@@ -82,7 +82,7 @@ export default function ShareModal({
           <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2.5">
             Share Method
           </label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
             {[
               { 
                 key: 'friends', 
@@ -92,6 +92,16 @@ export default function ShareModal({
                   <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5 inline">
                     <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                  </svg>
+                )
+              },
+              { 
+                key: 'chat', 
+                label: 'Share to chat', 
+                sub: 'AI Assistant context',
+                icon: (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5 inline">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                   </svg>
                 )
               },
@@ -445,7 +455,7 @@ export default function ShareModal({
             onClick={handleShareModalConfirm}
             className="px-6 py-2 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-750 text-white shadow-sm transition-all duration-200 hover:scale-[1.01] active:scale-95 whitespace-nowrap min-w-[90px]"
           >
-            {shareDestination === 'downloads' ? `Export ${shareFormat}` : shareDestination === 'apps' ? 'Share to Apps' : 'Copy Link'}
+            {shareDestination === 'downloads' ? `Export ${shareFormat}` : shareDestination === 'apps' ? 'Share to Apps' : shareDestination === 'chat' ? 'Attach to Chat' : 'Copy Link'}
           </button>
         </div>
 

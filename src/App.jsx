@@ -6105,6 +6105,11 @@ export default function App() {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editingTaskText, setEditingTaskText] = useState('');
   const [chatAttachments, setChatAttachments] = useState([]);
+  const [isDocContextActive, setIsDocContextActive] = useState(true);
+  const [isMentionMenuOpen, setIsMentionMenuOpen] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState('');
+  const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
+  const mentionMenuRef = useRef(null);
   const [scheduleAttachments, setScheduleAttachments] = useState([]);
   const [voiceTarget, setVoiceTarget] = useState('compose');
   const [scheduleInput, setScheduleInput] = useState('');
@@ -19955,6 +19960,105 @@ Rules:
     setChatAttachments([]);
   };
 
+  const availableDocs = useMemo(() => {
+    const list = (documents && documents.length)
+      ? documents
+      : [{ id: activeDocId || 'active-doc', title: docTitle || 'Untitled document' }];
+    if (!mentionSearch) return list;
+    return list.filter((doc) =>
+      (doc.title || 'Untitled document').toLowerCase().includes(mentionSearch)
+    );
+  }, [documents, mentionSearch, activeDocId, docTitle]);
+
+  const selectDocumentMention = (doc) => {
+    const title = doc.title?.trim() || 'Untitled document';
+    const docId = doc.id || 'active-doc';
+    if (docId === activeDocId || docId === 'active-doc') {
+      setIsDocContextActive(true);
+    } else {
+      setChatAttachments((prev) => {
+        if (prev.some((att) => att.docId === docId || att.name === title)) return prev;
+        return [
+          ...prev,
+          {
+            id: 'doc-' + docId + '-' + Date.now(),
+            name: title,
+            type: 'document',
+            isDoc: true,
+            docId: docId,
+          },
+        ];
+      });
+    }
+    const lastAtIndex = chatInput.lastIndexOf('@');
+    if (lastAtIndex !== -1) {
+      setChatInput(chatInput.slice(0, lastAtIndex));
+    }
+    setIsMentionMenuOpen(false);
+    showToast(`Attached document "${title}"`);
+  };
+
+  const handleChatInputChange = (e) => {
+    const val = e.target.value;
+    setChatInput(val);
+    const lastAtIndex = val.lastIndexOf('@');
+    if (lastAtIndex !== -1 && lastAtIndex >= val.length - 25) {
+      const query = val.slice(lastAtIndex + 1);
+      if (!query.includes(' ') && !query.includes('\n')) {
+        setIsMentionMenuOpen(true);
+        setMentionSearch(query.toLowerCase());
+        setMentionSelectedIndex(0);
+        return;
+      }
+    }
+    setIsMentionMenuOpen(false);
+  };
+
+  const handleChatInputKeyDown = (e) => {
+    if (isMentionMenuOpen) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionSelectedIndex((prev) => (prev + 1) % (availableDocs.length || 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionSelectedIndex((prev) => (prev - 1 + (availableDocs.length || 1)) % (availableDocs.length || 1));
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        if (availableDocs[mentionSelectedIndex]) {
+          selectDocumentMention(availableDocs[mentionSelectedIndex]);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsMentionMenuOpen(false);
+        return;
+      }
+    }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSidebarSend(e);
+    }
+  };
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (mentionMenuRef.current && !mentionMenuRef.current.contains(e.target)) {
+        setIsMentionMenuOpen(false);
+      }
+    };
+    if (isMentionMenuOpen) {
+      document.addEventListener('pointerdown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('pointerdown', handleOutsideClick);
+    };
+  }, [isMentionMenuOpen]);
+
   const handleAssistantQuickPromptSend = (event) => {
     event.preventDefault();
     if (!isLiveAiReady) {
@@ -22539,6 +22643,33 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
 
   const handleShareModalConfirm = async () => {
+    if (shareDestination === 'chat') {
+      const docName = shareTargetDocTitle || docTitle || 'Untitled document';
+      const docId = shareTargetDocId || activeDocId || 'active-doc';
+      if (docId === activeDocId || docId === 'active-doc') {
+        setIsDocContextActive(true);
+      } else {
+        setChatAttachments((prev) => {
+          if (prev.some((att) => att.docId === docId || att.name === docName)) return prev;
+          return [
+            ...prev,
+            {
+              id: 'doc-' + docId + '-' + Date.now(),
+              name: docName,
+              type: 'document',
+              isDoc: true,
+              docId: docId,
+            },
+          ];
+        });
+      }
+      setRightSidebarOpen(true);
+      setActiveRightTab('assistant');
+      setShareModalOpen(false);
+      showToast(`Attached "${docName}" to AI Assistant chat`);
+      return;
+    }
+
     if (shareDestination === 'downloads') {
       const ok = await downloadDocumentInFormat(shareFormat, shareTargetDocId || activeDocId);
       if (ok) {
@@ -25563,56 +25694,97 @@ Respond with a JSON array of slide objects matching the schema.`;
                         <h3 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight leading-none">
                           {productMode === 'compose' ? 'Compose Assistant' : productMode === 'sheets' ? 'Sheets Assistant' : 'Deck Assistant'}
                         </h3>
-                        <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium truncate mt-0.5 flex items-center gap-1">
-                          <FileText size={10.5} strokeWidth={1.5} className="shrink-0 text-slate-400 dark:text-zinc-500" />
-                          <span className="truncate">Connected to <span className="text-slate-600 dark:text-zinc-300 font-medium">{docTitleDisplay}</span></span>
-                        </div>
                       </div>
                     </div>
 
-                    {/* Integrated Input Area (Notes.app feel) */}
-                    <form onSubmit={handleSidebarSend} className="w-full mb-3.5">
-                      {chatAttachments.length > 0 && (
-                        <div className="mb-2 flex flex-wrap gap-2">
-                          {chatAttachments.map((attachment) => (
-                            <div
-                              key={attachment.id}
-                              className="inline-flex items-center gap-2 rounded-lg border border-slate-200/50 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-slate-700 dark:text-zinc-300 shadow-2xs group relative cursor-pointer"
-                              onClick={() => setPreviewAttachment(attachment)}
-                              title="Preview attachment"
-                            >
-                              {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
-                                <img
-                                  src={attachment.url}
-                                  alt={attachment.name}
-                                  className="w-4.5 h-4.5 rounded object-cover"
-                                />
-                              ) : (
-                                <div className="w-4.5 h-4.5 rounded bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-zinc-400">
-                                  {attachment.type && attachment.type.includes('audio') ? (
-                                    <Mic size={10} />
-                                  ) : (
-                                    <FileText size={10} />
-                                  )}
-                                </div>
-                              )}
-                              <span className="max-w-[120px] truncate font-medium">{attachment.name}</span>
+                    {/* Integrated Input Area (VS Code Prompt Box Style) */}
+                    <form onSubmit={handleSidebarSend} className="w-full mb-3.5 relative">
+                      {/* Floating @ Mention Dropdown */}
+                      {isMentionMenuOpen && (
+                        <div
+                          ref={mentionMenuRef}
+                          className="absolute bottom-full left-0 mb-2 w-full max-h-56 overflow-y-auto bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 p-1.5"
+                        >
+                          <div className="px-2 py-1 text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                            Mention Document
+                          </div>
+                          {availableDocs.length === 0 ? (
+                            <div className="px-2 py-2 text-xs text-slate-400 dark:text-zinc-500 italic">No matching documents</div>
+                          ) : (
+                            availableDocs.map((doc, idx) => (
                               <button
+                                key={doc.id}
                                 type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setChatAttachments(prev => prev.filter(att => att.id !== attachment.id));
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  selectDocumentMention(doc);
                                 }}
-                                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors ${
+                                  idx === mentionSelectedIndex
+                                    ? 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 font-semibold'
+                                    : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                                }`}
                               >
-                                <X size={10} />
+                                <div className="flex items-center gap-2 truncate">
+                                  <FileText size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                                  <span className="truncate">{doc.title || 'Untitled document'}</span>
+                                </div>
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono shrink-0">@doc</span>
                               </button>
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
                       )}
 
-                      <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-zinc-800/80 rounded-xl focus-within:border-slate-300 dark:focus-within:border-zinc-700/80 transition-all duration-200 shadow-2xs">
+                      <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all duration-200 shadow-2xs overflow-hidden">
+                        {/* Top Context Attachment Chips inside container (VS Code Style) */}
+                        {(isDocContextActive || chatAttachments.length > 0) && (
+                          <div className="px-2.5 pt-2.5 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
+                            {isDocContextActive && (
+                              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/80 text-[11.5px] font-mono text-slate-700 dark:text-zinc-300 shadow-2xs group relative">
+                                <Plus size={11} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                                <Diamond size={10} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+                                <span className="truncate max-w-[150px] font-sans font-medium text-[11px]">{docTitle || 'Untitled document'}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsDocContextActive(false)}
+                                  className="ml-0.5 p-0.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded hover:bg-slate-200/60 dark:hover:bg-zinc-700 transition-colors"
+                                  title="Remove document context"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            )}
+
+                            {chatAttachments.map((attachment) => (
+                              <div
+                                key={attachment.id}
+                                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/80 text-[11.5px] font-medium text-slate-700 dark:text-zinc-300 shadow-2xs group relative cursor-pointer"
+                                onClick={() => setPreviewAttachment(attachment)}
+                                title="Preview attachment"
+                              >
+                                {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
+                                  <img src={attachment.url} alt={attachment.name} className="w-3.5 h-3.5 rounded object-cover" />
+                                ) : (
+                                  <FileText size={10.5} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+                                )}
+                                <span className="max-w-[130px] truncate font-sans text-[11px]">{attachment.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setChatAttachments(prev => prev.filter(att => att.id !== attachment.id));
+                                  }}
+                                  className="ml-0.5 p-0.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded hover:bg-slate-200/60 dark:hover:bg-zinc-700 transition-colors"
+                                  title="Remove context"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
                         <input
                           ref={chatFileInputRef}
                           type="file"
@@ -25626,16 +25798,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                         <textarea
                           ref={chatInputRef}
                           value={chatInput}
-                          onChange={(e) => setChatInput(e.target.value)}
+                          onChange={handleChatInputChange}
                           onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
                           onPaste={handleChatPaste}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSidebarSend(e);
-                            }
-                          }}
-                          placeholder="Ask Compose Assistant..."
+                          onKeyDown={handleChatInputKeyDown}
+                          placeholder="Describe what to build or ask Compose Assistant... Type @ to mention docs"
                           rows={2}
                           className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-2.5 px-3 pb-1.5 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 resize-none min-h-[60px]"
                         />
@@ -25654,6 +25821,21 @@ Respond with a JSON array of slide objects matching the schema.`;
                             </button>
                             <button
                               type="button"
+                              onClick={() => {
+                                setMentionSearch('');
+                                setIsMentionMenuOpen((prev) => !prev);
+                              }}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                isMentionMenuOpen
+                                  ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/40'
+                                  : 'text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800'
+                              }`}
+                              title="Mention document (@)"
+                            >
+                              <AtSign size={15} strokeWidth={1.5} />
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => toggleVoiceRecording('right-chat')}
                               className={`p-1 rounded-lg transition-all ${
                                 isVoiceActive && voiceTarget === 'right-chat'
@@ -25667,9 +25849,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                           </div>
                           <button 
                             type="submit" 
-                            disabled={!chatInput.trim()}
+                            disabled={!chatInput.trim() && !chatAttachments.length && !isDocContextActive}
                             className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer ${
-                              chatInput.trim().length > 0 
+                              chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive
                                 ? 'opacity-100 bg-violet-500/90 hover:bg-violet-600 dark:bg-violet-500/80 dark:hover:bg-violet-500 text-white shadow-2xs' 
                                 : 'opacity-35 cursor-not-allowed bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600'
                             }`}
@@ -25888,47 +26070,93 @@ Respond with a JSON array of slide objects matching the schema.`;
 
               {/* Bottom Input Bar when active messages exist */}
               {chatMessages.length > 0 && (
-                <form onSubmit={handleSidebarSend} className="p-3 border-t border-slate-100 dark:border-zinc-800/60 bg-slate-50/40 dark:bg-zinc-900/40 shrink-0">
-                  {chatAttachments.length > 0 && (
-                    <div className="mb-2 flex flex-wrap gap-2 px-1">
-                      {chatAttachments.map((attachment) => (
-                        <div
-                          key={attachment.id}
-                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1 text-xs text-slate-700 dark:text-zinc-300 shadow-2xs group relative cursor-pointer"
-                          onClick={() => setPreviewAttachment(attachment)}
-                          title="Preview attachment"
-                        >
-                          {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
-                            <img
-                              src={attachment.url}
-                              alt={attachment.name}
-                              className="w-5 h-5 rounded object-cover"
-                            />
-                          ) : (
-                            <div className="w-5 h-5 rounded bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-zinc-400">
-                              {attachment.type && attachment.type.includes('audio') ? (
-                                <Mic size={11} />
-                              ) : (
-                                <FileText size={11} />
-                              )}
-                            </div>
-                          )}
-                          <span className="max-w-[120px] truncate font-medium">{attachment.name}</span>
+                <form onSubmit={handleSidebarSend} className="p-3 border-t border-slate-100 dark:border-zinc-800/60 bg-slate-50/40 dark:bg-zinc-900/40 shrink-0 relative">
+                  {/* Floating @ Mention Dropdown */}
+                  {isMentionMenuOpen && (
+                    <div
+                      ref={mentionMenuRef}
+                      className="absolute bottom-full left-3 right-3 mb-2 max-h-56 overflow-y-auto bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 p-1.5"
+                    >
+                      <div className="px-2 py-1 text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                        Mention Document
+                      </div>
+                      {availableDocs.length === 0 ? (
+                        <div className="px-2 py-2 text-xs text-slate-400 dark:text-zinc-500 italic">No matching documents</div>
+                      ) : (
+                        availableDocs.map((doc, idx) => (
                           <button
+                            key={doc.id}
                             type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setChatAttachments(prev => prev.filter(att => att.id !== attachment.id));
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              selectDocumentMention(doc);
                             }}
-                            className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                            className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors ${
+                              idx === mentionSelectedIndex
+                                ? 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 font-semibold'
+                                : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                            }`}
                           >
-                            <X size={11} />
+                            <div className="flex items-center gap-2 truncate">
+                              <FileText size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                              <span className="truncate">{doc.title || 'Untitled document'}</span>
+                            </div>
+                            <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono shrink-0">@doc</span>
                           </button>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   )}
-                  <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-violet-400/80 dark:focus-within:border-violet-500/80 transition-all shadow-2xs">
+
+                  <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-violet-400/80 dark:focus-within:border-violet-500/80 transition-all shadow-2xs overflow-hidden">
+                    {/* Top Context Attachment Chips inside container (VS Code Style) */}
+                    {(isDocContextActive || chatAttachments.length > 0) && (
+                      <div className="px-3 pt-2.5 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
+                        {isDocContextActive && (
+                          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/80 text-[11.5px] font-mono text-slate-700 dark:text-zinc-300 shadow-2xs group relative">
+                            <Plus size={11} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                            <Diamond size={10} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+                            <span className="truncate max-w-[150px] font-sans font-medium text-[11px]">{docTitle || 'Untitled document'}</span>
+                            <button
+                              type="button"
+                              onClick={() => setIsDocContextActive(false)}
+                              className="ml-0.5 p-0.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded hover:bg-slate-200/60 dark:hover:bg-zinc-700 transition-colors"
+                              title="Remove document context"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        )}
+
+                        {chatAttachments.map((attachment) => (
+                          <div
+                            key={attachment.id}
+                            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/80 text-[11.5px] font-medium text-slate-700 dark:text-zinc-300 shadow-2xs group relative cursor-pointer"
+                            onClick={() => setPreviewAttachment(attachment)}
+                            title="Preview attachment"
+                          >
+                            {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
+                              <img src={attachment.url} alt={attachment.name} className="w-3.5 h-3.5 rounded object-cover" />
+                            ) : (
+                              <FileText size={10.5} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+                            )}
+                            <span className="max-w-[130px] truncate font-sans text-[11px]">{attachment.name}</span>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setChatAttachments(prev => prev.filter(att => att.id !== attachment.id));
+                              }}
+                              className="ml-0.5 p-0.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded hover:bg-slate-200/60 dark:hover:bg-zinc-700 transition-colors"
+                              title="Remove context"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <input
                       ref={chatFileInputRef}
                       type="file"
@@ -25942,16 +26170,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                     <textarea
                       ref={chatInputRef}
                       value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
+                      onChange={handleChatInputChange}
                       onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
                       onPaste={handleChatPaste}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSidebarSend(e);
-                        }
-                      }}
-                      placeholder="Ask, summarize, or instruct..."
+                      onKeyDown={handleChatInputKeyDown}
+                      placeholder="Ask, summarize, or instruct... Type @ to mention docs"
                       rows={2}
                       className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3 px-3.5 pb-2 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 resize-none min-h-[64px]"
                     />
@@ -25970,6 +26193,21 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </button>
                         <button
                           type="button"
+                          onClick={() => {
+                            setMentionSearch('');
+                            setIsMentionMenuOpen((prev) => !prev);
+                          }}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            isMentionMenuOpen
+                              ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/40'
+                              : 'text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                          }`}
+                          title="Mention document (@)"
+                        >
+                          <AtSign size={16} strokeWidth={1.75} />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => toggleVoiceRecording('right-chat')}
                           className={`p-1.5 rounded-lg transition-all ${
                             isVoiceActive && voiceTarget === 'right-chat'
@@ -25983,9 +26221,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                       </div>
                       <button 
                         type="submit" 
-                        disabled={!chatInput.trim()}
+                        disabled={!chatInput.trim() && !chatAttachments.length && !isDocContextActive}
                         className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                          chatInput.trim().length > 0 
+                          chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive
                             ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-2xs' 
                             : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600'
                         }`}
