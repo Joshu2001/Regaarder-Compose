@@ -577,21 +577,28 @@
             <div className="flex-1 overflow-y-auto thin-scrollbar p-5 flex flex-col space-y-6 bg-white dark:bg-[#18181b]">
               {/* Single Clean Surface for Add Task & Filters */}
               <div className="rounded-2xl bg-slate-50/50 dark:bg-zinc-800/25 p-3 space-y-2.5">
-                {/* Segmented Filter Control - Apple Style */}
-                <div className="flex items-center gap-0.5 p-0.5 bg-slate-100/60 dark:bg-zinc-800/40 rounded-lg self-start">
+              {/* Filter Tabs & Clean Surface */}
+              <div className="space-y-3">
+                {/* Segmented Filter Track (Your Tasks, Agent Tasks, Team Tasks, All) */}
+                <div className="flex items-center gap-0.5 p-0.5 bg-slate-100/70 dark:bg-zinc-800/50 rounded-xl self-start overflow-x-auto no-scrollbar w-full">
                   <button
                     type="button"
                     onClick={() => {
                       setNewTaskOwner('user');
                       setTaskOwnerFilter('user');
                     }}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-all cursor-pointer ${
+                    onDragOver={(e) => { e.preventDefault(); setTaskDragOverCategory && setTaskDragOverCategory('user'); }}
+                    onDragLeave={() => setTaskDragOverCategory && setTaskDragOverCategory(null)}
+                    onDrop={(e) => handleTaskDropOnCategory && handleTaskDropOnCategory(e, 'user')}
+                    className={`px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
                       taskOwnerFilter === 'user'
-                        ? 'bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-2xs font-semibold'
-                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'
+                        ? 'bg-violet-600 text-white shadow-2xs font-semibold'
+                        : taskDragOverCategory === 'user'
+                        ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/40'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                     }`}
                   >
-                    User Task
+                    Your Tasks
                   </button>
                   <button
                     type="button"
@@ -599,28 +606,52 @@
                       setNewTaskOwner('agent');
                       setTaskOwnerFilter('agent');
                     }}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-all cursor-pointer ${
+                    onDragOver={(e) => { e.preventDefault(); setTaskDragOverCategory && setTaskDragOverCategory('agent'); }}
+                    onDragLeave={() => setTaskDragOverCategory && setTaskDragOverCategory(null)}
+                    onDrop={(e) => handleTaskDropOnCategory && handleTaskDropOnCategory(e, 'agent')}
+                    className={`px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
                       taskOwnerFilter === 'agent'
-                        ? 'bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-2xs font-semibold'
-                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'
+                        ? 'bg-violet-600 text-white shadow-2xs font-semibold'
+                        : taskDragOverCategory === 'agent'
+                        ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/40'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                     }`}
                   >
-                    Agent Task
+                    Agent Tasks
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewTaskOwner('team');
+                      setTaskOwnerFilter('team');
+                    }}
+                    onDragOver={(e) => { e.preventDefault(); setTaskDragOverCategory && setTaskDragOverCategory('team'); }}
+                    onDragLeave={() => setTaskDragOverCategory && setTaskDragOverCategory(null)}
+                    onDrop={(e) => handleTaskDropOnCategory && handleTaskDropOnCategory(e, 'team')}
+                    className={`px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                      taskOwnerFilter === 'team'
+                        ? 'bg-violet-600 text-white shadow-2xs font-semibold'
+                        : taskDragOverCategory === 'team'
+                        ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/40'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                    }`}
+                  >
+                    Team Tasks
                   </button>
                   <button
                     type="button"
                     onClick={() => setTaskOwnerFilter('all')}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-all cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
                       taskOwnerFilter === 'all'
-                        ? 'bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-2xs font-semibold'
-                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'
+                        ? 'bg-violet-600 text-white shadow-2xs font-semibold'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                     }`}
                   >
                     All
                   </button>
                 </div>
 
-                {/* Input & Primary Save Button */}
+                {/* Spacious Input Surface without noisy placeholder text */}
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -632,49 +663,63 @@
                         addTaskFromInput();
                       }
                     }}
-                    placeholder="Add a new action item..."
-                    className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-700/60 rounded-xl px-4 py-1.5 text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-violet-500 dark:focus:border-violet-500 transition-colors shadow-2xs"
+                    placeholder=""
+                    className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl px-4 py-2 text-xs text-slate-800 dark:text-zinc-100 focus:outline-none focus:border-violet-500 dark:focus:border-violet-500 transition-colors shadow-2xs min-h-[38px]"
                   />
                   <button
                     type="button"
                     onClick={addTaskFromInput}
-                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white shadow-2xs transition-colors shrink-0 cursor-pointer"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white shadow-2xs transition-colors shrink-0 cursor-pointer"
                   >
                     Save
                   </button>
                 </div>
               </div>
 
-              {/* Borderless Task List with 16-20px Vertical Breathing Room & Faint Separators */}
-              <div className="divide-y divide-slate-100/50 dark:divide-zinc-800/30">
+              {/* Task Items List */}
+              <div className="divide-y divide-slate-100/60 dark:divide-zinc-800/40">
                 {visibleTasks.map(task => (
                   <div 
-                    key={task.id} 
+                    key={task.id}
+                    draggable
+                    onDragStart={(e) => handleTaskDragStart && handleTaskDragStart(e, task.id)}
                     onClick={() => {
                       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
                       showToast(task.completed ? "Task uncompleted" : "Task marked completed");
                     }}
-                    className={`group flex items-start gap-2 py-4 px-2 rounded-xl transition-all cursor-pointer ${
+                    className={`group flex items-start gap-2.5 py-4 px-2.5 rounded-xl transition-all cursor-pointer relative ${
                       task.completed 
-                        ? 'opacity-20 text-slate-400 dark:text-zinc-500' 
-                        : 'hover:bg-slate-50/60 dark:hover:bg-zinc-800/30 text-slate-800 dark:text-zinc-200 opacity-100'
+                        ? 'opacity-30 text-slate-400 dark:text-zinc-500' 
+                        : 'hover:bg-slate-50/70 dark:hover:bg-zinc-800/30 text-slate-800 dark:text-zinc-200 opacity-100'
                     }`}
                   >
+                    {/* Checkbox */}
                     <div className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0 ${
                       task.completed 
                         ? 'bg-violet-600 border-violet-600 text-white' 
-                        : 'border-slate-300/80 dark:border-zinc-600 bg-white dark:bg-zinc-900 group-hover:border-violet-400'
+                        : 'border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 group-hover:border-violet-400'
                     }`}>
                       {task.completed && <Check size={10} strokeWidth={3} />}
                     </div>
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <div className="mb-0.5">
-                            <span className="inline-flex items-center px-1.5 py-0.2 rounded-md text-[9.5px] font-medium bg-slate-100/70 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border-0">
-                              {task.owner === 'agent' ? 'Agent' : 'User'}
-                            </span>
+                          {/* Top Badges (AI / Project Tag) */}
+                          <div className="flex items-center gap-1.5 mb-1">
+                            {(task.isAiCreated || task.owner === 'agent') && (
+                              <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/40">
+                                AI
+                              </span>
+                            )}
+                            {task.project && (
+                              <span className="inline-flex items-center text-[10px] font-medium text-slate-400 dark:text-zinc-500">
+                                {task.project}
+                              </span>
+                            )}
                           </div>
+
+                          {/* Editable Title */}
                           {editingTaskId === task.id ? (
                             <textarea
                               autoFocus
@@ -708,7 +753,139 @@
                               {task.text}
                             </p>
                           )}
+
+                          {/* Muted Metadata Row (Due Date • Priority • Assignees) */}
+                          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-slate-400 dark:text-zinc-500">
+                            {task.dueDate && (
+                              <span className="inline-flex items-center gap-1">
+                                <Clock size={11} className="text-slate-400" />
+                                <span>{task.dueDate}</span>
+                              </span>
+                            )}
+                            {task.priority && (
+                              <span className={`px-1.5 py-0.2 rounded text-[9.5px] font-semibold ${
+                                task.priority === 'High' 
+                                  ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400'
+                                  : task.priority === 'Medium'
+                                  ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
+                                  : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'
+                              }`}>
+                                {task.priority}
+                              </span>
+                            )}
+
+                            {/* Assignee / Stacked Avatars */}
+                            <div className="inline-flex items-center gap-1 relative">
+                              {task.assignees && task.assignees.length > 0 ? (
+                                task.owner === 'team' || task.assignees.length > 1 ? (
+                                  /* Stacked Avatars */
+                                  <div 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setAssigneePickerTaskId && setAssigneePickerTaskId(assigneePickerTaskId === task.id ? null : task.id);
+                                    }}
+                                    className="flex items-center -space-x-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+                                    title="Click to assign teammates"
+                                  >
+                                    {task.assignees.slice(0, 3).map((person, idx) => (
+                                      person.avatar ? (
+                                        <img 
+                                          key={person.id || idx} 
+                                          src={person.avatar} 
+                                          alt={person.name} 
+                                          className="w-4.5 h-4.5 rounded-full border border-white dark:border-zinc-900 object-cover" 
+                                        />
+                                      ) : (
+                                        <div key={person.id || idx} className="w-4.5 h-4.5 rounded-full border border-white dark:border-zinc-900 bg-violet-600 text-[9px] font-bold text-white flex items-center justify-center">
+                                          AI
+                                        </div>
+                                      )
+                                    ))}
+                                    {task.assignees.length > 3 && (
+                                      <span className="text-[9.5px] text-slate-400 pl-1 font-semibold">+{task.assignees.length - 3}</span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  /* Single Assignee Chip */
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setAssigneePickerTaskId && setAssigneePickerTaskId(assigneePickerTaskId === task.id ? null : task.id);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100/70 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 text-[10.5px] font-medium hover:bg-slate-200/70 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                                  >
+                                    {task.assignees[0].avatar ? (
+                                      <img src={task.assignees[0].avatar} alt={task.assignees[0].name} className="w-3.5 h-3.5 rounded-full object-cover" />
+                                    ) : (
+                                      <span className="w-3.5 h-3.5 rounded-full bg-violet-600 text-[8px] font-bold text-white flex items-center justify-center">AI</span>
+                                    )}
+                                    <span>{task.assignees[0].name}</span>
+                                  </button>
+                                )
+                              ) : (
+                                /* Assign Chip when no assignee exists */
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAssigneePickerTaskId && setAssigneePickerTaskId(assigneePickerTaskId === task.id ? null : task.id);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-dashed border-slate-300 dark:border-zinc-700 text-[10px] font-medium text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                                >
+                                  <UserPlus size={10} />
+                                  <span>Assign</span>
+                                </button>
+                              )}
+
+                              {/* Lightweight People Picker Dropover */}
+                              {assigneePickerTaskId === task.id && (
+                                <div 
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="absolute left-0 top-full mt-1.5 w-48 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl shadow-lg p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                >
+                                  <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                                    Assign to
+                                  </div>
+                                  <div className="space-y-0.5 max-h-44 overflow-y-auto thin-scrollbar">
+                                    {WORKSPACE_TEAMMATES.map((person) => {
+                                      const isSelected = (task.assignees || []).some(a => a.id === person.id);
+                                      return (
+                                        <button
+                                          key={person.id}
+                                          type="button"
+                                          onPointerDown={(e) => {
+                                            e.preventDefault();
+                                            toggleAssignee && toggleAssignee(task.id, person);
+                                          }}
+                                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
+                                            isSelected 
+                                              ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300' 
+                                              : 'hover:bg-slate-100/70 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'
+                                          }`}
+                                        >
+                                          {person.avatar ? (
+                                            <img src={person.avatar} alt={person.name} className="w-4 h-4 rounded-full object-cover shrink-0" />
+                                          ) : (
+                                            <div className="w-4 h-4 rounded-full bg-violet-600 text-[8px] font-bold text-white flex items-center justify-center shrink-0">
+                                              AI
+                                            </div>
+                                          )}
+                                          <div className="flex-1 min-w-0">
+                                            <div className="truncate text-[11px] font-medium">{person.name}</div>
+                                          </div>
+                                          {isSelected && <Check size={11} className="text-violet-600 dark:text-violet-400 shrink-0" />}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
+
+                        {/* Hover Pen & Delete Action Buttons */}
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-0.5 shrink-0">
                           <button
                             type="button"
@@ -734,25 +911,50 @@
                           </button>
                         </div>
                       </div>
-                      <div className="mt-1 flex items-center">
+
+                      {/* Subtle Action Row: Schedule • Delegate • Open */}
+                      <div className="mt-2 flex items-center gap-3 pt-1 border-t border-slate-100/40 dark:border-zinc-800/30 text-[11px] text-slate-400/80 dark:text-zinc-500">
                         <button
                           type="button"
                           onClick={(event) => {
                             event.stopPropagation();
                             convertTaskToSchedule(task);
                           }}
-                          className="inline-flex items-center gap-1 text-[11px] text-slate-400/70 dark:text-zinc-500/70 hover:text-slate-600 dark:hover:text-zinc-300 opacity-60 group-hover:opacity-100 transition-opacity font-medium cursor-pointer"
+                          className="inline-flex items-center gap-1 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors font-medium cursor-pointer"
                         >
-                          <Calendar size={11} strokeWidth={1.5} className="text-slate-400/70 dark:text-zinc-500" />
-                          <span>Convert to Schedule</span>
+                          <Calendar size={11} strokeWidth={1.5} />
+                          <span>Schedule</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setAssigneePickerTaskId && setAssigneePickerTaskId(assigneePickerTaskId === task.id ? null : task.id);
+                          }}
+                          className="inline-flex items-center gap-1 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors font-medium cursor-pointer"
+                        >
+                          <UserPlus size={11} strokeWidth={1.5} />
+                          <span>Delegate</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            showToast(`Opening context: ${task.sourceContext?.title || docTitle || 'Workspace'}`);
+                          }}
+                          className="inline-flex items-center gap-1 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors font-medium cursor-pointer ml-auto"
+                        >
+                          <ExternalLink size={11} strokeWidth={1.5} />
+                          <span>Open</span>
                         </button>
                       </div>
                     </div>
                   </div>
                 ))}
                 {visibleTasks.length === 0 && (
-                  <div className="py-8 text-center text-xs text-slate-400/80 dark:text-zinc-500/80 font-medium">
-                    No tasks in this view yet.
+                  <div className="py-12 text-center space-y-1">
+                    <div className="text-xs text-slate-400 dark:text-zinc-500 font-medium">No tasks in this view</div>
+                    <div className="text-[11px] text-slate-300 dark:text-zinc-600">Drag or create tasks to organize</div>
                   </div>
                 )}
               </div>
