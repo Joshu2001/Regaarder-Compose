@@ -25703,20 +25703,20 @@ Respond with a JSON array of slide objects matching the schema.`;
                       {isMentionMenuOpen && (
                         <div
                           ref={mentionMenuRef}
-                          className="absolute top-full left-0 right-0 mt-1.5 max-h-64 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-[0_12px_32px_-8px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5)] z-50 overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-top-1.5 zoom-in-95"
+                          className="absolute top-full left-0 right-0 mt-1.5 max-h-72 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-[0_12px_32px_-8px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5)] z-50 overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-top-1.5 zoom-in-95"
                         >
                           {/* Header & Refined Search Bar */}
-                          <div className="p-2 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/40 dark:bg-zinc-900/40 flex flex-col gap-1.5 shrink-0">
-                            <div className="flex items-center justify-between px-1">
+                          <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/30 dark:bg-zinc-900/30 flex flex-col gap-2 shrink-0">
+                            <div className="flex items-center justify-between px-0.5">
                               <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
                                 {mentionSearch ? 'Search Results' : 'Mention a Document'}
                               </span>
-                              <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-mono">
+                              <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono opacity-70">
                                 {availableDocs.length} {availableDocs.length === 1 ? 'file' : 'files'}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 focus-within:border-violet-400/50 dark:focus-within:border-violet-500/50 focus-within:ring-1 focus-within:ring-violet-400/20 transition-all duration-150 shadow-2xs">
-                              <Search size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 h-7 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus-within:border-violet-400 dark:focus-within:border-violet-500 transition-colors">
+                              <Search size={12} className="text-slate-400/80 dark:text-zinc-500/80 shrink-0" />
                               <input
                                 type="text"
                                 value={mentionSearch}
@@ -25744,10 +25744,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                             </div>
                           </div>
 
-                          {/* Scrollable Document List */}
-                          <div className="p-1 overflow-y-auto thin-scrollbar max-h-44">
+                          {/* Scrollable Document List with Breathing Room */}
+                          <div className="pt-2 pb-2 px-1.5 space-y-1 overflow-y-auto thin-scrollbar max-h-52">
                             {availableDocs.length === 0 ? (
-                              <div className="px-3 py-3 text-xs text-slate-400 dark:text-zinc-500 italic text-center">
+                              <div className="px-3 py-4 text-xs text-slate-400 dark:text-zinc-500 italic text-center">
                                 No matching documents found
                               </div>
                             ) : (
@@ -25762,17 +25762,20 @@ Respond with a JSON array of slide objects matching the schema.`;
                                       e.preventDefault();
                                       selectDocumentMention(doc);
                                     }}
-                                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between transition-colors ${
                                       isSelected
-                                        ? 'bg-violet-50/60 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200 font-medium'
-                                        : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 font-normal'
+                                        ? 'bg-slate-100/90 dark:bg-zinc-800/90 text-slate-900 dark:text-zinc-100 font-medium'
+                                        : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100/50 dark:hover:bg-zinc-800/40 font-normal'
                                     }`}
                                   >
-                                    <div className="flex items-center gap-2 truncate">
-                                      <FileText size={12} className={isSelected ? 'text-violet-500 dark:text-violet-400 shrink-0' : 'text-slate-400 dark:text-zinc-500 shrink-0'} />
+                                    <div className="flex items-center gap-2.5 truncate">
+                                      <FileText
+                                        size={12}
+                                        className={isSelected ? 'text-violet-500 dark:text-violet-400 shrink-0' : 'text-slate-400/70 dark:text-zinc-500/70 shrink-0'}
+                                      />
                                       <span className="truncate">{doc.title || 'Untitled document'}</span>
                                     </div>
-                                    <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-sans shrink-0">
+                                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-sans shrink-0 opacity-60">
                                       {isCurrentActive ? 'Active' : 'Updated recently'}
                                     </span>
                                   </button>
@@ -25784,13 +25787,13 @@ Respond with a JSON array of slide objects matching the schema.`;
                       )}
 
                       <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all duration-200 shadow-2xs overflow-hidden">
-                        {/* Top Context Attachment Chips inside container (VS Code Style) */}
+                        {/* Top Context Attachment Chips inside container (VS Code / Apple Token Style) */}
                         {(isDocContextActive || chatAttachments.length > 0) && (
                           <div className="px-2.5 pt-2 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
                             {isDocContextActive && (
-                              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-slate-200/80 dark:border-zinc-700/80 bg-slate-100/70 dark:bg-zinc-800/80 text-[11.5px] font-medium text-slate-700 dark:text-zinc-200 shadow-2xs group relative transition-all animate-in fade-in zoom-in-95 duration-150">
-                                <FileText size={11} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                                <span className="truncate max-w-[150px] font-sans text-[11.5px]">{docTitle || 'Untitled document'}</span>
+                              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5.5 rounded-md border border-slate-200/50 dark:border-zinc-800/60 bg-slate-100/60 dark:bg-zinc-800/60 text-[11px] font-medium text-slate-700 dark:text-zinc-200 shadow-2xs group relative transition-all animate-in fade-in zoom-in-95 duration-150">
+                                <FileText size={10.5} className="text-slate-400/70 dark:text-zinc-500/70 shrink-0" />
+                                <span className="truncate max-w-[150px] font-sans text-[11px]">{docTitle || 'Untitled document'}</span>
                                 <button
                                   type="button"
                                   onClick={() => setIsDocContextActive(false)}
@@ -25805,16 +25808,16 @@ Respond with a JSON array of slide objects matching the schema.`;
                             {chatAttachments.map((attachment) => (
                               <div
                                 key={attachment.id}
-                                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-slate-200/80 dark:border-zinc-700/80 bg-slate-100/70 dark:bg-zinc-800/80 text-[11.5px] font-medium text-slate-700 dark:text-zinc-200 shadow-2xs group relative cursor-pointer transition-all animate-in fade-in zoom-in-95 duration-150"
+                                className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5.5 rounded-md border border-slate-200/50 dark:border-zinc-800/60 bg-slate-100/60 dark:bg-zinc-800/60 text-[11px] font-medium text-slate-700 dark:text-zinc-200 shadow-2xs group relative cursor-pointer transition-all animate-in fade-in zoom-in-95 duration-150"
                                 onClick={() => setPreviewAttachment(attachment)}
                                 title="Preview attachment"
                               >
                                 {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
                                   <img src={attachment.url} alt={attachment.name} className="w-3.5 h-3.5 rounded object-cover" />
                                 ) : (
-                                  <FileText size={11} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                                  <FileText size={10.5} className="text-slate-400/70 dark:text-zinc-500/70 shrink-0" />
                                 )}
-                                <span className="max-w-[130px] truncate font-sans text-[11.5px]">{attachment.name}</span>
+                                <span className="max-w-[130px] truncate font-sans text-[11px]">{attachment.name}</span>
                                 <button
                                   type="button"
                                   onClick={(event) => {
@@ -26121,20 +26124,20 @@ Respond with a JSON array of slide objects matching the schema.`;
                   {isMentionMenuOpen && (
                     <div
                       ref={mentionMenuRef}
-                      className="absolute bottom-full left-3 right-3 mb-1.5 max-h-64 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-[0_12px_32px_-8px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5)] z-50 overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-1.5 zoom-in-95"
+                      className="absolute bottom-full left-3 right-3 mb-1.5 max-h-72 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-[0_12px_32px_-8px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5)] z-50 overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-1.5 zoom-in-95"
                     >
                       {/* Header & Refined Search Bar */}
-                      <div className="p-2 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/40 dark:bg-zinc-900/40 flex flex-col gap-1.5 shrink-0">
-                        <div className="flex items-center justify-between px-1">
+                      <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/30 dark:bg-zinc-900/30 flex flex-col gap-2 shrink-0">
+                        <div className="flex items-center justify-between px-0.5">
                           <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
                             {mentionSearch ? 'Search Results' : 'Mention a Document'}
                           </span>
-                          <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-mono">
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono opacity-70">
                             {availableDocs.length} {availableDocs.length === 1 ? 'file' : 'files'}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 focus-within:border-violet-400/50 dark:focus-within:border-violet-500/50 focus-within:ring-1 focus-within:ring-violet-400/20 transition-all duration-150 shadow-2xs">
-                          <Search size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 h-7 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus-within:border-violet-400 dark:focus-within:border-violet-500 transition-colors">
+                          <Search size={12} className="text-slate-400/80 dark:text-zinc-500/80 shrink-0" />
                           <input
                             type="text"
                             value={mentionSearch}
@@ -26162,10 +26165,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </div>
                       </div>
 
-                      {/* Scrollable Document List */}
-                      <div className="p-1 overflow-y-auto thin-scrollbar max-h-44">
+                      {/* Scrollable Document List with Breathing Room */}
+                      <div className="pt-2 pb-2 px-1.5 space-y-1 overflow-y-auto thin-scrollbar max-h-52">
                         {availableDocs.length === 0 ? (
-                          <div className="px-3 py-3 text-xs text-slate-400 dark:text-zinc-500 italic text-center">
+                          <div className="px-3 py-4 text-xs text-slate-400 dark:text-zinc-500 italic text-center">
                             No matching documents found
                           </div>
                         ) : (
@@ -26180,17 +26183,20 @@ Respond with a JSON array of slide objects matching the schema.`;
                                   e.preventDefault();
                                   selectDocumentMention(doc);
                                 }}
-                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                                className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between transition-colors ${
                                   isSelected
-                                    ? 'bg-violet-50/60 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200 font-medium'
-                                    : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 font-normal'
+                                    ? 'bg-slate-100/90 dark:bg-zinc-800/90 text-slate-900 dark:text-zinc-100 font-medium'
+                                    : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100/50 dark:hover:bg-zinc-800/40 font-normal'
                                 }`}
                               >
-                                <div className="flex items-center gap-2 truncate">
-                                  <FileText size={12} className={isSelected ? 'text-violet-500 dark:text-violet-400 shrink-0' : 'text-slate-400 dark:text-zinc-500 shrink-0'} />
+                                <div className="flex items-center gap-2.5 truncate">
+                                  <FileText
+                                    size={12}
+                                    className={isSelected ? 'text-violet-500 dark:text-violet-400 shrink-0' : 'text-slate-400/70 dark:text-zinc-500/70 shrink-0'}
+                                  />
                                   <span className="truncate">{doc.title || 'Untitled document'}</span>
                                 </div>
-                                <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-sans shrink-0">
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-sans shrink-0 opacity-60">
                                   {isCurrentActive ? 'Active' : 'Updated recently'}
                                 </span>
                               </button>
@@ -26201,14 +26207,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </div>
                   )}
 
-                  <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-violet-400/80 dark:focus-within:border-violet-500/80 transition-all shadow-2xs overflow-hidden">
-                    {/* Top Context Attachment Chips inside container (VS Code Style) */}
+                  <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all shadow-2xs overflow-hidden">
+                    {/* Top Context Attachment Chips inside container (VS Code / Apple Token Style) */}
                     {(isDocContextActive || chatAttachments.length > 0) && (
-                      <div className="px-3 pt-2 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
+                      <div className="px-2.5 pt-2 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
                         {isDocContextActive && (
-                          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-slate-200/80 dark:border-zinc-700/80 bg-slate-100/70 dark:bg-zinc-800/80 text-[11.5px] font-medium text-slate-700 dark:text-zinc-200 shadow-2xs group relative transition-all animate-in fade-in zoom-in-95 duration-150">
-                            <FileText size={11} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                            <span className="truncate max-w-[150px] font-sans text-[11.5px]">{docTitle || 'Untitled document'}</span>
+                          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5.5 rounded-md border border-slate-200/50 dark:border-zinc-800/60 bg-slate-100/60 dark:bg-zinc-800/60 text-[11px] font-medium text-slate-700 dark:text-zinc-200 shadow-2xs group relative transition-all animate-in fade-in zoom-in-95 duration-150">
+                            <FileText size={10.5} className="text-slate-400/70 dark:text-zinc-500/70 shrink-0" />
+                            <span className="truncate max-w-[150px] font-sans text-[11px]">{docTitle || 'Untitled document'}</span>
                             <button
                               type="button"
                               onClick={() => setIsDocContextActive(false)}
@@ -26223,16 +26229,16 @@ Respond with a JSON array of slide objects matching the schema.`;
                         {chatAttachments.map((attachment) => (
                           <div
                             key={attachment.id}
-                            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-slate-200/80 dark:border-zinc-700/80 bg-slate-100/70 dark:bg-zinc-800/80 text-[11.5px] font-medium text-slate-700 dark:text-zinc-200 shadow-2xs group relative cursor-pointer transition-all animate-in fade-in zoom-in-95 duration-150"
+                            className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5.5 rounded-md border border-slate-200/50 dark:border-zinc-800/60 bg-slate-100/60 dark:bg-zinc-800/60 text-[11px] font-medium text-slate-700 dark:text-zinc-200 shadow-2xs group relative cursor-pointer transition-all animate-in fade-in zoom-in-95 duration-150"
                             onClick={() => setPreviewAttachment(attachment)}
                             title="Preview attachment"
                           >
                             {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
                               <img src={attachment.url} alt={attachment.name} className="w-3.5 h-3.5 rounded object-cover" />
                             ) : (
-                              <FileText size={11} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                              <FileText size={10.5} className="text-slate-400/70 dark:text-zinc-500/70 shrink-0" />
                             )}
-                            <span className="max-w-[130px] truncate font-sans text-[11.5px]">{attachment.name}</span>
+                            <span className="max-w-[130px] truncate font-sans text-[11px]">{attachment.name}</span>
                             <button
                               type="button"
                               onClick={(event) => {
