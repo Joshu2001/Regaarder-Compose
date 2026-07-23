@@ -25437,16 +25437,20 @@ Respond with a JSON array of slide objects matching the schema.`;
                           <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Doc Theme styling</span>
                           <div className="flex gap-2">
                             {[
-                              { key: 'violet', label: 'Violet', color: 'bg-violet-500' },
-                              { key: 'emerald', label: 'Emerald', color: 'bg-emerald-500' },
-                              { key: 'amber', label: 'Amber', color: 'bg-amber-500' },
-                              { key: 'rose', label: 'Rose', color: 'bg-rose-500' },
-                              { key: 'slate', label: 'Slate', color: 'bg-slate-500' }
+                              { key: 'violet', label: 'Violet', color: 'bg-violet-500', hex: '#7c3aed' },
+                              { key: 'emerald', label: 'Emerald', color: 'bg-emerald-500', hex: '#059669' },
+                              { key: 'amber', label: 'Amber', color: 'bg-amber-500', hex: '#d97706' },
+                              { key: 'rose', label: 'Rose', color: 'bg-rose-500', hex: '#e11d48' },
+                              { key: 'slate', label: 'Slate', color: 'bg-slate-500', hex: '#475569' }
                             ].map((themeObj) => (
                               <button 
                                 key={themeObj.key} 
-                                onClick={() => setDocTheme(themeObj.key)} 
-                                className={`flex-1 flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-all ${docTheme === themeObj.key ? 'border-violet-500 bg-violet-50/20' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
+                                onClick={() => {
+                                  setDocTheme(themeObj.key);
+                                  setBrandColor(themeObj.hex);
+                                  showToast(`${themeObj.label} theme applied to document`);
+                                }} 
+                                className={`flex-1 flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-all ${docTheme === themeObj.key ? 'border-violet-500 bg-violet-50/20 shadow-sm' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
                               >
                                 <span className={`w-5 h-5 rounded-full ${themeObj.color}`} />
                                 <span className="text-[9px] font-semibold text-gray-700">{themeObj.label}</span>
@@ -44968,6 +44972,64 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }}
             >
             {renderWatermark(0)}
+            {(() => {
+              const currentThemeHeadings = {
+                violet: '#6d28d9',
+                emerald: '#047857',
+                amber: '#b45309',
+                rose: '#be123c',
+                slate: '#1e293b'
+              };
+              const currentThemeBrands = {
+                violet: '#7c3aed',
+                emerald: '#059669',
+                amber: '#d97706',
+                rose: '#e11d48',
+                slate: '#475569'
+              };
+              const currentThemeBorders = {
+                violet: '#c084fc',
+                emerald: '#6ee7b7',
+                amber: '#fcd34d',
+                rose: '#fda4af',
+                slate: '#94a3b8'
+              };
+              const currentThemeBgs = {
+                violet: '#faf5ff',
+                emerald: '#ecfdf5',
+                amber: '#fffbeb',
+                rose: '#fff1f2',
+                slate: '#f8fafc'
+              };
+              const hColor = currentThemeHeadings[docTheme] || brandColor || '#6d28d9';
+              const bColor = currentThemeBrands[docTheme] || brandColor || '#7c3aed';
+              const bdColor = currentThemeBorders[docTheme] || '#e2e8f0';
+              const bgColor = currentThemeBgs[docTheme] || '#f8fafc';
+
+              return (
+                <style>{`
+                  [data-enterprise-page="true"] h1, 
+                  [data-enterprise-page="true"] h2, 
+                  [data-enterprise-page="true"] h3, 
+                  [data-enterprise-page="true"] h4,
+                  [data-enterprise-page="true"] h5,
+                  [data-enterprise-page="true"] h6 {
+                    color: ${hColor} !important;
+                    transition: color 0.2s ease;
+                  }
+                  [data-enterprise-page="true"] a {
+                    color: ${bColor} !important;
+                  }
+                  [data-enterprise-page="true"] blockquote {
+                    border-left-color: ${bColor} !important;
+                    background-color: ${bgColor} !important;
+                  }
+                  [data-enterprise-page="true"] hr {
+                    border-color: ${bdColor} !important;
+                  }
+                `}</style>
+              );
+            })()}
             {true && (
               <div 
                 className="absolute top-6 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-1.5 flex justify-between select-none doc-header-chrome print-no-border"
