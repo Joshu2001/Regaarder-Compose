@@ -26639,17 +26639,30 @@ Respond with a JSON array of slide objects matching the schema.`;
                             </p>
                           )}
                         </div>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            removeTask(task.id);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 p-1 -mr-1 rounded-md text-slate-400 dark:text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 shrink-0 cursor-pointer"
-                          title="Delete task"
-                        >
-                          <Trash2 size={12} strokeWidth={1.5} />
-                        </button>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-0.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              beginTaskEdit(task);
+                            }}
+                            className="p-1 rounded-md text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 cursor-pointer"
+                            title="Edit task"
+                          >
+                            <Pen size={12} strokeWidth={1.5} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              removeTask(task.id);
+                            }}
+                            className="p-1 -mr-1 rounded-md text-slate-400 dark:text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
+                            title="Delete task"
+                          >
+                            <Trash2 size={12} strokeWidth={1.5} />
+                          </button>
+                        </div>
                       </div>
                       <div className="mt-1 flex items-center">
                         <button
