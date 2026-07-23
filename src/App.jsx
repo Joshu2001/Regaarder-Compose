@@ -26723,7 +26723,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </button>
                 </div>
 
-                {/* Refined 42px Input Surface with Leading '+' Icon & Form Submit */}
+                {/* Refined 42px Input Surface with Leading '+' Icon & Dynamic Save Button */}
                 <form 
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -26749,16 +26749,24 @@ Respond with a JSON array of slide objects matching the schema.`;
                       className="w-full bg-slate-50/60 dark:bg-zinc-800/30 border border-slate-200/60 dark:border-zinc-700/60 rounded-lg pl-8 pr-3 h-[42px] text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-violet-500/80 focus:bg-white dark:focus:bg-zinc-900 transition-all shadow-2xs"
                     />
                   </div>
-                  <button
-                    type="submit"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      addTaskFromInput();
-                    }}
-                    className="h-[42px] px-3.5 rounded-lg text-xs font-medium bg-violet-600/90 hover:bg-violet-700 active:bg-violet-800 text-white shadow-2xs transition-colors shrink-0 cursor-pointer"
-                  >
-                    Save
-                  </button>
+                  {newTaskInput.trim().length > 0 && (
+                    <button
+                      type="submit"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        addTaskFromInput();
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        addTaskFromInput();
+                      }}
+                      className="h-[42px] px-3.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white shadow-xs transition-all shrink-0 cursor-pointer animate-in fade-in zoom-in-95 duration-150"
+                    >
+                      Save
+                    </button>
+                  )}
                 </form>
               </div>
 
