@@ -4300,6 +4300,7 @@ export default function App() {
   const [editingOutlineId, setEditingOutlineId] = useState(null);
   const [editingOutlineText, setEditingOutlineText] = useState('');
   const [outlineTreeData, setOutlineTreeData] = useState([]);
+  const [activeOutlineSectionId, setActiveOutlineSectionId] = useState(null);
 
   const [activeEmojiEl, setActiveEmojiEl] = useState(null);
   const [emojiControlsPosition, setEmojiControlsPosition] = useState({ top: 0, left: 0 });
@@ -25251,24 +25252,25 @@ Respond with a JSON array of slide objects matching the schema.`;
       )}
 
       <div 
-        className={`border-l border-slate-200/50 flex flex-col bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md shrink-0 transition-[width] duration-300 relative z-[260] ${
-          productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? '' : 'w-0 overflow-hidden border-l-0'
+        className={`border-l border-slate-200/60 dark:border-zinc-800/80 flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl transition-all duration-200 shadow-[-12px_0_35px_-10px_rgba(15,23,42,0.08)] select-none overflow-hidden z-[260] ${
+          productMode !== 'landing' && rightSidebarOpen && !shareModalOpen 
+            ? (productMode === 'compose' ? 'fixed top-0 right-0 bottom-0 animate-in fade-in slide-in-from-right-4' : '') 
+            : 'w-0 overflow-hidden border-l-0 pointer-events-none opacity-0'
         }`}
-        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: `${rightSidebarWidth}px` } ) : { width: '0px' } }
+        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : ( productMode === 'compose' ? { width: '380px', position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 260 } : { width: `${rightSidebarWidth}px` } ) ) : { width: '0px' } }
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
-        <div className="h-14 flex items-center border-b border-slate-200/50 text-xs font-semibold select-none bg-transparent px-2">
+        <div className="h-14 flex items-center justify-between border-b border-slate-100/80 dark:border-zinc-800/60 text-xs font-semibold select-none bg-slate-50/40 dark:bg-zinc-900/40 px-3 shrink-0">
           <div
-            className="flex-1 min-w-0 overflow-x-auto no-scrollbar py-2"
+            className="flex-1 min-w-0 overflow-x-auto thin-scrollbar py-2"
             tabIndex={0}
             onKeyDown={handleRightSidebarTabsKeyDown}
             aria-label="Right panel tabs"
           >
-            <div className="inline-flex items-center gap-0.5 min-w-max p-1 bg-slate-100/60 rounded-lg ml-2">
+            <div className="inline-flex items-center gap-1 min-w-max p-1 bg-slate-100/70 dark:bg-zinc-800/70 rounded-xl border border-slate-200/40 dark:border-zinc-700/40">
               {[
-                { key: 'chat', label: 'AI Chat' },
-                { key: 'assistant', label: 'AI Assistant' },
+                { key: 'assistant', label: 'Assistant' },
                 productMode !== 'sheets' && { key: 'properties', label: 'Properties' },
                 { key: 'whiteboard', label: 'Whiteboard' },
                 { key: 'tasks', label: `Tasks (${tasks.filter((t) => !t.completed).length})` },
@@ -25277,50 +25279,46 @@ Respond with a JSON array of slide objects matching the schema.`;
                 { key: 'room', label: 'Room' },
                 { key: 'memory', label: 'Memory' },
                 { key: 'orb', label: 'Orb' },
-              ].filter(Boolean).map((tab) => (
-                <button
-                  key={tab.key}
-                  className={`shrink-0 px-3.5 py-1 rounded-[6px] transition-all text-[12px] font-medium ${
-                    activeRightTab === tab.key 
-                      ? 'bg-white text-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_1px_rgba(0,0,0,0.04)] border border-slate-200/10' 
-                      : 'text-slate-500 border border-transparent hover:text-slate-800 hover:bg-white/30'
-                  }`}
-                  onClick={() => {
-                    if (tab.key === 'manageen') {
-                      createManageenExperience();
-                      return;
-                    }
-                    setActiveRightTab(tab.key);
-                  }}
-                >
-                  {tab.label}
-                </button>
-              ))}
+              ].filter(Boolean).map((tab) => {
+                const isActive = activeRightTab === tab.key || (tab.key === 'assistant' && activeRightTab === 'chat');
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    className={`shrink-0 px-3.5 py-1 rounded-lg transition-all text-[12px] cursor-pointer ${
+                      isActive 
+                        ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 font-semibold shadow-2xs border border-slate-200/60 dark:border-zinc-700/60' 
+                        : 'text-slate-400 dark:text-zinc-500 font-medium hover:text-slate-700 dark:hover:text-zinc-300'
+                    }`}
+                    onClick={() => {
+                      if (tab.key === 'manageen') {
+                        createManageenExperience();
+                        return;
+                      }
+                      setActiveRightTab(tab.key);
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <div className="w-16 shrink-0 flex items-center justify-end border-l border-slate-200/50 gap-1 px-2">
-            <button
-              type="button"
-              title={rightPanelMaximized ? 'Restore panel' : 'Expand panel'}
-              onClick={() => { setRightPanelMaximized((p) => !p); if (!rightSidebarOpen) setRightSidebarOpen(true); }}
-              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-all duration-200"
-            >
-              {rightPanelMaximized ? <Minimize2 size={14} /> : <Maximize size={14} />}
-            </button>
+          <div className="shrink-0 flex items-center pl-2">
             <button
               type="button"
               title="Close panel"
-              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-all duration-200"
+              className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 dark:hover:text-zinc-200 transition-all cursor-pointer"
               onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
             >
-              <X size={14} />
+              <X size={14} strokeWidth={1.75} />
             </button>
           </div>
         </div>
         )}
 
         {/* Dynamic Sidebar Content */}
-        <div className="flex-1 flex flex-col min-h-0 bg-white">
+        <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
           
           {/* ACTIVE TAB: PROPERTIES */}
           {activeRightTab === 'properties' && (
@@ -25532,85 +25530,191 @@ Respond with a JSON array of slide objects matching the schema.`;
             </div>
           )}
 
-          {/* A. ACTIVE TAB: AI CHAT */}
-          {activeRightTab === 'chat' && (
-            <div className="flex-1 flex flex-col min-h-0">
-              {/* Context Indicator */}
-              <div className="px-4 py-2 bg-violet-50/40 border-b border-violet-100/30 flex items-center gap-2 text-xs text-violet-700">
-                <FileText size={12} />
-                <span className="font-medium truncate" title={docTitle}>Context Linked: {docTitleDisplay}</span>
-              </div>
-
-              {/* Chat Stream */}
-              <div className="flex-1 overflow-y-auto thin-scrollbar p-4 space-y-4">
+          {/* A. ACTIVE TAB: AI ASSISTANT / CHAT */}
+          {(activeRightTab === 'assistant' || activeRightTab === 'chat') && (
+            <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
+              {/* Chat Stream & Focal Layout */}
+              <div className="flex-1 overflow-y-auto thin-scrollbar p-5 space-y-5">
                 {chatMessages.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-full text-center px-5 pt-8 pb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mb-5 shadow-xl shadow-violet-500/20 relative overflow-hidden">
-                      <Sparkles size={24} className="text-white" fill="white" />
+                  <div className="flex flex-col items-start justify-start w-full pt-1 pb-4">
+                    {/* Compact Integrated Header */}
+                    <div className="flex items-center gap-3 w-full mb-5 text-left">
+                      <div className="w-7 h-7 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 flex items-center justify-center shrink-0">
+                        <Bot size={14} strokeWidth={1.75} className="text-slate-600 dark:text-zinc-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight leading-none">
+                          {productMode === 'compose' ? 'Compose AI' : productMode === 'sheets' ? 'Sheets AI' : 'Deck AI'}
+                        </h3>
+                        <div className="text-[11.5px] text-slate-400 dark:text-zinc-500 font-medium truncate mt-1 flex items-center gap-1">
+                          <FileText size={11} strokeWidth={1.5} className="shrink-0 text-slate-400 dark:text-zinc-500" />
+                          <span className="truncate">Connected to <span className="text-slate-600 dark:text-zinc-300 font-medium">{docTitleDisplay}</span></span>
+                        </div>
+                      </div>
                     </div>
-                    <h3 className="text-[17px] font-semibold text-slate-800 mb-1.5 tracking-tight">
-                      {productMode === 'compose' ? 'Compose AI Assistant' : productMode === 'sheets' ? 'Sheets AI Assistant' : 'Deck AI Assistant'}
-                    </h3>
-                    <p className="text-[13px] text-slate-500 max-w-[260px] leading-relaxed mb-8">
-                      {productMode === 'compose' ? 'Ask questions, analyze content, or edit drafts instantly.' :
-                       productMode === 'sheets' ? 'Ask questions about numbers, create formulas, or analyze trends.' :
-                       'Ask for design tips, generate speaker notes, or refine slide content.'}
-                    </p>
-                    
-                    <div className="flex flex-col gap-3 w-full max-w-[290px]">
-                      <button onClick={() => setChatInput(productMode === 'compose' ? 'Summarize this document ' : productMode === 'sheets' ? 'Summarize this sheet ' : 'Summarize this deck ')} className="group p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md hover:shadow-violet-500/5 transition-all text-left flex items-start gap-3">
-                        <div className="p-1.5 rounded-lg bg-violet-50 text-violet-600 group-hover:bg-violet-100 transition-colors">
-                          <FileText size={16} strokeWidth={2.5} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-[12.5px] font-semibold text-slate-700">
-                            {productMode === 'compose' ? 'Summarize Document' : productMode === 'sheets' ? 'Summarize Sheet' : 'Summarize Deck'}
-                          </div>
-                          <div className="text-[11px] text-slate-400 mt-0.5">Extract key points instantly</div>
-                        </div>
-                      </button>
-                      
-                      <button onClick={() => setChatInput(productMode === 'compose' ? 'Extract action items from ' : productMode === 'sheets' ? 'Find trends in ' : 'Create speaker notes for ')} className="group p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md hover:shadow-violet-500/5 transition-all text-left flex items-start gap-3">
-                        <div className="p-1.5 rounded-lg bg-violet-50 text-violet-600 group-hover:bg-violet-100 transition-colors">
-                          <ListTodo size={16} strokeWidth={2.5} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-[12.5px] font-semibold text-slate-700">
-                            {productMode === 'compose' ? 'Action Items' : productMode === 'sheets' ? 'Data Trends' : 'Speaker Notes'}
-                          </div>
-                          <div className="text-[11px] text-slate-400 mt-0.5">
-                            {productMode === 'compose' ? 'Pull out tasks and next steps' : productMode === 'sheets' ? 'Highlight key metrics' : 'Generate talking points'}
-                          </div>
-                        </div>
-                      </button>
 
-                      <button onClick={() => setChatInput('Refine this ')} className="group p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md hover:shadow-violet-500/5 transition-all text-left flex items-start gap-3">
-                        <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100 transition-colors">
-                          <Pen size={16} strokeWidth={2.5} />
+                    {/* Elevated Input Area as Focal Point */}
+                    <form onSubmit={handleSidebarSend} className="w-full mb-5">
+                      {chatAttachments.length > 0 && (
+                        <div className="mb-2.5 flex flex-wrap gap-2">
+                          {chatAttachments.map((attachment) => (
+                            <div
+                              key={attachment.id}
+                              className="inline-flex items-center gap-2 rounded-xl border border-slate-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1 text-xs text-slate-700 dark:text-zinc-300 shadow-2xs group relative cursor-pointer"
+                              onClick={() => setPreviewAttachment(attachment)}
+                              title="Preview attachment"
+                            >
+                              {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
+                                <img
+                                  src={attachment.url}
+                                  alt={attachment.name}
+                                  className="w-5 h-5 rounded object-cover"
+                                />
+                              ) : (
+                                <div className="w-5 h-5 rounded bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-zinc-400">
+                                  {attachment.type && attachment.type.includes('audio') ? (
+                                    <Mic size={11} />
+                                  ) : (
+                                    <FileText size={11} />
+                                  )}
+                                </div>
+                              )}
+                              <span className="max-w-[120px] truncate font-medium">{attachment.name}</span>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setChatAttachments(prev => prev.filter(att => att.id !== attachment.id));
+                                }}
+                                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                              >
+                                <X size={11} />
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                        <div className="flex-1">
-                          <div className="text-[12.5px] font-semibold text-slate-700">Refine Writing</div>
-                          <div className="text-[11px] text-slate-400 mt-0.5">Improve clarity and tone</div>
+                      )}
+
+                      <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-violet-400/80 dark:focus-within:border-violet-500/80 transition-all shadow-2xs">
+                        <input
+                          ref={chatFileInputRef}
+                          type="file"
+                          multiple
+                          className="hidden"
+                          onChange={async (event) => {
+                            await ingestChatAttachments(event.target.files);
+                            event.target.value = '';
+                          }}
+                        />
+                        <textarea
+                          ref={chatInputRef}
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
+                          onPaste={handleChatPaste}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSidebarSend(e);
+                            }
+                          }}
+                          placeholder="Ask Compose AI..."
+                          rows={2}
+                          className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3.5 px-4 pb-2 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 resize-none min-h-[72px]"
+                        />
+                        <div className="flex items-center justify-between px-2.5 pb-2.5">
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                isFilePickerActiveRef.current = true;
+                                chatFileInputRef.current?.click();
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                              title="Attach files"
+                            >
+                              <Plus size={16} strokeWidth={1.75} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => toggleVoiceRecording('right-chat')}
+                              className={`p-1.5 rounded-lg transition-all ${
+                                isVoiceActive && voiceTarget === 'right-chat'
+                                  ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/40 hover:bg-violet-100 shadow-[0_0_0_2px_rgba(139,92,246,0.2)] animate-pulse'
+                                  : 'text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                              }`}
+                              title={isVoiceActive && voiceTarget === 'right-chat' ? 'Stop voice dictation' : 'Voice dictation'}
+                            >
+                              <Mic size={16} strokeWidth={1.75} />
+                            </button>
+                          </div>
+                          <button 
+                            type="submit" 
+                            disabled={!chatInput.trim()}
+                            className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                              chatInput.trim().length > 0 
+                                ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-2xs' 
+                                : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600'
+                            }`}
+                          >
+                            <Send size={14} strokeWidth={1.75} />
+                          </button>
                         </div>
-                      </button>
+                      </div>
+                    </form>
+                    
+                    {/* Suggested Action Chips */}
+                    <div className="w-full">
+                      <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 mb-2">
+                        Suggested
+                      </div>
+                      <div className="flex flex-wrap gap-2 w-full">
+                        <button 
+                          type="button"
+                          onClick={() => setChatInput(productMode === 'compose' ? 'Summarize this document ' : productMode === 'sheets' ? 'Summarize this sheet ' : 'Summarize this deck ')} 
+                          className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/60 dark:bg-zinc-800/60 border border-slate-200/50 dark:border-zinc-700/50 hover:bg-slate-200/50 dark:hover:bg-zinc-700/60 text-slate-700 dark:text-zinc-300 text-xs font-medium transition-all cursor-pointer select-none"
+                        >
+                          <FileText size={12} strokeWidth={1.5} className="text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300" />
+                          <span>Summarize Document</span>
+                        </button>
+                        
+                        <button 
+                          type="button"
+                          onClick={() => setChatInput(productMode === 'compose' ? 'Extract action items from ' : productMode === 'sheets' ? 'Find trends in ' : 'Create speaker notes for ')} 
+                          className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/60 dark:bg-zinc-800/60 border border-slate-200/50 dark:border-zinc-700/50 hover:bg-slate-200/50 dark:hover:bg-zinc-700/60 text-slate-700 dark:text-zinc-300 text-xs font-medium transition-all cursor-pointer select-none"
+                        >
+                          <ListTodo size={12} strokeWidth={1.5} className="text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300" />
+                          <span>Action Items</span>
+                        </button>
+
+                        <button 
+                          type="button"
+                          onClick={() => setChatInput('Refine this ')} 
+                          className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/60 dark:bg-zinc-800/60 border border-slate-200/50 dark:border-zinc-700/50 hover:bg-slate-200/50 dark:hover:bg-zinc-700/60 text-slate-700 dark:text-zinc-300 text-xs font-medium transition-all cursor-pointer select-none"
+                        >
+                          <Pen size={12} strokeWidth={1.5} className="text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300" />
+                          <span>Refine Writing</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
+
                 {chatMessages.map((msg) => (
                   <div 
                     key={msg.id} 
-                    className={`group flex flex-col max-w-[85%] ${msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
+                    className={`group flex flex-col max-w-[88%] ${msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
                   >
                     {/* Speaker Header */}
-                    <span className="text-[10px] text-gray-400 mb-1 px-1">
-                      {msg.sender === 'user' ? 'Alex R.' : 'Compose AI'}
+                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 mb-1 px-1">
+                      {msg.sender === 'user' ? 'You' : 'Compose AI'}
                     </span>
 
                     {/* Chat Bubble / Cards */}
-                    <div className={`p-3 rounded-2xl text-sm leading-relaxed ${
+                    <div className={`p-3 rounded-2xl text-xs leading-relaxed ${
                       msg.sender === 'user' 
-                        ? 'bg-violet-600 text-white rounded-tr-xs shadow-[0_8px_30px_rgba(124,58,237,0.06)]' 
-                        : 'bg-[#FAFAFC] text-gray-700 border border-gray-100 rounded-tl-xs shadow-xs'
+                        ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-tr-xs shadow-2xs font-medium' 
+                        : 'bg-slate-100/80 dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-200 border border-slate-200/50 dark:border-zinc-700/50 rounded-tl-xs shadow-2xs'
                     }`}>
                       {msg.text}
 
@@ -25634,10 +25738,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                                 }
                                 handleAISubmit(sug.label);
                               }}
-                              className="w-full text-left bg-white hover:bg-violet-50 text-xs font-medium text-gray-700 hover:text-violet-700 p-2.5 rounded-lg border border-gray-200/60 hover:border-violet-200 transition-all flex items-center justify-between group/sug"
+                              className="w-full text-left bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-xs font-medium text-slate-700 dark:text-zinc-300 p-2.5 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 transition-all flex items-center justify-between group/sug cursor-pointer"
                             >
                               <span>{sug.label}</span>
-                              <ArrowRight size={12} className="text-gray-400 group-hover/sug:translate-x-1 transition-transform" />
+                              <ArrowRight size={12} className="text-slate-400 group-hover/sug:translate-x-1 transition-transform" />
                             </button>
                           ))}
                         </div>
@@ -25645,53 +25749,53 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                       {/* Action confirmation pill */}
                       {msg.type === 'action_completed' && (
-                        <div className="mt-2.5 flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
+                        <div className="mt-2.5 flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 rounded-lg border border-emerald-100 dark:border-emerald-900/60">
                           <Check size={12} />
                           <span>Successfully injected into document</span>
                         </div>
                       )}
                     </div>
 
-                    <div className="mt-1.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="mt-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         type="button"
                         onClick={() => retryMessageAction(msg)}
-                        className="p-1 rounded-md text-gray-400 hover:text-violet-600 hover:bg-violet-50"
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
                         title="Retry"
                       >
-                        <RefreshCcw size={12} />
+                        <RefreshCcw size={12} strokeWidth={1.75} />
                       </button>
                       <button
                         type="button"
                         onClick={() => undoMessageAction(msg)}
-                        className="p-1 rounded-md text-gray-400 hover:text-violet-600 hover:bg-violet-50"
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
                         title="Undo AI action"
                       >
-                        <Undo2 size={12} />
+                        <Undo2 size={12} strokeWidth={1.75} />
                       </button>
                       <button
                         type="button"
                         onClick={() => deleteMessageAction(msg)}
-                        className="p-1 rounded-md text-gray-400 hover:text-rose-600 hover:bg-rose-50"
+                        className="p-1 rounded-md text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                         title="Delete message"
                       >
-                        <Trash2 size={12} />
+                        <Trash2 size={12} strokeWidth={1.75} />
                       </button>
                       <button
                         type="button"
                         onClick={() => recordChatFeedback(msg, 'thumbs_up')}
-                        className="p-1 rounded-md text-gray-400 hover:text-emerald-600 hover:bg-emerald-50"
+                        className="p-1 rounded-md text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
                         title="Helpful"
                       >
-                        <ThumbsUp size={12} />
+                        <ThumbsUp size={12} strokeWidth={1.75} />
                       </button>
                       <button
                         type="button"
                         onClick={() => recordChatFeedback(msg, 'thumbs_down')}
-                        className="p-1 rounded-md text-gray-400 hover:text-amber-600 hover:bg-amber-50"
+                        className="p-1 rounded-md text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
                         title="Needs improvement"
                       >
-                        <ThumbsDown size={12} />
+                        <ThumbsDown size={12} strokeWidth={1.75} />
                       </button>
                       <button
                         type="button"
@@ -25704,16 +25808,16 @@ Respond with a JSON array of slide objects matching the schema.`;
                             },
                           }));
                         }}
-                        className="p-1 rounded-md text-gray-400 hover:text-sky-600 hover:bg-sky-50"
+                        className="p-1 rounded-md text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-colors"
                         title="Add feedback comment"
                       >
-                        <MessageSquarePlus size={12} />
+                        <MessageSquarePlus size={12} strokeWidth={1.75} />
                       </button>
                     </div>
 
                     {chatFeedbackDrafts[msg.id]?.open && (
                       <div className="mt-1.5 w-full">
-                        <div className="relative flex items-center bg-white border border-gray-200 rounded-full px-2 py-1 hover:border-violet-200 focus-within:border-violet-400 transition-colors">
+                        <div className="relative flex items-center bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-full px-2 py-1 focus-within:border-violet-400 transition-colors">
                           <input
                             type="text"
                             value={chatFeedbackDrafts[msg.id]?.text || ''}
@@ -25729,7 +25833,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                               }));
                             }}
                             placeholder="Tell AI how to improve this response..."
-                            className="w-full min-w-0 bg-transparent border-none focus:outline-none text-[11px] text-gray-700 py-1 pl-1 pr-14"
+                            className="w-full min-w-0 bg-transparent border-none focus:outline-none text-[11px] text-slate-700 dark:text-zinc-300 py-1 pl-1 pr-14"
                           />
                           <button
                             type="button"
@@ -25745,7 +25849,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                               }));
                               showToast('Feedback saved to memory');
                             }}
-                            className="absolute right-1 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full text-[11px] bg-violet-600 text-white hover:bg-violet-700"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full text-[11px] bg-violet-600 text-white hover:bg-violet-700 transition-colors cursor-pointer"
                           >
                             Save
                           </button>
@@ -25757,7 +25861,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                 
                 {/* Loader animation when AI is processing */}
                 {isComposing && (
-                  <div className="flex items-center gap-2 text-xs text-gray-400 p-2 animate-pulse">
+                  <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-zinc-500 p-2 animate-pulse">
                     <Loader2 className="animate-spin text-violet-500" size={14} />
                     <span>{productMode === 'deck' ? 'Deck AI is designing your slides...' : 'Compose AI is writing...'}</span>
                   </div>
@@ -25765,364 +25869,123 @@ Respond with a JSON array of slide objects matching the schema.`;
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Chat Input Bar */}
-              <form onSubmit={handleSidebarSend} className="p-3 border-t border-gray-100 bg-[#FAFAFC]">
-                {chatAttachments.length > 0 && (
-                  <div className="mb-2.5 flex flex-wrap gap-2 px-1">
-                    {chatAttachments.map((attachment) => (
-                      <div
-                        key={attachment.id}
-                        className="inline-flex items-center gap-2 rounded-xl border border-[#e8e6f1] bg-white px-2.5 py-1.5 text-xs text-slate-700 shadow-sm hover:border-violet-200 transition-all group relative cursor-pointer"
-                        onClick={() => setPreviewAttachment(attachment)}
-                        title="Preview attachment"
-                      >
-                        {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
-                          <img
-                            src={attachment.url}
-                            alt={attachment.name}
-                            className="w-6 h-6 rounded-lg object-cover border border-gray-100"
-                          />
-                        ) : (
-                          <div className="w-6 h-6 rounded-lg bg-violet-50 flex items-center justify-center text-violet-500 border border-violet-100">
-                            {attachment.type && attachment.type.includes('audio') ? (
-                              <Mic size={12} />
-                            ) : (
-                              <FileText size={12} />
-                            )}
-                          </div>
-                        )}
-                        <span className="max-w-[125px] truncate font-medium">{attachment.name}</span>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setChatAttachments(prev => prev.filter(att => att.id !== attachment.id));
-                          }}
-                          className="text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-100 transition-colors"
-                          title="Remove"
+              {/* Bottom Input Bar when active messages exist */}
+              {chatMessages.length > 0 && (
+                <form onSubmit={handleSidebarSend} className="p-3 border-t border-slate-100 dark:border-zinc-800/60 bg-slate-50/40 dark:bg-zinc-900/40 shrink-0">
+                  {chatAttachments.length > 0 && (
+                    <div className="mb-2 flex flex-wrap gap-2 px-1">
+                      {chatAttachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1 text-xs text-slate-700 dark:text-zinc-300 shadow-2xs group relative cursor-pointer"
+                          onClick={() => setPreviewAttachment(attachment)}
+                          title="Preview attachment"
                         >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
-                  <input
-                    ref={chatFileInputRef}
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={async (event) => {
-                      await ingestChatAttachments(event.target.files);
-                      event.target.value = '';
-                    }}
-                  />
-                  <textarea
-                    ref={chatInputRef}
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
-                    onPaste={handleChatPaste}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSidebarSend(e);
-                      }
-                    }}
-                    placeholder="Ask, summarize, or instruct..."
-                    rows={3}
-                    className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3 px-4 pb-2 text-gray-700 placeholder-gray-400 resize-none min-h-[80px]"
-                  />
-                  <div className="flex items-center justify-between px-2 pb-2">
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          isFilePickerActiveRef.current = true;
-                          chatFileInputRef.current?.click();
-                        }}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                        title="Attach files"
-                      >
-                        <Plus size={18} strokeWidth={2.5} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => toggleVoiceRecording('right-chat')}
-                        className={`p-1.5 rounded-lg transition-all ${
-                          isVoiceActive && voiceTarget === 'right-chat'
-                            ? 'text-violet-600 bg-violet-50 hover:bg-violet-100 shadow-[0_0_0_2px_rgba(139,92,246,0.2)] animate-pulse'
-                            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                        }`}
-                        title={isVoiceActive && voiceTarget === 'right-chat' ? 'Stop voice dictation' : 'Voice dictation'}
-                      >
-                        <Mic size={18} />
-                      </button>
-                    </div>
-                    <button 
-                      type="submit" 
-                      className={`p-1.5 rounded-lg transition-colors ${chatInput.trim().length > 0 ? 'bg-violet-600 text-white hover:bg-violet-700' : 'bg-violet-50 text-violet-400'}`}
-                    >
-                      <Send size={16} />
-                    </button>
-                  </div>
-                </div>
-                <div className="text-center mt-2 pb-2">
-                  <span className="text-[10px] text-gray-400 font-medium">AI can make mistakes. Check important info.</span>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* B. ACTIVE TAB: AI ASSISTANT CO-WRITER */}
-          {activeRightTab === 'assistant' && (
-            <div className="flex-1 flex flex-col min-h-0 bg-white">
-              <div className="flex-1 overflow-y-auto thin-scrollbar p-5">
-                <div className="flex flex-col items-center justify-start min-h-full text-center mt-2 pb-8">
-                  <div className="w-full text-[13px] font-semibold text-gray-800 text-left mb-2">Currently editing</div>
-                  <div className="w-full mb-8 bg-white border border-gray-200 rounded-xl p-3 shadow-sm text-left flex items-center justify-between">
-                    <div className="flex items-center gap-3 overflow-hidden w-full mr-2">
-                      {productMode === 'compose' ? (
-                        <div className="w-12 h-8 rounded shrink-0 bg-gray-100 overflow-hidden border border-gray-200">
-                          <img src={buildComposePreviewDataUri(docTitle)} className="w-full h-full object-cover" alt="thumbnail" />
-                        </div>
-                      ) : productMode === 'sheets' ? (
-                        <div className="w-12 h-8 rounded shrink-0 bg-gray-100 overflow-hidden border border-gray-200">
-                          <img src={buildSheetPreviewDataUri({ title: docTitle || 'Untitled Sheet', subtitle: 'Active Sheet' })} className="w-full h-full object-cover" alt="thumbnail" />
-                        </div>
-                      ) : (
-                        <div className="w-12 h-8 rounded shrink-0 bg-gray-100 overflow-hidden border border-gray-200">
-                          <img src={deckSnapshotPreviews[activeDeckSlideId] || buildDeckPreviewDataUri(deckSlidesData.find(s => s.id === activeDeckSlideId) || deckSlidesData[0])} className="w-full h-full object-cover" alt="thumbnail" />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        {productMode === 'compose' ? (
-                          <>
-                            <div className="text-[12px] font-bold text-gray-900 truncate">Page {currentActivePage}</div>
-                            {isEditingTitleFromPanel ? (
-                              <input
-                                type="text"
-                                value={docTitle}
-                                onChange={(e) => {
-                                  setDocTitle(e.target.value);
-                                }}
-                                onBlur={() => setIsEditingTitleFromPanel(false)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    setIsEditingTitleFromPanel(false);
-                                  }
-                                }}
-                                autoFocus
-                                className="w-full bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-[11px] text-gray-800 outline-none"
-                              />
-                            ) : (
-                              <div 
-                                onClick={() => setIsEditingTitleFromPanel(true)}
-                                className={`text-[11px] truncate hover:text-gray-800 hover:bg-slate-50 rounded px-1 -mx-1 py-0.5 cursor-text border border-transparent hover:border-slate-150 transition-all ${
-                                  docTitle ? 'text-gray-700 font-medium' : 'text-gray-400 italic'
-                                }`}
-                              >
-                                {docTitle || 'Untitled Document'}
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <div className="text-[12px] font-bold text-gray-900 truncate">Slide {activeDeckSlideId}</div>
-                            <div className="text-[11px] text-gray-500 truncate">{deckSlidesData.find(s => s.id === activeDeckSlideId)?.headline || 'Untitled Slide'}</div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    {!isEditingTitleFromPanel && productMode === 'compose' && (
-                      <button 
-                        type="button"
-                        onClick={() => setIsEditingTitleFromPanel(true)}
-                        className="p-1.5 text-gray-400 hover:text-gray-700 transition-colors shrink-0"
-                      >
-                        <Pen size={14} />
-                      </button>
-                    )}
-                  </div>
-
-                  <h3 className="text-[14px] font-bold text-gray-900 mb-4 tracking-tight text-left w-full">
-                    {productMode === 'compose' ? 'How can I help you with this doc?' : productMode === 'sheets' ? 'How can I help with this sheet?' : 'How can I help with this slide?'}
-                  </h3>
-                  
-                  <div className="flex flex-col w-full gap-1 mx-auto">
-                    {(productMode === 'compose' ? [
-                      { label: 'Draft from notes', subtitle: 'Generate a draft from your materials', icon: Pen },
-                      { label: 'Create presentation', subtitle: 'Convert text to structured slides', icon: Presentation },
-                      { label: 'Project timeline', subtitle: 'Build a roadmap from references', icon: Calendar },
-                      { label: 'Summarize document', subtitle: 'Extract key takeaways and main themes', icon: FileText },
-                      { label: 'Extract action items', subtitle: 'Generate task checklists from content', icon: ListTodo },
-                      { label: 'Synthesize data report', subtitle: 'Create structured reports from inputs', icon: Database }
-                    ] : productMode === 'sheets' ? getSheetsSidebarActions() : [
-                      { label: 'Improve slide clarity', subtitle: 'Make message stronger and clearer', icon: Sparkles },
-                      { label: 'Rewrite content', subtitle: 'Improve tone and content flow', icon: Pen },
-                      { label: 'Generate visuals', subtitle: 'Add charts, images, or graphics', icon: ImageIcon },
-                      { label: 'Create speaker notes', subtitle: 'Add presenter talking points', icon: FileText },
-                      { label: 'Reduce slide count', subtitle: 'Simplify and merge slides', icon: LayoutGrid },
-                      { label: 'Improve structure', subtitle: 'Enhance layout and presentation order', icon: AlignCenter }
-                    ]).map((item, idx) => {
-                      const Icon = item.icon;
-                      return (
-                        <button 
-                          key={idx}
-                          onClick={() => setAssistantQuickPrompt(item.label)} 
-                          className="group px-3 py-3 bg-white hover:bg-gray-50 rounded-xl text-left transition-all flex items-center justify-between w-full border border-transparent hover:border-gray-100"
-                        >
-                          <div className="flex items-start gap-3 min-w-0">
-                            <div className="p-2 rounded-xl bg-violet-50 text-violet-600 shrink-0 group-hover:bg-violet-100 transition-colors mt-0.5">
-                              <Icon size={16} />
+                          {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
+                            <img
+                              src={attachment.url}
+                              alt={attachment.name}
+                              className="w-5 h-5 rounded object-cover"
+                            />
+                          ) : (
+                            <div className="w-5 h-5 rounded bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-zinc-400">
+                              {attachment.type && attachment.type.includes('audio') ? (
+                                <Mic size={11} />
+                              ) : (
+                                <FileText size={11} />
+                              )}
                             </div>
-                            <div className="min-w-0">
-                              <div className="text-[13px] font-semibold text-gray-900 leading-snug">{item.label}</div>
-                              <div className="text-[11px] text-gray-500 mt-1 leading-normal">{item.subtitle}</div>
-                            </div>
-                          </div>
-                          <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 shrink-0 ml-2 transition-colors self-center" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 bg-white border-t border-gray-100">
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!isLiveAiReady) {
-                    showToast(smartAssistDisabledReason);
-                    return;
-                  }
-                  if (!assistantQuickPrompt.trim()) return;
-                  handleAssistantQuickPromptSend(e);
-                }}>
-                  <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-sm">
-                    {assistantAttachments.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2 px-3 pt-2">
-                        {assistantAttachments.map((attachment) => (
-                          <div
-                            key={attachment.id}
-                            className="inline-flex items-center gap-2 rounded-xl border border-[#e8e6f1] bg-white px-2.5 py-1.5 text-xs text-slate-700 shadow-sm hover:border-violet-200 transition-all group relative cursor-pointer"
-                            onClick={() => setPreviewAttachment(attachment)}
-                            title="Preview attachment"
+                          )}
+                          <span className="max-w-[120px] truncate font-medium">{attachment.name}</span>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setChatAttachments(prev => prev.filter(att => att.id !== attachment.id));
+                            }}
+                            className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
                           >
-                            {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
-                              <img
-                                src={attachment.url}
-                                alt={attachment.name}
-                                className="w-6 h-6 rounded-lg object-cover border border-gray-100"
-                              />
-                            ) : (
-                              <div className="w-6 h-6 rounded-lg bg-violet-50 flex items-center justify-center text-violet-500 border border-violet-100">
-                                {attachment.type && attachment.type.includes('audio') ? (
-                                  <Mic size={12} />
-                                ) : (
-                                  <FileText size={12} />
-                                )}
-                              </div>
-                            )}
-                            <span className="max-w-[125px] truncate font-medium">{attachment.name}</span>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setAssistantAttachments(prev => prev.filter(att => att.id !== attachment.id));
-                              }}
-                              className="text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-100 transition-colors"
-                              title="Remove"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                            <X size={11} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-violet-400/80 dark:focus-within:border-violet-500/80 transition-all shadow-2xs">
+                    <input
+                      ref={chatFileInputRef}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={async (event) => {
+                        await ingestChatAttachments(event.target.files);
+                        event.target.value = '';
+                      }}
+                    />
                     <textarea
-                      value={assistantQuickPrompt}
-                      onChange={(e) => setAssistantQuickPrompt(e.target.value)}
+                      ref={chatInputRef}
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
                       onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
+                      onPaste={handleChatPaste}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
-                          if (!isLiveAiReady) {
-                            showToast(smartAssistDisabledReason);
-                            return;
-                          }
-                          if (!assistantQuickPrompt.trim()) return;
-                          handleAssistantQuickPromptSend(e);
+                          handleSidebarSend(e);
                         }
                       }}
-                      placeholder={productMode === 'compose' ? 'Ask AI anything about this doc...' : productMode === 'sheets' ? 'Ask AI anything about this sheet...' : 'Ask AI anything about this slide...'}
-                      rows={3}
-                      className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3 px-4 pb-2 text-gray-800 placeholder-gray-500 resize-none min-h-[80px]"
+                      placeholder="Ask, summarize, or instruct..."
+                      rows={2}
+                      className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3 px-3.5 pb-2 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 resize-none min-h-[64px]"
                     />
                     <div className="flex items-center justify-between px-2 pb-2">
                       <div className="flex items-center gap-1">
-                        <label
-                          className="p-2 rounded-lg text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
-                          title="Attach files"
-                        >
-                          <Plus size={18} strokeWidth={2.5} />
-                          <input
-                            ref={assistantFileInputRef}
-                            type="file"
-                            multiple
-                            className="hidden"
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files || []);
-                              if (files.length > 0) {
-                                setAssistantAttachments(prev => [...prev, ...files.map(f => ({
-                                  id: `assistant-${Date.now()}-${Math.random()}`,
-                                  name: f.name,
-                                  type: f.type,
-                                  url: URL.createObjectURL(f),
-                                  isImage: f.type.startsWith('image/')
-                                }))]);
-                              }
-                              e.target.value = '';
-                            }}
-                          />
-                        </label>
                         <button
                           type="button"
-                          onClick={() => toggleVoiceRecording('right-assistant')}
-                          className={`p-2 rounded-lg transition-all ${
-                            isVoiceActive && voiceTarget === 'right-assistant'
-                              ? 'text-violet-600 bg-violet-50 hover:bg-violet-100 shadow-[0_0_0_2px_rgba(139,92,246,0.2)] animate-pulse'
-                              : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                          onClick={() => {
+                            isFilePickerActiveRef.current = true;
+                            chatFileInputRef.current?.click();
+                          }}
+                          className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                          title="Attach files"
+                        >
+                          <Plus size={16} strokeWidth={1.75} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleVoiceRecording('right-chat')}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            isVoiceActive && voiceTarget === 'right-chat'
+                              ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/40 hover:bg-violet-100 shadow-[0_0_0_2px_rgba(139,92,246,0.2)] animate-pulse'
+                              : 'text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
                           }`}
-                          title={isVoiceActive && voiceTarget === 'right-assistant' ? 'Stop voice dictation' : 'Voice dictation'}
+                          title={isVoiceActive && voiceTarget === 'right-chat' ? 'Stop voice dictation' : 'Voice dictation'}
                         >
-                          <Mic size={18} />
+                          <Mic size={16} strokeWidth={1.75} />
                         </button>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button 
-                          type="button" 
-                          onClick={() => setRightPanelMaximized((p) => !p)}
-                          className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                          title={rightPanelMaximized ? 'Restore panel' : 'Expand panel'}
-                        >
-                          {rightPanelMaximized ? <Minimize2 size={16} strokeWidth={2.5} /> : <Maximize size={16} strokeWidth={2.5} />}
-                        </button>
-                        <button 
-                          type="submit" 
-                          disabled={isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady}
-                          className={`p-2 rounded-xl transition-colors ${(isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady) ? 'bg-violet-50 text-violet-400 cursor-not-allowed' : 'bg-violet-600 text-white shadow-sm hover:bg-violet-700'}`}
-                        >
-                          <Send size={16} strokeWidth={2.5} />
-                        </button>
-                      </div>
+                      <button 
+                        type="submit" 
+                        disabled={!chatInput.trim()}
+                        className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                          chatInput.trim().length > 0 
+                            ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-2xs' 
+                            : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600'
+                        }`}
+                      >
+                        <Send size={14} strokeWidth={1.75} />
+                      </button>
                     </div>
                   </div>
+                  <div className="text-center mt-2 pb-1">
+                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">AI can make mistakes. Check important info.</span>
+                  </div>
                 </form>
-              </div>
+              )}
             </div>
           )}
+
+
 
           {/* C. ACTIVE TAB: WHITEBOARD ASSISTANT */}
           {activeRightTab === 'whiteboard' && (
@@ -38261,203 +38124,219 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
   const renderDocumentOutlineContent = () => {
-              const wordsCount = documentStats?.words || 0;
-              const minRead = Math.max(1, Math.ceil(wordsCount / 200));
+    const wordsCount = documentStats?.words || 0;
+    const minRead = Math.max(1, Math.ceil(wordsCount / 200));
+    return (
+      <div className="flex-1 flex flex-col min-h-0 px-3.5 py-3.5 animate-fade-in-slide-right space-y-3.5" style={{ fontFamily: editorFont }}>
+        <div className="space-y-1.5 shrink-0 px-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold tracking-[0.12em] text-slate-400 dark:text-zinc-500 uppercase">Structure</span>
+            <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-50/80 dark:bg-violet-950/50 border border-violet-200/60 dark:border-violet-800/50 rounded-full px-2.5 py-0.5 shadow-2xs">
+              {outlineTreeData.length} {outlineTreeData.length === 1 ? 'Section' : 'Sections'}
+            </span>
+          </div>
+          <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+            {minRead} min read &bull; {wordsCount} words
+          </div>
+        </div>
+
+        {outlineTreeData.length > 0 ? (
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5 thin-scrollbar">
+            {outlineTreeData.map((section) => {
+              const isSelected = activeOutlineSectionId === section.id;
+              let badgeColorClass = "bg-slate-100/70 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60";
+              if (section.completed || section.progress >= 80) {
+                badgeColorClass = "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50";
+              } else if (section.progress >= 40) {
+                badgeColorClass = "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50";
+              } else if (section.progress > 0) {
+                badgeColorClass = "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/50";
+              }
+
               return (
-                <div className="flex-1 flex flex-col min-h-0 px-3 py-3 animate-fade-in-slide-right" style={{ fontFamily: editorFont }}>
-                    <div className="flex-1 flex flex-col min-h-0 space-y-3">
-                      <div className="space-y-1 shrink-0 px-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-semibold tracking-[0.12em] text-slate-400 dark:text-zinc-500 uppercase">Structure</span>
-                          <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-800/60 rounded-full px-2 py-0.5" style={{ color: brandColor, borderColor: brandColor ? `${brandColor}33` : undefined }}>
-                            {outlineTreeData.length} {outlineTreeData.length === 1 ? 'Section' : 'Sections'}
-                          </span>
-                        </div>
-                        <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-medium">
-                          {minRead} min read &bull; {wordsCount} words
-                        </div>
-                      </div>
-
-
-                      {outlineTreeData.length > 0 ? (
-                        <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5 thin-scrollbar">
-                          {outlineTreeData.map((section) => {
-                            let badgeColorClass = "bg-slate-50 text-slate-655 border border-slate-150";
-                            if (section.completed || section.progress >= 80) {
-                              badgeColorClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
-                            } else if (section.progress >= 40) {
-                              badgeColorClass = "bg-amber-50 text-amber-600 border border-amber-100";
-                            } else if (section.progress > 0) {
-                              badgeColorClass = "bg-rose-50 text-rose-600 border border-rose-100";
-                            }
-
-                            return (
-                              <div key={section.id} className="space-y-1" style={{ fontFamily: editorFont }}>
-                                <div className="group flex items-center justify-between p-1 rounded-lg hover:bg-slate-50/70 transition-colors relative flex-nowrap min-w-0">
-                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
-                                      }}
-                                      className="text-slate-400 hover:text-slate-650 transition-colors shrink-0"
-                                    >
-                                      {section.subsections?.length > 0 ? (
-                                        section.expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />
-                                      ) : (
-                                        <span className="w-3.5 block" />
-                                      )}
-                                    </button>
-                                    
-                                    {editingOutlineId === section.id ? (
-                                      <input
-                                        type="text"
-                                        value={editingOutlineText}
-                                        onChange={(e) => setEditingOutlineText(e.target.value)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            e.target.blur(); // Triggers the onBlur save
-                                          }
-                                        }}
-                                        onBlur={() => {
-                                          setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
-                                          setEditingOutlineId(null);
-                                          showToast('Section renamed');
-                                        }}
-                                        autoFocus
-                                        className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 w-full"
-                                        style={{ fontFamily: editorFont }}
-                                      />
-                                    ) : (
-                                      <span 
-                                        onClick={() => {
-                                          setEditingOutlineId(section.id);
-                                          setEditingOutlineText(section.title);
-                                        }}
-                                        className="text-[12.5px] font-bold text-slate-800 truncate cursor-text hover:text-slate-955 whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1"
-                                      >
-                                        {section.title}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  <div className="flex items-center gap-1 pl-1 shrink-0">
-                                    {section.completed ? (
-                                      <span className="w-4 h-4 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[9px] text-emerald-600 font-bold">✓</span>
-                                    ) : (
-                                      section.progress > 0 && (
-                                        <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${badgeColorClass}`}>
-                                          {section.progress}%
-                                        </span>
-                                      )
-                                    )}
-
-                                    {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-                                      <div className="relative">
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            setOutlineMenuCoords({ top: rect.bottom, left: rect.right - 140 });
-                                            setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id);
-                                          }}
-                                          className="p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-655 transition-all cursor-pointer"
-                                        >
-                                          <MoreVertical size={13} />
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Render Subsections */}
-                                {section.expanded && section.subsections && section.subsections.length > 0 && (
-                                  <div className="pl-4 space-y-1.5 border-l border-slate-200 ml-2.5">
-                                    {section.subsections.map(sub => (
-                                      <div key={sub.id} className="flex items-center gap-2 py-0.5 min-w-0 flex-nowrap">
-                                        <span className="w-1.5 h-1.5 rounded-full border border-slate-400 bg-transparent shrink-0" />
-                                        <span className="text-[11.5px] text-slate-500 font-semibold truncate whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1">{sub.title}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-10 px-4 text-center mt-2">
-                          <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mb-3">
-                            <Menu size={18} className="text-slate-400" />
-                          </div>
-                          <p className="text-[12.5px] font-semibold text-slate-700 dark:text-zinc-200 mb-1">No sections created</p>
-                          <p className="text-[11px] text-slate-400 mb-5 leading-relaxed max-w-[200px]">Paste content containing headings to auto-populate outline.</p>
-                          <button 
-                            type="button" 
-                            onClick={() => {
-                              setOutlineTreeData([{ id: `sec-${Date.now()}`, title: 'New Section', progress: 0, completed: false, subsections: [], expanded: false }]);
-                            }} 
-                            className="text-[11.5px] font-semibold text-violet-700 bg-violet-50/30 border border-violet-200/80 hover:bg-violet-50 hover:border-violet-300 px-5 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1 cursor-pointer select-none"
-                            style={{ fontFamily: editorFont }}
-                          >
-                            + Add Section
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Add New Section Buttons */}
-                      {outlineTreeData.length > 0 && currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-                        <div className="flex gap-2 w-full mt-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newId = `sec-${Date.now()}`;
-                              setOutlineTreeData(prev => [...prev, { id: newId, title: 'Untitled', progress: 0, completed: false, subsections: [], expanded: false }]);
-                              setEditingOutlineId(newId);
-                              setEditingOutlineText('Untitled');
-                            }}
-                            className="flex-1 py-2 rounded-xl border border-slate-200 hover:border-violet-400/80 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-650 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-                            style={{ fontFamily: editorFont }}
-                          >
-                            + Add Section
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              showToast('Generating AI Section...');
-                              setTimeout(() => {
-                                const newId = `sec-ai-${Date.now()}`;
-                                setOutlineTreeData(prev => [...prev, { id: newId, title: 'AI Generated Insights', progress: 0, completed: false, subsections: [], expanded: false }]);
-                                setEditingOutlineId(newId);
-                                setEditingOutlineText('AI Generated Insights');
-                                showToast('AI Section Generated');
-                              }, 1000);
-                            }}
-                            className="flex-1 py-2 rounded-xl border border-dashed border-violet-200/80 hover:border-violet-450 bg-violet-50/40 hover:bg-violet-100 text-violet-655 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-                            style={{ fontFamily: editorFont }}
-                          >
-                            <Sparkles size={13} /> AI Section
-                          </button>
-                        </div>
-                      )}
+                <div key={section.id} className="space-y-1" style={{ fontFamily: editorFont }}>
+                  <div
+                    onClick={() => setActiveOutlineSectionId(section.id)}
+                    className={`group flex items-center justify-between p-1.5 rounded-xl transition-all duration-150 relative flex-nowrap min-w-0 cursor-pointer ${
+                      isSelected
+                        ? 'bg-violet-50/70 dark:bg-violet-950/40 border border-violet-200/80 dark:border-violet-800/60 text-violet-700 dark:text-violet-300 shadow-2xs'
+                        : 'hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-zinc-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
+                        }}
+                        className="text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors shrink-0 p-0.5 rounded"
+                      >
+                        {section.subsections?.length > 0 ? (
+                          section.expanded ? <ChevronDown size={13} strokeWidth={1.75} /> : <ChevronRight size={13} strokeWidth={1.75} />
+                        ) : (
+                          <span className="w-3.5 block" />
+                        )}
+                      </button>
                       
-                      {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            insertEnterprisePage();
+                      {editingOutlineId === section.id ? (
+                        <input
+                          type="text"
+                          value={editingOutlineText}
+                          onChange={(e) => setEditingOutlineText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.target.blur();
+                            }
                           }}
-                          className="w-full py-2.5 mt-2 rounded-xl border border-slate-200 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                          onBlur={() => {
+                            setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
+                            setEditingOutlineId(null);
+                            showToast('Section renamed');
+                          }}
+                          autoFocus
+                          className="text-xs font-semibold text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-400 w-full"
                           style={{ fontFamily: editorFont }}
+                        />
+                      ) : (
+                        <span 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveOutlineSectionId(section.id);
+                            setEditingOutlineId(section.id);
+                            setEditingOutlineText(section.title);
+                          }}
+                          className={`text-[12.5px] truncate cursor-text whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1 ${
+                            isSelected
+                              ? 'font-semibold text-violet-700 dark:text-violet-300'
+                              : 'font-medium text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100'
+                          }`}
                         >
-                          + New page
-                        </button>
+                          {section.title}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1 pl-1 shrink-0">
+                      {section.completed ? (
+                        <span className="w-4 h-4 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/60 dark:border-emerald-800/50 flex items-center justify-center text-[9px] text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                      ) : (
+                        section.progress > 0 && (
+                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${badgeColorClass}`}>
+                            {section.progress}%
+                          </span>
+                        )
+                      )}
+
+                      {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setOutlineMenuCoords({ top: rect.bottom, left: rect.right - 140 });
+                              setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id);
+                            }}
+                            className="p-1 rounded-md hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 transition-all cursor-pointer"
+                          >
+                            <MoreVertical size={13} strokeWidth={1.75} />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
+
+                  {/* Subsections */}
+                  {section.expanded && section.subsections && section.subsections.length > 0 && (
+                    <div className="pl-3.5 ml-3 space-y-1.5 border-l border-slate-200/70 dark:border-zinc-800">
+                      {section.subsections.map(sub => (
+                        <div key={sub.id} className="flex items-center gap-2 py-0.5 min-w-0 flex-nowrap group/sub cursor-pointer">
+                          <span className="w-1.5 h-1.5 rounded-full border border-slate-300 dark:border-zinc-600 bg-transparent shrink-0 group-hover/sub:border-violet-500 transition-colors" />
+                          <span className="text-[11.5px] text-slate-500 dark:text-zinc-400 font-medium hover:text-slate-800 dark:hover:text-zinc-200 truncate whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1 transition-colors">{sub.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               );
-            };
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-10 px-4 text-center mt-2">
+            <div className="w-10 h-10 bg-slate-100/70 dark:bg-zinc-800/70 border border-slate-200/50 dark:border-zinc-700/50 rounded-2xl flex items-center justify-center mb-3">
+              <Menu size={18} strokeWidth={1.75} className="text-slate-400 dark:text-zinc-500" />
+            </div>
+            <p className="text-[13px] font-semibold text-slate-700 dark:text-zinc-200 mb-1">No sections created</p>
+            <p className="text-[11.5px] text-slate-400 dark:text-zinc-500 mb-5 leading-relaxed max-w-[210px]">Paste content containing headings to auto-populate outline.</p>
+            <button 
+              type="button" 
+              onClick={() => {
+                const newId = `sec-${Date.now()}`;
+                setOutlineTreeData([{ id: newId, title: 'New Section', progress: 0, completed: false, subsections: [], expanded: false }]);
+                setActiveOutlineSectionId(newId);
+              }} 
+              className="text-[12px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/50 border border-violet-200/80 dark:border-violet-800/60 hover:bg-violet-100 dark:hover:bg-violet-900/60 active:scale-[0.99] px-4 py-2 rounded-xl transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer select-none"
+              style={{ fontFamily: editorFont }}
+            >
+              + Add Section
+            </button>
+          </div>
+        )}
+
+        {/* Add New Section Buttons */}
+        {outlineTreeData.length > 0 && currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+          <div className="flex gap-2 w-full mt-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                const newId = `sec-${Date.now()}`;
+                setOutlineTreeData(prev => [...prev, { id: newId, title: 'Untitled Section', progress: 0, completed: false, subsections: [], expanded: false }]);
+                setActiveOutlineSectionId(newId);
+                setEditingOutlineId(newId);
+                setEditingOutlineText('Untitled Section');
+              }}
+              className="flex-1 py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-900/60 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-950/30 text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+              style={{ fontFamily: editorFont }}
+            >
+              + Add Section
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                showToast('Generating AI Section...');
+                setTimeout(() => {
+                  const newId = `sec-ai-${Date.now()}`;
+                  setOutlineTreeData(prev => [...prev, { id: newId, title: 'AI Generated Insights', progress: 0, completed: false, subsections: [], expanded: false }]);
+                  setActiveOutlineSectionId(newId);
+                  setEditingOutlineId(newId);
+                  setEditingOutlineText('AI Generated Insights');
+                  showToast('AI Section Generated');
+                }, 1000);
+              }}
+              className="flex-1 py-2.5 rounded-xl border border-dashed border-violet-200/80 dark:border-violet-800/60 bg-violet-50/30 dark:bg-violet-950/20 hover:bg-violet-50 dark:hover:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+              style={{ fontFamily: editorFont }}
+            >
+              <Sparkles size={13} strokeWidth={1.75} /> AI Section
+            </button>
+          </div>
+        )}
+        
+        {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+          <button
+            type="button"
+            onClick={() => {
+              insertEnterprisePage();
+            }}
+            className="w-full py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-900/60 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-950/30 text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none shrink-0"
+            style={{ fontFamily: editorFont }}
+          >
+            + New page
+          </button>
+        )}
+      </div>
+    );
+  };
 
   const handleWorkspaceModuleClick = (moduleName) => {
     if (focusedModule === moduleName) return;
@@ -39398,31 +39277,31 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {showDocumentOutlineView && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
         <div
           ref={documentOutlineDrawerRef}
-          className="fixed top-0 left-0 bottom-0 z-[260] flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border-r border-slate-200/90 dark:border-zinc-800 shadow-[12px_0_35px_-10px_rgba(15,23,42,0.12)] select-none overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-left-4"
+          className="fixed top-0 left-0 bottom-0 z-[260] flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border-r border-slate-200/60 dark:border-zinc-800/80 shadow-[12px_0_35px_-10px_rgba(15,23,42,0.08)] select-none overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-left-4"
           style={{ width: `${Math.max(300, leftSidebarWidth)}px` }}
         >
           {/* Panel Header */}
-          <div className="h-14 px-5 border-b border-slate-100 dark:border-zinc-800/80 shrink-0 bg-slate-50/50 dark:bg-zinc-900/50 flex items-center justify-between">
+          <div className="h-14 px-5 border-b border-slate-100 dark:border-zinc-800/60 shrink-0 bg-slate-50/50 dark:bg-zinc-900/50 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-xl bg-violet-100/70 dark:bg-violet-950/50 border border-violet-200/50 dark:border-violet-800/50 flex items-center justify-center shrink-0 shadow-sm">
-                <FileText size={14} className="text-violet-600 dark:text-violet-400" />
+              <div className="w-7 h-7 rounded-xl bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-700/60 flex items-center justify-center shrink-0">
+                <FileText size={14} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
               </div>
-              <span className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight">Document Outline</span>
+              <span className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-200 tracking-tight">Document Outline</span>
             </div>
           </div>
 
           {/* Outline Content */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-2 py-3 thin-scrollbar">
+          <div className="flex-1 min-h-0 overflow-y-auto px-1 py-1 thin-scrollbar">
             {renderDocumentOutlineContent()}
           </div>
 
           {/* Footer */}
-          <div className="p-3.5 border-t border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/40 shrink-0">
+          <div className="p-3.5 border-t border-slate-100 dark:border-zinc-800/60 bg-slate-50/50 dark:bg-zinc-900/40 shrink-0">
             <button
               onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
-              className="flex items-center gap-2.5 text-xs font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 w-full px-2 py-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="flex items-center gap-2.5 text-xs font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 w-full px-2 py-1.5 rounded-lg hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
             >
-              <Settings size={14} /> Settings
+              <Settings size={14} strokeWidth={1.75} /> Settings
             </button>
           </div>
         </div>
@@ -48814,13 +48693,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {activeOutlineMenuId && (
         <div
-          className="fixed bg-white border border-slate-200 rounded-lg shadow-lg py-1.5 z-[9999] min-w-[150px]"
+          className="fixed bg-white/95 dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-[9999] min-w-[150px] backdrop-blur-md"
           style={{ top: `${outlineMenuCoords.top + 4}px`, left: `${outlineMenuCoords.left}px`, fontFamily: editorFont }}
         >
-          <button type="button" className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-violet-600 flex items-center gap-2 transition-colors" onClick={() => { setEditingOutlineId(activeOutlineMenuId); const section = outlineTreeData.find(s => s.id === activeOutlineMenuId); setEditingOutlineText(section ? section.title : ''); setActiveOutlineMenuId(null); }}><FileEdit size={14} /> Rename Section</button>
-          <button type="button" className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-violet-600 flex items-center gap-2 transition-colors" onClick={() => { setActiveOutlineMenuId(null); setOutlineTreeData(prev => prev.map(s => s.id === activeOutlineMenuId ? { ...s, completed: !s.completed } : s)); }}><CheckCircle2 size={14} /> Toggle Status</button>
-          <div className="h-px bg-slate-100 my-1.5 mx-2" />
-          <button type="button" className="w-full text-left px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors" onClick={() => { setOutlineTreeData(prev => prev.filter(s => s.id !== activeOutlineMenuId)); setActiveOutlineMenuId(null); }}><Trash size={14} /> Delete Section</button>
+          <button type="button" className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100/70 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-2 transition-colors cursor-pointer" onClick={() => { setEditingOutlineId(activeOutlineMenuId); const section = outlineTreeData.find(s => s.id === activeOutlineMenuId); setEditingOutlineText(section ? section.title : ''); setActiveOutlineMenuId(null); }}><FileEdit size={13} strokeWidth={1.75} /> Rename Section</button>
+          <button type="button" className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100/70 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-2 transition-colors cursor-pointer" onClick={() => { setActiveOutlineMenuId(null); setOutlineTreeData(prev => prev.map(s => s.id === activeOutlineMenuId ? { ...s, completed: !s.completed } : s)); }}><CheckCircle2 size={13} strokeWidth={1.75} /> Toggle Status</button>
+          <div className="h-px bg-slate-100 dark:bg-zinc-800 my-1 mx-2" />
+          <button type="button" className="w-full text-left px-3 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 transition-colors cursor-pointer" onClick={() => { setOutlineTreeData(prev => prev.filter(s => s.id !== activeOutlineMenuId)); setActiveOutlineMenuId(null); }}><Trash size={13} strokeWidth={1.75} /> Delete Section</button>
         </div>
       )}
 
