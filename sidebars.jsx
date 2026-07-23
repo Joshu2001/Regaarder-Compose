@@ -676,14 +676,15 @@
                             </span>
                           </div>
                           {editingTaskId === task.id ? (
-                            <input
+                            <textarea
                               autoFocus
+                              rows={Math.max(2, Math.ceil((editingTaskText || '').length / 28))}
                               value={editingTaskText}
                               onChange={(event) => setEditingTaskText(event.target.value)}
                               onClick={(event) => event.stopPropagation()}
                               onBlur={() => commitTaskEdit(task.id)}
                               onKeyDown={(event) => {
-                                if (event.key === 'Enter') {
+                                if (event.key === 'Enter' && !event.shiftKey) {
                                   event.preventDefault();
                                   commitTaskEdit(task.id);
                                 }
@@ -692,7 +693,7 @@
                                   setEditingTaskText('');
                                 }
                               }}
-                              className="w-full bg-white dark:bg-zinc-900 border border-violet-400 dark:border-violet-500 rounded-lg px-2.5 py-1 text-xs text-slate-900 dark:text-zinc-100 focus:outline-none shadow-2xs"
+                              className="w-full bg-white dark:bg-zinc-900 border border-violet-400 dark:border-violet-500 rounded-xl px-3 py-2 text-[13px] font-medium leading-relaxed text-slate-900 dark:text-zinc-100 focus:outline-none shadow-xs resize-none min-h-[56px]"
                             />
                           ) : (
                             <p
