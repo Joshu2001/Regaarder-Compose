@@ -25703,36 +25703,77 @@ Respond with a JSON array of slide objects matching the schema.`;
                       {isMentionMenuOpen && (
                         <div
                           ref={mentionMenuRef}
-                          className="absolute top-full left-0 right-0 mt-2 max-h-56 overflow-y-auto bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 p-1.5"
+                          className="absolute top-full left-0 right-0 mt-2 max-h-64 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 overflow-hidden"
                         >
-                          <div className="px-2 py-1 text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-                            Mention Document
-                          </div>
-                          {availableDocs.length === 0 ? (
-                            <div className="px-2 py-2 text-xs text-slate-400 dark:text-zinc-500 italic">No matching documents</div>
-                          ) : (
-                            availableDocs.map((doc, idx) => (
-                              <button
-                                key={doc.id}
-                                type="button"
-                                onPointerDown={(e) => {
-                                  e.preventDefault();
-                                  selectDocumentMention(doc);
+                          {/* Header & Mini Search Bar */}
+                          <div className="p-2 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/50 flex flex-col gap-1.5 shrink-0">
+                            <div className="flex items-center justify-between px-1">
+                              <span className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                                Mention Document
+                              </span>
+                              <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">
+                                {availableDocs.length} {availableDocs.length === 1 ? 'doc' : 'docs'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 focus-within:border-violet-500 transition-colors shadow-2xs">
+                              <Search size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                              <input
+                                type="text"
+                                value={mentionSearch}
+                                onChange={(e) => {
+                                  setMentionSearch(e.target.value.toLowerCase());
+                                  setMentionSelectedIndex(0);
                                 }}
-                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors ${
-                                  idx === mentionSelectedIndex
-                                    ? 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 font-semibold'
-                                    : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 truncate">
-                                  <FileText size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                                  <span className="truncate">{doc.title || 'Untitled document'}</span>
-                                </div>
-                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono shrink-0">@doc</span>
-                              </button>
-                            ))
-                          )}
+                                placeholder="Search documents..."
+                                className="w-full bg-transparent border-none text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none p-0"
+                                autoFocus
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              {mentionSearch && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setMentionSearch('');
+                                  }}
+                                  className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 rounded"
+                                >
+                                  <X size={10} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Scrollable Document List */}
+                          <div className="p-1.5 overflow-y-auto thin-scrollbar max-h-44">
+                            {availableDocs.length === 0 ? (
+                              <div className="px-3 py-3 text-xs text-slate-400 dark:text-zinc-500 italic text-center">
+                                No matching documents found
+                              </div>
+                            ) : (
+                              availableDocs.map((doc, idx) => (
+                                <button
+                                  key={doc.id}
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    selectDocumentMention(doc);
+                                  }}
+                                  className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors ${
+                                    idx === mentionSelectedIndex
+                                      ? 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 font-semibold'
+                                      : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 truncate">
+                                    <FileText size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                                    <span className="truncate">{doc.title || 'Untitled document'}</span>
+                                  </div>
+                                  <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono shrink-0">@doc</span>
+                                </button>
+                              ))
+                            )}
+                          </div>
                         </div>
                       )}
 
@@ -26075,36 +26116,77 @@ Respond with a JSON array of slide objects matching the schema.`;
                   {isMentionMenuOpen && (
                     <div
                       ref={mentionMenuRef}
-                      className="absolute bottom-full left-3 right-3 mb-2 max-h-56 overflow-y-auto bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 p-1.5"
+                      className="absolute bottom-full left-3 right-3 mb-2 max-h-64 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 overflow-hidden"
                     >
-                      <div className="px-2 py-1 text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-                        Mention Document
-                      </div>
-                      {availableDocs.length === 0 ? (
-                        <div className="px-2 py-2 text-xs text-slate-400 dark:text-zinc-500 italic">No matching documents</div>
-                      ) : (
-                        availableDocs.map((doc, idx) => (
-                          <button
-                            key={doc.id}
-                            type="button"
-                            onPointerDown={(e) => {
-                              e.preventDefault();
-                              selectDocumentMention(doc);
+                      {/* Header & Mini Search Bar */}
+                      <div className="p-2 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/50 flex flex-col gap-1.5 shrink-0">
+                        <div className="flex items-center justify-between px-1">
+                          <span className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                            Mention Document
+                          </span>
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">
+                            {availableDocs.length} {availableDocs.length === 1 ? 'doc' : 'docs'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 focus-within:border-violet-500 transition-colors shadow-2xs">
+                          <Search size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                          <input
+                            type="text"
+                            value={mentionSearch}
+                            onChange={(e) => {
+                              setMentionSearch(e.target.value.toLowerCase());
+                              setMentionSelectedIndex(0);
                             }}
-                            className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors ${
-                              idx === mentionSelectedIndex
-                                ? 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 font-semibold'
-                                : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 truncate">
-                              <FileText size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                              <span className="truncate">{doc.title || 'Untitled document'}</span>
-                            </div>
-                            <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono shrink-0">@doc</span>
-                          </button>
-                        ))
-                      )}
+                            placeholder="Search documents..."
+                            className="w-full bg-transparent border-none text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none p-0"
+                            autoFocus
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          {mentionSearch && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMentionSearch('');
+                              }}
+                              className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 rounded"
+                            >
+                              <X size={10} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Scrollable Document List */}
+                      <div className="p-1.5 overflow-y-auto thin-scrollbar max-h-44">
+                        {availableDocs.length === 0 ? (
+                          <div className="px-3 py-3 text-xs text-slate-400 dark:text-zinc-500 italic text-center">
+                            No matching documents found
+                          </div>
+                        ) : (
+                          availableDocs.map((doc, idx) => (
+                            <button
+                              key={doc.id}
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                selectDocumentMention(doc);
+                              }}
+                              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors ${
+                                idx === mentionSelectedIndex
+                                  ? 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 font-semibold'
+                                  : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <FileText size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                                <span className="truncate">{doc.title || 'Untitled document'}</span>
+                              </div>
+                              <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono shrink-0">@doc</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
                     </div>
                   )}
 
