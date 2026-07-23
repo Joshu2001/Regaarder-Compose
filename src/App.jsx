@@ -8577,6 +8577,7 @@ export default function App() {
     } catch { return ['room', 'tasks']; }
   });
   const [morePanelOpen, setMorePanelOpen] = useState(false);
+  const [miniSidebarDismissed, setMiniSidebarDismissed] = useState(false);
   const [morePanelPos, setMorePanelPos] = useState({ top: 0, right: 0 });
   const [workspaceLauncherIconStyle, setWorkspaceLauncherIconStyle] = useState('solid');
   const [workspaceLauncherIconSize, setWorkspaceLauncherIconSize] = useState('md');
@@ -27624,6 +27625,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           const handleClick = () => {
             recordFeatureUsage(key);
             setMorePanelOpen(false);
+            setMiniSidebarDismissed(true);
             if (key === 'files') {
               handleMiniSidebarClick('room');
               setActiveMeetingStageTab('files');
@@ -27670,14 +27672,29 @@ Respond with a JSON array of slide objects matching the schema.`;
 
         return (
           <>
-            {/* ── Sidebar shell ─────────────────────────────────────────── */}
-            <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} fixed right-0 top-0 h-full z-[300] w-[56px] hover:w-[165px] group/sidebar border-l border-slate-200/70 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl flex-col items-start px-2 py-4 gap-2.5 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.03)]`}>
+            {/* ── Invisible Right-Edge Hover Detector Area ──────────────── */}
+            {productMode !== 'landing' && (
+              <div className="fixed right-0 top-0 h-full w-4 z-[299] pointer-events-auto" />
+            )}
+
+            {/* ── Auto-Hiding 2-Stage Expandable Sidebar Shell ──────────── */}
+            <div
+              onMouseLeave={() => setMiniSidebarDismissed(false)}
+              className={`${productMode === 'landing' ? 'hidden' : 'flex'} fixed right-0 top-0 h-full z-[300] w-[56px] hover:w-[165px] group/sidebar border-l border-slate-200/70 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl flex-col items-start px-2 py-4 gap-2.5 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.03)] ${
+                miniSidebarDismissed
+                  ? 'translate-x-full opacity-0 pointer-events-none'
+                  : 'translate-x-[calc(100%-8px)] hover:translate-x-0 opacity-40 hover:opacity-100'
+              }`}
+            >
 
               {/* ── Slot 1: Home (always fixed) ─── */}
               <div className="relative mb-1 w-full">
                 <div
                   className="group/item flex items-center gap-3 px-2.5 py-2 rounded-xl cursor-pointer select-none border border-transparent text-slate-400 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-700 dark:hover:text-zinc-200 transition-all duration-200 w-full"
-                  onClick={() => setProductMode('landing')}
+                  onClick={() => {
+                    setProductMode('landing');
+                    setMiniSidebarDismissed(true);
+                  }}
                   title="Home"
                 >
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
@@ -27708,7 +27725,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                         <button
                           key={key}
                           type="button"
-                          onClick={() => launchWorkspaceFromMiniPlus(key)}
+                          onClick={() => {
+                            launchWorkspaceFromMiniPlus(key);
+                            setMiniSidebarDismissed(true);
+                          }}
                           className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 hover:bg-violet-50 hover:text-violet-700 rounded-lg transition-colors text-left font-medium group"
                         >
                           <Icon size={16} strokeWidth={2} className="text-slate-400 group-hover:text-violet-500 transition-colors" />
