@@ -25534,33 +25534,33 @@ Respond with a JSON array of slide objects matching the schema.`;
           {(activeRightTab === 'assistant' || activeRightTab === 'chat') && (
             <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
               {/* Chat Stream & Focal Layout */}
-              <div className="flex-1 overflow-y-auto thin-scrollbar p-5 space-y-5">
+              <div className="flex-1 overflow-y-auto thin-scrollbar p-4 space-y-3.5">
                 {chatMessages.length === 0 && (
-                  <div className="flex flex-col items-start justify-start w-full pt-1 pb-4">
+                  <div className="flex flex-col items-start justify-start w-full pt-0.5 pb-2">
                     {/* Compact Integrated Header */}
-                    <div className="flex items-center gap-3 w-full mb-5 text-left">
-                      <div className="w-7 h-7 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 flex items-center justify-center shrink-0">
-                        <Bot size={14} strokeWidth={1.75} className="text-slate-600 dark:text-zinc-400" />
+                    <div className="flex items-center gap-2.5 w-full mb-3.5 text-left">
+                      <div className="w-6.5 h-6.5 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 flex items-center justify-center shrink-0">
+                        <Bot size={13} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight leading-none">
-                          {productMode === 'compose' ? 'Compose AI' : productMode === 'sheets' ? 'Sheets AI' : 'Deck AI'}
+                        <h3 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight leading-none">
+                          {productMode === 'compose' ? 'Compose Assistant' : productMode === 'sheets' ? 'Sheets Assistant' : 'Deck Assistant'}
                         </h3>
-                        <div className="text-[11.5px] text-slate-400 dark:text-zinc-500 font-medium truncate mt-1 flex items-center gap-1">
-                          <FileText size={11} strokeWidth={1.5} className="shrink-0 text-slate-400 dark:text-zinc-500" />
+                        <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium truncate mt-0.5 flex items-center gap-1">
+                          <FileText size={10.5} strokeWidth={1.5} className="shrink-0 text-slate-400 dark:text-zinc-500" />
                           <span className="truncate">Connected to <span className="text-slate-600 dark:text-zinc-300 font-medium">{docTitleDisplay}</span></span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Elevated Input Area as Focal Point */}
-                    <form onSubmit={handleSidebarSend} className="w-full mb-5">
+                    {/* Integrated Input Area (Notes.app feel) */}
+                    <form onSubmit={handleSidebarSend} className="w-full mb-3.5">
                       {chatAttachments.length > 0 && (
-                        <div className="mb-2.5 flex flex-wrap gap-2">
+                        <div className="mb-2 flex flex-wrap gap-2">
                           {chatAttachments.map((attachment) => (
                             <div
                               key={attachment.id}
-                              className="inline-flex items-center gap-2 rounded-xl border border-slate-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1 text-xs text-slate-700 dark:text-zinc-300 shadow-2xs group relative cursor-pointer"
+                              className="inline-flex items-center gap-2 rounded-lg border border-slate-200/50 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-slate-700 dark:text-zinc-300 shadow-2xs group relative cursor-pointer"
                               onClick={() => setPreviewAttachment(attachment)}
                               title="Preview attachment"
                             >
@@ -25568,14 +25568,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                                 <img
                                   src={attachment.url}
                                   alt={attachment.name}
-                                  className="w-5 h-5 rounded object-cover"
+                                  className="w-4.5 h-4.5 rounded object-cover"
                                 />
                               ) : (
-                                <div className="w-5 h-5 rounded bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-zinc-400">
+                                <div className="w-4.5 h-4.5 rounded bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-zinc-400">
                                   {attachment.type && attachment.type.includes('audio') ? (
-                                    <Mic size={11} />
+                                    <Mic size={10} />
                                   ) : (
-                                    <FileText size={11} />
+                                    <FileText size={10} />
                                   )}
                                 </div>
                               )}
@@ -25588,14 +25588,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                                 }}
                                 className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
                               >
-                                <X size={11} />
+                                <X size={10} />
                               </button>
                             </div>
                           ))}
                         </div>
                       )}
 
-                      <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-violet-400/80 dark:focus-within:border-violet-500/80 transition-all shadow-2xs">
+                      <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-zinc-800/80 rounded-xl focus-within:border-slate-300 dark:focus-within:border-zinc-700/80 transition-all duration-200 shadow-2xs">
                         <input
                           ref={chatFileInputRef}
                           type="file"
@@ -25618,81 +25618,81 @@ Respond with a JSON array of slide objects matching the schema.`;
                               handleSidebarSend(e);
                             }
                           }}
-                          placeholder="Ask Compose AI..."
+                          placeholder="Ask Compose Assistant..."
                           rows={2}
-                          className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3.5 px-4 pb-2 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 resize-none min-h-[72px]"
+                          className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-2.5 px-3 pb-1.5 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 resize-none min-h-[60px]"
                         />
-                        <div className="flex items-center justify-between px-2.5 pb-2.5">
-                          <div className="flex items-center gap-1">
+                        <div className="flex items-center justify-between px-2 pb-2">
+                          <div className="flex items-center gap-0.5">
                             <button
                               type="button"
                               onClick={() => {
                                 isFilePickerActiveRef.current = true;
                                 chatFileInputRef.current?.click();
                               }}
-                              className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                              className="p-1 rounded-lg text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800 transition-colors"
                               title="Attach files"
                             >
-                              <Plus size={16} strokeWidth={1.75} />
+                              <Plus size={15} strokeWidth={1.5} />
                             </button>
                             <button
                               type="button"
                               onClick={() => toggleVoiceRecording('right-chat')}
-                              className={`p-1.5 rounded-lg transition-all ${
+                              className={`p-1 rounded-lg transition-all ${
                                 isVoiceActive && voiceTarget === 'right-chat'
                                   ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/40 hover:bg-violet-100 shadow-[0_0_0_2px_rgba(139,92,246,0.2)] animate-pulse'
-                                  : 'text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                                  : 'text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800'
                               }`}
                               title={isVoiceActive && voiceTarget === 'right-chat' ? 'Stop voice dictation' : 'Voice dictation'}
                             >
-                              <Mic size={16} strokeWidth={1.75} />
+                              <Mic size={15} strokeWidth={1.5} />
                             </button>
                           </div>
                           <button 
                             type="submit" 
                             disabled={!chatInput.trim()}
-                            className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                            className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer ${
                               chatInput.trim().length > 0 
-                                ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-2xs' 
-                                : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600'
+                                ? 'opacity-100 bg-violet-500/90 hover:bg-violet-600 dark:bg-violet-500/80 dark:hover:bg-violet-500 text-white shadow-2xs' 
+                                : 'opacity-35 cursor-not-allowed bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600'
                             }`}
                           >
-                            <Send size={14} strokeWidth={1.75} />
+                            <Send size={13} strokeWidth={1.75} />
                           </button>
                         </div>
                       </div>
                     </form>
                     
-                    {/* Suggested Action Chips */}
+                    {/* Action Chips */}
                     <div className="w-full">
-                      <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 mb-2">
-                        Suggested
+                      <div className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mb-1.5">
+                        Actions
                       </div>
-                      <div className="flex flex-wrap gap-2 w-full">
+                      <div className="flex flex-wrap gap-1.5 w-full">
                         <button 
                           type="button"
                           onClick={() => setChatInput(productMode === 'compose' ? 'Summarize this document ' : productMode === 'sheets' ? 'Summarize this sheet ' : 'Summarize this deck ')} 
-                          className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/60 dark:bg-zinc-800/60 border border-slate-200/50 dark:border-zinc-700/50 hover:bg-slate-200/50 dark:hover:bg-zinc-700/60 text-slate-700 dark:text-zinc-300 text-xs font-medium transition-all cursor-pointer select-none"
+                          className="group flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/50 dark:bg-zinc-800/40 border border-slate-200/40 dark:border-zinc-700/40 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-[11.5px] font-medium transition-all duration-150 ease-out hover:-translate-y-0.5 cursor-pointer select-none"
                         >
-                          <FileText size={12} strokeWidth={1.5} className="text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300" />
+                          <FileText size={11.5} strokeWidth={1.5} className="text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300" />
                           <span>Summarize Document</span>
                         </button>
                         
                         <button 
                           type="button"
                           onClick={() => setChatInput(productMode === 'compose' ? 'Extract action items from ' : productMode === 'sheets' ? 'Find trends in ' : 'Create speaker notes for ')} 
-                          className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/60 dark:bg-zinc-800/60 border border-slate-200/50 dark:border-zinc-700/50 hover:bg-slate-200/50 dark:hover:bg-zinc-700/60 text-slate-700 dark:text-zinc-300 text-xs font-medium transition-all cursor-pointer select-none"
+                          className="group flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/50 dark:bg-zinc-800/40 border border-slate-200/40 dark:border-zinc-700/40 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-[11.5px] font-medium transition-all duration-150 ease-out hover:-translate-y-0.5 cursor-pointer select-none"
                         >
-                          <ListTodo size={12} strokeWidth={1.5} className="text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300" />
+                          <ListTodo size={11.5} strokeWidth={1.5} className="text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300" />
                           <span>Action Items</span>
                         </button>
 
                         <button 
                           type="button"
                           onClick={() => setChatInput('Refine this ')} 
-                          className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/60 dark:bg-zinc-800/60 border border-slate-200/50 dark:border-zinc-700/50 hover:bg-slate-200/50 dark:hover:bg-zinc-700/60 text-slate-700 dark:text-zinc-300 text-xs font-medium transition-all cursor-pointer select-none"
+                          className="group flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/50 dark:bg-zinc-800/40 border border-slate-200/40 dark:border-zinc-700/40 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-[11.5px] font-medium transition-all duration-150 ease-out hover:-translate-y-0.5 cursor-pointer select-none"
                         >
-                          <Pen size={12} strokeWidth={1.5} className="text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300" />
+                          <Pen size={11.5} strokeWidth={1.5} className="text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300" />
                           <span>Refine Writing</span>
                         </button>
                       </div>
