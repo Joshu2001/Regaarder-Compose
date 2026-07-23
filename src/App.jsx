@@ -26505,18 +26505,18 @@ Respond with a JSON array of slide objects matching the schema.`;
 
           {/* D. ACTIVE TAB: TASKS WORKLIST */}
           {activeRightTab === 'tasks' && (
-            <div className="flex-1 overflow-y-auto thin-scrollbar p-5 flex flex-col space-y-5 bg-white dark:bg-[#18181b]">
+            <div className="flex-1 overflow-y-auto thin-scrollbar p-5 flex flex-col space-y-6 bg-white dark:bg-[#18181b]">
               {/* Single Clean Surface for Add Task & Filters */}
-              <div className="rounded-2xl bg-slate-50/60 dark:bg-zinc-800/30 p-3 space-y-2.5">
-                {/* Segmented Filter Control - iOS Style */}
-                <div className="flex items-center gap-0.5 p-0.5 bg-slate-100/70 dark:bg-zinc-800/50 rounded-lg self-start">
+              <div className="rounded-2xl bg-slate-50/50 dark:bg-zinc-800/25 p-3 space-y-2.5">
+                {/* Segmented Filter Control - Apple Style */}
+                <div className="flex items-center gap-0.5 p-0.5 bg-slate-100/60 dark:bg-zinc-800/40 rounded-lg self-start">
                   <button
                     type="button"
                     onClick={() => {
                       setNewTaskOwner('user');
                       setTaskOwnerFilter('user');
                     }}
-                    className={`px-2.5 py-0.5 rounded-md text-[10.5px] font-medium transition-all cursor-pointer ${
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-all cursor-pointer ${
                       taskOwnerFilter === 'user'
                         ? 'bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-2xs font-semibold'
                         : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'
@@ -26530,7 +26530,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                       setNewTaskOwner('agent');
                       setTaskOwnerFilter('agent');
                     }}
-                    className={`px-2.5 py-0.5 rounded-md text-[10.5px] font-medium transition-all cursor-pointer ${
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-all cursor-pointer ${
                       taskOwnerFilter === 'agent'
                         ? 'bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-2xs font-semibold'
                         : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'
@@ -26541,7 +26541,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   <button
                     type="button"
                     onClick={() => setTaskOwnerFilter('all')}
-                    className={`px-2.5 py-0.5 rounded-md text-[10.5px] font-medium transition-all cursor-pointer ${
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-all cursor-pointer ${
                       taskOwnerFilter === 'all'
                         ? 'bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-2xs font-semibold'
                         : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'
@@ -26551,7 +26551,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </button>
                 </div>
 
-                {/* Input & Softened Primary Save Button */}
+                {/* Input & Primary Save Button */}
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -26564,20 +26564,20 @@ Respond with a JSON array of slide objects matching the schema.`;
                       }
                     }}
                     placeholder="Add a new action item..."
-                    className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-zinc-700/70 rounded-xl px-4 py-1.5 text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-violet-500 dark:focus:border-violet-500 transition-colors shadow-2xs"
+                    className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-700/60 rounded-xl px-4 py-1.5 text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-violet-500 dark:focus:border-violet-500 transition-colors shadow-2xs"
                   />
                   <button
                     type="button"
                     onClick={addTaskFromInput}
-                    className="px-3.5 py-1.5 rounded-xl text-xs font-medium bg-violet-600/85 hover:bg-violet-600 active:bg-violet-700 text-white shadow-2xs transition-colors shrink-0 cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white shadow-2xs transition-colors shrink-0 cursor-pointer"
                   >
                     Save
                   </button>
                 </div>
               </div>
 
-              {/* Continuous Task List separated only by whitespace & ultra-subtle dividers */}
-              <div className="divide-y divide-slate-100/40 dark:divide-zinc-800/30">
+              {/* Borderless Task List with 16-20px Vertical Breathing Room & Faint Separators */}
+              <div className="divide-y divide-slate-100/50 dark:divide-zinc-800/30">
                 {visibleTasks.map(task => (
                   <div 
                     key={task.id} 
@@ -26585,13 +26585,15 @@ Respond with a JSON array of slide objects matching the schema.`;
                       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
                       showToast(task.completed ? "Task uncompleted" : "Task marked completed");
                     }}
-                    className={`group flex items-start gap-3 py-3 px-1 transition-all cursor-pointer hover:bg-slate-50/50 dark:hover:bg-zinc-800/30 rounded-xl ${
-                      task.completed ? 'opacity-35' : 'opacity-100'
+                    className={`group flex items-start gap-2 py-4 px-2 rounded-xl transition-all cursor-pointer ${
+                      task.completed 
+                        ? 'opacity-20 text-slate-400 dark:text-zinc-500' 
+                        : 'hover:bg-slate-50/60 dark:hover:bg-zinc-800/30 text-slate-800 dark:text-zinc-200 opacity-100'
                     }`}
                   >
                     <div className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0 ${
                       task.completed 
-                        ? 'bg-violet-600/90 border-violet-600/90 text-white' 
+                        ? 'bg-violet-600 border-violet-600 text-white' 
                         : 'border-slate-300/80 dark:border-zinc-600 bg-white dark:bg-zinc-900 group-hover:border-violet-400'
                     }`}>
                       {task.completed && <Check size={10} strokeWidth={3} />}
@@ -26600,7 +26602,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="mb-0.5">
-                            <span className="inline-flex items-center px-1.5 py-0.2 rounded-md text-[10px] font-medium bg-slate-100/80 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border-0">
+                            <span className="inline-flex items-center px-1.5 py-0.2 rounded-md text-[9.5px] font-medium bg-slate-100/70 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border-0">
                               {task.owner === 'agent' ? 'Agent' : 'User'}
                             </span>
                           </div>
@@ -26630,7 +26632,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                 beginTaskEdit(task);
                               }}
                               className={`text-[13px] font-medium leading-snug break-words ${
-                                task.completed ? 'line-through text-slate-400/80 dark:text-zinc-500/80' : 'text-slate-800 dark:text-zinc-100'
+                                task.completed ? 'line-through text-slate-400/60 dark:text-zinc-500/60' : 'text-slate-800 dark:text-zinc-100'
                               }`}
                             >
                               {task.text}
@@ -26656,9 +26658,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                             event.stopPropagation();
                             convertTaskToSchedule(task);
                           }}
-                          className="inline-flex items-center gap-1.5 text-xs text-slate-400/90 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors font-medium cursor-pointer"
+                          className="inline-flex items-center gap-1 text-[11px] text-slate-400/70 dark:text-zinc-500/70 hover:text-slate-600 dark:hover:text-zinc-300 opacity-60 group-hover:opacity-100 transition-opacity font-medium cursor-pointer"
                         >
-                          <Calendar size={12} strokeWidth={1.5} className="text-slate-400/80 dark:text-zinc-500 group-hover:text-slate-500 dark:group-hover:text-zinc-300 transition-colors" />
+                          <Calendar size={11} strokeWidth={1.5} className="text-slate-400/70 dark:text-zinc-500" />
                           <span>Convert to Schedule</span>
                         </button>
                       </div>
