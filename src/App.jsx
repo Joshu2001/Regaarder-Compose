@@ -25395,9 +25395,22 @@ Respond with a JSON array of slide objects matching the schema.`;
                           </div>
                           {showPageNumbers && (
                             <div className="grid grid-cols-3 gap-1">
-                              {['bottom-left', 'bottom-center', 'bottom-right'].map(pos => (
-                                <button key={pos} onClick={() => setPageNumberPos(pos)} className={`py-1 px-1.5 text-[10px] font-semibold rounded-md border transition-all capitalize truncate ${pageNumberPos === pos ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 text-gray-600 bg-white hover:bg-gray-50'}`}>{pos.replace('bottom-', '')}</button>
-                              ))}
+                              {['bottom-left', 'bottom-center', 'bottom-right'].map(pos => {
+                                const cleanPos = pos.replace('bottom-', '');
+                                const isActive = pageNumberPos === pos || pageNumberPosition === cleanPos;
+                                return (
+                                  <button 
+                                    key={pos} 
+                                    onClick={() => {
+                                      setPageNumberPos(pos);
+                                      setPageNumberPosition(cleanPos);
+                                    }} 
+                                    className={`py-1 px-1.5 text-[10px] font-semibold rounded-md border transition-all capitalize truncate ${isActive ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 text-gray-600 bg-white hover:bg-gray-50'}`}
+                                  >
+                                    {cleanPos}
+                                  </button>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
@@ -26812,11 +26825,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                         const title = docTitle || 'Untitled Document';
                         let coverHtml = '';
                         if (template.id === 'academic') {
-                          coverHtml = `<div contenteditable="false" style="min-height: 80vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-family: 'Times New Roman', serif; padding: 40px; border: 4px double #cbd5e1; margin-bottom: 40px; page-break-after: always;"><h1 style="font-size: 42px; margin-bottom: 20px; color: #1e293b;">${title}</h1><h3 style="font-size: 24px; color: #475569; font-weight: normal;">Author Name</h3><p style="margin-top: 60px; font-style: italic; color: #64748b;">${new Date().toLocaleDateString()}</p></div>`;
+                          coverHtml = `<div contenteditable="true" style="width: 100%; min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-family: 'Times New Roman', serif; padding: 48px; border: 4px double #cbd5e1; margin-bottom: 40px; page-break-after: always; flex: 1;"><h1 contenteditable="true" style="font-size: 42px; margin-bottom: 20px; color: #1e293b; font-weight: 700; outline: none;">${title}</h1><h3 contenteditable="true" style="font-size: 22px; color: #475569; font-weight: normal; margin-bottom: 30px; outline: none;">Author Name</h3><p contenteditable="true" style="margin-top: 40px; font-style: italic; color: #64748b; outline: none;">${new Date().toLocaleDateString()}</p></div>`;
                         } else if (template.id === 'writer') {
-                          coverHtml = `<div contenteditable="false" style="min-height: 80vh; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; text-align: left; font-family: Georgia, serif; padding: 60px; background-color: #fdfbf7; margin-bottom: 40px; page-break-after: always; border-left: 8px solid #d4a373;"><h1 style="font-size: 48px; margin-bottom: 16px; color: #283618; letter-spacing: -1px;">${title}</h1><div style="width: 60px; height: 4px; background-color: #dda15e; margin-bottom: 30px;"></div><h3 style="font-size: 20px; color: #606c38; font-weight: normal; font-style: italic;">A Novel Approach</h3></div>`;
+                          coverHtml = `<div contenteditable="true" style="width: 100%; min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; text-align: left; font-family: Georgia, serif; padding: 60px; background-color: #fdfbf7; margin-bottom: 40px; page-break-after: always; border-left: 8px solid #d4a373; flex: 1;"><h1 contenteditable="true" style="font-size: 48px; margin-bottom: 16px; color: #283618; letter-spacing: -1px; font-weight: 700; outline: none;">${title}</h1><div style="width: 60px; height: 4px; background-color: #dda15e; margin-bottom: 30px;"></div><h3 contenteditable="true" style="font-size: 20px; color: #606c38; font-weight: normal; font-style: italic; outline: none;">A Novel Approach</h3></div>`;
                         } else if (template.id === 'enterprise') {
-                          coverHtml = `<div contenteditable="false" style="min-height: 80vh; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; text-align: left; font-family: 'Inter', sans-serif; padding: 60px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; margin-bottom: 40px; page-break-after: always;"><div style="font-size: 24px; font-weight: bold; color: #38bdf8;">Enterprise Inc.</div><div style="margin-top: auto; margin-bottom: auto;"><h1 style="font-size: 56px; margin-bottom: 20px; font-weight: 800; line-height: 1.1;">${title}</h1><h3 style="font-size: 24px; color: #94a3b8; font-weight: 400;">Q3 Executive Summary</h3></div><div style="width: 100%; border-top: 1px solid #334155; padding-top: 20px; display: flex; justify-content: space-between; color: #64748b; font-size: 14px;"><span>CONFIDENTIAL</span><span>${new Date().toLocaleDateString()}</span></div></div>`;
+                          coverHtml = `<div contenteditable="true" style="width: 100%; min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; text-align: left; font-family: 'Inter', sans-serif; padding: 60px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; margin-bottom: 40px; page-break-after: always; border-radius: 16px; flex: 1;"><div contenteditable="true" style="font-size: 24px; font-weight: bold; color: #38bdf8; outline: none;">Enterprise Inc.</div><div style="margin-top: auto; margin-bottom: auto;"><h1 contenteditable="true" style="font-size: 52px; margin-bottom: 20px; font-weight: 800; line-height: 1.1; outline: none;">${title}</h1><h3 contenteditable="true" style="font-size: 24px; color: #94a3b8; font-weight: 400; outline: none;">Q3 Executive Summary</h3></div><div style="width: 100%; border-top: 1px solid #334155; padding-top: 20px; display: flex; justify-content: space-between; color: #94a3b8; font-size: 14px;"><span contenteditable="true" style="outline: none;">CONFIDENTIAL</span><span contenteditable="true" style="outline: none;">${new Date().toLocaleDateString()}</span></div></div>`;
                         }
                         
                         // Insert at top
@@ -26838,12 +26851,12 @@ Respond with a JSON array of slide objects matching the schema.`;
                       const prmpt = prompt("Describe your custom cover page:");
                       if (prmpt) {
                         const boxId = 'cover-' + Date.now();
-                        const htmlText = `<div id="${boxId}" class="inline-ai-block ai-block-loading" contenteditable="false" style="min-height:50vh; display:flex; align-items:center; justify-content:center;"><div class="ai-block-shimmer"></div><div class="ai-block-content" style="color:#6b7280;">Generating custom cover...</div></div>`;
+                        const htmlText = `<div id="${boxId}" class="inline-ai-block ai-block-loading" contenteditable="true" style="width:100%; min-height:100%; display:flex; align-items:center; justify-content:center; page-break-after:always;"><div class="ai-block-shimmer"></div><div class="ai-block-content" style="color:#6b7280;">Generating custom cover...</div></div>`;
                         if (blankBodyRef.current) {
                           blankBodyRef.current.innerHTML = htmlText + blankBodyRef.current.innerHTML;
                           setDocBodyHtml(blankBodyRef.current.innerHTML);
                         }
-                        handleAIBlockSubmit(`Generate an inline styled HTML cover page based on: ${prmpt}. Make it min-height 80vh and visually striking.`, 'html', boxId);
+                        handleAIBlockSubmit(`Generate an inline styled HTML cover page based on: ${prmpt}. Make it width:100%, min-height:100%, page-break-after:always and visually striking, and keep text elements editable.`, 'html', boxId);
                       }
                       setPageCoverModalOpen(false);
                       setOpenDropdown(null);
@@ -44918,6 +44931,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               data-enterprise-page="true"
               className="w-full mx-auto rounded-[24px] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-zinc-800/50 transition-all relative"
               style={{
+                maxWidth: pageOrientation === 'landscape'
+                  ? (docPageSize === 'letter' ? '1056px' : docPageSize === 'legal' ? '1296px' : '1123px')
+                  : (docPageSize === 'letter' ? '816px' : docPageSize === 'legal' ? '816px' : '800px'),
                 backgroundColor: 
                   docTheme === 'emerald' ? '#F0FDF4' :
                   docTheme === 'amber' ? '#FEFBE8' :
@@ -44936,12 +44952,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   docTheme === 'rose' ? '#4c0519' :
                   docTheme === 'slate' ? '#0f172a' :
                   '#0f172a',
-                fontFamily:
+                fontFamily: editorFont || (
                   docTheme === 'emerald' ? 'sans-serif' :
                   docTheme === 'amber' ? 'serif' :
                   docTheme === 'rose' ? 'sans-serif' :
                   docTheme === 'slate' ? 'monospace' :
-                  'sans-serif',
+                  'sans-serif'
+                ),
                 minHeight: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)}px`,
                 paddingLeft: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
                 paddingRight: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
@@ -45451,6 +45468,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   className="w-full mx-auto rounded-[24px] shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] border transition-all relative"
                   style={{
                     marginTop: '32px',
+                    maxWidth: pageOrientation === 'landscape'
+                      ? (docPageSize === 'letter' ? '1056px' : docPageSize === 'legal' ? '1296px' : '1123px')
+                      : (docPageSize === 'letter' ? '816px' : docPageSize === 'legal' ? '816px' : '800px'),
                     backgroundColor:
                       docTheme === 'emerald' ? '#F0FDF4' :
                       docTheme === 'amber' ? '#FEFBE8' :
@@ -45469,12 +45489,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       docTheme === 'rose' ? '#4c0519' :
                       docTheme === 'slate' ? '#0f172a' :
                       '#0f172a',
-                    fontFamily:
+                    fontFamily: editorFont || (
                       docTheme === 'emerald' ? 'sans-serif' :
                       docTheme === 'amber' ? 'serif' :
                       docTheme === 'rose' ? 'sans-serif' :
                       docTheme === 'slate' ? 'monospace' :
-                      'sans-serif',
+                      'sans-serif'
+                    ),
                     minHeight: pgHeight + 'px',
                     paddingLeft: pgPadding,
                     paddingRight: pgPadding,
