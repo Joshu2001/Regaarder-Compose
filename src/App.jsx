@@ -436,6 +436,19 @@ const QUICK_ADD_SOURCE_OPTIONS = [
   { id: 'note', label: 'Add note' },
   { id: 'link', label: 'Add link' },
 ];
+const QUICK_ADD_DATE_OPTIONS = [
+  { id: 'today', label: 'Today' },
+  { id: 'tomorrow', label: 'Tomorrow' },
+  { id: 'next_week', label: 'Next Week' },
+];
+const QUICK_ADD_CATEGORY_OPTIONS = [
+  { id: 'General', label: 'General', color: 'bg-slate-400' },
+  { id: 'Work', label: 'Work', color: 'bg-violet-500' },
+  { id: 'Personal', label: 'Personal', color: 'bg-emerald-500' },
+  { id: 'Focus', label: 'Focus', color: 'bg-amber-500' },
+  { id: 'Meeting', label: 'Meeting', color: 'bg-blue-500' },
+  { id: 'Review', label: 'Review', color: 'bg-rose-500' },
+];
 const SCHEDULE_TIMEZONE_OPTIONS = ['GMT+5:30', 'GMT+0:00', 'GMT-8:00', 'GMT+1:00'];
 
 const TONE_PICKER_GROUPS = [
@@ -6112,12 +6125,16 @@ export default function App() {
   const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
   const mentionMenuRef = useRef(null);
   const [scheduleAttachments, setScheduleAttachments] = useState([]);
+  const [editingAgendaField, setEditingAgendaField] = useState(null); // { id: string | number, field: 'title' | 'slot', value: string }
   const [voiceTarget, setVoiceTarget] = useState('compose');
   const [scheduleInput, setScheduleInput] = useState('');
   const [scheduleOutput, setScheduleOutput] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([
-    { id: 1, title: 'Beta Launch Kickoff', slotLabel: 'May 15 - 10:00 AM' },
-    { id: 2, title: 'Product Hunt Checklist Finalization', slotLabel: 'June 14 - 2:30 PM' },
+    { id: 1, title: 'Beta Launch Kickoff', slotLabel: 'May 15 - 10:00 AM', slot: '10:00 AM', dueDate: '2026-05-15T10:00:00', durationMinutes: 60, category: 'General' },
+    { id: 2, title: 'Product Hunt Checklist Finalization', slotLabel: 'June 14 - 2:30 PM', slot: '2:30 PM', dueDate: '2026-06-14T14:30:00', durationMinutes: 60, category: 'General' },
+  ]);
+  const [relatedDocuments, setRelatedDocuments] = useState([
+    { id: 'doc-1', title: 'Product Hunt Launch Plan', dateStr: '2026-05-15', dueDate: 'May 15', status: 'On Track' },
   ]);
   const [scheduleForm, setScheduleForm] = useState({
     startDate: '2026-05-29',
@@ -6151,6 +6168,27 @@ export default function App() {
   const [isScheduleSessionModalOpen, setIsScheduleSessionModalOpen] = useState(false);
   const [isSchedulePeopleMenuOpen, setIsSchedulePeopleMenuOpen] = useState(false);
   const [isQuickAddSourceMenuOpen, setIsQuickAddSourceMenuOpen] = useState(false);
+  const [isQuickAddDateMenuOpen, setIsQuickAddDateMenuOpen] = useState(false);
+  const [isQuickAddCategoryMenuOpen, setIsQuickAddCategoryMenuOpen] = useState(false);
+  const [selectedQuickAddDateLabel, setSelectedQuickAddDateLabel] = useState('Today');
+  const [selectedQuickAddDate, setSelectedQuickAddDate] = useState(null);
+  const [selectedQuickAddCategory, setSelectedQuickAddCategory] = useState('General');
+  const [activeAgendaDropdown, setActiveAgendaDropdown] = useState(null); // { id: number, type: 'duration' | 'category' } | null
+  
+  const scheduleTouchStartXRef = useRef(0);
+  const scheduleTouchCurrentXRef = useRef(0);
+
+  // Dismiss transient Schedule panel on Escape key
+  useEffect(() => {
+    const handleScheduleEscape = (event) => {
+      if (event.key === 'Escape' && rightSidebarOpen && activeRightTab === 'calendar') {
+        event.preventDefault();
+        setRightSidebarOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleScheduleEscape);
+    return () => window.removeEventListener('keydown', handleScheduleEscape);
+  }, [rightSidebarOpen, activeRightTab]);
   
   // AI State machine
   const [isComposing, setIsComposing] = useState(false);
@@ -8140,6 +8178,8 @@ export default function App() {
   const morePanelRef = useRef(null);
   const moreButtonRef = useRef(null);
   const quickAddSourceMenuRef = useRef(null);
+  const quickAddDateMenuRef = useRef(null);
+  const quickAddCategoryMenuRef = useRef(null);
   const voiceTargetRef = useRef('compose');
   const isMicMutedRef = useRef(false);
   const isVoiceActiveRef = useRef(false);
@@ -11062,6 +11102,12 @@ export default function App() {
       if (quickAddSourceMenuRef.current && !quickAddSourceMenuRef.current.contains(event.target)) {
         setIsQuickAddSourceMenuOpen(false);
       }
+      if (quickAddDateMenuRef.current && !quickAddDateMenuRef.current.contains(event.target)) {
+        setIsQuickAddDateMenuOpen(false);
+      }
+      if (quickAddCategoryMenuRef.current && !quickAddCategoryMenuRef.current.contains(event.target)) {
+        setIsQuickAddCategoryMenuOpen(false);
+      }
       if (!event.target.closest('[data-meeting-share-root]')) {
         setMeetingShareMenuAnchor(null);
       }
@@ -13459,6 +13505,7 @@ export default function App() {
     setIsMeetingLinkInputOpen(false);
     setIsMeetingOverflowParticipantsOpen(false);
     setWorkspaceLauncherOpen(false);
+    setActiveAgendaDropdown(null);
     setTonePickerState((prev) => (prev.open ? { open: false, instruction: '', actionKey: '', selectionScoped: undefined } : prev));
   };
 
@@ -21061,7 +21108,7 @@ Rules:
   // ─── Smart Sidebar: Feature Usage Engine ─────────────────────────────────
 
   // Keys that are always pinned and cannot fill dynamic slots
-  const SIDEBAR_PINNED_KEYS = new Set(['home', 'chat', 'assistant']);
+  const SIDEBAR_PINNED_KEYS = new Set(['home', 'chat', 'assistant', 'tasks', 'calendar', 'room']);
   // Maximum number of dynamic (usage-promoted) slots shown in the sidebar
   const SIDEBAR_DYNAMIC_SLOT_COUNT = 2;
 
@@ -23385,13 +23432,59 @@ Respond with a JSON array of slide objects matching the schema.`;
         return {
           ...event,
           _sortDate: hasDate ? dueDate : fallback,
+          _hasExplicitDate: hasDate,
         };
+      })
+      .filter((event) => {
+        if (!selectedCalendarDate) return true;
+        if (!event._hasExplicitDate) return false;
+        const selYear = selectedCalendarDate.getFullYear();
+        const selMonth = selectedCalendarDate.getMonth();
+        const selDay = selectedCalendarDate.getDate();
+        const evYear = event._sortDate.getFullYear();
+        const evMonth = event._sortDate.getMonth();
+        const evDay = event._sortDate.getDate();
+        return selYear === evYear && selMonth === evMonth && selDay === evDay;
       })
       .sort((a, b) => a._sortDate - b._sortDate)
       .slice(0, 6);
 
     return normalized;
   }, [scheduleOutput, selectedCalendarDate, upcomingEvents]);
+
+  const activeRelatedDoc = useMemo(() => {
+    if (!selectedCalendarDate) return null;
+    const selYear = selectedCalendarDate.getFullYear();
+    const selMonth = selectedCalendarDate.getMonth();
+    const selDay = selectedCalendarDate.getDate();
+    return (
+      relatedDocuments.find((doc) => {
+        if (!doc?.dateStr) return false;
+        const d = new Date(doc.dateStr);
+        return (
+          d.getFullYear() === selYear &&
+          d.getMonth() === selMonth &&
+          d.getDate() === selDay
+        );
+      }) || null
+    );
+  }, [relatedDocuments, selectedCalendarDate]);
+
+  const handleUpdateAgendaEvent = useCallback((eventId, field, value) => {
+    setUpcomingEvents((prev) =>
+      prev.map((ev) => (ev.id === eventId ? { ...ev, [field]: value } : ev))
+    );
+    setScheduleOutput((prev) =>
+      prev.map((ev) => (ev.id === eventId ? { ...ev, [field]: value } : ev))
+    );
+    showToast(`Updated event ${field}`);
+  }, [showToast]);
+
+  const handleDeleteAgendaEvent = useCallback((eventId) => {
+    setUpcomingEvents((prev) => prev.filter((ev) => ev.id !== eventId));
+    setScheduleOutput((prev) => prev.filter((ev) => ev.id !== eventId));
+    showToast('Event removed from schedule');
+  }, [showToast]);
 
   const scheduleAiInsights = useMemo(() => {
     const insights = [];
@@ -23482,10 +23575,14 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
 
   const convertMessyScheduleToPlan = async () => {
-    const rawItems = scheduleInput
+    let rawItems = scheduleInput
       .split(/\n|;/)
       .map((item) => item.trim())
       .filter(Boolean);
+
+    if (!rawItems.length && scheduleAttachments.length > 0) {
+      rawItems = scheduleAttachments.map((att) => att.name || 'Attached File');
+    }
 
     if (!rawItems.length) {
       return;
@@ -23502,11 +23599,14 @@ Respond with a JSON array of slide objects matching the schema.`;
 
     cleanItems = await enrichScheduleItemsWithAI(rawItems, cleanItems);
 
+    setUpcomingEvents((prev) => [...prev, ...cleanItems]);
     setScheduleOutput(cleanItems);
+    setScheduleInput('');
+    setScheduleAttachments([]);
     trackMemoryAction('automation', 'Converted raw schedule input', {
       items: cleanItems.length,
     });
-    showToast('Messy schedule converted to clean timeline');
+    showToast('Task added to schedule');
   };
 
   const updateScheduleItem = (id, field, value) => {
@@ -25530,6 +25630,18 @@ Respond with a JSON array of slide objects matching the schema.`;
 
   const sharedRightPanels = (
     <React.Fragment>
+      {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && activeRightTab === 'calendar' && (
+        <div
+          className="fixed inset-0 z-[305] bg-black/5 dark:bg-black/20 backdrop-blur-[1px] transition-opacity duration-200 animate-in fade-in cursor-default"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setRightSidebarOpen(false);
+          }}
+          aria-label="Dismiss Schedule panel"
+        />
+      )}
+
       {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (
         <div
           onMouseDown={(event) => beginPanelResize('right', event)}
@@ -25561,9 +25673,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                 productMode !== 'sheets' && { key: 'properties', label: 'Properties' },
                 { key: 'whiteboard', label: 'Whiteboard' },
                 { key: 'tasks', label: 'Tasks' },
-                { key: 'manageen', label: 'Manageen' },
                 { key: 'calendar', label: 'Schedule' },
                 { key: 'room', label: 'Room' },
+                { key: 'manageen', label: 'Manageen' },
                 { key: 'memory', label: 'Memory' },
                 { key: 'orb', label: 'Orb' },
               ].filter(Boolean).map((tab) => {
@@ -27408,7 +27520,22 @@ Respond with a JSON array of slide objects matching the schema.`;
           )}
           {/* G. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE (LAUNCH TIMELINE) */}
           {activeRightTab === 'calendar' && (
-            <div className="flex-1 min-h-0 flex flex-col relative border-l border-slate-200/50 shadow-[-4px_0_12px_rgba(0,0,0,0.02)] animate-in fade-in-50 duration-200">
+            <div 
+              className="flex-1 min-h-0 flex flex-col relative border-l border-slate-200/50 shadow-[-4px_0_12px_rgba(0,0,0,0.02)] animate-in fade-in-50 slide-in-from-right-4 duration-200"
+              onTouchStart={(e) => {
+                scheduleTouchStartXRef.current = e.touches[0]?.clientX || 0;
+                scheduleTouchCurrentXRef.current = e.touches[0]?.clientX || 0;
+              }}
+              onTouchMove={(e) => {
+                scheduleTouchCurrentXRef.current = e.touches[0]?.clientX || 0;
+              }}
+              onTouchEnd={() => {
+                const deltaX = scheduleTouchCurrentXRef.current - scheduleTouchStartXRef.current;
+                if (deltaX > 50) {
+                  setRightSidebarOpen(false);
+                }
+              }}
+            >
               <div className="flex-1 overflow-y-auto thin-scrollbar px-4 pt-4 pb-8 bg-slate-50/40 space-y-6">
                 {/* 1. HEADER */}
                 <div className="flex items-center justify-between px-0.5">
@@ -27528,27 +27655,207 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </button>
                   </div>
 
-                  {/* Redesigned event list: Time acts as left anchor */}
-                  <div className="space-y-1">
-                    {scheduleAgendaItems.slice(0, 2).map((event) => (
-                      <div key={`timeline-${event.id}`} className="group relative p-2.5 rounded-xl hover:bg-slate-100/60 active:scale-[0.99] transition-all duration-150 flex items-start gap-3">
-                        {/* Left Anchor: Time & Dot */}
-                        <div className="flex items-center gap-2 w-[72px] shrink-0 pt-0.5">
-                          <span className="h-1.5 w-1.5 rounded-full bg-violet-600 shrink-0 ring-2 ring-violet-100" />
-                          <span className="text-[11.5px] font-semibold text-slate-700 tabular-nums">{event.slot || '10:00 AM'}</span>
-                        </div>
-                        {/* Content: Title & Metadata */}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[13.5px] font-semibold text-slate-900 leading-snug truncate">{event.title}</div>
-                          <div className="flex items-center gap-2 text-[11px] font-normal text-slate-400 mt-1">
-                            <span>{Math.max(15, Number(event.durationMinutes || 60))}m</span>
-                            <span className="text-slate-300">•</span>
-                            <span className="inline-flex items-center h-[18px] px-2 rounded-md border border-slate-200/60 bg-slate-100/70 text-[10px] font-medium text-slate-500 leading-none">{event.category || 'General'}</span>
+                  {/* Event list or Apple-style Empty state */}
+                  {scheduleAgendaItems.length > 0 ? (
+                    <div className="space-y-1">
+                      {scheduleAgendaItems.slice(0, 6).map((event) => {
+                        const currentDuration = Math.max(15, Number(event.durationMinutes || 60));
+                        const currentCategory = event.category || 'General';
+                        return (
+                          <div
+                            key={`timeline-${event.id}`}
+                            className="group relative p-2.5 rounded-xl hover:bg-slate-100/70 transition-all duration-150 flex items-center justify-between gap-2"
+                          >
+                            {/* Left Anchor: Time & Dot */}
+                            <div className="flex items-center gap-1.5 min-w-[76px] shrink-0 pt-0.5">
+                              <span className="h-1.5 w-1.5 rounded-full bg-violet-600 shrink-0 ring-2 ring-violet-100 dark:ring-violet-950" />
+                              {editingAgendaField?.id === event.id && editingAgendaField?.field === 'slot' ? (
+                                <input
+                                  type="text"
+                                  value={editingAgendaField.value}
+                                  onChange={(e) => setEditingAgendaField((prev) => ({ ...prev, value: e.target.value }))}
+                                  onBlur={() => {
+                                    if (editingAgendaField.value.trim()) {
+                                      handleUpdateAgendaEvent(event.id, 'slot', editingAgendaField.value.trim());
+                                    }
+                                    setEditingAgendaField(null);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      if (editingAgendaField.value.trim()) {
+                                        handleUpdateAgendaEvent(event.id, 'slot', editingAgendaField.value.trim());
+                                      }
+                                      setEditingAgendaField(null);
+                                    }
+                                    if (e.key === 'Escape') {
+                                      setEditingAgendaField(null);
+                                    }
+                                  }}
+                                  className="text-[11.5px] font-semibold text-slate-800 dark:text-zinc-100 tabular-nums bg-white dark:bg-zinc-800 border border-violet-400 dark:border-violet-600 rounded px-1 py-0.5 outline-none ring-2 ring-violet-500/20 w-16"
+                                  autoFocus
+                                />
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingAgendaField({ id: event.id, field: 'slot', value: event.slot || '10:00 AM' });
+                                  }}
+                                  className="text-[11.5px] font-semibold text-slate-700 dark:text-zinc-300 tabular-nums hover:text-violet-600 dark:hover:text-violet-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/60 px-1 py-0.5 rounded transition-all cursor-pointer text-left hover:underline decoration-violet-400/80 decoration-dashed"
+                                  title="Click to edit time"
+                                >
+                                  {event.slot || '10:00 AM'}
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Content: Title & Interactive Metadata */}
+                            <div className="flex-1 min-w-0">
+                              {editingAgendaField?.id === event.id && editingAgendaField?.field === 'title' ? (
+                                <input
+                                  type="text"
+                                  value={editingAgendaField.value}
+                                  onChange={(e) => setEditingAgendaField((prev) => ({ ...prev, value: e.target.value }))}
+                                  onBlur={() => {
+                                    if (editingAgendaField.value.trim()) {
+                                      handleUpdateAgendaEvent(event.id, 'title', editingAgendaField.value.trim());
+                                    }
+                                    setEditingAgendaField(null);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      if (editingAgendaField.value.trim()) {
+                                        handleUpdateAgendaEvent(event.id, 'title', editingAgendaField.value.trim());
+                                      }
+                                      setEditingAgendaField(null);
+                                    }
+                                    if (e.key === 'Escape') {
+                                      setEditingAgendaField(null);
+                                    }
+                                  }}
+                                  className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 leading-snug bg-white dark:bg-zinc-800 border border-violet-400 dark:border-violet-600 rounded px-1.5 py-0.5 outline-none ring-2 ring-violet-500/20 w-full"
+                                  autoFocus
+                                />
+                              ) : (
+                                <div
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingAgendaField({ id: event.id, field: 'title', value: event.title || 'Scheduled Task' });
+                                  }}
+                                  className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 leading-snug truncate hover:text-violet-600 dark:hover:text-violet-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/60 px-1 py-0.5 rounded transition-all cursor-pointer hover:underline decoration-violet-500 decoration-2"
+                                  title="Click to edit title"
+                                >
+                                  {event.title || 'Scheduled Task'}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 text-[11px] font-normal text-slate-400 mt-1">
+                                {/* Editable Duration Dropdown */}
+                                <div className="relative inline-flex items-center">
+                                  <button
+                                    type="button"
+                                    onPointerDown={(e) => e.preventDefault()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveAgendaDropdown((prev) => (prev?.id === event.id && prev?.type === 'duration' ? null : { id: event.id, type: 'duration' }));
+                                    }}
+                                    className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200/80 dark:hover:bg-zinc-700/80 text-slate-700 dark:text-zinc-300 font-medium text-[10.5px] border border-slate-200/60 dark:border-zinc-700/60 flex items-center gap-1 transition-all outline-none cursor-pointer"
+                                    title="Click to edit duration"
+                                  >
+                                    <span>{currentDuration}m</span>
+                                    <ChevronDown size={10} className={`text-slate-400 transition-transform duration-150 ${activeAgendaDropdown?.id === event.id && activeAgendaDropdown?.type === 'duration' ? 'rotate-180' : ''}`} />
+                                  </button>
+
+                                  {activeAgendaDropdown?.id === event.id && activeAgendaDropdown?.type === 'duration' && (
+                                    <div className="absolute left-0 top-full mt-1 z-50 w-24 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-xl shadow-slate-900/10 p-1 space-y-0.5 animate-in fade-in zoom-in-95 duration-100">
+                                      {[15, 30, 45, 60, 90, 120].map((mins) => (
+                                        <button
+                                          key={mins}
+                                          type="button"
+                                          onPointerDown={(e) => e.preventDefault()}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleUpdateAgendaEvent(event.id, 'durationMinutes', mins);
+                                            setActiveAgendaDropdown(null);
+                                          }}
+                                          className={`w-full text-left px-2 py-1 rounded-lg text-[11px] font-medium flex items-center justify-between transition-colors ${currentDuration === mins ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-semibold' : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
+                                        >
+                                          <span>{mins}m</span>
+                                          {currentDuration === mins && <Check size={11} className="text-violet-600 dark:text-violet-400" />}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <span className="text-slate-300">•</span>
+
+                                {/* Editable Category / Type Dropdown */}
+                                <div className="relative inline-flex items-center">
+                                  <button
+                                    type="button"
+                                    onPointerDown={(e) => e.preventDefault()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveAgendaDropdown((prev) => (prev?.id === event.id && prev?.type === 'category' ? null : { id: event.id, type: 'category' }));
+                                    }}
+                                    className="px-2 py-0.5 rounded-md bg-violet-50 dark:bg-violet-950/40 hover:bg-violet-100/90 dark:hover:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-semibold text-[10px] border border-violet-200/60 dark:border-violet-800/40 flex items-center gap-1 transition-all outline-none cursor-pointer"
+                                    title="Click to edit type"
+                                  >
+                                    <span>{currentCategory}</span>
+                                    <ChevronDown size={9} className={`text-violet-500 transition-transform duration-150 ${activeAgendaDropdown?.id === event.id && activeAgendaDropdown?.type === 'category' ? 'rotate-180' : ''}`} />
+                                  </button>
+
+                                  {activeAgendaDropdown?.id === event.id && activeAgendaDropdown?.type === 'category' && (
+                                    <div className="absolute left-0 top-full mt-1 z-50 w-28 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-xl shadow-slate-900/10 p-1 space-y-0.5 animate-in fade-in zoom-in-95 duration-100">
+                                      {['General', 'Focus', 'Meeting', 'Review', 'Work', 'Personal'].map((cat) => (
+                                        <button
+                                          key={cat}
+                                          type="button"
+                                          onPointerDown={(e) => e.preventDefault()}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleUpdateAgendaEvent(event.id, 'category', cat);
+                                            setActiveAgendaDropdown(null);
+                                          }}
+                                          className={`w-full text-left px-2 py-1 rounded-lg text-[11px] font-medium flex items-center justify-between transition-colors ${currentCategory === cat ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-semibold' : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
+                                        >
+                                          <span>{cat}</span>
+                                          {currentCategory === cat && <Check size={11} className="text-violet-600 dark:text-violet-400" />}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Delete Button on Hover */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteAgendaEvent(event.id);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all duration-150 shrink-0 self-center cursor-pointer active:scale-95"
+                              title="Delete event"
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </div>
-                        </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-6 px-4 text-center rounded-2xl border border-dashed border-slate-200/80 bg-slate-50/50 my-1">
+                      <div className="w-8 h-8 rounded-full bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-500 mb-2 shadow-2xs">
+                        <Calendar size={15} />
                       </div>
-                    ))}
-                  </div>
+                      <div className="text-[12.5px] font-semibold text-slate-800 tracking-tight">No Events Scheduled</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5 max-w-[210px] leading-relaxed">
+                        No events set for {selectedCalendarDate ? selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'this date'}. Add a task below to plan your schedule.
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* 4. AI SCHEDULE INSIGHT (SUPPORTIVE RECOMMENDATION, SOFTENED BORDER & ICON) */}
@@ -27577,25 +27884,57 @@ Respond with a JSON array of slide objects matching the schema.`;
                 {/* 5. QUICK ADD */}
                 <div className="space-y-2 pt-1 border-t border-slate-200/40">
                   <div className="text-[12.5px] font-semibold text-slate-800 tracking-tight px-0.5">Quick Add</div>
-                  <div className="relative flex flex-col rounded-xl border border-slate-200/80 bg-white p-1 focus-within:border-violet-500/50 focus-within:ring-2 focus-within:ring-violet-500/10 transition-all duration-150 shadow-2xs">
+                  <div className="relative flex flex-col rounded-xl border border-slate-200/80 bg-white dark:bg-zinc-900 p-1 focus-within:border-violet-500/50 focus-within:ring-2 focus-within:ring-violet-500/10 transition-all duration-150 shadow-2xs">
+                    {/* Attachment Chips Preview Bar */}
+                    {scheduleAttachments.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 p-1 pb-1.5 mb-1 border-b border-slate-100 dark:border-zinc-800 animate-in fade-in-50 zoom-in-95 duration-150">
+                        {scheduleAttachments.map((attachment) => (
+                          <div
+                            key={attachment.id}
+                            className="inline-flex items-center gap-1.5 px-2 py-0.5 h-6 rounded-md border border-slate-200/80 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/80 text-[11px] font-medium text-slate-700 dark:text-zinc-200 shadow-2xs group relative cursor-pointer transition-all hover:border-violet-300"
+                            onClick={() => setPreviewAttachment(attachment)}
+                            title="Click to preview attachment"
+                          >
+                            {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
+                              <img src={attachment.url} alt={attachment.name} className="w-3.5 h-3.5 rounded object-cover" />
+                            ) : (
+                              <FileText size={11} className="text-violet-500 shrink-0" />
+                            )}
+                            <span className="max-w-[120px] truncate text-[10.5px] font-medium">{attachment.name}</span>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setScheduleAttachments((prev) => prev.filter((att) => att.id !== attachment.id));
+                              }}
+                              className="ml-0.5 p-0.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded hover:bg-slate-200/60 dark:hover:bg-zinc-700 transition-colors"
+                              title="Remove attachment"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="flex items-center">
                       <div className="relative shrink-0" ref={quickAddSourceMenuRef}>
                         <button
                           type="button"
                           onClick={() => setIsQuickAddSourceMenuOpen((prev) => !prev)}
-                          className="inline-flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:scale-[0.98] transition-all duration-150"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-zinc-800 active:scale-[0.98] transition-all duration-150"
                           title="Add context source"
                         >
                           <Plus size={13} />
                         </button>
                         {isQuickAddSourceMenuOpen && (
-                          <div className="absolute left-0 top-full z-20 mt-1.5 w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-lg animate-in fade-in-50 duration-150">
+                          <div className="absolute left-0 top-full z-20 mt-1.5 w-44 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1 shadow-lg animate-in fade-in-50 duration-150">
                             {QUICK_ADD_SOURCE_OPTIONS.map((source) => (
                               <button
                                 key={source.id}
                                 type="button"
                                 onClick={() => handleQuickAddSourceAction(source.id)}
-                                className="w-full rounded-md px-2.5 py-1.5 text-left text-[11.5px] font-normal text-slate-700 hover:bg-slate-100/70 inline-flex items-center gap-2 transition-colors"
+                                className="w-full rounded-md px-2.5 py-1.5 text-left text-[11.5px] font-normal text-slate-700 dark:text-zinc-300 hover:bg-slate-100/70 dark:hover:bg-zinc-800 inline-flex items-center gap-2 transition-colors"
                               >
                                 <span className="text-slate-400">{getQuickAddSourceIcon(source.id)}</span>
                                 {source.label}
@@ -27616,14 +27955,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                           }
                         }}
                         placeholder="Add a task..."
-                        className="h-7 min-w-0 flex-1 bg-transparent px-2 text-[11.5px] font-normal text-slate-800 placeholder:text-[11px] placeholder:text-slate-400 focus:outline-none"
+                        className="h-7 min-w-0 flex-1 bg-transparent px-2 text-[11.5px] font-normal text-slate-800 dark:text-zinc-100 placeholder:text-[11px] placeholder:text-slate-400 focus:outline-none"
                       />
 
-                      {scheduleInput.trim() && (
+                      {(scheduleInput.trim() || scheduleAttachments.length > 0) && (
                         <button
                           type="button"
                           onClick={convertMessyScheduleToPlan}
-                          className="inline-flex items-center rounded-md bg-violet-600 hover:bg-violet-700 px-2.5 py-1 text-[10.5px] font-medium text-white active:scale-[0.98] transition-all duration-150 shadow-2xs"
+                          className="inline-flex items-center rounded-md bg-violet-600 hover:bg-violet-700 px-2.5 py-1 text-[10.5px] font-medium text-white active:scale-[0.98] transition-all duration-150 shadow-2xs cursor-pointer"
                         >
                           Add
                         </button>
@@ -27631,12 +27970,12 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </div>
 
                     {/* Progressive Disclosure Context Pills */}
-                    {scheduleInput.trim() && (
-                      <div className="flex items-center gap-1.5 pt-1.5 px-1 border-t border-slate-100 animate-in fade-in-50 duration-150">
-                        <span className="inline-flex items-center gap-1 h-[20px] px-2 rounded-md border border-slate-200/60 bg-slate-100 text-[10.5px] font-medium text-slate-600 leading-none">
+                    {(scheduleInput.trim() || scheduleAttachments.length > 0) && (
+                      <div className="flex items-center gap-1.5 pt-1.5 px-1 border-t border-slate-100 dark:border-zinc-800 animate-in fade-in-50 duration-150">
+                        <span className="inline-flex items-center gap-1 h-[20px] px-2 rounded-md border border-slate-200/60 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-[10.5px] font-medium text-slate-600 dark:text-zinc-300 leading-none">
                           <Calendar size={10} className="text-slate-400" /> Today
                         </span>
-                        <span className="inline-flex items-center gap-1 h-[20px] px-2 rounded-md border border-slate-200/60 bg-slate-100 text-[10.5px] font-medium text-slate-600 leading-none">
+                        <span className="inline-flex items-center gap-1 h-[20px] px-2 rounded-md border border-slate-200/60 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-[10.5px] font-medium text-slate-600 dark:text-zinc-300 leading-none">
                           General
                         </span>
                         <span className="text-[9.5px] text-slate-400 ml-auto">Press Enter to schedule</span>
@@ -27655,19 +27994,50 @@ Respond with a JSON array of slide objects matching the schema.`;
                   />
                 </div>
 
-                {/* 6. RELATED DOCUMENT */}
-                <div className="rounded-xl border border-slate-200/50 bg-white p-3.5 shadow-2xs transition-all duration-150 hover:border-slate-300/80">
-                  <div className="text-[11px] font-medium text-slate-400 mb-1.5 inline-flex items-center gap-1.5">
-                    <FileText size={11} className="text-slate-400" />
-                    Related Document
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="text-[13.5px] font-semibold text-slate-900 truncate leading-snug">Product Hunt Launch Plan</div>
-                      <div className="text-[11.5px] font-normal text-slate-400 mt-0.5">Due {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
+                {/* 6. RELATED DOCUMENT & EMPTY STATE */}
+                <div className="pt-2 border-t border-slate-200/40">
+                  {activeRelatedDoc ? (
+                    <div className="rounded-xl border border-slate-200/50 bg-white p-3.5 shadow-2xs transition-all duration-150 hover:border-slate-300/80">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="text-[11px] font-medium text-slate-400 inline-flex items-center gap-1.5">
+                          <FileText size={11} className="text-slate-400" />
+                          Related Document
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRelatedDocuments((prev) => prev.filter((d) => d.id !== activeRelatedDoc.id));
+                            showToast('Unlinked document from schedule date');
+                          }}
+                          className="text-[10.5px] font-normal text-slate-400 hover:text-rose-500 active:scale-[0.98] transition-all duration-150"
+                          title="Unlink document"
+                        >
+                          Unlink
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-[13.5px] font-semibold text-slate-900 truncate leading-snug">{activeRelatedDoc.title}</div>
+                          <div className="text-[11.5px] font-normal text-slate-400 mt-0.5">
+                            Due {activeRelatedDoc.dueDate || (selectedCalendarDate ? selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '')}
+                          </div>
+                        </div>
+                        <span className="inline-flex items-center h-[20px] px-2 rounded-md border border-emerald-200/60 bg-emerald-50 text-[10.5px] font-medium text-emerald-700 leading-none shrink-0">
+                          {activeRelatedDoc.status || 'On Track'}
+                        </span>
+                      </div>
                     </div>
-                    <span className="inline-flex items-center h-[20px] px-2 rounded-md border border-emerald-200/60 bg-emerald-50 text-[10.5px] font-medium text-emerald-700 leading-none shrink-0">On Track</span>
-                  </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-5 px-4 text-center rounded-2xl border border-dashed border-slate-200/80 bg-slate-50/50">
+                      <div className="w-8 h-8 rounded-full bg-slate-100/80 border border-slate-200/60 flex items-center justify-center text-slate-400 mb-1.5 shadow-2xs">
+                        <FileText size={14} />
+                      </div>
+                      <div className="text-[12px] font-semibold text-slate-700 tracking-tight">No Related Document</div>
+                      <div className="text-[10.5px] text-slate-400 mt-0.5 max-w-[210px] leading-relaxed">
+                        No document linked for {selectedCalendarDate ? selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'this date'}.
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* EXPANDED FULL CALENDAR OVERLAY */}
@@ -27769,24 +28139,34 @@ Respond with a JSON array of slide objects matching the schema.`;
                             View Day
                           </button>
                         </div>
-                        <div className="space-y-1.5">
-                          {scheduleAgendaItems.slice(0, 2).map((event) => (
-                            <div key={`expanded-${event.id}`} className="group p-2.5 rounded-xl hover:bg-slate-50 transition-all duration-150 flex items-start gap-3 border border-slate-100">
-                              <div className="flex items-center gap-2 w-[72px] shrink-0 pt-0.5">
-                                <span className="h-1.5 w-1.5 rounded-full bg-violet-600 shrink-0 ring-2 ring-violet-100" />
-                                <span className="text-[11.5px] font-semibold text-slate-700 tabular-nums">{event.slot || '10:00 AM'}</span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-[13.5px] font-semibold text-slate-900 leading-snug truncate">{event.title}</div>
-                                <div className="flex items-center gap-2 text-[11px] font-normal text-slate-400 mt-0.5">
-                                  <span>{Math.max(15, Number(event.durationMinutes || 60))}m</span>
-                                  <span className="text-slate-300">•</span>
-                                  <span className="inline-flex items-center h-[18px] px-2 rounded-md border border-slate-200/60 bg-slate-100/70 text-[10px] font-medium text-slate-500 leading-none">{event.category || 'General'}</span>
+                        {scheduleAgendaItems.length > 0 ? (
+                          <div className="space-y-1.5">
+                            {scheduleAgendaItems.slice(0, 4).map((event) => (
+                              <div key={`expanded-${event.id}`} className="group p-2.5 rounded-xl hover:bg-slate-50 transition-all duration-150 flex items-start gap-3 border border-slate-100">
+                                <div className="flex items-center gap-2 w-[72px] shrink-0 pt-0.5">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-violet-600 shrink-0 ring-2 ring-violet-100" />
+                                  <span className="text-[11.5px] font-semibold text-slate-700 tabular-nums">{event.slot || '10:00 AM'}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[13.5px] font-semibold text-slate-900 leading-snug truncate">{event.title}</div>
+                                  <div className="flex items-center gap-2 text-[11px] font-normal text-slate-400 mt-0.5">
+                                    <span>{Math.max(15, Number(event.durationMinutes || 60))}m</span>
+                                    <span className="text-slate-300">•</span>
+                                    <span className="inline-flex items-center h-[18px] px-2 rounded-md border border-slate-200/60 bg-slate-100/70 text-[10px] font-medium text-slate-500 leading-none">{event.category || 'General'}</span>
+                                  </div>
                                 </div>
                               </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-5 px-4 text-center rounded-xl border border-dashed border-slate-200/80 bg-slate-50/50">
+                            <div className="w-8 h-8 rounded-full bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-500 mb-1.5 shadow-2xs">
+                              <Calendar size={15} />
                             </div>
-                          ))}
-                        </div>
+                            <div className="text-[12px] font-semibold text-slate-800">No events on this day</div>
+                            <div className="text-[11px] text-slate-400 mt-0.5">Select another date or click + to add a session</div>
+                          </div>
+                        )}
                       </div>
 
                       {/* AI Insight in overlay (Subdued) */}
@@ -28510,16 +28890,16 @@ Respond with a JSON array of slide objects matching the schema.`;
         const ALL_FEATURES = [
           { key: 'chat',       label: 'Chat',       icon: MessageCircle,    pinned: true },
           { key: 'assistant',  label: 'Assist',     icon: Wand2,            pinned: true },
+          { key: 'tasks',      label: 'Tasks',      icon: CheckSquare,      pinned: true },
+          { key: 'calendar',   label: 'Schedule',   icon: Calendar,         pinned: true },
+          { key: 'room',       label: 'Room',       icon: MonitorPlay,      pinned: true },
           { key: 'comments',   label: 'Comments',   icon: MessageSquareText, conditional: comments.length > 0 },
           { key: 'dm',         label: 'DMs',        icon: MessageSquare },
           { key: 'whiteboard', label: 'Whiteboard', icon: Shapes },
-          { key: 'tasks',      label: 'Tasks',      icon: CheckSquare },
-          { key: 'calendar',   label: 'Schedule',   icon: Calendar },
           { key: 'people',     label: 'People',     icon: Users },
           { key: 'memory',     label: 'Memory',     icon: Database },
           { key: 'orb',        label: 'Orb',        icon: Cloud },
           { key: 'manageen',   label: 'Manageen',   icon: ListTodo },
-          { key: 'room',       label: 'Room',       icon: MonitorPlay },
           { key: 'files',      label: 'Files',      icon: File },
         ];
 
@@ -28663,6 +29043,15 @@ Respond with a JSON array of slide objects matching the schema.`;
 
               {/* ── Slot 3: Assist (always fixed) ─── */}
               <div className="w-full mb-1">{renderNavIcon({ key: 'assistant', label: 'Assist', icon: Wand2 })}</div>
+
+              {/* ── Slot 4: Tasks (always fixed) ─── */}
+              <div className="w-full">{renderNavIcon({ key: 'tasks', label: 'Tasks', icon: CheckSquare })}</div>
+
+              {/* ── Slot 5: Schedule (always fixed) ─── */}
+              <div className="w-full">{renderNavIcon({ key: 'calendar', label: 'Schedule', icon: Calendar })}</div>
+
+              {/* ── Slot 6: Room (always fixed) ─── */}
+              <div className="w-full mb-1">{renderNavIcon({ key: 'room', label: 'Room', icon: MonitorPlay })}</div>
 
               {/* ── Slots 4–5: Dynamic (usage-promoted, animated on key change) ─── */}
               {dynamicSlots.map((slotKey, idx) => {
@@ -32679,16 +33068,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         { mode: 'compose', label: 'Compose Docs', desc: 'Collaborative Document Editor', icon: FileText },
                         { mode: 'sheets', label: 'Compose Sheets', desc: 'Data Analytics & Spreadsheets', icon: Table },
                         { mode: 'deck', label: 'Compose Decks', desc: 'Interactive Slideshow Presentations', icon: MonitorPlay },
+                        { mode: 'schedule', label: 'Compose Schedule', desc: 'Interactive Timeline & Agenda', icon: Calendar },
                         { mode: 'room', label: 'Compose Room', desc: 'Video & Collaboration Room', icon: Users }
                       ].map((item) => {
                         const IconComponent = item.icon;
-                        const isCurrent = productMode === item.mode;
+                        const isCurrent = productMode === item.mode || (item.mode === 'schedule' && activeRightTab === 'calendar' && rightSidebarOpen);
                         return (
                           <button
                             key={item.mode}
                             type="button"
                             onClick={() => {
-                              setProductMode(item.mode);
+                              if (item.mode === 'schedule') {
+                                setActiveRightTab('calendar');
+                                setRightSidebarOpen(true);
+                              } else {
+                                setProductMode(item.mode);
+                              }
                               setWorkspaceSwitcherOpen(false);
                               showToast(`Switched to ${item.label}`);
                             }}
@@ -40272,6 +40667,30 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div>
               <div className="px-2.5 text-[10px] uppercase tracking-[0.11em] font-semibold text-gray-400 mb-1.5">Workspace Intelligence</div>
               <div className="space-y-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveRightTab('calendar');
+                    setRightSidebarOpen(true);
+                    showToast('Opened Schedule');
+                  }}
+                  className={`w-full flex items-center justify-between px-2.5 py-2 text-sm rounded-lg transition-colors ${activeRightTab === 'calendar' && rightSidebarOpen ? 'bg-violet-50 text-violet-700 font-semibold dark:bg-violet-950/40 dark:text-violet-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800'}`}
+                >
+                  <span className="flex items-center gap-3"><Calendar size={15} /> Schedule</span>
+                  <span className="text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-full">Today</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveRightTab('room');
+                    setRightSidebarOpen(true);
+                    showToast('Opened Compose Room');
+                  }}
+                  className={`w-full flex items-center justify-between px-2.5 py-2 text-sm rounded-lg transition-colors ${activeRightTab === 'room' && rightSidebarOpen ? 'bg-violet-50 text-violet-700 font-semibold dark:bg-violet-950/40 dark:text-violet-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800'}`}
+                >
+                  <span className="flex items-center gap-3"><Users size={15} /> Room</span>
+                  <span className="text-[10px] font-semibold bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 px-1.5 py-0.5 rounded-full">Live</span>
+                </button>
                 <button className="w-full flex items-center justify-between px-2.5 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                   <span className="flex items-center gap-3"><Sparkles size={15} /> AI Suggested</span>
                   <span className="text-[10px] font-semibold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">12</span>
@@ -40449,16 +40868,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       { mode: 'compose', label: 'Compose Docs', desc: 'Collaborative Document Editor', icon: FileText },
                       { mode: 'sheets', label: 'Compose Sheets', desc: 'Data Analytics & Spreadsheets', icon: Table },
                       { mode: 'deck', label: 'Compose Decks', desc: 'Interactive Slideshow Presentations', icon: MonitorPlay },
+                      { mode: 'schedule', label: 'Compose Schedule', desc: 'Interactive Timeline & Agenda', icon: Calendar },
                       { mode: 'room', label: 'Compose Room', desc: 'Video & Collaboration Room', icon: Users }
                     ].map((item) => {
                       const IconComponent = item.icon;
-                      const isCurrent = productMode === item.mode;
+                      const isCurrent = productMode === item.mode || (item.mode === 'schedule' && activeRightTab === 'calendar' && rightSidebarOpen);
                       return (
                         <button
                           key={item.mode}
                           type="button"
                           onClick={() => {
-                            setProductMode(item.mode);
+                            if (item.mode === 'schedule') {
+                              setActiveRightTab('calendar');
+                              setRightSidebarOpen(true);
+                            } else {
+                              setProductMode(item.mode);
+                            }
                             setWorkspaceSwitcherOpen(false);
                             showToast(`Switched to ${item.label}`);
                           }}
