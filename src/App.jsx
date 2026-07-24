@@ -33559,7 +33559,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
 
-        <main className="flex-1 min-w-0 flex flex-col bg-[#f5f7fc]">
+        <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-[#f5f7fc]">
           <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between group/header relative z-[210]">
             <div className="flex items-center gap-4 min-w-0">
               {/* App Switcher Button - smoothly discloses on parent hover */}
@@ -34085,7 +34085,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </aside>
                     )}
 
-            <section className={`flex-1 min-w-0 flex flex-col overflow-hidden relative p-4 gap-4 transition-all duration-200 ${isSheetsMode ? 'bg-[#FAFAFC]' : 'bg-transparent'} ${productMode === 'compose' ? (rightSidebarOpen && !shareModalOpen ? 'mr-[380px]' : 'mr-3') : ''}`}>
+            <section className={`flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden relative p-4 gap-4 transition-all duration-200 ${isSheetsMode ? 'bg-[#FAFAFC]' : 'bg-transparent'} ${productMode === 'compose' ? (rightSidebarOpen && !shareModalOpen ? 'mr-[380px]' : 'mr-3') : ''}`}>
             {/* Floating button removed as per requirements */}
               <div className={`flex flex-col h-full w-full flex-1 relative z-10 min-h-0 overflow-hidden`}>
                 {isSheetsMode ? (
@@ -41455,7 +41455,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           />
         </div>
       ) : (
-      <div className="flex-1 flex flex-col min-w-0 bg-slate-50/30 dark:bg-zinc-950/20 backdrop-blur-[8px] relative z-10">
+      <div className="flex-1 min-h-0 flex flex-col min-w-0 overflow-hidden bg-slate-50/30 dark:bg-zinc-950/20 backdrop-blur-[8px] relative z-10">
         {!isSheetsMode && (
           <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.35]">
             <div className="absolute -top-[15%] -left-[15%] w-[70%] h-[70%] rounded-full bg-blue-400/35 dark:bg-blue-900/20 mix-blend-multiply dark:mix-blend-screen filter blur-[110px]" />
