@@ -289,20 +289,69 @@ body { margin: 0; background: #ffffff; }
   display: none !important;
 }
 .slash-menu-container::-webkit-scrollbar {
-  width: 6px;
+  width: 7px;
+  height: 7px;
 }
 .slash-menu-container::-webkit-scrollbar-track {
   background: transparent;
+  margin: 6px 2px;
 }
 .slash-menu-container::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.3);
+  background: rgba(148, 163, 184, 0.2);
   border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+.slash-menu-container:hover::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
 }
 .slash-menu-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.5);
+  background: rgba(71, 85, 105, 0.6);
+}
+.slash-menu-container::-webkit-scrollbar-thumb:active {
+  background: rgba(51, 65, 85, 0.8);
 }
 .slash-menu-container::-webkit-scrollbar-button {
   display: none !important;
+}
+
+.custom-doc-dropdown-menu::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+.custom-doc-dropdown-menu::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 2px;
+}
+.custom-doc-dropdown-menu::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+.custom-doc-dropdown-menu:hover::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+}
+.custom-doc-dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(71, 85, 105, 0.6);
+}
+.custom-doc-dropdown-menu::-webkit-scrollbar-thumb:active {
+  background: rgba(51, 65, 85, 0.8);
+}
+
+.app-dark .slash-menu-container::-webkit-scrollbar-thumb {
+  background: rgba(161, 161, 170, 0.2);
+}
+.app-dark .slash-menu-container:hover::-webkit-scrollbar-thumb {
+  background: rgba(161, 161, 170, 0.4);
+}
+.app-dark .slash-menu-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 212, 216, 0.6);
+}
+.app-dark .slash-menu-container::-webkit-scrollbar-thumb:active {
+  background: rgba(244, 244, 245, 0.8);
 }
 .inline-ai-prompt-box {
 	animation: fadeIn 200ms ease-out;
@@ -341,7 +390,11 @@ body { margin: 0; background: #ffffff; }
   max-height: 380px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+  scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
+  transition: scrollbar-color 0.2s ease;
+}
+.slash-menu-container:hover {
+  scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
 }
 .slash-menu-option {
   width: 100%;

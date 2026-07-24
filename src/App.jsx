@@ -29488,20 +29488,26 @@ Respond with a JSON array of slide objects matching the schema.`;
 
         return (
           <>
-            {/* ── Invisible Right-Edge Hover Detector Area ──────────────── */}
+            {/* ── Auto-Hiding 2-Stage Expandable Sidebar Shell & Cohabitating Floating Rail ──────────── */}
             {productMode !== 'landing' && !rightSidebarOpen && (
-              <div className="fixed right-0 top-0 h-full w-4 z-[299] pointer-events-auto" />
-            )}
+              <div className="fixed right-4 top-0 h-full z-[300] group/sidebar-rail pointer-events-none">
+                {/* Floating Dock Handle: Offset by 16px (right-4) from window edge so native scrollbar is 100% untouched */}
+                <div
+                  className="absolute right-0 top-24 pointer-events-auto flex items-center justify-center w-6 h-12 rounded-l-xl bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md border border-r-0 border-slate-200/80 dark:border-zinc-700/80 shadow-md cursor-pointer text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 group-hover/sidebar-rail:opacity-0 group-hover/sidebar-rail:pointer-events-none"
+                  title="Hover to open Quick Sidebar"
+                >
+                  <ChevronLeft size={16} />
+                </div>
 
-            {/* ── Auto-Hiding 2-Stage Expandable Sidebar Shell ──────────── */}
-            <div
-              onMouseLeave={() => setMiniSidebarDismissed(false)}
-              className={`${productMode === 'landing' ? 'hidden' : 'flex'} fixed right-0 top-0 h-full z-[300] w-[56px] hover:w-[165px] group/sidebar border-l border-slate-200/70 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl flex-col items-start px-2 py-4 gap-2.5 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.03)] ${
-                miniSidebarDismissed || rightSidebarOpen
-                  ? 'translate-x-full opacity-0 pointer-events-none'
-                  : 'translate-x-[calc(100%-8px)] hover:translate-x-0 opacity-40 hover:opacity-100'
-              }`}
-            >
+                {/* Sidebar Shell */}
+                <div
+                  onMouseLeave={() => setMiniSidebarDismissed(false)}
+                  className={`fixed right-0 top-0 h-full z-[301] w-[56px] hover:w-[165px] group/sidebar border-l border-slate-200/70 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl flex flex-col items-start px-2 py-4 gap-2.5 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] pointer-events-auto ${
+                    miniSidebarDismissed
+                      ? 'translate-x-full opacity-0 pointer-events-none'
+                      : 'translate-x-full group-hover/sidebar-rail:translate-x-0 opacity-0 group-hover/sidebar-rail:opacity-100'
+                  }`}
+                >
 
               {/* ── Slot 1: Home (always fixed) ─── */}
               <div className="relative mb-1 w-full">
@@ -29616,7 +29622,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                 </span>
               </div>
             </div>
-          </>
+          </div>
+          )}
+        </>
         );
       })()}
 
@@ -33769,7 +33777,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     {/* Profile Dropdown Menu */}
                     {profileMenuOpen && (
-                      <div className="absolute right-0 top-9 z-[500] w-64 rounded-xl border border-slate-200/80 bg-white dark:bg-[#1c1c1e] dark:border-zinc-800 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-4 font-sans animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="absolute right-0 top-9 z-[500] w-[236px] rounded-xl border border-slate-200/80 bg-white/95 dark:bg-[#1c1c1e]/95 dark:border-zinc-800 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.12)] p-3.5 font-sans animate-in fade-in slide-in-from-top-2 duration-200 backdrop-blur-md">
                         {currentUser ? (
                           // Logged In State
                           <div className="flex flex-col gap-3">
@@ -33808,13 +33816,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </div>
                         ) : (
                           // Guest State
-                          <div className="flex flex-col gap-3 text-center py-1">
-                            <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-955/40 text-violet-600 dark:text-violet-400 flex items-center justify-center text-md font-bold mx-auto mb-1">
-                              G
+                          <div className="flex flex-col items-center text-center py-0.5 px-0.5 gap-2">
+                            {/* Branded Glass Avatar with Glowing Ring & Micro Sparkle */}
+                            <div className="relative my-0.5 group cursor-default">
+                              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-violet-500/25 via-indigo-500/20 to-violet-500/25 blur-[6px] animate-pulse opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
+                              <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-slate-50 via-violet-50/90 to-indigo-100/70 dark:from-zinc-800 dark:via-violet-950/50 dark:to-zinc-900 border border-violet-200/70 dark:border-violet-800/40 text-violet-700 dark:text-violet-300 flex items-center justify-center font-bold shadow-[inset_0_1px_2px_rgba(255,255,255,0.9),0_2px_8px_-2px_rgba(124,58,237,0.15)] transition-transform duration-300 group-hover:scale-105">
+                                <span className="text-[15px] font-bold tracking-tight bg-gradient-to-br from-violet-700 to-indigo-600 dark:from-violet-300 dark:to-indigo-300 bg-clip-text text-transparent">G</span>
+                              </div>
+                              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white dark:bg-zinc-800 border border-violet-200 dark:border-violet-700/60 shadow-sm flex items-center justify-center">
+                                <Sparkles size={8.5} className="text-violet-500 fill-violet-500/20 animate-pulse" />
+                              </div>
                             </div>
-                            <div className="flex flex-col">
-                              <span className="text-[12px] font-bold text-slate-800 dark:text-zinc-200">Guest Mode</span>
-                              <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 max-w-[200px] mx-auto leading-relaxed">
+                            <div className="flex flex-col items-center">
+                              <span className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">Guest Mode</span>
+                              <p className="text-[10.5px] text-slate-600 dark:text-zinc-300 mt-0.5 max-w-[190px] mx-auto leading-snug opacity-95">
                                 Sign in to sync your work, collaborate, and access premium AI tools.
                               </p>
                             </div>
@@ -33824,7 +33839,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 setProfileMenuOpen(false);
                                 setAuthModalOpen(true);
                               }}
-                              className="w-full mt-1.5 py-1.5 px-3 text-[11px] font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
+                              className="w-full mt-1 py-1.5 px-3 text-[11.5px] font-semibold text-white bg-gradient-to-r from-violet-600/90 via-purple-600/90 to-indigo-600/90 hover:from-violet-600 hover:to-indigo-600 dark:from-violet-600 dark:to-indigo-600 dark:hover:from-violet-500 dark:hover:to-indigo-500 rounded-lg shadow-[0_2px_8px_-2px_rgba(124,58,237,0.25)] hover:shadow-[0_4px_12px_-2px_rgba(124,58,237,0.35)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
                             >
                               Sign In
                             </button>
@@ -41910,7 +41925,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
               {/* Profile Dropdown Menu */}
               {composeProfileMenuOpen && (
-                <div className="absolute right-0 top-9 z-[500] w-64 rounded-xl border border-slate-200/80 bg-white dark:bg-[#1c1c1e] dark:border-zinc-800 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-4 font-sans animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute right-0 top-9 z-[500] w-[236px] rounded-xl border border-slate-200/80 bg-white/95 dark:bg-[#1c1c1e]/95 dark:border-zinc-800 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.12)] p-3.5 font-sans animate-in fade-in slide-in-from-top-2 duration-200 backdrop-blur-md">
                   {currentUser ? (
                     // Logged In State
                     <div className="flex flex-col gap-3">
@@ -41949,13 +41964,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   ) : (
                     // Guest State
-                    <div className="flex flex-col gap-3 text-center py-1">
-                      <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-955/40 text-violet-600 dark:text-violet-400 flex items-center justify-center text-md font-bold mx-auto mb-1">
-                        G
+                    <div className="flex flex-col items-center text-center py-0.5 px-0.5 gap-2">
+                      {/* Branded Glass Avatar with Glowing Ring & Micro Sparkle */}
+                      <div className="relative my-0.5 group cursor-default">
+                        <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-violet-500/25 via-indigo-500/20 to-violet-500/25 blur-[6px] animate-pulse opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-slate-50 via-violet-50/90 to-indigo-100/70 dark:from-zinc-800 dark:via-violet-950/50 dark:to-zinc-900 border border-violet-200/70 dark:border-violet-800/40 text-violet-700 dark:text-violet-300 flex items-center justify-center font-bold shadow-[inset_0_1px_2px_rgba(255,255,255,0.9),0_2px_8px_-2px_rgba(124,58,237,0.15)] transition-transform duration-300 group-hover:scale-105">
+                          <span className="text-[15px] font-bold tracking-tight bg-gradient-to-br from-violet-700 to-indigo-600 dark:from-violet-300 dark:to-indigo-300 bg-clip-text text-transparent">G</span>
+                        </div>
+                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white dark:bg-zinc-800 border border-violet-200 dark:border-violet-700/60 shadow-sm flex items-center justify-center">
+                          <Sparkles size={8.5} className="text-violet-500 fill-violet-500/20 animate-pulse" />
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-[12px] font-bold text-slate-800 dark:text-zinc-200">Guest Mode</span>
-                        <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 max-w-[200px] mx-auto leading-relaxed">
+                      <div className="flex flex-col items-center">
+                        <span className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">Guest Mode</span>
+                        <p className="text-[10.5px] text-slate-600 dark:text-zinc-300 mt-0.5 max-w-[190px] mx-auto leading-snug opacity-95">
                           Sign in to sync your work, collaborate, and access premium AI tools.
                         </p>
                       </div>
@@ -41965,7 +41987,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           setComposeProfileMenuOpen(false);
                           setAuthModalOpen(true);
                         }}
-                        className="w-full mt-1.5 py-1.5 px-3 text-[11px] font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
+                        className="w-full mt-1 py-1.5 px-3 text-[11.5px] font-semibold text-white bg-gradient-to-r from-violet-600/90 via-purple-600/90 to-indigo-600/90 hover:from-violet-600 hover:to-indigo-600 dark:from-violet-600 dark:to-indigo-600 dark:hover:from-violet-500 dark:hover:to-indigo-500 rounded-lg shadow-[0_2px_8px_-2px_rgba(124,58,237,0.25)] hover:shadow-[0_4px_12px_-2px_rgba(124,58,237,0.35)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
                       >
                         Sign In
                       </button>

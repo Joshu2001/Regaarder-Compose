@@ -1,11 +1,12 @@
 /* Thin, elegant scrollbar for editor viewports, icon rails, and compact panels */
 .thin-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+  scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
+  transition: scrollbar-color 0.2s ease;
 }
 
 .thin-scrollbar:hover {
-  scrollbar-color: rgba(100, 116, 139, 0.6) transparent;
+  scrollbar-color: rgba(100, 116, 139, 0.45) transparent;
 }
 
 .thin-scrollbar::-webkit-scrollbar {
@@ -15,16 +16,27 @@
 
 .thin-scrollbar::-webkit-scrollbar-track {
   background: transparent;
+  margin: 4px 2px;
 }
 
 .thin-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(148, 163, 184, 0.35);
+  background-color: rgba(148, 163, 184, 0.2);
   border-radius: 999px;
-  border: 0px solid transparent;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
 }
 
 .thin-scrollbar:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(100, 116, 139, 0.6);
+  background-color: rgba(100, 116, 139, 0.4);
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(71, 85, 105, 0.6);
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb:active {
+  background-color: rgba(51, 65, 85, 0.8);
 }
 
 /* Dark Mode Implementation */
