@@ -34085,9 +34085,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </aside>
                     )}
 
-            <section className={`flex-1 min-w-0 flex flex-col overflow-hidden relative p-4 gap-4 ${isSheetsMode ? 'bg-[#FAFAFC]' : 'bg-transparent'}`}>
+            <section className={`flex-1 min-w-0 flex flex-col overflow-hidden relative p-4 gap-4 transition-all duration-200 ${isSheetsMode ? 'bg-[#FAFAFC]' : 'bg-transparent'} ${productMode === 'compose' ? (rightSidebarOpen && !shareModalOpen ? 'mr-[380px]' : 'mr-3') : ''}`}>
             {/* Floating button removed as per requirements */}
-              <div className={`flex flex-col h-full w-full flex-1 relative z-10`}>
+              <div className={`flex flex-col h-full w-full flex-1 relative z-10 min-h-0 overflow-hidden`}>
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-transparent flex flex-col relative">
                     <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#121214] flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
@@ -45568,7 +45568,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             </div>
           )}
-          <div className={activeRightTab === 'whiteboard' ? 'opacity-0 pointer-events-none select-none' : ''}>
+          <div className={`flex-1 min-h-0 overflow-y-auto thin-scrollbar relative p-2 md:p-4 transition-all duration-200 ${activeRightTab === 'whiteboard' ? 'opacity-0 pointer-events-none select-none' : ''}`}>
           <div
             className="mx-auto"
             style={{

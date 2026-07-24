@@ -1,17 +1,16 @@
-/* Thin, subtle scrollbar for icon rails and compact panels - visible on hover only */
+/* Thin, elegant scrollbar for editor viewports, icon rails, and compact panels */
 .thin-scrollbar {
-  scrollbar-width: none; /* Firefox default hidden */
-  scrollbar-color: transparent transparent;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
 }
 
 .thin-scrollbar:hover {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(15,23,42,0.2) transparent;
+  scrollbar-color: rgba(100, 116, 139, 0.6) transparent;
 }
 
 .thin-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 .thin-scrollbar::-webkit-scrollbar-track {
@@ -19,14 +18,13 @@
 }
 
 .thin-scrollbar::-webkit-scrollbar-thumb {
-  background-color: transparent;
+  background-color: rgba(148, 163, 184, 0.35);
   border-radius: 999px;
   border: 0px solid transparent;
-  transition: background-color 0.2s ease;
 }
 
 .thin-scrollbar:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(15, 23, 42, 0.2);
+  background-color: rgba(100, 116, 139, 0.6);
 }
 
 /* Dark Mode Implementation */
