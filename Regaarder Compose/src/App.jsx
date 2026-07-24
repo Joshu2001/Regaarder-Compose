@@ -24,7 +24,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode} from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Compass } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -25433,295 +25433,407 @@ Respond with a JSON array of slide objects matching the schema.`;
                               className="w-full text-[11px] px-2.5 py-1.5 rounded-lg border border-slate-200 focus:border-violet-400 focus:outline-none bg-white"
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' && e.target.value.trim()) {
-                                  const text = e.target.value;
-                                  setComments(prev => prev.map(comp => comp.id === c.id ? {
-                                    ...comp,
-                                    text: comp.text || text, // If initial text is empty, set it
-                                    replies: comp.text ? [...(comp.replies || []), { author: 'You', time: 'Just now', text, html: text }] : (comp.replies || [])
-                                  } : comp));
-                                  e.target.value = '';
-                                }
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* G. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
+                                  con          {/* G. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE (LAUNCH TIMELINE) */}
           {activeRightTab === 'calendar' && (
-            <div className="flex-1 min-h-0 flex flex-col relative">
-              <div className="flex-1 overflow-y-auto thin-scrollbar px-4 pt-1 pb-3 bg-[linear-gradient(180deg,#f6f7fb_0%,#f4f5f9_100%)]">
-                <div className="rounded-2xl border border-[#e8eaf2] bg-[#f5f6fa] p-3 space-y-3">
-                  <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)]">
-                    <div className="flex items-center justify-between text-[12px]">
-                      <div className="text-slate-800 font-medium inline-flex items-center gap-1.5">
-                        <Calendar size={12} className="text-violet-500" />
-                        Today <span className="text-violet-600 font-semibold">- {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                      </div>
-                      <div className="inline-flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            closeTransientMenus();
-                            setIsScheduleCalendarExpanded(true);
-                          }}
-                          className="text-slate-400 hover:text-slate-600"
-                          title="Toggle calendar"
-                        >
-                          <ChevronDown size={14} />
-                        </button>
-                      </div>
-                    </div>
+            <div className="flex-1 min-h-0 flex flex-col relative border-l border-slate-200/50 shadow-[-4px_0_12px_rgba(0,0,0,0.02)] animate-in fade-in-50 duration-200">
+              <div className="flex-1 overflow-y-auto thin-scrollbar px-4 pt-4 pb-8 bg-slate-50/40 space-y-6">
 
-                    <div className="mt-3 border-t border-[#ececf5] pt-2.5">
-                      <div className="flex items-center justify-between">
-                        <div className="text-[11px] font-medium text-slate-600">Upcoming</div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            closeTransientMenus();
-                            setIsScheduleCalendarExpanded(true);
-                          }}
-                          className="text-[10px] font-medium text-violet-600 hover:text-violet-700"
-                        >
-                          See full calendar
-                        </button>
-                      </div>
-                      <div className="relative mt-2 space-y-0">
-                        <div className="absolute left-[6px] top-[12px] bottom-[16px] w-px bg-[#d1d5db]" />
-                        {scheduleAgendaItems.slice(0, 2).map((event, index) => (
-                          <div key={`timeline-${event.id}`} className={`relative grid grid-cols-[62px_1fr] gap-3 ${index > 0 ? 'border-t border-[#ececf5]' : ''}`}>
-                            <div className="relative pl-3 text-[11.5px] leading-4 text-slate-700 pt-[8px] pb-[8px]">
-                              <span className="absolute left-[0px] top-[13px] h-1.5 w-1.5 rounded-full bg-violet-500 ring-2 ring-white" />
-                              <div className="whitespace-nowrap">{event.slot || '10:00 AM'}</div>
-                              <div className="text-[10px] text-slate-400">{Math.max(15, Number(event.durationMinutes || 60))}m</div>
-                            </div>
-                            <div className="relative rounded-lg px-2 py-[8px]">
-                              <div className="text-[12.5px] font-medium text-slate-800 leading-snug">{event.title}</div>
-                              <span className="mt-0.5 inline-flex rounded-full border border-violet-100 bg-violet-50 px-1.5 py-[1px] text-[10px] text-violet-500">{event.category || 'General'}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="mt-3 rounded-2xl border border-[#e9e0ff] bg-[#f6f1ff] px-3.5 py-3">
-                      <div className="text-[12px] font-medium text-slate-800 inline-flex items-center gap-1.5">
-                        <Sparkles size={12} className="text-violet-500" /> AI Schedule Insight
-                      </div>
-                      <div className="mt-2 text-[12px] text-slate-700 leading-relaxed">{scheduleAiInsights[0] || 'Schedule balance looks healthy. Keep one flexible slot open for AI-assisted revisions.'}</div>
+                {/* 1. HEADER */}
+                <div className="flex items-center justify-between px-0.5">
+                  <div>
+                    <div className="text-[15px] font-bold text-slate-900 tracking-tight leading-none">Launch Timeline</div>
+                    <div className="text-[11.5px] font-normal text-slate-400 mt-1">Intelligent schedule • {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeTransientMenus();
+                      setIsScheduleCalendarExpanded(true);
+                    }}
+                    className="text-slate-400 hover:text-slate-700 hover:bg-slate-200/50 active:scale-[0.98] transition-all duration-150 p-1.5 rounded-lg"
+                    title="Expand calendar"
+                  >
+                    <ChevronDown size={15} />
+                  </button>
+                </div>
+
+                {/* 2. CALENDAR (PRIMARY VISUAL ANCHOR) */}
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-center justify-between px-0.5">
+                    {/* Month Navigation */}
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => {
-                          setRightSidebarOpen(true);
-                          setActiveRightTab('assistant');
-                          setAssistantQuickPrompt('Optimize my next three schedule blocks for focus and momentum.');
+                          if (calendarYear === 2026 && calendarMonth === 0) return;
+                          if (calendarMonth === 0) {
+                            setCalendarView(11, calendarYear - 1);
+                          } else {
+                            setCalendarView(calendarMonth - 1, calendarYear);
+                          }
                         }}
-                        className="mt-3 w-full rounded-lg border border-violet-200 bg-violet-100 px-3 py-1.5 text-[12px] font-medium text-violet-700 hover:bg-violet-200/70"
+                        className="rounded-md p-1 text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 active:scale-[0.98] transition-all duration-150"
+                        disabled={calendarYear === 2026 && calendarMonth === 0}
                       >
-                        Optimize Schedule
+                        <ChevronLeft size={14} />
+                      </button>
+                      <span className="text-[13.5px] font-bold text-slate-900 tracking-tight">{monthNames[calendarMonth]} {calendarYear}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (calendarMonth === 11) {
+                            setCalendarView(0, calendarYear + 1);
+                          } else {
+                            setCalendarView(calendarMonth + 1, calendarYear);
+                          }
+                        }}
+                        className="rounded-md p-1 text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 active:scale-[0.98] transition-all duration-150"
+                        disabled={calendarYear === 2029 && calendarMonth === 11}
+                      >
+                        <ChevronRight size={14} />
                       </button>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeTransientMenus();
+                        setIsScheduleCalendarExpanded(true);
+                      }}
+                      className="text-[11px] font-medium text-violet-600 hover:text-violet-700 active:scale-[0.98] transition-all duration-150"
+                    >
+                      Full View
+                    </button>
+                  </div>
 
-                    <div className="mt-3 rounded-2xl border border-[#ede7ff] bg-[#faf7ff] px-3.5 py-3">
-                      <div className="text-[12px] font-medium text-slate-700 mb-2">Quick Add</div>
-                      <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
-                        <div className="relative" ref={quickAddSourceMenuRef}>
-                          <button
-                            type="button"
-                            onClick={() => setIsQuickAddSourceMenuOpen((prev) => !prev)}
-                            className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-white px-2 text-[10px] font-medium text-violet-700 hover:border-violet-300 hover:bg-violet-50"
-                            title="Add context source"
-                          >
-                            <Plus size={11} />
-                            <ChevronDown size={11} />
-                          </button>
-                          {isQuickAddSourceMenuOpen && (
-                            <div className="absolute left-0 top-full z-20 mt-1.5 w-44 rounded-lg border border-[#e5e7f1] bg-white p-1 shadow-[0_12px_28px_-18px_rgba(15,23,42,0.45)]">
-                              {QUICK_ADD_SOURCE_OPTIONS.map((source) => (
-                                <button
-                                  key={source.id}
-                                  type="button"
-                                  onClick={() => handleQuickAddSourceAction(source.id)}
-                                  className="w-full rounded-md px-2.5 py-1.5 text-left text-[11px] text-slate-700 hover:bg-violet-50 inline-flex items-center gap-2"
-                                >
-                                  <span className="text-slate-500">{getQuickAddSourceIcon(source.id)}</span>
-                                  {source.label}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                  {/* Weekday headers with generous spacing */}
+                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-widest py-1.5 border-b border-slate-200/40">
+                    <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                  </div>
 
-                        <input
-                          value={scheduleInput}
-                          onChange={(event) => setScheduleInput(event.target.value)}
-                          onPaste={handleSchedulePaste}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter') {
-                              event.preventDefault();
-                              convertMessyScheduleToPlan();
-                            }
+                  {/* Calendar Grid: enlarged cells, bolder month & selected day, reduced opacity inactive days */}
+                  <div className="grid grid-cols-7 gap-y-1.5 gap-x-1 text-center text-[11px] pt-1">
+                    {generateCalendarDays(calendarMonth, calendarYear).map((dayObj, idx) => {
+                      const isSelected = selectedCalendarDate && selectedCalendarDate.getFullYear() === calendarYear && selectedCalendarDate.getMonth() === calendarMonth && selectedCalendarDate.getDate() === dayObj.day;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            if (!dayObj.isCurrentMonth) return;
+                            setSelectedCalendarDate(new Date(calendarYear, calendarMonth, dayObj.day));
                           }}
-                          placeholder="What do you want to schedule?"
-                          className="h-8 min-w-0 flex-1 rounded-lg border border-slate-200 bg-[#fcfcff] px-2.5 text-[11px] text-slate-700 placeholder:text-[10px] placeholder:text-slate-400 focus:outline-none focus:border-violet-300"
-                        />
+                          className={`h-8 w-full flex items-center justify-center rounded-lg font-medium transition-all duration-150 active:scale-95 ${
+                            !dayObj.isCurrentMonth
+                              ? 'opacity-25 text-slate-400 pointer-events-none'
+                              : isSelected
+                              ? 'bg-violet-600 text-white font-semibold shadow-xs shadow-violet-500/25 border-0'
+                              : dayObj.isToday
+                              ? 'ring-1.5 ring-violet-500/80 text-violet-700 font-semibold bg-violet-50/60'
+                              : 'text-slate-700 hover:bg-violet-50/60 hover:text-violet-900'
+                          }`}
+                          disabled={!dayObj.isCurrentMonth}
+                        >
+                          {dayObj.day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
+                {/* 3. TODAY'S EVENTS (TIME AS ANCHOR, BORDERLESS CARDS) */}
+                <div className="space-y-3 pt-2 border-t border-slate-200/50">
+                  <div className="flex items-baseline justify-between px-0.5">
+                    <span className="text-[12.5px] font-semibold text-slate-800 tracking-tight">Today's Events</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeTransientMenus();
+                        setIsScheduleCalendarExpanded(true);
+                      }}
+                      className="text-[10.5px] font-normal text-slate-400 hover:text-slate-600 active:scale-[0.98] transition-all duration-150"
+                    >
+                      See full calendar
+                    </button>
+                  </div>
+
+                  {/* Redesigned event list: Time acts as left anchor */}
+                  <div className="space-y-1">
+                    {scheduleAgendaItems.slice(0, 2).map((event) => (
+                      <div key={`timeline-${event.id}`} className="group relative p-2.5 rounded-xl hover:bg-slate-100/60 active:scale-[0.99] transition-all duration-150 flex items-start gap-3">
+                        {/* Left Anchor: Time & Dot */}
+                        <div className="flex items-center gap-2 w-[72px] shrink-0 pt-0.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-violet-600 shrink-0 ring-2 ring-violet-100" />
+                          <span className="text-[11.5px] font-semibold text-slate-700 tabular-nums">{event.slot || '10:00 AM'}</span>
+                        </div>
+                        {/* Content: Title & Metadata */}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13.5px] font-semibold text-slate-900 leading-snug truncate">{event.title}</div>
+                          <div className="flex items-center gap-2 text-[11px] font-normal text-slate-400 mt-1">
+                            <span>{Math.max(15, Number(event.durationMinutes || 60))}m</span>
+                            <span className="text-slate-300">•</span>
+                            <span className="inline-flex items-center h-[18px] px-2 rounded-md border border-slate-200/60 bg-slate-100/70 text-[10px] font-medium text-slate-500 leading-none">{event.category || 'General'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. AI SCHEDULE INSIGHT (SUPPORTIVE RECOMMENDATION, SOFTENED BORDER & ICON) */}
+                <div className="rounded-xl border border-slate-200/50 bg-slate-50/40 p-3.5 shadow-2xs transition-all duration-150 hover:bg-slate-50/80">
+                  <div className="text-[11.5px] font-medium text-slate-700 flex items-center gap-1.5">
+                    <Compass size={12} className="text-slate-400 shrink-0" />
+                    <span>AI Schedule Insight</span>
+                  </div>
+                  <p className="mt-1.5 text-[11.5px] font-normal text-slate-500 leading-relaxed">
+                    {scheduleAiInsights[0] || 'Schedule balance looks healthy. Keep one flexible slot open for AI-assisted revisions.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRightSidebarOpen(true);
+                      setActiveRightTab('assistant');
+                      setAssistantQuickPrompt('Optimize my next three schedule blocks for focus and momentum.');
+                    }}
+                    className="mt-2 text-[11px] font-medium text-violet-600 hover:text-violet-700 inline-flex items-center gap-1 group active:scale-[0.98] transition-all duration-150"
+                  >
+                    <span>Optimize Schedule</span>
+                    <ArrowRight size={11} className="text-violet-500 group-hover:translate-x-0.5 transition-transform duration-150" />
+                  </button>
+                </div>
+
+                {/* 5. QUICK ADD */}
+                <div className="space-y-2 pt-1 border-t border-slate-200/40">
+                  <div className="text-[12.5px] font-semibold text-slate-800 tracking-tight px-0.5">Quick Add</div>
+                  <div className="relative flex flex-col rounded-xl border border-slate-200/80 bg-white p-1 focus-within:border-violet-500/50 focus-within:ring-2 focus-within:ring-violet-500/10 transition-all duration-150 shadow-2xs">
+                    <div className="flex items-center">
+                      <div className="relative shrink-0" ref={quickAddSourceMenuRef}>
+                        <button
+                          type="button"
+                          onClick={() => setIsQuickAddSourceMenuOpen((prev) => !prev)}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:scale-[0.98] transition-all duration-150"
+                          title="Add context source"
+                        >
+                          <Plus size={13} />
+                        </button>
+                        {isQuickAddSourceMenuOpen && (
+                          <div className="absolute left-0 top-full z-20 mt-1.5 w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-lg animate-in fade-in-50 duration-150">
+                            {QUICK_ADD_SOURCE_OPTIONS.map((source) => (
+                              <button
+                                key={source.id}
+                                type="button"
+                                onClick={() => handleQuickAddSourceAction(source.id)}
+                                className="w-full rounded-md px-2.5 py-1.5 text-left text-[11.5px] font-normal text-slate-700 hover:bg-slate-100/70 inline-flex items-center gap-2 transition-colors"
+                              >
+                                <span className="text-slate-400">{getQuickAddSourceIcon(source.id)}</span>
+                                {source.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <input
+                        value={scheduleInput}
+                        onChange={(event) => setScheduleInput(event.target.value)}
+                        onPaste={handleSchedulePaste}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            convertMessyScheduleToPlan();
+                          }
+                        }}
+                        placeholder="Add a task..."
+                        className="h-7 min-w-0 flex-1 bg-transparent px-2 text-[11.5px] font-normal text-slate-800 placeholder:text-[11px] placeholder:text-slate-400 focus:outline-none"
+                      />
+
+                      {scheduleInput.trim() && (
                         <button
                           type="button"
                           onClick={convertMessyScheduleToPlan}
-                          className="h-8 shrink-0 rounded-lg bg-violet-600 px-2.5 text-[10px] font-semibold text-white hover:bg-violet-700"
+                          className="inline-flex items-center rounded-md bg-violet-600 hover:bg-violet-700 px-2.5 py-1 text-[10.5px] font-medium text-white active:scale-[0.98] transition-all duration-150 shadow-2xs"
                         >
                           Add
                         </button>
-                      </div>
-                      <input
-                        ref={scheduleFileInputRef}
-                        type="file"
-                        className="hidden"
-                        onChange={async (event) => {
-                          await ingestScheduleAttachments(event.target.files);
-                          event.target.value = '';
-                          showToast('Attachment added to schedule input');
-                        }}
-                      />
+                      )}
                     </div>
 
-                    <div className="mt-3 rounded-2xl border border-[#e9ebf2] bg-[#f8f9fc] px-3.5 py-3">
-                      <div className="text-[12px] font-medium text-slate-700 mb-2 inline-flex items-center gap-1.5"><Link size={11} className="text-slate-500" />Related to this document</div>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-800">
-                            <span className="inline-flex h-4.5 w-4.5 items-center justify-center rounded bg-amber-100 text-amber-600">
-                              <Calendar size={10} />
-                            </span>
-                            <span className="truncate">Product Hunt Launch Plan</span>
-                          </div>
-                          <div className="mt-1 text-[11px] text-slate-500">Milestone - Due {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
-                        </div>
-                        <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">On Track</span>
+                    {/* Progressive Disclosure Context Pills */}
+                    {scheduleInput.trim() && (
+                      <div className="flex items-center gap-1.5 pt-1.5 px-1 border-t border-slate-100 animate-in fade-in-50 duration-150">
+                        <span className="inline-flex items-center gap-1 h-[20px] px-2 rounded-md border border-slate-200/60 bg-slate-100 text-[10.5px] font-medium text-slate-600 leading-none">
+                          <Calendar size={10} className="text-slate-400" /> Today
+                        </span>
+                        <span className="inline-flex items-center gap-1 h-[20px] px-2 rounded-md border border-slate-200/60 bg-slate-100 text-[10.5px] font-medium text-slate-600 leading-none">
+                          General
+                        </span>
+                        <span className="text-[9.5px] text-slate-400 ml-auto">Press Enter to schedule</span>
                       </div>
-                    </div>
+                    )}
                   </div>
+                  <input
+                    ref={scheduleFileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={async (event) => {
+                      await ingestScheduleAttachments(event.target.files);
+                      event.target.value = '';
+                      showToast('Attachment added to schedule input');
+                    }}
+                  />
+                </div>
 
+                {/* 6. RELATED DOCUMENT */}
+                <div className="rounded-xl border border-slate-200/50 bg-white p-3.5 shadow-2xs transition-all duration-150 hover:border-slate-300/80">
+                  <div className="text-[11px] font-medium text-slate-400 mb-1.5 inline-flex items-center gap-1.5">
+                    <FileText size={11} className="text-slate-400" />
+                    Related Document
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-[13.5px] font-semibold text-slate-900 truncate leading-snug">Product Hunt Launch Plan</div>
+                      <div className="text-[11.5px] font-normal text-slate-400 mt-0.5">Due {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
+                    </div>
+                    <span className="inline-flex items-center h-[20px] px-2 rounded-md border border-emerald-200/60 bg-emerald-50 text-[10.5px] font-medium text-emerald-700 leading-none shrink-0">On Track</span>
+                  </div>
+                </div>
+
+                {/* EXPANDED FULL CALENDAR OVERLAY */}
                 {isScheduleCalendarExpanded && (
-                  <div className="absolute inset-0 z-20 bg-[#f4f5fa] p-3" ref={calendarMenuRef}>
-                    <div className="h-full rounded-2xl border border-[#dfe3ef] bg-white p-3 shadow-[0_18px_36px_-24px_rgba(15,23,42,0.35)] overflow-y-auto thin-scrollbar">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-[20px] font-semibold text-slate-900 leading-none">Launch Timeline</div>
-                        <div className="text-[11px] text-slate-500 mt-1">Intelligent schedule optimized around your work</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsScheduleCalendarExpanded(false)}
-                        className="rounded-md p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                        aria-label="Close full calendar"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-
-                    <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50/70 px-2.5 py-2 flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-medium text-violet-700">AI Planning Insight</div>
-                        <div className="text-[10px] text-violet-600 truncate">You have two focus blocks back-to-back today.</div>
-                      </div>
-                      <button className="shrink-0 rounded-md border border-violet-200 bg-white px-2 py-1 text-[10px] font-medium text-violet-700">Optimize Day</button>
-                    </div>
-
-                    <div className="mt-3 rounded-xl border border-[#ececf5] bg-white px-2.5 py-2">
-                      <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (calendarYear === 2026 && calendarMonth === 0) return;
-                            if (calendarMonth === 0) {
-                              setCalendarView(11, calendarYear - 1);
-                            } else {
-                              setCalendarView(calendarMonth - 1, calendarYear);
-                            }
-                          }}
-                          className="rounded p-1 hover:bg-slate-100"
-                          disabled={calendarYear === 2026 && calendarMonth === 0}
-                        >
-                          <ChevronLeft size={13} />
-                        </button>
-                        <span>{monthNames[calendarMonth]} {calendarYear}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (calendarMonth === 11) {
-                              setCalendarView(0, calendarYear + 1);
-                            } else {
-                              setCalendarView(calendarMonth + 1, calendarYear);
-                            }
-                          }}
-                          className="rounded p-1 hover:bg-slate-100"
-                          disabled={calendarYear === 2029 && calendarMonth === 11}
-                        >
-                          <ChevronRight size={13} />
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-slate-400 mb-1">
-                        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-                      </div>
-                      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-slate-700">
-                        {generateCalendarDays(calendarMonth, calendarYear).map((dayObj, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              if (!dayObj.isCurrentMonth) return;
-                              setSelectedCalendarDate(new Date(calendarYear, calendarMonth, dayObj.day));
-                            }}
-                            className={`py-1.5 rounded ${dayObj.isCurrentMonth ? ((selectedCalendarDate && selectedCalendarDate.getFullYear() === calendarYear && selectedCalendarDate.getMonth() === calendarMonth && selectedCalendarDate.getDate() === dayObj.day) ? 'bg-violet-600 text-white' : dayObj.isToday ? 'bg-violet-100 text-violet-700' : 'hover:bg-slate-100') : 'text-slate-300'}`}
-                            disabled={!dayObj.isCurrentMonth}
-                          >
-                            {dayObj.day}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[11px] font-medium text-slate-700">{selectedCalendarDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+                  <div className="absolute inset-0 z-20 bg-slate-50/95 backdrop-blur-sm p-3 animate-in fade-in-50 duration-200" ref={calendarMenuRef}>
+                    <div className="h-full rounded-xl border border-slate-200/90 bg-white p-4 shadow-xl overflow-y-auto thin-scrollbar space-y-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-[16px] font-bold text-slate-900 leading-none tracking-tight">Launch Timeline</div>
+                          <div className="text-[11.5px] font-normal text-slate-400 mt-1">Intelligent schedule optimized around your work</div>
+                        </div>
                         <button
                           type="button"
                           onClick={() => setIsScheduleCalendarExpanded(false)}
-                          className="rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-medium text-violet-700 hover:bg-violet-100"
+                          className="rounded-lg p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:scale-[0.98] transition-all duration-150"
+                          aria-label="Close full calendar"
                         >
-                          View Day
+                          <X size={15} />
                         </button>
                       </div>
+
+                      {/* Calendar in overlay */}
+                      <div className="rounded-xl border border-slate-200/70 bg-white p-3.5 shadow-2xs">
+                        <div className="flex items-center justify-between text-[13.5px] font-bold text-slate-900 mb-2">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (calendarYear === 2026 && calendarMonth === 0) return;
+                                if (calendarMonth === 0) {
+                                  setCalendarView(11, calendarYear - 1);
+                                } else {
+                                  setCalendarView(calendarMonth - 1, calendarYear);
+                                }
+                              }}
+                              className="rounded p-1 hover:bg-slate-100 active:scale-[0.98] transition-all duration-150 text-slate-500"
+                              disabled={calendarYear === 2026 && calendarMonth === 0}
+                            >
+                              <ChevronLeft size={14} />
+                            </button>
+                            <span>{monthNames[calendarMonth]} {calendarYear}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (calendarMonth === 11) {
+                                  setCalendarView(0, calendarYear + 1);
+                                } else {
+                                  setCalendarView(calendarMonth + 1, calendarYear);
+                                }
+                              }}
+                              className="rounded p-1 hover:bg-slate-100 active:scale-[0.98] transition-all duration-150 text-slate-500"
+                              disabled={calendarYear === 2029 && calendarMonth === 11}
+                            >
+                              <ChevronRight size={14} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-widest py-1 border-b border-slate-100 mb-1">
+                          <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                        </div>
+                        <div className="grid grid-cols-7 gap-y-1.5 gap-x-1 text-center text-[11px] pt-1">
+                          {generateCalendarDays(calendarMonth, calendarYear).map((dayObj, idx) => {
+                            const isSelected = selectedCalendarDate && selectedCalendarDate.getFullYear() === calendarYear && selectedCalendarDate.getMonth() === calendarMonth && selectedCalendarDate.getDate() === dayObj.day;
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => {
+                                  if (!dayObj.isCurrentMonth) return;
+                                  setSelectedCalendarDate(new Date(calendarYear, calendarMonth, dayObj.day));
+                                }}
+                                className={`h-8 w-full flex items-center justify-center rounded-lg font-medium transition-all duration-150 active:scale-95 ${
+                                  !dayObj.isCurrentMonth
+                                    ? 'opacity-25 text-slate-400 pointer-events-none'
+                                    : isSelected
+                                    ? 'bg-violet-600 text-white font-semibold shadow-xs shadow-violet-500/25'
+                                    : dayObj.isToday
+                                    ? 'ring-1.5 ring-violet-500/80 text-violet-700 font-semibold bg-violet-50/60'
+                                    : 'text-slate-700 hover:bg-violet-50/60 hover:text-violet-900'
+                                }`}
+                                disabled={!dayObj.isCurrentMonth}
+                              >
+                                {dayObj.day}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Events in overlay */}
                       <div className="space-y-2">
-                        {scheduleAgendaItems.slice(0, 2).map((event) => (
-                          <div key={`expanded-${event.id}`} className="rounded-xl border border-[#ececf5] bg-[#fbfbff] px-2.5 py-2">
-                            <div className="grid grid-cols-[56px_1fr] gap-2">
-                              <div>
-                                <div className="text-[10px] font-medium text-slate-700">{event.slot || '10:00 AM'}</div>
-                                <div className="text-[10px] text-slate-400">{Math.max(15, Number(event.durationMinutes || 60))}m</div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[13px] font-semibold text-slate-800">{selectedCalendarDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+                          <button
+                            type="button"
+                            onClick={() => setIsScheduleCalendarExpanded(false)}
+                            className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 active:scale-[0.98] transition-all duration-150"
+                          >
+                            View Day
+                          </button>
+                        </div>
+                        <div className="space-y-1.5">
+                          {scheduleAgendaItems.slice(0, 2).map((event) => (
+                            <div key={`expanded-${event.id}`} className="group p-2.5 rounded-xl hover:bg-slate-50 transition-all duration-150 flex items-start gap-3 border border-slate-100">
+                              <div className="flex items-center gap-2 w-[72px] shrink-0 pt-0.5">
+                                <span className="h-1.5 w-1.5 rounded-full bg-violet-600 shrink-0 ring-2 ring-violet-100" />
+                                <span className="text-[11.5px] font-semibold text-slate-700 tabular-nums">{event.slot || '10:00 AM'}</span>
                               </div>
-                              <div>
-                                <div className="text-[11.5px] font-medium text-slate-800 leading-snug">{event.title}</div>
-                                <span className="mt-1 inline-flex rounded-full border border-violet-100 bg-violet-50 px-1.5 py-[1px] text-[9px] text-violet-500">{event.category || 'General'}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[13.5px] font-semibold text-slate-900 leading-snug truncate">{event.title}</div>
+                                <div className="flex items-center gap-2 text-[11px] font-normal text-slate-400 mt-0.5">
+                                  <span>{Math.max(15, Number(event.durationMinutes || 60))}m</span>
+                                  <span className="text-slate-300">•</span>
+                                  <span className="inline-flex items-center h-[18px] px-2 rounded-md border border-slate-200/60 bg-slate-100/70 text-[10px] font-medium text-slate-500 leading-none">{event.category || 'General'}</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
+
+                      {/* AI Insight in overlay (Subdued) */}
+                      <div className="rounded-xl border border-slate-200/50 bg-slate-50/40 p-3 shadow-2xs flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-[11.5px] font-medium text-slate-700 flex items-center gap-1.5">
+                            <Compass size={12} className="text-slate-400 shrink-0" />
+                            <span>AI Planning Insight</span>
+                          </div>
+                          <div className="text-[11px] font-normal text-slate-500 truncate mt-0.5">You have two focus blocks back-to-back today.</div>
+                        </div>
+                        <button className="shrink-0 rounded-lg border border-slate-200/80 bg-white hover:bg-slate-100/70 px-2.5 py-1 text-[11px] font-medium text-violet-600 active:scale-[0.98] transition-all duration-150 shadow-2xs">
+                          Optimize Day
+                        </button>
+                      </div>
+
                     </div>
                   </div>
                 )}
-
-                </div>
               </div>
             </div>
           )}
@@ -29741,7 +29853,6 @@ const renderRoomTopHeader = () => (
                        <p className="text-xs text-slate-500 mb-3">{notif.date} at {notif.time}</p>
                        <div className="flex gap-2">
                          <button 
-                         <button 
                            onClick={async () => {
                              try {
                                const token = localStorage.getItem('rc.token');
@@ -30781,8 +30892,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         {sheetsTitle || 'Saved Drafts'}
                       </button>
                     )}
-                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 ml-2 hidden sm:flex">
-                      <Cloud size={14} /> {savedStatusLabel}
+                    <div className="flex items-center gap-1.5 text-[11px] font-normal text-slate-400/50 ml-2 hidden sm:flex">
+                      <Cloud size={13} className="text-slate-400/50" /> {savedStatusLabel}
                     </div>
                   </div>
                 </>
