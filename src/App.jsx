@@ -24,7 +24,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -7119,11 +7119,104 @@ export default function App() {
   ]);
   const [mediaError, setMediaError] = useState(false);
   const [platformContacts, setPlatformContacts] = useState([
-    { id: 1, name: 'Sarah Lang', title: 'Product Lead', status: 'active', lastSeen: 'In call now' },
-    { id: 2, name: 'Mike Cohen', title: 'Growth Lead', status: 'active', lastSeen: 'Online' },
-    { id: 3, name: 'Maya Patel', title: 'Design Director', status: 'active', lastSeen: 'Online' },
-    { id: 4, name: 'Jordan Kim', title: 'Operations', status: 'away', lastSeen: '5m ago' },
+    {
+      id: 'ai-1',
+      name: 'Antigravity AI',
+      title: 'Lead Architect',
+      department: 'ai',
+      status: 'ai',
+      presence: 'Synthesizing system architecture',
+      isAi: true,
+      isFavorite: true,
+      roleBadge: 'System AI',
+    },
+    {
+      id: 'ai-2',
+      name: 'Writer AI',
+      title: 'Copy & Tone Specialist',
+      department: 'ai',
+      status: 'ai',
+      presence: 'Drafting executive briefing',
+      isAi: true,
+      roleBadge: 'Assistant',
+    },
+    {
+      id: 'ai-3',
+      name: 'Research AI',
+      title: 'Data & Web Analyst',
+      department: 'ai',
+      status: 'ai',
+      presence: 'Analyzing market benchmarks',
+      isAi: true,
+      roleBadge: 'Search Agent',
+    },
+    {
+      id: 'ai-4',
+      name: 'Meeting AI',
+      title: 'Notes & Transcripts',
+      department: 'ai',
+      status: 'ai',
+      presence: 'Listening in Team Sync',
+      isAi: true,
+      roleBadge: 'Scribe',
+    },
   ]);
+  const [collaboratorSearchQuery, setCollaboratorSearchQuery] = useState('');
+  const [collaboratorFilter, setCollaboratorFilter] = useState('all');
+  const [activeCollaboratorMenuId, setActiveCollaboratorMenuId] = useState(null);
+  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+  const [newMemberForm, setNewMemberForm] = useState({
+    name: '',
+    title: '',
+    department: 'Engineering',
+    isFavorite: false,
+    avatar: '',
+  });
+
+  const toggleFavoriteContact = (contactId) => {
+    setPlatformContacts((prev) =>
+      prev.map((c) => {
+        if (c.id === contactId) {
+          const updatedFav = !c.isFavorite;
+          showToast(
+            updatedFav
+              ? `Marked ${c.name} as Favorite ⭐`
+              : `Removed ${c.name} from Favorites`
+          );
+          return { ...c, isFavorite: updatedFav };
+        }
+        return c;
+      })
+    );
+  };
+
+  const handleAddTeamMember = (e) => {
+    if (e) e.preventDefault();
+    if (!newMemberForm.name.trim()) return;
+
+    const createdMember = {
+      id: `member-${Date.now()}`,
+      name: newMemberForm.name.trim(),
+      title: newMemberForm.title.trim() || 'Team Member',
+      department: newMemberForm.department || 'Engineering',
+      status: 'active',
+      presence: 'Active in workspace',
+      isFavorite: Boolean(newMemberForm.isFavorite),
+      isAi: false,
+      avatar: newMemberForm.avatar.trim() || null,
+    };
+
+    setPlatformContacts((prev) => [createdMember, ...prev]);
+    setIsAddMemberModalOpen(false);
+    setNewMemberForm({
+      name: '',
+      title: '',
+      department: 'Engineering',
+      isFavorite: false,
+      avatar: '',
+    });
+    showToast(`Added ${createdMember.name} to team members!`);
+  };
   const [speechSupported, setSpeechSupported] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastCallback, setToastCallback] = useState(null);
@@ -23086,12 +23179,16 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
 
   const addTaskFromInput = (overrideText) => {
-    // Always prefer the ref (live DOM-mirrored value) over the closure-captured state,
-    // which can be stale at the moment a form submit fires.
-    const textToUse = typeof overrideText === 'string' && overrideText.length > 0
-      ? overrideText
-      : newTaskInputRef.current;
-    const trimmed = (textToUse || '').trim();
+    let rawText = '';
+    if (typeof overrideText === 'string' && overrideText.trim().length > 0) {
+      rawText = overrideText;
+    } else if (typeof newTaskInputRef.current === 'string' && newTaskInputRef.current.trim().length > 0) {
+      rawText = newTaskInputRef.current;
+    } else if (typeof newTaskInput === 'string' && newTaskInput.trim().length > 0) {
+      rawText = newTaskInput;
+    }
+
+    const trimmed = rawText.trim();
     if (!trimmed) {
       return;
     }
@@ -25630,7 +25727,7 @@ Respond with a JSON array of slide objects matching the schema.`;
 
   const sharedRightPanels = (
     <React.Fragment>
-      {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && activeRightTab === 'calendar' && (
+      {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (activeRightTab === 'calendar' || activeRightTab === 'people' || activeRightTab === 'room') && (
         <div
           className="fixed inset-0 z-[305] bg-black/5 dark:bg-black/20 backdrop-blur-[1px] transition-opacity duration-200 animate-in fade-in cursor-default"
           onPointerDown={(e) => {
@@ -25638,7 +25735,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             e.stopPropagation();
             setRightSidebarOpen(false);
           }}
-          aria-label="Dismiss Schedule panel"
+          aria-label="Dismiss side panel"
         />
       )}
 
@@ -26845,16 +26942,13 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </button>
                 </div>
 
-                {/* Refined 42px Input Surface with Leading '+' Icon & Dynamic Save Button */}
+                {/* Refined 42px Input Surface with Leading '+' Icon & Always-Visible Active Save Button */}
                 <form
                   className="flex items-center gap-2 no-fullscreen-toggle"
                   onSubmit={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    const val = newTaskInputRef.current || newTaskInput;
-                    if (val.trim()) {
-                      addTaskFromInput(val);
-                    }
+                    addTaskFromInput(newTaskInput);
                   }}
                   onDoubleClick={(e) => e.stopPropagation()}
                 >
@@ -26872,24 +26966,37 @@ Respond with a JSON array of slide objects matching the schema.`;
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           e.stopPropagation();
-                          const val = newTaskInputRef.current || newTaskInput;
-                          if (val.trim()) {
-                            addTaskFromInput(val);
-                          }
+                          addTaskFromInput(newTaskInput);
                         }
                       }}
                       placeholder="Add a new task..."
                       className="w-full bg-slate-50/60 dark:bg-zinc-800/30 border border-slate-200/60 dark:border-zinc-700/60 rounded-lg pl-8 pr-3 h-[42px] text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-violet-500/80 focus:bg-white dark:focus:bg-zinc-900 transition-all shadow-2xs"
                     />
                   </div>
-                  {newTaskInput.trim().length > 0 && (
-                    <button
-                      type="submit"
-                      className="h-[42px] px-3.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white shadow-xs transition-all shrink-0 cursor-pointer animate-in fade-in zoom-in-95 duration-150 no-fullscreen-toggle"
-                    >
-                      Save
-                    </button>
-                  )}
+                  <button
+                    type="submit"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (newTaskInput.trim()) {
+                        addTaskFromInput(newTaskInput);
+                      }
+                    }}
+                    onPointerDown={(e) => {
+                      if (newTaskInput.trim()) {
+                        e.preventDefault();
+                        addTaskFromInput(newTaskInput);
+                      }
+                    }}
+                    disabled={!newTaskInput.trim()}
+                    className={`h-[42px] px-4 rounded-lg text-xs font-semibold shadow-xs transition-all shrink-0 no-fullscreen-toggle ${
+                      newTaskInput.trim()
+                        ? 'bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white cursor-pointer opacity-100'
+                        : 'bg-violet-600/40 text-white/70 cursor-not-allowed opacity-60'
+                    }`}
+                  >
+                    Save
+                  </button>
                 </form>
               </div>
 
@@ -28636,52 +28743,463 @@ Respond with a JSON array of slide objects matching the schema.`;
           )}
 
           {activeRightTab === 'people' && (
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-white animate-fade-in">
-              <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50 to-white p-4">
-                <h3 className="text-sm font-bold text-gray-900">Platform Contacts</h3>
-                <p className="text-xs text-gray-500 mt-1">Everyone currently available to collaborate in Regaarder Compose.</p>
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-5 pb-6 space-y-5 bg-white dark:bg-zinc-950 animate-fade-in thin-scrollbar select-none">
+              
+              {/* 1. HEADER — title dominant, icon-only CTA, no subtitle */}
+              <div className="flex items-center justify-between">
+                <h3 className="text-[15px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Collaborators</h3>
+                <button
+                  type="button"
+                  onClick={() => setIsAddMemberModalOpen(true)}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  title="Add a new team member"
+                >
+                  <UserPlus size={14} strokeWidth={1.75} />
+                </button>
               </div>
 
-              <div className="space-y-3">
-                {platformContacts.map((person) => (
-                  <div key={person.id} className="rounded-xl border border-gray-100 bg-white p-3 flex items-center justify-between gap-3 hover:border-violet-200 hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)] transition-all">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-[48px] rounded-[999px] bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center shrink-0">
-                        {person.name.split(' ').map((token) => token[0]).join('').slice(0, 2)}
+              {/* 2. SEARCH — full-width, slightly taller for presence */}
+              <div className="relative flex items-center">
+                <Search size={13} className="absolute left-3 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+                <input
+                  type="text"
+                  value={collaboratorSearchQuery}
+                  onChange={(e) => setCollaboratorSearchQuery(e.target.value)}
+                  placeholder="Search by name, role, or skill..."
+                  className="w-full h-8 rounded-lg bg-slate-100/60 dark:bg-zinc-900 border border-slate-200/50 dark:border-zinc-800 pl-9 pr-7 text-[11px] font-normal text-slate-800 dark:text-zinc-200 placeholder:text-[11px] placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-700 transition-all"
+                />
+                {collaboratorSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setCollaboratorSearchQuery('')}
+                    className="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                  >
+                    <X size={11} />
+                  </button>
+                )}
+              </div>
+
+              {/* 3. FILTER CHIPS — ghosted inactive, filled active, counts very faint */}
+              <div className="flex items-center gap-0.5 overflow-x-auto thin-scrollbar">
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'online', label: 'Online' },
+                  { id: 'favorites', label: '⭐ Fav' },
+                  { id: 'ai', label: 'AI' },
+                  { id: 'design', label: 'Design' },
+                  { id: 'engineering', label: 'Engineering' },
+                  { id: 'marketing', label: 'Marketing' },
+                ].map((chip) => {
+                  const count = platformContacts.filter((c) => {
+                    if (chip.id === 'all') return true;
+                    if (chip.id === 'online') return c.status === 'active';
+                    if (chip.id === 'favorites') return c.isFavorite;
+                    if (chip.id === 'ai') return c.isAi;
+                    return c.department?.toLowerCase() === chip.id;
+                  }).length;
+                  const isActive = collaboratorFilter === chip.id;
+
+                  return (
+                    <button
+                      key={chip.id}
+                      type="button"
+                      onClick={() => setCollaboratorFilter(chip.id)}
+                      className={`px-2.5 py-1 rounded-md text-[10.5px] shrink-0 transition-all duration-150 cursor-pointer ${
+                        isActive
+                          ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold'
+                          : 'text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50'
+                      }`}
+                    >
+                      {chip.label}
+                      <span className="ml-0.5 text-[9px] opacity-50"> {count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 3. GROUPED COLLABORATORS SECTIONS */}
+              {(() => {
+                const filtered = platformContacts.filter((person) => {
+                  const matchesQuery =
+                    !collaboratorSearchQuery.trim() ||
+                    person.name.toLowerCase().includes(collaboratorSearchQuery.toLowerCase()) ||
+                    person.title.toLowerCase().includes(collaboratorSearchQuery.toLowerCase()) ||
+                    person.presence.toLowerCase().includes(collaboratorSearchQuery.toLowerCase());
+
+                  if (!matchesQuery) return false;
+
+                  if (collaboratorFilter === 'online') return person.status === 'active';
+                  if (collaboratorFilter === 'favorites') return person.isFavorite;
+                  if (collaboratorFilter === 'ai') return person.isAi;
+                  if (collaboratorFilter === 'design') return person.department?.toLowerCase() === 'design';
+                  if (collaboratorFilter === 'engineering') return person.department?.toLowerCase() === 'engineering';
+                  if (collaboratorFilter === 'marketing') return person.department?.toLowerCase() === 'marketing';
+
+                  return true;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-8 px-4 text-center rounded-xl border border-dashed border-slate-200/80 dark:border-zinc-800 bg-slate-50/40 dark:bg-zinc-900/40">
+                      <Users size={18} className="text-slate-400 mb-1.5" />
+                      <div className="text-[12px] font-semibold text-slate-700 dark:text-zinc-200">No Collaborators Found</div>
+                      <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 mt-0.5 max-w-[200px]">
+                        Try adjusting your search query or filter selection.
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-gray-800 truncate">{person.name}</div>
-                        <div className="text-xs text-gray-500 truncate">{person.title}</div>
-                        <div className={`inline-flex items-center gap-1 mt-1 text-[10px] font-semibold rounded-full px-2 py-0.5 ${person.status === 'active' ? 'text-emerald-700 bg-emerald-50 border border-emerald-200' : 'text-amber-700 bg-amber-50 border border-amber-200'}`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${person.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
-                          {person.status === 'active' ? 'Active' : 'Away'}
+                    </div>
+                  );
+                }
+
+                const aiGroup = filtered.filter((c) => c.isAi);
+                const favoritesGroup = filtered.filter((c) => !c.isAi && c.isFavorite);
+                const membersGroup = filtered.filter((c) => !c.isAi && !c.isFavorite);
+
+                const renderCollaboratorCard = (person) => {
+                  const isMenuOpen = activeCollaboratorMenuId === person.id;
+
+                  return (
+                    <div
+                      key={person.id}
+                      className="relative rounded-xl p-2.5 flex items-center justify-between gap-2.5 transition-all duration-150 group border border-slate-100/90 dark:border-zinc-800/60 bg-white dark:bg-zinc-900/80 hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 hover:border-slate-200/70 dark:hover:border-zinc-700/60 hover:shadow-2xs"
+                    >
+                      {/* Left: Avatar + Primary Content (Avatar -> Name -> Title -> Activity) */}
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        {/* Avatar container with quiet status dot */}
+                        <div className="relative shrink-0">
+                          {person.isAi ? (
+                            <div className="w-[26px] h-[26px] rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 flex items-center justify-center border border-slate-200/60 dark:border-zinc-700/60">
+                              {person.id === 'ai-1' && <Sparkles size={13} className="text-slate-700 dark:text-zinc-200" />}
+                              {person.id === 'ai-2' && <FileText size={13} className="text-slate-700 dark:text-zinc-200" />}
+                              {person.id === 'ai-3' && <Cpu size={13} className="text-slate-700 dark:text-zinc-200" />}
+                              {person.id === 'ai-4' && <Mic size={13} className="text-slate-700 dark:text-zinc-200" />}
+                              {!['ai-1', 'ai-2', 'ai-3', 'ai-4'].includes(person.id) && <Bot size={13} className="text-slate-700 dark:text-zinc-200" />}
+                            </div>
+                          ) : person.avatar ? (
+                            <div className="relative w-[26px] h-[26px]">
+                              <img
+                                src={person.avatar}
+                                alt={person.name}
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.nextElementSibling) {
+                                    e.currentTarget.nextElementSibling.style.display = 'flex';
+                                  }
+                                }}
+                                className="w-[26px] h-[26px] rounded-md object-cover ring-1 ring-slate-200/50 dark:ring-zinc-800"
+                              />
+                              <div
+                                style={{ display: 'none' }}
+                                className="w-[26px] h-[26px] rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 text-[10px] font-bold items-center justify-center"
+                              >
+                                {person.name.split(' ').map((t) => t[0]).join('').slice(0, 2).toUpperCase()}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-[26px] h-[26px] rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 text-[10px] font-bold flex items-center justify-center border border-slate-200/60 dark:border-zinc-700/60">
+                              {person.name.split(' ').map((t) => t[0]).join('').slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+
+                          {/* Quiet Apple Status Indicator Dot */}
+                          <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-white dark:bg-zinc-900 ring-2 ring-white dark:ring-zinc-900">
+                            {person.status === 'active' && (
+                              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                            )}
+                            {person.status === 'away' && (
+                              <span className="h-2 w-2 rounded-full bg-amber-500" />
+                            )}
+                            {person.status === 'ai' && (
+                              <span className="h-2 w-2 rounded-full bg-slate-700 dark:bg-zinc-300" />
+                            )}
+                            {person.status === 'offline' && (
+                              <span className="h-2 w-2 rounded-full bg-slate-300 dark:bg-zinc-600" />
+                            )}
+                          </span>
+                        </div>
+
+                        {/* Name & Title & Soft Activity line */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-100 truncate">
+                              {person.name}
+                            </span>
+                            {/* Role label: visible but never dominant */}
+                            {person.isLead && (
+                              <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 shrink-0">
+                                · Lead
+                              </span>
+                            )}
+                            {person.roleBadge && (
+                              <span className="text-[10px] font-normal text-slate-500 dark:text-zinc-400 shrink-0">
+                                · {person.roleBadge}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="text-[11px] font-normal text-slate-500 dark:text-zinc-400 truncate leading-tight">
+                            {person.title}
+                          </div>
+
+                          {/* Activity subtext: muted gray, tiny icon for context only */}
+                          <div className="text-[10px] font-normal text-slate-400/70 dark:text-zinc-500/70 truncate leading-tight mt-0.5 flex items-center gap-0.5">
+                            <span className="shrink-0 text-slate-400/50 dark:text-zinc-600">
+                              {person.status === 'active' ? '●' : person.status === 'away' ? '◐' : '○'}
+                            </span>
+                            <span className="truncate">{person.presence}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Progressive Disclosure Action Controls */}
+                      <div className="flex items-center gap-1 shrink-0 relative">
+                        {/* Primary Action Button (Low-contrast Chat / Call) */}
+                        {person.isAi ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveRightTab('assistant');
+                              setRightSidebarOpen(true);
+                              setAssistantQuickPrompt(`Help me collaborate with ${person.name} on workspace tasks.`);
+                            }}
+                            className="px-2.5 py-1 rounded-lg text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 text-[11px] font-medium transition-colors cursor-pointer"
+                          >
+                            Chat
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRoomMode('calls');
+                              openMeetingSetup(`call-${person.name.toLowerCase().replace(/\s+/g, '-')}`);
+                              setActiveRightTab('room');
+                            }}
+                            className="px-2.5 py-1 rounded-lg text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 text-[11px] font-medium transition-colors cursor-pointer"
+                          >
+                            Call
+                          </button>
+                        )}
+
+                        {/* Secondary Actions: Reveal on hover/focus or when menu open */}
+                        <div className={`flex items-center gap-0.5 transition-opacity duration-150 ${isMenuOpen || person.isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'}`}>
+                          {/* Interactive Favorite Star Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFavoriteContact(person.id);
+                            }}
+                            className="inline-flex h-6.5 w-6.5 items-center justify-center rounded-lg text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                            title={person.isFavorite ? "Remove from Favorites" : "Mark as Favorite"}
+                          >
+                            <Star
+                              size={12.5}
+                              className={person.isFavorite ? "text-amber-500 fill-amber-500" : "text-slate-300 dark:text-zinc-600"}
+                            />
+                          </button>
+
+                          {/* Three-Dot Overflow Menu Button */}
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                setActiveCollaboratorMenuId((prev) => (prev === person.id ? null : person.id));
+                              }}
+                              className="inline-flex h-6.5 w-6.5 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                              title="More options"
+                            >
+                              <MoreVertical size={12.5} />
+                            </button>
+
+                            {/* Touch-Safe Floating Menu */}
+                            {isMenuOpen && (
+                              <div className="absolute right-0 top-full z-30 mt-1 w-44 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1 shadow-lg animate-in fade-in-50 duration-150">
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    setActiveCollaboratorMenuId(null);
+                                    toggleFavoriteContact(person.id);
+                                  }}
+                                  className="w-full rounded-lg px-2.5 py-1.5 text-left text-[11.5px] font-normal text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800 inline-flex items-center gap-2 transition-colors cursor-pointer"
+                                >
+                                  <Star size={12} className={person.isFavorite ? "text-amber-500 fill-amber-500" : "text-slate-500"} />
+                                  <span>{person.isFavorite ? 'Unmark Favorite' : 'Mark as Favorite'}</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    setActiveCollaboratorMenuId(null);
+                                    setProductMode('dm');
+                                    showToast(`Opened direct message thread with ${person.name}`);
+                                  }}
+                                  className="w-full rounded-lg px-2.5 py-1.5 text-left text-[11.5px] font-normal text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800 inline-flex items-center gap-2 transition-colors cursor-pointer"
+                                >
+                                  <MessageSquare size={12} className="text-slate-500" />
+                                  <span>Send Message</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    setActiveCollaboratorMenuId(null);
+                                    setRoomMode('meetings');
+                                    setActiveRightTab('room');
+                                    showToast(`Invited ${person.name} to Meeting Room`);
+                                  }}
+                                  className="w-full rounded-lg px-2.5 py-1.5 text-left text-[11.5px] font-normal text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800 inline-flex items-center gap-2 transition-colors cursor-pointer"
+                                >
+                                  <UserPlus size={12} className="text-slate-500" />
+                                  <span>Invite to Room</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    setActiveCollaboratorMenuId(null);
+                                    setActiveRightTab('tasks');
+                                    showToast(`Assigned task to ${person.name}`);
+                                  }}
+                                  className="w-full rounded-lg px-2.5 py-1.5 text-left text-[11.5px] font-normal text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800 inline-flex items-center gap-2 transition-colors cursor-pointer"
+                                >
+                                  <CheckSquare size={12} className="text-slate-500" />
+                                  <span>Assign Task</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    setActiveCollaboratorMenuId(null);
+                                    setShareModalOpen(true);
+                                  }}
+                                  className="w-full rounded-lg px-2.5 py-1.5 text-left text-[11.5px] font-normal text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800 inline-flex items-center gap-2 transition-colors cursor-pointer"
+                                >
+                                  <FileText size={12} className="text-slate-500" />
+                                  <span>Share Document</span>
+                                </button>
+
+                                <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
+
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    setActiveCollaboratorMenuId(null);
+                                    showToast(`Member profile: ${person.name} (${person.title})`);
+                                  }}
+                                  className="w-full rounded-lg px-2.5 py-1.5 text-left text-[11.5px] font-normal text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800 inline-flex items-center gap-2 transition-colors cursor-pointer"
+                                >
+                                  <ExternalLink size={12} className="text-slate-400" />
+                                  <span>View Profile</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => {
-                          setRoomMode('calls');
-                          openMeetingSetup(`call-${person.name.toLowerCase().replace(/\s+/g, '-')}`);
-                          setActiveRightTab('room');
-                        }}
-                        className="px-2.5 py-1.5 rounded-lg bg-violet-600 text-white text-[11px] font-semibold hover:bg-violet-700 transition-colors"
-                      >
-                        Call
-                      </button>
-                      <button
-                        onClick={() => {
-                          setRoomMode('meetings');
-                          setActiveRightTab('room');
-                        }}
-                        className="px-2.5 py-1.5 rounded-lg border border-gray-200 text-[11px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        Invite
-                      </button>
-                    </div>
+                  );
+                };
+
+                return (
+                  <div className="space-y-3.5 pt-0.5">
+                    {/* SECTION 1: AI COLLABORATORS */}
+                    {aiGroup.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between px-0.5">
+                          <div className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <Bot size={11} className="text-slate-400" />
+                            <span>AI Collaborators</span>
+                          </div>
+                          <span className="text-[10px] font-normal text-slate-400 dark:text-zinc-500">
+                            {aiGroup.length} Agents
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {aiGroup.map((person) => renderCollaboratorCard(person))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION 2: FAVORITES */}
+                    {favoritesGroup.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between px-0.5">
+                          <div className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <Star size={11} className="text-amber-500 fill-amber-500" />
+                            <span>Favorites</span>
+                          </div>
+                          <span className="text-[10px] font-normal text-slate-400 dark:text-zinc-500">
+                            {favoritesGroup.length} Members
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {favoritesGroup.map((person) => renderCollaboratorCard(person))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION 3: TEAM MEMBERS */}
+                    {membersGroup.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between px-0.5">
+                          <div className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <Users size={11} className="text-slate-400" />
+                            <span>Team Members</span>
+                          </div>
+                          <span className="text-[10px] font-normal text-slate-400 dark:text-zinc-500">
+                            {membersGroup.length} Members
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {membersGroup.map((person) => renderCollaboratorCard(person))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION 4: EMPTY STATE — polished with CTA */}
+                    {(collaboratorFilter === 'all' || collaboratorFilter === 'online') && favoritesGroup.length === 0 && membersGroup.length === 0 && (
+                      <div className="space-y-1.5 pt-0.5">
+                        <div className="flex items-center justify-between px-0.5">
+                          <div className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <Users size={11} className="text-slate-400" />
+                            <span>Team Members & Favorites</span>
+                          </div>
+                          <span className="text-[10px] font-normal text-slate-400 dark:text-zinc-500">
+                            Not Connected
+                          </span>
+                        </div>
+
+                        <div className="py-7 px-5 flex flex-col items-center text-center rounded-xl border border-slate-200/50 dark:border-zinc-800/70 bg-slate-50/50 dark:bg-zinc-900/30">
+                          {/* Simple workspace illustration */}
+                          <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center mb-3">
+                            <Users size={18} className="text-slate-400 dark:text-zinc-500 stroke-[1.5]" />
+                          </div>
+                          <div className="text-[12px] font-semibold text-slate-700 dark:text-zinc-200 leading-snug">
+                            Bring your team together
+                          </div>
+                          <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 mt-1.5 max-w-[190px] mx-auto leading-relaxed">
+                            Invite teammates to collaborate on documents, tasks, and meetings.
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setIsAddMemberModalOpen(true)}
+                            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-zinc-100 hover:bg-slate-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-[11px] font-semibold transition-colors cursor-pointer shadow-sm active:scale-[0.98]"
+                          >
+                            <UserPlus size={12} strokeWidth={2} />
+                            <span>Invite Members</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </div>
           )}
 
@@ -37904,6 +38422,128 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <Sparkles size={16} /> Generate Math
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {isAddMemberModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setIsAddMemberModalOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 flex items-center justify-center border border-slate-200/80 dark:border-zinc-700">
+                  <UserPlus size={18} strokeWidth={2} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+                    Add Team Member
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    Invite a collaborator to your workspace
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsAddMemberModalOpen(false)}
+                className="h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleAddTeamMember} className="space-y-4">
+              {/* Name Field */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                  Full Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newMemberForm.name}
+                  onChange={(e) => setNewMemberForm({ ...newMemberForm, name: e.target.value })}
+                  placeholder="e.g. Sarah Lang"
+                  className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700 text-xs font-normal text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/20 focus:border-slate-400 transition-all"
+                />
+              </div>
+
+              {/* Role / Title Field */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                  Role & Title
+                </label>
+                <input
+                  type="text"
+                  value={newMemberForm.title}
+                  onChange={(e) => setNewMemberForm({ ...newMemberForm, title: e.target.value })}
+                  placeholder="e.g. Senior Frontend Engineer"
+                  className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700 text-xs font-normal text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/20 focus:border-slate-400 transition-all"
+                />
+              </div>
+
+              {/* Department Field */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                  Department
+                </label>
+                <select
+                  value={newMemberForm.department}
+                  onChange={(e) => setNewMemberForm({ ...newMemberForm, department: e.target.value })}
+                  className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700 text-xs font-normal text-slate-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-slate-400/20 focus:border-slate-400 transition-all cursor-pointer"
+                >
+                  <option value="Engineering">Engineering</option>
+                  <option value="Design">Design</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Operations">Operations</option>
+                  <option value="Product">Product</option>
+                </select>
+              </div>
+
+              {/* Favorite Contact Checkbox */}
+              <div className="pt-1">
+                <label className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200/70 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-800/40 cursor-pointer hover:bg-slate-100/70 dark:hover:bg-zinc-800/70 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={newMemberForm.isFavorite}
+                    onChange={(e) => setNewMemberForm({ ...newMemberForm, isFavorite: e.target.checked })}
+                    className="h-4 w-4 rounded border-slate-300 dark:border-zinc-700 text-slate-900 focus:ring-slate-400/20 cursor-pointer"
+                  />
+                  <div className="flex items-center gap-1.5">
+                    <Star size={14} className={newMemberForm.isFavorite ? "text-amber-500 fill-amber-500" : "text-slate-400"} />
+                    <span className="text-xs font-medium text-slate-700 dark:text-zinc-200">
+                      Mark as Favorite Contact
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setIsAddMemberModalOpen(false)}
+                  className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 text-xs font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98] cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <UserPlus size={13} />
+                  <span>Add Member</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
