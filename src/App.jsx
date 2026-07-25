@@ -4445,6 +4445,43 @@ export default function App() {
     });
   };
 
+  const addSubsectionToTree = (tree, parentId) => {
+    const newSubId = `sub-${Date.now()}`;
+    const newSubItem = {
+      id: newSubId,
+      title: 'Untitled Subsection',
+      plainText: 'Untitled Subsection',
+      progress: 0,
+      completed: false,
+      level: 2,
+      subsections: [],
+      expanded: true,
+    };
+
+    const updateTree = (nodes) => {
+      if (!Array.isArray(nodes)) return [];
+      return nodes.map((node) => {
+        if (node.id === parentId) {
+          return {
+            ...node,
+            expanded: true,
+            subsections: [...(node.subsections || []), newSubItem],
+          };
+        }
+        if (node.subsections && node.subsections.length > 0) {
+          return {
+            ...node,
+            subsections: updateTree(node.subsections),
+          };
+        }
+        return node;
+      });
+    };
+
+    const updatedTree = updateTree(tree);
+    return { updatedTree, newSubId };
+  };
+
   const extractHierarchicalOutline = (htmlString = docBodyHtml, titleString = docTitle) => {
     const rawItems = [];
 
@@ -40739,7 +40776,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       )}
 
                       {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-                        <div className="relative">
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <button
+                            type="button"
+                            title="Add Subsection"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const { updatedTree, newSubId } = addSubsectionToTree(outlineTreeData, section.id);
+                              setOutlineTreeData(updatedTree);
+                              setActiveOutlineSectionId(newSubId);
+                              setEditingOutlineId(newSubId);
+                              setEditingOutlineText('Untitled Subsection');
+                              showToast('Subsection added');
+                            }}
+                            className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer"
+                          >
+                            <Plus size={13} strokeWidth={1.75} />
+                          </button>
                           <button
                             type="button"
                             onPointerDown={(e) => {
@@ -40803,19 +40856,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             )}
                           </div>
                           {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setOutlineMenuCoords({ top: rect.bottom, left: rect.right - 140 });
-                                setActiveOutlineMenuId(activeOutlineMenuId === sub.id ? null : sub.id);
-                              }}
-                              className="p-1 rounded-md opacity-0 group-hover/sub:opacity-100 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 transition-all cursor-pointer shrink-0"
-                            >
-                              <MoreVertical size={12} strokeWidth={1.75} />
-                            </button>
+                            <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/sub:opacity-100 transition-opacity">
+                              <button
+                                type="button"
+                                title="Add Sub-item"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const { updatedTree, newSubId } = addSubsectionToTree(outlineTreeData, sub.id);
+                                  setOutlineTreeData(updatedTree);
+                                  setActiveOutlineSectionId(newSubId);
+                                  setEditingOutlineId(newSubId);
+                                  setEditingOutlineText('Untitled Subsection');
+                                  showToast('Sub-item added');
+                                }}
+                                className="p-1 rounded-md hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer"
+                              >
+                                <Plus size={12} strokeWidth={1.75} />
+                              </button>
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setOutlineMenuCoords({ top: rect.bottom, left: rect.right - 140 });
+                                  setActiveOutlineMenuId(activeOutlineMenuId === sub.id ? null : sub.id);
+                                }}
+                                className="p-1 rounded-md hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 transition-all cursor-pointer"
+                              >
+                                <MoreVertical size={12} strokeWidth={1.75} />
+                              </button>
+                            </div>
                           )}
                         </div>
                       ))}
@@ -51344,9 +51415,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
           ref={outlineMenuRef}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
-          className="fixed bg-white/95 dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-[9999] min-w-[150px] backdrop-blur-md"
+          className="fixed bg-white/95 dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-[9999] min-w-[160px] backdrop-blur-md"
           style={{ top: `${outlineMenuCoords.top + 4}px`, left: `${outlineMenuCoords.left}px`, fontFamily: editorFont }}
         >
+          <button 
+            type="button" 
+            className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100/70 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-2 transition-colors cursor-pointer select-none" 
+            onPointerDown={(e) => { 
+              e.preventDefault(); 
+              e.stopPropagation(); 
+              const targetId = activeOutlineMenuId;
+              const { updatedTree, newSubId } = addSubsectionToTree(outlineTreeData, targetId);
+              setOutlineTreeData(updatedTree);
+              setActiveOutlineSectionId(newSubId);
+              setEditingOutlineId(newSubId);
+              setEditingOutlineText('Untitled Subsection');
+              setActiveOutlineMenuId(null);
+              showToast('Subsection added');
+            }}
+          >
+            <Plus size={13} strokeWidth={1.75} /> Add Subsection
+          </button>
+
           <button 
             type="button" 
             className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100/70 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-2 transition-colors cursor-pointer select-none" 
