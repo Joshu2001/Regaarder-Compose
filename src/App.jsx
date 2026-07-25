@@ -8048,7 +8048,7 @@ export default function App() {
       ? notifications
       : notifications.filter(n => n.category === notificationCategoryFilter);
 
-    /* Normalize all category icons to stroke-[1.5] and size 18 */
+    /* Clean, normalized stroke icon styling (identical size 18, stroke-[1.5]) */
     const getCategoryIcon = (category) => {
       switch (category) {
         case 'draft':         return <FileEdit size={18} className="text-slate-500 dark:text-zinc-400 stroke-[1.5]" />;
@@ -8064,21 +8064,21 @@ export default function App() {
 
     return (
       <>
-        {/* Subtle page backdrop overlay (4-6% black wash with soft blur for depth) */}
+        {/* Subtle page backdrop overlay */}
         <div 
-          className="fixed inset-0 bg-black/[0.06] dark:bg-black/35 backdrop-blur-[1.5px] z-[440] transition-opacity duration-200"
+          className="fixed inset-0 bg-black/[0.05] dark:bg-black/35 backdrop-blur-[1.5px] z-[440] transition-opacity duration-200"
           onClick={() => setNotificationsOpen(false)}
         />
 
-        {/* Panel Container — Surface Elevation Level 1 (420px width for absolute spaciousness) */}
-        <div className="absolute right-0 top-11 z-[450] w-[420px] rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-[#f8f9fb] dark:bg-[#18181b] backdrop-blur-2xl shadow-[0_32px_72px_-16px_rgba(0,0,0,0.14),0_8px_24px_-6px_rgba(0,0,0,0.06)] font-sans animate-in zoom-in-95 fade-in duration-150 origin-top-right overflow-hidden">
+        {/* Panel Container — Flat Apple macOS Surface (420px width, unified 22px grid margin) */}
+        <div className="absolute right-0 top-11 z-[450] w-[420px] rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-[#fcfcfd] dark:bg-[#18181b] backdrop-blur-2xl shadow-[0_32px_72px_-16px_rgba(0,0,0,0.13),0_8px_24px_-6px_rgba(0,0,0,0.05)] font-sans animate-in zoom-in-95 fade-in duration-150 origin-top-right overflow-hidden">
 
-          {/* ── Hero Header ── */}
-          <div className="px-5 pt-4.5 pb-3 flex items-center justify-between">
+          {/* ── Hero Header (Aligned to 22px margin) ── */}
+          <div className="px-5.5 pt-5 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <span className="text-[16px] font-bold tracking-tight text-slate-900 dark:text-white">Notifications</span>
               {unreadCount > 0 && (
-                <span className="px-2.5 py-0.5 text-[10.5px] font-semibold bg-violet-100/90 text-violet-700 dark:bg-violet-950/80 dark:text-violet-300 rounded-full tabular-nums shadow-2xs">
+                <span className="px-2.5 py-0.5 text-[10.5px] font-semibold bg-violet-100/80 text-violet-700 dark:bg-violet-950/80 dark:text-violet-300 rounded-full tabular-nums shadow-2xs">
                   {unreadCount} unread
                 </span>
               )}
@@ -8105,8 +8105,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* ── Tactile Apple Segmented Control ── */}
-          <div className="mx-4.5 my-2.5 p-1 bg-slate-200/60 dark:bg-zinc-800/90 rounded-[11px] flex items-center gap-0.5 shadow-inner">
+          {/* ── Apple Segmented Control (Aligned to 22px margin) ── */}
+          <div className="mx-5.5 my-2.5 p-1 bg-slate-200/50 dark:bg-zinc-800/80 rounded-[11px] flex items-center gap-0.5 shadow-inner">
             {categories.map((cat) => {
               const isActive = notificationCategoryFilter === cat.key;
               return (
@@ -8116,7 +8116,7 @@ export default function App() {
                   onClick={() => setNotificationCategoryFilter(cat.key)}
                   className={`flex-1 py-1.5 text-center text-[11.5px] transition-all rounded-[8px] select-none whitespace-nowrap ${
                     isActive
-                      ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-[0_1.5px_4px_rgba(0,0,0,0.12),0_0.5px_1px_rgba(0,0,0,0.06)] font-semibold'
+                      ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-[0_1.5px_4px_rgba(0,0,0,0.1),0_0.5px_1px_rgba(0,0,0,0.05)] font-semibold'
                       : 'text-slate-500 dark:text-zinc-400 font-medium hover:text-slate-800 dark:hover:text-zinc-200'
                   }`}
                 >
@@ -8126,9 +8126,9 @@ export default function App() {
             })}
           </div>
 
-          {/* ── Borderless Floating Cards ── */}
+          {/* ── Flat List Rows Surface (Pulled 14px away from edges, smooth 150ms hover) ── */}
           <div
-            className="max-h-[380px] overflow-y-auto px-4.5 pt-1.5 pb-1 space-y-2"
+            className="max-h-[385px] overflow-y-auto px-2.5 pt-2 pb-1.5 space-y-0.5"
             style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}
           >
             {filteredNotifications.length === 0 ? (
@@ -8147,36 +8147,36 @@ export default function App() {
                     setNotificationsOpen(false);
                     if (item.category === 'schedule' && typeof setSidebarTab === 'function') setSidebarTab('tasks');
                   }}
-                  className={`group relative px-3.5 py-3 rounded-xl transition-all duration-150 cursor-pointer ${
+                  className={`group relative px-3 py-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
                     item.unread
-                      ? 'bg-[#f7f4ff] dark:bg-violet-950/20 shadow-[0_1px_3px_rgba(124,58,237,0.04),0_0_0_1px_rgba(124,58,237,0.08)] hover:bg-[#f1ebff] dark:hover:bg-violet-950/30 hover:-translate-y-[0.5px] hover:shadow-[0_4px_12px_-2px_rgba(124,58,237,0.08)]'
-                      : 'bg-white dark:bg-[#222226] shadow-[0_1px_3px_rgba(0,0,0,0.03),0_0_0_1px_rgba(0,0,0,0.02)] hover:bg-slate-50/80 dark:hover:bg-[#28282d] hover:-translate-y-[0.5px] hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.06)]'
+                      ? 'bg-violet-50/40 dark:bg-violet-950/20 hover:bg-violet-100/60 dark:hover:bg-violet-950/35 hover:-translate-y-[0.5px] hover:shadow-2xs'
+                      : 'bg-transparent hover:bg-slate-100/70 dark:hover:bg-zinc-800/50 hover:-translate-y-[0.5px] hover:shadow-2xs'
                   }`}
                 >
-                  <div className="flex items-start gap-2.5">
-                    {/* Normalized Icon Anchor */}
+                  <div className="flex items-start gap-3">
+                    {/* Icon Anchor — Grid Aligned */}
                     <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                       item.category === 'ai'
                         ? 'bg-violet-100/70 dark:bg-violet-950/60'
-                        : 'bg-slate-100/90 dark:bg-zinc-700/60'
+                        : 'bg-slate-100 dark:bg-zinc-700/60'
                     }`}>
                       {getCategoryIcon(item.category)}
                     </div>
 
-                    {/* Content */}
+                    {/* Content — Strict Vertical Alignment */}
                     <div className="flex-1 min-w-0 pr-0.5">
                       <div className="flex items-baseline justify-between gap-2">
-                        {/* Clear weight distinction: Unread (font-bold) vs Read (font-medium) */}
+                        {/* Title Dominance: Unread (semibold) vs Read (medium) */}
                         <span className={`text-[12.5px] leading-snug truncate ${
                           item.unread
-                            ? 'font-bold text-slate-900 dark:text-white'
-                            : 'font-medium text-slate-600 dark:text-zinc-400'
+                            ? 'font-semibold text-slate-900 dark:text-white'
+                            : 'font-medium text-slate-700 dark:text-zinc-300'
                         }`}>
                           {item.title}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {/* Quieter timestamp */}
-                          <span className="text-[10px] font-normal text-slate-400/60 dark:text-zinc-500/70 tabular-nums">
+                          {/* Metadata / Timestamp reduced weight */}
+                          <span className="text-[10px] font-normal text-slate-400/70 dark:text-zinc-500/80 tabular-nums">
                             {fmtTime(item.timestamp)}
                           </span>
                           {item.unread && (
@@ -8184,7 +8184,7 @@ export default function App() {
                           )}
                         </div>
                       </div>
-                      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400/90 dark:text-zinc-400 line-clamp-2">
+                      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400 dark:text-zinc-400 line-clamp-2">
                         {item.detail}
                       </p>
                     </div>
@@ -8214,10 +8214,10 @@ export default function App() {
             )}
           </div>
 
-          {/* ── Integrated Footer ── */}
+          {/* ── Integrated Footer (Aligned Grid) ── */}
           {filteredNotifications.length > 0 && (
-            <div className="mt-2.5 border-t border-black/[0.04] dark:border-white/[0.04] px-5 py-3.5 flex items-center justify-between bg-slate-100/50 dark:bg-zinc-900/50">
-              <span className="text-[10.5px] text-slate-400/80 dark:text-zinc-500 tabular-nums">
+            <div className="mt-2 border-t border-black/[0.04] dark:border-white/[0.04] px-5.5 py-3.5 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-900/40">
+              <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 tabular-nums">
                 {filteredNotifications.length} {filteredNotifications.length === 1 ? 'notification' : 'notifications'}
                 {unreadCount > 0 && notificationCategoryFilter === 'all' && ` · ${unreadCount} unread`}
               </span>
