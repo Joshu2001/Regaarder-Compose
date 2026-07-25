@@ -7988,11 +7988,36 @@ export default function App() {
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const [relativeNow, setRelativeNow] = useState(Date.now());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationCategoryFilter, setNotificationCategoryFilter] = useState('all');
   const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Replay link ready to share', detail: 'Copy and send to collaborators', unread: false },
-    { id: 2, title: 'Document saved locally', detail: 'Your latest draft is persisted', unread: false },
-    { id: 3, title: 'AI assistant is active', detail: 'Ask about selected text anytime', unread: false },
+    { id: 'notif-1', title: 'Blank composition created', detail: 'System Event at 10:36:37 PM', category: 'system', unread: false, timestamp: '10:36:37 PM', timeMs: Date.now() - 300000 },
+    { id: 'notif-2', title: 'Replay link ready to share', detail: 'Copy and send to collaborators', category: 'collaboration', unread: true, timestamp: '10:32:15 PM', timeMs: Date.now() - 600000 },
+    { id: 'notif-3', title: 'Document saved locally', detail: 'Your latest draft is persisted', category: 'draft', unread: false, timestamp: '10:28:40 PM', timeMs: Date.now() - 900000 },
+    { id: 'notif-4', title: 'AI assistant is active', detail: 'Ask about selected text anytime', category: 'ai', unread: false, timestamp: '10:20:00 PM', timeMs: Date.now() - 1200000 },
+    { id: 'notif-5', title: 'Scheduled task reminder', detail: 'Project MOAT review is due today', category: 'schedule', unread: true, timestamp: '10:15:00 PM', timeMs: Date.now() - 1500000 },
   ]);
+
+  const pushNotification = useCallback(({ title, detail, category = 'system', unread = true, actionType = null }) => {
+    if (!title) return;
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setNotifications((prev) => {
+      if (prev.length > 0 && prev[0].title === title && (Date.now() - (prev[0].timeMs || 0)) < 3000) {
+        return prev;
+      }
+      const newItem = {
+        id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        title,
+        detail: detail || `System Event at ${timeStr}`,
+        category, // 'draft' | 'schedule' | 'collaboration' | 'ai' | 'system'
+        unread,
+        timestamp: timeStr,
+        timeMs: Date.now(),
+        actionType
+      };
+      return [newItem, ...prev].slice(0, 50);
+    });
+  }, []);
 
   const getNotificationColorClass = (item) => {
     const text = (item.title + ' ' + item.detail).toLowerCase();
@@ -8007,6 +8032,217 @@ export default function App() {
     }
     return 'bg-yellow-400';
   };
+
+  const renderNotificationsDropdownContent = () => {
+    const unreadCount = notifications.filter(n => n.unread).length;
+    const categories = [
+      { key: 'all', label: 'All' },
+      { key: 'draft', label: 'Drafts' },
+      { key: 'schedule', label: 'Schedule' },
+      { key: 'collaboration', label: 'Collab' },
+      { key: 'ai', label: 'AI' },
+      { key: 'system', label: 'System' },
+    ];
+
+    const filteredNotifications = notificationCategoryFilter === 'all'
+      ? notifications
+      : notifications.filter(n => n.category === notificationCategoryFilter);
+
+    /* Normalize all category icons to stroke-[1.5] and size 18 */
+    const getCategoryIcon = (category) => {
+      switch (category) {
+        case 'draft':         return <FileEdit size={18} className="text-slate-500 dark:text-zinc-400 stroke-[1.5]" />;
+        case 'schedule':      return <Clock size={18} className="text-slate-500 dark:text-zinc-400 stroke-[1.5]" />;
+        case 'collaboration': return <Users size={18} className="text-slate-500 dark:text-zinc-400 stroke-[1.5]" />;
+        case 'ai':            return <Sparkles size={18} className="text-violet-500 dark:text-violet-400 stroke-[1.5]" />;
+        default:              return <CheckCircle2 size={18} className="text-slate-500 dark:text-zinc-400 stroke-[1.5]" />;
+      }
+    };
+
+    /* Shorten HH:MM:SS → HH:MM AM/PM */
+    const fmtTime = (ts) => ts ? ts.replace(/:(\d{2})\s/, ' ') : 'Now';
+
+    return (
+      <>
+        {/* Subtle page backdrop overlay (4-6% black wash with soft blur for depth) */}
+        <div 
+          className="fixed inset-0 bg-black/[0.06] dark:bg-black/35 backdrop-blur-[1.5px] z-[440] transition-opacity duration-200"
+          onClick={() => setNotificationsOpen(false)}
+        />
+
+        {/* Panel Container — Surface Elevation Level 1 (420px width for absolute spaciousness) */}
+        <div className="absolute right-0 top-11 z-[450] w-[420px] rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-[#f8f9fb] dark:bg-[#18181b] backdrop-blur-2xl shadow-[0_32px_72px_-16px_rgba(0,0,0,0.14),0_8px_24px_-6px_rgba(0,0,0,0.06)] font-sans animate-in zoom-in-95 fade-in duration-150 origin-top-right overflow-hidden">
+
+          {/* ── Hero Header ── */}
+          <div className="px-5 pt-4.5 pb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="text-[16px] font-bold tracking-tight text-slate-900 dark:text-white">Notifications</span>
+              {unreadCount > 0 && (
+                <span className="px-2.5 py-0.5 text-[10.5px] font-semibold bg-violet-100/90 text-violet-700 dark:bg-violet-950/80 dark:text-violet-300 rounded-full tabular-nums shadow-2xs">
+                  {unreadCount} unread
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setNotifications(prev => prev.map(n => ({ ...n, unread: false })))}
+                  className="text-[11px] font-medium text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                >
+                  Mark all read
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setNotifications([])}
+                  className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 hover:text-rose-500 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ── Tactile Apple Segmented Control ── */}
+          <div className="mx-4.5 my-2.5 p-1 bg-slate-200/60 dark:bg-zinc-800/90 rounded-[11px] flex items-center gap-0.5 shadow-inner">
+            {categories.map((cat) => {
+              const isActive = notificationCategoryFilter === cat.key;
+              return (
+                <button
+                  key={cat.key}
+                  type="button"
+                  onClick={() => setNotificationCategoryFilter(cat.key)}
+                  className={`flex-1 py-1.5 text-center text-[11.5px] transition-all rounded-[8px] select-none whitespace-nowrap ${
+                    isActive
+                      ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-[0_1.5px_4px_rgba(0,0,0,0.12),0_0.5px_1px_rgba(0,0,0,0.06)] font-semibold'
+                      : 'text-slate-500 dark:text-zinc-400 font-medium hover:text-slate-800 dark:hover:text-zinc-200'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Borderless Floating Cards ── */}
+          <div
+            className="max-h-[380px] overflow-y-auto px-4.5 pt-1.5 pb-1 space-y-2"
+            style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}
+          >
+            {filteredNotifications.length === 0 ? (
+              <div className="py-14 flex flex-col items-center gap-2.5 text-center">
+                <Bell size={22} strokeWidth={1.5} className="text-slate-300 dark:text-zinc-600" />
+                <span className="text-[12.5px] text-slate-400 dark:text-zinc-500 font-medium">
+                  {notificationCategoryFilter === 'all' ? "You're all caught up" : `No ${notificationCategoryFilter} notifications`}
+                </span>
+              </div>
+            ) : (
+              filteredNotifications.map((item) => (
+                <div 
+                  key={item.id}
+                  onClick={() => {
+                    setNotifications(prev => prev.map(n => n.id === item.id ? { ...n, unread: false } : n));
+                    setNotificationsOpen(false);
+                    if (item.category === 'schedule' && typeof setSidebarTab === 'function') setSidebarTab('tasks');
+                  }}
+                  className={`group relative px-3.5 py-3 rounded-xl transition-all duration-150 cursor-pointer ${
+                    item.unread
+                      ? 'bg-[#f7f4ff] dark:bg-violet-950/20 shadow-[0_1px_3px_rgba(124,58,237,0.04),0_0_0_1px_rgba(124,58,237,0.08)] hover:bg-[#f1ebff] dark:hover:bg-violet-950/30 hover:-translate-y-[0.5px] hover:shadow-[0_4px_12px_-2px_rgba(124,58,237,0.08)]'
+                      : 'bg-white dark:bg-[#222226] shadow-[0_1px_3px_rgba(0,0,0,0.03),0_0_0_1px_rgba(0,0,0,0.02)] hover:bg-slate-50/80 dark:hover:bg-[#28282d] hover:-translate-y-[0.5px] hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.06)]'
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    {/* Normalized Icon Anchor */}
+                    <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      item.category === 'ai'
+                        ? 'bg-violet-100/70 dark:bg-violet-950/60'
+                        : 'bg-slate-100/90 dark:bg-zinc-700/60'
+                    }`}>
+                      {getCategoryIcon(item.category)}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 pr-0.5">
+                      <div className="flex items-baseline justify-between gap-2">
+                        {/* Clear weight distinction: Unread (font-bold) vs Read (font-medium) */}
+                        <span className={`text-[12.5px] leading-snug truncate ${
+                          item.unread
+                            ? 'font-bold text-slate-900 dark:text-white'
+                            : 'font-medium text-slate-600 dark:text-zinc-400'
+                        }`}>
+                          {item.title}
+                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Quieter timestamp */}
+                          <span className="text-[10px] font-normal text-slate-400/60 dark:text-zinc-500/70 tabular-nums">
+                            {fmtTime(item.timestamp)}
+                          </span>
+                          {item.unread && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                          )}
+                        </div>
+                      </div>
+                      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400/90 dark:text-zinc-400 line-clamp-2">
+                        {item.detail}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Hover Quick Actions */}
+                  <div className="absolute bottom-2 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none group-hover:pointer-events-auto z-20">
+                    {item.unread && (
+                      <button
+                        type="button"
+                        onPointerDown={(e) => { e.stopPropagation(); setNotifications(prev => prev.map(n => n.id === item.id ? { ...n, unread: false } : n)); }}
+                        className="px-2 py-0.5 text-[9.5px] font-medium rounded-md bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white shadow-2xs transition-all"
+                      >
+                        Mark read
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onPointerDown={(e) => { e.stopPropagation(); setNotifications(prev => prev.filter(n => n.id !== item.id)); }}
+                      className="px-2 py-0.5 text-[9.5px] font-medium rounded-md bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-400 dark:text-zinc-500 hover:text-rose-500 dark:hover:text-rose-400 shadow-2xs transition-all"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* ── Integrated Footer ── */}
+          {filteredNotifications.length > 0 && (
+            <div className="mt-2.5 border-t border-black/[0.04] dark:border-white/[0.04] px-5 py-3.5 flex items-center justify-between bg-slate-100/50 dark:bg-zinc-900/50">
+              <span className="text-[10.5px] text-slate-400/80 dark:text-zinc-500 tabular-nums">
+                {filteredNotifications.length} {filteredNotifications.length === 1 ? 'notification' : 'notifications'}
+                {unreadCount > 0 && notificationCategoryFilter === 'all' && ` · ${unreadCount} unread`}
+              </span>
+              {filteredNotifications.length >= 2 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (notificationCategoryFilter === 'all') {
+                      setNotifications([]);
+                    } else {
+                      setNotifications(prev => prev.filter(n => n.category !== notificationCategoryFilter));
+                    }
+                  }}
+                  className="text-[10.5px] font-medium text-slate-400 dark:text-zinc-500 hover:text-rose-500 transition-colors"
+                >
+                  Clear {notificationCategoryFilter !== 'all' ? 'category' : 'all'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </>
+    );
+  };
+
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [selectedSheetRange, setSelectedSheetRange] = useState(null);
@@ -8832,7 +9068,7 @@ export default function App() {
     awareness.setLocalStateField('isRoomCameraOn', isRoomCameraOn);
     awareness.setLocalStateField('socketId', socketId);
 
-    awareness.on('change', () => {
+    awareness.on('change', ({ added, removed }) => {
       const states = awareness.getStates();
       const newUsers = new Map();
       states.forEach((state, clientID) => {
@@ -8841,6 +9077,29 @@ export default function App() {
         }
       });
       setAwarenessUsers(newUsers);
+
+      // Notify on collaborator join / leave
+      const myId = providerRef.current?.awareness?.clientID;
+      added.forEach(clientID => {
+        if (clientID === myId) return;
+        const state = states.get(clientID);
+        const name = state?.user?.name || `A collaborator`;
+        pushNotification({
+          title: `${name} joined the document`,
+          detail: `Now co-editing in real time`,
+          category: 'collaboration',
+          unread: true
+        });
+      });
+      removed.forEach(clientID => {
+        if (clientID === myId) return;
+        pushNotification({
+          title: `A collaborator left the document`,
+          detail: `Session ended`,
+          category: 'collaboration',
+          unread: true
+        });
+      });
     });
 
     yTextRef.current.observe((event, transaction) => {
@@ -13707,22 +13966,32 @@ export default function App() {
   };
 
   // Toast notifier helper
-  const showToast = (msg, callback = null) => {
+  const showToast = (msg, callback = null, category = null, customDetail = null) => {
     if (toastTimerRef.current) {
       clearTimeout(toastTimerRef.current);
     }
     setToastMessage(msg);
     setToastCallback(() => callback);
     if (msg) {
-      setNotifications(prev => [
-        {
-          id: Date.now() + Math.random(),
-          title: msg,
-          detail: `System Event at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`,
-          unread: false
-        },
-        ...prev
-      ].slice(0, 50));
+      const lower = msg.toLowerCase();
+      let detectedCategory = category || 'system';
+      if (!category) {
+        if (lower.includes('draft') || lower.includes('saved') || lower.includes('unfinished') || lower.includes('pending') || lower.includes('persisted')) {
+          detectedCategory = 'draft';
+        } else if (lower.includes('schedule') || lower.includes('due') || lower.includes('timer') || lower.includes('calendar') || lower.includes('reminder') || lower.includes('task')) {
+          detectedCategory = 'schedule';
+        } else if (lower.includes('collaborat') || lower.includes('replay') || lower.includes('join') || lower.includes('share') || lower.includes('socket') || lower.includes('online') || lower.includes('room') || lower.includes('user')) {
+          detectedCategory = 'collaboration';
+        } else if (lower.includes('ai') || lower.includes('assistant') || lower.includes('generated') || lower.includes('prompt') || lower.includes('summary')) {
+          detectedCategory = 'ai';
+        }
+      }
+      pushNotification({
+        title: msg,
+        detail: customDetail || `System Event at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`,
+        category: detectedCategory,
+        unread: true
+      });
     }
     toastTimerRef.current = setTimeout(() => {
       setToastMessage('');
@@ -23454,13 +23723,28 @@ Respond with a JSON array of slide objects matching the schema.`;
     const fileBase = sanitizeFileName(payload.title);
 
     if (format === 'PDF') {
-      return exportCurrentDocumentAsPdf(`${fileBase}.pdf`);
+      const ok = await exportCurrentDocumentAsPdf(`${fileBase}.pdf`);
+      if (ok !== false) {
+        pushNotification({
+          title: `PDF exported — ${payload.title || 'Untitled'}`,
+          detail: `Saved as ${fileBase}.pdf`,
+          category: 'system',
+          unread: true
+        });
+      }
+      return ok;
     }
 
     if (format === 'Compose (.cmp)') {
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       triggerBlobDownload(`${fileBase}.cmp`, blob);
       trackMemoryAction('export', 'Exported document', { format: 'Compose (.cmp)' });
+      pushNotification({
+        title: `Compose file exported — ${payload.title || 'Untitled'}`,
+        detail: `Saved as ${fileBase}.cmp`,
+        category: 'system',
+        unread: true
+      });
       return true;
     }
 
@@ -23468,6 +23752,12 @@ Respond with a JSON array of slide objects matching the schema.`;
       const markdown = `# ${payload.title || 'Untitled'}\n\n${payload.subtitle || ''}\n\n${(payload.initiatives || []).map((item) => `- ${item.name} (${item.timeline})`).join('\n')}\n`;
       triggerBlobDownload(`${fileBase}.md`, new Blob([markdown], { type: 'text/markdown' }));
       trackMemoryAction('export', 'Exported document', { format: 'Markdown' });
+      pushNotification({
+        title: `Markdown exported — ${payload.title || 'Untitled'}`,
+        detail: `Saved as ${fileBase}.md`,
+        category: 'system',
+        unread: true
+      });
       return true;
     }
 
@@ -23475,6 +23765,12 @@ Respond with a JSON array of slide objects matching the schema.`;
       const plain = `${payload.title || 'Untitled'}\n\n${payload.subtitle || ''}`;
       triggerBlobDownload(`${fileBase}.txt`, new Blob([plain], { type: 'text/plain' }));
       trackMemoryAction('export', 'Exported document', { format: 'Plain Text' });
+      pushNotification({
+        title: `Plain text exported — ${payload.title || 'Untitled'}`,
+        detail: `Saved as ${fileBase}.txt`,
+        category: 'system',
+        unread: true
+      });
       return true;
     }
 
@@ -23482,6 +23778,12 @@ Respond with a JSON array of slide objects matching the schema.`;
       const docMarkup = `<html><head><meta charset="utf-8"/></head><body><h1>${payload.title || 'Untitled'}</h1><p>${payload.subtitle || ''}</p></body></html>`;
       triggerBlobDownload(`${fileBase}.doc`, new Blob([docMarkup], { type: 'application/msword' }));
       trackMemoryAction('export', 'Exported document', { format: 'DOC (Word-compatible)' });
+      pushNotification({
+        title: `Word document exported — ${payload.title || 'Untitled'}`,
+        detail: `Saved as ${fileBase}.doc`,
+        category: 'system',
+        unread: true
+      });
       return true;
     }
 
@@ -23489,6 +23791,12 @@ Respond with a JSON array of slide objects matching the schema.`;
       const html = `<!doctype html><html><head><meta charset="utf-8"/></head><body>${payload.bodyHtml || ''}</body></html>`;
       triggerBlobDownload(`${fileBase}.html`, new Blob([html], { type: 'text/html' }));
       trackMemoryAction('export', 'Exported document', { format: 'HTML' });
+      pushNotification({
+        title: `HTML exported — ${payload.title || 'Untitled'}`,
+        detail: `Saved as ${fileBase}.html`,
+        category: 'system',
+        unread: true
+      });
       return true;
     }
 
@@ -33996,39 +34304,44 @@ const renderRoomTopHeader = () => (
     if (!authModalOpen) return null;
     return (
       <div 
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[99999] flex items-center justify-center font-sans animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-950/40 backdrop-blur-md z-[99999] flex items-center justify-center font-sans animate-in fade-in duration-200"
         onMouseDown={() => setAuthModalOpen(false)}
       >
         <div 
-          className="bg-white dark:bg-[#1c1c1e] rounded-3xl shadow-[0_24px_60px_-15px_rgba(0,0,0,0.3)] border border-slate-200/50 dark:border-zinc-800 w-[380px] p-6 relative flex flex-col gap-4.5 animate-in zoom-in-95 duration-200"
+          className="bg-white/90 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.22),0_0_0_1px_rgba(0,0,0,0.05)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)] border border-white/60 dark:border-white/10 w-[400px] p-8 relative flex flex-col gap-6 animate-in zoom-in-95 duration-200"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           onMouseDown={(e) => e.stopPropagation()}
         >
+          {/* Close button */}
           <button 
             type="button"
             onClick={() => setAuthModalOpen(false)}
-            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors focus:outline-none"
+            className="absolute top-5 right-5 w-7 h-7 rounded-full bg-slate-100/80 hover:bg-slate-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white transition-all flex items-center justify-center focus:outline-none"
             title="Close"
           >
-            <X size={15} />
+            <X size={14} />
           </button>
 
-          <div className="flex flex-col items-center text-center gap-1.5 mt-1">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 shadow-lg flex items-center justify-center shadow-pink-500/20 transform rotate-6">
-              <div className="w-4.5 h-4.5 bg-white rounded-full opacity-20 -translate-x-0.5 -translate-y-0.5" />
+          {/* Integrated Brand Header */}
+          <div className="flex flex-col items-center text-center gap-2">
+            <div className="relative group cursor-pointer mb-1">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 shadow-xl shadow-pink-500/20 flex items-center justify-center transform group-hover:scale-105 transition-all duration-300">
+                <div className="w-6 h-6 bg-white rounded-full opacity-25 -translate-x-0.5 -translate-y-0.5" />
+              </div>
             </div>
-            <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white mt-2.5">Welcome to Regaarder</h2>
-            <p className="text-[10.5px] text-slate-500 dark:text-zinc-400">One workspace for all your office needs.</p>
+            <h2 className="text-[20px] font-bold tracking-tight text-slate-900 dark:text-white">Welcome to Regaarder</h2>
+            <p className="text-[12px] text-slate-400 dark:text-zinc-500 font-normal -mt-0.5">One workspace for all your office needs.</p>
           </div>
 
-          <div className="flex flex-col gap-2">
+          {/* Primary Social Authentication Methods */}
+          <div className="flex flex-col gap-2.5">
             <button
               type="button"
               onClick={() => handleSocialAuth('google')}
               disabled={authLoading}
-              className="w-full h-9 flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-zinc-750 rounded-lg text-[12px] font-medium text-slate-700 dark:text-zinc-200 transition-all duration-150 active:scale-[0.99]"
+              className="w-full h-[44px] flex items-center justify-center gap-3 bg-white hover:bg-slate-50 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200/90 dark:border-zinc-750 rounded-xl text-[13px] font-medium text-slate-800 dark:text-zinc-100 transition-all duration-150 active:scale-[0.985] shadow-xs"
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05"/>
@@ -34040,29 +34353,40 @@ const renderRoomTopHeader = () => (
               type="button"
               onClick={() => handleSocialAuth('apple')}
               disabled={authLoading}
-              className="w-full h-9 flex items-center justify-center gap-2 bg-black hover:bg-zinc-900 text-white rounded-lg text-[12px] font-medium transition-all duration-150 active:scale-[0.99]"
+              className="w-full h-[44px] flex items-center justify-center gap-3 bg-slate-950 hover:bg-slate-900 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 rounded-xl text-[13px] font-medium transition-all duration-150 active:scale-[0.985] shadow-xs"
             >
-              <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.2.67-2.92 1.5-.62.71-1.16 1.85-1.01 2.96 1.12.09 2.26-.59 2.94-1.4"/>
               </svg>
               Continue with Apple
             </button>
           </div>
 
-          <div className="flex items-center gap-3.5 my-0.5">
-            <div className="h-px flex-1 bg-slate-100 dark:bg-zinc-800/80"></div>
-            <span className="text-[9.5px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest">or use email</span>
-            <div className="h-px flex-1 bg-slate-100 dark:bg-zinc-800/80"></div>
+          {/* Hairline Divider with Spaced Badge */}
+          <div className="relative flex items-center justify-center my-0.5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200/80 dark:border-zinc-800" />
+            </div>
+            <span className="relative px-3.5 bg-white dark:bg-[#1c1c1e] text-[11px] font-normal text-slate-400 dark:text-zinc-500">
+              or continue with email
+            </span>
           </div>
 
-          <div className="flex bg-slate-100 dark:bg-zinc-900/60 p-0.5 rounded-lg border border-slate-200/20 dark:border-zinc-800/20">
+          {/* Compact Sliding Segmented Control */}
+          <div className="relative p-0.5 bg-slate-100/90 dark:bg-zinc-900/90 rounded-xl border border-slate-200/50 dark:border-zinc-800/60 flex h-8">
+            <div 
+              className="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] bg-white dark:bg-zinc-800 rounded-lg shadow-xs border border-slate-200/60 dark:border-zinc-700/50 transition-all duration-200 ease-out"
+              style={{
+                left: authTab === 'login' ? '2px' : 'calc(50%)'
+              }}
+            />
             <button
               type="button"
               onClick={() => { setAuthTab('login'); setAuthError(''); }}
-              className={`flex-1 py-1 text-[11px] font-semibold rounded-md transition-all duration-150 ${
+              className={`relative flex-1 z-10 text-[11.5px] font-medium transition-colors duration-150 flex items-center justify-center ${
                 authTab === 'login' 
-                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-[0_1px_3px_rgba(0,0,0,0.08)] border border-black/5 dark:border-white/5' 
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-350'
+                  ? 'text-slate-900 dark:text-white' 
+                  : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
               }`}
             >
               Sign In
@@ -34070,60 +34394,61 @@ const renderRoomTopHeader = () => (
             <button
               type="button"
               onClick={() => { setAuthTab('register'); setAuthError(''); }}
-              className={`flex-1 py-1 text-[11px] font-semibold rounded-md transition-all duration-150 ${
+              className={`relative flex-1 z-10 text-[11.5px] font-medium transition-colors duration-150 flex items-center justify-center ${
                 authTab === 'register' 
-                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-[0_1px_3px_rgba(0,0,0,0.08)] border border-black/5 dark:border-white/5' 
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-355'
+                  ? 'text-slate-900 dark:text-white' 
+                  : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
               }`}
             >
               Create Account
             </button>
           </div>
 
+          {/* Email Form */}
           <form onSubmit={handleAuthSubmit} className="flex flex-col gap-3.5">
             {authError && (
-              <div className="p-2.5 bg-rose-50 border border-rose-100/60 dark:bg-rose-950/20 dark:border-rose-900/30 rounded-lg text-rose-600 dark:text-rose-400 text-[10.5px] font-medium leading-relaxed">
+              <div className="p-2.5 bg-rose-50 border border-rose-200/60 dark:bg-rose-950/30 dark:border-rose-900/40 rounded-xl text-rose-600 dark:text-rose-400 text-[11px] font-medium leading-relaxed">
                 {authError}
               </div>
             )}
 
             {authTab === 'register' && (
-              <div className="flex flex-col gap-1">
-                <label className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Full Name</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">Full Name</label>
                 <input
                   type="text"
                   placeholder="Sarah Johnson"
                   value={authName}
                   onChange={(e) => setAuthName(e.target.value)}
                   disabled={authLoading}
-                  className="h-9 px-3 text-[12px] bg-slate-50 hover:bg-slate-100/50 focus:bg-white dark:bg-zinc-900 dark:hover:bg-zinc-850/50 dark:focus:bg-zinc-900 border border-transparent focus:border-violet-500 dark:focus:border-violet-500 rounded-lg outline-none transition-all duration-150"
+                  className="h-10 px-3.5 text-[12.5px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
                   required
                 />
               </div>
             )}
 
-            <div className="flex flex-col gap-1">
-              <label className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Email Address</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">Email address</label>
               <input
                 type="email"
                 placeholder="you@example.com"
                 value={authEmail}
                 onChange={(e) => setAuthEmail(e.target.value)}
                 disabled={authLoading}
-                className="h-9 px-3 text-[12px] bg-slate-50 hover:bg-slate-100/50 focus:bg-white dark:bg-zinc-900 dark:hover:bg-zinc-850/50 dark:focus:bg-zinc-900 border border-transparent focus:border-violet-500 dark:focus:border-violet-500 rounded-lg outline-none transition-all duration-150"
+                className="h-10 px-3.5 text-[12.5px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
                 required
               />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Password</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">Password</label>
               <input
                 type="password"
                 placeholder="••••••••"
                 value={authPassword}
                 onChange={(e) => setAuthPassword(e.target.value)}
                 disabled={authLoading}
-                className="h-9 px-3 text-[12px] bg-slate-50 hover:bg-slate-100/50 focus:bg-white dark:bg-zinc-900 dark:hover:bg-zinc-850/50 dark:focus:bg-zinc-900 border border-transparent focus:border-violet-500 dark:focus:border-violet-500 rounded-lg outline-none transition-all duration-150"
+                className="h-10 px-3.5 text-[12.5px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
                 required
               />
             </div>
@@ -34131,16 +34456,24 @@ const renderRoomTopHeader = () => (
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full h-9.5 mt-1 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white rounded-lg text-[12px] font-semibold shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-all duration-150"
+              className="w-full h-10 mt-1 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 dark:bg-white dark:hover:bg-slate-100 dark:disabled:bg-zinc-600 text-white dark:text-slate-900 rounded-xl text-[12.5px] font-medium shadow-xs flex items-center justify-center gap-2 active:scale-[0.985] transition-all duration-150"
             >
               {authLoading ? (
                 <>
                   <Loader2 size={13} className="animate-spin" />
                   Please wait...
                 </>
-              ) : authTab === 'login' ? 'Sign In' : 'Create Account'}
+              ) : authTab === 'login' ? 'Sign In with Email' : 'Create Account'}
             </button>
           </form>
+
+          {/* Trust Microcopy */}
+          <p className="text-[10.5px] text-slate-400 dark:text-zinc-500 text-center leading-relaxed -mt-2">
+            By continuing, you agree to Regaarder's{' '}
+            <span className="underline cursor-pointer hover:text-slate-600 dark:hover:text-zinc-300 transition-colors">Terms of Service</span>
+            {' '}and{' '}
+            <span className="underline cursor-pointer hover:text-slate-600 dark:hover:text-zinc-300 transition-colors">Privacy Policy</span>.
+          </p>
         </div>
       </div>
     );
@@ -34550,46 +34883,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       onClick={() => {
                         setReplaySpeedMenuOpen(false);
                         setNotificationsOpen((prev) => !prev);
-                        setNotifications((prev) => prev.map((item) => ({ ...item, unread: false })));
                       }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 relative transition-colors"
                       title="Notifications"
                     >
                       <Bell size={16} />
                       {notifications.some(n => n.unread) && (
-                        <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-2 ring-white dark:ring-[#121214] ${
-                          (() => {
-                            const unreadList = notifications.filter(n => n.unread);
-                            const colors = unreadList.map(getNotificationColorClass);
-                            if (colors.includes('bg-red-500')) return 'bg-red-500';
-                            if (colors.includes('bg-amber-500')) return 'bg-amber-500';
-                            if (colors.includes('bg-emerald-500')) return 'bg-emerald-500';
-                            return 'bg-yellow-400';
-                          })()
-                        }`}></span>
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-[#121214] animate-pulse"></span>
                       )}
                     </button>
-                    {notificationsOpen && (
-                      <div className="absolute right-0 top-10 z-[450] w-[300px] rounded-2xl border border-violet-100 bg-white dark:bg-[#1c1c1e] dark:border-zinc-800 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.45)] p-2">
-                        <div className="px-2 py-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-violet-600 dark:text-violet-400">Notifications</div>
-                        <div className="max-h-[260px] overflow-y-auto thin-scrollbar space-y-1 px-1 pb-1">
-                          {notifications.map((item) => (
-                            <div 
-                              key={item.id} 
-                              onClick={() => setNotificationsOpen(false)}
-                              className="rounded-xl border border-slate-100 dark:border-zinc-850 px-3 py-2.5 hover:bg-violet-50/50 dark:hover:bg-violet-950/20 cursor-pointer"
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="text-[12px] font-medium text-slate-800 dark:text-zinc-200">{item.title}</div>
-                                {item.unread && <span className={`mt-1 h-2 w-2 rounded-full ${getNotificationColorClass(item)}`} />}
-                              </div>
-                              <div className="mt-0.5 text-[11px] text-slate-500 dark:text-zinc-400">{item.detail}</div>
-                            </div>
-                          ))}
-                    </div>
+                    {notificationsOpen && renderNotificationsDropdownContent()}
                   </div>
-                )}
-              </div>
 
               {/* Settings Button */}
               <button
@@ -42772,45 +43076,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 onClick={() => {
                   setReplaySpeedMenuOpen(false);
                   setNotificationsOpen((prev) => !prev);
-                  setNotifications((prev) => prev.map((item) => ({ ...item, unread: false })));
                 }}
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 relative transition-colors"
                 title="Notifications"
               >
                 <Bell size={16} strokeWidth={1.5} />
                 {notifications.some(n => n.unread) && (
-                  <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-2 ring-white dark:ring-[#121214] ${
-                    (() => {
-                      const unreadList = notifications.filter(n => n.unread);
-                      const colors = unreadList.map(getNotificationColorClass);
-                      if (colors.includes('bg-red-500')) return 'bg-red-500';
-                      if (colors.includes('bg-amber-500')) return 'bg-amber-500';
-                      if (colors.includes('bg-emerald-500')) return 'bg-emerald-500';
-                      return 'bg-yellow-400';
-                    })()
-                  }`}></span>
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-[#121214] animate-pulse"></span>
                 )}
               </button>
-              {notificationsOpen && (
-                <div className="absolute right-0 top-10 z-[450] w-[300px] rounded-2xl border border-violet-100 bg-white dark:bg-[#1c1c1e] dark:border-zinc-800 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.45)] p-2">
-                  <div className="px-2 py-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-violet-600 dark:text-violet-400">Notifications</div>
-                  <div className="max-h-[260px] overflow-y-auto thin-scrollbar space-y-1 px-1 pb-1">
-                    {notifications.map((item) => (
-                      <div 
-                        key={item.id} 
-                        onClick={() => setNotificationsOpen(false)}
-                        className="rounded-xl border border-slate-100 dark:border-zinc-850 px-3 py-2.5 hover:bg-violet-50/50 dark:hover:bg-violet-950/20 cursor-pointer"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="text-[12px] font-medium text-slate-800 dark:text-zinc-200">{item.title}</div>
-                          {item.unread && <span className="mt-1 h-2 w-2 rounded-full bg-violet-500" />}
-                        </div>
-                        <div className="mt-0.5 text-[11px] text-slate-500 dark:text-zinc-400">{item.detail}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {notificationsOpen && renderNotificationsDropdownContent()}
             </div>
             <button 
               onClick={() => handleMiniSidebarClick('assistant')}
