@@ -8052,14 +8052,14 @@ export default function App() {
 
     return (
       <>
-        {/* Full backdrop overlay — z-[540] completely covers sidebar toggle button & rail under blur */}
+        {/* Full backdrop overlay — original subtle blur */}
         <div 
-          className="fixed inset-0 bg-black/25 dark:bg-black/60 backdrop-blur-md z-[540] transition-opacity duration-200"
+          className="fixed inset-0 bg-black/[0.05] dark:bg-black/35 backdrop-blur-[1.5px] z-[440] transition-opacity duration-200"
           onClick={() => setNotificationsOpen(false)}
         />
 
-        {/* Panel Container — Native macOS System Gray Surface (420px width, z-[550]) */}
-        <div className="absolute right-0 top-11 z-[550] w-[420px] rounded-[22px] border border-black/[0.08] dark:border-white/[0.08] bg-[#f2f2f7] dark:bg-[#1e1e22] backdrop-blur-2xl shadow-[0_32px_72px_-16px_rgba(0,0,0,0.2),0_8px_24px_-6px_rgba(0,0,0,0.08)] font-sans animate-in zoom-in-95 fade-in duration-150 origin-top-right overflow-hidden">
+        {/* Panel Container — Native macOS System Gray Surface (420px width) */}
+        <div className="absolute right-0 top-11 z-[450] w-[420px] rounded-[22px] border border-black/[0.08] dark:border-white/[0.08] bg-[#f2f2f7] dark:bg-[#1e1e22] backdrop-blur-2xl shadow-[0_32px_72px_-16px_rgba(0,0,0,0.16),0_8px_24px_-6px_rgba(0,0,0,0.06)] font-sans animate-in zoom-in-95 fade-in duration-150 origin-top-right overflow-hidden">
 
           {/* ── Hero Header ── */}
           <div className="px-6 pt-5 pb-3 flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.04]">
@@ -30456,7 +30456,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         return (
           <>
             {/* ── Auto-Hiding 2-Stage Expandable Sidebar Shell & Cohabitating Floating Rail ──────────── */}
-            {productMode !== 'landing' && !rightSidebarOpen && (
+            {productMode !== 'landing' && !rightSidebarOpen && !notificationsOpen && (
               <div className="fixed right-4 top-0 h-full z-[300] group/sidebar-rail pointer-events-none">
                 {/* Floating Dock Handle: Offset by 16px (right-4) from window edge so native scrollbar is 100% untouched */}
                 <div
@@ -34560,7 +34560,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
         <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-[#f5f7fc]">
-          <header className={`h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between group/header relative transition-all ${notificationsOpen ? 'z-[550]' : 'z-[210]'}`}>
+          <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between group/header relative z-[210]">
             <div className="flex items-center gap-4 min-w-0">
               {/* App Switcher Button - smoothly discloses on parent hover */}
               <div ref={workspaceSwitcherRef} className="relative z-[200] flex items-center">
@@ -42516,7 +42516,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
         
         {/* Top Header */}
-        <div className={`h-14 flex items-center justify-between px-6 border-b border-slate-200/50 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative transition-all ${notificationsOpen ? 'z-[550]' : 'z-[350]'}`}>
+        <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative z-[350]">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
