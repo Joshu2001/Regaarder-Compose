@@ -12424,9 +12424,8 @@ export default function App() {
   };
 
   const clearEntireCompositionText = () => {
-    setDocTitle('');
-    setDocSubtitle('');
     setDocBodyHtml('');
+    setExtraPages([]);
     setIsBlankDocument(true);
     setAppendedSections([]);
     setLastComposeRun(null);
@@ -12437,8 +12436,6 @@ export default function App() {
 
   const replaceEntireCompositionText = (value) => {
     const raw = stripMarkdownArtifacts(value).trim();
-    setDocTitle('');
-    setDocSubtitle('');
     setIsBlankDocument(true);
     setAppendedSections([]);
     setActiveDocView('document');
@@ -23753,25 +23750,85 @@ Respond with a JSON array of slide objects matching the schema.`;
       selection.addRange(range);
     }
 
-    if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
-      const isOrdered = command === 'insertOrderedList';
+    const applyStandardWordProcessorList = (cmd, activeRange) => {
+      const isOrdered = cmd === 'insertOrderedList';
       const tag = isOrdered ? 'ol' : 'ul';
+      const listStyle = isOrdered ? 'decimal' : 'disc';
       const selection = window.getSelection();
-      const activeRange = selection && selection.rangeCount ? selection.getRangeAt(0) : range;
+      const curRange = activeRange || (selection && selection.rangeCount ? selection.getRangeAt(0) : null);
 
-      if (activeRange && !activeRange.collapsed) {
-        const selectedText = activeRange.toString();
-        const lines = selectedText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-        if (lines.length > 0) {
-          const lis = lines.map(line => `<li>${line}</li>`).join('');
-          const listHtml = `<${tag}>${lis}</${tag}>`;
-          document.execCommand('insertHTML', false, listHtml);
-        } else {
-          document.execCommand(command, false, value);
-        }
-      } else {
-        document.execCommand(command, false, value);
+      if (!curRange) {
+        document.execCommand(cmd, false, null);
+        return;
       }
+
+      const ancestor = curRange.commonAncestorContainer;
+      const parentEl = ancestor.nodeType === Node.ELEMENT_NODE ? ancestor : ancestor.parentElement;
+      const isAlreadyInList = Boolean(parentEl?.closest('li, ul, ol'));
+
+      if (isAlreadyInList) {
+        document.execCommand(cmd, false, null);
+        return;
+      }
+
+      let rawText = '';
+      if (!curRange.collapsed) {
+        rawText = curRange.toString();
+      } else {
+        const blockEl = parentEl?.closest('p, div, h1, h2, h3, h4, h5, h6, section, article') || parentEl;
+        if (blockEl) {
+          rawText = blockEl.innerText || blockEl.textContent || '';
+          try {
+            curRange.selectNodeContents(blockEl);
+          } catch (_e) {}
+        }
+      }
+
+      const trimmedRaw = String(rawText || '').replace(/\r/g, '').trim();
+      if (!trimmedRaw) {
+        document.execCommand(cmd, false, null);
+        return;
+      }
+
+      const lineBlocks = trimmedRaw.split(/\n+/);
+      const sentenceList = [];
+
+      for (const block of lineBlocks) {
+        const trimmedBlock = block.trim();
+        if (!trimmedBlock) continue;
+
+        const sentences = trimmedBlock
+          .split(/(?<=[.!?])\s+(?=[A-Z0-9\u00C0-\u024F])/)
+          .map(s => s.trim())
+          .filter(Boolean);
+
+        if (sentences.length > 1) {
+          sentenceList.push(...sentences);
+        } else {
+          sentenceList.push(trimmedBlock);
+        }
+      }
+
+      if (sentenceList.length === 0) {
+        document.execCommand(cmd, false, null);
+        return;
+      }
+
+      const lis = sentenceList
+        .map(item => `<li style="margin-bottom: 4px;">${escapeHtml(item)}</li>`)
+        .join('');
+      const listHtml = `<${tag} style="list-style-type: ${listStyle}; padding-left: 24px; margin: 8px 0;">${lis}</${tag}>`;
+
+      try {
+        selection.removeAllRanges();
+        selection.addRange(curRange);
+      } catch (_e) {}
+
+      document.execCommand('insertHTML', false, listHtml);
+    };
+
+    if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
+      applyStandardWordProcessorList(command, range);
     } else {
       document.execCommand(command, false, value);
     }
@@ -42780,14 +42837,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="w-px h-4 bg-gray-200/60 mx-1"></div>
           <button onPointerDown={(e) => { 
             e.preventDefault(); 
-            setAssistantQuickPrompt("Draft an expanded, polished version of this selection"); 
-            setChatInput("Draft an expanded, polished version of this selection");
-            setRightSidebarOpen(true); 
-            setActiveRightTab("assistant");
-            setSelectionActionMenu({ open: false, top: 0, left: 0 });
-          }} className="flex items-center gap-1.5 p-1.5 px-2 hover:bg-violet-50/80 text-violet-600 rounded text-xs font-semibold transition-colors"><FileEdit size={14}/> Draft</button>
-          <button onPointerDown={(e) => { 
-            e.preventDefault(); 
             setAssistantQuickPrompt("Explain this text"); 
             setChatInput("Explain this text");
             setRightSidebarOpen(true); 
@@ -48895,19 +48944,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!floatingPrompt.toLowerCase().startsWith('draft')) {
-                          setFloatingPrompt(prev => prev ? `Draft ${prev}` : 'Draft ');
-                        }
-                      }}
-                      className="px-2 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 border border-violet-200/60 text-violet-700 font-semibold text-xs flex items-center gap-1.5 transition-all shrink-0 active:scale-95 shadow-sm"
-                      title="Draft mode"
-                    >
-                      <FileEdit size={13} />
-                      <span>Draft</span>
-                    </button>
                     <textarea
                       value={floatingPrompt}
                       onChange={(e) => setFloatingPrompt(e.target.value)}
