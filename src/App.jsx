@@ -4283,6 +4283,18 @@ export default function App() {
   const [uploadedBrandLogo, setUploadedBrandLogo] = useState(null);
 
   const [activeOutlineMenuId, setActiveOutlineMenuId] = useState(null);
+  const outlineMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!activeOutlineMenuId) return;
+    const handleOutsideClick = (e) => {
+      if (outlineMenuRef.current && !outlineMenuRef.current.contains(e.target)) {
+        setActiveOutlineMenuId(null);
+      }
+    };
+    window.addEventListener('pointerdown', handleOutsideClick);
+    return () => window.removeEventListener('pointerdown', handleOutsideClick);
+  }, [activeOutlineMenuId]);
   const [recentDocumentsModalOpen, setRecentDocumentsModalOpen] = useState(false);
   const [recentDocumentsList, setRecentDocumentsList] = useState([]);
   
@@ -4364,6 +4376,73 @@ export default function App() {
         {part.text}
       </span>
     ));
+  };
+
+  const stripHtml = (html) => {
+    if (!html) return '';
+    const tmp = document.createElement('div');
+    tmp.innerHTML = String(html);
+    return (tmp.textContent || tmp.innerText || '').replace(/^#+\s*/, '').replace(/<[^>]*>?/gm, '').trim();
+  };
+
+  const findOutlineItem = (tree, id) => {
+    if (!Array.isArray(tree)) return null;
+    for (const item of tree) {
+      if (item.id === id) return item;
+      if (item.subsections && item.subsections.length > 0) {
+        const subFound = findOutlineItem(item.subsections, id);
+        if (subFound) return subFound;
+      }
+    }
+    return null;
+  };
+
+  const updateOutlineItemTitle = (tree, id, newTitle) => {
+    if (!Array.isArray(tree)) return [];
+    const clean = stripHtml(newTitle);
+    return tree.map((item) => {
+      if (item.id === id) {
+        return { ...item, title: clean, plainText: clean };
+      }
+      if (item.subsections && item.subsections.length > 0) {
+        return {
+          ...item,
+          subsections: updateOutlineItemTitle(item.subsections, id, newTitle),
+        };
+      }
+      return item;
+    });
+  };
+
+  const deleteOutlineItem = (tree, id) => {
+    if (!Array.isArray(tree)) return [];
+    return tree
+      .filter((item) => item.id !== id)
+      .map((item) => {
+        if (item.subsections && item.subsections.length > 0) {
+          return {
+            ...item,
+            subsections: deleteOutlineItem(item.subsections, id),
+          };
+        }
+        return item;
+      });
+  };
+
+  const toggleOutlineItemStatus = (tree, id) => {
+    if (!Array.isArray(tree)) return [];
+    return tree.map((item) => {
+      if (item.id === id) {
+        return { ...item, completed: !item.completed };
+      }
+      if (item.subsections && item.subsections.length > 0) {
+        return {
+          ...item,
+          subsections: toggleOutlineItemStatus(item.subsections, id),
+        };
+      }
+      return item;
+    });
   };
 
   const extractHierarchicalOutline = (htmlString = docBodyHtml, titleString = docTitle) => {
@@ -40613,11 +40692,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onChange={(e) => setEditingOutlineText(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                              e.target.blur();
+                              setOutlineTreeData(prev => updateOutlineItemTitle(prev, section.id, editingOutlineText));
+                              setEditingOutlineId(null);
+                              showToast('Section renamed');
+                            } else if (e.key === 'Escape') {
+                              setEditingOutlineId(null);
                             }
                           }}
                           onBlur={() => {
-                            setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
+                            setOutlineTreeData(prev => updateOutlineItemTitle(prev, section.id, editingOutlineText));
                             setEditingOutlineId(null);
                             showToast('Section renamed');
                           }}
@@ -40631,7 +40714,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             e.stopPropagation();
                             setActiveOutlineSectionId(section.id);
                             setEditingOutlineId(section.id);
-                            setEditingOutlineText(section.plainText || section.title);
+                            setEditingOutlineText(stripHtml(section.plainText || section.title));
                           }}
                           className={`text-[12.5px] truncate cursor-text whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1 ${
                             isSelected
@@ -40659,8 +40742,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div className="relative">
                           <button
                             type="button"
-                            onClick={(e) => {
+                            onPointerDown={(e) => {
                               e.stopPropagation();
+                              e.preventDefault();
                               const rect = e.currentTarget.getBoundingClientRect();
                               setOutlineMenuCoords({ top: rect.bottom, left: rect.right - 140 });
                               setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id);
@@ -40678,11 +40762,61 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   {section.expanded && section.subsections && section.subsections.length > 0 && (
                     <div className="pl-3.5 ml-3 space-y-1 border-l border-slate-200/70 dark:border-zinc-800">
                       {section.subsections.map(sub => (
-                        <div key={sub.id} className="flex items-center gap-2 py-1 min-w-0 flex-nowrap group/sub cursor-pointer">
-                          <span className="w-1.5 h-1.5 rounded-full border border-slate-300 dark:border-zinc-600 bg-transparent shrink-0 group-hover/sub:border-violet-500 transition-colors" />
-                          <span className="text-[11.5px] text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 truncate whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1 transition-colors">
-                            {parseRichTextToJsx(sub.title)}
-                          </span>
+                        <div key={sub.id} className="flex items-center justify-between gap-2 py-1 min-w-0 flex-nowrap group/sub cursor-pointer" onClick={() => setActiveOutlineSectionId(sub.id)}>
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="w-1.5 h-1.5 rounded-full border border-slate-300 dark:border-zinc-600 bg-transparent shrink-0 group-hover/sub:border-violet-500 transition-colors" />
+                            {editingOutlineId === sub.id ? (
+                              <input
+                                type="text"
+                                value={editingOutlineText}
+                                onChange={(e) => setEditingOutlineText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    setOutlineTreeData(prev => updateOutlineItemTitle(prev, sub.id, editingOutlineText));
+                                    setEditingOutlineId(null);
+                                    showToast('Subsection renamed');
+                                  } else if (e.key === 'Escape') {
+                                    setEditingOutlineId(null);
+                                  }
+                                }}
+                                onBlur={() => {
+                                  setOutlineTreeData(prev => updateOutlineItemTitle(prev, sub.id, editingOutlineText));
+                                  setEditingOutlineId(null);
+                                  showToast('Subsection renamed');
+                                }}
+                                autoFocus
+                                className="text-xs font-semibold text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-400 w-full"
+                                style={{ fontFamily: editorFont }}
+                              />
+                            ) : (
+                              <span 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveOutlineSectionId(sub.id);
+                                  setEditingOutlineId(sub.id);
+                                  setEditingOutlineText(stripHtml(sub.plainText || sub.title));
+                                }}
+                                className="text-[11.5px] text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 truncate whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1 transition-colors"
+                              >
+                                {parseRichTextToJsx(sub.title)}
+                              </span>
+                            )}
+                          </div>
+                          {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setOutlineMenuCoords({ top: rect.bottom, left: rect.right - 140 });
+                                setActiveOutlineMenuId(activeOutlineMenuId === sub.id ? null : sub.id);
+                              }}
+                              className="p-1 rounded-md opacity-0 group-hover/sub:opacity-100 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 transition-all cursor-pointer shrink-0"
+                            >
+                              <MoreVertical size={12} strokeWidth={1.75} />
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -51207,13 +51341,58 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {activeOutlineMenuId && (
         <div
+          ref={outlineMenuRef}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
           className="fixed bg-white/95 dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-[9999] min-w-[150px] backdrop-blur-md"
           style={{ top: `${outlineMenuCoords.top + 4}px`, left: `${outlineMenuCoords.left}px`, fontFamily: editorFont }}
         >
-          <button type="button" className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100/70 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-2 transition-colors cursor-pointer" onClick={() => { setEditingOutlineId(activeOutlineMenuId); const section = outlineTreeData.find(s => s.id === activeOutlineMenuId); setEditingOutlineText(section ? section.title : ''); setActiveOutlineMenuId(null); }}><FileEdit size={13} strokeWidth={1.75} /> Rename Section</button>
-          <button type="button" className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100/70 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-2 transition-colors cursor-pointer" onClick={() => { setActiveOutlineMenuId(null); setOutlineTreeData(prev => prev.map(s => s.id === activeOutlineMenuId ? { ...s, completed: !s.completed } : s)); }}><CheckCircle2 size={13} strokeWidth={1.75} /> Toggle Status</button>
+          <button 
+            type="button" 
+            className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100/70 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-2 transition-colors cursor-pointer select-none" 
+            onPointerDown={(e) => { 
+              e.preventDefault(); 
+              e.stopPropagation(); 
+              const targetId = activeOutlineMenuId;
+              const item = findOutlineItem(outlineTreeData, targetId); 
+              const cleanTitle = stripHtml(item?.plainText || item?.title || '');
+              setActiveOutlineMenuId(null);
+              setEditingOutlineId(targetId); 
+              setEditingOutlineText(cleanTitle); 
+            }}
+          >
+            <FileEdit size={13} strokeWidth={1.75} /> Rename Section
+          </button>
+          
+          <button 
+            type="button" 
+            className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100/70 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-2 transition-colors cursor-pointer select-none" 
+            onPointerDown={(e) => { 
+              e.preventDefault(); 
+              e.stopPropagation(); 
+              const targetId = activeOutlineMenuId;
+              setOutlineTreeData(prev => toggleOutlineItemStatus(prev, targetId)); 
+              setActiveOutlineMenuId(null); 
+            }}
+          >
+            <CheckCircle2 size={13} strokeWidth={1.75} /> Toggle Status
+          </button>
+          
           <div className="h-px bg-slate-100 dark:bg-zinc-800 my-1 mx-2" />
-          <button type="button" className="w-full text-left px-3 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 transition-colors cursor-pointer" onClick={() => { setOutlineTreeData(prev => prev.filter(s => s.id !== activeOutlineMenuId)); setActiveOutlineMenuId(null); }}><Trash size={13} strokeWidth={1.75} /> Delete Section</button>
+          
+          <button 
+            type="button" 
+            className="w-full text-left px-3 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 transition-colors cursor-pointer select-none" 
+            onPointerDown={(e) => { 
+              e.preventDefault(); 
+              e.stopPropagation(); 
+              const targetId = activeOutlineMenuId;
+              setOutlineTreeData(prev => deleteOutlineItem(prev, targetId)); 
+              setActiveOutlineMenuId(null); 
+            }}
+          >
+            <Trash size={13} strokeWidth={1.75} /> Delete Section
+          </button>
         </div>
       )}
 
