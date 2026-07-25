@@ -4369,17 +4369,28 @@ export default function App() {
   const extractHierarchicalOutline = (htmlString = docBodyHtml, titleString = docTitle) => {
     const rawItems = [];
 
-    const getLevelFromNode = (el) => {
+    const addCandidate = (title, plainText, level) => {
+      const cleanPlain = String(plainText || '').replace(/^#+\s*/, '').replace(/^[*_\-~`\s]+/, '').trim();
+      if (!cleanPlain || cleanPlain.length < 2 || cleanPlain.length > 180) return;
+      if (rawItems.some((item) => item.plainText === cleanPlain)) return;
+
+      rawItems.push({
+        title: String(title || cleanPlain).trim(),
+        plainText: cleanPlain,
+        level: Math.min(Math.max(level, 1), 3),
+      });
+    };
+
+    const getLevelFromElement = (el) => {
       const tag = el.tagName?.toLowerCase();
       if (tag === 'h1') return 1;
       if (tag === 'h2') return 2;
-      if (tag === 'h3') return 3;
-      if (tag === 'h4' || tag === 'h5' || tag === 'h6') return 3;
+      if (tag === 'h3' || tag === 'h4' || tag === 'h5' || tag === 'h6') return 3;
 
       const style = el.getAttribute('style') || '';
-      if (/font-size:\s*(?:2[6-9]|[3-9]\d)px/.test(style)) return 1;
-      if (/font-size:\s*(?:2[0-5])px/.test(style)) return 2;
-      if (/font-size:\s*(?:1[7-9])px/.test(style)) return 3;
+      if (/font-size:\s*(?:2[4-9]|[3-9]\d)px/.test(style)) return 1;
+      if (/font-size:\s*(?:1[9-9]|2[0-3])px/.test(style)) return 2;
+      if (/font-size:\s*(?:1[6-8])px/.test(style)) return 3;
 
       if (el.classList?.contains('text-3xl') || el.classList?.contains('text-2xl')) return 1;
       if (el.classList?.contains('text-xl') || el.classList?.contains('text-lg')) return 2;
@@ -4387,89 +4398,100 @@ export default function App() {
       return 2;
     };
 
+    // PASS 1: Scan DOM Elements in blankBodyRef
     if (blankBodyRef.current) {
-      const headingElements = Array.from(
-        blankBodyRef.current.querySelectorAll(
-          'h1, h2, h3, h4, h5, h6, [style*="font-size: 2"], [style*="font-size: 3"], p.font-bold, p.text-xl, p.text-2xl, div > strong'
-        )
-      );
+      const allElements = Array.from(blankBodyRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, div, blockquote'));
+      allElements.forEach((el, idx) => {
+        const text = String(el.textContent || '').trim();
+        const rawHtml = String(el.innerHTML || '').trim();
+        if (!text || text.length < 3 || text.length > 180) return;
 
-      headingElements.forEach((el) => {
-        const rawTitle = String(el.innerHTML || el.textContent || '').trim();
-        const plainText = String(el.textContent || '').trim();
-        if (plainText && plainText.length > 2 && plainText.length < 160 && !rawItems.some((item) => item.plainText === plainText)) {
-          rawItems.push({
-            title: rawTitle,
-            plainText: plainText,
-            level: getLevelFromNode(el),
-          });
+        const tag = el.tagName?.toLowerCase();
+        let level = 0;
+
+        if (/^h[1-6]$/.test(tag)) {
+          level = getLevelFromElement(el);
+        } else if (idx === 0) {
+          level = 1;
+        } else if (/^#+\s+/.test(text)) {
+          if (/^#\s+/.test(text)) level = 1;
+          else if (/^##\s+/.test(text)) level = 2;
+          else level = 3;
+        } else {
+          const hasBoldChild = el.querySelector('strong, b, [style*="font-weight: 700"], [style*="font-weight:bold"]');
+          const isEndingSymbol = text.endsWith(':') || text.endsWith('?');
+          const isNumberedHeader = /^(?:section|part|step|\d+\.|\d+\.\d+)\b/i.test(text);
+
+          if (hasBoldChild || isEndingSymbol || isNumberedHeader) {
+            level = isNumberedHeader && /^\d+\.\d+/.test(text) ? 3 : 2;
+          }
+        }
+
+        if (level > 0) {
+          const firstBoldChild = el.querySelector('strong, b');
+          if (firstBoldChild && text.length > 80) {
+            const boldText = firstBoldChild.textContent?.trim();
+            if (boldText && boldText.length >= 3 && boldText.length < 100) {
+              addCandidate(firstBoldChild.innerHTML || boldText, boldText, level);
+              return;
+            }
+          }
+          addCandidate(rawHtml || text, text, level);
         }
       });
     }
 
-    if (rawItems.length === 0 && (htmlString || titleString)) {
+    // PASS 2: Parse HTML / Text Blocks (fallback or supplement if candidates are few)
+    if (rawItems.length < 3 && (htmlString || titleString)) {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = htmlString || '';
-      const lineElements = Array.from(tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, div'));
+      const blockElements = Array.from(tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, div'));
 
-      if (lineElements.length > 0) {
-        lineElements.forEach((el, idx) => {
-          const rawHtml = el.innerHTML?.trim() || '';
-          const lineText = el.textContent?.trim() || '';
-          if (!lineText || lineText.length < 3 || lineText.length > 180) return;
+      if (blockElements.length > 0) {
+        blockElements.forEach((el, idx) => {
+          const text = String(el.textContent || '').trim();
+          const rawHtml = String(el.innerHTML || '').trim();
+          if (!text || text.length < 3 || text.length > 180) return;
 
           let level = 0;
           const tag = el.tagName?.toLowerCase();
 
-          if (tag === 'h1' || /^#\s+/.test(lineText)) level = 1;
-          else if (tag === 'h2' || /^##\s+/.test(lineText)) level = 2;
-          else if (tag === 'h3' || tag === 'h4' || tag === 'h5' || tag === 'h6' || /^###+\s+/.test(lineText)) level = 3;
+          if (tag === 'h1' || /^#\s+/.test(text)) level = 1;
+          else if (tag === 'h2' || /^##\s+/.test(text)) level = 2;
+          else if (tag === 'h3' || tag === 'h4' || tag === 'h5' || tag === 'h6' || /^###+\s+/.test(text)) level = 3;
           else if (idx === 0) level = 1;
-          else if (lineText.endsWith(':') || lineText.endsWith('?') || /^\d+\.\s+\*\*/.test(lineText) || /^\*\*[^*]+\*\*/.test(lineText)) {
+          else if (text.endsWith(':') || text.endsWith('?') || /^\d+\.\s+/.test(text) || /^\*\*[^*]+\*\*/.test(text) || /<strong|<b>/i.test(rawHtml)) {
             level = 2;
           }
 
-          if (level > 0 && !rawItems.some((item) => item.plainText === lineText)) {
-            rawItems.push({
-              title: rawHtml,
-              plainText: lineText.replace(/^#+\s*/, '').trim(),
-              level,
-            });
-          }
-        });
-      } else {
-        const fullText = (tempDiv.innerText || tempDiv.textContent || '').trim();
-        const lines = fullText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-
-        lines.forEach((line, idx) => {
-          let level = 0;
-          if (/^#\s+/.test(line) || idx === 0) level = 1;
-          else if (/^##\s+/.test(line)) level = 2;
-          else if (/^###+\s+/.test(line)) level = 3;
-          else if (line.endsWith(':') || line.endsWith('?') || /^\d+\.\s+\*\*/.test(line) || /^\*\*[^*]+\*\*/.test(line)) {
-            level = 2;
-          }
-
-          if (level > 0 && line.length < 180) {
-            const clean = line.replace(/^#+\s*/, '').trim();
-            if (clean && !rawItems.some((item) => item.plainText === clean)) {
-              rawItems.push({
-                title: line,
-                plainText: clean,
-                level,
-              });
-            }
+          if (level > 0) {
+            addCandidate(rawHtml || text, text, level);
           }
         });
       }
+
+      // PASS 3: Raw line splitting (for plain text pasted without tags)
+      const fullText = (tempDiv.innerText || tempDiv.textContent || '').trim();
+      const lines = fullText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+      lines.forEach((line, idx) => {
+        let level = 0;
+        if (/^#\s+/.test(line) || idx === 0) level = 1;
+        else if (/^##\s+/.test(line)) level = 2;
+        else if (/^###+\s+/.test(line)) level = 3;
+        else if (line.length < 100 && (line.endsWith(':') || line.endsWith('?') || /^\d+\.\s+/.test(line) || /^\*\*[^*]+\*\*/.test(line))) {
+          level = 2;
+        }
+
+        if (level > 0) {
+          addCandidate(line, line, level);
+        }
+      });
     }
 
+    // PASS 4: Fallback to document title if still empty
     if (rawItems.length === 0 && titleString && titleString !== 'Untitled document' && titleString !== 'Unsaved draft') {
-      rawItems.push({
-        title: titleString,
-        plainText: titleString,
-        level: 1,
-      });
+      addCandidate(titleString, titleString, 1);
     }
 
     const tree = [];
