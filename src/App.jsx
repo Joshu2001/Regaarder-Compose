@@ -4820,6 +4820,12 @@ export default function App() {
       if (workspaceSwitcherRef.current && !workspaceSwitcherRef.current.contains(e.target)) {
         setWorkspaceSwitcherOpen(false);
       }
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) {
+        setShareModalOpen(false);
+      }
+      if (composeShareMenuRef.current && !composeShareMenuRef.current.contains(e.target)) {
+        setShareModalOpen(false);
+      }
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
         setProfileMenuOpen(false);
       }
@@ -9220,6 +9226,8 @@ export default function App() {
   const dmpRef = useRef(new DiffMatchPatch());
   const profileMenuRef = useRef(null);
   const composeProfileMenuRef = useRef(null);
+  const shareMenuRef = useRef(null);
+  const composeShareMenuRef = useRef(null);
   const [composeProfileMenuOpen, setComposeProfileMenuOpen] = useState(false);
   const workspaceSwitcherRef = useRef(null);
   const [workspaceSwitcherOpen, setWorkspaceSwitcherOpen] = useState(false);
@@ -34971,15 +34979,60 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => openShareModal(activeDocId || documents[0]?.id)}
-                  className="bg-[#7C4DFF] hover:bg-[#6C3DF0] text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
-                >
-                  <Users size={14} /> Share
-                </button>
-
-              </div>
+                <div className="relative" ref={shareMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!shareModalOpen) {
+                        openShareModal(activeDocId || documents[0]?.id);
+                      } else {
+                        setShareModalOpen(false);
+                      }
+                    }}
+                    className="bg-[#7C4DFF] hover:bg-[#6C3DF0] text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+                  >
+                    <Users size={14} /> Share
+                  </button>
+                  {shareModalOpen && (
+                    <ShareModal
+                      isOpen={shareModalOpen}
+                      onClose={() => setShareModalOpen(false)}
+                      shareTargetDocTitle={shareTargetDocTitle}
+                      shareDestination={shareDestination}
+                      setShareDestination={setShareDestination}
+                      shareAccess={shareAccess}
+                      setShareAccess={setShareAccess}
+                      shareFormat={shareFormat}
+                      setShareFormat={setShareFormat}
+                      shareLink={shareLink}
+                      handleShareModalConfirm={handleShareModalConfirm}
+                      zeroKnowledgeRedactions={zeroKnowledgeRedactions}
+                      removeProtection={removeProtection}
+                      newRedactionKeyword={newRedactionKeyword}
+                      setNewRedactionKeyword={setNewRedactionKeyword}
+                      protectKeywordInEditor={protectKeywordInEditor}
+                      setZeroKnowledgePreviewOpen={setZeroKnowledgePreviewOpen}
+                      sharePasswordProtected={sharePasswordProtected}
+                      setSharePasswordProtected={setSharePasswordProtected}
+                      sharePassword={sharePassword}
+                      setSharePassword={setSharePassword}
+                      sharePasswordConfirm={sharePasswordConfirm}
+                      setSharePasswordConfirm={setSharePasswordConfirm}
+                      showSharePassword={showSharePassword}
+                      setShowSharePassword={setShowSharePassword}
+                      isPasswordConfirmed={isPasswordConfirmed}
+                      setIsPasswordConfirmed={setIsPasswordConfirmed}
+                      shareExpiringAccess={shareExpiringAccess}
+                      setShareExpiringAccess={setShareExpiringAccess}
+                      shareExpirationValue={shareExpirationValue}
+                      setShareExpirationValue={setShareExpirationValue}
+                      shareExpirationUnit={shareExpirationUnit}
+                      setShareExpirationUnit={setShareExpirationUnit}
+                      shareExpirationDate={shareExpirationDate}
+                      setShareExpirationDate={setShareExpirationDate}
+                      showToast={showToast}
+                    />
+                  )}
                 </div>
 
                   {/* Local User Profile Avatar Button */}
@@ -35097,7 +35150,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <Settings size={16} />
               </button>
             </div>
-          </header>
+          </div>
+        </div>
+      </header>
 
           <div className="flex-1 min-h-0 flex relative">
             {!isSheetsMode && productMode !== 'deck' && (
@@ -39656,46 +39711,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
       )}
-      {shareModalOpen && (
-        <ShareModal
-          isOpen={shareModalOpen}
-          onClose={() => setShareModalOpen(false)}
-          shareTargetDocTitle={shareTargetDocTitle}
-          shareDestination={shareDestination}
-          setShareDestination={setShareDestination}
-          shareAccess={shareAccess}
-          setShareAccess={setShareAccess}
-          shareFormat={shareFormat}
-          setShareFormat={setShareFormat}
-          shareLink={shareLink}
-          handleShareModalConfirm={handleShareModalConfirm}
-          zeroKnowledgeRedactions={zeroKnowledgeRedactions}
-          removeProtection={removeProtection}
-          newRedactionKeyword={newRedactionKeyword}
-          setNewRedactionKeyword={setNewRedactionKeyword}
-          protectKeywordInEditor={protectKeywordInEditor}
-          setZeroKnowledgePreviewOpen={setZeroKnowledgePreviewOpen}
-          sharePasswordProtected={sharePasswordProtected}
-          setSharePasswordProtected={setSharePasswordProtected}
-          sharePassword={sharePassword}
-          setSharePassword={setSharePassword}
-          sharePasswordConfirm={sharePasswordConfirm}
-          setSharePasswordConfirm={setSharePasswordConfirm}
-          showSharePassword={showSharePassword}
-          setShowSharePassword={setShowSharePassword}
-          isPasswordConfirmed={isPasswordConfirmed}
-          setIsPasswordConfirmed={setIsPasswordConfirmed}
-          shareExpiringAccess={shareExpiringAccess}
-          setShareExpiringAccess={setShareExpiringAccess}
-          shareExpirationValue={shareExpirationValue}
-          setShareExpirationValue={setShareExpirationValue}
-          shareExpirationUnit={shareExpirationUnit}
-          setShareExpirationUnit={setShareExpirationUnit}
-          shareExpirationDate={shareExpirationDate}
-          setShareExpirationDate={setShareExpirationDate}
-          showToast={showToast}
-        />
-      )}
+
 
       {/* ── Sheet Slash Menu ── */}
       {productMode === 'sheets' && sheetSlashMenu.open && (() => {
@@ -42177,46 +42193,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
       )}
-      {shareModalOpen && (
-  <ShareModal
-    isOpen={shareModalOpen}
-    onClose={() => setShareModalOpen(false)}
-    shareTargetDocTitle={shareTargetDocTitle}
-    shareDestination={shareDestination}
-    setShareDestination={setShareDestination}
-    shareAccess={shareAccess}
-    setShareAccess={setShareAccess}
-    shareFormat={shareFormat}
-    setShareFormat={setShareFormat}
-    shareLink={shareLink}
-    handleShareModalConfirm={handleShareModalConfirm}
-    zeroKnowledgeRedactions={zeroKnowledgeRedactions}
-    removeProtection={removeProtection}
-    newRedactionKeyword={newRedactionKeyword}
-    setNewRedactionKeyword={setNewRedactionKeyword}
-    protectKeywordInEditor={protectKeywordInEditor}
-    setZeroKnowledgePreviewOpen={setZeroKnowledgePreviewOpen}
-    sharePasswordProtected={sharePasswordProtected}
-    setSharePasswordProtected={setSharePasswordProtected}
-    sharePassword={sharePassword}
-    setSharePassword={setSharePassword}
-    sharePasswordConfirm={sharePasswordConfirm}
-    setSharePasswordConfirm={setSharePasswordConfirm}
-    showSharePassword={showSharePassword}
-    setShowSharePassword={setShowSharePassword}
-    isPasswordConfirmed={isPasswordConfirmed}
-    setIsPasswordConfirmed={setIsPasswordConfirmed}
-    shareExpiringAccess={shareExpiringAccess}
-    setShareExpiringAccess={setShareExpiringAccess}
-    shareExpirationValue={shareExpirationValue}
-    setShareExpirationValue={setShareExpirationValue}
-    shareExpirationUnit={shareExpirationUnit}
-    setShareExpirationUnit={setShareExpirationUnit}
-    shareExpirationDate={shareExpirationDate}
-    setShareExpirationDate={setShareExpirationDate}
-    showToast={showToast}
-        />
-)}
+
 
       {/* ── Zero-Knowledge Side-by-Side Preview Modal ── */}
       {zeroKnowledgePreviewOpen && (
@@ -42871,12 +42848,61 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             )}
 
-            <button
-              onClick={() => openShareModal(activeDocId || documents[0]?.id)}
-              className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
-            >
-              <Users size={14} strokeWidth={1.5} /> Share
-            </button>
+            <div className="relative font-sans" ref={composeShareMenuRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!shareModalOpen) {
+                    openShareModal(activeDocId || documents[0]?.id);
+                  } else {
+                    setShareModalOpen(false);
+                  }
+                }}
+                className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+              >
+                <Users size={14} strokeWidth={1.5} /> Share
+              </button>
+              {shareModalOpen && (
+                <ShareModal
+                  isOpen={shareModalOpen}
+                  onClose={() => setShareModalOpen(false)}
+                  shareTargetDocTitle={shareTargetDocTitle}
+                  shareDestination={shareDestination}
+                  setShareDestination={setShareDestination}
+                  shareAccess={shareAccess}
+                  setShareAccess={setShareAccess}
+                  shareFormat={shareFormat}
+                  setShareFormat={setShareFormat}
+                  shareLink={shareLink}
+                  handleShareModalConfirm={handleShareModalConfirm}
+                  zeroKnowledgeRedactions={zeroKnowledgeRedactions}
+                  removeProtection={removeProtection}
+                  newRedactionKeyword={newRedactionKeyword}
+                  setNewRedactionKeyword={setNewRedactionKeyword}
+                  protectKeywordInEditor={protectKeywordInEditor}
+                  setZeroKnowledgePreviewOpen={setZeroKnowledgePreviewOpen}
+                  sharePasswordProtected={sharePasswordProtected}
+                  setSharePasswordProtected={setSharePasswordProtected}
+                  sharePassword={sharePassword}
+                  setSharePassword={setSharePassword}
+                  sharePasswordConfirm={sharePasswordConfirm}
+                  setSharePasswordConfirm={setSharePasswordConfirm}
+                  showSharePassword={showSharePassword}
+                  setShowSharePassword={setShowSharePassword}
+                  isPasswordConfirmed={isPasswordConfirmed}
+                  setIsPasswordConfirmed={setIsPasswordConfirmed}
+                  shareExpiringAccess={shareExpiringAccess}
+                  setShareExpiringAccess={setShareExpiringAccess}
+                  shareExpirationValue={shareExpirationValue}
+                  setShareExpirationValue={setShareExpirationValue}
+                  shareExpirationUnit={shareExpirationUnit}
+                  setShareExpirationUnit={setShareExpirationUnit}
+                  shareExpirationDate={shareExpirationDate}
+                  setShareExpirationDate={setShareExpirationDate}
+                  showToast={showToast}
+                />
+              )}
+            </div>
             
             {/* Avatars */}
             <div className="flex -space-x-2">
