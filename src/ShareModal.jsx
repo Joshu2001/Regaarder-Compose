@@ -183,18 +183,10 @@ export default function ShareModal({
               <Share2 size={15} className="text-violet-600 dark:text-violet-400" />
               <span>Share document</span>
             </h3>
-            <p className="text-[11px] text-slate-400 dark:text-zinc-400 font-medium truncate max-w-[260px] mt-0.5">
+            <p className="text-[11px] text-slate-400 dark:text-zinc-400 font-medium truncate max-w-[300px] mt-0.5">
               {shareTargetDocTitle || 'Untitled document'}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => onClose()}
-            className="w-7 h-7 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800 transition-all duration-150 active:scale-95 border border-transparent hover:border-slate-200/60 dark:hover:border-zinc-700"
-            title="Close"
-          >
-            <X size={15} />
-          </button>
         </div>
 
         {/* Form Body */}

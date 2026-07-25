@@ -30737,7 +30737,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         return (
           <>
             {/* ── Auto-Hiding 2-Stage Expandable Sidebar Shell & Cohabitating Floating Rail ──────────── */}
-            {productMode !== 'landing' && !rightSidebarOpen && !notificationsOpen && (
+            {productMode !== 'landing' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
               <div className="fixed right-4 top-0 h-full z-[300] group/sidebar-rail pointer-events-none">
                 {/* Floating Dock Handle: Offset by 16px (right-4) from window edge so native scrollbar is 100% untouched */}
                 <div
