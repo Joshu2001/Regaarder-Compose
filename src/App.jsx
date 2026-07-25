@@ -8202,23 +8202,15 @@ export default function App() {
 
   const renderWorkspaceSwitcherDropdownContent = () => {
     return (
-      <div className="absolute left-0 top-11 z-[450] w-[310px] rounded-[22px] border border-black/[0.08] dark:border-white/[0.08] bg-[#f2f2f7] dark:bg-[#1e1e22] backdrop-blur-2xl shadow-[0_24px_54px_-12px_rgba(0,0,0,0.18),0_8px_20px_-6px_rgba(0,0,0,0.06)] p-3 font-sans animate-in fade-in zoom-in-95 duration-150 origin-top-left overflow-hidden">
-        <div className="px-3 pt-2.5 pb-2 flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.04] mb-1.5">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-400">
-            Workspace Apps
-          </span>
-          <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500">
-            Regaarder Suite
-          </span>
-        </div>
+      <div className="absolute left-0 top-11 z-[450] w-[175px] rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.12)] p-2 font-sans animate-in fade-in zoom-in-95 duration-150 origin-top-left overflow-hidden">
         <div className="flex flex-col gap-1">
           {[
-            { mode: 'landing', label: 'Workspace Home', desc: 'Dashboard & Templates', icon: Home },
-            { mode: 'compose', label: 'Compose Docs', desc: 'Collaborative Document Editor', icon: FileText },
-            { mode: 'sheets', label: 'Compose Sheets', desc: 'Data Analytics & Spreadsheets', icon: Table },
-            { mode: 'deck', label: 'Compose Decks', desc: 'Interactive Slideshow Presentations', icon: MonitorPlay },
-            { mode: 'schedule', label: 'Compose Schedule', desc: 'Interactive Timeline & Agenda', icon: Calendar },
-            { mode: 'room', label: 'Compose Room', desc: 'Video & Collaboration Room', icon: Users }
+            { mode: 'landing', label: 'Home', icon: Home },
+            { mode: 'compose', label: 'Docs', icon: FileText },
+            { mode: 'sheets', label: 'Sheets', icon: Table },
+            { mode: 'deck', label: 'Decks', icon: MonitorPlay },
+            { mode: 'schedule', label: 'Schedule', icon: Calendar },
+            { mode: 'room', label: 'Room', icon: Users }
           ].map((item) => {
             const IconComponent = item.icon;
             const isCurrent = productMode === item.mode || (item.mode === 'schedule' && activeRightTab === 'calendar' && rightSidebarOpen);
@@ -8236,34 +8228,18 @@ export default function App() {
                   setWorkspaceSwitcherOpen(false);
                   showToast(`Switched to ${item.label}`);
                 }}
-                className={`group relative w-full flex items-center gap-3.5 p-2.5 rounded-xl text-left transition-all duration-180 ease-out cursor-pointer ${
+                className={`group flex items-center gap-3 px-2.5 py-2 rounded-xl text-left select-none transition-all duration-200 w-full ${
                   isCurrent
-                    ? 'bg-violet-100/60 dark:bg-violet-950/35 border border-violet-200/50 dark:border-violet-800/40 shadow-2xs'
-                    : 'bg-transparent border border-transparent hover:bg-white dark:hover:bg-[#28282d] hover:border-black/[0.06] dark:hover:border-white/[0.08] hover:shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:-translate-y-[0.5px]'
+                    ? 'bg-violet-50/90 dark:bg-violet-950/50 border border-violet-200/80 dark:border-violet-800/80 text-violet-600 dark:text-violet-400 shadow-[0_2px_8px_-3px_rgba(124,58,237,0.14)] font-medium'
+                    : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-800 dark:hover:text-zinc-200'
                 }`}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform duration-180 group-hover:scale-[1.05] ${
-                  isCurrent
-                    ? 'bg-violet-600 text-white shadow-xs'
-                    : 'bg-black/[0.04] dark:bg-white/[0.08] text-slate-600 dark:text-zinc-300 group-hover:bg-slate-900 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-slate-950'
-                }`}>
-                  <IconComponent size={15} strokeWidth={1.75} />
+                <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                  <IconComponent size={19} strokeWidth={isCurrent ? 2.2 : 1.8} />
                 </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className={`text-[12.5px] leading-tight truncate transition-colors ${
-                    isCurrent
-                      ? 'font-bold text-violet-950 dark:text-violet-100'
-                      : 'font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white'
-                  }`}>
-                    {item.label}
-                  </span>
-                  <span className="text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 group-hover:text-slate-700 dark:group-hover:text-zinc-300 leading-tight mt-0.5 truncate">
-                    {item.desc}
-                  </span>
-                </div>
-                {isCurrent && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400 shrink-0 shadow-xs" />
-                )}
+                <span className="text-[12.5px] font-medium leading-none whitespace-nowrap">
+                  {item.label}
+                </span>
               </button>
             );
           })}
