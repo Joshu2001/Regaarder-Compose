@@ -8048,14 +8048,14 @@ export default function App() {
       ? notifications
       : notifications.filter(n => n.category === notificationCategoryFilter);
 
-    /* Clean, normalized stroke icon styling (identical size 16, stroke-[1.75]) */
+    /* Apple-style normalized stroke icon set (size 15.5, stroke-[1.75]) */
     const getCategoryIcon = (category) => {
       switch (category) {
-        case 'draft':         return <FileEdit size={16} className="text-slate-500 dark:text-zinc-400 stroke-[1.75]" />;
-        case 'schedule':      return <Clock size={16} className="text-slate-500 dark:text-zinc-400 stroke-[1.75]" />;
-        case 'collaboration': return <Users size={16} className="text-slate-500 dark:text-zinc-400 stroke-[1.75]" />;
-        case 'ai':            return <Sparkles size={16} className="text-violet-600 dark:text-violet-400 stroke-[1.75]" />;
-        default:              return <CheckCircle2 size={16} className="text-slate-500 dark:text-zinc-400 stroke-[1.75]" />;
+        case 'draft':         return <FileEdit size={15.5} className="text-slate-600 dark:text-zinc-300 stroke-[1.75]" />;
+        case 'schedule':      return <Clock size={15.5} className="text-slate-600 dark:text-zinc-300 stroke-[1.75]" />;
+        case 'collaboration': return <Users size={15.5} className="text-slate-600 dark:text-zinc-300 stroke-[1.75]" />;
+        case 'ai':            return <Sparkles size={15.5} className="text-violet-600 dark:text-violet-400 stroke-[1.75]" />;
+        default:              return <CheckCircle2 size={15.5} className="text-slate-600 dark:text-zinc-300 stroke-[1.75]" />;
       }
     };
 
@@ -8064,16 +8064,16 @@ export default function App() {
 
     return (
       <>
-        {/* Subtle page backdrop overlay */}
+        {/* Page backdrop overlay */}
         <div 
           className="fixed inset-0 bg-black/[0.05] dark:bg-black/35 backdrop-blur-[1.5px] z-[440] transition-opacity duration-200"
           onClick={() => setNotificationsOpen(false)}
         />
 
-        {/* Panel Container — Native macOS System Gray Surface (420px width, inset content grid) */}
+        {/* Panel Container — Native macOS System Gray Surface (420px width) */}
         <div className="absolute right-0 top-11 z-[450] w-[420px] rounded-[22px] border border-black/[0.07] dark:border-white/[0.08] bg-[#f2f2f7] dark:bg-[#1e1e22] backdrop-blur-2xl shadow-[0_32px_72px_-16px_rgba(0,0,0,0.16),0_8px_24px_-6px_rgba(0,0,0,0.06)] font-sans animate-in zoom-in-95 fade-in duration-150 origin-top-right overflow-hidden">
 
-          {/* ── Hero Header (Centered & Inset to px-6 so text never hugs the curved edge) ── */}
+          {/* ── Hero Header (Centered & Inset to px-6) ── */}
           <div className="px-6 pt-5 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5 shrink-0">
               <span className="text-[16px] font-bold tracking-tight text-slate-900 dark:text-white">Notifications</span>
@@ -8105,7 +8105,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* ── Apple Segmented Control (Inset to mx-6 for clean alignment) ── */}
+          {/* ── Apple Segmented Control (Inset to mx-6) ── */}
           <div className="mx-6 my-2 p-1 bg-slate-300/40 dark:bg-zinc-800/80 rounded-[11px] flex items-center gap-0.5 shadow-inner">
             {categories.map((cat) => {
               const isActive = notificationCategoryFilter === cat.key;
@@ -8126,9 +8126,9 @@ export default function App() {
             })}
           </div>
 
-          {/* ── Flat List Rows Surface (Centered & Inset away from outer borders) ── */}
+          {/* ── Flat List Rows Surface (24px top clearance, 18-20px row rhythm) ── */}
           <div
-            className="max-h-[385px] overflow-y-auto px-3.5 pt-2 pb-1.5 space-y-1"
+            className="max-h-[385px] overflow-y-auto px-3.5 pt-3 pb-2 space-y-1.5"
             style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}
           >
             {filteredNotifications.length === 0 ? (
@@ -8147,50 +8147,52 @@ export default function App() {
                     setNotificationsOpen(false);
                     if (item.category === 'schedule' && typeof setSidebarTab === 'function') setSidebarTab('tasks');
                   }}
-                  className={`group relative px-3.5 py-2.5 rounded-xl transition-all duration-180 ease-out cursor-pointer ${
+                  className={`group relative px-3.5 py-3 rounded-xl border border-transparent transition-all duration-180 ease-out cursor-pointer ${
                     item.unread
-                      ? 'bg-violet-100/40 dark:bg-violet-950/30 hover:bg-white dark:hover:bg-zinc-800/80 hover:-translate-y-[1px] hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06)]'
-                      : 'bg-transparent hover:bg-white dark:hover:bg-zinc-800/80 hover:-translate-y-[1px] hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06)]'
+                      ? 'bg-violet-100/40 dark:bg-violet-950/25 hover:bg-[#f8f8fb] dark:hover:bg-[#252529] hover:border-black/[0.04] dark:hover:border-white/[0.06] hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] hover:-translate-y-[1px]'
+                      : 'bg-transparent hover:bg-[#f8f8fb] dark:hover:bg-[#252529] hover:border-black/[0.04] dark:hover:border-white/[0.06] hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] hover:-translate-y-[1px]'
                   }`}
                 >
                   <div className="flex items-start gap-3.5">
-                    {/* Compact 28px Icon Container with Soft #f4f5f8 Neutral Fill */}
-                    <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                    {/* 28x28 Subtle Circular Icon Fill (Apple Mail style) */}
+                    <div className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-transform duration-180 group-hover:scale-[1.04] ${
                       item.category === 'ai'
-                        ? 'bg-violet-100/90 dark:bg-violet-950/70'
-                        : 'bg-[#f4f5f8] dark:bg-zinc-800/60'
+                        ? 'bg-violet-500/10 dark:bg-violet-500/20'
+                        : 'bg-black/[0.035] dark:bg-white/[0.06]'
                     }`}>
                       {getCategoryIcon(item.category)}
                     </div>
 
-                    {/* Content — Strict Vertical Alignment */}
+                    {/* Content — Baseline Aligned */}
                     <div className="flex-1 min-w-0 pr-0.5">
                       <div className="flex items-baseline justify-between gap-2">
-                        {/* Title Dominance */}
-                        <span className={`text-[12.5px] leading-snug truncate ${
+                        {/* Title Dominance with subtle darken on hover */}
+                        <span className={`text-[12.5px] leading-snug truncate transition-colors duration-150 ${
                           item.unread
-                            ? 'font-semibold text-slate-900 dark:text-white'
-                            : 'font-medium text-slate-700 dark:text-zinc-300'
+                            ? 'font-semibold text-slate-900 dark:text-white group-hover:text-slate-950 dark:group-hover:text-white'
+                            : 'font-medium text-slate-700 dark:text-zinc-300 group-hover:text-slate-900 dark:group-hover:text-white'
                         }`}>
                           {item.title}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="text-[10px] font-normal text-slate-400 dark:text-zinc-500 tabular-nums">
+                          {/* Baseline aligned, quieter timestamp */}
+                          <span className="text-[10px] font-normal text-slate-400/80 dark:text-zinc-500/80 tabular-nums">
                             {fmtTime(item.timestamp)}
                           </span>
+                          {/* Refined 5px unread dot */}
                           {item.unread && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                            <span className="w-1.25 h-1.25 rounded-full bg-violet-500 shrink-0" />
                           )}
                         </div>
                       </div>
-                      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400 line-clamp-2">
+                      <p className="mt-1 text-[11px] leading-relaxed text-slate-500/90 dark:text-zinc-400 line-clamp-2">
                         {item.detail}
                       </p>
                     </div>
                   </div>
 
                   {/* Hover Quick Actions */}
-                  <div className="absolute bottom-2 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none group-hover:pointer-events-auto z-20">
+                  <div className="absolute bottom-2.5 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none group-hover:pointer-events-auto z-20">
                     {item.unread && (
                       <button
                         type="button"
@@ -8213,7 +8215,7 @@ export default function App() {
             )}
           </div>
 
-          {/* ── Integrated Footer (Centered & Inset to px-6 so text never hugs the edge) ── */}
+          {/* ── Integrated Footer (Centered & Inset to px-6) ── */}
           {filteredNotifications.length > 0 && (
             <div className="mt-2 border-t border-black/[0.05] dark:border-white/[0.05] px-6 py-3.5 flex items-center justify-between bg-slate-200/40 dark:bg-zinc-900/60">
               <span className="text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 tabular-nums">
