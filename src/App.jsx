@@ -8200,6 +8200,78 @@ export default function App() {
     );
   };
 
+  const renderWorkspaceSwitcherDropdownContent = () => {
+    return (
+      <div className="absolute left-0 top-11 z-[450] w-[310px] rounded-[22px] border border-black/[0.08] dark:border-white/[0.08] bg-[#f2f2f7] dark:bg-[#1e1e22] backdrop-blur-2xl shadow-[0_24px_54px_-12px_rgba(0,0,0,0.18),0_8px_20px_-6px_rgba(0,0,0,0.06)] p-3 font-sans animate-in fade-in zoom-in-95 duration-150 origin-top-left overflow-hidden">
+        <div className="px-3 pt-2.5 pb-2 flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.04] mb-1.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-400">
+            Workspace Apps
+          </span>
+          <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500">
+            Regaarder Suite
+          </span>
+        </div>
+        <div className="flex flex-col gap-1">
+          {[
+            { mode: 'landing', label: 'Workspace Home', desc: 'Dashboard & Templates', icon: Home },
+            { mode: 'compose', label: 'Compose Docs', desc: 'Collaborative Document Editor', icon: FileText },
+            { mode: 'sheets', label: 'Compose Sheets', desc: 'Data Analytics & Spreadsheets', icon: Table },
+            { mode: 'deck', label: 'Compose Decks', desc: 'Interactive Slideshow Presentations', icon: MonitorPlay },
+            { mode: 'schedule', label: 'Compose Schedule', desc: 'Interactive Timeline & Agenda', icon: Calendar },
+            { mode: 'room', label: 'Compose Room', desc: 'Video & Collaboration Room', icon: Users }
+          ].map((item) => {
+            const IconComponent = item.icon;
+            const isCurrent = productMode === item.mode || (item.mode === 'schedule' && activeRightTab === 'calendar' && rightSidebarOpen);
+            return (
+              <button
+                key={item.mode}
+                type="button"
+                onClick={() => {
+                  if (item.mode === 'schedule') {
+                    setActiveRightTab('calendar');
+                    setRightSidebarOpen(true);
+                  } else {
+                    setProductMode(item.mode);
+                  }
+                  setWorkspaceSwitcherOpen(false);
+                  showToast(`Switched to ${item.label}`);
+                }}
+                className={`group relative w-full flex items-center gap-3.5 p-2.5 rounded-xl text-left transition-all duration-180 ease-out cursor-pointer ${
+                  isCurrent
+                    ? 'bg-violet-100/60 dark:bg-violet-950/35 border border-violet-200/50 dark:border-violet-800/40 shadow-2xs'
+                    : 'bg-transparent border border-transparent hover:bg-white dark:hover:bg-[#28282d] hover:border-black/[0.06] dark:hover:border-white/[0.08] hover:shadow-[0_4px_14px_rgba(0,0,0,0.06)] hover:-translate-y-[0.5px]'
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform duration-180 group-hover:scale-[1.05] ${
+                  isCurrent
+                    ? 'bg-violet-600 text-white shadow-xs'
+                    : 'bg-black/[0.04] dark:bg-white/[0.08] text-slate-600 dark:text-zinc-300 group-hover:bg-slate-900 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-slate-950'
+                }`}>
+                  <IconComponent size={15} strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className={`text-[12.5px] leading-tight truncate transition-colors ${
+                    isCurrent
+                      ? 'font-bold text-violet-950 dark:text-violet-100'
+                      : 'font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white'
+                  }`}>
+                    {item.label}
+                  </span>
+                  <span className="text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 group-hover:text-slate-700 dark:group-hover:text-zinc-300 leading-tight mt-0.5 truncate">
+                    {item.desc}
+                  </span>
+                </div>
+                {isCurrent && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400 shrink-0 shadow-xs" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [selectedSheetRange, setSelectedSheetRange] = useState(null);
@@ -34569,56 +34641,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </button>
 
                 {/* Dropdown Menu */}
-                {workspaceSwitcherOpen && (
-                  <div className="absolute left-0 top-9 w-60 rounded-xl border border-slate-200/80 bg-white/95 dark:bg-[#1c1c1e]/95 dark:border-zinc-800 backdrop-blur-md shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 font-sans animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Workspace Apps
-                    </div>
-                    <div className="flex flex-col gap-0.5 mt-1">
-                      {[
-                        { mode: 'landing', label: 'Workspace Home', desc: 'Dashboard & Templates', icon: Home },
-                        { mode: 'compose', label: 'Compose Docs', desc: 'Collaborative Document Editor', icon: FileText },
-                        { mode: 'sheets', label: 'Compose Sheets', desc: 'Data Analytics & Spreadsheets', icon: Table },
-                        { mode: 'deck', label: 'Compose Decks', desc: 'Interactive Slideshow Presentations', icon: MonitorPlay },
-                        { mode: 'schedule', label: 'Compose Schedule', desc: 'Interactive Timeline & Agenda', icon: Calendar },
-                        { mode: 'room', label: 'Compose Room', desc: 'Video & Collaboration Room', icon: Users }
-                      ].map((item) => {
-                        const IconComponent = item.icon;
-                        const isCurrent = productMode === item.mode || (item.mode === 'schedule' && activeRightTab === 'calendar' && rightSidebarOpen);
-                        return (
-                          <button
-                            key={item.mode}
-                            type="button"
-                            onClick={() => {
-                              if (item.mode === 'schedule') {
-                                setActiveRightTab('calendar');
-                                setRightSidebarOpen(true);
-                              } else {
-                                setProductMode(item.mode);
-                              }
-                              setWorkspaceSwitcherOpen(false);
-                              showToast(`Switched to ${item.label}`);
-                            }}
-                            className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all relative ${
-                              isCurrent
-                                ? 'bg-violet-500/10 dark:bg-violet-950/40'
-                                : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
-                            }`}
-                          >
-                            <div className={`shrink-0 mt-0.5 ${isCurrent ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-zinc-400'}`}>
-                              <IconComponent size={15} />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 leading-tight">{item.label}</span>
-                              <span className="text-[10px] text-slate-500 dark:text-zinc-400 leading-tight mt-0.5">{item.desc}</span>
-                            </div>
-                            {isCurrent && <span className="absolute right-1 top-2 bottom-2 w-[3px] rounded-full bg-violet-500" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
               </div>
 
               {isSheetsMode ? (
@@ -42542,56 +42565,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </button>
 
               {/* Dropdown Menu */}
-              {workspaceSwitcherOpen && (
-                <div className="absolute left-0 top-9 w-60 rounded-xl border border-slate-200/80 bg-white/95 dark:bg-[#1c1c1e]/95 dark:border-zinc-800 backdrop-blur-md shadow-[0_12px_36px_-8px_rgba(0,0,0,0.18),0_0_1px_rgba(0,0,0,0.1)] p-2 font-sans animate-in fade-in slide-in-from-top-2 duration-150 z-[370]">
-                  <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Workspace Apps
-                  </div>
-                  <div className="flex flex-col gap-0.5 mt-1">
-                    {[
-                      { mode: 'landing', label: 'Workspace Home', desc: 'Dashboard & Templates', icon: Home },
-                      { mode: 'compose', label: 'Compose Docs', desc: 'Collaborative Document Editor', icon: FileText },
-                      { mode: 'sheets', label: 'Compose Sheets', desc: 'Data Analytics & Spreadsheets', icon: Table },
-                      { mode: 'deck', label: 'Compose Decks', desc: 'Interactive Slideshow Presentations', icon: MonitorPlay },
-                      { mode: 'schedule', label: 'Compose Schedule', desc: 'Interactive Timeline & Agenda', icon: Calendar },
-                      { mode: 'room', label: 'Compose Room', desc: 'Video & Collaboration Room', icon: Users }
-                    ].map((item) => {
-                      const IconComponent = item.icon;
-                      const isCurrent = productMode === item.mode || (item.mode === 'schedule' && activeRightTab === 'calendar' && rightSidebarOpen);
-                      return (
-                        <button
-                          key={item.mode}
-                          type="button"
-                          onClick={() => {
-                            if (item.mode === 'schedule') {
-                              setActiveRightTab('calendar');
-                              setRightSidebarOpen(true);
-                            } else {
-                              setProductMode(item.mode);
-                            }
-                            setWorkspaceSwitcherOpen(false);
-                            showToast(`Switched to ${item.label}`);
-                          }}
-                          className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all relative ${
-                            isCurrent
-                              ? 'bg-violet-500/10 dark:bg-violet-950/40'
-                              : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
-                          }`}
-                        >
-                          <div className={`shrink-0 mt-0.5 ${isCurrent ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-zinc-400'}`}>
-                            <IconComponent size={15} />
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 leading-tight">{item.label}</span>
-                            <span className="text-[10px] text-slate-500 dark:text-zinc-400 leading-tight mt-0.5">{item.desc}</span>
-                          </div>
-                          {isCurrent && <span className="absolute right-1 top-2 bottom-2 w-[3px] rounded-full bg-violet-500" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
             </div>
             {isUnsavedDraftVisible && (
               <>
