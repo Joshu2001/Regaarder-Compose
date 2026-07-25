@@ -41413,10 +41413,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 setEditingOutlineId(item.id);
                                 setEditingOutlineText(stripHtml(item.plainText || item.title));
                               }}
-                              className={`text-[12.5px] truncate cursor-text whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1 ${
+                              className={`text-[12.5px] font-bold truncate cursor-text whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1 ${
                                 isSelected
-                                  ? 'text-violet-700 dark:text-violet-300 font-semibold'
-                                  : 'text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100'
+                                  ? 'text-violet-700 dark:text-violet-300'
+                                  : 'text-slate-800 dark:text-zinc-100 hover:text-slate-900 dark:hover:text-white'
                               }`}
                             >
                               {parseRichTextToJsx(item.title)}
@@ -41484,7 +41484,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div key={item.id} className="space-y-1" style={{ fontFamily: editorFont }}>
                     <div 
                       className={`flex items-center justify-between gap-2 py-1 min-w-0 flex-nowrap group/sub cursor-pointer px-1 rounded-lg transition-colors ${
-                        isSelected ? 'bg-violet-50/60 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 font-semibold' : 'hover:bg-slate-100/50 dark:hover:bg-zinc-800/40'
+                        isSelected ? 'bg-violet-50/60 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 font-medium' : 'hover:bg-slate-100/50 dark:hover:bg-zinc-800/40'
                       }`}
                       onClick={() => setActiveOutlineSectionId(item.id)}
                     >
@@ -41535,8 +41535,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setEditingOutlineId(item.id);
                               setEditingOutlineText(stripHtml(item.plainText || item.title));
                             }}
-                            className={`text-[11.5px] truncate whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1 transition-colors ${
-                              isSelected ? 'text-violet-700 dark:text-violet-300 font-semibold' : 'text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100'
+                            className={`text-[11.5px] font-normal truncate whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1 transition-colors ${
+                              isSelected ? 'text-violet-700 dark:text-violet-300 font-medium' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                             }`}
                           >
                             {parseRichTextToJsx(item.title)}
