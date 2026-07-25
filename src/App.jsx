@@ -4488,6 +4488,7 @@ export default function App() {
     const addCandidate = (title, plainText, level) => {
       const cleanPlain = String(plainText || '').replace(/^#+\s*/, '').replace(/^[*_\-~`\s]+/, '').trim();
       if (!cleanPlain || cleanPlain.length < 2 || cleanPlain.length > 180) return;
+      if (/^(untitled(\s+(document|section|page))?|unsaved\s+draft|type\s+\/\s+to\s+insert.*|new\s+document)$/i.test(cleanPlain)) return;
       if (rawItems.some((item) => item.plainText === cleanPlain)) return;
 
       rawItems.push({
@@ -4517,7 +4518,7 @@ export default function App() {
     // PASS 1: Scan DOM Elements in blankBodyRef
     if (blankBodyRef.current) {
       const allElements = Array.from(blankBodyRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, div, blockquote'));
-      allElements.forEach((el, idx) => {
+      allElements.forEach((el) => {
         const text = String(el.textContent || '').trim();
         const rawHtml = String(el.innerHTML || '').trim();
         if (!text || text.length < 3 || text.length > 180) return;
@@ -4527,8 +4528,6 @@ export default function App() {
 
         if (/^h[1-6]$/.test(tag)) {
           level = getLevelFromElement(el);
-        } else if (idx === 0) {
-          level = 1;
         } else if (/^#+\s+/.test(text)) {
           if (/^#\s+/.test(text)) level = 1;
           else if (/^##\s+/.test(text)) level = 2;
@@ -4564,7 +4563,7 @@ export default function App() {
       const blockElements = Array.from(tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, div'));
 
       if (blockElements.length > 0) {
-        blockElements.forEach((el, idx) => {
+        blockElements.forEach((el) => {
           const text = String(el.textContent || '').trim();
           const rawHtml = String(el.innerHTML || '').trim();
           if (!text || text.length < 3 || text.length > 180) return;
@@ -4575,7 +4574,6 @@ export default function App() {
           if (tag === 'h1' || /^#\s+/.test(text)) level = 1;
           else if (tag === 'h2' || /^##\s+/.test(text)) level = 2;
           else if (tag === 'h3' || tag === 'h4' || tag === 'h5' || tag === 'h6' || /^###+\s+/.test(text)) level = 3;
-          else if (idx === 0) level = 1;
           else if (text.endsWith(':') || text.endsWith('?') || /^\d+\.\s+/.test(text) || /^\*\*[^*]+\*\*/.test(text) || /<strong|<b>/i.test(rawHtml)) {
             level = 2;
           }
@@ -4590,9 +4588,9 @@ export default function App() {
       const fullText = (tempDiv.innerText || tempDiv.textContent || '').trim();
       const lines = fullText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
 
-      lines.forEach((line, idx) => {
+      lines.forEach((line) => {
         let level = 0;
-        if (/^#\s+/.test(line) || idx === 0) level = 1;
+        if (/^#\s+/.test(line)) level = 1;
         else if (/^##\s+/.test(line)) level = 2;
         else if (/^###+\s+/.test(line)) level = 3;
         else if (line.length < 100 && (line.endsWith(':') || line.endsWith('?') || /^\d+\.\s+/.test(line) || /^\*\*[^*]+\*\*/.test(line))) {
@@ -4605,8 +4603,8 @@ export default function App() {
       });
     }
 
-    // PASS 4: Fallback to document title if still empty
-    if (rawItems.length === 0 && titleString && titleString !== 'Untitled document' && titleString !== 'Unsaved draft') {
+    // PASS 4: Fallback to document title if still empty (only for valid custom document titles)
+    if (rawItems.length === 0 && titleString && !/^(untitled(\s+(document|section|page))?|unsaved\s+draft|new\s+document)$/i.test(String(titleString).trim())) {
       addCandidate(titleString, titleString, 1);
     }
 
@@ -11673,9 +11671,7 @@ export default function App() {
   useEffect(() => {
     const updateOutline = () => {
       const tree = extractHierarchicalOutline(docBodyHtml, docTitle);
-      if (tree.length > 0) {
-        setOutlineTreeData(tree);
-      }
+      setOutlineTreeData(tree);
     };
 
     const timer = setTimeout(updateOutline, 150);
@@ -41312,7 +41308,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
   const renderDocumentOutlineContent = () => {
     const wordsCount = documentStats?.words || 0;
-    const minRead = Math.max(1, Math.ceil(wordsCount / 200));
+    const minRead = wordsCount > 0 ? Math.max(1, Math.ceil(wordsCount / 200)) : 0;
     return (
       <div className="flex-1 flex flex-col min-h-0 px-3.5 py-3.5 animate-fade-in-slide-right space-y-3.5" style={{ fontFamily: editorFont }}>
         <div className="space-y-1.5 shrink-0 px-1">
