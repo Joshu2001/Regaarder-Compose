@@ -7989,13 +7989,7 @@ export default function App() {
   const [relativeNow, setRelativeNow] = useState(Date.now());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationCategoryFilter, setNotificationCategoryFilter] = useState('all');
-  const [notifications, setNotifications] = useState([
-    { id: 'notif-1', title: 'Blank composition created', detail: 'System Event at 10:36:37 PM', category: 'system', unread: false, timestamp: '10:36:37 PM', timeMs: Date.now() - 300000 },
-    { id: 'notif-2', title: 'Replay link ready to share', detail: 'Copy and send to collaborators', category: 'collaboration', unread: true, timestamp: '10:32:15 PM', timeMs: Date.now() - 600000 },
-    { id: 'notif-3', title: 'Document saved locally', detail: 'Your latest draft is persisted', category: 'draft', unread: false, timestamp: '10:28:40 PM', timeMs: Date.now() - 900000 },
-    { id: 'notif-4', title: 'AI assistant is active', detail: 'Ask about selected text anytime', category: 'ai', unread: false, timestamp: '10:20:00 PM', timeMs: Date.now() - 1200000 },
-    { id: 'notif-5', title: 'Scheduled task reminder', detail: 'Project MOAT review is due today', category: 'schedule', unread: true, timestamp: '10:15:00 PM', timeMs: Date.now() - 1500000 },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
   const pushNotification = useCallback(({ title, detail, category = 'system', unread = true, actionType = null }) => {
     if (!title) return;
