@@ -8070,25 +8070,25 @@ export default function App() {
           onClick={() => setNotificationsOpen(false)}
         />
 
-        {/* Panel Container — Flat Apple macOS Surface (420px width, unified 22px grid margin) */}
-        <div className="absolute right-0 top-11 z-[450] w-[420px] rounded-[22px] border border-black/[0.06] dark:border-white/[0.08] bg-[#fcfcfd] dark:bg-[#18181b] backdrop-blur-2xl shadow-[0_32px_72px_-16px_rgba(0,0,0,0.13),0_8px_24px_-6px_rgba(0,0,0,0.05)] font-sans animate-in zoom-in-95 fade-in duration-150 origin-top-right overflow-hidden">
+        {/* Panel Container — Native macOS System Gray Surface (420px width, inset content grid) */}
+        <div className="absolute right-0 top-11 z-[450] w-[420px] rounded-[22px] border border-black/[0.07] dark:border-white/[0.08] bg-[#f2f2f7] dark:bg-[#1e1e22] backdrop-blur-2xl shadow-[0_32px_72px_-16px_rgba(0,0,0,0.16),0_8px_24px_-6px_rgba(0,0,0,0.06)] font-sans animate-in zoom-in-95 fade-in duration-150 origin-top-right overflow-hidden">
 
-          {/* ── Hero Header (Aligned to 22px margin) ── */}
-          <div className="px-5.5 pt-5 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
+          {/* ── Hero Header (Centered & Inset to px-6 so text never hugs the curved edge) ── */}
+          <div className="px-6 pt-5 pb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2.5 shrink-0">
               <span className="text-[16px] font-bold tracking-tight text-slate-900 dark:text-white">Notifications</span>
               {unreadCount > 0 && (
-                <span className="px-2.5 py-0.5 text-[10.5px] font-semibold bg-violet-100/80 text-violet-700 dark:bg-violet-950/80 dark:text-violet-300 rounded-full tabular-nums shadow-2xs">
+                <span className="px-2.5 py-0.5 text-[10.5px] font-semibold bg-violet-200/60 text-violet-800 dark:bg-violet-950/80 dark:text-violet-300 rounded-full tabular-nums shadow-2xs">
                   {unreadCount} unread
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 shrink-0">
               {unreadCount > 0 && (
                 <button
                   type="button"
                   onClick={() => setNotifications(prev => prev.map(n => ({ ...n, unread: false })))}
-                  className="text-[11px] font-medium text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                  className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
                 >
                   Mark all read
                 </button>
@@ -8097,7 +8097,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setNotifications([])}
-                  className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 hover:text-rose-500 transition-colors"
+                  className="text-[11px] font-medium text-slate-500 dark:text-zinc-500 hover:text-rose-500 transition-colors"
                 >
                   Clear
                 </button>
@@ -8105,8 +8105,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* ── Apple Segmented Control (Aligned to 22px margin) ── */}
-          <div className="mx-5.5 my-2.5 p-1 bg-slate-200/50 dark:bg-zinc-800/80 rounded-[11px] flex items-center gap-0.5 shadow-inner">
+          {/* ── Apple Segmented Control (Inset to mx-6 for clean alignment) ── */}
+          <div className="mx-6 my-2 p-1 bg-slate-300/40 dark:bg-zinc-800/80 rounded-[11px] flex items-center gap-0.5 shadow-inner">
             {categories.map((cat) => {
               const isActive = notificationCategoryFilter === cat.key;
               return (
@@ -8116,8 +8116,8 @@ export default function App() {
                   onClick={() => setNotificationCategoryFilter(cat.key)}
                   className={`flex-1 py-1.5 text-center text-[11.5px] transition-all rounded-[8px] select-none whitespace-nowrap ${
                     isActive
-                      ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-[0_1.5px_4px_rgba(0,0,0,0.1),0_0.5px_1px_rgba(0,0,0,0.05)] font-semibold'
-                      : 'text-slate-500 dark:text-zinc-400 font-medium hover:text-slate-800 dark:hover:text-zinc-200'
+                      ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-[0_1.5px_4px_rgba(0,0,0,0.12),0_0.5px_1px_rgba(0,0,0,0.06)] font-semibold'
+                      : 'text-slate-600 dark:text-zinc-400 font-medium hover:text-slate-900 dark:hover:text-zinc-200'
                   }`}
                 >
                   {cat.label}
@@ -8126,9 +8126,9 @@ export default function App() {
             })}
           </div>
 
-          {/* ── Flat List Rows Surface (Pulled 14px away from edges, smooth 150ms hover) ── */}
+          {/* ── Flat List Rows Surface (Centered & Inset away from outer borders) ── */}
           <div
-            className="max-h-[385px] overflow-y-auto px-2.5 pt-2 pb-1.5 space-y-0.5"
+            className="max-h-[385px] overflow-y-auto px-3.5 pt-2 pb-1.5 space-y-1"
             style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}
           >
             {filteredNotifications.length === 0 ? (
@@ -8147,18 +8147,18 @@ export default function App() {
                     setNotificationsOpen(false);
                     if (item.category === 'schedule' && typeof setSidebarTab === 'function') setSidebarTab('tasks');
                   }}
-                  className={`group relative px-3 py-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
+                  className={`group relative px-3.5 py-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
                     item.unread
-                      ? 'bg-violet-50/40 dark:bg-violet-950/20 hover:bg-violet-100/60 dark:hover:bg-violet-950/35 hover:-translate-y-[0.5px] hover:shadow-2xs'
-                      : 'bg-transparent hover:bg-slate-100/70 dark:hover:bg-zinc-800/50 hover:-translate-y-[0.5px] hover:shadow-2xs'
+                      ? 'bg-violet-100/40 dark:bg-violet-950/30 hover:bg-white/80 dark:hover:bg-violet-950/45 hover:shadow-2xs'
+                      : 'bg-transparent hover:bg-white/70 dark:hover:bg-zinc-800/60 hover:shadow-2xs'
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     {/* Icon Anchor — Grid Aligned */}
                     <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                       item.category === 'ai'
-                        ? 'bg-violet-100/70 dark:bg-violet-950/60'
-                        : 'bg-slate-100 dark:bg-zinc-700/60'
+                        ? 'bg-violet-100 dark:bg-violet-950/60'
+                        : 'bg-white/80 dark:bg-zinc-700/60 shadow-2xs'
                     }`}>
                       {getCategoryIcon(item.category)}
                     </div>
@@ -8166,7 +8166,7 @@ export default function App() {
                     {/* Content — Strict Vertical Alignment */}
                     <div className="flex-1 min-w-0 pr-0.5">
                       <div className="flex items-baseline justify-between gap-2">
-                        {/* Title Dominance: Unread (semibold) vs Read (medium) */}
+                        {/* Title Dominance */}
                         <span className={`text-[12.5px] leading-snug truncate ${
                           item.unread
                             ? 'font-semibold text-slate-900 dark:text-white'
@@ -8175,8 +8175,7 @@ export default function App() {
                           {item.title}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {/* Metadata / Timestamp reduced weight */}
-                          <span className="text-[10px] font-normal text-slate-400/70 dark:text-zinc-500/80 tabular-nums">
+                          <span className="text-[10px] font-normal text-slate-400 dark:text-zinc-500 tabular-nums">
                             {fmtTime(item.timestamp)}
                           </span>
                           {item.unread && (
@@ -8184,7 +8183,7 @@ export default function App() {
                           )}
                         </div>
                       </div>
-                      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400 dark:text-zinc-400 line-clamp-2">
+                      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400 line-clamp-2">
                         {item.detail}
                       </p>
                     </div>
@@ -8214,10 +8213,10 @@ export default function App() {
             )}
           </div>
 
-          {/* ── Integrated Footer (Aligned Grid) ── */}
+          {/* ── Integrated Footer (Centered & Inset to px-6 so text never hugs the edge) ── */}
           {filteredNotifications.length > 0 && (
-            <div className="mt-2 border-t border-black/[0.04] dark:border-white/[0.04] px-5.5 py-3.5 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-900/40">
-              <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 tabular-nums">
+            <div className="mt-2 border-t border-black/[0.05] dark:border-white/[0.05] px-6 py-3.5 flex items-center justify-between bg-slate-200/40 dark:bg-zinc-900/60">
+              <span className="text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 tabular-nums">
                 {filteredNotifications.length} {filteredNotifications.length === 1 ? 'notification' : 'notifications'}
                 {unreadCount > 0 && notificationCategoryFilter === 'all' && ` · ${unreadCount} unread`}
               </span>
@@ -8231,7 +8230,7 @@ export default function App() {
                       setNotifications(prev => prev.filter(n => n.category !== notificationCategoryFilter));
                     }
                   }}
-                  className="text-[10.5px] font-medium text-slate-400 dark:text-zinc-500 hover:text-rose-500 transition-colors"
+                  className="text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 hover:text-rose-500 transition-colors"
                 >
                   Clear {notificationCategoryFilter !== 'all' ? 'category' : 'all'}
                 </button>
