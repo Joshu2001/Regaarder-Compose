@@ -4315,6 +4315,204 @@ export default function App() {
   const [outlineTreeData, setOutlineTreeData] = useState([]);
   const [activeOutlineSectionId, setActiveOutlineSectionId] = useState(null);
 
+  const parseRichTextToJsx = (text) => {
+    if (!text) return null;
+    const str = String(text);
+
+    let markdown = str
+      .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+      .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
+      .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+      .replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
+      .replace(/<[^>]+>/g, '');
+
+    const parts = [];
+    const regex = /(\*\*\*[\s\S]*?\*\*\*|\*\*[\s\S]*?\*\*|\*[\s\S]*?\*|`[\s\S]*?`)/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(markdown)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ text: markdown.substring(lastIndex, match.index), bold: false, italic: false });
+      }
+      const matchedText = match[0];
+      if (matchedText.startsWith('***') && matchedText.endsWith('***')) {
+        parts.push({ text: matchedText.slice(3, -3), bold: true, italic: true });
+      } else if (matchedText.startsWith('**') && matchedText.endsWith('**')) {
+        parts.push({ text: matchedText.slice(2, -2), bold: true, italic: false });
+      } else if (matchedText.startsWith('*') && matchedText.endsWith('*')) {
+        parts.push({ text: matchedText.slice(1, -1), bold: false, italic: true });
+      } else {
+        parts.push({ text: matchedText, bold: false, italic: false });
+      }
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < markdown.length) {
+      parts.push({ text: markdown.substring(lastIndex), bold: false, italic: false });
+    }
+
+    if (parts.length === 0) {
+      return str;
+    }
+
+    return parts.map((part, idx) => (
+      <span
+        key={idx}
+        className={`${part.bold ? 'font-bold' : 'font-normal'} ${part.italic ? 'italic' : ''}`}
+      >
+        {part.text}
+      </span>
+    ));
+  };
+
+  const extractHierarchicalOutline = (htmlString = docBodyHtml, titleString = docTitle) => {
+    const rawItems = [];
+
+    const getLevelFromNode = (el) => {
+      const tag = el.tagName?.toLowerCase();
+      if (tag === 'h1') return 1;
+      if (tag === 'h2') return 2;
+      if (tag === 'h3') return 3;
+      if (tag === 'h4' || tag === 'h5' || tag === 'h6') return 3;
+
+      const style = el.getAttribute('style') || '';
+      if (/font-size:\s*(?:2[6-9]|[3-9]\d)px/.test(style)) return 1;
+      if (/font-size:\s*(?:2[0-5])px/.test(style)) return 2;
+      if (/font-size:\s*(?:1[7-9])px/.test(style)) return 3;
+
+      if (el.classList?.contains('text-3xl') || el.classList?.contains('text-2xl')) return 1;
+      if (el.classList?.contains('text-xl') || el.classList?.contains('text-lg')) return 2;
+
+      return 2;
+    };
+
+    if (blankBodyRef.current) {
+      const headingElements = Array.from(
+        blankBodyRef.current.querySelectorAll(
+          'h1, h2, h3, h4, h5, h6, [style*="font-size: 2"], [style*="font-size: 3"], p.font-bold, p.text-xl, p.text-2xl, div > strong'
+        )
+      );
+
+      headingElements.forEach((el) => {
+        const rawTitle = String(el.innerHTML || el.textContent || '').trim();
+        const plainText = String(el.textContent || '').trim();
+        if (plainText && plainText.length > 2 && plainText.length < 160 && !rawItems.some((item) => item.plainText === plainText)) {
+          rawItems.push({
+            title: rawTitle,
+            plainText: plainText,
+            level: getLevelFromNode(el),
+          });
+        }
+      });
+    }
+
+    if (rawItems.length === 0 && (htmlString || titleString)) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlString || '';
+      const lineElements = Array.from(tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, div'));
+
+      if (lineElements.length > 0) {
+        lineElements.forEach((el, idx) => {
+          const rawHtml = el.innerHTML?.trim() || '';
+          const lineText = el.textContent?.trim() || '';
+          if (!lineText || lineText.length < 3 || lineText.length > 180) return;
+
+          let level = 0;
+          const tag = el.tagName?.toLowerCase();
+
+          if (tag === 'h1' || /^#\s+/.test(lineText)) level = 1;
+          else if (tag === 'h2' || /^##\s+/.test(lineText)) level = 2;
+          else if (tag === 'h3' || tag === 'h4' || tag === 'h5' || tag === 'h6' || /^###+\s+/.test(lineText)) level = 3;
+          else if (idx === 0) level = 1;
+          else if (lineText.endsWith(':') || lineText.endsWith('?') || /^\d+\.\s+\*\*/.test(lineText) || /^\*\*[^*]+\*\*/.test(lineText)) {
+            level = 2;
+          }
+
+          if (level > 0 && !rawItems.some((item) => item.plainText === lineText)) {
+            rawItems.push({
+              title: rawHtml,
+              plainText: lineText.replace(/^#+\s*/, '').trim(),
+              level,
+            });
+          }
+        });
+      } else {
+        const fullText = (tempDiv.innerText || tempDiv.textContent || '').trim();
+        const lines = fullText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+        lines.forEach((line, idx) => {
+          let level = 0;
+          if (/^#\s+/.test(line) || idx === 0) level = 1;
+          else if (/^##\s+/.test(line)) level = 2;
+          else if (/^###+\s+/.test(line)) level = 3;
+          else if (line.endsWith(':') || line.endsWith('?') || /^\d+\.\s+\*\*/.test(line) || /^\*\*[^*]+\*\*/.test(line)) {
+            level = 2;
+          }
+
+          if (level > 0 && line.length < 180) {
+            const clean = line.replace(/^#+\s*/, '').trim();
+            if (clean && !rawItems.some((item) => item.plainText === clean)) {
+              rawItems.push({
+                title: line,
+                plainText: clean,
+                level,
+              });
+            }
+          }
+        });
+      }
+    }
+
+    if (rawItems.length === 0 && titleString && titleString !== 'Untitled document' && titleString !== 'Unsaved draft') {
+      rawItems.push({
+        title: titleString,
+        plainText: titleString,
+        level: 1,
+      });
+    }
+
+    const tree = [];
+    let currentH1 = null;
+    let currentH2 = null;
+
+    rawItems.forEach((item, index) => {
+      const sectionNode = {
+        id: `sec-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        title: item.title,
+        plainText: item.plainText,
+        level: item.level,
+        progress: 0,
+        completed: false,
+        subsections: [],
+        expanded: true,
+      };
+
+      if (item.level === 1) {
+        tree.push(sectionNode);
+        currentH1 = sectionNode;
+        currentH2 = null;
+      } else if (item.level === 2) {
+        if (currentH1) {
+          currentH1.subsections.push(sectionNode);
+        } else {
+          tree.push(sectionNode);
+        }
+        currentH2 = sectionNode;
+      } else {
+        if (currentH2) {
+          currentH2.subsections.push(sectionNode);
+        } else if (currentH1) {
+          currentH1.subsections.push(sectionNode);
+        } else {
+          tree.push(sectionNode);
+        }
+      }
+    });
+
+    return tree;
+  };
+
   const [activeEmojiEl, setActiveEmojiEl] = useState(null);
   const [emojiControlsPosition, setEmojiControlsPosition] = useState({ top: 0, left: 0 });
   const [savedEmojis, setSavedEmojis] = useState(() => {
@@ -10772,6 +10970,19 @@ export default function App() {
       if (key === 'y' || (key === 'z' && event.shiftKey)) {
         event.preventDefault();
         redoDocumentChange();
+        return;
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && (key === 'v' || key === 'V')) {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          event.preventDefault();
+          navigator.clipboard.readText().then((text) => {
+            if (text) {
+              handleSmartClipboardIngest(text);
+            }
+          }).catch(() => {});
+          return;
+        }
       }
     };
 
@@ -10781,24 +10992,57 @@ export default function App() {
 
   useEffect(() => {
     const handlePaste = (event) => {
-      if (!wholeDocSelectionRef.current) {
+      if (wholeDocSelectionRef.current && blankBodyRef.current && blankBodyRef.current.contains(event.target)) {
+        event.preventDefault();
+        const pasted = event.clipboardData?.getData('text/plain') || '';
+        replaceEntireCompositionText(pasted);
+        wholeDocSelectionRef.current = false;
         return;
       }
 
-      const target = event.target;
-      if (!blankBodyRef.current || !blankBodyRef.current.contains(target)) {
+      // Check if user is actively focused inside an input element or editable text control
+      const activeEl = document.activeElement;
+      const isEditableTarget = activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.isContentEditable ||
+        activeEl.closest('[contenteditable="true"]') ||
+        activeEl.closest('input') ||
+        activeEl.closest('textarea') ||
+        activeEl.closest('.sheet-cell-editor') ||
+        activeEl.closest('#editor-canvas') ||
+        activeEl.closest('.notes-editor')
+      );
+
+      // If user is pasting inside an input or editable field, allow normal paste behavior
+      if (isEditableTarget) {
         return;
       }
 
-      event.preventDefault();
-      const pasted = event.clipboardData?.getData('text/plain') || '';
-      replaceEntireCompositionText(pasted);
-      wholeDocSelectionRef.current = false;
+      // If user is on an un-focused surface (dashboard, background, sidebar), perform Smart Clipboard Ingest
+      const pastedText = event.clipboardData?.getData('text/plain') || '';
+      if (pastedText.trim().length >= 5) {
+        event.preventDefault();
+        handleSmartClipboardIngest(pastedText);
+      }
     };
 
     window.addEventListener('paste', handlePaste, true);
     return () => window.removeEventListener('paste', handlePaste, true);
-  }, []);
+  }, [activeDocId, documents]);
+
+  // Auto-sync Document Outline from document content and headings
+  useEffect(() => {
+    const updateOutline = () => {
+      const tree = extractHierarchicalOutline(docBodyHtml, docTitle);
+      if (tree.length > 0) {
+        setOutlineTreeData(tree);
+      }
+    };
+
+    const timer = setTimeout(updateOutline, 150);
+    return () => clearTimeout(timer);
+  }, [activeDocId, docBodyHtml, docTitle]);
 
   useEffect(() => {
     const handleSheetCopy = (event) => {
@@ -22044,6 +22288,62 @@ Rules:
       showToast('Blank composition created');
     }
     return newDoc.id;
+  };
+
+  const handleSmartClipboardIngest = (rawText) => {
+    const trimmed = (rawText || '').trim();
+    if (!trimmed || trimmed.length < 5) return false;
+
+    const lines = trimmed.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    if (!lines.length) return false;
+
+    // 1. Extract Smart Title from first line
+    const firstLine = lines[0];
+    const titleCandidate = firstLine.replace(/^#+\s*/, '').replace(/^[*_\-~`\s]+/, '').trim();
+    const extractedTitle = titleCandidate.length > 80 ? titleCandidate.slice(0, 77) + '...' : (titleCandidate || 'Pasted Document');
+
+    // 2. Format Body into semantic HTML
+    const bodyLines = lines.slice(1);
+    let formattedBodyHtml = '';
+
+    if (bodyLines.length === 0) {
+      formattedBodyHtml = `<p style="margin-bottom: 12px; font-size: 16px; color: #334155; line-height: 1.75;">${escapeHtml(trimmed)}</p>`;
+    } else {
+      formattedBodyHtml = bodyLines.map((line) => {
+        if (line.startsWith('# ')) return `<h1 style="font-size: 28px; font-weight: 700; color: #0f172a; margin: 18px 0 10px;">${escapeHtml(line.replace(/^#\s*/, ''))}</h1>`;
+        if (line.startsWith('## ')) return `<h2 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 16px 0 8px;">${escapeHtml(line.replace(/^##\s*/, ''))}</h2>`;
+        if (line.startsWith('### ')) return `<h3 style="font-size: 18px; font-weight: 600; color: #0f172a; margin: 14px 0 6px;">${escapeHtml(line.replace(/^###\s*/, ''))}</h3>`;
+        if (line.startsWith('- ') || line.startsWith('* ')) return `<li style="margin-bottom: 6px; margin-left: 20px; color: #334155;">${escapeHtml(line.replace(/^[*\-]\s*/, ''))}</li>`;
+        return `<p style="margin-bottom: 12px; font-size: 16px; color: #334155; line-height: 1.75;">${escapeHtml(line)}</p>`;
+      }).join('');
+    }
+
+    const prevDocId = activeDocId;
+
+    // 3. Create new document
+    const newDocId = createNewComposition({
+      silent: true,
+      initialTitle: extractedTitle,
+      initialHtml: formattedBodyHtml,
+    });
+
+    // Auto-populate Document Outline with hierarchical sections/headings
+    const outlineTree = extractHierarchicalOutline(formattedBodyHtml, extractedTitle);
+    if (outlineTree.length > 0) {
+      setOutlineTreeData(outlineTree);
+    }
+
+    // 4. Show Apple-style Toast with Undo Callback
+    const displayTitle = extractedTitle.length > 25 ? `${extractedTitle.slice(0, 22)}...` : extractedTitle;
+    showToast(`✨ Created "${displayTitle}" from clipboard — Click to Undo`, () => {
+      setDocuments((prev) => prev.filter((doc) => doc.id !== newDocId));
+      if (prevDocId) {
+        switchDocument(prevDocId);
+      }
+      showToast('Document creation undone');
+    });
+
+    return true;
   };
 
   const openCreationPicker = () => {
@@ -40309,15 +40609,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             e.stopPropagation();
                             setActiveOutlineSectionId(section.id);
                             setEditingOutlineId(section.id);
-                            setEditingOutlineText(section.title);
+                            setEditingOutlineText(section.plainText || section.title);
                           }}
                           className={`text-[12.5px] truncate cursor-text whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1 ${
                             isSelected
-                              ? 'font-semibold text-violet-700 dark:text-violet-300'
-                              : 'font-medium text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100'
+                              ? 'text-violet-700 dark:text-violet-300 font-semibold'
+                              : 'text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100'
                           }`}
                         >
-                          {section.title}
+                          {parseRichTextToJsx(section.title)}
                         </span>
                       )}
                     </div>
@@ -40352,13 +40652,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   </div>
 
-                  {/* Subsections */}
+                  {/* Subsections with indentation hierarchy */}
                   {section.expanded && section.subsections && section.subsections.length > 0 && (
-                    <div className="pl-3.5 ml-3 space-y-1.5 border-l border-slate-200/70 dark:border-zinc-800">
+                    <div className="pl-3.5 ml-3 space-y-1 border-l border-slate-200/70 dark:border-zinc-800">
                       {section.subsections.map(sub => (
-                        <div key={sub.id} className="flex items-center gap-2 py-0.5 min-w-0 flex-nowrap group/sub cursor-pointer">
+                        <div key={sub.id} className="flex items-center gap-2 py-1 min-w-0 flex-nowrap group/sub cursor-pointer">
                           <span className="w-1.5 h-1.5 rounded-full border border-slate-300 dark:border-zinc-600 bg-transparent shrink-0 group-hover/sub:border-violet-500 transition-colors" />
-                          <span className="text-[11.5px] text-slate-500 dark:text-zinc-400 font-medium hover:text-slate-800 dark:hover:text-zinc-200 truncate whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1 transition-colors">{sub.title}</span>
+                          <span className="text-[11.5px] text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 truncate whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1 transition-colors">
+                            {parseRichTextToJsx(sub.title)}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -40389,9 +40691,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
 
-        {/* Add New Section Buttons */}
+        {/* Add New Section Button */}
         {outlineTreeData.length > 0 && currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-          <div className="flex gap-2 w-full mt-2 shrink-0">
+          <div className="w-full mt-2 shrink-0">
             <button
               type="button"
               onClick={() => {
@@ -40401,28 +40703,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 setEditingOutlineId(newId);
                 setEditingOutlineText('Untitled Section');
               }}
-              className="flex-1 py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-900/60 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-950/30 text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+              className="w-full py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-900/60 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-950/30 text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
               style={{ fontFamily: editorFont }}
             >
               + Add Section
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                showToast('Generating AI Section...');
-                setTimeout(() => {
-                  const newId = `sec-ai-${Date.now()}`;
-                  setOutlineTreeData(prev => [...prev, { id: newId, title: 'AI Generated Insights', progress: 0, completed: false, subsections: [], expanded: false }]);
-                  setActiveOutlineSectionId(newId);
-                  setEditingOutlineId(newId);
-                  setEditingOutlineText('AI Generated Insights');
-                  showToast('AI Section Generated');
-                }, 1000);
-              }}
-              className="flex-1 py-2.5 rounded-xl border border-dashed border-violet-200/80 dark:border-violet-800/60 bg-violet-50/30 dark:bg-violet-950/20 hover:bg-violet-50 dark:hover:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-              style={{ fontFamily: editorFont }}
-            >
-              <Sparkles size={13} strokeWidth={1.75} /> AI Section
             </button>
           </div>
         )}
