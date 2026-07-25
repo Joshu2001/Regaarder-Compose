@@ -8048,14 +8048,14 @@ export default function App() {
       ? notifications
       : notifications.filter(n => n.category === notificationCategoryFilter);
 
-    /* Clean, normalized stroke icon styling (identical size 18, stroke-[1.5]) */
+    /* Clean, normalized stroke icon styling (identical size 16, stroke-[1.75]) */
     const getCategoryIcon = (category) => {
       switch (category) {
-        case 'draft':         return <FileEdit size={18} className="text-slate-500 dark:text-zinc-400 stroke-[1.5]" />;
-        case 'schedule':      return <Clock size={18} className="text-slate-500 dark:text-zinc-400 stroke-[1.5]" />;
-        case 'collaboration': return <Users size={18} className="text-slate-500 dark:text-zinc-400 stroke-[1.5]" />;
-        case 'ai':            return <Sparkles size={18} className="text-violet-500 dark:text-violet-400 stroke-[1.5]" />;
-        default:              return <CheckCircle2 size={18} className="text-slate-500 dark:text-zinc-400 stroke-[1.5]" />;
+        case 'draft':         return <FileEdit size={16} className="text-slate-500 dark:text-zinc-400 stroke-[1.75]" />;
+        case 'schedule':      return <Clock size={16} className="text-slate-500 dark:text-zinc-400 stroke-[1.75]" />;
+        case 'collaboration': return <Users size={16} className="text-slate-500 dark:text-zinc-400 stroke-[1.75]" />;
+        case 'ai':            return <Sparkles size={16} className="text-violet-600 dark:text-violet-400 stroke-[1.75]" />;
+        default:              return <CheckCircle2 size={16} className="text-slate-500 dark:text-zinc-400 stroke-[1.75]" />;
       }
     };
 
@@ -8147,18 +8147,18 @@ export default function App() {
                     setNotificationsOpen(false);
                     if (item.category === 'schedule' && typeof setSidebarTab === 'function') setSidebarTab('tasks');
                   }}
-                  className={`group relative px-3.5 py-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
+                  className={`group relative px-3.5 py-2.5 rounded-xl transition-all duration-180 ease-out cursor-pointer ${
                     item.unread
-                      ? 'bg-violet-100/40 dark:bg-violet-950/30 hover:bg-white/80 dark:hover:bg-violet-950/45 hover:shadow-2xs'
-                      : 'bg-transparent hover:bg-white/70 dark:hover:bg-zinc-800/60 hover:shadow-2xs'
+                      ? 'bg-violet-100/40 dark:bg-violet-950/30 hover:bg-white dark:hover:bg-zinc-800/80 hover:-translate-y-[1px] hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06)]'
+                      : 'bg-transparent hover:bg-white dark:hover:bg-zinc-800/80 hover:-translate-y-[1px] hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06)]'
                   }`}
                 >
-                  <div className="flex items-start gap-3">
-                    {/* Icon Anchor — Grid Aligned */}
-                    <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                  <div className="flex items-start gap-3.5">
+                    {/* Compact 28px Icon Container with Soft #f4f5f8 Neutral Fill */}
+                    <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
                       item.category === 'ai'
-                        ? 'bg-violet-100 dark:bg-violet-950/60'
-                        : 'bg-white/80 dark:bg-zinc-700/60 shadow-2xs'
+                        ? 'bg-violet-100/90 dark:bg-violet-950/70'
+                        : 'bg-[#f4f5f8] dark:bg-zinc-800/60'
                     }`}>
                       {getCategoryIcon(item.category)}
                     </div>
