@@ -47569,29 +47569,54 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {/* Page 1 Sheet Wrapper */}
             <div
               data-enterprise-page="true"
-              className="w-full mx-auto rounded-[24px] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-zinc-800/50 transition-all relative"
+              className={`w-full mx-auto rounded-[24px] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] border transition-all relative ${
+                isDarkMode 
+                  ? 'bg-zinc-900 border-zinc-800 text-zinc-100' 
+                  : 'bg-white border-slate-200/50 text-slate-900'
+              }`}
               style={{
                 maxWidth: pageOrientation === 'landscape'
                   ? (docPageSize === 'letter' ? '1056px' : docPageSize === 'legal' ? '1296px' : '1123px')
                   : (docPageSize === 'letter' ? '816px' : docPageSize === 'legal' ? '816px' : '800px'),
-                backgroundColor: 
+                backgroundColor: isDarkMode ? (
+                  docTheme === 'emerald' ? '#064e3b' :
+                  docTheme === 'amber' ? '#451a03' :
+                  docTheme === 'rose' ? '#4c0519' :
+                  docTheme === 'slate' ? '#18181b' :
+                  '#18181b'
+                ) : (
                   docTheme === 'emerald' ? '#F0FDF4' :
                   docTheme === 'amber' ? '#FEFBE8' :
                   docTheme === 'rose' ? '#FFF1F2' :
                   docTheme === 'slate' ? '#F8FAFC' :
-                  '#ffffff',
-                borderColor:
+                  '#ffffff'
+                ),
+                borderColor: isDarkMode ? (
+                  docTheme === 'emerald' ? '#047857' :
+                  docTheme === 'amber' ? '#b45309' :
+                  docTheme === 'rose' ? '#be123c' :
+                  docTheme === 'slate' ? '#27272a' :
+                  '#27272a'
+                ) : (
                   docTheme === 'emerald' ? '#BBF7D0' :
                   docTheme === 'amber' ? '#FEF08A' :
                   docTheme === 'rose' ? '#FECDD3' :
                   docTheme === 'slate' ? '#E2E8F0' :
-                  'rgba(148, 163, 184, 0.22)',
-                color:
+                  'rgba(148, 163, 184, 0.22)'
+                ),
+                color: isDarkMode ? (
+                  docTheme === 'emerald' ? '#dcfce7' :
+                  docTheme === 'amber' ? '#fef3c7' :
+                  docTheme === 'rose' ? '#ffe4e6' :
+                  docTheme === 'slate' ? '#f8fafc' :
+                  '#f8fafc'
+                ) : (
                   docTheme === 'emerald' ? '#052e16' :
                   docTheme === 'amber' ? '#451a03' :
                   docTheme === 'rose' ? '#4c0519' :
                   docTheme === 'slate' ? '#0f172a' :
-                  '#0f172a',
+                  '#0f172a'
+                ),
                 fontFamily: editorFont || (
                   docTheme === 'emerald' ? 'sans-serif' :
                   docTheme === 'amber' ? 'serif' :
@@ -47616,6 +47641,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 rose: '#be123c',
                 slate: '#1e293b'
               };
+              const darkThemeHeadings = {
+                violet: '#c4b5fd',
+                emerald: '#6ee7b7',
+                amber: '#fde68a',
+                rose: '#fecdd3',
+                slate: '#f1f5f9'
+              };
               const currentThemeBrands = {
                 violet: '#7c3aed',
                 emerald: '#059669',
@@ -47637,13 +47669,31 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 rose: '#fff1f2',
                 slate: '#f8fafc'
               };
-              const hColor = currentThemeHeadings[docTheme] || brandColor || '#6d28d9';
-              const bColor = currentThemeBrands[docTheme] || brandColor || '#7c3aed';
-              const bdColor = currentThemeBorders[docTheme] || '#e2e8f0';
-              const bgColor = currentThemeBgs[docTheme] || '#f8fafc';
+              const darkThemeBgs = {
+                violet: '#2e1065',
+                emerald: '#064e3b',
+                amber: '#451a03',
+                rose: '#4c0519',
+                slate: '#27272a'
+              };
+
+              const hColor = isDarkMode ? (darkThemeHeadings[docTheme] || '#c4b5fd') : (currentThemeHeadings[docTheme] || brandColor || '#6d28d9');
+              const bColor = isDarkMode ? '#a78bfa' : (currentThemeBrands[docTheme] || brandColor || '#7c3aed');
+              const bdColor = isDarkMode ? '#3f3f46' : (currentThemeBorders[docTheme] || '#e2e8f0');
+              const bgColor = isDarkMode ? (darkThemeBgs[docTheme] || '#27272a') : (currentThemeBgs[docTheme] || '#f8fafc');
+              const textColor = isDarkMode ? '#f8fafc' : '#1e293b';
 
               return (
                 <style>{`
+                  [data-enterprise-page="true"] {
+                    color: ${textColor} !important;
+                  }
+                  [data-enterprise-page="true"] p, 
+                  [data-enterprise-page="true"] div, 
+                  [data-enterprise-page="true"] span:not([class*="bg-"]), 
+                  [data-enterprise-page="true"] li {
+                    color: ${textColor};
+                  }
                   [data-enterprise-page="true"] h1, 
                   [data-enterprise-page="true"] h2, 
                   [data-enterprise-page="true"] h3, 
@@ -47659,6 +47709,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   [data-enterprise-page="true"] blockquote {
                     border-left-color: ${bColor} !important;
                     background-color: ${bgColor} !important;
+                    color: ${textColor} !important;
                   }
                   [data-enterprise-page="true"] hr {
                     border-color: ${bdColor} !important;
@@ -47927,7 +47978,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   {...editorDragHandlers}
                   dir="ltr"
                   data-doc-id={activeDocId || ''}
-                  className="mb-4 min-h-[70vh] cursor-text outline-none text-sm text-gray-700 leading-relaxed"
+                  className={`mb-4 min-h-[70vh] cursor-text outline-none text-sm leading-relaxed transition-colors ${isDarkMode ? 'text-zinc-100' : 'text-slate-800'}`}
                   style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
                   dangerouslySetInnerHTML={{ __html: docBodyHtml }}
                 />
