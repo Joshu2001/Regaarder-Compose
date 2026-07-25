@@ -8048,14 +8048,14 @@ export default function App() {
       ? notifications
       : notifications.filter(n => n.category === notificationCategoryFilter);
 
-    /* Apple-style normalized stroke icon set (size 15.5, stroke-[1.75]) */
+    /* Apple-style normalized stroke icon set (size 16, stroke-[1.75]) */
     const getCategoryIcon = (category) => {
       switch (category) {
-        case 'draft':         return <FileEdit size={15.5} className="text-slate-600 dark:text-zinc-300 stroke-[1.75]" />;
-        case 'schedule':      return <Clock size={15.5} className="text-slate-600 dark:text-zinc-300 stroke-[1.75]" />;
-        case 'collaboration': return <Users size={15.5} className="text-slate-600 dark:text-zinc-300 stroke-[1.75]" />;
-        case 'ai':            return <Sparkles size={15.5} className="text-violet-600 dark:text-violet-400 stroke-[1.75]" />;
-        default:              return <CheckCircle2 size={15.5} className="text-slate-600 dark:text-zinc-300 stroke-[1.75]" />;
+        case 'draft':         return <FileEdit size={16} className="text-slate-700 dark:text-zinc-200 stroke-[1.75]" />;
+        case 'schedule':      return <Clock size={16} className="text-slate-700 dark:text-zinc-200 stroke-[1.75]" />;
+        case 'collaboration': return <Users size={16} className="text-slate-700 dark:text-zinc-200 stroke-[1.75]" />;
+        case 'ai':            return <Sparkles size={16} className="text-violet-700 dark:text-violet-300 stroke-[1.75]" />;
+        default:              return <CheckCircle2 size={16} className="text-slate-700 dark:text-zinc-200 stroke-[1.75]" />;
       }
     };
 
@@ -8064,21 +8064,21 @@ export default function App() {
 
     return (
       <>
-        {/* Page backdrop overlay */}
+        {/* Full backdrop overlay — z-[540] completely covers sidebar toggle button & rail under blur */}
         <div 
-          className="fixed inset-0 bg-black/[0.05] dark:bg-black/35 backdrop-blur-[1.5px] z-[440] transition-opacity duration-200"
+          className="fixed inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-md z-[540] transition-opacity duration-200"
           onClick={() => setNotificationsOpen(false)}
         />
 
-        {/* Panel Container — Native macOS System Gray Surface (420px width) */}
-        <div className="absolute right-0 top-11 z-[450] w-[420px] rounded-[22px] border border-black/[0.07] dark:border-white/[0.08] bg-[#f2f2f7] dark:bg-[#1e1e22] backdrop-blur-2xl shadow-[0_32px_72px_-16px_rgba(0,0,0,0.16),0_8px_24px_-6px_rgba(0,0,0,0.06)] font-sans animate-in zoom-in-95 fade-in duration-150 origin-top-right overflow-hidden">
+        {/* Panel Container — Native macOS System Gray Surface (420px width, z-[550]) */}
+        <div className="absolute right-0 top-11 z-[550] w-[420px] rounded-[22px] border border-black/[0.09] dark:border-white/[0.1] bg-[#f2f2f7] dark:bg-[#1e1e22] backdrop-blur-2xl shadow-[0_32px_72px_-16px_rgba(0,0,0,0.22),0_8px_24px_-6px_rgba(0,0,0,0.08)] font-sans animate-in zoom-in-95 fade-in duration-150 origin-top-right overflow-hidden">
 
           {/* ── Hero Header (Centered & Inset to px-6) ── */}
           <div className="px-6 pt-5 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5 shrink-0">
               <span className="text-[16px] font-bold tracking-tight text-slate-900 dark:text-white">Notifications</span>
               {unreadCount > 0 && (
-                <span className="px-2.5 py-0.5 text-[10.5px] font-semibold bg-violet-200/60 text-violet-800 dark:bg-violet-950/80 dark:text-violet-300 rounded-full tabular-nums shadow-2xs">
+                <span className="px-2.5 py-0.5 text-[11px] font-bold bg-violet-600 text-white dark:bg-violet-700 dark:text-white rounded-full tabular-nums shadow-xs">
                   {unreadCount} unread
                 </span>
               )}
@@ -8088,7 +8088,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setNotifications(prev => prev.map(n => ({ ...n, unread: false })))}
-                  className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                  className="text-[11.5px] font-bold text-violet-700 dark:text-violet-300 hover:text-violet-900 dark:hover:text-violet-100 hover:underline transition-colors"
                 >
                   Mark all read
                 </button>
@@ -8097,7 +8097,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setNotifications([])}
-                  className="text-[11px] font-medium text-slate-500 dark:text-zinc-500 hover:text-rose-500 transition-colors"
+                  className="text-[11.5px] font-bold text-rose-700 dark:text-rose-400 hover:text-rose-900 dark:hover:text-rose-300 hover:underline transition-colors"
                 >
                   Clear
                 </button>
@@ -8105,8 +8105,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* ── Apple Segmented Control (Inset to mx-6) ── */}
-          <div className="mx-6 my-2 p-1 bg-slate-300/40 dark:bg-zinc-800/80 rounded-[11px] flex items-center gap-0.5 shadow-inner">
+          {/* ── High-Contrast Apple Segmented Control (Inset to mx-6) ── */}
+          <div className="mx-6 my-2 p-1 bg-slate-300/60 dark:bg-zinc-800/90 rounded-[11px] flex items-center gap-0.5 shadow-inner">
             {categories.map((cat) => {
               const isActive = notificationCategoryFilter === cat.key;
               return (
@@ -8114,10 +8114,10 @@ export default function App() {
                   key={cat.key}
                   type="button"
                   onClick={() => setNotificationCategoryFilter(cat.key)}
-                  className={`flex-1 py-1.5 text-center text-[11.5px] transition-all rounded-[8px] select-none whitespace-nowrap ${
+                  className={`flex-1 py-1.5 text-center text-[12px] transition-all rounded-[8px] select-none whitespace-nowrap ${
                     isActive
-                      ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-[0_1.5px_4px_rgba(0,0,0,0.12),0_0.5px_1px_rgba(0,0,0,0.06)] font-semibold'
-                      : 'text-slate-600 dark:text-zinc-400 font-medium hover:text-slate-900 dark:hover:text-zinc-200'
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-[0_1.5px_4px_rgba(0,0,0,0.18)] font-bold'
+                      : 'text-slate-800 dark:text-zinc-200 font-semibold hover:text-slate-950 dark:hover:text-white'
                   }`}
                 >
                   {cat.label}
@@ -8126,15 +8126,15 @@ export default function App() {
             })}
           </div>
 
-          {/* ── Flat List Rows Surface (24px top clearance, 18-20px row rhythm) ── */}
+          {/* ── High Contrast Accessible Notification List Rows ── */}
           <div
             className="max-h-[385px] overflow-y-auto px-3.5 pt-3 pb-2 space-y-1.5"
-            style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}
+            style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.3) transparent' }}
           >
             {filteredNotifications.length === 0 ? (
               <div className="py-14 flex flex-col items-center gap-2.5 text-center">
-                <Bell size={22} strokeWidth={1.5} className="text-slate-300 dark:text-zinc-600" />
-                <span className="text-[12.5px] text-slate-400 dark:text-zinc-500 font-medium">
+                <Bell size={24} strokeWidth={1.75} className="text-slate-400 dark:text-zinc-500" />
+                <span className="text-[13px] text-slate-600 dark:text-zinc-300 font-semibold">
                   {notificationCategoryFilter === 'all' ? "You're all caught up" : `No ${notificationCategoryFilter} notifications`}
                 </span>
               </div>
@@ -8149,43 +8149,40 @@ export default function App() {
                   }}
                   className={`group relative px-3.5 py-3 rounded-xl border border-transparent transition-all duration-180 ease-out cursor-pointer ${
                     item.unread
-                      ? 'bg-violet-100/40 dark:bg-violet-950/25 hover:bg-[#f8f8fb] dark:hover:bg-[#252529] hover:border-black/[0.04] dark:hover:border-white/[0.06] hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] hover:-translate-y-[1px]'
-                      : 'bg-transparent hover:bg-[#f8f8fb] dark:hover:bg-[#252529] hover:border-black/[0.04] dark:hover:border-white/[0.06] hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] hover:-translate-y-[1px]'
+                      ? 'bg-violet-100/60 dark:bg-violet-950/35 hover:bg-[#f8f8fb] dark:hover:bg-[#252529] hover:border-black/[0.06] dark:hover:border-white/[0.08] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-[1px]'
+                      : 'bg-transparent hover:bg-[#f8f8fb] dark:hover:bg-[#252529] hover:border-black/[0.06] dark:hover:border-white/[0.08] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-[1px]'
                   }`}
                 >
                   <div className="flex items-start gap-3.5">
-                    {/* 28x28 Subtle Circular Icon Fill (Apple Mail style) */}
+                    {/* 28x28 High Contrast Circular Icon Container */}
                     <div className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-transform duration-180 group-hover:scale-[1.04] ${
                       item.category === 'ai'
-                        ? 'bg-violet-500/10 dark:bg-violet-500/20'
-                        : 'bg-black/[0.035] dark:bg-white/[0.06]'
+                        ? 'bg-violet-200/80 dark:bg-violet-900/60'
+                        : 'bg-black/[0.06] dark:bg-white/[0.1]'
                     }`}>
                       {getCategoryIcon(item.category)}
                     </div>
 
-                    {/* Content — Baseline Aligned */}
+                    {/* Content — Accessible Contrast & Typography */}
                     <div className="flex-1 min-w-0 pr-0.5">
                       <div className="flex items-baseline justify-between gap-2">
-                        {/* Title Dominance with subtle darken on hover */}
-                        <span className={`text-[12.5px] leading-snug truncate transition-colors duration-150 ${
+                        <span className={`text-[13px] leading-snug truncate transition-colors duration-150 ${
                           item.unread
-                            ? 'font-semibold text-slate-900 dark:text-white group-hover:text-slate-950 dark:group-hover:text-white'
-                            : 'font-medium text-slate-700 dark:text-zinc-300 group-hover:text-slate-900 dark:group-hover:text-white'
+                            ? 'font-bold text-slate-950 dark:text-white'
+                            : 'font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white'
                         }`}>
                           {item.title}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {/* Baseline aligned, quieter timestamp */}
-                          <span className="text-[10px] font-normal text-slate-400/80 dark:text-zinc-500/80 tabular-nums">
+                          <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400 tabular-nums">
                             {fmtTime(item.timestamp)}
                           </span>
-                          {/* Refined 5px unread dot */}
                           {item.unread && (
-                            <span className="w-1.25 h-1.25 rounded-full bg-violet-500 shrink-0" />
+                            <span className="w-2 h-2 rounded-full bg-violet-600 dark:bg-violet-400 shrink-0 shadow-xs" />
                           )}
                         </div>
                       </div>
-                      <p className="mt-1 text-[11px] leading-relaxed text-slate-500/90 dark:text-zinc-400 line-clamp-2">
+                      <p className="mt-1 text-[11.5px] leading-relaxed font-medium text-slate-700 dark:text-zinc-200 line-clamp-2">
                         {item.detail}
                       </p>
                     </div>
@@ -8197,7 +8194,7 @@ export default function App() {
                       <button
                         type="button"
                         onPointerDown={(e) => { e.stopPropagation(); setNotifications(prev => prev.map(n => n.id === item.id ? { ...n, unread: false } : n)); }}
-                        className="px-2 py-0.5 text-[9.5px] font-medium rounded-md bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white shadow-2xs transition-all"
+                        className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 text-slate-800 dark:text-zinc-200 hover:text-slate-950 dark:hover:text-white shadow-2xs transition-all"
                       >
                         Mark read
                       </button>
@@ -8205,7 +8202,7 @@ export default function App() {
                     <button
                       type="button"
                       onPointerDown={(e) => { e.stopPropagation(); setNotifications(prev => prev.filter(n => n.id !== item.id)); }}
-                      className="px-2 py-0.5 text-[9.5px] font-medium rounded-md bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-400 dark:text-zinc-500 hover:text-rose-500 dark:hover:text-rose-400 shadow-2xs transition-all"
+                      className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 shadow-2xs transition-all"
                     >
                       Dismiss
                     </button>
@@ -8215,10 +8212,10 @@ export default function App() {
             )}
           </div>
 
-          {/* ── Integrated Footer (Centered & Inset to px-6) ── */}
+          {/* ── Integrated High Contrast Footer ── */}
           {filteredNotifications.length > 0 && (
-            <div className="mt-2 border-t border-black/[0.05] dark:border-white/[0.05] px-6 py-3.5 flex items-center justify-between bg-slate-200/40 dark:bg-zinc-900/60">
-              <span className="text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 tabular-nums">
+            <div className="mt-2 border-t border-black/[0.07] dark:border-white/[0.07] px-6 py-3.5 flex items-center justify-between bg-slate-200/50 dark:bg-zinc-900/80">
+              <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300 tabular-nums">
                 {filteredNotifications.length} {filteredNotifications.length === 1 ? 'notification' : 'notifications'}
                 {unreadCount > 0 && notificationCategoryFilter === 'all' && ` · ${unreadCount} unread`}
               </span>
@@ -8232,7 +8229,7 @@ export default function App() {
                       setNotifications(prev => prev.filter(n => n.category !== notificationCategoryFilter));
                     }
                   }}
-                  className="text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 hover:text-rose-500 transition-colors"
+                  className="text-[11px] font-bold text-rose-700 dark:text-rose-400 hover:text-rose-900 dark:hover:text-rose-300 hover:underline transition-colors"
                 >
                   Clear {notificationCategoryFilter !== 'all' ? 'category' : 'all'}
                 </button>
@@ -34598,7 +34595,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
         <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-[#f5f7fc]">
-          <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between group/header relative z-[210]">
+          <header className={`h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between group/header relative transition-all ${notificationsOpen ? 'z-[550]' : 'z-[210]'}`}>
             <div className="flex items-center gap-4 min-w-0">
               {/* App Switcher Button - smoothly discloses on parent hover */}
               <div ref={workspaceSwitcherRef} className="relative z-[200] flex items-center">
@@ -42554,7 +42551,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
         
         {/* Top Header */}
-        <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative z-[350]">
+        <div className={`h-14 flex items-center justify-between px-6 border-b border-slate-200/50 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative transition-all ${notificationsOpen ? 'z-[550]' : 'z-[350]'}`}>
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
