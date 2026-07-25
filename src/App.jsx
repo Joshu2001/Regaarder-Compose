@@ -42763,30 +42763,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 >
                   <Search size={16} strokeWidth={1.5} />
                 </button>
-                            type="button"
-                            onClick={() => { applySemanticRedaction(); setDocSearchPanelOpen(false); }}
-                            disabled={semanticRedactMatches.length === 0}
-                            className="px-2.5 py-1.5 text-[11px] font-medium rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-                          >
-                            Redact All
-                          </button>
-                          {semanticRedactUndoStack && (
-                            <button
-                              type="button"
-                              onClick={undoSemanticRedaction}
-                              className="px-2.5 py-1.5 text-[11px] font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 ml-auto"
-                            >
-                              Undo
-                            </button>
-                          )}
-                        </div>
-                        <div className="mt-2 text-[11px] text-gray-500">
-                          {semanticRedactMatches.length} items found
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
+                {docSearchPanelOpen && renderDocSearchPanel()}
               </div>
 
             </div>
