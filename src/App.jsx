@@ -11069,15 +11069,32 @@ export default function App() {
   useEffect(() => {
     const onKeyDown = (event) => {
       const activeElement = document.activeElement;
-      const insideEditor = Boolean(activeElement && documentCardRef.current?.contains(activeElement));
+      const sel = window.getSelection();
+      const selAnchorNode = sel && sel.anchorNode;
+      const insideEditor = Boolean(
+        (activeElement && documentCardRef.current?.contains(activeElement)) ||
+        (selAnchorNode && documentCardRef.current?.contains(selAnchorNode)) ||
+        wholeDocSelectionRef.current
+      );
 
       const isCrossFieldSelection = false;
 
-      if (!(event.ctrlKey || event.metaKey) && (wholeDocSelectionRef.current || isCrossFieldSelection) && insideEditor && (event.key === 'Backspace' || event.key === 'Delete')) {
-        event.preventDefault();
-        clearEntireCompositionText();
-        wholeDocSelectionRef.current = false;
-        return;
+      if (!(event.ctrlKey || event.metaKey) && (event.key === 'Backspace' || event.key === 'Delete')) {
+        if (insideEditor || wholeDocSelectionRef.current) {
+          if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            if (handleDeleteCrossPageSelection(range)) {
+              event.preventDefault();
+              return;
+            }
+          }
+          if (wholeDocSelectionRef.current) {
+            event.preventDefault();
+            clearEntireCompositionText();
+            wholeDocSelectionRef.current = false;
+            return;
+          }
+        }
       }
 
       if (!(event.ctrlKey || event.metaKey)) {
@@ -11881,7 +11898,15 @@ export default function App() {
     }
 
     const bodyRoot = getActiveEditorRoot();
-    return Boolean(bodyRoot && bodyRoot.contains(targetNode));
+    const docCard = documentCardRef.current;
+    const notesCard = notesCardRef.current;
+
+    return Boolean(
+      (bodyRoot && bodyRoot.contains(targetNode)) ||
+      (docCard && docCard.contains(targetNode)) ||
+      (notesCard && notesCard.contains(targetNode)) ||
+      (targetNode.closest && targetNode.closest('[contenteditable="true"]'))
+    );
   };
   const stripMarkdownArtifacts = (value) => String(value || '')
     .replace(/```[\s\S]*?```/g, ' ')
@@ -11968,6 +11993,117 @@ export default function App() {
     return html.join('');
   };
 
+  const handleDeleteCrossPageSelection = (range) => {
+    if (!range || range.collapsed) return false;
+
+    if (wholeDocSelectionRef.current || isWholeDocumentSelection(range)) {
+      clearEntireCompositionText();
+      wholeDocSelectionRef.current = false;
+      return true;
+    }
+
+    const allEditables = Array.from(documentCardRef.current?.querySelectorAll('[contenteditable="true"]') || [])
+      .filter(el => !el.closest('.select-none'));
+
+    if (allEditables.length === 0) return false;
+
+    const intersectingEditables = allEditables.filter(ed => {
+      try {
+        return range.intersectsNode(ed);
+      } catch (e) {
+        return false;
+      }
+    });
+
+    const getEditableRoot = (node) => {
+      if (!node) return null;
+      const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+      return el ? el.closest('[contenteditable="true"]') : null;
+    };
+
+    const startEditable = getEditableRoot(range.startContainer) || intersectingEditables[0];
+    const endEditable = getEditableRoot(range.endContainer) || intersectingEditables[intersectingEditables.length - 1];
+
+    if (!startEditable || !endEditable) {
+      return false;
+    }
+
+    if (startEditable === endEditable) {
+      if (intersectingEditables.length > 1) {
+        // Spans multiple editables
+      } else {
+        return false;
+      }
+    }
+
+    const startIdx = allEditables.indexOf(startEditable);
+    const endIdx = allEditables.indexOf(endEditable);
+
+    if (startIdx === -1 || endIdx === -1) {
+      return false;
+    }
+
+    const minIdx = Math.min(startIdx, endIdx);
+    const maxIdx = Math.max(startIdx, endIdx);
+    const firstEd = allEditables[minIdx];
+    const lastEd = allEditables[maxIdx];
+
+    if (minIdx === maxIdx) {
+      return false;
+    }
+
+    try {
+      const rangeStart = document.createRange();
+      rangeStart.setStart(range.startContainer, range.startOffset);
+      rangeStart.setEnd(firstEd, firstEd.childNodes.length);
+      rangeStart.deleteContents();
+    } catch (e) {
+      firstEd.innerHTML = '';
+    }
+
+    try {
+      const rangeEnd = document.createRange();
+      rangeEnd.setStart(lastEd, 0);
+      rangeEnd.setEnd(range.endContainer, range.endOffset);
+      rangeEnd.deleteContents();
+    } catch (e) {
+      lastEd.innerHTML = '';
+    }
+
+    for (let i = minIdx + 1; i < maxIdx; i++) {
+      allEditables[i].innerHTML = '';
+    }
+
+    const sel = window.getSelection();
+    if (sel) {
+      sel.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.setStart(firstEd, Math.min(0, firstEd.childNodes.length));
+      newRange.collapse(true);
+      sel.addRange(newRange);
+      firstEd.focus();
+    }
+
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
+
+    setExtraPages(prevPages => {
+      return prevPages.map(pg => {
+        const pageEl = extraPageRefs.current[pg.id];
+        if (pageEl) {
+          const ed = pageEl.querySelector('[contenteditable="true"]');
+          if (ed) {
+            return { ...pg, html: ed.innerHTML };
+          }
+        }
+        return pg;
+      });
+    });
+
+    return true;
+  };
+
   const updateSelectionActionMenuPosition = (range) => {
     if (!selectionActionMenuEnabled) {
       setSelectionActionMenu({ open: false, left: 0, top: 0 });
@@ -11986,20 +12122,31 @@ export default function App() {
     }
 
     const rangeRect = range.getBoundingClientRect();
-    const menuWidth = 344;
-    const estimatedMenuHeight = Math.max(420, Math.floor(window.innerHeight * 0.72));
+    if (!rangeRect || (rangeRect.width === 0 && rangeRect.height === 0 && rangeRect.top === 0)) {
+      setSelectionActionMenu({ open: false, left: 0, top: 0 });
+      return;
+    }
+
+    const menuWidth = 540;
+    const menuHeight = 44;
     const horizontalPadding = 16;
-    const verticalGap = 22;
+    const verticalGap = 10;
     const centeredLeft = rangeRect.left + (rangeRect.width / 2) - (menuWidth / 2);
     const maxLeft = Math.max(horizontalPadding, window.innerWidth - menuWidth - horizontalPadding);
-    const preferredBelow = rangeRect.bottom + verticalGap;
-    const maxTop = Math.max(12, window.innerHeight - estimatedMenuHeight - 12);
-    const rawTop = Math.min(Math.max(12, preferredBelow), maxTop);
+    const left = Math.min(maxLeft, Math.max(horizontalPadding, centeredLeft));
+
+    let top = rangeRect.top - menuHeight - verticalGap;
+    if (top < 12) {
+      top = rangeRect.bottom + verticalGap;
+    }
+
+    top = Math.min(top, window.innerHeight - menuHeight - 12);
+    top = Math.max(12, top);
 
     setSelectionActionMenu({
       open: true,
-      left: Math.min(maxLeft, Math.max(horizontalPadding, centeredLeft)),
-      top: rawTop,
+      left,
+      top,
     });
   };
 
@@ -12163,13 +12310,21 @@ export default function App() {
         }
       }
 
-      const listHtml = `<${tag} ${listAttr}><li><br></li></${tag}>`;
+      const activeRange = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+      let listHtml = `<${tag} ${listAttr}><li><br></li></${tag}>`;
+      if (activeRange && !activeRange.collapsed) {
+        const text = activeRange.toString();
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length > 0) {
+          const lis = lines.map(line => `<li>${line}</li>`).join('');
+          listHtml = `<${tag} ${listAttr}>${lis}</${tag}>`;
+        }
+      }
 
       // Step 3: inject list at cursor position
       document.execCommand('insertHTML', false, listHtml);
 
       // Step 4: move cursor inside the freshly inserted <li>
-      // so the user can start typing immediately without an extra click
       const allItems = ed.querySelectorAll(`${tag} li`);
       if (allItems.length) {
         const lastLi = allItems[allItems.length - 1];
@@ -17880,6 +18035,17 @@ Generate the updated output according to the instruction. Preserve layout and ta
       return;
     }
 
+    if (!(event.ctrlKey || event.metaKey) && (event.key === 'Backspace' || event.key === 'Delete')) {
+      const selection = window.getSelection();
+      if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        if (handleDeleteCrossPageSelection(range)) {
+          event.preventDefault();
+          return;
+        }
+      }
+    }
+
     if (event.key === ' ' || event.code === 'Space') {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
@@ -23480,17 +23646,6 @@ Respond with a JSON array of slide objects matching the schema.`;
       return;
     }
 
-    if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
-      if (range && !range.collapsed) {
-        const selectedText = range.toString().trim();
-        if (selectedText) {
-          const type = command === 'insertUnorderedList' ? 'bullets' : 'numbered_list';
-          applyDirectSelectionAIAction(type, selectedText, range);
-          return;
-        }
-      }
-    }
-
     if (command === 'fontSize') {
       const parsedSize = Number(value);
       const safeSize = Number.isFinite(parsedSize) ? Math.min(72, Math.max(10, parsedSize)) : editorSize;
@@ -23579,23 +23734,69 @@ Respond with a JSON array of slide objects matching the schema.`;
       return;
     }
 
-    const activeRoot = getActiveEditorRoot();
-    activeRoot?.focus();
+    const getTargetEditableRoot = (targetRange) => {
+      if (targetRange) {
+        const ancestor = targetRange.commonAncestorContainer;
+        const el = ancestor.nodeType === Node.ELEMENT_NODE ? ancestor : ancestor.parentElement;
+        const ed = el?.closest?.('[contenteditable="true"]');
+        if (ed) return ed;
+      }
+      return getActiveEditorRoot();
+    };
+
+    const targetRoot = getTargetEditableRoot(range);
+    targetRoot?.focus();
+
     if (range) {
       const selection = window.getSelection();
       selection.removeAllRanges();
       selection.addRange(range);
     }
-    document.execCommand(command, false, value);
+
+    if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
+      const isOrdered = command === 'insertOrderedList';
+      const tag = isOrdered ? 'ol' : 'ul';
+      const selection = window.getSelection();
+      const activeRange = selection && selection.rangeCount ? selection.getRangeAt(0) : range;
+
+      if (activeRange && !activeRange.collapsed) {
+        const selectedText = activeRange.toString();
+        const lines = selectedText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length > 0) {
+          const lis = lines.map(line => `<li>${line}</li>`).join('');
+          const listHtml = `<${tag}>${lis}</${tag}>`;
+          document.execCommand('insertHTML', false, listHtml);
+        } else {
+          document.execCommand(command, false, value);
+        }
+      } else {
+        document.execCommand(command, false, value);
+      }
+    } else {
+      document.execCommand(command, false, value);
+    }
 
     const selection = window.getSelection();
     if (selection && selection.rangeCount) {
       savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
     }
 
-    if (activeRoot === blankBodyRef.current && blankBodyRef.current) {
+    if (blankBodyRef.current) {
       setDocBodyHtml(blankBodyRef.current.innerHTML);
     }
+
+    setExtraPages(prevPages => {
+      return prevPages.map(pg => {
+        const pageEl = extraPageRefs.current[pg.id];
+        if (pageEl) {
+          const ed = pageEl.querySelector('[contenteditable="true"]');
+          if (ed) {
+            return { ...pg, html: ed.innerHTML };
+          }
+        }
+        return pg;
+      });
+    });
 
     try {
       setIsBoldActive(Boolean(document.queryCommandState('bold')));
@@ -42579,6 +42780,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="w-px h-4 bg-gray-200/60 mx-1"></div>
           <button onPointerDown={(e) => { 
             e.preventDefault(); 
+            setAssistantQuickPrompt("Draft an expanded, polished version of this selection"); 
+            setChatInput("Draft an expanded, polished version of this selection");
+            setRightSidebarOpen(true); 
+            setActiveRightTab("assistant");
+            setSelectionActionMenu({ open: false, top: 0, left: 0 });
+          }} className="flex items-center gap-1.5 p-1.5 px-2 hover:bg-violet-50/80 text-violet-600 rounded text-xs font-semibold transition-colors"><FileEdit size={14}/> Draft</button>
+          <button onPointerDown={(e) => { 
+            e.preventDefault(); 
             setAssistantQuickPrompt("Explain this text"); 
             setChatInput("Explain this text");
             setRightSidebarOpen(true); 
@@ -43393,7 +43602,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
 
               <div
-                className={`relative flex items-center gap-0.5 px-1 py-1 rounded-xl transition-all duration-300 ease-out border ${openDropdown === 'size' ? 'bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent hover:border-slate-200/40 hover:bg-slate-50/60 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
+                className={`font-size-select-trigger relative flex items-center gap-0.5 px-1 py-1 rounded-xl transition-all duration-300 ease-out border ${openDropdown === 'size' ? 'bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent hover:border-slate-200/40 hover:bg-slate-50/60 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
                 onMouseEnter={() => setIsFormattingDropdownHovered(true)}
                 onMouseLeave={() => setIsFormattingDropdownHovered(false)}
               >
@@ -43420,7 +43629,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     
                     applyFormatCommand('fontSize', String(nextSize));
                   }}
-                  className="w-10 bg-transparent border-none text-[13px] font-medium text-slate-600 focus:text-slate-900 text-center focus:outline-none"
+                  className="w-10 bg-transparent border-none text-[13px] font-medium text-slate-600 focus:text-slate-900 text-center focus:outline-none h-6 flex items-center justify-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <button
                   onClick={() => {
@@ -43508,8 +43717,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-52 flex flex-col gap-0.5">
                       <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">List Styles</div>
                       {[
-                        { id: 'bullet', icon: <List size={14} />, label: 'Bullet List', desc: 'Choose bullet style', action: () => { setListGalleryOpen('bullet'); setListDropdownOpen(false); } },
-                        { id: 'numbered', icon: <ListOrdered size={14} />, label: 'Numbered List', desc: 'Choose numbering style', action: () => { setListGalleryOpen('numbered'); setListDropdownOpen(false); } },
+                        { id: 'bullet', icon: <List size={14} />, label: 'Bullet List', desc: 'Standard bullet list', action: () => { applyFormatCommand('insertUnorderedList'); setListDropdownOpen(false); } },
+                        { id: 'numbered', icon: <ListOrdered size={14} />, label: 'Numbered List', desc: 'Standard numbered list', action: () => { applyFormatCommand('insertOrderedList'); setListDropdownOpen(false); } },
                         { id: 'multilevel', icon: <ListTree size={14} />, label: 'Multilevel List', desc: 'Nested hierarchy', action: () => { setListGalleryOpen('multilevel'); setListDropdownOpen(false); } },
                         { id: 'checklist', icon: <span className="text-[13px]">☑</span>, label: 'Checklist', desc: 'Interactive checkboxes', action: () => { const checkHtml = '<ul style="list-style:none;padding-left:0"><li style="display:flex;align-items:center;gap:8px;margin:4px 0"><input type="checkbox" style="width:15px;height:15px;cursor:pointer" /><span>&nbsp;</span></li></ul><p><br></p>'; const html = checkHtml; if (window.__composeInsertHTML) window.__composeInsertHTML(html); else document.execCommand('insertHTML', false, html); setListDropdownOpen(false); } },
                       ].map(item => (
@@ -48686,6 +48895,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       )}
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!floatingPrompt.toLowerCase().startsWith('draft')) {
+                          setFloatingPrompt(prev => prev ? `Draft ${prev}` : 'Draft ');
+                        }
+                      }}
+                      className="px-2 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 border border-violet-200/60 text-violet-700 font-semibold text-xs flex items-center gap-1.5 transition-all shrink-0 active:scale-95 shadow-sm"
+                      title="Draft mode"
+                    >
+                      <FileEdit size={13} />
+                      <span>Draft</span>
+                    </button>
                     <textarea
                       value={floatingPrompt}
                       onChange={(e) => setFloatingPrompt(e.target.value)}
