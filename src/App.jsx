@@ -25,7 +25,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -763,19 +763,113 @@ const SLASH_OPTIONS = [
   { key: 'code_block', label: 'Code Block', desc: 'Insert a code container' }
 ];
 
+const SlashMenuPopover = React.forwardRef(({
+  options = [],
+  selectedIndex = 0,
+  onSelectOption,
+  title = null,
+  badgeText = null,
+  className = '',
+  style = {},
+  source = 'default'
+}, ref) => {
+  return (
+    <div 
+      ref={ref}
+      className={`slash-menu-container animate-in fade-in zoom-in-95 duration-100 ${className}`}
+      style={style}
+    >
+      {(title || badgeText) && (
+        <div className="px-3 py-1.5 border-b border-slate-100 dark:border-zinc-800/80 flex items-center justify-between shrink-0 mb-1 select-none">
+          {title && (
+            <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-zinc-500 uppercase">
+              {title}
+            </span>
+          )}
+          {badgeText && (
+            <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500 font-mono opacity-80">
+              {badgeText}
+            </span>
+          )}
+        </div>
+      )}
+
+      <div className="space-y-0.5 overflow-y-auto thin-scrollbar max-h-64">
+        {options.length === 0 ? (
+          <div className="p-3 text-center text-xs text-slate-400 dark:text-zinc-500 font-medium">
+            No matching options
+          </div>
+        ) : (
+          options.map((opt, idx) => {
+            const isActive = idx === selectedIndex;
+            const IconComp = opt.icon;
+            const tagText = opt.tag || (opt.key ? `/${opt.key}` : null);
+            const description = opt.desc || opt.description;
+
+            return (
+              <button
+                key={opt.key || idx}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  onSelectOption?.(opt, source);
+                }}
+                onClick={() => onSelectOption?.(opt, source)}
+                className={`slash-menu-option ${isActive ? 'active' : ''}`}
+              >
+                <div className="flex items-start gap-2.5 w-full">
+                  {IconComp && (
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                      isActive
+                        ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/60 dark:text-violet-300'
+                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400'
+                    }`}>
+                      <IconComp size={14} strokeWidth={1.75} />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="slash-menu-option-label truncate">{opt.label}</span>
+                      {tagText && (
+                        <span className="text-[10px] font-mono opacity-70 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60 shrink-0">
+                          {tagText}
+                        </span>
+                      )}
+                    </div>
+                    {description && (
+                      <span className="slash-menu-option-desc block truncate">
+                        {description}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </button>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+});
+
 const PROMPT_SLASH_OPTIONS = [
-  { key: 'health', label: 'Document Health', desc: 'Run 6 parallel quality checks (grammar, logic, evidence...)', emoji: '🚦', agentKey: 'health' },
-  { key: 'writing', label: 'Writing', desc: 'Transform tone, expand, shorten, brainstorm & summarize', emoji: '✏️', agentKey: 'writing' },
-  { key: 'editor', label: 'Editor', desc: 'Grammar, clarity, passive voice & style polish', emoji: '✍️', agentKey: 'editor' },
-  { key: 'designer', label: 'Designer', desc: 'Document type detection & formatting structure', emoji: '🎨', agentKey: 'designer' },
-  { key: 'logic', label: 'Logic', desc: 'Analyze reasoning quality, fallacies & contradictions', emoji: '🧠', agentKey: 'logic' },
-  { key: 'research', label: 'Research', desc: 'Find citations, empirical evidence & counter-arguments', emoji: '📚', agentKey: 'research' },
-  { key: 'reviewer', label: 'Reviewer', desc: 'Editorial score ring, summary quote & actionable feedback', emoji: '📝', agentKey: 'reviewer' },
-  { key: 'audience', label: 'Audience', desc: 'Simulate 12 reader personas & comprehension level', emoji: '👥', agentKey: 'audience' },
-  { key: 'consistency', label: 'Consistency', desc: 'Terminology, casing, tone & formatting audit', emoji: '🛡️', agentKey: 'consistency' },
-  { key: 'compliance', label: 'Compliance', desc: 'Policy, sensitivity, privacy & legal risk check', emoji: '🔒', agentKey: 'compliance' },
-  { key: 'gap', label: 'Knowledge Gap', desc: 'Identify missing explanations, context or undefined terms', emoji: '❓', agentKey: 'gap' },
-  { key: 'dna', label: 'Writing DNA', desc: 'Personal voice vector, style match & 12-month evolution', emoji: '🧬', agentKey: 'dna' }
+  { key: 'ask', label: 'ask', desc: 'Ask a quick question without interrupting context', icon: MessageSquare, agentKey: 'ask' },
+  { key: 'goal', label: 'goal', desc: 'Run until the specified goal is completed', icon: Target, agentKey: 'goal' },
+  { key: 'schedule', label: 'schedule', desc: 'Run an instruction on a recurring schedule', icon: Clock, agentKey: 'schedule' },
+  { key: 'browser', label: 'browser', desc: 'Invoke a browser agent for web tasks', icon: Globe, agentKey: 'browser' },
+  { key: 'health', label: 'Document Health', desc: 'Run 6 parallel quality checks (grammar, logic, evidence...)', icon: Activity, agentKey: 'health' },
+  { key: 'writing', label: 'Writing', desc: 'Transform tone, expand, shorten, brainstorm & summarize', icon: PenTool, agentKey: 'writing' },
+  { key: 'editor', label: 'Editor', desc: 'Grammar, clarity, passive voice & style polish', icon: FileEdit, agentKey: 'editor' },
+  { key: 'designer', label: 'Designer', desc: 'Document type detection & formatting structure', icon: LayoutTemplate, agentKey: 'designer' },
+  { key: 'logic', label: 'Logic', desc: 'Analyze reasoning quality, fallacies & contradictions', icon: Cpu, agentKey: 'logic' },
+  { key: 'research', label: 'Research', desc: 'Find citations, empirical evidence & counter-arguments', icon: BookOpen, agentKey: 'research' },
+  { key: 'reviewer', label: 'Reviewer', desc: 'Editorial score ring, summary quote & actionable feedback', icon: CheckCircle2, agentKey: 'reviewer' },
+  { key: 'audience', label: 'Audience', desc: 'Simulate 12 reader personas & comprehension level', icon: Users2, agentKey: 'audience' },
+  { key: 'consistency', label: 'Consistency', desc: 'Terminology, casing, tone & formatting audit', icon: Shield, agentKey: 'consistency' },
+  { key: 'compliance', label: 'Compliance', desc: 'Policy, sensitivity, privacy & legal risk check', icon: Lock, agentKey: 'compliance' },
+  { key: 'gap', label: 'Knowledge Gap', desc: 'Identify missing explanations, context or undefined terms', icon: FileQuestion, agentKey: 'gap' },
+  { key: 'dna', label: 'Writing DNA', desc: 'Personal voice vector, style match & 12-month evolution', icon: Cpu, agentKey: 'dna' }
 ];
 const getAbsoluteOffset = (container, node, offset) => {
   if (!container || !node) return 0;
@@ -6513,6 +6607,7 @@ export default function App() {
   const [isPromptSlashMenuOpen, setIsPromptSlashMenuOpen] = useState(false);
   const [promptSlashSearch, setPromptSlashSearch] = useState('');
   const [promptSlashSelectedIndex, setPromptSlashSelectedIndex] = useState(0);
+  const [promptSlashSource, setPromptSlashSource] = useState('chat');
   const promptSlashMenuRef = useRef(null);
   const [scheduleAttachments, setScheduleAttachments] = useState([]);
   const [editingAgendaField, setEditingAgendaField] = useState(null); // { id: string | number, field: 'title' | 'slot', value: string }
@@ -21425,14 +21520,21 @@ Rules:
     showToast(`Attached document "${title}"`);
   };
 
-  const selectPromptSlashOption = (option) => {
-    setSelectedAIAgent(option.agentKey || 'health');
-    setActiveAgentTag(`/${option.agentKey || option.key}`);
+  const selectPromptSlashOption = (option, source = promptSlashSource) => {
+    setSelectedAIAgent(option.agentKey || option.key);
+    setActiveAgentTag(`/${option.key}`);
     setRightSidebarOpen(true);
     setActiveRightTab('ai-studio');
-    const lastSlash = chatInput.lastIndexOf('/');
-    if (lastSlash !== -1) {
-      setChatInput(chatInput.slice(0, lastSlash).trim());
+    if (source === 'floating') {
+      const lastSlash = floatingPrompt.lastIndexOf('/');
+      if (lastSlash !== -1) {
+        setFloatingPrompt(floatingPrompt.slice(0, lastSlash).trim());
+      }
+    } else {
+      const lastSlash = chatInput.lastIndexOf('/');
+      if (lastSlash !== -1) {
+        setChatInput(chatInput.slice(0, lastSlash).trim());
+      }
     }
     setIsPromptSlashMenuOpen(false);
     showToast(`Switched agent to ${option.label}`);
@@ -21441,6 +21543,7 @@ Rules:
   const handleChatInputChange = (e) => {
     const val = e.target.value;
     setChatInput(val);
+    setPromptSlashSource('chat');
 
     const lastSlashIndex = val.lastIndexOf('/');
     if (lastSlashIndex !== -1 && lastSlashIndex >= val.length - 25) {
@@ -21468,14 +21571,33 @@ Rules:
     setIsMentionMenuOpen(false);
   };
 
-  const handleChatInputKeyDown = (e) => {
+  const handleFloatingPromptChange = (e) => {
+    const val = e.target.value;
+    setFloatingPrompt(val);
+    setPromptSlashSource('floating');
+
+    const lastSlashIndex = val.lastIndexOf('/');
+    if (lastSlashIndex !== -1 && lastSlashIndex >= val.length - 25) {
+      const query = val.slice(lastSlashIndex + 1);
+      if (!query.includes(' ') && !query.includes('\n')) {
+        setIsPromptSlashMenuOpen(true);
+        setPromptSlashSearch(query.toLowerCase());
+        setPromptSlashSelectedIndex(0);
+        setIsMentionMenuOpen(false);
+        return;
+      }
+    }
+    setIsPromptSlashMenuOpen(false);
+  };
+
+  const handleFloatingPromptKeyDown = (e) => {
     const filteredSlashOpts = PROMPT_SLASH_OPTIONS.filter((opt) =>
       opt.label.toLowerCase().includes(promptSlashSearch) ||
       opt.key.toLowerCase().includes(promptSlashSearch) ||
       opt.desc.toLowerCase().includes(promptSlashSearch)
     );
 
-    if (isPromptSlashMenuOpen) {
+    if (isPromptSlashMenuOpen && promptSlashSource === 'floating') {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setPromptSlashSelectedIndex((prev) => (prev + 1) % (filteredSlashOpts.length || 1));
@@ -21489,7 +21611,45 @@ Rules:
       if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault();
         if (filteredSlashOpts[promptSlashSelectedIndex]) {
-          selectPromptSlashOption(filteredSlashOpts[promptSlashSelectedIndex]);
+          selectPromptSlashOption(filteredSlashOpts[promptSlashSelectedIndex], 'floating');
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsPromptSlashMenuOpen(false);
+        return;
+      }
+    }
+
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleFloatingSend(e);
+    }
+  };
+
+  const handleChatInputKeyDown = (e) => {
+    const filteredSlashOpts = PROMPT_SLASH_OPTIONS.filter((opt) =>
+      opt.label.toLowerCase().includes(promptSlashSearch) ||
+      opt.key.toLowerCase().includes(promptSlashSearch) ||
+      opt.desc.toLowerCase().includes(promptSlashSearch)
+    );
+
+    if (isPromptSlashMenuOpen && promptSlashSource === 'chat') {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setPromptSlashSelectedIndex((prev) => (prev + 1) % (filteredSlashOpts.length || 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setPromptSlashSelectedIndex((prev) => (prev - 1 + (filteredSlashOpts.length || 1)) % (filteredSlashOpts.length || 1));
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        if (filteredSlashOpts[promptSlashSelectedIndex]) {
+          selectPromptSlashOption(filteredSlashOpts[promptSlashSelectedIndex], 'chat');
         }
         return;
       }
@@ -27510,46 +27670,27 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                     {/* Integrated Input Area (VS Code Prompt Box Style) */}
                     <form onSubmit={handleSidebarSend} className="w-full mb-3.5 relative">
-                      {/* Floating / Slash Command Dropdown (Image 4 Aesthetic) */}
-                      {isPromptSlashMenuOpen && (
-                        <div
-                          ref={promptSlashMenuRef}
-                          className="absolute bottom-full left-0 mb-2 w-72 max-h-80 flex flex-col bg-white dark:bg-zinc-900 border border-violet-100/90 dark:border-zinc-800 rounded-2xl shadow-[0_16px_40px_-8px_rgba(139,92,246,0.18)] dark:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] z-50 overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 duration-150 p-1.5"
-                        >
-                          <div className="py-1 px-1 space-y-1 overflow-y-auto thin-scrollbar max-h-72">
-                            {PROMPT_SLASH_OPTIONS.filter((opt) =>
-                              opt.label.toLowerCase().includes(promptSlashSearch) ||
-                              opt.key.toLowerCase().includes(promptSlashSearch) ||
-                              opt.desc.toLowerCase().includes(promptSlashSearch)
-                            ).map((opt, idx) => {
-                              const isSelected = idx === promptSlashSelectedIndex;
-                              return (
-                                <button
-                                  key={opt.key}
-                                  type="button"
-                                  onPointerDown={(e) => {
-                                    e.preventDefault();
-                                    selectPromptSlashOption(opt);
-                                  }}
-                                  className={`w-full text-left px-3 py-2.5 rounded-xl transition-all cursor-pointer flex items-start gap-2.5 ${
-                                    isSelected
-                                      ? 'bg-violet-50/90 dark:bg-violet-950/40 text-violet-900 dark:text-violet-100'
-                                      : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/50'
-                                  }`}
-                                >
-                                  <span className="text-base shrink-0 select-none mt-0.5">{opt.emoji || '✨'}</span>
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center justify-between gap-1.5">
-                                      <span className={`text-xs font-semibold tracking-tight ${isSelected ? 'text-violet-700 dark:text-violet-300' : 'text-slate-900 dark:text-zinc-100'}`}>{opt.label}</span>
-                                    </div>
-                                    <p className={`text-[11px] line-clamp-2 mt-0.5 leading-snug font-normal ${isSelected ? 'text-violet-600/85 dark:text-violet-400/85' : 'text-slate-400 dark:text-zinc-500'}`}>{opt.desc}</p>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
+                      {/* Floating / Slash Command Dropdown (Reusable SlashMenuPopover Component) */}
+                      {isPromptSlashMenuOpen && promptSlashSource === 'chat' && (() => {
+                        const filteredSlashOpts = PROMPT_SLASH_OPTIONS.filter((opt) =>
+                          opt.label.toLowerCase().includes(promptSlashSearch) ||
+                          opt.key.toLowerCase().includes(promptSlashSearch) ||
+                          opt.desc.toLowerCase().includes(promptSlashSearch)
+                        );
+
+                        return (
+                          <SlashMenuPopover
+                            ref={promptSlashMenuRef}
+                            options={filteredSlashOpts}
+                            selectedIndex={promptSlashSelectedIndex}
+                            onSelectOption={(opt) => selectPromptSlashOption(opt, 'chat')}
+                            title="SLASH COMMANDS"
+                            badgeText={`${filteredSlashOpts.length} AGENTS`}
+                            className="absolute bottom-full left-0 mb-2 w-80 z-50"
+                            source="chat"
+                          />
+                        );
+                      })()}
 
                       {/* Floating @ Mention Dropdown */}
                       {isMentionMenuOpen && (() => {
@@ -28258,13 +28399,13 @@ Respond with a JSON array of slide objects matching the schema.`;
                       <button 
                         type="submit" 
                         disabled={!chatInput.trim() && !chatAttachments.length && !isDocContextActive}
-                        className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                        className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 cursor-pointer ${
                           chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive
-                            ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-2xs' 
-                            : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600'
+                            ? 'bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800' 
+                            : 'opacity-50 cursor-not-allowed bg-slate-100/60 dark:bg-zinc-800/40 text-slate-300 dark:text-zinc-600 border border-slate-200/40 dark:border-zinc-800'
                         }`}
                       >
-                        <Send size={14} strokeWidth={1.75} />
+                        <Send size={13} strokeWidth={1.75} className={chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive ? "text-violet-600 dark:text-violet-300" : "text-slate-300 dark:text-zinc-600"} />
                       </button>
                     </div>
                   </div>
@@ -49308,15 +49449,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <textarea
                       ref={floatingPromptRef}
                       value={floatingPrompt}
-                      onChange={(e) => setFloatingPrompt(e.target.value)}
+                      onChange={handleFloatingPromptChange}
                       onPaste={handleFloatingPaste}
                       onInput={(e) => autoResizeTextarea(e.currentTarget, 180)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleFloatingSend(e);
-                        }
-                      }}
+                      onKeyDown={handleFloatingPromptKeyDown}
                       placeholder="Or type your goal here..."
                       rows={1}
                       className="flex-1 bg-transparent border-none focus:outline-none text-sm text-slate-700 placeholder:text-slate-400 resize-none overflow-hidden min-h-[36px]"
@@ -49390,10 +49526,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </button>
                     <button
                       type="submit"
-                      disabled={isComposing}
-                      className={`text-violet-600 hover:text-violet-700 transition-colors flex items-center justify-center h-11 w-11 active:scale-90 ${isComposing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={isComposing || !chatInput.trim()}
+                      className={`w-9 h-9 rounded-lg transition-all duration-200 flex items-center justify-center shrink-0 active:scale-95 ${
+                        isComposing || !chatInput.trim()
+                          ? 'bg-slate-100/60 dark:bg-zinc-800/40 text-slate-300 dark:text-zinc-600 border border-slate-200/40 dark:border-zinc-800 cursor-not-allowed opacity-50'
+                          : 'bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800 cursor-pointer'
+                      }`}
                     >
-                      {isComposing ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+                      {isComposing ? (
+                        <Loader2 size={16} className="animate-spin text-violet-600 dark:text-violet-300" />
+                      ) : (
+                        <Send size={15} strokeWidth={1.75} className={chatInput.trim() ? "text-violet-600 dark:text-violet-300 ml-0.5" : "text-slate-300 dark:text-zinc-600 ml-0.5"} />
+                      )}
                     </button>
                   </div>
 
@@ -49506,9 +49650,30 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       )}
                     </div>
+                    {isPromptSlashMenuOpen && promptSlashSource === 'floating' && (() => {
+                      const filteredSlashOpts = PROMPT_SLASH_OPTIONS.filter((opt) =>
+                        opt.label.toLowerCase().includes(promptSlashSearch) ||
+                        opt.key.toLowerCase().includes(promptSlashSearch) ||
+                        opt.desc.toLowerCase().includes(promptSlashSearch)
+                      );
+
+                      return (
+                        <SlashMenuPopover
+                          ref={promptSlashMenuRef}
+                          options={filteredSlashOpts}
+                          selectedIndex={promptSlashSelectedIndex}
+                          onSelectOption={(opt) => selectPromptSlashOption(opt, 'floating')}
+                          title="SLASH COMMANDS"
+                          badgeText={`${filteredSlashOpts.length} AGENTS`}
+                          className="absolute bottom-full left-0 mb-2 w-80 z-[999]"
+                          source="floating"
+                        />
+                      );
+                    })()}
                     <textarea
                       value={floatingPrompt}
-                      onChange={(e) => setFloatingPrompt(e.target.value)}
+                      onChange={handleFloatingPromptChange}
+                      onKeyDown={handleFloatingPromptKeyDown}
                       onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
                       placeholder="Describe what you'd like to write..."
                       rows={1}
@@ -49518,9 +49683,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <button
                       type="submit"
                       disabled={isComposing || !floatingPrompt.trim()}
-                      className={`p-1.5 rounded-full transition-colors flex shrink-0 ${isComposing || !floatingPrompt.trim() ? 'text-gray-300 cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm'}`}
+                      className={`w-8 h-8 rounded-lg transition-all duration-200 flex items-center justify-center shrink-0 active:scale-95 ${
+                        isComposing || !floatingPrompt.trim()
+                          ? 'bg-slate-100/60 dark:bg-zinc-800/40 text-slate-300 dark:text-zinc-600 border border-slate-200/40 dark:border-zinc-800 cursor-not-allowed opacity-50'
+                          : 'bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800 cursor-pointer'
+                      }`}
                     >
-                      {isComposing ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                      {isComposing ? (
+                        <Loader2 size={15} className="animate-spin text-violet-600 dark:text-violet-300" />
+                      ) : (
+                        <Send size={14} strokeWidth={1.75} className={floatingPrompt.trim() ? "text-violet-600 dark:text-violet-300 ml-0.5" : "text-slate-300 dark:text-zinc-600 ml-0.5"} />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -50394,64 +50567,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
       />
 
       {slashMenu.open && (
-        <div 
+        <SlashMenuPopover
           ref={slashMenuContainerRef}
-          className="slash-menu-container animate-in fade-in zoom-in-95 duration-100"
+          options={SLASH_OPTIONS
+            .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
+            .filter(opt => opt.label.toLowerCase().includes(slashMenu.filterText.toLowerCase()))}
+          selectedIndex={slashMenu.activeIndex}
+          onSelectOption={(opt) => executeSlashCommand(opt.key)}
           style={{ 
             left: `${slashMenu.left}px`, 
             top: slashMenu.top,
             bottom: slashMenu.bottom
           }}
-        >
-          {SLASH_OPTIONS
-            .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
-            .filter(opt => opt.label.toLowerCase().includes(slashMenu.filterText.toLowerCase()))
-            .map((opt, idx) => {
-              const isActive = idx === slashMenu.activeIndex;
-              return (
-                <button
-                   key={opt.key}
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => executeSlashCommand(opt.key)}
-                  className={`slash-menu-option ${isActive ? 'active' : ''}`}
-                >
-                  <span className="slash-menu-option-label">{opt.label}</span>
-                  <span className="slash-menu-option-desc">{opt.desc}</span>
-                </button>
-              );
-            })}
-        </div>
+          className="fixed"
+        />
       )}
 
       {deckSlashMenu.open && (
-        <div 
-          className="slash-menu-container animate-in fade-in zoom-in-95 duration-100"
+        <SlashMenuPopover
+          options={DECK_SLASH_OPTIONS
+            .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
+            .filter(opt => opt.label.toLowerCase().includes(deckSlashMenu.filterText.toLowerCase()))}
+          selectedIndex={deckSlashMenu.activeIndex}
+          onSelectOption={(opt) => executeDeckSlashCommand(opt.key)}
           style={{ 
             left: `${deckSlashMenu.left}px`, 
             top: deckSlashMenu.top,
             bottom: deckSlashMenu.bottom
           }}
-        >
-          {DECK_SLASH_OPTIONS
-            .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
-            .filter(opt => opt.label.toLowerCase().includes(deckSlashMenu.filterText.toLowerCase()))
-            .map((opt, idx) => {
-              const isActive = idx === deckSlashMenu.activeIndex;
-              return (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => executeDeckSlashCommand(opt.key)}
-                  className={`slash-menu-option ${isActive ? 'active' : ''}`}
-                >
-                  <span className="slash-menu-option-label">{opt.label}</span>
-                  <span className="slash-menu-option-desc">{opt.description}</span>
-                </button>
-              );
-            })}
-        </div>
+          className="fixed"
+        />
       )}
 
       {/* ── Sheet Slash Menu ────────────────────────────────────── */}
