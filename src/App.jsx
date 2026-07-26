@@ -13251,7 +13251,7 @@ export default function App() {
     const forceAppendToEnd = Boolean(options.forceAppendToEnd);
 
     const getFallbackDocumentTarget = () => {
-      return blankBodyRef.current || null;
+      return blankBodyRef.current || documentCardRef.current || document.querySelector('.prose[contenteditable="true"]') || document.querySelector('[contenteditable="true"]') || null;
     };
 
     const active = document.activeElement;
@@ -13742,28 +13742,7 @@ export default function App() {
         if (activeVoiceTarget === 'schedule') {
           setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
         } else if (activeVoiceTarget === 'document') {
-          const previous = lastDocumentTranscriptRef.current;
-          let textToInsert = normalizedText;
-          const shouldCompareWithInterim = previous.text
-            && previous.source === 'interim'
-            && source !== 'interim'
-            && Date.now() - previous.at < 3500;
-
-          if (shouldCompareWithInterim) {
-            const previousLower = previous.text.toLowerCase();
-            const normalizedLower = normalizedText.toLowerCase();
-            if (normalizedLower === previousLower) {
-              return;
-            }
-            if (normalizedLower.startsWith(previousLower)) {
-              textToInsert = normalizedText.slice(previous.text.length).trim();
-              if (!textToInsert) {
-                return;
-              }
-            }
-          }
-
-          insertTranscriptIntoDocumentRef.current?.(textToInsert, { forceAppendToEnd: true });
+          insertTranscriptIntoDocumentRef.current?.(normalizedText, { forceAppendToEnd: true });
           lastDocumentTranscriptRef.current = { text: normalizedText, source, at: Date.now() };
         } else if (activeVoiceTarget === 'chat') {
           setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
@@ -13825,7 +13804,7 @@ export default function App() {
               userPrompt: `Clean up the following voice transcription, correcting spelling, grammar, and formatting errors while preserving the original meaning. Output ONLY the cleaned text:\n\n${normalizedFinal}`,
               systemPrompt: `You are a voice transcription cleaner. Your ONLY job is to output the corrected text. Do NOT add any conversational padding. Output plain text.`
             });
-            const cleanedText = llmProcessed?.text?.trim() || normalizedFinal;
+            const cleanedText = (llmProcessed && typeof llmProcessed.text === 'string' && llmProcessed.text.trim()) ? llmProcessed.text.trim() : normalizedFinal;
             routeTranscriptToTarget(cleanedText, 'final');
           } catch (e) {
             routeTranscriptToTarget(normalizedFinal, 'final');
@@ -49217,15 +49196,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   beginPanelResize('dictation', event);
                 }
               }}
-              className={`pointer-events-auto flex items-center transition-all duration-500 ease-out select-none border backdrop-blur-xl ${
+              className={`pointer-events-auto flex items-center transition-all duration-500 ease-out select-none border backdrop-blur-2xl ${
                 isVoiceActive && voiceTarget === 'document' 
-                  ? 'rounded-2xl bg-white/95 dark:bg-zinc-900/95 border-violet-300 dark:border-violet-700/80 px-4 py-3 gap-3 shadow-[0_12px_40px_-10px_rgba(139,92,246,0.25)] min-w-[260px] max-w-[340px]' 
+                  ? 'rounded-2xl bg-white/95 dark:bg-[#1a1926]/95 border-violet-400/80 dark:border-violet-500/80 px-4 py-3 gap-3.5 shadow-[0_12px_40px_-8px_rgba(147,51,234,0.3)] ring-1 ring-violet-500/20 min-w-[270px] max-w-[340px]' 
                   : 'rounded-full bg-white/80 dark:bg-zinc-900/80 border-slate-200/80 dark:border-zinc-700/80 p-1 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.12)] hover:border-violet-300/80'
               }`}
             >
               <div className="relative flex items-center justify-center shrink-0">
                 {isVoiceActive && voiceTarget === 'document' && (
-                  <div className="absolute -inset-1 rounded-full bg-violet-400/25 dark:bg-violet-500/25 blur-sm animate-pulse pointer-events-none" />
+                  <>
+                    <div className="absolute -inset-2 rounded-full bg-violet-500/20 dark:bg-violet-400/20 blur-md animate-pulse pointer-events-none" />
+                    <div className="absolute -inset-1 rounded-full border-2 border-violet-400/40 dark:border-violet-500/40 animate-ping opacity-75 pointer-events-none" style={{ animationDuration: '2s' }} />
+                  </>
                 )}
                 <button
                   type="button"
@@ -49235,19 +49217,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   }}
                   className={`flex items-center justify-center rounded-full transition-all duration-300 relative z-10 ${
                     isVoiceActive && voiceTarget === 'document'
-                      ? 'w-10 h-10 bg-violet-500/15 dark:bg-violet-950/50 text-violet-600 dark:text-violet-300 border-2 border-violet-400/90 dark:border-violet-400 shadow-[0_0_20px_rgba(168,85,247,0.45),inset_0_0_12px_rgba(168,85,247,0.2)] ring-4 ring-violet-400/20'
+                      ? 'w-11 h-11 bg-violet-100/90 dark:bg-violet-950/70 text-violet-600 dark:text-violet-300 border-2 border-violet-500 dark:border-violet-400 shadow-[0_0_25px_rgba(168,85,247,0.55),inset_0_0_15px_rgba(168,85,247,0.25)] ring-4 ring-violet-400/30'
                       : 'w-10 h-10 bg-slate-50 dark:bg-zinc-800 hover:bg-violet-50 dark:hover:bg-violet-950/40 text-slate-500 hover:text-violet-600 dark:text-zinc-400 dark:hover:text-violet-400 border border-slate-200/60 dark:border-zinc-700/60'
                   }`}
                   title={isVoiceActive && voiceTarget === 'document' ? 'Stop voice transcription' : 'Start voice transcription'}
                 >
-                  <Mic size={18} className={isVoiceActive && voiceTarget === 'document' ? 'animate-pulse text-violet-600 dark:text-violet-400' : ''} />
+                  <Mic size={19} className={isVoiceActive && voiceTarget === 'document' ? 'animate-pulse text-violet-600 dark:text-violet-300 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]' : ''} />
                 </button>
               </div>
 
               {isVoiceActive && voiceTarget === 'document' ? (
                 <div className="flex-1 flex flex-col justify-center min-w-0 pr-1">
-                  <div className="text-[10px] font-bold text-violet-600 dark:text-violet-400 tracking-wider uppercase opacity-90">Dictation Active</div>
-                  <div className="text-[12px] font-medium text-slate-800 dark:text-zinc-200 truncate leading-relaxed">
+                  <div className="flex items-center justify-between gap-1 mb-0.5">
+                    <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 tracking-wider uppercase opacity-95">Dictation Active</span>
+                    <span className="w-2 h-2 rounded-full bg-violet-500 animate-ping shrink-0" />
+                  </div>
+                  <div className="text-[12px] font-semibold text-slate-800 dark:text-zinc-100 truncate leading-relaxed">
                     {liveSpeechInterimText || 'Listening... start speaking'}
                   </div>
                 </div>
