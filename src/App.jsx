@@ -13259,88 +13259,63 @@ export default function App() {
       ? active
       : null;
 
-    let target = activeEditable;
-    if (!target) {
-      target = getFallbackDocumentTarget();
-    }
-
+    let target = activeEditable || getFallbackDocumentTarget();
     if (!target) {
       return;
     }
 
-    target.focus();
+    try {
+      target.focus();
+    } catch (_e) {
+      // Ignore focus errors
+    }
+
     if ((target.textContent || '').trim() === AI_NATIVE_PLACEHOLDER) {
       target.textContent = '';
     }
 
     const selection = window.getSelection();
-    let shouldResetToEnd = forceAppendToEnd;
-    if (selection && selection.rangeCount) {
-      if (!forceAppendToEnd) {
-        const currentRange = selection.getRangeAt(0);
-        const anchorNode = selection.anchorNode;
-        const anchorElement = anchorNode?.nodeType === Node.TEXT_NODE ? anchorNode.parentNode : anchorNode;
-        shouldResetToEnd = !anchorElement || !target.contains(anchorElement);
-        if (!shouldResetToEnd && !isRangeInsideEditor(currentRange)) {
-          shouldResetToEnd = true;
-        }
+    if (selection) {
+      try {
+        const endRange = document.createRange();
+        endRange.selectNodeContents(target);
+        endRange.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(endRange);
+      } catch (_e) {
+        // Ignore range errors
       }
-    } else if (!forceAppendToEnd) {
-      shouldResetToEnd = true;
     }
 
-    if (selection && shouldResetToEnd) {
-      const endRange = document.createRange();
-      endRange.selectNodeContents(target);
-      endRange.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(endRange);
+    let insertedViaCommand = false;
+    try {
+      insertedViaCommand = document.execCommand('insertText', false, `${normalized} `);
+    } catch (_e) {
+      insertedViaCommand = false;
     }
 
-    const insertedViaCommand = document.execCommand('insertText', false, `${normalized} `);
     if (!insertedViaCommand) {
-      const fallbackSelection = window.getSelection();
-      if (fallbackSelection && fallbackSelection.rangeCount) {
-        const fallbackRange = fallbackSelection.getRangeAt(0);
-        fallbackRange.deleteContents();
-        fallbackRange.insertNode(document.createTextNode(`${normalized} `));
-        fallbackRange.collapse(false);
-        fallbackSelection.removeAllRanges();
-        fallbackSelection.addRange(fallbackRange);
+      try {
+        const textNode = document.createTextNode(`${normalized} `);
+        target.appendChild(textNode);
+        if (selection) {
+          const newRange = document.createRange();
+          newRange.selectNodeContents(target);
+          newRange.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+      } catch (_e) {
+        // Fallback textContent append
+        target.textContent = `${target.textContent || ''} ${normalized} `.trim();
       }
     }
 
-    const finalSelection = window.getSelection();
-    if (finalSelection) {
-      const endRange = document.createRange();
-      endRange.selectNodeContents(target);
-      endRange.collapse(false);
-      finalSelection.removeAllRanges();
-      finalSelection.addRange(endRange);
-    }
-    normalizeEditableDirection(target);
-
-    if (target === blankBodyRef.current) {
+    // ALWAYS update React docBodyHtml state so re-renders keep the inserted transcript intact
+    if (blankBodyRef.current) {
       setIsBlankDocument(true);
-      setDocBodyHtml(target.innerHTML);
-      
-      // Auto-detect outline on paste
-      setTimeout(() => {
-        if (blankBodyRef.current) {
-          const headingNodes = Array.from(blankBodyRef.current.querySelectorAll('h1, h2, h3'));
-          if (headingNodes.length > 0) {
-            const newTreeData = headingNodes.map((n, i) => ({
-              id: `sec-auto-${Date.now()}-${i}`,
-              title: String(n.textContent || '').trim() || 'Untitled Section',
-              progress: 0,
-              completed: false,
-              subsections: [],
-              expanded: false
-            }));
-            setOutlineTreeData(newTreeData);
-          }
-        }
-      }, 50);
+      const updatedHtml = blankBodyRef.current.innerHTML;
+      setDocBodyHtml(updatedHtml);
     }
   };
 
@@ -13798,19 +13773,8 @@ export default function App() {
             skipCommandEngine: false,
           });
         } else {
-          setIsComposing(true);
-          try {
-            const llmProcessed = await callGemini({
-              userPrompt: `Clean up the following voice transcription, correcting spelling, grammar, and formatting errors while preserving the original meaning. Output ONLY the cleaned text:\n\n${normalizedFinal}`,
-              systemPrompt: `You are a voice transcription cleaner. Your ONLY job is to output the corrected text. Do NOT add any conversational padding. Output plain text.`
-            });
-            const cleanedText = (llmProcessed && typeof llmProcessed.text === 'string' && llmProcessed.text.trim()) ? llmProcessed.text.trim() : normalizedFinal;
-            routeTranscriptToTarget(cleanedText, 'final');
-          } catch (e) {
-            routeTranscriptToTarget(normalizedFinal, 'final');
-          } finally {
-            setIsComposing(false);
-          }
+          // Route raw transcript immediately so user gets real-time response without waiting for AI server
+          routeTranscriptToTarget(normalizedFinal, 'final');
         }
         interimTranscriptRef.current = normalizedFinal;
         pendingInterimTranscriptRef.current = '';
@@ -21856,7 +21820,7 @@ Rules:
             showToast('Voice command cancelled');
             setTimeout(() => {
               if (isVoiceActiveRef.current) {
-                setLiveSpeechInterimText('Listening... start speaking');
+                setLiveSpeechInterimText((prev) => prev || 'Listening... start speaking');
               }
             }, 1200);
             return;
@@ -21916,7 +21880,7 @@ Rules:
               } else if (voiceTargetRef.current === 'agent-chat') {
                 setDmAiChatInput((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
               } else {
-                setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
+                setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
               }
             }
           }
@@ -21927,7 +21891,7 @@ Rules:
               if (isVoiceCommandModeRef.current) {
                 setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current}`);
               } else {
-                setLiveSpeechInterimText('Listening...');
+                setLiveSpeechInterimText((prev) => prev || 'Listening...');
               }
             }
           }, 800);
@@ -21939,7 +21903,7 @@ Rules:
             if (isVoiceCommandModeRef.current) {
               setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || 'speak instructions...'}`);
             } else {
-              setLiveSpeechInterimText('Listening... start speaking');
+              setLiveSpeechInterimText((prev) => prev || 'Listening... start speaking');
             }
           }
         }
@@ -21960,7 +21924,7 @@ Rules:
           }
           setLiveSpeechInterimText(fallbackText);
         } else if (isVoiceActiveRef.current) {
-          setLiveSpeechInterimText('Listening... start speaking');
+          setLiveSpeechInterimText((prev) => prev || 'Listening... start speaking');
         }
       }
     } catch (e) {
@@ -21972,7 +21936,7 @@ Rules:
         }
       }
       if (isVoiceActiveRef.current) {
-        setLiveSpeechInterimText('Listening... start speaking');
+        setLiveSpeechInterimText((prev) => prev || 'Listening... start speaking');
       }
     } finally {
       if ((!isVoiceActiveRef.current || shouldExecuteCommandRef.current) && isVoiceCommandModeRef.current) {
