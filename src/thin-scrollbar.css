@@ -52,3 +52,56 @@
 .app-dark .bg-violet-600, .app-dark .bg-violet-500 {
   filter: hue-rotate(180deg);
 }
+
+/* Editor scrollbar auto-dimming: subtly dimmed when mouse is in editor or typing, brightens when mouse is on right side next to editor */
+.editor-auto-dim-scrollbar,
+.editor-auto-dim-scrollbar:hover,
+.editor-auto-dim-scrollbar:focus,
+.editor-auto-dim-scrollbar:focus-within {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.18) transparent !important;
+  transition: scrollbar-color 0.25s ease;
+}
+
+.editor-auto-dim-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.editor-auto-dim-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.editor-auto-dim-scrollbar::-webkit-scrollbar-thumb,
+.editor-auto-dim-scrollbar:hover::-webkit-scrollbar-thumb,
+.editor-auto-dim-scrollbar:focus::-webkit-scrollbar-thumb,
+.editor-auto-dim-scrollbar:focus-within::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.18) !important;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.25s ease;
+}
+
+/* Brightened state: when mouse is on the right side next to document editor (.scrollbar-visible) or hovering thumb directly */
+.editor-auto-dim-scrollbar.scrollbar-visible,
+.editor-auto-dim-scrollbar.scrollbar-visible:hover,
+.editor-auto-dim-scrollbar.scrollbar-visible:focus,
+.editor-auto-dim-scrollbar.scrollbar-visible:focus-within {
+  scrollbar-color: rgba(100, 116, 139, 0.55) transparent !important;
+}
+
+.editor-auto-dim-scrollbar.scrollbar-visible::-webkit-scrollbar-thumb,
+.editor-auto-dim-scrollbar.scrollbar-visible:hover::-webkit-scrollbar-thumb,
+.editor-auto-dim-scrollbar.scrollbar-visible:focus::-webkit-scrollbar-thumb,
+.editor-auto-dim-scrollbar.scrollbar-visible:focus-within::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.55) !important;
+}
+
+.editor-auto-dim-scrollbar::-webkit-scrollbar-thumb:hover,
+.editor-auto-dim-scrollbar::-webkit-scrollbar-thumb:active {
+  background-color: rgba(51, 65, 85, 0.85) !important;
+  scrollbar-color: rgba(51, 65, 85, 0.85) transparent !important;
+}
+
+

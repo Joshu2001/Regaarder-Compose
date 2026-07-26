@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import ShareModal from './ShareModal';
+import DropdownModalShell from './DropdownModalShell';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { Parser } from 'hot-formula-parser';
@@ -36,7 +37,9 @@ import { diff_match_patch as DiffMatchPatch } from 'diff-match-patch';
 import randomColor from 'randomcolor';// Inline attachment chip — avoids module-order TDZ in the production bundle
 import { exportCompose, exportSheets, exportDeck, exportWhiteboard } from './utils/exportUtils';
 import AnalyticsHubUI from './analytics/AnalyticsHubUI';
-const API_BASE_URL = typeof window !== 'undefined' ? (window.location.protocol === 'https:' ? 'https://' : 'http://') + window.location.hostname + ':3001' : API_BASE_URL;
+const API_BASE_URL = (typeof process !== 'undefined' && process.env?.VITE_COLLAB_SERVER_URL) || 
+  (import.meta.env?.VITE_COLLAB_SERVER_URL) || 
+  (typeof window !== 'undefined' ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? `${window.location.protocol}//${window.location.hostname}:3001` : 'http://localhost:3001') : 'http://localhost:3001');
 function AIChatAttachmentChip({ file, onRemove }) {
   return (
     <span style={{
@@ -3922,10 +3925,19 @@ export default function App() {
   const [socketId, setSocketId] = useState('');
 
   useEffect(() => {
-    socketRef.current = io(API_BASE_URL);
+    socketRef.current = io(API_BASE_URL, {
+      reconnectionAttempts: 3,
+      reconnectionDelay: 5000,
+      timeout: 3000,
+      autoConnect: true
+    });
     
     socketRef.current.on('connect', () => {
       setSocketId(socketRef.current.id);
+    });
+
+    socketRef.current.on('connect_error', () => {
+      // Silently catch offline backend server connection attempts
     });
 
     socketRef.current.on('agent_state', (data) => {
@@ -6727,7 +6739,82 @@ export default function App() {
   const pageIndicatorTimeoutRef = useRef(null);
   const documentScrollContainerRef = useRef(null);
 
+  const [isEditorScrolling, setIsEditorScrolling] = useState(false);
+  const editorScrollTimeoutRef = useRef(null);
+  const lastMouseXRef = useRef(0);
+
+  const handleEditorMouseMove = (e) => {
+    const container = e.currentTarget;
+    if (!container) return;
+    lastMouseXRef.current = e.clientX;
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.clientX;
+    
+    let isRightSide = false;
+    if (documentCardRef.current) {
+      const cardRect = documentCardRef.current.getBoundingClientRect();
+      if (mouseX >= cardRect.right - 10) {
+        isRightSide = true;
+      }
+    } else {
+      if (rect.right - mouseX <= 60) {
+        isRightSide = true;
+      }
+    }
+
+    if (isRightSide) {
+      container.classList.add('scrollbar-visible');
+    } else {
+      container.classList.remove('scrollbar-visible');
+    }
+  };
+
+  const handleEditorMouseLeave = (e) => {
+    const container = e.currentTarget;
+    if (container) {
+      container.classList.remove('scrollbar-visible');
+    }
+  };
+
   const handleEditorScroll = (e) => {
+    const container = e.currentTarget;
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      const mouseX = lastMouseXRef.current;
+      let isRightSide = false;
+      if (documentCardRef.current) {
+        const cardRect = documentCardRef.current.getBoundingClientRect();
+        if (mouseX >= cardRect.right - 10) {
+          isRightSide = true;
+        }
+      } else {
+        if (rect.right - mouseX <= 60) {
+          isRightSide = true;
+        }
+      }
+
+      if (isRightSide) {
+        container.classList.add('scrollbar-visible');
+        if (editorScrollTimeoutRef.current) {
+          clearTimeout(editorScrollTimeoutRef.current);
+        }
+        editorScrollTimeoutRef.current = setTimeout(() => {
+          if (container) {
+            container.classList.remove('scrollbar-visible');
+          }
+        }, 1000);
+      } else {
+        container.classList.remove('scrollbar-visible');
+      }
+    }
+    setIsEditorScrolling(true);
+    if (editorScrollTimeoutRef.current) {
+      clearTimeout(editorScrollTimeoutRef.current);
+    }
+    editorScrollTimeoutRef.current = setTimeout(() => {
+      setIsEditorScrolling(false);
+    }, 1000);
+
     setShowPageIndicator(true);
     if (pageIndicatorTimeoutRef.current) {
       clearTimeout(pageIndicatorTimeoutRef.current);
@@ -6736,7 +6823,6 @@ export default function App() {
       setShowPageIndicator(false);
     }, 1500);
 
-    const container = e.currentTarget;
     const containerCenter = container.scrollTop + (container.clientHeight / 2);
     const rect = container.getBoundingClientRect();
     setPageIndicatorLeft(rect.left + container.clientWidth / 2);
@@ -8064,159 +8150,141 @@ export default function App() {
     /* Shorten HH:MM:SS → HH:MM AM/PM */
     const fmtTime = (ts) => ts ? ts.replace(/:(\d{2})\s/, ' ') : 'Now';
 
-    return (
+    const headerExtra = (
       <>
-        {/* Full backdrop overlay — original subtle blur */}
-        <div 
-          className="fixed inset-0 bg-black/[0.05] dark:bg-black/35 backdrop-blur-[1.5px] z-[440] transition-opacity duration-200"
-          onClick={() => setNotificationsOpen(false)}
-        />
-
-        {/* Panel Container — Native macOS System Gray Surface (420px width) */}
-        <div className="absolute right-0 top-11 z-[450] w-[420px] rounded-[22px] border border-black/[0.08] dark:border-white/[0.08] bg-[#f2f2f7] dark:bg-[#1e1e22] backdrop-blur-2xl shadow-[0_32px_72px_-16px_rgba(0,0,0,0.16),0_8px_24px_-6px_rgba(0,0,0,0.06)] font-sans animate-in zoom-in-95 fade-in duration-150 origin-top-right overflow-hidden">
-
-          {/* ── Hero Header ── */}
-          <div className="px-6 pt-5 pb-3 flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.04]">
-            <div className="flex items-center gap-2.5 shrink-0">
-              <span className="text-[16px] font-bold tracking-tight text-slate-900 dark:text-white">Notifications</span>
-              {unreadCount > 0 && (
-                <span className="px-2.5 py-0.5 text-[10.5px] font-semibold bg-violet-200/70 text-violet-800 dark:bg-violet-950/80 dark:text-violet-300 rounded-full tabular-nums shadow-2xs">
-                  {unreadCount} unread
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              {unreadCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setNotifications(prev => prev.map(n => ({ ...n, unread: false })))}
-                  className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
-                >
-                  Mark all read
-                </button>
-              )}
-              {notifications.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setNotifications([])}
-                  className="text-[11px] font-medium text-slate-500 dark:text-zinc-500 hover:text-rose-500 transition-colors"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* ── Pure Notification List Surface (No category tabs) ── */}
-          <div
-            className="max-h-[395px] overflow-y-auto px-3.5 pt-3 pb-2 space-y-1.5"
-            style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.25) transparent' }}
+        {unreadCount > 0 && (
+          <span className="px-2.5 py-0.5 text-[10.5px] font-semibold bg-violet-200/70 text-violet-800 dark:bg-violet-950/80 dark:text-violet-300 rounded-full tabular-nums shadow-2xs">
+            {unreadCount} unread
+          </span>
+        )}
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setNotifications(prev => prev.map(n => ({ ...n, unread: false })))}
+            className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
           >
-            {notifications.length === 0 ? (
-              <div className="py-14 flex flex-col items-center gap-2.5 text-center">
-                <Bell size={24} strokeWidth={1.5} className="text-slate-300 dark:text-zinc-600" />
-                <span className="text-[12.5px] text-slate-400 dark:text-zinc-500 font-medium">
-                  You're all caught up
-                </span>
-              </div>
-            ) : (
-              notifications.map((item) => (
-                <div 
-                  key={item.id}
-                  onClick={() => {
-                    setNotifications(prev => prev.map(n => n.id === item.id ? { ...n, unread: false } : n));
-                    setNotificationsOpen(false);
-                    if (item.category === 'schedule' && typeof setSidebarTab === 'function') setSidebarTab('tasks');
-                  }}
-                  className={`group relative px-3.5 py-3 rounded-xl border border-transparent transition-all duration-180 ease-out cursor-pointer ${
-                    item.unread
-                      ? 'bg-violet-100/40 dark:bg-violet-950/25 hover:bg-white dark:hover:bg-[#28282d] hover:border-black/[0.06] dark:hover:border-white/[0.08] hover:shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:-translate-y-[1px]'
-                      : 'bg-transparent hover:bg-white dark:hover:bg-[#28282d] hover:border-black/[0.06] dark:hover:border-white/[0.08] hover:shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:-translate-y-[1px]'
-                  }`}
-                >
-                  <div className="flex items-start gap-3.5">
-                    {/* 28x28 Circular Icon Container */}
-                    <div className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-transform duration-180 group-hover:scale-[1.05] ${
-                      item.category === 'ai'
-                        ? 'bg-violet-500/10 dark:bg-violet-500/20 group-hover:bg-violet-500/20'
-                        : 'bg-black/[0.035] dark:bg-white/[0.06] group-hover:bg-black/[0.07] dark:group-hover:bg-white/[0.12]'
-                    }`}>
-                      {getCategoryIcon(item.category)}
-                    </div>
+            Mark all read
+          </button>
+        )}
+        {notifications.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setNotifications([])}
+            className="text-[11px] font-medium text-slate-500 dark:text-zinc-500 hover:text-rose-500 transition-colors"
+          >
+            Clear
+          </button>
+        )}
+      </>
+    );
 
-                    {/* Content — Hover-Only High Contrast Upgrade */}
-                    <div className="flex-1 min-w-0 pr-0.5">
-                      <div className="flex items-baseline justify-between gap-2">
-                        {/* Title: High Contrast Boost on Hover ONLY */}
-                        <span className={`text-[12.5px] leading-snug truncate transition-colors duration-150 ${
-                          item.unread
-                            ? 'font-semibold text-slate-900 dark:text-white group-hover:text-black dark:group-hover:text-white group-hover:font-bold'
-                            : 'font-medium text-slate-700 dark:text-zinc-300 group-hover:text-slate-950 dark:group-hover:text-white group-hover:font-semibold'
-                        }`}>
-                          {item.title}
-                        </span>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {/* Timestamp: Sharper Contrast on Hover ONLY */}
-                          <span className="text-[10px] font-normal text-slate-400 dark:text-zinc-500 group-hover:text-slate-700 dark:group-hover:text-zinc-300 group-hover:font-medium transition-colors tabular-nums">
-                            {fmtTime(item.timestamp)}
-                          </span>
-                          {/* 5px unread dot */}
-                          {item.unread && (
-                            <span className="w-1.25 h-1.25 rounded-full bg-violet-500 shrink-0" />
-                          )}
-                        </div>
-                      </div>
-                      {/* Description: Sharper Contrast on Hover ONLY */}
-                      <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400 group-hover:text-slate-900 dark:group-hover:text-zinc-100 group-hover:font-medium transition-colors line-clamp-2">
-                        {item.detail}
-                      </p>
-                    </div>
-                  </div>
+    const footerContent = notifications.length > 0 ? (
+      <>
+        <span className="text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 tabular-nums">
+          {notifications.length} {notifications.length === 1 ? 'notification' : 'notifications'}
+          {unreadCount > 0 && ` · ${unreadCount} unread`}
+        </span>
+        {notifications.length >= 2 && (
+          <button
+            type="button"
+            onClick={() => setNotifications([])}
+            className="text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 hover:text-rose-500 transition-colors"
+          >
+            Clear all
+          </button>
+        )}
+      </>
+    ) : null;
 
-                  {/* Hover Quick Actions */}
-                  <div className="absolute bottom-2.5 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none group-hover:pointer-events-auto z-20">
-                    {item.unread && (
-                      <button
-                        type="button"
-                        onPointerDown={(e) => { e.stopPropagation(); setNotifications(prev => prev.map(n => n.id === item.id ? { ...n, unread: false } : n)); }}
-                        className="px-2 py-0.5 text-[9.5px] font-medium rounded-md bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white shadow-2xs transition-all"
-                      >
-                        Mark read
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onPointerDown={(e) => { e.stopPropagation(); setNotifications(prev => prev.filter(n => n.id !== item.id)); }}
-                      className="px-2 py-0.5 text-[9.5px] font-medium rounded-md bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-400 dark:text-zinc-500 hover:text-rose-500 dark:hover:text-rose-400 shadow-2xs transition-all"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
+    return (
+      <DropdownModalShell
+        isOpen={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+        title="Notifications"
+        headerExtra={headerExtra}
+        width="w-[420px]"
+        maxHeight="max-h-[395px]"
+        zIndexBackdrop="z-[440]"
+        zIndexModal="z-[450]"
+        footer={footerContent}
+      >
+        {notifications.length === 0 ? (
+          <div className="py-14 flex flex-col items-center gap-2.5 text-center">
+            <Bell size={24} strokeWidth={1.5} className="text-slate-300 dark:text-zinc-600" />
+            <span className="text-[12.5px] text-slate-400 dark:text-zinc-500 font-medium">
+              You're all caught up
+            </span>
           </div>
+        ) : (
+          notifications.map((item) => (
+            <div 
+              key={item.id}
+              onClick={() => {
+                setNotifications(prev => prev.map(n => n.id === item.id ? { ...n, unread: false } : n));
+                setNotificationsOpen(false);
+                if (item.category === 'schedule' && typeof setSidebarTab === 'function') setSidebarTab('tasks');
+              }}
+              className={`group relative px-3.5 py-3 rounded-xl border border-transparent transition-all duration-180 ease-out cursor-pointer ${
+                item.unread
+                  ? 'bg-violet-100/40 dark:bg-violet-950/25 hover:bg-white dark:hover:bg-[#28282d] hover:border-black/[0.06] dark:hover:border-white/[0.08] hover:shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:-translate-y-[1px]'
+                  : 'bg-transparent hover:bg-white dark:hover:bg-[#28282d] hover:border-black/[0.06] dark:hover:border-white/[0.08] hover:shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:-translate-y-[1px]'
+              }`}
+            >
+              <div className="flex items-start gap-3.5">
+                <div className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-transform duration-180 group-hover:scale-[1.05] ${
+                  item.category === 'ai'
+                    ? 'bg-violet-500/10 dark:bg-violet-500/20 group-hover:bg-violet-500/20'
+                    : 'bg-black/[0.035] dark:bg-white/[0.06] group-hover:bg-black/[0.07] dark:group-hover:bg-white/[0.12]'
+                }`}>
+                  {getCategoryIcon(item.category)}
+                </div>
 
-          {/* ── Integrated Footer ── */}
-          {notifications.length > 0 && (
-            <div className="mt-2 border-t border-black/[0.05] dark:border-white/[0.05] px-6 py-3.5 flex items-center justify-between bg-slate-200/40 dark:bg-zinc-900/60">
-              <span className="text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 tabular-nums">
-                {notifications.length} {notifications.length === 1 ? 'notification' : 'notifications'}
-                {unreadCount > 0 && ` · ${unreadCount} unread`}
-              </span>
-              {notifications.length >= 2 && (
+                <div className="flex-1 min-w-0 pr-0.5">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className={`text-[12.5px] leading-snug truncate transition-colors duration-150 ${
+                      item.unread
+                        ? 'font-semibold text-slate-900 dark:text-white group-hover:text-black dark:group-hover:text-white group-hover:font-bold'
+                        : 'font-medium text-slate-700 dark:text-zinc-300 group-hover:text-slate-950 dark:group-hover:text-white group-hover:font-semibold'
+                    }`}>
+                      {item.title}
+                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] font-normal text-slate-400 dark:text-zinc-500 group-hover:text-slate-700 dark:group-hover:text-zinc-300 group-hover:font-medium transition-colors tabular-nums">
+                        {fmtTime(item.timestamp)}
+                      </span>
+                      {item.unread && (
+                        <span className="w-1.25 h-1.25 rounded-full bg-violet-500 shrink-0" />
+                      )}
+                    </div>
+                  </div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400 group-hover:text-slate-900 dark:group-hover:text-zinc-100 group-hover:font-medium transition-colors line-clamp-2">
+                    {item.detail}
+                  </p>
+                </div>
+              </div>
+
+              <div className="absolute bottom-2.5 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none group-hover:pointer-events-auto z-20">
+                {item.unread && (
+                  <button
+                    type="button"
+                    onPointerDown={(e) => { e.stopPropagation(); setNotifications(prev => prev.map(n => n.id === item.id ? { ...n, unread: false } : n)); }}
+                    className="px-2 py-0.5 text-[9.5px] font-medium rounded-md bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white shadow-2xs transition-all"
+                  >
+                    Mark read
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => setNotifications([])}
-                  className="text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 hover:text-rose-500 transition-colors"
+                  onPointerDown={(e) => { e.stopPropagation(); setNotifications(prev => prev.filter(n => n.id !== item.id)); }}
+                  className="px-2 py-0.5 text-[9.5px] font-medium rounded-md bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-400 dark:text-zinc-500 hover:text-rose-500 dark:hover:text-rose-400 shadow-2xs transition-all"
                 >
-                  Clear all
+                  Dismiss
                 </button>
-              )}
+              </div>
             </div>
-          )}
-        </div>
-      </>
+          ))
+        )}
+      </DropdownModalShell>
     );
   };
 
@@ -9297,11 +9365,17 @@ export default function App() {
   useEffect(() => {
     yDocRef.current = new Y.Doc();
     yTextRef.current = yDocRef.current.getText('docBodyHtml');
-
-    const wsHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-    const wsUrl = `ws://${wsHost}:3001/yjs`;
+    const wsUrl = API_BASE_URL.replace(/^http/, 'ws') + '/yjs';
     const roomName = roomId ? `compose-room-${roomId}` : `compose-room-${activeDocId || 'default'}`;
-    providerRef.current = new WebsocketProvider(wsUrl, roomName, yDocRef.current);
+    providerRef.current = new WebsocketProvider(wsUrl, roomName, yDocRef.current, {
+      maxBackoffTime: 30000,
+      resyncInterval: 0,
+      disableBc: false
+    });
+
+    providerRef.current.on('connection-error', () => {
+      // Gracefully handle offline backend collaboration server
+    });
 
     const awareness = providerRef.current.awareness;
     awareness.setLocalStateField('user', {
@@ -9544,6 +9618,7 @@ export default function App() {
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isDocumentImmersive, setIsDocumentImmersive] = useState(false);
+
   const [workspaceLauncherOpen, setWorkspaceLauncherOpen] = useState(false);
   // Smart sidebar: persisted usage counts (key → cumulative clicks)
   const [featureUsageCounts, setFeatureUsageCounts] = useState(() => {
@@ -13248,54 +13323,98 @@ export default function App() {
     if (!normalized) {
       return;
     }
+    const forceAppendToEnd = Boolean(options.forceAppendToEnd);
 
-    const getFallbackDocumentTarget = () => {
-      return blankBodyRef.current || documentCardRef.current || document.querySelector('.prose[contenteditable="true"]') || document.querySelector('[contenteditable="true"]') || null;
-    };
+    // Get the editor root element
+    const editorEl = blankBodyRef.current || documentCardRef.current || document.querySelector('.prose[contenteditable="true"]') || document.querySelector('[contenteditable="true"]');
+    if (!editorEl) {
+      return;
+    }
 
+    setIsBlankDocument(false);
+
+    // If active focus is an editable element inside documentCardRef, use it
     const active = document.activeElement;
-    const activeEditable = active?.isContentEditable && documentCardRef.current?.contains(active)
+    const activeEditable = active?.isContentEditable && (editorEl.contains(active) || active === editorEl)
       ? active
       : null;
 
-    let target = activeEditable || getFallbackDocumentTarget();
-    if (!target) {
-      return;
-    }
+    let target = activeEditable || editorEl;
+
+    // Focus target element
+    try { target.focus(); } catch (_e) {}
 
     if ((target.textContent || '').trim() === AI_NATIVE_PLACEHOLDER) {
       target.textContent = '';
     }
 
-    // Direct, guaranteed DOM insertion into the document editor
-    let container = target;
-    if (target.lastElementChild && (target.lastElementChild.tagName === 'P' || target.lastElementChild.tagName === 'DIV')) {
-      container = target.lastElementChild;
-    }
-
-    const textNode = document.createTextNode(`${normalized} `);
-    container.appendChild(textNode);
-
-    // Position cursor at end of newly inserted text
-    const selection = window.getSelection();
-    if (selection) {
-      try {
-        const range = document.createRange();
-        range.setStartAfter(textNode);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      } catch (_e) {
-        // Ignore range errors
+    // Ensure target has a paragraph element to insert into if target is the editor root
+    let actualInsertContainer = target;
+    if (target === editorEl || target === blankBodyRef.current) {
+      const blocks = Array.from(editorEl.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote, li')).filter(
+        (el) => !el.closest('[contenteditable="false"]')
+      );
+      if (blocks.length > 0) {
+        actualInsertContainer = blocks[blocks.length - 1];
+      } else {
+        const p = document.createElement('p');
+        editorEl.appendChild(p);
+        actualInsertContainer = p;
       }
     }
 
-    // ALWAYS update React docBodyHtml state & document store so re-renders keep the inserted transcript intact
-    if (blankBodyRef.current) {
-      setIsBlankDocument(true);
-      const updatedHtml = blankBodyRef.current.innerHTML;
-      setDocBodyHtml(updatedHtml);
-      commitEditableHtmlForActiveDoc(blankBodyRef.current, setDocBodyHtml);
+    try { actualInsertContainer.focus(); } catch (_e) {}
+
+    const selection = window.getSelection();
+    let shouldResetToEnd = forceAppendToEnd;
+    if (selection && selection.rangeCount && !forceAppendToEnd) {
+      const currentRange = selection.getRangeAt(0);
+      const anchorNode = selection.anchorNode;
+      const anchorElement = anchorNode?.nodeType === Node.TEXT_NODE ? anchorNode.parentNode : anchorNode;
+      shouldResetToEnd = !anchorElement || !actualInsertContainer.contains(anchorElement);
+    } else if (!forceAppendToEnd) {
+      shouldResetToEnd = true;
+    }
+
+    if (selection && shouldResetToEnd) {
+      try {
+        const endRange = document.createRange();
+        endRange.selectNodeContents(actualInsertContainer);
+        endRange.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(endRange);
+      } catch (_e) {}
+    }
+
+    // Attempt insertion via native execCommand first
+    let insertedViaCommand = false;
+    try {
+      insertedViaCommand = document.execCommand('insertText', false, `${normalized} `);
+    } catch (_e) {
+      insertedViaCommand = false;
+    }
+
+    // Fallback: Direct DOM node insertion inside actualInsertContainer
+    if (!insertedViaCommand) {
+      const textNode = document.createTextNode(`${normalized} `);
+      actualInsertContainer.appendChild(textNode);
+      if (selection) {
+        try {
+          const fallbackRange = document.createRange();
+          fallbackRange.setStartAfter(textNode);
+          fallbackRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(fallbackRange);
+        } catch (_e) {}
+      }
+    }
+
+    normalizeEditableDirection(target);
+
+    // Sync React state with the updated innerHTML of the editor container without destroying active caret selection
+    if (options.syncState !== false) {
+      const updatedHtml = editorEl.innerHTML || '';
+      commitEditableHtmlForActiveDoc(editorEl, setDocBodyHtml);
     }
   };
 
@@ -13697,7 +13816,28 @@ export default function App() {
         if (activeVoiceTarget === 'schedule') {
           setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
         } else if (activeVoiceTarget === 'document') {
-          insertTranscriptIntoDocumentRef.current?.(normalizedText, { forceAppendToEnd: true });
+          const previous = lastDocumentTranscriptRef.current;
+          let textToInsert = normalizedText;
+          const shouldCompareWithInterim = previous.text
+            && previous.source === 'interim'
+            && source !== 'interim'
+            && Date.now() - previous.at < 3500;
+
+          if (shouldCompareWithInterim) {
+            const previousLower = previous.text.toLowerCase();
+            const normalizedLower = normalizedText.toLowerCase();
+            if (normalizedLower === previousLower) {
+              return;
+            }
+            if (normalizedLower.startsWith(previousLower)) {
+              textToInsert = normalizedText.slice(previous.text.length).trim();
+              if (!textToInsert) {
+                return;
+              }
+            }
+          }
+
+          insertTranscriptIntoDocumentRef.current?.(textToInsert, { forceAppendToEnd: true });
           lastDocumentTranscriptRef.current = { text: normalizedText, source, at: Date.now() };
         } else if (activeVoiceTarget === 'chat') {
           setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
@@ -13752,7 +13892,7 @@ export default function App() {
             selectionScoped: hasSelection,
             skipCommandEngine: false,
           });
-        } else {
+        } else if (voiceTargetRef.current === 'compose' || voiceTargetRef.current === 'agent-chat' || voiceTargetRef.current === 'right-assistant' || isVoiceCommandModeRef.current) {
           setIsComposing(true);
           try {
             const llmProcessed = await callGemini({
@@ -13768,6 +13908,8 @@ export default function App() {
           } finally {
             setIsComposing(false);
           }
+        } else {
+          routeTranscriptToTarget(normalizedFinal, 'final');
         }
         interimTranscriptRef.current = normalizedFinal;
         pendingInterimTranscriptRef.current = '';
@@ -19405,7 +19547,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         <div class="shape-svg-container" style="padding:24px; background:transparent; display:flex; justify-content:center; align-items:center; min-height:180px; position:relative; overflow:visible; user-select:none;">
           ${svgHtml}
           <!-- Text overlay centered on the shape -->
-          <div contenteditable="true" class="shape-text-overlay" data-placeholder="Type inside shape..." oninput="window.updateShapeText('${containerId}', this.innerText)" style="position:absolute; width:${Math.max(40, width - offset*2 - 20)}px; height:${Math.max(40, height - offset*2 - 20)}px; display:flex; align-items:center; justify-content:center; text-align:center; outline:none; font-family:sans-serif; font-size:14px; font-weight:500; color:#1e293b; overflow:hidden; word-break:break-word; pointer-events:auto; z-index:2; border:none; background:transparent; line-height:1.2;">
+          <div contenteditable="true" class="shape-text-overlay" data-placeholder="Type inside shape..." oninput="window.updateShapeText('${containerId}', this.innerText)" style="position:absolute; width:${Math.max(40, width - offset*2 - 20)}px; height:${Math.max(40, height - offset*2 - 20)}px; display:flex; align-items:center; justify-content:center; text-align:center; outline:none; font-family:sans-serif; font-size:14px; font-weight:500; color:${state.textColor || state.color || 'inherit'}; overflow:hidden; word-break:break-word; pointer-events:auto; z-index:2; border:none; background:transparent; line-height:1.2;">
             ${state.text || ''}
           </div>
           <!-- Resize Handles -->
@@ -21768,8 +21910,6 @@ Rules:
     }
     
     try {
-      setLiveSpeechInterimText('Processing audio...');
-
       const reader = new FileReader();
       const base64Promise = new Promise((resolve, reject) => {
         reader.onloadend = () => resolve(reader.result.split(',')[1]);
@@ -21780,6 +21920,7 @@ Rules:
 
       let result = null;
       try {
+        setLiveSpeechInterimText('Processing audio...');
         const response = await fetch('/api/gemini', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -21873,7 +22014,7 @@ Rules:
               } else if (voiceTargetRef.current === 'agent-chat') {
                 setDmAiChatInput((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
               } else {
-                setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
+                setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
               }
             }
           }
@@ -21901,22 +22042,31 @@ Rules:
           }
         }
       } else {
-        // Fallback gracefully to browser native speech recognition (SpeechRecognition API)
-        const fallbackText = String(interimTranscriptRef.current || '').trim();
-        if (fallbackText) {
+        // AI transcription unavailable — rely entirely on browser native SpeechRecognition.
+        // The onresult handler already inserts final transcripts into the target. We only
+        // need to handle text that onresult buffered as interim but hasn't committed yet.
+        const nativeInterim = String(interimTranscriptRef.current || '').trim();
+        const lastInserted = lastDocumentTranscriptRef.current;
+        const alreadyInserted = lastInserted && lastInserted.text === nativeInterim && (Date.now() - lastInserted.at) < 6000;
+
+        if (nativeInterim && !alreadyInserted) {
+          // Only insert if this text wasn't already committed by the onresult handler
           if (voiceTargetRef.current === 'document') {
-            insertTranscriptIntoDocumentRef.current?.(fallbackText + ' ', { forceAppendToEnd: true });
+            insertTranscriptIntoDocumentRef.current?.(nativeInterim + ' ', { forceAppendToEnd: true });
+            lastDocumentTranscriptRef.current = { text: nativeInterim, source: 'gemini-fallback', at: Date.now() };
           } else if (voiceTargetRef.current === 'schedule') {
-            setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${fallbackText}`);
+            setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${nativeInterim}`);
           } else if (voiceTargetRef.current === 'chat') {
-            setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${fallbackText}`);
+            setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${nativeInterim}`);
           } else if (voiceTargetRef.current === 'agent-chat') {
-            setDmAiChatInput((prev) => `${prev}${prev ? ' ' : ''}${fallbackText}`);
+            setDmAiChatInput((prev) => `${prev}${prev ? ' ' : ''}${nativeInterim}`);
           } else {
-            setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${fallbackText}`);
+            setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${nativeInterim}`);
           }
-          setLiveSpeechInterimText(fallbackText);
+          setLiveSpeechInterimText(nativeInterim);
         } else if (isVoiceActiveRef.current) {
+          // Preserve whatever the SpeechRecognition onresult handler already set,
+          // instead of overwriting with a generic message
           setLiveSpeechInterimText((prev) => prev || 'Listening... start speaking');
         }
       }
@@ -23992,7 +24142,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     const target = getDocumentPayload(docId);
     const base = `${window.location.origin}${window.location.pathname}`;
     setShareTargetDocId(docId);
-    setShareTargetDocTitle(target.title?.trim() || 'Untitled composition');
+    setShareTargetDocTitle(target.title?.trim() || docTitle?.trim() || 'Untitled Document');
     setShareDestination('friends');
     setShareFormat('Compose (.cmp)');
     setShareAccess('Viewer');
@@ -36891,7 +37041,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                          {shapeContent}
 
                                        </svg>
-                                       {overlay.type === 'rectangle' && (
+                                       {(!['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType) && overlay.type !== 'image' && overlay.type !== 'chart') && (
                                          <textarea
                                            className="absolute inset-0 w-full h-full bg-transparent p-3 text-sm resize-none border-none outline-none z-10 font-medium"
                                            style={{
@@ -36908,10 +37058,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                              backgroundColor: overlay.highlight || 'transparent'
                                            }}
                                            value={overlay.content || ''}
-                                           placeholder=""
+                                           placeholder={isSelected ? "Type text..." : ""}
                                            onChange={(e) => updateOverlay({ content: e.target.value })}
                                            onClick={(e) => { e.stopPropagation(); setSelectedSheetOverlayId(overlay.id); }}
-                                           onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
+                                           onPointerDown={e => { e.stopPropagation(); }}
                                          />
                                        )}
                                      </>
@@ -44359,8 +44509,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
           <div
             ref={documentScrollContainerRef}
+            onMouseMove={handleEditorMouseMove}
+            onMouseLeave={handleEditorMouseLeave}
             onScroll={handleEditorScroll}
-            className="flex-1 overflow-y-auto thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 pt-14 md:pt-14 transition-opacity duration-300 opacity-100"
+            className="flex-1 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 pt-14 md:pt-14 transition-opacity duration-300 opacity-100"
           >
           {activeRightTab === 'whiteboard' && (
             <div className={`absolute inset-0 ${isWhiteboardImmersive ? 'z-[340] p-0 bg-white' : isWhiteboardFloatingUiOpen ? 'z-[320] p-6 md:p-8 bg-[#F7F7F9]' : 'z-30 p-6 md:p-8 bg-[#F7F7F9]'}`}>
@@ -46527,7 +46679,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             </div>
           )}
-          <div className={`flex-1 min-h-0 overflow-y-auto thin-scrollbar relative p-2 md:p-4 transition-all duration-200 ${activeRightTab === 'whiteboard' ? 'opacity-0 pointer-events-none select-none' : ''}`}>
+          <div
+            onMouseMove={handleEditorMouseMove}
+            onMouseLeave={handleEditorMouseLeave}
+            onScroll={handleEditorScroll}
+            className={`flex-1 min-h-0 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative p-2 md:p-4 transition-all duration-200 ${
+              activeRightTab === 'whiteboard' ? 'opacity-0 pointer-events-none select-none' : ''
+            }`}
+          >
           <div
             className="mx-auto"
             style={{
@@ -47564,7 +47723,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                          {shapeContent}
 
                                        </svg>
-                                       {overlay.type === 'rectangle' && (
+                                       {(!['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType) && overlay.type !== 'image' && overlay.type !== 'chart') && (
                                          <textarea
                                            className="absolute inset-0 w-full h-full bg-transparent p-3 text-sm resize-none border-none outline-none z-10 font-medium"
                                            style={{
@@ -47581,10 +47740,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                              backgroundColor: overlay.highlight || 'transparent'
                                            }}
                                            value={overlay.content || ''}
-                                           placeholder=""
+                                           placeholder={isSelected ? "Type text..." : ""}
                                            onChange={(e) => updateOverlay({ content: e.target.value })}
                                            onClick={(e) => { e.stopPropagation(); setSelectedComposeOverlayId(overlay.id); }}
-                                           onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
+                                           onPointerDown={e => { e.stopPropagation(); }}
                                          />
                                        )}
                                      </>
