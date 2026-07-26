@@ -13290,11 +13290,12 @@ export default function App() {
       }
     }
 
-    // ALWAYS update React docBodyHtml state so re-renders keep the inserted transcript intact
+    // ALWAYS update React docBodyHtml state & document store so re-renders keep the inserted transcript intact
     if (blankBodyRef.current) {
       setIsBlankDocument(true);
       const updatedHtml = blankBodyRef.current.innerHTML;
       setDocBodyHtml(updatedHtml);
+      commitEditableHtmlForActiveDoc(blankBodyRef.current, setDocBodyHtml);
     }
   };
 
