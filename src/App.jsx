@@ -13248,7 +13248,6 @@ export default function App() {
     if (!normalized) {
       return;
     }
-    const forceAppendToEnd = Boolean(options.forceAppendToEnd);
 
     const getFallbackDocumentTarget = () => {
       return blankBodyRef.current || documentCardRef.current || document.querySelector('.prose[contenteditable="true"]') || document.querySelector('[contenteditable="true"]') || null;
@@ -13264,50 +13263,30 @@ export default function App() {
       return;
     }
 
-    try {
-      target.focus();
-    } catch (_e) {
-      // Ignore focus errors
-    }
-
     if ((target.textContent || '').trim() === AI_NATIVE_PLACEHOLDER) {
       target.textContent = '';
     }
 
+    // Direct, guaranteed DOM insertion into the document editor
+    let container = target;
+    if (target.lastElementChild && (target.lastElementChild.tagName === 'P' || target.lastElementChild.tagName === 'DIV')) {
+      container = target.lastElementChild;
+    }
+
+    const textNode = document.createTextNode(`${normalized} `);
+    container.appendChild(textNode);
+
+    // Position cursor at end of newly inserted text
     const selection = window.getSelection();
     if (selection) {
       try {
-        const endRange = document.createRange();
-        endRange.selectNodeContents(target);
-        endRange.collapse(false);
+        const range = document.createRange();
+        range.setStartAfter(textNode);
+        range.collapse(true);
         selection.removeAllRanges();
-        selection.addRange(endRange);
+        selection.addRange(range);
       } catch (_e) {
         // Ignore range errors
-      }
-    }
-
-    let insertedViaCommand = false;
-    try {
-      insertedViaCommand = document.execCommand('insertText', false, `${normalized} `);
-    } catch (_e) {
-      insertedViaCommand = false;
-    }
-
-    if (!insertedViaCommand) {
-      try {
-        const textNode = document.createTextNode(`${normalized} `);
-        target.appendChild(textNode);
-        if (selection) {
-          const newRange = document.createRange();
-          newRange.selectNodeContents(target);
-          newRange.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        }
-      } catch (_e) {
-        // Fallback textContent append
-        target.textContent = `${target.textContent || ''} ${normalized} `.trim();
       }
     }
 
