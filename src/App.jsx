@@ -13773,8 +13773,21 @@ export default function App() {
             skipCommandEngine: false,
           });
         } else {
-          // Route raw transcript immediately so user gets real-time response without waiting for AI server
-          routeTranscriptToTarget(normalizedFinal, 'final');
+          setIsComposing(true);
+          try {
+            const llmProcessed = await callGemini({
+              userPrompt: `Clean up the following voice transcription, correcting spelling, grammar, and formatting errors while preserving the original meaning. Output ONLY the cleaned text:\n\n${normalizedFinal}`,
+              systemPrompt: `You are a voice transcription cleaner. Your ONLY job is to output the corrected text. Do NOT add any conversational padding. Output plain text.`
+            });
+            const cleanedText = (llmProcessed && !llmProcessed.error && typeof llmProcessed.text === 'string' && llmProcessed.text.trim())
+              ? llmProcessed.text.trim()
+              : normalizedFinal;
+            routeTranscriptToTarget(cleanedText, 'final');
+          } catch (e) {
+            routeTranscriptToTarget(normalizedFinal, 'final');
+          } finally {
+            setIsComposing(false);
+          }
         }
         interimTranscriptRef.current = normalizedFinal;
         pendingInterimTranscriptRef.current = '';
