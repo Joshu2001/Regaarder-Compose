@@ -1,0 +1,10 @@
+[
+  {
+    "id": "user_1785064398265",
+    "email": "testdoc_1785064398146@example.com",
+    "name": "Doc Tester",
+    "passwordHash": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+    "provider": "email",
+    "createdAt": "2026-07-26T11:13:18.266Z"
+  }
+]

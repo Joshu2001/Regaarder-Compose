@@ -6,6 +6,7 @@ import cors from 'cors';
 import { WebSocketServer } from 'ws';
 import { setupWSConnection } from 'y-websocket/bin/utils';
 import { processAgentRequest } from './orchestrator.js';
+import { handleMcpJsonRpc, REGAARDER_MCP_TOOLS } from './mcpTools.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -42,6 +43,18 @@ const activeSessions = new Map();
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Model Context Protocol (MCP) Endpoints
+app.post('/api/mcp', handleMcpJsonRpc);
+app.get('/api/mcp/tools', (req, res) => {
+  res.json({
+    tools: REGAARDER_MCP_TOOLS.map(t => ({
+      name: t.name,
+      description: t.description,
+      inputSchema: toStandardJsonSchema(t.parameters)
+    }))
+  });
+});
 
 // API Auth Routes
 app.post('/api/auth/register', (req, res) => {
@@ -169,6 +182,18 @@ let db;
       time TEXT,
       status TEXT DEFAULT 'pending'
     );
+    CREATE TABLE IF NOT EXISTS documents (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT,
+      subtitle TEXT,
+      content TEXT,
+      initiatives TEXT,
+      appended_sections TEXT,
+      is_blank INTEGER DEFAULT 1,
+      created_at TEXT,
+      updated_at TEXT
+    );
   `);
 })();
 
@@ -268,6 +293,130 @@ app.delete('/api/invites/:id', requireAuth, async (req, res) => {
   try {
     await db.run('DELETE FROM invites WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Documents API ---
+const formatDocResponse = (doc) => {
+  if (!doc) return null;
+  let parsedInitiatives = [];
+  let parsedSections = [];
+  try {
+    parsedInitiatives = doc.initiatives ? JSON.parse(doc.initiatives) : [];
+  } catch (e) {
+    parsedInitiatives = [];
+  }
+  try {
+    parsedSections = doc.appended_sections ? JSON.parse(doc.appended_sections) : [];
+  } catch (e) {
+    parsedSections = [];
+  }
+  return {
+    id: doc.id,
+    user_id: doc.user_id,
+    title: doc.title || '',
+    subtitle: doc.subtitle || '',
+    bodyHtml: doc.content || '',
+    content: doc.content || '',
+    initiatives: parsedInitiatives,
+    appendedSections: parsedSections,
+    isBlank: Boolean(doc.is_blank),
+    createdAt: doc.created_at,
+    updatedAt: doc.updated_at
+  };
+};
+
+app.get('/api/documents', requireAuth, async (req, res) => {
+  try {
+    const docs = await db.all('SELECT * FROM documents WHERE user_id = ? ORDER BY updated_at DESC', [req.user.id]);
+    res.json(docs.map(formatDocResponse));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/documents/:id', requireAuth, async (req, res) => {
+  try {
+    const doc = await db.get('SELECT * FROM documents WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+    res.json(formatDocResponse(doc));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/documents', requireAuth, async (req, res) => {
+  const { id, title, subtitle, content, bodyHtml, initiatives, appendedSections, isBlank } = req.body;
+  const docId = String(id || 'doc_' + Date.now());
+  const docContent = bodyHtml !== undefined ? bodyHtml : (content || '');
+  const initiativesStr = JSON.stringify(initiatives || []);
+  const sectionsStr = JSON.stringify(appendedSections || []);
+  const isBlankVal = isBlank ? 1 : 0;
+  const now = new Date().toISOString();
+
+  try {
+    const existing = await db.get('SELECT id FROM documents WHERE id = ? AND user_id = ?', [docId, req.user.id]);
+    if (existing) {
+      await db.run(
+        `UPDATE documents SET 
+          title = ?, subtitle = ?, content = ?, initiatives = ?, appended_sections = ?, is_blank = ?, updated_at = ?
+         WHERE id = ? AND user_id = ?`,
+        [title || '', subtitle || '', docContent, initiativesStr, sectionsStr, isBlankVal, now, docId, req.user.id]
+      );
+    } else {
+      await db.run(
+        `INSERT INTO documents 
+          (id, user_id, title, subtitle, content, initiatives, appended_sections, is_blank, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [docId, req.user.id, title || '', subtitle || '', docContent, initiativesStr, sectionsStr, isBlankVal, now, now]
+      );
+    }
+
+    const savedDoc = await db.get('SELECT * FROM documents WHERE id = ? AND user_id = ?', [docId, req.user.id]);
+    res.status(201).json(formatDocResponse(savedDoc));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/documents/:id', requireAuth, async (req, res) => {
+  const docId = String(req.params.id);
+  const { title, subtitle, content, bodyHtml, initiatives, appendedSections, isBlank } = req.body;
+  const docContent = bodyHtml !== undefined ? bodyHtml : (content || '');
+  const initiativesStr = JSON.stringify(initiatives || []);
+  const sectionsStr = JSON.stringify(appendedSections || []);
+  const isBlankVal = isBlank ? 1 : 0;
+  const now = new Date().toISOString();
+
+  try {
+    const existing = await db.get('SELECT id FROM documents WHERE id = ? AND user_id = ?', [docId, req.user.id]);
+    if (!existing) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    await db.run(
+      `UPDATE documents SET 
+        title = ?, subtitle = ?, content = ?, initiatives = ?, appended_sections = ?, is_blank = ?, updated_at = ?
+       WHERE id = ? AND user_id = ?`,
+      [title || '', subtitle || '', docContent, initiativesStr, sectionsStr, isBlankVal, now, docId, req.user.id]
+    );
+
+    const updatedDoc = await db.get('SELECT * FROM documents WHERE id = ? AND user_id = ?', [docId, req.user.id]);
+    res.json(formatDocResponse(updatedDoc));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/documents/:id', requireAuth, async (req, res) => {
+  try {
+    const result = await db.run('DELETE FROM documents WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    res.json({ success: true, message: 'Document deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

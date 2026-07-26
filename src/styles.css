@@ -1301,3 +1301,83 @@ input[type=number] {
   align-items: center;
   justify-content: center;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   Compose AI Studio — Inline Editor Highlights
+   Apple-style: subtle wash + coloured underline. Never clutter.
+   ════════════════════════════════════════════════════════════════ */
+
+mark.ai-highlight {
+  background: transparent;
+  border-radius: 2px;
+  padding: 0 1px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-bottom-color 0.15s ease;
+  border-bottom: 2px solid transparent;
+  text-decoration: none;
+}
+
+mark.ai-highlight:hover {
+  filter: brightness(0.97);
+}
+
+/* Editor Agent — amber (grammar, style, clarity) */
+mark.ai-highlight--editor {
+  background: rgba(245, 158, 11, 0.10);
+  border-bottom-color: rgba(245, 158, 11, 0.65);
+}
+
+/* Logic Agent — rose (reasoning, contradictions, fallacies) */
+mark.ai-highlight--logic {
+  background: rgba(239, 68, 68, 0.08);
+  border-bottom-color: rgba(239, 68, 68, 0.55);
+}
+
+/* Consistency Agent — orange (terminology, naming) */
+mark.ai-highlight--consistency {
+  background: rgba(249, 115, 22, 0.08);
+  border-bottom-color: rgba(249, 115, 22, 0.55);
+}
+
+/* Compliance Agent — violet (APA, MLA, IEEE) */
+mark.ai-highlight--compliance {
+  background: rgba(139, 92, 246, 0.08);
+  border-bottom-color: rgba(139, 92, 246, 0.55);
+}
+
+/* Knowledge Gap Agent — sky (undefined concepts, forward refs) */
+mark.ai-highlight--gap {
+  background: rgba(14, 165, 233, 0.08);
+  border-bottom-color: rgba(14, 165, 233, 0.55);
+}
+
+/* Research Agent — emerald (citation needs, outdated refs) */
+mark.ai-highlight--research {
+  background: rgba(16, 185, 129, 0.08);
+  border-bottom-color: rgba(16, 185, 129, 0.55);
+}
+
+/* Designer Agent — teal (formatting, document structure) */
+mark.ai-highlight--designer {
+  background: rgba(20, 184, 166, 0.08);
+  border-bottom-color: rgba(20, 184, 166, 0.55);
+}
+
+/* Preview state — violet dashed outline, triggered on SuggestionCard hover */
+mark.ai-highlight--preview {
+  background: rgba(124, 58, 237, 0.14) !important;
+  border-bottom-color: rgba(124, 58, 237, 0.80) !important;
+  outline: 1px dashed rgba(124, 58, 237, 0.35);
+  border-radius: 3px;
+}
+
+/* Dark mode overrides — reduce brightness to avoid glare */
+.dark mark.ai-highlight--editor     { background: rgba(245, 158, 11, 0.14); }
+.dark mark.ai-highlight--logic      { background: rgba(239, 68,  68, 0.12); }
+.dark mark.ai-highlight--consistency{ background: rgba(249, 115, 22, 0.12); }
+.dark mark.ai-highlight--compliance { background: rgba(139, 92, 246, 0.12); }
+.dark mark.ai-highlight--gap        { background: rgba(14,  165, 233, 0.12); }
+.dark mark.ai-highlight--research   { background: rgba(16,  185, 129, 0.12); }
+.dark mark.ai-highlight--designer   { background: rgba(20,  184, 166, 0.12); }
+.dark mark.ai-highlight--preview    { background: rgba(124, 58,  237, 0.20) !important; }
+

@@ -1,5 +1,6 @@
 import TurndownService from 'turndown';
-import { saveAs } from 'file-saver';
+import fileSaver from 'file-saver';
+const saveAs = fileSaver.saveAs || fileSaver;
 import * as XLSX from 'xlsx';
 import pptxgen from 'pptxgenjs';
 import html2pdf from 'html2pdf.js';
@@ -7,52 +8,147 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 
-// Compose Exports
-export const exportCompose = async (format, editorHtml, rawData, fileName = 'Document') => {
-  if (format === 'Compose' || format === 'Docs') {
-    // Export raw JSON or text
-    const blob = new Blob([JSON.stringify(rawData, null, 2)], { type: 'application/json' });
-    saveAs(blob, `${fileName}.json`);
-    return;
+// Helper to decode HTML entities in text
+export const unescapeHtml = (html = '') => {
+  if (typeof document !== 'undefined' && document.createElement) {
+    try {
+      const tmp = document.createElement('textarea');
+      tmp.innerHTML = html;
+      if (typeof tmp.value === 'string' && tmp.value.length > 0) return tmp.value;
+    } catch (_e) {}
   }
-  
-  if (format === 'Markdown') {
-    const turndownService = new TurndownService();
-    const markdown = turndownService.turndown(editorHtml);
-    const blob = new Blob([markdown], { type: 'text/markdown' });
-    saveAs(blob, `${fileName}.md`);
-    return;
+  return String(html || '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+};
+
+// Helper to strip HTML tags cleanly and decode entities
+export const htmlToPlainText = (html = '') => {
+  if (!html) return '';
+  let text = '';
+  if (typeof document !== 'undefined' && document.createElement) {
+    try {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      text = tmp.textContent || tmp.innerText || '';
+    } catch (_e) {}
   }
-  
-  if (format === 'Word') {
-    const doc = new Document({
-      sections: [{
-        properties: {},
-        children: [
-          new Paragraph({
-            children: [
-              new TextRun(editorHtml.replace(/<[^>]+>/g, '')) // Simplistic HTML to Text mapping
-            ]
-          })
-        ]
-      }]
-    });
-    const docxBlob = await Packer.toBlob(doc);
-    saveAs(docxBlob, `${fileName}.docx`);
-    return;
+  if (!text) {
+    text = String(html).replace(/<[^>]+>/g, '');
   }
-  
-  if (format === 'PDF') {
-    const element = document.createElement('div');
-    element.innerHTML = editorHtml;
-    html2pdf().set({
-      margin: 10,
-      filename: `${fileName}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).from(element).save();
-    return;
+  return unescapeHtml(text).trim();
+};
+
+/**
+ * Unified Compose Document Exporter
+ * @param {string} format - Export format (PDF, Markdown, Plain Text, DOC, HTML, Compose)
+ * @param {string|object} contentOrPayload - HTML string or payload object { title, subtitle, initiatives, bodyHtml }
+ * @param {object} rawData - Extra document state/metadata
+ * @param {string} fileName - Base filename
+ */
+export const exportCompose = async (format, contentOrPayload = '', rawData = {}, fileName = 'Document') => {
+  try {
+    let fullHtml = '';
+    let payload = rawData || {};
+
+    if (typeof contentOrPayload === 'object' && contentOrPayload !== null) {
+      payload = { ...rawData, ...contentOrPayload };
+      const titleHtml = payload.title ? `<h1>${payload.title}</h1>` : '';
+      const subtitleHtml = payload.subtitle ? `<p><em>${payload.subtitle}</em></p>` : '';
+      const initiativesHtml = (payload.initiatives && payload.initiatives.length > 0)
+        ? `<ul>${payload.initiatives.map((item) => `<li>${item.name || item.title || item} (${item.timeline || ''})</li>`).join('')}</ul>`
+        : '';
+      const bodyHtml = payload.bodyHtml || payload.content || '';
+      fullHtml = `${titleHtml}${subtitleHtml}${initiativesHtml}${bodyHtml}`;
+    } else {
+      fullHtml = String(contentOrPayload || '');
+    }
+
+    const fmt = (format || '').toLowerCase();
+
+    // 1. Compose (.cmp) / JSON
+    if (fmt.includes('compose') || fmt.includes('docs') || fmt === 'json') {
+      const exportData = (typeof contentOrPayload === 'object' && contentOrPayload !== null) ? contentOrPayload : { bodyHtml: fullHtml, ...rawData };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      saveAs(blob, `${fileName}.cmp`);
+      return true;
+    }
+
+    // 2. Markdown (.md)
+    if (fmt.includes('markdown') || fmt === 'md') {
+      let markdown = '';
+      try {
+        const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
+        markdown = turndownService.turndown(fullHtml || ' ');
+      } catch (_err) {
+        markdown = htmlToPlainText(fullHtml);
+      }
+      const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+      saveAs(blob, `${fileName}.md`);
+      return true;
+    }
+
+    // 3. Plain Text (.txt)
+    if (fmt.includes('plain') || fmt.includes('text') || fmt === 'txt') {
+      const plainText = htmlToPlainText(fullHtml);
+      const blob = new Blob([plainText], { type: 'text/plain;charset=utf-8' });
+      saveAs(blob, `${fileName}.txt`);
+      return true;
+    }
+
+    // 4. Word (.docx / .doc)
+    if (fmt.includes('word') || fmt.includes('doc')) {
+      const docMarkup = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${fileName}</title></head><body>${fullHtml}</body></html>`;
+      const blob = new Blob([docMarkup], { type: 'application/msword' });
+      saveAs(blob, `${fileName}.doc`);
+      return true;
+    }
+
+    // 5. HTML (.html)
+    if (fmt.includes('html')) {
+      const htmlDoc = `<!doctype html><html><head><meta charset="utf-8"/><title>${fileName}</title></head><body>${fullHtml}</body></html>`;
+      const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' });
+      saveAs(blob, `${fileName}.html`);
+      return true;
+    }
+
+    // 6. PDF (.pdf)
+    if (fmt.includes('pdf')) {
+      if (typeof document === 'undefined') return false;
+      const element = document.createElement('div');
+      element.className = 'pdf-export-container';
+      element.style.padding = '24px';
+      element.style.fontFamily = 'sans-serif';
+      element.style.color = '#1e293b';
+      element.innerHTML = fullHtml || ' ';
+      document.body.appendChild(element);
+
+      try {
+        await html2pdf().set({
+          margin: 15,
+          filename: `${fileName}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        }).from(element).save();
+      } catch (err) {
+        console.error('PDF Export Error:', err);
+        const pdf = new jsPDF();
+        pdf.text(htmlToPlainText(fullHtml).substring(0, 2000), 10, 10);
+        pdf.save(`${fileName}.pdf`);
+      } finally {
+        if (element.parentNode) element.parentNode.removeChild(element);
+      }
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('Error during document export:', error);
+    return false;
   }
 };
 

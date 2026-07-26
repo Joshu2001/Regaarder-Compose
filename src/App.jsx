@@ -30,6 +30,7 @@ import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 import RoomLandingPage from './RoomLandingPage';
+import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
@@ -760,6 +761,21 @@ const SLASH_OPTIONS = [
   { key: 'divider', label: 'Divider', desc: 'Insert a horizontal rule' },
   { key: 'callout', label: 'Callout', desc: 'Insert a styled quote block' },
   { key: 'code_block', label: 'Code Block', desc: 'Insert a code container' }
+];
+
+const PROMPT_SLASH_OPTIONS = [
+  { key: 'health', label: 'Document Health', desc: 'Run 6 parallel quality checks (grammar, logic, evidence...)', emoji: '🚦', agentKey: 'health' },
+  { key: 'writing', label: 'Writing', desc: 'Transform tone, expand, shorten, brainstorm & summarize', emoji: '✏️', agentKey: 'writing' },
+  { key: 'editor', label: 'Editor', desc: 'Grammar, clarity, passive voice & style polish', emoji: '✍️', agentKey: 'editor' },
+  { key: 'designer', label: 'Designer', desc: 'Document type detection & formatting structure', emoji: '🎨', agentKey: 'designer' },
+  { key: 'logic', label: 'Logic', desc: 'Analyze reasoning quality, fallacies & contradictions', emoji: '🧠', agentKey: 'logic' },
+  { key: 'research', label: 'Research', desc: 'Find citations, empirical evidence & counter-arguments', emoji: '📚', agentKey: 'research' },
+  { key: 'reviewer', label: 'Reviewer', desc: 'Editorial score ring, summary quote & actionable feedback', emoji: '📝', agentKey: 'reviewer' },
+  { key: 'audience', label: 'Audience', desc: 'Simulate 12 reader personas & comprehension level', emoji: '👥', agentKey: 'audience' },
+  { key: 'consistency', label: 'Consistency', desc: 'Terminology, casing, tone & formatting audit', emoji: '🛡️', agentKey: 'consistency' },
+  { key: 'compliance', label: 'Compliance', desc: 'Policy, sensitivity, privacy & legal risk check', emoji: '🔒', agentKey: 'compliance' },
+  { key: 'gap', label: 'Knowledge Gap', desc: 'Identify missing explanations, context or undefined terms', emoji: '❓', agentKey: 'gap' },
+  { key: 'dna', label: 'Writing DNA', desc: 'Personal voice vector, style match & 12-month evolution', emoji: '🧬', agentKey: 'dna' }
 ];
 const getAbsoluteOffset = (container, node, offset) => {
   if (!container || !node) return 0;
@@ -6481,6 +6497,8 @@ export default function App() {
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
   const [floatingPrompt, setFloatingPrompt] = useState('');
+  const [selectedAIAgent, setSelectedAIAgent] = useState('health');
+  const [activeAgentTag, setActiveAgentTag] = useState(null);
   const [newTaskInput, setNewTaskInput] = useState('');
   const newTaskInputRef = useRef('');
   const [newTaskOwner, setNewTaskOwner] = useState('user');
@@ -6492,6 +6510,10 @@ export default function App() {
   const [mentionSearch, setMentionSearch] = useState('');
   const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
   const mentionMenuRef = useRef(null);
+  const [isPromptSlashMenuOpen, setIsPromptSlashMenuOpen] = useState(false);
+  const [promptSlashSearch, setPromptSlashSearch] = useState('');
+  const [promptSlashSelectedIndex, setPromptSlashSelectedIndex] = useState(0);
+  const promptSlashMenuRef = useRef(null);
   const [scheduleAttachments, setScheduleAttachments] = useState([]);
   const [editingAgendaField, setEditingAgendaField] = useState(null); // { id: string | number, field: 'title' | 'slot', value: string }
   const [voiceTarget, setVoiceTarget] = useState('compose');
@@ -15713,7 +15735,7 @@ export default function App() {
     return `Source materials to ground the response in:\n${blocks.join('\n\n')}`;
   };
 
-  const callGemini = async ({ userPrompt, systemPrompt, schema, attachments = [] }) => {
+  async function callGemini({ userPrompt, systemPrompt, schema, attachments = [] }) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000);
     try {
@@ -21403,9 +21425,36 @@ Rules:
     showToast(`Attached document "${title}"`);
   };
 
+  const selectPromptSlashOption = (option) => {
+    setSelectedAIAgent(option.agentKey || 'health');
+    setActiveAgentTag(`/${option.agentKey || option.key}`);
+    setRightSidebarOpen(true);
+    setActiveRightTab('ai-studio');
+    const lastSlash = chatInput.lastIndexOf('/');
+    if (lastSlash !== -1) {
+      setChatInput(chatInput.slice(0, lastSlash).trim());
+    }
+    setIsPromptSlashMenuOpen(false);
+    showToast(`Switched agent to ${option.label}`);
+  };
+
   const handleChatInputChange = (e) => {
     const val = e.target.value;
     setChatInput(val);
+
+    const lastSlashIndex = val.lastIndexOf('/');
+    if (lastSlashIndex !== -1 && lastSlashIndex >= val.length - 25) {
+      const query = val.slice(lastSlashIndex + 1);
+      if (!query.includes(' ') && !query.includes('\n')) {
+        setIsPromptSlashMenuOpen(true);
+        setPromptSlashSearch(query.toLowerCase());
+        setPromptSlashSelectedIndex(0);
+        setIsMentionMenuOpen(false);
+        return;
+      }
+    }
+    setIsPromptSlashMenuOpen(false);
+
     const lastAtIndex = val.lastIndexOf('@');
     if (lastAtIndex !== -1 && lastAtIndex >= val.length - 25) {
       const query = val.slice(lastAtIndex + 1);
@@ -21420,21 +21469,67 @@ Rules:
   };
 
   const handleChatInputKeyDown = (e) => {
-    if (isMentionMenuOpen) {
+    const filteredSlashOpts = PROMPT_SLASH_OPTIONS.filter((opt) =>
+      opt.label.toLowerCase().includes(promptSlashSearch) ||
+      opt.key.toLowerCase().includes(promptSlashSearch) ||
+      opt.desc.toLowerCase().includes(promptSlashSearch)
+    );
+
+    if (isPromptSlashMenuOpen) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setMentionSelectedIndex((prev) => (prev + 1) % (availableDocs.length || 1));
+        setPromptSlashSelectedIndex((prev) => (prev + 1) % (filteredSlashOpts.length || 1));
         return;
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setMentionSelectedIndex((prev) => (prev - 1 + (availableDocs.length || 1)) % (availableDocs.length || 1));
+        setPromptSlashSelectedIndex((prev) => (prev - 1 + (filteredSlashOpts.length || 1)) % (filteredSlashOpts.length || 1));
         return;
       }
       if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault();
-        if (availableDocs[mentionSelectedIndex]) {
-          selectDocumentMention(availableDocs[mentionSelectedIndex]);
+        if (filteredSlashOpts[promptSlashSelectedIndex]) {
+          selectPromptSlashOption(filteredSlashOpts[promptSlashSelectedIndex]);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsPromptSlashMenuOpen(false);
+        return;
+      }
+    }
+
+    if (isMentionMenuOpen) {
+      const filteredAgents = PROMPT_SLASH_OPTIONS.filter((opt) =>
+        opt.label.toLowerCase().includes(mentionSearch) ||
+        opt.key.toLowerCase().includes(mentionSearch) ||
+        opt.desc.toLowerCase().includes(mentionSearch)
+      );
+      const filteredDocs = availableDocs.filter((doc) =>
+        (doc.title || '').toLowerCase().includes(mentionSearch)
+      );
+      const totalMentionItems = filteredAgents.length + filteredDocs.length;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionSelectedIndex((prev) => (prev + 1) % (totalMentionItems || 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionSelectedIndex((prev) => (prev - 1 + (totalMentionItems || 1)) % (totalMentionItems || 1));
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        if (mentionSelectedIndex < filteredAgents.length) {
+          selectPromptSlashOption(filteredAgents[mentionSelectedIndex]);
+        } else {
+          const docIdx = mentionSelectedIndex - filteredAgents.length;
+          if (filteredDocs[docIdx]) {
+            selectDocumentMention(filteredDocs[docIdx]);
+          }
         }
         return;
       }
@@ -21444,6 +21539,7 @@ Rules:
         return;
       }
     }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSidebarSend(e);
@@ -21455,14 +21551,17 @@ Rules:
       if (mentionMenuRef.current && !mentionMenuRef.current.contains(e.target)) {
         setIsMentionMenuOpen(false);
       }
+      if (promptSlashMenuRef.current && !promptSlashMenuRef.current.contains(e.target)) {
+        setIsPromptSlashMenuOpen(false);
+      }
     };
-    if (isMentionMenuOpen) {
+    if (isMentionMenuOpen || isPromptSlashMenuOpen) {
       document.addEventListener('pointerdown', handleOutsideClick);
     }
     return () => {
       document.removeEventListener('pointerdown', handleOutsideClick);
     };
-  }, [isMentionMenuOpen]);
+  }, [isMentionMenuOpen, isPromptSlashMenuOpen]);
 
   const handleAssistantQuickPromptSend = (event) => {
     event.preventDefault();
@@ -27106,6 +27205,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             <div className="inline-flex items-center gap-2 min-w-max p-1 bg-slate-100/60 dark:bg-zinc-800/60 rounded-xl border border-slate-200/30 dark:border-zinc-700/30">
               {[
                 { key: 'assistant', label: 'Assistant' },
+                { key: 'ai-studio', label: 'AI Agents' },
                 productMode !== 'sheets' && { key: 'properties', label: 'Properties' },
                 { key: 'whiteboard', label: 'Whiteboard' },
                 { key: 'tasks', label: 'Tasks' },
@@ -27155,6 +27255,13 @@ Respond with a JSON array of slide objects matching the schema.`;
         {/* Dynamic Sidebar Content */}
         <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
           
+          {/* ACTIVE TAB: AI STUDIO */}
+          {activeRightTab === 'ai-studio' && (
+            <div className="flex-1 flex flex-col min-h-0 bg-[#f8fafc] dark:bg-[#18181b]">
+              <ComposeAIStudio initialAgent={selectedAIAgent} handleAISubmit={handleAISubmit} chatMessages={chatMessages} isComposing={isComposing} />
+            </div>
+          )}
+
           {/* ACTIVE TAB: PROPERTIES */}
           {activeRightTab === 'properties' && (
             <div className={`flex-1 flex flex-col min-h-0 bg-[#f8fafc] ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-60 select-none' : ''}`}>
@@ -27403,97 +27510,207 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                     {/* Integrated Input Area (VS Code Prompt Box Style) */}
                     <form onSubmit={handleSidebarSend} className="w-full mb-3.5 relative">
-                      {/* Floating @ Mention Dropdown */}
-                      {isMentionMenuOpen && (
+                      {/* Floating / Slash Command Dropdown (Image 4 Aesthetic) */}
+                      {isPromptSlashMenuOpen && (
                         <div
-                          ref={mentionMenuRef}
-                          className="absolute top-full left-0 right-0 mt-1.5 max-h-72 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-[0_12px_32px_-8px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5)] z-50 overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-top-1.5 zoom-in-95"
+                          ref={promptSlashMenuRef}
+                          className="absolute bottom-full left-0 mb-2 w-72 max-h-80 flex flex-col bg-white dark:bg-zinc-900 border border-violet-100/90 dark:border-zinc-800 rounded-2xl shadow-[0_16px_40px_-8px_rgba(139,92,246,0.18)] dark:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] z-50 overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 duration-150 p-1.5"
                         >
-                          {/* Header & Refined Search Bar */}
-                          <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/30 dark:bg-zinc-900/30 flex flex-col gap-2 shrink-0">
-                            <div className="flex items-center justify-between px-0.5">
-                              <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
-                                {mentionSearch ? 'Search Results' : 'Mention a Document'}
-                              </span>
-                              <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono opacity-70">
-                                {availableDocs.length} {availableDocs.length === 1 ? 'file' : 'files'}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 h-7 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus-within:border-violet-400 dark:focus-within:border-violet-500 transition-colors">
-                              <Search size={12} className="text-slate-400/80 dark:text-zinc-500/80 shrink-0" />
-                              <input
-                                type="text"
-                                value={mentionSearch}
-                                onChange={(e) => {
-                                  setMentionSearch(e.target.value.toLowerCase());
-                                  setMentionSelectedIndex(0);
-                                }}
-                                placeholder="Search documents..."
-                                className="w-full bg-transparent border-none text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none p-0"
-                                autoFocus
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              {mentionSearch && (
+                          <div className="py-1 px-1 space-y-1 overflow-y-auto thin-scrollbar max-h-72">
+                            {PROMPT_SLASH_OPTIONS.filter((opt) =>
+                              opt.label.toLowerCase().includes(promptSlashSearch) ||
+                              opt.key.toLowerCase().includes(promptSlashSearch) ||
+                              opt.desc.toLowerCase().includes(promptSlashSearch)
+                            ).map((opt, idx) => {
+                              const isSelected = idx === promptSlashSelectedIndex;
+                              return (
                                 <button
+                                  key={opt.key}
                                   type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setMentionSearch('');
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    selectPromptSlashOption(opt);
                                   }}
-                                  className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 rounded"
+                                  className={`w-full text-left px-3 py-2.5 rounded-xl transition-all cursor-pointer flex items-start gap-2.5 ${
+                                    isSelected
+                                      ? 'bg-violet-50/90 dark:bg-violet-950/40 text-violet-900 dark:text-violet-100'
+                                      : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/50'
+                                  }`}
                                 >
-                                  <X size={10} />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Scrollable Document List with Breathing Room */}
-                          <div className="pt-2 pb-2 px-1.5 space-y-1 overflow-y-auto thin-scrollbar max-h-52">
-                            {availableDocs.length === 0 ? (
-                              <div className="px-3 py-4 text-xs text-slate-400 dark:text-zinc-500 italic text-center">
-                                No matching documents found
-                              </div>
-                            ) : (
-                              availableDocs.map((doc, idx) => {
-                                const isSelected = idx === mentionSelectedIndex;
-                                const isCurrentActive = doc.id === activeDocId || doc.id === 'active-doc';
-                                return (
-                                  <button
-                                    key={doc.id}
-                                    type="button"
-                                    onPointerDown={(e) => {
-                                      e.preventDefault();
-                                      selectDocumentMention(doc);
-                                    }}
-                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between transition-colors ${
-                                      isSelected
-                                        ? 'bg-slate-100/90 dark:bg-zinc-800/90 text-slate-900 dark:text-zinc-100 font-medium'
-                                        : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100/50 dark:hover:bg-zinc-800/40 font-normal'
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-2.5 truncate">
-                                      <FileText
-                                        size={12}
-                                        className={isSelected ? 'text-violet-500 dark:text-violet-400 shrink-0' : 'text-slate-400/70 dark:text-zinc-500/70 shrink-0'}
-                                      />
-                                      <span className="truncate">{doc.title || 'Untitled document'}</span>
+                                  <span className="text-base shrink-0 select-none mt-0.5">{opt.emoji || '✨'}</span>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-1.5">
+                                      <span className={`text-xs font-semibold tracking-tight ${isSelected ? 'text-violet-700 dark:text-violet-300' : 'text-slate-900 dark:text-zinc-100'}`}>{opt.label}</span>
                                     </div>
-                                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-sans shrink-0 opacity-60">
-                                      {isCurrentActive ? 'Active' : 'Updated recently'}
-                                    </span>
-                                  </button>
-                                );
-                              })
-                            )}
+                                    <p className={`text-[11px] line-clamp-2 mt-0.5 leading-snug font-normal ${isSelected ? 'text-violet-600/85 dark:text-violet-400/85' : 'text-slate-400 dark:text-zinc-500'}`}>{opt.desc}</p>
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
 
+                      {/* Floating @ Mention Dropdown */}
+                      {isMentionMenuOpen && (() => {
+                        const filteredAgents = PROMPT_SLASH_OPTIONS.filter((opt) =>
+                          opt.label.toLowerCase().includes(mentionSearch) ||
+                          opt.key.toLowerCase().includes(mentionSearch) ||
+                          opt.desc.toLowerCase().includes(mentionSearch)
+                        );
+                        const filteredDocs = availableDocs.filter((doc) =>
+                          (doc.title || '').toLowerCase().includes(mentionSearch)
+                        );
+                        const totalCount = filteredAgents.length + filteredDocs.length;
+
+                        return (
+                          <div
+                            ref={mentionMenuRef}
+                            className="absolute bottom-full left-0 right-0 mb-2 max-h-80 flex flex-col bg-white dark:bg-zinc-900 border border-violet-100/90 dark:border-zinc-800 rounded-2xl shadow-[0_16px_40px_-8px_rgba(139,92,246,0.18)] dark:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] z-50 overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 duration-150 p-1.5"
+                          >
+                            <div className="p-2 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/40 dark:bg-zinc-900/40 flex flex-col gap-1.5 shrink-0">
+                              <div className="flex items-center justify-between px-1">
+                                <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">
+                                  Mention Agents & Documents
+                                </span>
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono opacity-70">
+                                  {totalCount} items
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 px-2.5 py-1 h-7 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus-within:border-violet-400 dark:focus-within:border-violet-500 transition-colors">
+                                <Search size={12} className="text-slate-400/80 dark:text-zinc-500/80 shrink-0" />
+                                <input
+                                  type="text"
+                                  value={mentionSearch}
+                                  onChange={(e) => {
+                                    setMentionSearch(e.target.value.toLowerCase());
+                                    setMentionSelectedIndex(0);
+                                  }}
+                                  placeholder="Type @ to search agent or doc..."
+                                  className="w-full bg-transparent border-none text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none p-0"
+                                  autoFocus
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                {mentionSearch && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setMentionSearch('');
+                                    }}
+                                    className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 rounded"
+                                  >
+                                    <X size={10} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="py-1.5 px-1 space-y-2 overflow-y-auto thin-scrollbar max-h-60">
+                              {/* AI AGENTS SECTION */}
+                              {filteredAgents.length > 0 && (
+                                <div className="space-y-0.5">
+                                  <div className="px-2 py-0.5 text-[10px] font-bold tracking-wider text-violet-600 dark:text-violet-400 uppercase opacity-80">
+                                    AI Agents
+                                  </div>
+                                  {filteredAgents.map((opt, idx) => {
+                                    const isSelected = idx === mentionSelectedIndex;
+                                    return (
+                                      <button
+                                        key={`agent-${opt.key}`}
+                                        type="button"
+                                        onPointerDown={(e) => {
+                                          e.preventDefault();
+                                          selectPromptSlashOption(opt);
+                                        }}
+                                        className={`w-full text-left px-2.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-2.5 ${
+                                          isSelected
+                                            ? 'bg-violet-50/90 dark:bg-violet-950/40 text-violet-900 dark:text-violet-100'
+                                            : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/50'
+                                        }`}
+                                      >
+                                        <span className="text-sm shrink-0 select-none">{opt.emoji || '✨'}</span>
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-center justify-between gap-1.5">
+                                            <span className={`text-xs font-semibold tracking-tight ${isSelected ? 'text-violet-700 dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'}`}>{opt.label}</span>
+                                          </div>
+                                          <p className={`text-[10.5px] line-clamp-1 mt-0.5 leading-snug font-normal ${isSelected ? 'text-violet-600/85 dark:text-violet-400/85' : 'text-slate-400 dark:text-zinc-500'}`}>{opt.desc}</p>
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {/* DOCUMENTS SECTION */}
+                              {filteredDocs.length > 0 && (
+                                <div className="space-y-0.5">
+                                  <div className="px-2 py-0.5 text-[10px] font-bold tracking-wider text-slate-400 dark:text-zinc-500 uppercase opacity-80">
+                                    Documents
+                                  </div>
+                                  {filteredDocs.map((doc, idx) => {
+                                    const overallIdx = filteredAgents.length + idx;
+                                    const isSelected = overallIdx === mentionSelectedIndex;
+                                    const isCurrentActive = doc.id === activeDocId || doc.id === 'active-doc';
+                                    return (
+                                      <button
+                                        key={`doc-${doc.id}`}
+                                        type="button"
+                                        onPointerDown={(e) => {
+                                          e.preventDefault();
+                                          selectDocumentMention(doc);
+                                        }}
+                                        className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center justify-between transition-all ${
+                                          isSelected
+                                            ? 'bg-slate-100/90 dark:bg-zinc-800/90 text-slate-900 dark:text-zinc-100 font-medium'
+                                            : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100/50 dark:hover:bg-zinc-800/40 font-normal'
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2 truncate">
+                                          <FileText
+                                            size={12}
+                                            className={isSelected ? 'text-violet-500 dark:text-violet-400 shrink-0' : 'text-slate-400/70 dark:text-zinc-500/70 shrink-0'}
+                                          />
+                                          <span className="truncate">{doc.title || 'Untitled document'}</span>
+                                        </div>
+                                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-sans shrink-0 opacity-60">
+                                          {isCurrentActive ? 'Active' : 'Doc'}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {totalCount === 0 && (
+                                <div className="px-3 py-4 text-xs text-slate-400 dark:text-zinc-500 italic text-center">
+                                  No matching agents or documents found
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all duration-200 shadow-2xs overflow-hidden">
                         {/* Top Context Attachment Chips inside container (VS Code / Apple Token Style) */}
-                        {(isDocContextActive || chatAttachments.length > 0) && (
+                        {(isDocContextActive || activeAgentTag || chatAttachments.length > 0) && (
                           <div className="px-2.5 pt-2 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
+                            {activeAgentTag && (
+                              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5.5 rounded-md border border-violet-200/90 dark:border-violet-800/80 bg-violet-100/80 dark:bg-violet-950/60 text-[11px] font-medium text-violet-700 dark:text-violet-300 shadow-2xs group relative transition-all animate-in fade-in zoom-in-95 duration-150">
+                                <Sparkles size={10.5} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                                <span className="font-medium text-[11px]">[{activeAgentTag}]</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveAgentTag(null)}
+                                  className="ml-0.5 p-0.5 text-violet-400 hover:text-violet-700 dark:hover:text-violet-200 rounded hover:bg-violet-200/60 dark:hover:bg-violet-800 transition-colors"
+                                  title="Remove agent selection"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            )}
+
                             {isDocContextActive && (
                               <div className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5.5 rounded-md border border-slate-200/50 dark:border-zinc-800/60 bg-slate-100/60 dark:bg-zinc-800/60 text-[11px] font-medium text-slate-700 dark:text-zinc-200 shadow-2xs group relative transition-all animate-in fade-in zoom-in-95 duration-150">
                                 <FileText size={10.5} className="text-slate-400/70 dark:text-zinc-500/70 shrink-0" />
@@ -27555,7 +27772,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                           onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
                           onPaste={handleChatPaste}
                           onKeyDown={handleChatInputKeyDown}
-                          placeholder="Describe what to build or ask Compose Assistant... Type @ to mention docs"
+                          placeholder="Describe what to build or ask Compose Assistant... Type / for agents, @ for docs"
                           rows={2}
                           className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-2.5 px-3 pb-1.5 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 resize-none min-h-[60px]"
                         />
@@ -27575,8 +27792,25 @@ Respond with a JSON array of slide objects matching the schema.`;
                             <button
                               type="button"
                               onClick={() => {
+                                setPromptSlashSearch('');
+                                setIsPromptSlashMenuOpen((prev) => !prev);
+                                setIsMentionMenuOpen(false);
+                              }}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                isPromptSlashMenuOpen
+                                  ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/40'
+                                  : 'text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800'
+                              }`}
+                              title="AI Agents & Slash Commands (/)"
+                            >
+                              <Sparkles size={15} strokeWidth={1.5} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
                                 setMentionSearch('');
                                 setIsMentionMenuOpen((prev) => !prev);
+                                setIsPromptSlashMenuOpen(false);
                               }}
                               className={`p-1.5 rounded-lg transition-colors ${
                                 isMentionMenuOpen
@@ -27602,10 +27836,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                           </div>
                           <button 
                             type="submit" 
-                            disabled={!chatInput.trim() && !chatAttachments.length && !isDocContextActive}
+                            disabled={!chatInput.trim() && !chatAttachments.length && !isDocContextActive && !activeAgentTag}
                             className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer ${
-                              chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive
-                                ? 'opacity-100 bg-violet-500/90 hover:bg-violet-600 dark:bg-violet-500/80 dark:hover:bg-violet-500 text-white shadow-2xs' 
+                              chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive || activeAgentTag
+                                ? 'opacity-100 bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800' 
                                 : 'opacity-35 cursor-not-allowed bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600'
                             }`}
                           >
@@ -30747,6 +30981,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         const ALL_FEATURES = [
           { key: 'chat',       label: 'Chat',       icon: MessageCircle,    pinned: true },
           { key: 'assistant',  label: 'Assist',     icon: Wand2,            pinned: true },
+          { key: 'ai-studio',  label: 'AI Agents',  icon: Sparkles },
           { key: 'tasks',      label: 'Tasks',      icon: CheckSquare,      pinned: true },
           { key: 'calendar',   label: 'Schedule',   icon: Calendar,         pinned: true },
           { key: 'room',       label: 'Room',       icon: MonitorPlay,      pinned: true },
