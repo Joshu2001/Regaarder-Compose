@@ -21842,19 +21842,26 @@ Rules:
       reader.readAsDataURL(blob);
       const base64data = await base64Promise;
 
-      const response = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          task: 'transcription',
-          userPrompt: 'Transcribe this audio accurately. Remove repeated wake words and trigger chatter (for example: hey gemini, hey orb, command). If the audio is silent or contains no speech, respond with exactly: [SILENCE]',
-          systemPrompt: 'You are an expert audio transcription tool. Filter out filler words like "umm", "uh", "um", "like", and stutters. Remove repeated wake words when they are not actionable intent. Output only clean text with proper capitalization and punctuation. If there is no speech in the audio, respond with exactly: [SILENCE].',
-          attachments: [{ name: 'audio.webm', mimeType: blob.type || 'audio/webm', data: base64data }]
-        })
-      });
-      
-      const result = await response.json();
-      if (result.ok && result.text) {
+      let result = null;
+      try {
+        const response = await fetch('/api/gemini', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task: 'transcription',
+            userPrompt: 'Transcribe this audio accurately. Remove repeated wake words and trigger chatter (for example: hey gemini, hey orb, command). If the audio is silent or contains no speech, respond with exactly: [SILENCE]',
+            systemPrompt: 'You are an expert audio transcription tool. Filter out filler words like "umm", "uh", "um", "like", and stutters. Remove repeated wake words when they are not actionable intent. Output only clean text with proper capitalization and punctuation. If there is no speech in the audio, respond with exactly: [SILENCE].',
+            attachments: [{ name: 'audio.webm', mimeType: blob.type || 'audio/webm', data: base64data }]
+          })
+        });
+        if (response.ok) {
+          result = await response.json().catch(() => null);
+        }
+      } catch (fetchErr) {
+        console.warn('AI transcription API endpoint unavailable, relying on native speech recognition:', fetchErr?.message);
+      }
+
+      if (result && result.ok && result.text) {
         const cleanedText = result.text.trim();
         if (cleanedText && cleanedText !== '[SILENCE]' && !cleanedText.toLowerCase().includes('[silence]')) {
           lastSpeechTimeRef.current = Date.now();
@@ -21958,35 +21965,33 @@ Rules:
           }
         }
       } else {
-        console.warn('Gemini transcription failed:', result.error || 'unknown error');
-        const fallbackTranscript = String(interimTranscriptRef.current || '').trim();
-        if (isVoiceCommandModeRef.current && fallbackTranscript) {
-          const fallbackCheck = detectCommandPrefix(fallbackTranscript);
-          const fallbackCommand = (fallbackCheck.matched ? fallbackCheck.remaining : fallbackTranscript).trim();
-          if (fallbackCommand) {
-            setVoiceCommandBuffer((prev) => {
-              const existing = String(prev || '').trim();
-              if (existing && existing.toLowerCase().endsWith(fallbackCommand.toLowerCase())) {
-                voiceCommandBufferRef.current = prev;
-                return prev;
-              }
-              const combined = `${prev}${prev ? ' ' : ''}${fallbackCommand}`;
-              voiceCommandBufferRef.current = combined;
-              return combined;
-            });
-            setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || fallbackCommand}`);
-            showToast('Using native speech fallback for command execution.');
+        // Fallback gracefully to browser native speech recognition (SpeechRecognition API)
+        const fallbackText = String(interimTranscriptRef.current || '').trim();
+        if (fallbackText) {
+          if (voiceTargetRef.current === 'document') {
+            insertTranscriptIntoDocumentRef.current?.(fallbackText + ' ', { forceAppendToEnd: true });
+          } else if (voiceTargetRef.current === 'schedule') {
+            setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${fallbackText}`);
+          } else if (voiceTargetRef.current === 'chat') {
+            setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${fallbackText}`);
+          } else if (voiceTargetRef.current === 'agent-chat') {
+            setDmAiChatInput((prev) => `${prev}${prev ? ' ' : ''}${fallbackText}`);
+          } else {
+            setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${fallbackText}`);
           }
-        } else {
-          showToast('Transcription error: ' + String(result.error || 'API returned no text'));
-        }
-        if (isVoiceActiveRef.current) {
+          setLiveSpeechInterimText(fallbackText);
+        } else if (isVoiceActiveRef.current) {
           setLiveSpeechInterimText('Listening... start speaking');
         }
       }
     } catch (e) {
-      console.error('Audio processing failed', e);
-      showToast('Audio processing error: ' + String(e?.message || 'unknown'));
+      console.warn('Audio processing fallback active:', e?.message);
+      const fallbackText = String(interimTranscriptRef.current || '').trim();
+      if (fallbackText) {
+        if (voiceTargetRef.current === 'document') {
+          insertTranscriptIntoDocumentRef.current?.(fallbackText + ' ', { forceAppendToEnd: true });
+        }
+      }
       if (isVoiceActiveRef.current) {
         setLiveSpeechInterimText('Listening... start speaking');
       }
@@ -49206,7 +49211,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               transform: `translate(calc(-50% + ${dictationOffset.x}px), calc(-50% + ${dictationOffset.y}px))`
             }}
           >
-            <div 
+            <div
               onPointerDown={(event) => {
                 if (event.target.tagName !== 'BUTTON' && !event.target.closest('button')) {
                   beginPanelResize('dictation', event);
@@ -49214,35 +49219,40 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }}
               className={`pointer-events-auto flex items-center transition-all duration-500 ease-out select-none border backdrop-blur-xl ${
                 isVoiceActive && voiceTarget === 'document' 
-                  ? 'rounded-2xl bg-violet-50/95 border-violet-400 outline outline-2 outline-violet-500/30 px-4 py-2.5 gap-3 shadow-[0_12px_40px_-15px_rgba(139,92,246,0.3)] min-w-[240px] max-w-[320px]' 
-                  : 'rounded-full bg-white/80 border-white/40 p-1 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] hover:border-violet-300/80'
+                  ? 'rounded-2xl bg-white/95 dark:bg-zinc-900/95 border-violet-300 dark:border-violet-700/80 px-4 py-3 gap-3 shadow-[0_12px_40px_-10px_rgba(139,92,246,0.25)] min-w-[260px] max-w-[340px]' 
+                  : 'rounded-full bg-white/80 dark:bg-zinc-900/80 border-slate-200/80 dark:border-zinc-700/80 p-1 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.12)] hover:border-violet-300/80'
               }`}
             >
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={async () => {
-                  await toggleVoiceRecording('document');
-                }}
-                className={`flex items-center justify-center rounded-full transition-all duration-300 ${
-                  isVoiceActive && voiceTarget === 'document'
-                    ? 'w-8 h-8 bg-violet-600 text-white shadow-[0_0_12px_rgba(124,58,237,0.5)] animate-pulse'
-                    : 'w-10 h-10 bg-slate-50 hover:bg-violet-50 text-slate-500 hover:text-violet-600'
-                }`}
-                title={isVoiceActive && voiceTarget === 'document' ? 'Stop voice transcription' : 'Start voice transcription'}
-              >
-                <Mic size={isVoiceActive && voiceTarget === 'document' ? 16 : 18} />
-              </button>
+              <div className="relative flex items-center justify-center shrink-0">
+                {isVoiceActive && voiceTarget === 'document' && (
+                  <div className="absolute -inset-1 rounded-full bg-violet-400/25 dark:bg-violet-500/25 blur-sm animate-pulse pointer-events-none" />
+                )}
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={async () => {
+                    await toggleVoiceRecording('document');
+                  }}
+                  className={`flex items-center justify-center rounded-full transition-all duration-300 relative z-10 ${
+                    isVoiceActive && voiceTarget === 'document'
+                      ? 'w-10 h-10 bg-violet-500/15 dark:bg-violet-950/50 text-violet-600 dark:text-violet-300 border-2 border-violet-400/90 dark:border-violet-400 shadow-[0_0_20px_rgba(168,85,247,0.45),inset_0_0_12px_rgba(168,85,247,0.2)] ring-4 ring-violet-400/20'
+                      : 'w-10 h-10 bg-slate-50 dark:bg-zinc-800 hover:bg-violet-50 dark:hover:bg-violet-950/40 text-slate-500 hover:text-violet-600 dark:text-zinc-400 dark:hover:text-violet-400 border border-slate-200/60 dark:border-zinc-700/60'
+                  }`}
+                  title={isVoiceActive && voiceTarget === 'document' ? 'Stop voice transcription' : 'Start voice transcription'}
+                >
+                  <Mic size={18} className={isVoiceActive && voiceTarget === 'document' ? 'animate-pulse text-violet-600 dark:text-violet-400' : ''} />
+                </button>
+              </div>
 
               {isVoiceActive && voiceTarget === 'document' ? (
                 <div className="flex-1 flex flex-col justify-center min-w-0 pr-1">
-                  <div className="text-[10px] font-bold text-violet-600 tracking-wider uppercase opacity-85">Dictation Active</div>
-                  <div className="text-[12px] font-medium text-slate-700 truncate leading-relaxed">
-                    {liveSpeechInterimText || 'Listening...'}
+                  <div className="text-[10px] font-bold text-violet-600 dark:text-violet-400 tracking-wider uppercase opacity-90">Dictation Active</div>
+                  <div className="text-[12px] font-medium text-slate-800 dark:text-zinc-200 truncate leading-relaxed">
+                    {liveSpeechInterimText || 'Listening... start speaking'}
                   </div>
                 </div>
               ) : (
-                <span className="text-[11px] font-semibold text-slate-400 px-3 pr-4 pointer-events-none">Dictate</span>
+                <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-400 px-3 pr-4 pointer-events-none">Dictate</span>
               )}
             </div>
           </div>
