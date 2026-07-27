@@ -12,7 +12,7 @@
  * The Designer agent gets an extra detected document type chip.
  */
 import React, { useMemo } from 'react';
-import { ChevronLeft, RefreshCw, Loader2, Zap } from 'lucide-react';
+import { ChevronLeft, RefreshCw, Loader2, Zap, Trash2 } from 'lucide-react';
 import { SuggestionCard } from './SuggestionCard';
 import { AGENT_REGISTRY } from './agentConfig';
 
@@ -39,8 +39,11 @@ export const AgentDetailPanel = ({
   onCancelPreview,
   onApply,
   onIgnore,
+  customAgent = null,
+  onDeleteCustom = null,
 }) => {
-  const agent = AGENT_REGISTRY.find(a => a.id === agentId);
+  const builtInAgent = AGENT_REGISTRY.find(a => a.id === agentId);
+  const agent = customAgent || builtInAgent;
   const hasBeenRun = agentData !== undefined;
 
   // For designer, extract suggestions from nested object; for others, agentData is the array
@@ -73,6 +76,12 @@ export const AgentDetailPanel = ({
             </p>
           )}
         </div>
+        {customAgent && onDeleteCustom && (
+          <button type="button" onClick={onDeleteCustom} title="Delete custom agent"
+            className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors">
+            <Trash2 size={13} />
+          </button>
+        )}
         {hasBeenRun && (
           <button type="button" onClick={onRunAgent} title="Re-run agent"
             className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">

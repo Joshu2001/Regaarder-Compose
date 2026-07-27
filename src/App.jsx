@@ -3,8 +3,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { io } from 'socket.io-client';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import ShareModal from './ShareModal';
-import DropdownModalShell from './DropdownModalShell';
+import { ShareModal } from '@regaarder/ui';
+import { DropdownModalShell } from '@regaarder/ui';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { Parser } from 'hot-formula-parser';
@@ -31183,7 +31183,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         const ALL_FEATURES = [
           { key: 'chat',       label: 'Chat',       icon: MessageCircle,    pinned: true },
           { key: 'assistant',  label: 'Assist',     icon: Wand2,            pinned: true },
-          { key: 'ai-studio',  label: 'AI Agents',  icon: Sparkles },
+          { key: 'ai-studio',  label: 'Agents',     icon: Sparkles,         pinned: true },
           { key: 'tasks',      label: 'Tasks',      icon: CheckSquare,      pinned: true },
           { key: 'calendar',   label: 'Schedule',   icon: Calendar,         pinned: true },
           { key: 'room',       label: 'Room',       icon: MonitorPlay,      pinned: true },
@@ -31197,7 +31197,8 @@ Respond with a JSON array of slide objects matching the schema.`;
           { key: 'files',      label: 'Files',      icon: File },
         ];
 
-        const visibleKeys = new Set(['chat', 'assistant', ...dynamicSlots]);
+        const fixedKeys = new Set(['chat', 'assistant', 'ai-studio', 'tasks', 'calendar', 'room']);
+        const visibleKeys = new Set([...fixedKeys, ...dynamicSlots]);
 
         const moreItems = ALL_FEATURES.filter(f =>
           !f.pinned && !visibleKeys.has(f.key) && (f.conditional !== false)
@@ -31342,30 +31343,36 @@ Respond with a JSON array of slide objects matching the schema.`;
               <div className="w-full">{renderNavIcon({ key: 'chat', label: 'Chat', icon: MessageCircle })}</div>
 
               {/* ── Slot 3: Assist (always fixed) ─── */}
-              <div className="w-full mb-1">{renderNavIcon({ key: 'assistant', label: 'Assist', icon: Wand2 })}</div>
+              <div className="w-full">{renderNavIcon({ key: 'assistant', label: 'Assist', icon: Wand2 })}</div>
 
-              {/* ── Slot 4: Tasks (always fixed) ─── */}
+              {/* ── Slot 4: Agents (always fixed) ─── */}
+              <div className="w-full mb-1">{renderNavIcon({ key: 'ai-studio', label: 'Agents', icon: Sparkles })}</div>
+
+              {/* ── Slot 5: Tasks (always fixed) ─── */}
               <div className="w-full">{renderNavIcon({ key: 'tasks', label: 'Tasks', icon: CheckSquare })}</div>
 
-              {/* ── Slot 5: Schedule (always fixed) ─── */}
+              {/* ── Slot 6: Schedule (always fixed) ─── */}
               <div className="w-full">{renderNavIcon({ key: 'calendar', label: 'Schedule', icon: Calendar })}</div>
 
-              {/* ── Slot 6: Room (always fixed) ─── */}
+              {/* ── Slot 7: Room (always fixed) ─── */}
               <div className="w-full mb-1">{renderNavIcon({ key: 'room', label: 'Room', icon: MonitorPlay })}</div>
 
-              {/* ── Slots 4–5: Dynamic (usage-promoted, animated on key change) ─── */}
-              {dynamicSlots.map((slotKey, idx) => {
-                const feature = ALL_FEATURES.find(f => f.key === slotKey);
-                if (!feature) return null;
-                return (
-                  <div
-                    key={`dynamic-${idx}-${slotKey}`}
-                    className="w-full animate-in fade-in zoom-in-90 duration-300 ease-out"
-                  >
-                    {renderNavIcon(feature)}
-                  </div>
-                );
-              })}
+              {/* ── Slots: Dynamic (usage-promoted, excluding fixed slots) ─── */}
+              {dynamicSlots
+                .filter(slotKey => !fixedKeys.has(slotKey))
+                .map((slotKey, idx) => {
+                  const feature = ALL_FEATURES.find(f => f.key === slotKey);
+                  if (!feature) return null;
+                  return (
+                    <div
+                      key={`dynamic-${idx}-${slotKey}`}
+                      className="w-full animate-in fade-in zoom-in-90 duration-300 ease-out"
+                    >
+                      {renderNavIcon(feature)}
+                    </div>
+                  );
+                })
+              }
 
               {/* ── Spacer gap before More ─── */}
               <div className="flex-1 min-h-[12px]" aria-hidden="true" />
