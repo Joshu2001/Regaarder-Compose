@@ -1,0 +1,8 @@
+{
+  "name": "regaarder-workspace",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "Regaarder Compose"
+  ]
+}
