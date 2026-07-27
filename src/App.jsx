@@ -763,45 +763,73 @@ const SLASH_OPTIONS = [
   { key: 'code_block', label: 'Code Block', desc: 'Insert a code container' }
 ];
 
+
+
+const PROMPT_SLASH_OPTIONS = [
+  { key: 'ask', label: 'Ask', desc: 'Ask a quick question without interrupting context', icon: MessageSquare, agentKey: 'ask' },
+  { key: 'goal', label: 'Goal', desc: 'Run until the specified goal is completed', icon: Target, agentKey: 'goal' },
+  { key: 'schedule', label: 'Schedule', desc: 'Run an instruction on a recurring schedule', icon: Clock, agentKey: 'schedule' },
+  { key: 'browser', label: 'Browser', desc: 'Invoke a browser agent for web tasks', icon: Globe, agentKey: 'browser' },
+  { key: 'health', label: 'Document Health', desc: 'Run 6 parallel quality checks (grammar, logic, evidence...)', icon: Activity, agentKey: 'health' },
+  { key: 'writing', label: 'Writing', desc: 'Transform tone, expand, shorten, brainstorm & summarize', icon: PenTool, agentKey: 'writing' },
+  { key: 'editor', label: 'Editor', desc: 'Grammar, clarity, passive voice & style polish', icon: FileEdit, agentKey: 'editor' },
+  { key: 'designer', label: 'Designer', desc: 'Document type detection & formatting structure', icon: LayoutTemplate, agentKey: 'designer' },
+  { key: 'logic', label: 'Logic', desc: 'Analyze reasoning quality, fallacies & contradictions', icon: Cpu, agentKey: 'logic' },
+  { key: 'research', label: 'Research', desc: 'Find citations, empirical evidence & counter-arguments', icon: BookOpen, agentKey: 'research' },
+  { key: 'reviewer', label: 'Reviewer', desc: 'Editorial score ring, summary quote & actionable feedback', icon: FileText, agentKey: 'reviewer' },
+  { key: 'audience', label: 'Audience', desc: 'Simulate 12 reader personas & comprehension level', icon: Users, agentKey: 'audience' },
+  { key: 'consistency', label: 'Consistency', desc: 'Terminology, casing, tone & formatting audit', icon: CheckSquare, agentKey: 'consistency' },
+  { key: 'compliance', label: 'Compliance', desc: 'Policy, sensitivity, privacy & legal risk check', icon: Shield, agentKey: 'compliance' },
+  { key: 'gap', label: 'Knowledge Gap', desc: 'Identify missing explanations, context or undefined terms', icon: FileQuestion, agentKey: 'gap' },
+  { key: 'dna', label: 'Writing DNA', desc: 'Personal voice vector, style match & 12-month evolution', icon: Wand2, agentKey: 'dna' }
+];
+
 const SlashMenuPopover = React.forwardRef(({
   options = [],
   selectedIndex = 0,
   onSelectOption,
-  title = null,
+  title = "SLASH COMMANDS",
   badgeText = null,
   className = '',
   style = {},
-  source = 'default'
+  source = 'default',
+  position = 'above'
 }, ref) => {
+  const displayBadgeText = badgeText !== null ? badgeText : `${options.length} AGENTS`;
+  const isBelow = position === 'below' || source === 'chat';
+  const posClasses = isBelow 
+    ? 'top-full left-0 mt-2 slide-in-from-top-2' 
+    : 'bottom-full left-0 mb-2 slide-in-from-bottom-2';
+
   return (
     <div 
       ref={ref}
-      className={`slash-menu-container animate-in fade-in zoom-in-95 duration-100 ${className}`}
+      className={`absolute ${posClasses} w-80 max-h-84 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] z-50 overflow-hidden transition-all duration-200 animate-in fade-in p-2 ${className}`}
       style={style}
     >
-      {(title || badgeText) && (
-        <div className="px-3 py-1.5 border-b border-slate-100 dark:border-zinc-800/80 flex items-center justify-between shrink-0 mb-1 select-none">
+      {(title || displayBadgeText) && (
+        <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-zinc-800/80 flex items-center justify-between shrink-0 mb-1.5 select-none font-sans">
           {title && (
             <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-zinc-500 uppercase">
               {title}
             </span>
           )}
-          {badgeText && (
-            <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500 font-mono opacity-80">
-              {badgeText}
+          {displayBadgeText && (
+            <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 font-mono tracking-tight opacity-80">
+              {displayBadgeText}
             </span>
           )}
         </div>
       )}
 
-      <div className="space-y-0.5 overflow-y-auto thin-scrollbar max-h-64">
+      <div className="space-y-1 overflow-y-auto thin-scrollbar max-h-72 px-0.5">
         {options.length === 0 ? (
           <div className="p-3 text-center text-xs text-slate-400 dark:text-zinc-500 font-medium">
             No matching options
           </div>
         ) : (
           options.map((opt, idx) => {
-            const isActive = idx === selectedIndex;
+            const isSelected = idx === selectedIndex;
             const IconComp = opt.icon;
             const tagText = opt.tag || (opt.key ? `/${opt.key}` : null);
             const description = opt.desc || opt.description;
@@ -810,40 +838,74 @@ const SlashMenuPopover = React.forwardRef(({
               <button
                 key={opt.key || idx}
                 type="button"
-                onMouseDown={(e) => e.preventDefault()}
                 onPointerDown={(e) => {
                   e.preventDefault();
-                  onSelectOption?.(opt, source);
+                  onSelectOption && onSelectOption(opt);
                 }}
-                onClick={() => onSelectOption?.(opt, source)}
-                className={`slash-menu-option ${isActive ? 'active' : ''}`}
+                className={`w-full text-left px-3 py-2 rounded-xl transition-all duration-150 cursor-pointer flex flex-col justify-center border-none ${
+                  isSelected
+                    ? 'bg-[#f4f0fe] dark:bg-violet-950/60'
+                    : 'bg-transparent text-slate-700 dark:text-zinc-300 hover:bg-slate-50/80 dark:hover:bg-zinc-800/40'
+                }`}
               >
-                <div className="flex items-start gap-2.5 w-full">
-                  {IconComp && (
+                {IconComp ? (
+                  <div className="flex items-start gap-2.5 w-full">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-                      isActive
-                        ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/60 dark:text-violet-300'
+                      isSelected
+                        ? 'bg-violet-100/80 text-[#8b5cf6] dark:bg-violet-900/60 dark:text-violet-300'
                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400'
                     }`}>
                       <IconComp size={14} strokeWidth={1.75} />
                     </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="slash-menu-option-label truncate">{opt.label}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1.5 w-full">
+                        <span className={`text-[13px] font-semibold tracking-tight truncate ${
+                          isSelected ? 'text-[#8b5cf6] dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
+                        }`}>
+                          {opt.label}
+                        </span>
+                        {tagText && (
+                          <span className={`text-[10px] font-mono shrink-0 ${
+                            isSelected ? 'text-[#a78bfa] dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500 opacity-60'
+                          }`}>
+                            {tagText}
+                          </span>
+                        )}
+                      </div>
+                      {description && (
+                        <p className={`text-[11px] line-clamp-1 mt-0.5 font-normal truncate ${
+                          isSelected ? 'text-[#a78bfa] dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'
+                        }`}>
+                          {description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between gap-1.5 w-full">
+                      <span className={`text-[13px] font-semibold tracking-tight ${
+                        isSelected ? 'text-[#8b5cf6] dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
+                      }`}>
+                        {opt.label}
+                      </span>
                       {tagText && (
-                        <span className="text-[10px] font-mono opacity-70 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60 shrink-0">
+                        <span className={`text-[10px] font-mono ${
+                          isSelected ? 'text-[#a78bfa] dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500 opacity-60'
+                        }`}>
                           {tagText}
                         </span>
                       )}
                     </div>
                     {description && (
-                      <span className="slash-menu-option-desc block truncate">
+                      <p className={`text-[11px] line-clamp-1 mt-0.5 font-normal ${
+                        isSelected ? 'text-[#a78bfa] dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'
+                      }`}>
                         {description}
-                      </span>
+                      </p>
                     )}
-                  </div>
-                </div>
+                  </>
+                )}
               </button>
             );
           })
@@ -852,25 +914,7 @@ const SlashMenuPopover = React.forwardRef(({
     </div>
   );
 });
-
-const PROMPT_SLASH_OPTIONS = [
-  { key: 'ask', label: 'ask', desc: 'Ask a quick question without interrupting context', icon: MessageSquare, agentKey: 'ask' },
-  { key: 'goal', label: 'goal', desc: 'Run until the specified goal is completed', icon: Target, agentKey: 'goal' },
-  { key: 'schedule', label: 'schedule', desc: 'Run an instruction on a recurring schedule', icon: Clock, agentKey: 'schedule' },
-  { key: 'browser', label: 'browser', desc: 'Invoke a browser agent for web tasks', icon: Globe, agentKey: 'browser' },
-  { key: 'health', label: 'Document Health', desc: 'Run 6 parallel quality checks (grammar, logic, evidence...)', icon: Activity, agentKey: 'health' },
-  { key: 'writing', label: 'Writing', desc: 'Transform tone, expand, shorten, brainstorm & summarize', icon: PenTool, agentKey: 'writing' },
-  { key: 'editor', label: 'Editor', desc: 'Grammar, clarity, passive voice & style polish', icon: FileEdit, agentKey: 'editor' },
-  { key: 'designer', label: 'Designer', desc: 'Document type detection & formatting structure', icon: LayoutTemplate, agentKey: 'designer' },
-  { key: 'logic', label: 'Logic', desc: 'Analyze reasoning quality, fallacies & contradictions', icon: Cpu, agentKey: 'logic' },
-  { key: 'research', label: 'Research', desc: 'Find citations, empirical evidence & counter-arguments', icon: BookOpen, agentKey: 'research' },
-  { key: 'reviewer', label: 'Reviewer', desc: 'Editorial score ring, summary quote & actionable feedback', icon: CheckCircle2, agentKey: 'reviewer' },
-  { key: 'audience', label: 'Audience', desc: 'Simulate 12 reader personas & comprehension level', icon: Users2, agentKey: 'audience' },
-  { key: 'consistency', label: 'Consistency', desc: 'Terminology, casing, tone & formatting audit', icon: Shield, agentKey: 'consistency' },
-  { key: 'compliance', label: 'Compliance', desc: 'Policy, sensitivity, privacy & legal risk check', icon: Lock, agentKey: 'compliance' },
-  { key: 'gap', label: 'Knowledge Gap', desc: 'Identify missing explanations, context or undefined terms', icon: FileQuestion, agentKey: 'gap' },
-  { key: 'dna', label: 'Writing DNA', desc: 'Personal voice vector, style match & 12-month evolution', icon: Cpu, agentKey: 'dna' }
-];
+SlashMenuPopover.displayName = 'SlashMenuPopover';
 const getAbsoluteOffset = (container, node, offset) => {
   if (!container || !node) return 0;
   const range = document.createRange();
@@ -6605,9 +6649,9 @@ export default function App() {
   const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
   const mentionMenuRef = useRef(null);
   const [isPromptSlashMenuOpen, setIsPromptSlashMenuOpen] = useState(false);
+  const [promptSlashSource, setPromptSlashSource] = useState('chat');
   const [promptSlashSearch, setPromptSlashSearch] = useState('');
   const [promptSlashSelectedIndex, setPromptSlashSelectedIndex] = useState(0);
-  const [promptSlashSource, setPromptSlashSource] = useState('chat');
   const promptSlashMenuRef = useRef(null);
   const [scheduleAttachments, setScheduleAttachments] = useState([]);
   const [editingAgendaField, setEditingAgendaField] = useState(null); // { id: string | number, field: 'title' | 'slot', value: string }
@@ -21520,20 +21564,20 @@ Rules:
     showToast(`Attached document "${title}"`);
   };
 
-  const selectPromptSlashOption = (option, source = promptSlashSource) => {
-    setSelectedAIAgent(option.agentKey || option.key);
-    setActiveAgentTag(`/${option.key}`);
+  const selectPromptSlashOption = (option, source = 'chat') => {
+    setSelectedAIAgent(option.agentKey || option.key || 'health');
+    setActiveAgentTag(`/${option.agentKey || option.key}`);
     setRightSidebarOpen(true);
     setActiveRightTab('ai-studio');
-    if (source === 'floating') {
-      const lastSlash = floatingPrompt.lastIndexOf('/');
-      if (lastSlash !== -1) {
-        setFloatingPrompt(floatingPrompt.slice(0, lastSlash).trim());
-      }
-    } else {
+    if (source === 'chat') {
       const lastSlash = chatInput.lastIndexOf('/');
       if (lastSlash !== -1) {
         setChatInput(chatInput.slice(0, lastSlash).trim());
+      }
+    } else if (source === 'floating') {
+      const lastSlash = floatingPrompt.lastIndexOf('/');
+      if (lastSlash !== -1) {
+        setFloatingPrompt(floatingPrompt.slice(0, lastSlash).trim());
       }
     }
     setIsPromptSlashMenuOpen(false);
@@ -21550,6 +21594,7 @@ Rules:
       const query = val.slice(lastSlashIndex + 1);
       if (!query.includes(' ') && !query.includes('\n')) {
         setIsPromptSlashMenuOpen(true);
+        setPromptSlashSource('chat');
         setPromptSlashSearch(query.toLowerCase());
         setPromptSlashSelectedIndex(0);
         setIsMentionMenuOpen(false);
@@ -21581,6 +21626,7 @@ Rules:
       const query = val.slice(lastSlashIndex + 1);
       if (!query.includes(' ') && !query.includes('\n')) {
         setIsPromptSlashMenuOpen(true);
+        setPromptSlashSource('floating');
         setPromptSlashSearch(query.toLowerCase());
         setPromptSlashSelectedIndex(0);
         setIsMentionMenuOpen(false);
@@ -21684,7 +21730,7 @@ Rules:
       if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault();
         if (mentionSelectedIndex < filteredAgents.length) {
-          selectPromptSlashOption(filteredAgents[mentionSelectedIndex]);
+          selectPromptSlashOption(filteredAgents[mentionSelectedIndex], 'chat');
         } else {
           const docIdx = mentionSelectedIndex - filteredAgents.length;
           if (filteredDocs[docIdx]) {
@@ -21705,6 +21751,7 @@ Rules:
       handleSidebarSend(e);
     }
   };
+
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -27670,7 +27717,7 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                     {/* Integrated Input Area (VS Code Prompt Box Style) */}
                     <form onSubmit={handleSidebarSend} className="w-full mb-3.5 relative">
-                      {/* Floating / Slash Command Dropdown (Reusable SlashMenuPopover Component) */}
+                      {/* Floating / Slash Command Dropdown (SlashMenuPopover Component) */}
                       {isPromptSlashMenuOpen && promptSlashSource === 'chat' && (() => {
                         const filteredSlashOpts = PROMPT_SLASH_OPTIONS.filter((opt) =>
                           opt.label.toLowerCase().includes(promptSlashSearch) ||
@@ -27686,8 +27733,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                             onSelectOption={(opt) => selectPromptSlashOption(opt, 'chat')}
                             title="SLASH COMMANDS"
                             badgeText={`${filteredSlashOpts.length} AGENTS`}
-                            className="absolute bottom-full left-0 mb-2 w-80 z-50"
+                            className="w-full z-50"
                             source="chat"
+                            position="below"
                           />
                         );
                       })()}
@@ -27707,7 +27755,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         return (
                           <div
                             ref={mentionMenuRef}
-                            className="absolute bottom-full left-0 right-0 mb-2 max-h-80 flex flex-col bg-white dark:bg-zinc-900 border border-violet-100/90 dark:border-zinc-800 rounded-2xl shadow-[0_16px_40px_-8px_rgba(139,92,246,0.18)] dark:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] z-50 overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 duration-150 p-1.5"
+                            className="absolute top-full left-0 right-0 mt-2 max-h-80 flex flex-col bg-white dark:bg-zinc-900 border border-violet-100/90 dark:border-zinc-800 rounded-2xl shadow-[0_16px_40px_-8px_rgba(139,92,246,0.18)] dark:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] z-50 overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-top-2 duration-150 p-1.5"
                           >
                             <div className="p-2 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/40 dark:bg-zinc-900/40 flex flex-col gap-1.5 shrink-0">
                               <div className="flex items-center justify-between px-1">
@@ -27770,7 +27818,16 @@ Respond with a JSON array of slide objects matching the schema.`;
                                             : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/50'
                                         }`}
                                       >
-                                        <span className="text-sm shrink-0 select-none">{opt.emoji || '✨'}</span>
+                                        {(() => {
+                                          const IconComp = opt.icon;
+                                          return IconComp ? (
+                                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? 'bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300' : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400'}`}>
+                                              <IconComp size={13} strokeWidth={1.75} />
+                                            </div>
+                                          ) : (
+                                            <span className="text-sm shrink-0 select-none">{opt.emoji || '✨'}</span>
+                                          );
+                                        })()}
                                         <div className="min-w-0 flex-1">
                                           <div className="flex items-center justify-between gap-1.5">
                                             <span className={`text-xs font-semibold tracking-tight ${isSelected ? 'text-violet-700 dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'}`}>{opt.label}</span>
@@ -27838,16 +27895,20 @@ Respond with a JSON array of slide objects matching the schema.`;
                         {(isDocContextActive || activeAgentTag || chatAttachments.length > 0) && (
                           <div className="px-2.5 pt-2 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
                             {activeAgentTag && (
-                              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5.5 rounded-md border border-violet-200/90 dark:border-violet-800/80 bg-violet-100/80 dark:bg-violet-950/60 text-[11px] font-medium text-violet-700 dark:text-violet-300 shadow-2xs group relative transition-all animate-in fade-in zoom-in-95 duration-150">
-                                <Sparkles size={10.5} className="text-violet-600 dark:text-violet-400 shrink-0" />
-                                <span className="font-medium text-[11px]">[{activeAgentTag}]</span>
+                              <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100/90 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-medium text-xs tracking-tight group relative transition-all animate-in fade-in zoom-in-95 duration-150">
+                                <span className="font-mono text-[11px] font-semibold leading-tight">
+                                  {activeAgentTag.startsWith('/') ? activeAgentTag : `/${activeAgentTag}`}
+                                </span>
                                 <button
                                   type="button"
-                                  onClick={() => setActiveAgentTag(null)}
-                                  className="ml-0.5 p-0.5 text-violet-400 hover:text-violet-700 dark:hover:text-violet-200 rounded hover:bg-violet-200/60 dark:hover:bg-violet-800 transition-colors"
-                                  title="Remove agent selection"
+                                  onClick={() => {
+                                    setActiveAgentTag(null);
+                                    setSelectedAIAgent(null);
+                                  }}
+                                  className="ml-0.5 p-0.5 text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 rounded hover:bg-blue-200/50 dark:hover:bg-blue-900/50 transition-colors"
+                                  title="Remove subagent tag"
                                 >
-                                  <X size={10} />
+                                  <X size={9.5} />
                                 </button>
                               </div>
                             )}
@@ -49670,6 +49731,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         />
                       );
                     })()}
+                    {activeAgentTag && (
+                      <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100/90 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-medium text-xs tracking-tight group relative transition-all shrink-0 mt-1">
+                        <span className="font-mono text-[11px] font-semibold leading-tight">
+                          {activeAgentTag.startsWith('/') ? activeAgentTag : `/${activeAgentTag}`}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveAgentTag(null);
+                            setSelectedAIAgent(null);
+                          }}
+                          className="ml-0.5 p-0.5 text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 rounded hover:bg-blue-200/50 dark:hover:bg-blue-900/50 transition-colors"
+                          title="Remove subagent tag"
+                        >
+                          <X size={9.5} />
+                        </button>
+                      </div>
+                    )}
                     <textarea
                       value={floatingPrompt}
                       onChange={handleFloatingPromptChange}
@@ -49683,17 +49762,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <button
                       type="submit"
                       disabled={isComposing || !floatingPrompt.trim()}
-                      className={`w-8 h-8 rounded-lg transition-all duration-200 flex items-center justify-center shrink-0 active:scale-95 ${
-                        isComposing || !floatingPrompt.trim()
-                          ? 'bg-slate-100/60 dark:bg-zinc-800/40 text-slate-300 dark:text-zinc-600 border border-slate-200/40 dark:border-zinc-800 cursor-not-allowed opacity-50'
-                          : 'bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800 cursor-pointer'
+                      className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer ${
+                        floatingPrompt.trim() || isComposing
+                          ? 'opacity-100 bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800' 
+                          : 'opacity-35 cursor-not-allowed bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600'
                       }`}
                     >
-                      {isComposing ? (
-                        <Loader2 size={15} className="animate-spin text-violet-600 dark:text-violet-300" />
-                      ) : (
-                        <Send size={14} strokeWidth={1.75} className={floatingPrompt.trim() ? "text-violet-600 dark:text-violet-300 ml-0.5" : "text-slate-300 dark:text-zinc-600 ml-0.5"} />
-                      )}
+                      {isComposing ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} strokeWidth={1.75} />}
                     </button>
                   </div>
                 </div>
