@@ -4374,6 +4374,7 @@ export default function App() {
   const [deckPromptOffset, setDeckPromptOffset] = useState({ x: 0, y: 0 });
   const [deckPromptChips, setDeckPromptChips] = useState(['Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft']);
   const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(false);
+  const [sheetsSidebarOpen, setSheetsSidebarOpen] = useState(false);
   const [deckActiveToolbarMenu, setDeckActiveToolbarMenu] = useState(null);
   const [activeDeckTitle, setActiveDeckTitle] = useState('Product Roadmap 2025');
   const [deckZoomLevel, setDeckZoomLevel] = useState(100);
@@ -25887,7 +25888,16 @@ Respond with a JSON array of slide objects matching the schema.`;
   }, [activeDeckSlide?.speakerNotes, chatAttachments, deckSlides, promptAttachments]);
 
   const activeSheet = sheetsData.find((sheet) => sheet.id === activeSheetId) || sheetsData[0];
-  const activeSheetGridRaw = sheetGrids[activeSheetId] || { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array(26).fill('')), formats: {} };
+  const rawSheetGrid = sheetGrids[activeSheetId];
+  const activeSheetGridRaw = {
+    rows: rawSheetGrid?.rows || 22,
+    cols: rawSheetGrid?.cols || 26,
+    cells: (rawSheetGrid?.cells && rawSheetGrid.cells.length > 0) ? rawSheetGrid.cells : Array.from({ length: 22 }, () => Array(26).fill('')),
+    formats: rawSheetGrid?.formats || {},
+    tables: rawSheetGrid?.tables || [],
+    overlays: rawSheetGrid?.overlays || [],
+    filters: rawSheetGrid?.filters || {}
+  };
   
   const activeSheetGrid = useMemo(() => {
     if (!activeSheetGridRaw) return null;
@@ -35403,11 +35413,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <>
                   <button
                     type="button"
-                    onClick={() => setDeckSlidesPanelOpen((prev) => !prev)}
+                    onClick={() => setSheetsSidebarOpen((prev) => !prev)}
                     className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
-                    title={deckSlidesPanelOpen ? 'Hide sheets panel' : 'Show sheets panel'}
+                    title={sheetsSidebarOpen ? 'Hide sheets panel' : 'Show sheets panel'}
                   >
-                    {deckSlidesPanelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                    {sheetsSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
                   </button>
                   <div className="flex items-center gap-2">
                     {isEditingUnsavedDraftName ? (
@@ -35487,33 +35497,35 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 >
                   <MonitorPlay size={14} /> Present
                 </button>
-                <div className="relative export-menu-container">
-                  <button
-                    onClick={() => {
-                      closeTransientMenus();
-                      setDeckExportMenuOpen(!deckExportMenuOpen);
-                    }}
-                    className="bg-white border border-gray-250 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-3 py-2 rounded-lg flex items-center gap-1 shadow-sm transition-all"
-                  >
-                    <span>Export</span> <ChevronDown size={12} />
-                  </button>
-                  {deckExportMenuOpen && (
-                    <div className="absolute right-0 top-11 z-[230] w-52 bg-white border border-slate-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-2 flex flex-col gap-1 font-sans">
-                      {['PPTX', 'PDF', 'Images'].map(fmt => (
-                        <button
-                          key={fmt}
-                          onClick={() => {
-                            showToast(`Exporting as ${fmt}...`);
-                            setDeckExportMenuOpen(false);
-                          }}
-                          className="w-full flex items-center justify-between text-xs p-2 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors text-left font-medium"
-                        >
-                          {fmt}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {!isSheetsMode && (
+                  <div className="relative export-menu-container">
+                    <button
+                      onClick={() => {
+                        closeTransientMenus();
+                        setDeckExportMenuOpen(!deckExportMenuOpen);
+                      }}
+                      className="bg-white border border-gray-250 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-3 py-2 rounded-lg flex items-center gap-1 shadow-sm transition-all"
+                    >
+                      <span>Export</span> <ChevronDown size={12} />
+                    </button>
+                    {deckExportMenuOpen && (
+                      <div className="absolute right-0 top-11 z-[230] w-52 bg-white border border-slate-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-2 flex flex-col gap-1 font-sans">
+                        {['PPTX', 'PDF', 'Images'].map(fmt => (
+                          <button
+                            key={fmt}
+                            onClick={() => {
+                              showToast(`Exporting as ${fmt}...`);
+                              setDeckExportMenuOpen(false);
+                            }}
+                            className="w-full flex items-center justify-between text-xs p-2 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors text-left font-medium"
+                          >
+                            {fmt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="relative" ref={shareMenuRef}>
                   <button
                     type="button"
@@ -35796,7 +35808,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </aside>
                     )}
 
-            {deckSlidesPanelOpen && (
+            {(isSheetsMode ? sheetsSidebarOpen : deckSlidesPanelOpen) && (
                     <aside className="w-[240px] border-r border-gray-200/50 bg-[#f8f9fd]/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col shrink-0">
                       {/* Top Sidebar Action */}
                       <div className="h-16 px-4 border-b border-gray-200 flex items-center justify-between shrink-0">
@@ -38691,8 +38703,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div className="flex items-center gap-3 text-[13px] font-medium text-gray-500 shrink-0">
                         <button 
                           onClick={handleTtsToggle} 
-                          className={`p-1 rounded-lg transition-all duration-300 ${isReadingAloud ? 'text-violet-600 bg-violet-50 outline outline-1 outline-violet-500/30' : 'hover:text-gray-800 hover:bg-gray-100'}`} 
-                          title={isReadingAloud ? "Stop reading out loud" : "Read sheet out loud"}
+                          aria-label="Read sheet out loud (Text to speech)"
+                          className={`px-2 py-1 rounded-md transition-all duration-200 flex items-center gap-1.5 border ${
+                            isReadingAloud 
+                              ? 'text-violet-700 bg-violet-50 border-violet-200 outline outline-1 outline-violet-400/40 font-semibold shadow-xs' 
+                              : 'border-transparent hover:border-gray-200 hover:bg-gray-100/80 text-gray-600'
+                          }`} 
+                          title={isReadingAloud ? "Stop audio playback" : "Read sheet out loud (Text-to-speech)"}
                         >
                           {isReadingAloud ? (
                             <div className="flex items-center gap-0.5 h-3.5 px-0.5">
@@ -38701,8 +38718,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <span className="w-0.5 h-1.5 bg-violet-600 animate-[bounce_0.8s_infinite_300ms] rounded-full"></span>
                             </div>
                           ) : (
-                            <Volume2 size={16} />
+                            <Volume2 size={15} />
                           )}
+                          <span className="text-[11px] font-medium hidden sm:inline">{isReadingAloud ? 'Reading...' : 'Audio'}</span>
                         </button>
                       </div>
                     </div>
@@ -41868,6 +41886,209 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
+      {settingsModalOpen && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
+          <div className="absolute inset-0 bg-black/5 backdrop-blur-md" onClick={() => setSettingsModalOpen(false)}></div>
+          <div className="relative bg-white/70 backdrop-blur-3xl shadow-[0_30px_100px_-20px_rgba(0,0,0,0.15)] rounded-3xl w-full max-w-[850px] min-h-[550px] flex overflow-hidden border border-white/40 transform transition-all">
+            <div className="w-[240px] bg-slate-50/50 border-r border-slate-200/50 p-6 flex flex-col shrink-0">
+              <div className="flex items-center gap-2 mb-8 px-2">
+                <Settings size={18} className="text-slate-700" />
+                <span className="font-bold text-slate-800 tracking-tight">Settings</span>
+              </div>
+              <div className="flex flex-col gap-1.5 flex-1">
+                <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-700'}`}>Account</button>
+                <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-700'}`}>Personalization</button>
+                <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-700'}`}>General</button>
+              </div>
+            </div>
+            <div className="flex-1 bg-white/40 p-10 overflow-y-auto relative">
+              <button onClick={() => setSettingsModalOpen(false)} className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-200/50 text-slate-400 hover:text-slate-600 transition-colors">
+                <X size={18} strokeWidth={2.5} />
+              </button>
+              {settingsTab === 'account' && (
+                <div className="max-w-[400px] mx-auto mt-6">
+                  <div className="text-center mb-8">
+                    <h2 className="text-2xl font-bold text-slate-800 tracking-tight mb-2">Sign in to Compose</h2>
+                    <p className="text-[13px] text-slate-500">Access your workspaces across all your devices.</p>
+                  </div>
+                  <div className="space-y-4 mb-6">
+                    <button onClick={() => { window.location.href = 'https://apple.com'; }} className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-semibold text-slate-700 transition-all shadow-sm">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.126 3.805 3.06 1.514-.067 2.09-.982 3.924-.982 1.832 0 2.37.95 3.96.982 1.63.027 2.65-1.464 3.65-2.91 1.155-1.685 1.63-3.322 1.65-3.407-.035-.015-3.195-1.226-3.23-4.88-.035-3.053 2.502-4.524 2.613-4.59-1.423-2.08-3.633-2.365-4.42-2.42-1.89-.187-3.693 1.088-4.55 1.088zm-.835-2.025c.805-.97 1.346-2.32 1.198-3.65-1.127.045-2.528.75-3.353 1.73-.733.86-1.346 2.23-1.166 3.54 1.265.1 2.515-.65 3.32-1.62z"/></svg>
+                      Continue with Apple
+                    </button>
+                    <button onClick={() => { window.location.href = 'https://google.com'; }} className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-semibold text-slate-700 transition-all shadow-sm">
+                      <svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                      Continue with Google
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="flex-1 h-px bg-slate-200"></div>
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase">or</span>
+                    <div className="flex-1 h-px bg-slate-200"></div>
+                  </div>
+                  <div className="space-y-4">
+                    <input type="email" placeholder="Email Address" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-[13px] text-slate-800 placeholder-slate-400 outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm" />
+                    <button onClick={() => showToast('Sending magic link to email...')} className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-3 text-[13px] font-bold shadow-md transition-colors">Continue with Email</button>
+                  </div>
+                </div>
+              )}
+              {settingsTab === 'personalization' && (
+                <div className="max-w-[500px]">
+                  <h2 className="text-2xl font-bold text-slate-800 tracking-tight mb-8">Personalization</h2>
+                  <div className="space-y-8">
+                    <div>
+                      <h3 className="text-[13px] font-bold text-slate-800 mb-4">Appearance</h3>
+                      <div className="flex items-center gap-4">
+                        <button onClick={() => setIsDarkMode(false)} className={`flex-1 p-3 rounded-2xl border-2 transition-all group ${!isDarkMode ? 'border-violet-500 bg-violet-50/50' : 'border-transparent hover:bg-slate-50'}`}>
+                          <div className={`w-full h-20 rounded-lg bg-[#F5F5F5] border mb-3 flex overflow-hidden relative shadow-sm transition-all ${!isDarkMode ? 'border-violet-300 ring-4 ring-violet-500/10' : 'border-slate-200 group-hover:border-slate-300'}`}>
+                            <div className="w-1/3 bg-[#E8E8E8] h-full border-r border-slate-300/50 p-1.5 flex flex-col gap-1">
+                              <div className="flex gap-1 mb-1">
+                                <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-yellow-400"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                              </div>
+                              <div className="w-full h-2 bg-slate-300/60 rounded-[2px]"></div>
+                              <div className="w-3/4 h-2 bg-slate-300/60 rounded-[2px]"></div>
+                            </div>
+                            <div className="flex-1 p-2 flex flex-col gap-1.5 bg-white">
+                              <div className="w-1/2 h-2 bg-slate-200 rounded-[2px]"></div>
+                              <div className="w-full h-1 bg-slate-100 rounded-[2px]"></div>
+                              <div className="w-4/5 h-1 bg-slate-100 rounded-[2px]"></div>
+                            </div>
+                          </div>
+                          <span className={`text-[12px] font-semibold ${!isDarkMode ? 'text-violet-700' : 'text-slate-600'}`}>Light</span>
+                        </button>
+                        <button onClick={() => setIsDarkMode(true)} className={`flex-1 p-3 rounded-2xl border-2 transition-all group ${isDarkMode ? 'border-violet-500 bg-violet-50/50' : 'border-transparent hover:bg-slate-50'}`}>
+                          <div className={`w-full h-20 rounded-lg bg-[#1E1E1E] border mb-3 flex overflow-hidden relative shadow-sm transition-all ${isDarkMode ? 'border-violet-400 ring-4 ring-violet-500/10' : 'border-slate-700 group-hover:border-slate-600'}`}>
+                            <div className="w-1/3 bg-[#2D2D2D] h-full border-r border-slate-600/50 p-1.5 flex flex-col gap-1">
+                              <div className="flex gap-1 mb-1">
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-600"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-600"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-600"></div>
+                              </div>
+                              <div className="w-full h-2 bg-slate-600 rounded-[2px]"></div>
+                              <div className="w-3/4 h-2 bg-slate-600 rounded-[2px]"></div>
+                            </div>
+                            <div className="flex-1 p-2 flex flex-col gap-1.5 bg-[#121212]">
+                              <div className="w-1/2 h-2 bg-slate-700 rounded-[2px]"></div>
+                              <div className="w-full h-1 bg-slate-800 rounded-[2px]"></div>
+                              <div className="w-4/5 h-1 bg-slate-800 rounded-[2px]"></div>
+                            </div>
+                          </div>
+                          <span className={`text-[12px] font-semibold ${isDarkMode ? 'text-violet-700' : 'text-slate-600'}`}>Dark</span>
+                        </button>
+                        <button onClick={() => { setIsDarkMode(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); showToast('System theme applied'); }} className="flex-1 p-3 rounded-2xl border-2 border-transparent hover:bg-slate-50 transition-all group">
+                          <div className="w-full h-20 rounded-lg border border-slate-300 group-hover:border-slate-400 mb-3 flex overflow-hidden relative shadow-sm transition-all">
+                            <div className="w-1/2 h-full flex">
+                              <div className="w-full bg-[#F5F5F5] h-full flex">
+                                <div className="w-2/3 bg-[#E8E8E8] h-full border-r border-slate-300/50 p-1.5 flex flex-col gap-1">
+                                  <div className="flex gap-0.5 mb-1">
+                                    <div className="w-1 h-1 rounded-full bg-slate-400"></div>
+                                    <div className="w-1 h-1 rounded-full bg-slate-400"></div>
+                                  </div>
+                                  <div className="w-full h-1.5 bg-slate-300/60 rounded-[2px]"></div>
+                                </div>
+                                <div className="flex-1 p-1.5 flex flex-col gap-1 bg-white">
+                                  <div className="w-full h-1.5 bg-slate-200 rounded-[2px]"></div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="w-1/2 h-full flex border-l border-slate-400/30">
+                              <div className="w-full bg-[#1E1E1E] h-full flex">
+                                <div className="w-full p-1.5 flex flex-col gap-1 bg-[#121212]">
+                                  <div className="w-3/4 h-1.5 bg-slate-700 rounded-[2px] mt-1"></div>
+                                  <div className="w-full h-1 bg-slate-800 rounded-[2px]"></div>
+                                  <div className="w-4/5 h-1 bg-slate-800 rounded-[2px]"></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-[12px] font-semibold text-slate-600">System</span>
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-[13px] font-bold text-slate-800 mb-4">Accent Color</h3>
+                      <div className="flex items-center gap-3">
+                        {['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'].map(color => (
+                          <button key={color} onClick={() => { setBrandColor(color); showToast('Accent color updated'); }} className={`w-8 h-8 rounded-full shadow-sm border-2 ${brandColor === color ? 'border-slate-400 ring-2 ring-slate-200' : 'border-white'} focus:ring-violet-500 transition-all`} style={{ backgroundColor: color }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {settingsTab === 'general' && (
+                <div className="max-w-[500px]">
+                  <h2 className="text-2xl font-bold text-slate-800 tracking-tight mb-8">General</h2>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                      <div>
+                        <h4 className="text-[13px] font-bold text-slate-800">UI Language</h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Select your preferred language for the interface.</p>
+                      </div>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
+                          className="flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg hover:bg-slate-100 px-3 py-2 outline-none font-semibold cursor-pointer transition-colors"
+                        >
+                          {currentLanguage}
+                          <ChevronDown size={14} className="text-slate-400" />
+                        </button>
+                        {languageMenuOpen && (
+                          <>
+                            <div className="fixed inset-0 z-[100]" onClick={() => setLanguageMenuOpen(false)}></div>
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-xl overflow-hidden z-[110] animate-in fade-in slide-in-from-top-2 duration-200">
+                              <div className="p-1">
+                                {['English', 'French', 'Traditional Chinese', 'Auto detect'].map((lang) => (
+                                  <button
+                                    key={lang}
+                                    onClick={() => {
+                                      setCurrentLanguage(lang);
+                                      setLanguageMenuOpen(false);
+                                      showToast(`Language changed to ${lang === 'French' ? 'Français' : lang === 'Traditional Chinese' ? '繁體中文' : lang}`);
+                                    }}
+                                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-left rounded-lg hover:bg-slate-50 transition-colors group"
+                                  >
+                                    <span className={`font-medium ${currentLanguage === lang ? 'text-violet-600' : 'text-slate-700 group-hover:text-slate-900'}`}>
+                                      {lang === 'French' ? 'Français' : lang === 'Traditional Chinese' ? '繁體中文' : lang}
+                                    </span>
+                                    {currentLanguage === lang && <Check size={14} className="text-violet-600" />}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                      <div>
+                        <h4 className="text-[13px] font-bold text-slate-800">Auto-detect Language</h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Automatically select spelling dictionary based on input.</p>
+                      </div>
+                      <div className="w-10 h-6 bg-violet-500 rounded-full relative cursor-pointer shadow-inner">
+                        <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5 shadow-sm"></div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                      <div>
+                        <h4 className="text-[13px] font-bold text-slate-800">Analytics</h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Share anonymous usage data to improve Compose.</p>
+                      </div>
+                      <div className="w-10 h-6 bg-slate-200 rounded-full relative cursor-pointer shadow-inner">
+                        <div className="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5 shadow-sm"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {renderAuthModal()}
       </div>
     );
   }
