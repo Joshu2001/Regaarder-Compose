@@ -35894,11 +35894,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </aside>
                     )}
 
-            <section className={`flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden relative p-4 gap-4 transition-all duration-200 ${isSheetsMode ? 'bg-[#FAFAFC]' : 'bg-transparent'} ${productMode === 'compose' ? (rightSidebarOpen && !shareModalOpen ? 'mr-[380px]' : 'mr-3') : ''}`}>
+            <section className={`flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden relative transition-all duration-200 ${isSheetsMode ? 'bg-[#FAFAFC]' : 'bg-transparent'} ${(isSheetsMode && sheetToolbarTab === 'Data' && !hasImportedData) ? '' : 'p-4 gap-4'} ${productMode === 'compose' ? (rightSidebarOpen && !shareModalOpen ? 'mr-[380px]' : 'mr-3') : ''}`}>
             {/* Floating button removed as per requirements */}
-              <div className={`flex flex-col h-full w-full flex-1 relative z-10 min-h-0 overflow-hidden`}>
+              <div className={`flex flex-col flex-1 relative z-10 min-h-0 overflow-hidden`}>
                 {isSheetsMode ? (
-                  <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-transparent flex flex-col relative">
+                  <div ref={sheetCanvasPreviewRef} className="flex-1 min-h-0 overflow-hidden bg-transparent flex flex-col relative">
                     <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#121214] flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
                       <div className="flex items-center gap-4">
                         {['Data', 'Templates', 'Analyze', 'Visualize'].map((tab) => (
@@ -36011,203 +36011,235 @@ if (productMode === 'deck' || productMode === 'sheets') {
       updateSheetCell={updateSheetCell} 
       showToast={showToast} 
     />
-  ) : (sheetToolbarTab === 'Data' && !hasImportedData) ? (
-                        /* ── DATA TAB: OMNI-IMPORT PORTAL ─────────────────────── */
-                        <div className="flex-1 overflow-y-auto thin-scrollbar bg-[#FAFAFC]">
-                          <div className="max-w-3xl mx-auto px-6 py-10 flex flex-col gap-10">
+  ) : null}
 
-                            {/* Relationship Detection Banner */}
-                            {dataPortalRelationshipPrompt && (
-                              <div className="flex items-start gap-3 bg-violet-50 border border-violet-200 rounded-2xl px-5 py-4 shadow-sm animate-in fade-in slide-in-from-top-3 duration-250">
-                                <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5">
-                                  <GitMerge size={15} className="text-violet-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[13px] font-semibold text-violet-900">Relationships detected</p>
-                                  <p className="text-[12px] text-violet-700 mt-0.5">Matching customer IDs found across your uploaded files. Would you like to connect these datasets automatically?</p>
-                                  <div className="flex items-center gap-2 mt-3">
-                                    <button type="button" onClick={() => { setDataPortalRelationshipPrompt(false); setHasImportedData(true); showToast('Datasets connected — no VLOOKUP required!'); }} className="px-3 py-1.5 text-[12px] font-medium rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors">Connect Datasets</button>
-                                    <button type="button" onClick={() => setDataPortalRelationshipPrompt(false)} className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors">Dismiss</button>
-                                  </div>
-                                </div>
-                                <button type="button" onClick={() => setDataPortalRelationshipPrompt(false)} className="text-violet-400 hover:text-violet-600 shrink-0"><X size={15} /></button>
-                              </div>
-                            )}
+  {/* ── DATA TAB: OMNI-IMPORT PORTAL ─────────────────────── */}
+  {sheetToolbarTab === 'Data' && !hasImportedData ? (
+    <div className="flex-1 min-h-0 overflow-y-auto bg-[#FAFAFC] thin-scrollbar">
+      <div className="max-w-3xl w-full mx-auto flex flex-col gap-6 px-6 py-10 md:px-10 md:py-12">
 
-                            {/* ZONE 1: Omni-Import Portal */}
-                            <div
-                              className={`relative rounded-3xl transition-all duration-200 bg-white shadow-sm border border-slate-100 ${dataPortalDragOver ? 'ring-2 ring-violet-200 bg-violet-50/20' : ''}`}
-                              onDragOver={(e) => { e.preventDefault(); setDataPortalDragOver(true); }}
-                              onDragLeave={() => setDataPortalDragOver(false)}
-                              onDrop={(e) => {
-                                e.preventDefault();
-                                setDataPortalDragOver(false);
-                                const files = Array.from(e.dataTransfer.files);
-                                const fileNames = files.map(f => f.name);
-                                if (files.length > 1) {
-                                  setDataPortalRelationshipPrompt(true);
-                                  setSelectedDatasets(fileNames);
-                                } else if (files.length === 1) {
-                                  setSelectedDatasets([files[0].name]);
-                                  setHasImportedData(true);
-                                }
-                                files.forEach(f => {
-                                  setDataPortalImports(prev => [{ id: Date.now() + Math.random(), name: f.name, type: f.name.split('.').pop(), date: 'Just now', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50' }, ...prev]);
-                                });
-                                showToast(`${files.length} file${files.length > 1 ? 's' : ''} received — analyzing...`);
-                              }}
-                            >
-                              <div className="p-16 flex flex-col items-center text-center gap-8">
-                                {/* Hero Icon */}
-                                <div className="relative">
-                                  <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200/60 dark:bg-zinc-900/60 dark:border-zinc-800 flex items-center justify-center shadow-sm">
-                                    <Cpu size={32} className="text-violet-600 dark:text-violet-400" />
-                                  </div>
-                                </div>
+        {/* Relationship Detection Banner */}
+        {dataPortalRelationshipPrompt && (
+          <div className="flex items-start gap-3 bg-violet-50 border border-violet-200 rounded-2xl px-5 py-4 shadow-sm animate-in fade-in slide-in-from-top-3 duration-250">
+            <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5">
+              <GitMerge size={15} className="text-violet-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-violet-900">Relationships detected</p>
+              <p className="text-[12px] text-violet-700 mt-0.5">Matching customer IDs found across your uploaded files. Would you like to connect these datasets automatically?</p>
+              <div className="flex items-center gap-2 mt-3">
+                <button type="button" onClick={() => { setDataPortalRelationshipPrompt(false); setHasImportedData(true); showToast('Datasets connected — no VLOOKUP required!'); }} className="px-3 py-1.5 text-[12px] font-medium rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors">Connect Datasets</button>
+                <button type="button" onClick={() => setDataPortalRelationshipPrompt(false)} className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors">Dismiss</button>
+              </div>
+            </div>
+            <button type="button" onClick={() => setDataPortalRelationshipPrompt(false)} className="text-violet-400 hover:text-violet-600 shrink-0"><X size={15} /></button>
+          </div>
+        )}
 
-                                {/* Headline */}
-                                <div>
-                                  <h2 className="text-[24px] font-semibold text-slate-800 tracking-tight">What would you like to analyze?</h2>
-                                  <p className="text-[14px] text-slate-500 mt-2 max-w-sm mx-auto">Drop any file or paste content — Regaarder converts it into structured, intelligent data.</p>
-                                </div>
+        {/* ZONE 1: Omni-Import Portal Main Card */}
+        <div
+          className={`relative rounded-3xl transition-all duration-200 bg-white shadow-sm border border-slate-200/80 ${dataPortalDragOver ? 'ring-2 ring-violet-200 bg-violet-50/20' : ''}`}
+          onDragOver={(e) => { e.preventDefault(); setDataPortalDragOver(true); }}
+          onDragLeave={() => setDataPortalDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDataPortalDragOver(false);
+            const files = Array.from(e.dataTransfer.files);
+            const fileNames = files.map(f => f.name);
+            if (files.length > 1) {
+              setDataPortalRelationshipPrompt(true);
+              setSelectedDatasets(fileNames);
+            } else if (files.length === 1) {
+              setSelectedDatasets([files[0].name]);
+              setHasImportedData(true);
+            }
+            files.forEach(f => {
+              setDataPortalImports(prev => [{ id: Date.now() + Math.random(), name: f.name, type: f.name.split('.').pop(), date: 'Just now', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50' }, ...prev]);
+            });
+            showToast(`${files.length} file${files.length > 1 ? 's' : ''} received — analyzing...`);
+          }}
+        >
+          <div className="p-8 md:p-10 flex flex-col items-center text-center gap-6">
+            {/* Hero Icon */}
+            <div className="relative">
+              <div className="w-14 h-14 rounded-2xl bg-violet-600 text-white flex items-center justify-center shadow-md shadow-violet-500/20">
+                <Cpu size={28} />
+              </div>
+            </div>
 
-                                {/* Upload Area Dropzone */}
-                                <div className="w-full max-w-md mt-4 flex flex-col items-center gap-5 py-12 px-6 rounded-2xl border border-dashed border-slate-200/80 bg-slate-50/30 hover:bg-slate-50/60 dark:border-zinc-800 dark:bg-zinc-900/10 dark:hover:bg-zinc-900/30 transition-colors relative">
-                                  <Upload size={32} className="text-slate-400" />
-                                  <div className="space-y-1">
-                                    <p className="text-[15px] text-slate-600 font-medium">Drag and drop file here</p>
-                                    <p className="text-[13px] text-slate-400">or</p>
-                                  </div>
-                                  <label className="px-6 py-2.5 bg-slate-100 text-slate-800 text-[13px] font-medium rounded-xl cursor-pointer hover:bg-slate-200/80 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700/80 transition-colors border border-slate-200/30 dark:border-zinc-750/30">
-                                    Browse for file
-                                    <input type="file" multiple className="hidden" onChange={(e) => {
-                                      const files = Array.from(e.target.files || []);
-                                      const fileNames = files.map(f => f.name);
-                                      if (files.length > 1) {
-                                        setDataPortalRelationshipPrompt(true);
-                                        setSelectedDatasets(fileNames);
-                                      } else if (files.length === 1) {
-                                        setSelectedDatasets([files[0].name]);
-                                        setHasImportedData(true);
-                                      }
-                                      files.forEach(f => {
-                                        setDataPortalImports(prev => [{ id: Date.now() + Math.random(), name: f.name, type: f.name.split('.').pop(), date: 'Just now', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50' }, ...prev]);
-                                      });
-                                      showToast(`${files.length} file${files.length > 1 ? 's' : ''} ready — converting to sheet...`);
-                                    }} />
-                                  </label>
-                                </div>
+            {/* Headline */}
+            <div>
+              <h2 className="text-[22px] font-bold text-slate-900 tracking-tight">What would you like to analyze?</h2>
+              <p className="text-[13px] text-slate-500 mt-1 max-w-md mx-auto leading-relaxed">Drop any file or paste content — Regaarder converts it into structured, intelligent data.</p>
+            </div>
 
-                                {/* Secondary actions */}
-                                <div className="flex items-center gap-6 mt-2">
-                                  <button type="button" onClick={() => { setHasImportedData(true); showToast('Paste content view loaded'); }} className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Paste Content</button>
-                                  <button type="button" onClick={() => { setHasImportedData(true); showToast('AI generation ready — describe your sheet'); }} className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Ask AI</button>
-                                </div>
+            {/* Try Asking Prompt Pills */}
+            <div className="flex flex-col items-center gap-2.5">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Try asking:</span>
+              <div className="flex items-center gap-3 flex-wrap justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSheetsTitle('SOP Tracker');
+                    setHasImportedData(true);
+                    showToast('Creating SOP tracker...');
+                  }}
+                  className="px-4 py-2 bg-slate-50 hover:bg-violet-50/80 text-slate-700 hover:text-violet-700 border border-slate-200/80 hover:border-violet-200 rounded-xl text-xs font-medium transition-all shadow-2xs active:scale-98"
+                >
+                  "Turn this SOP into a tracker"
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSheetsTitle('CRM Database');
+                    setHasImportedData(true);
+                    showToast('Creating CRM database...');
+                  }}
+                  className="px-4 py-2 bg-slate-50 hover:bg-violet-50/80 text-slate-700 hover:text-violet-700 border border-slate-200/80 hover:border-violet-200 rounded-xl text-xs font-medium transition-all shadow-2xs active:scale-98"
+                >
+                  "Create a CRM from this PDF"
+                </button>
+              </div>
+            </div>
 
-                                {dataPortalDragOver && (
-                                  <div className="absolute inset-0 rounded-3xl bg-violet-50/80 flex items-center justify-center pointer-events-none z-10 backdrop-blur-[1px]">
-                                    <div className="flex flex-col items-center gap-3">
-                                      <Upload size={40} className="text-violet-500" />
-                                      <p className="text-[16px] font-semibold text-violet-700">Release to import</p>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+            {/* Upload Area Dropzone */}
+            <div className="w-full max-w-lg mt-1 flex flex-col items-center gap-3 py-8 px-8 rounded-2xl border-2 border-dashed border-violet-200/80 bg-violet-50/20 hover:bg-violet-50/50 transition-colors relative">
+              <Upload size={32} className="text-slate-400" />
+              <div className="space-y-0.5">
+                <p className="text-[14px] text-slate-700 font-semibold">Drag and drop file here</p>
+                <p className="text-[12px] text-slate-400">or</p>
+              </div>
+              <label className="px-5 py-2 bg-white text-slate-800 text-[12px] font-semibold rounded-xl cursor-pointer hover:bg-slate-50 transition-colors border border-slate-200 shadow-xs">
+                Browse for file
+                <input type="file" multiple className="hidden" onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  const fileNames = files.map(f => f.name);
+                  if (files.length > 1) {
+                    setDataPortalRelationshipPrompt(true);
+                    setSelectedDatasets(fileNames);
+                  } else if (files.length === 1) {
+                    setSelectedDatasets([files[0].name]);
+                    setHasImportedData(true);
+                  }
+                  files.forEach(f => {
+                    setDataPortalImports(prev => [{ id: Date.now() + Math.random(), name: f.name, type: f.name.split('.').pop(), date: 'Just now', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50' }, ...prev]);
+                  });
+                  showToast(`${files.length} file${files.length > 1 ? 's' : ''} ready — converting to sheet...`);
+                }} />
+              </label>
+            </div>
 
-                            {/* ZONE 2: Quick Creation Templates */}
-                            <div>
-                              <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-3">Start from a template</p>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                {[
-                                  { label: 'Blank Sheet', icon: FilePlus2, color: 'text-slate-500', bg: 'bg-slate-50' },
-                                  { label: 'CRM', icon: Users2, color: 'text-blue-600', bg: 'bg-blue-50' },
-                                  { label: 'Budget Tracker', icon: BarChart2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                                  { label: 'Inventory', icon: Database, color: 'text-amber-600', bg: 'bg-amber-50' },
-                                  { label: 'Project Tracker', icon: CheckSquare, color: 'text-violet-600', bg: 'bg-violet-50' },
-                                  { label: 'Content Calendar', icon: Calendar, color: 'text-pink-600', bg: 'bg-pink-50' },
-                                  { label: 'Sales Dashboard', icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                                  { label: 'Expense Tracker', icon: PieChart, color: 'text-orange-600', bg: 'bg-orange-50' },
-                                ].map(({ label, icon: Icon, color, bg }) => (
-                                  <button
-                                    key={label}
-                                    type="button"
-                                    onClick={() => {
-                                      if (label === 'Blank Sheet') {
-                                        setSheetsTitle('Blank Sheet');
-                                        setHasImportedData(true);
-                                        showToast('Blank sheet created');
-                                      } else {
-                                        setSheetsTitle(label + ' Template');
-                                        setHasImportedData(true);
-                                        showToast(`AI-generating "${label}" template...`);
-                                      }
-                                    }}
-                                    className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all text-left group shadow-sm"
-                                  >
-                                    <div className={`w-8 h-8 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
-                                      <Icon size={16} className={color} />
-                                    </div>
-                                    <span className="text-[13px] font-medium text-slate-700 group-hover:text-violet-700 transition-colors">{label}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
+            {/* Secondary actions */}
+            <div className="flex items-center gap-6 mt-1">
+              <button type="button" onClick={() => { setHasImportedData(true); showToast('Paste content view loaded'); }} className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Paste Content</button>
+              <button type="button" onClick={() => { setHasImportedData(true); showToast('AI generation ready — describe your sheet'); }} className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Ask AI</button>
+              <button type="button" onClick={() => { setHasImportedData(true); showToast('Spreadsheet grid view opened'); }} className="text-[13px] text-violet-600 hover:underline font-semibold">Open Spreadsheet Grid</button>
+            </div>
 
-                            {/* ZONE 3: Recent Data Sources */}
-                            {dataPortalImports.length > 0 && (
-                              <div>
-                                <div className="flex items-center justify-between mb-3">
-                                  <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Recent imports</p>
-                                  <button type="button" className="text-[12px] text-violet-600 hover:underline font-medium">View all</button>
-                                </div>
-                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
-                                  {dataPortalImports.slice(0, 5).map((item) => {
-                                    const Icon = item.icon;
-                                    const isSelected = selectedDatasets.includes(item.name);
-                                    return (
-                                      <button
-                                        key={item.id}
-                                        type="button"
-                                        onClick={() => {
-                                          setSelectedDatasets(prev => {
-                                            const next = prev.includes(item.name) ? prev.filter(n => n !== item.name) : [...prev, item.name];
-                                            if (next.length > 1) {
-                                              setDataPortalRelationshipPrompt(true);
-                                            } else {
-                                              setDataPortalRelationshipPrompt(false);
-                                            }
-                                            return next;
-                                          });
-                                          showToast(`${item.name} ${isSelected ? 'deselected' : 'selected'}`);
-                                        }}
-                                        onDoubleClick={() => {
-                                          setSheetsTitle(item.name);
-                                          setHasImportedData(true);
-                                          showToast(`Opening "${item.name}"...`);
-                                        }}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50/60 transition-all text-left first:rounded-t-2xl last:rounded-b-2xl ${isSelected ? 'bg-violet-50/30 outline outline-2 outline-violet-500/30' : ''}`}
-                                      >
-                                        <div className={`w-9 h-9 rounded-xl ${item.color} flex items-center justify-center shrink-0`}>
-                                          <Icon size={16} />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-[13px] font-medium text-slate-800 truncate">{item.name}</p>
-                                          <p className="text-[11px] text-slate-400 mt-0.5">Imported {item.date} (Double-click to open)</p>
-                                        </div>
-                                        <ArrowRight size={14} className="text-slate-300 group-hover:text-violet-400 shrink-0" />
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
+            {dataPortalDragOver && (
+              <div className="absolute inset-0 rounded-3xl bg-violet-50/80 flex items-center justify-center pointer-events-none z-10 backdrop-blur-[1px]">
+                <div className="flex flex-col items-center gap-3">
+                  <Upload size={40} className="text-violet-500" />
+                  <p className="text-[16px] font-semibold text-violet-700">Release to import</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                     <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
+        {/* ZONE 2: Quick Creation Templates */}
+        <div>
+          <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-3 text-center sm:text-left">Start from a template</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Blank Sheet', icon: FilePlus2, color: 'text-slate-500', bg: 'bg-slate-50' },
+              { label: 'CRM', icon: Users2, color: 'text-blue-600', bg: 'bg-blue-50' },
+              { label: 'Budget Tracker', icon: BarChart2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+              { label: 'Inventory', icon: Database, color: 'text-amber-600', bg: 'bg-amber-50' },
+              { label: 'Project Tracker', icon: CheckSquare, color: 'text-violet-600', bg: 'bg-violet-50' },
+              { label: 'Content Calendar', icon: Calendar, color: 'text-pink-600', bg: 'bg-pink-50' },
+              { label: 'Sales Dashboard', icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+              { label: 'Expense Tracker', icon: PieChart, color: 'text-orange-600', bg: 'bg-orange-50' },
+            ].map(({ label, icon: Icon, color, bg }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => {
+                  if (label === 'Blank Sheet') {
+                    setSheetsTitle('Blank Sheet');
+                    setHasImportedData(true);
+                    showToast('Blank sheet created');
+                  } else {
+                    setSheetsTitle(label + ' Template');
+                    setHasImportedData(true);
+                    showToast(`AI-generating "${label}" template...`);
+                  }
+                }}
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all text-left group shadow-xs"
+              >
+                <div className={`w-8 h-8 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
+                  <Icon size={16} className={color} />
+                </div>
+                <span className="text-[13px] font-medium text-slate-700 group-hover:text-violet-700 transition-colors">{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ZONE 3: Recent Data Sources */}
+        {dataPortalImports.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Recent imports</p>
+              <button type="button" className="text-[12px] text-violet-600 hover:underline font-medium">View all</button>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-xs divide-y divide-gray-50">
+              {dataPortalImports.slice(0, 5).map((item) => {
+                const Icon = item.icon;
+                const isSelected = selectedDatasets.includes(item.name);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedDatasets(prev => {
+                        const next = prev.includes(item.name) ? prev.filter(n => n !== item.name) : [...prev, item.name];
+                        if (next.length > 1) {
+                          setDataPortalRelationshipPrompt(true);
+                        } else {
+                          setDataPortalRelationshipPrompt(false);
+                        }
+                        return next;
+                      });
+                      showToast(`${item.name} ${isSelected ? 'deselected' : 'selected'}`);
+                    }}
+                    onDoubleClick={() => {
+                      setSheetsTitle(item.name);
+                      setHasImportedData(true);
+                      showToast(`Opening "${item.name}"...`);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50/60 transition-all text-left first:rounded-t-2xl last:rounded-b-2xl ${isSelected ? 'bg-violet-50/30 outline outline-2 outline-violet-500/30' : ''}`}
+                  >
+                    <div className={`w-9 h-9 rounded-xl ${item.color} flex items-center justify-center shrink-0`}>
+                      <Icon size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium text-slate-800 truncate">{item.name}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Imported {item.date} (Double-click to open)</p>
+                    </div>
+                    <ArrowRight size={14} className="text-slate-300 group-hover:text-violet-400 shrink-0" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  ) : (
+    <>
+      <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
                       {/* Insert, Analyze, Visualize tabs buttons removed as per request to only show in dropdown */}
 
                       <div className="flex items-center gap-1 border-r border-gray-200 pr-3 mr-1">
@@ -38653,8 +38685,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
 
-                      </>
-                    )}
                     <div className="h-10 px-4 border-t border-gray-200 bg-white flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3 overflow-x-auto thin-scrollbar">
                         {sheetsData.map((sheet) => (
@@ -38724,9 +38754,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex-1 flex overflow-hidden bg-[#F7F8FB] relative select-none">
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="w-full h-full flex-1 flex overflow-hidden bg-[#F7F8FB] relative select-none">
                     {/* Workspace background vignette effect overlay */}
                     <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(240,242,247,0.8)_100%)] z-0" />
 
@@ -38925,10 +38957,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
 
                       {/* Presentation Editor Main Workspace Canvas */}
-                      <div className="flex-1 flex flex-col justify-start items-center p-3 min-h-0 relative overflow-hidden">
+                      <div className="flex-1 flex flex-col justify-between items-center p-3 min-h-0 relative overflow-y-auto thin-scrollbar bg-[#F7F8FB]">
                         
                         {/* Centered Presentation Canvas */}
-                        <div className="w-full flex-1 flex items-center justify-center relative min-h-0 mt-0">
+                        <div className="w-full flex-1 flex items-center justify-center relative min-h-[320px] py-4">
                           {!activeDeckSlide ? (
                             <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-3xl border border-gray-150 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-sm z-10">
                               <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center text-[#7C4DFF] mb-4">
@@ -38960,11 +38992,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   ref={deckCanvasPreviewRef}
                                   className={`aspect-[16/9] ${customBg ? '' : (currentPresetObj.background || 'bg-white')} rounded-[24px] md:rounded-[36px] shadow-[0_20px_50px_-10px_rgba(15,23,42,0.12)] border border-gray-150 relative overflow-hidden flex flex-col justify-between p-[32px] md:p-[48px] select-text mx-auto my-auto transition-all duration-300`}
                                   style={{ 
-                                    height: 'min(calc(100vh - 310px), 50vh)',
-                                    width: 'calc(min(calc(100vh - 310px), 50vh) * 16 / 9)',
-                                    maxWidth: '100%',
-                                    maxHeight: '100%',
-                                    transform: `scale(${deckZoomLevel / 100}) translateY(10px)`, 
+                                    width: 'min(100%, 820px)',
+                                    aspectRatio: '16/9',
+                                    transform: `scale(${deckZoomLevel / 100})`, 
                                     transformOrigin: 'center center', 
                                     transition: 'transform 140ms ease, background-color 300ms ease',
                                     backgroundColor: customBg || undefined,
