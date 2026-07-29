@@ -804,7 +804,7 @@ const SlashMenuPopover = React.forwardRef(({
   return (
     <div 
       ref={ref}
-      className={`absolute ${posClasses} w-80 max-h-84 flex flex-col bg-white/80 dark:bg-[#1c1c1e]/85 backdrop-blur-3xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.55)] z-50 overflow-hidden transition-all duration-200 animate-in fade-in p-2 ${className}`}
+      className={`absolute ${posClasses} w-80 max-h-84 flex flex-col bg-white dark:bg-[#1c1c1e] border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.22)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] z-[200005] overflow-hidden transition-all duration-200 animate-in fade-in p-2 ${className}`}
       style={style}
     >
       {(title || displayBadgeText) && (
@@ -50062,7 +50062,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onSelectOption={(opt) => selectPromptSlashOption(opt, 'floating')}
                           title="SLASH COMMANDS"
                           badgeText={`${filteredSlashOpts.length} AGENTS`}
-                          className="absolute bottom-full left-0 mb-2 w-80 z-[999]"
+                          className="absolute bottom-full left-0 mb-2 w-80 z-[200005]"
                           source="floating"
                         />
                       );
