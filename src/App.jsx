@@ -8473,14 +8473,14 @@ export default function App() {
           className="fixed inset-0 z-[440] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
           onClick={() => setWorkspaceSwitcherOpen(false)}
         />
-        <div className="absolute left-0 top-8 pt-1 z-[450]">
-          <div className="w-[170px] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl p-1.5 font-sans origin-top-left overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex flex-col gap-0.5">
+        <div className="absolute left-0 top-9 pt-1.5 z-[450]">
+          <div className="w-[210px] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl p-2 font-sans origin-top-left overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex flex-col gap-1">
               {[
-                { mode: 'compose', label: 'Docs', icon: FileText },
-                { mode: 'sheets', label: 'Sheets', icon: Table },
-                { mode: 'deck', label: 'Decks', icon: MonitorPlay },
-                { mode: 'room', label: 'Room', icon: Users }
+                { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: FileText },
+                { mode: 'sheets', label: 'Sheets', desc: 'Grid & Data Analysis', icon: Table },
+                { mode: 'deck', label: 'Decks', desc: 'Slide & Presentation', icon: MonitorPlay },
+                { mode: 'room', label: 'Room', desc: 'Team Video & Meetings', icon: Users }
               ].map((item) => {
                 const IconComponent = item.icon;
                 const isCurrent = productMode === item.mode;
@@ -8494,18 +8494,27 @@ export default function App() {
                       showToast(`Switched to ${item.label}`);
                     }}
                     onPointerDown={(e) => e.preventDefault()}
-                    className={`group flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-left select-none transition-colors duration-100 w-full ${
+                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-left select-none transition-all duration-150 w-full ${
                       isCurrent
-                        ? 'bg-slate-100 dark:bg-zinc-800 text-violet-600 dark:text-violet-400 font-semibold'
-                        : 'bg-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 font-medium'
+                        ? 'bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 font-semibold shadow-xs'
+                        : 'bg-transparent text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-zinc-100 font-medium'
                     }`}
                   >
-                    <div className="w-5 h-5 flex items-center justify-center shrink-0">
-                      <IconComponent size={17} strokeWidth={isCurrent ? 2.2 : 1.8} />
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                      isCurrent 
+                        ? 'bg-violet-600 text-white shadow-xs' 
+                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 group-hover:text-slate-800 dark:group-hover:text-zinc-200'
+                    }`}>
+                      <IconComponent size={18} strokeWidth={isCurrent ? 2.2 : 1.8} />
                     </div>
-                    <span className="text-[12.5px] leading-none whitespace-nowrap">
-                      {item.label}
-                    </span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[13.5px] font-semibold leading-tight whitespace-nowrap">
+                        {item.label}
+                      </span>
+                      <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal truncate mt-0.5">
+                        {item.desc}
+                      </span>
+                    </div>
                   </button>
                 );
               })}
