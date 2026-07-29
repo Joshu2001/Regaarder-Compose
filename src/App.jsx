@@ -35551,17 +35551,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           className="fixed inset-0 z-[220] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
                           onClick={() => setDeckExportMenuOpen(false)}
                         />
-                        <div className="absolute right-0 top-11 z-[230] w-52 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 flex flex-col gap-1 font-sans animate-in fade-in zoom-in-95 duration-150">
-                          {['PPTX', 'PDF', 'Images'].map(fmt => (
+                        <div className="absolute right-0 top-11 z-[230] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-2 font-sans animate-in fade-in zoom-in-95 duration-150">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 mb-0.5">Export Deck</span>
+                          {[
+                            { fmt: 'PPTX', label: 'PowerPoint (.pptx)' },
+                            { fmt: 'PDF', label: 'PDF Document (.pdf)' },
+                            { fmt: 'Images', label: 'Slide Images (.png)' }
+                          ].map(item => (
                             <button
-                              key={fmt}
+                              key={item.fmt}
                               onClick={() => {
-                                showToast(`Exporting as ${fmt}...`);
+                                showToast(`Exporting as ${item.fmt}...`);
                                 setDeckExportMenuOpen(false);
                               }}
-                              className="w-full flex items-center justify-between text-xs p-2 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-medium"
+                              className="w-full flex items-center justify-between text-xs py-2 px-3 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
                             >
-                              {fmt}
+                              {item.label}
                             </button>
                           ))}
                         </div>
@@ -35985,15 +35990,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               className="fixed inset-0 z-[220] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
                               onClick={() => setSheetsExportMenuOpen(false)}
                             />
-                            <div className="absolute top-9 right-0 z-[230] w-56 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-3.5 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
-                              <div className="flex flex-col gap-1.5">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Export as File</span>
+                            <div className="absolute top-9 right-0 z-[230] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
+                              <div className="flex flex-col gap-2">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Export as File</span>
                                 {[
-                                  { format: 'Sheets', label: 'Sheets', desc: 'Original' },
-                                  { format: 'XLSX', label: 'XLSX', desc: '.xlsx' },
-                                  { format: 'CSV', label: 'CSV', desc: '.csv' },
-                                  { format: 'JSON', label: 'JSON', desc: '.json' },
-                                  { format: 'PDF', label: 'PDF', desc: '.pdf' }
+                                  { format: 'Sheets', label: 'Sheets Document', desc: '.sheets' },
+                                  { format: 'XLSX', label: 'Excel Spreadsheet', desc: '.xlsx' },
+                                  { format: 'CSV', label: 'Comma Separated', desc: '.csv' },
+                                  { format: 'JSON', label: 'JSON Data', desc: '.json' },
+                                  { format: 'PDF', label: 'PDF Document', desc: '.pdf' }
                                 ].map(f => (
                                   <button 
                                     key={f.format}
@@ -36010,10 +36015,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         setSheetsExportMenuOpen(false);
                                       }
                                     }}
-                                    className="w-full flex items-center justify-between text-xs py-1 px-2 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-medium"
+                                    className="w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
                                   >
                                     <span>{f.label}</span>
-                                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
+                                    <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
                                   </button>
                                 ))}
                               </div>
@@ -43657,15 +43662,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       className="fixed inset-0 z-[360] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
                       onClick={() => setComposeExportMenuOpen(false)}
                     />
-                    <div className="absolute top-10 right-0 z-[370] w-56 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-3.5 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Export as File</span>
+                    <div className="absolute top-11 right-0 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Export as File</span>
                         {[
-                          { format: 'Compose', label: 'Compose', desc: 'Original' },
-                          { format: 'Word', label: 'Word', desc: '.docx' },
-                          { format: 'Docs', label: 'Docs', desc: 'Cloud' },
-                          { format: 'PDF', label: 'PDF', desc: '.pdf' },
-                          { format: 'Markdown', label: 'Markdown', desc: '.md' }
+                          { format: 'Compose', label: 'Compose Document', desc: '.compose' },
+                          { format: 'Word', label: 'Microsoft Word', desc: '.docx' },
+                          { format: 'Docs', label: 'Google Docs Cloud', desc: 'Cloud Format' },
+                          { format: 'PDF', label: 'PDF Document', desc: '.pdf' },
+                          { format: 'Markdown', label: 'Markdown File', desc: '.md' }
                         ].map(f => (
                           <button 
                             key={f.format}
@@ -43682,10 +43687,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 setComposeExportMenuOpen(false);
                               }
                             }}
-                            className="w-full flex items-center justify-between text-xs py-1.5 px-2 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-medium"
+                            className="w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
                           >
                             <span>{f.label}</span>
-                            <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
+                            <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
                           </button>
                         ))}
                       </div>
@@ -47138,14 +47143,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             className="fixed inset-0 z-[220] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
                             onClick={() => setWhiteboardExportMenuOpen(false)}
                           />
-                          <div className="absolute bottom-12 left-0 z-[230] w-56 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-3.5 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
-                            <div className="flex flex-col gap-1.5">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Export as File</span>
+                          <div className="absolute bottom-12 left-0 z-[230] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-3.5 font-sans animate-in fade-in zoom-in-95 duration-150">
+                            <div className="flex flex-col gap-2">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Export as File</span>
                               {[
                                 { format: 'Whiteboard', label: 'Whiteboard', desc: 'Original' },
                                 { format: 'PNG', label: 'PNG Image', desc: '.png' },
                                 { format: 'SVG', label: 'SVG Vector', desc: '.svg' },
-                                { format: 'PDF', label: 'PDF', desc: '.pdf' }
+                                { format: 'PDF', label: 'PDF Document', desc: '.pdf' }
                               ].map(f => (
                                 <button 
                                   key={f.format}
@@ -47162,16 +47167,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       setWhiteboardExportMenuOpen(false);
                                     }
                                   }}
-                                  className="w-full flex items-center justify-between text-xs py-1 px-2 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-medium"
+                                  className="w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
                                 >
                                   <span>{f.label}</span>
-                                  <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
+                                  <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
                                 </button>
                               ))}
                             </div>
                             <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full"></div>
                             <div className="flex flex-col gap-2">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Convert to</span>
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Convert to</span>
                               {[
                                 { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
                                 { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
@@ -47189,10 +47194,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       showToast('Converted to ' + t.target); 
                                     }, 1500);
                                   }}
-                                  className="w-full flex items-center gap-2.5 p-1 px-2 text-xs rounded-lg hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 transition-colors font-semibold text-slate-700 dark:text-zinc-200"
+                                  className="w-full flex items-center gap-3 p-1.5 px-2.5 text-xs rounded-xl hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 transition-colors font-semibold text-slate-700 dark:text-zinc-200"
                                 >
-                                  <div className={`p-1.5 rounded ${t.color}`}>
-                                    <t.icon size={13} />
+                                  <div className={`p-1.5 rounded-lg ${t.color}`}>
+                                    <t.icon size={14} />
                                   </div>
                                   {t.target}
                                 </button>
