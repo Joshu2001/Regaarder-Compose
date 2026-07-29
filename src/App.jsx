@@ -8452,9 +8452,9 @@ export default function App() {
 
   const renderWorkspaceSwitcherDropdownContent = () => {
     return (
-      <div className="absolute left-0 top-8 pt-2.5 z-[450]">
-        <div className="w-[170px] rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.12)] p-2 font-sans animate-in fade-in zoom-in-95 duration-150 origin-top-left overflow-hidden">
-          <div className="flex flex-col gap-1">
+      <div className="absolute left-0 top-8 pt-1 z-[450]">
+        <div className="w-[170px] rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg p-1.5 font-sans origin-top-left overflow-hidden">
+          <div className="flex flex-col gap-0.5">
             {[
               { mode: 'compose', label: 'Docs', icon: FileText },
               { mode: 'sheets', label: 'Sheets', icon: Table },
@@ -8472,14 +8472,15 @@ export default function App() {
                     setWorkspaceSwitcherOpen(false);
                     showToast(`Switched to ${item.label}`);
                   }}
-                  className={`group flex items-center gap-3 px-2.5 py-2 rounded-xl text-left select-none transition-all duration-200 w-full ${
+                  onPointerDown={(e) => e.preventDefault()}
+                  className={`group flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-left select-none transition-colors duration-100 w-full ${
                     isCurrent
-                      ? 'bg-slate-100/90 dark:bg-zinc-800/90 text-violet-600 dark:text-violet-400 font-semibold'
-                      : 'bg-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-zinc-200 font-medium'
+                      ? 'bg-slate-100 dark:bg-zinc-800 text-violet-600 dark:text-violet-400 font-semibold'
+                      : 'bg-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 font-medium'
                   }`}
                 >
-                  <div className="w-6 h-6 flex items-center justify-center shrink-0">
-                    <IconComponent size={19} strokeWidth={isCurrent ? 2.2 : 1.8} />
+                  <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                    <IconComponent size={17} strokeWidth={isCurrent ? 2.2 : 1.8} />
                   </div>
                   <span className="text-[12.5px] leading-none whitespace-nowrap">
                     {item.label}
@@ -35388,18 +35389,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-[#f5f7fc]">
           <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between group/header relative z-[210]">
             <div className="flex items-center gap-4 min-w-0">
-              {/* App Switcher Button - smoothly discloses on parent hover */}
+              {/* App Switcher Button */}
               <div
                 ref={workspaceSwitcherRef}
                 className="relative z-[200] flex items-center"
-                onMouseEnter={() => setWorkspaceSwitcherOpen(true)}
-                onMouseLeave={() => setWorkspaceSwitcherOpen(false)}
               >
                 <button
                   type="button"
                   onClick={() => setWorkspaceSwitcherOpen(!workspaceSwitcherOpen)}
                   onPointerDown={(e) => e.preventDefault()}
-                  className="flex items-center justify-center w-0 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-all duration-200 opacity-0 scale-90 group-hover/header:opacity-100 group-hover/header:w-7 group-hover/header:scale-100 overflow-hidden shrink-0"
+                  className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 ${
+                    workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
+                  }`}
                   title="Switch Workspace App"
                 >
                   <LayoutGrid size={15} />
@@ -43468,18 +43469,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }
             </button>
 
-            {/* App Switcher Button - smoothly discloses on parent hover */}
+            {/* App Switcher Button */}
             <div
               ref={workspaceSwitcherRef}
               className="relative z-[360] flex items-center"
-              onMouseEnter={() => setWorkspaceSwitcherOpen(true)}
-              onMouseLeave={() => setWorkspaceSwitcherOpen(false)}
             >
               <button
                 type="button"
                 onClick={() => setWorkspaceSwitcherOpen(!workspaceSwitcherOpen)}
                 onPointerDown={(e) => e.preventDefault()}
-                className="flex items-center justify-center w-0 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-all duration-200 opacity-0 scale-90 group-hover/header:opacity-100 group-hover/header:w-7 group-hover/header:scale-100 overflow-hidden shrink-0"
+                className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 ${
+                  workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
+                }`}
                 title="Switch Workspace App"
               >
                 <LayoutGrid size={15} />
