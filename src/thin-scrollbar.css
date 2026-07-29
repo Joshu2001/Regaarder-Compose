@@ -39,6 +39,67 @@
   background-color: rgba(51, 65, 85, 0.8);
 }
 
+/* Slash menu scrollbar: sleek floating overlay pill scrollbar in neutral grey */
+.slash-menu-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent !important;
+  transition: scrollbar-color 0.2s ease;
+}
+
+.slash-menu-scrollbar:hover,
+.slash-menu-scrollbar:focus-within {
+  scrollbar-color: rgba(100, 116, 139, 0.65) transparent !important;
+}
+
+.slash-menu-scrollbar::-webkit-scrollbar {
+  width: 7px !important;
+  height: 7px !important;
+}
+
+.slash-menu-scrollbar::-webkit-scrollbar-track {
+  background: transparent !important;
+  border: none !important;
+}
+
+.slash-menu-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.4) !important;
+  border-radius: 9999px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+  transition: background-color 0.2s ease;
+}
+
+.slash-menu-scrollbar:hover::-webkit-scrollbar-thumb,
+.slash-menu-scrollbar:focus-within::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.65) !important;
+}
+
+.slash-menu-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(71, 85, 105, 0.85) !important;
+}
+
+.dark .slash-menu-scrollbar {
+  scrollbar-color: rgba(161, 161, 170, 0.4) transparent !important;
+}
+
+.dark .slash-menu-scrollbar:hover,
+.dark .slash-menu-scrollbar:focus-within {
+  scrollbar-color: rgba(212, 212, 216, 0.65) transparent !important;
+}
+
+.dark .slash-menu-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(161, 161, 170, 0.4) !important;
+}
+
+.dark .slash-menu-scrollbar:hover::-webkit-scrollbar-thumb,
+.dark .slash-menu-scrollbar:focus-within::-webkit-scrollbar-thumb {
+  background-color: rgba(212, 212, 216, 0.65) !important;
+}
+
+.dark .slash-menu-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(244, 244, 245, 0.85) !important;
+}
+
 /* Dark Mode Implementation */
 .app-dark {
   filter: invert(0.9) hue-rotate(180deg);

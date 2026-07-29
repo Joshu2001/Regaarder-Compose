@@ -804,7 +804,7 @@ const SlashMenuPopover = React.forwardRef(({
   return (
     <div 
       ref={ref}
-      className={`absolute ${posClasses} w-80 max-h-84 flex flex-col bg-white dark:bg-[#1c1c1e] border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.22)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] z-[200005] overflow-hidden transition-all duration-200 animate-in fade-in p-2 ${className}`}
+      className={`absolute ${posClasses} w-80 max-h-84 flex flex-col bg-white dark:bg-[#1c1c1e] border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.22)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] z-[250020] overflow-hidden transition-all duration-200 animate-in fade-in p-2 ${className}`}
       style={style}
     >
       {(title || displayBadgeText) && (
@@ -822,7 +822,7 @@ const SlashMenuPopover = React.forwardRef(({
         </div>
       )}
 
-      <div className="space-y-1 overflow-y-auto thin-scrollbar max-h-72 px-0.5">
+      <div className="space-y-1 overflow-y-auto thin-scrollbar slash-menu-scrollbar max-h-72 px-1 pr-1.5">
         {options.length === 0 ? (
           <div className="p-3 text-center text-xs text-slate-400 dark:text-zinc-500 font-medium">
             No matching options
@@ -26747,8 +26747,9 @@ Respond with a JSON array of slide objects matching the schema.`;
   const blurEdgeGuard = 0;
   const blurLeftInset = leftSidebarOpen ? leftSidebarWidth : 0;
   const blurRightInset = (rightSidebarOpen ? rightSidebarWidth : 0) + rightMiniRailWidth + blurEdgeGuard;
+  const isAnySlashMenuOpen = isPromptSlashMenuOpen || Boolean(slashMenu?.open) || Boolean(deckSlashMenu?.open) || Boolean(sheetSlashMenu?.open);
   const shouldShowPromptBackdrop =
-    isPromptExpanded &&
+    (isPromptExpanded || isPromptSlashMenuOpen) &&
     isPromptAutoVisible &&
     !isPromptDismissed &&
     !isPromptMinimized &&
@@ -49701,31 +49702,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
 
         {/* Persistent Floating AI Prompt Bar */}
-        {/* Center blur overlay: only while prompt is open and only across workspace center */}
-        {shouldShowPromptBackdrop && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
+        {/* Subtle dimming backdrop overlay: active when prompt is expanded or slash menu is open */}
+        {(isAnySlashMenuOpen || shouldShowPromptBackdrop) && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
           <div
             aria-hidden
+            onClick={() => {
+              if (isPromptSlashMenuOpen) setIsPromptSlashMenuOpen(false);
+              if (slashMenu?.open) setSlashMenu(s => ({ ...s, open: false }));
+              if (deckSlashMenu?.open) setDeckSlashMenu(s => ({ ...s, open: false }));
+              if (sheetSlashMenu?.open) setSheetSlashMenu(s => ({ ...s, open: false }));
+            }}
             style={{
               left: `${blurLeftInset}px`,
               right: `${blurRightInset}px`,
             }}
-            className="pointer-events-none fixed top-0 bottom-0 z-[1200] hidden md:block"
+            className="fixed top-0 bottom-0 z-[240000] hidden md:block transition-all duration-300 ease-in-out animate-in fade-in"
           >
             <div
               style={{
                 width: '100%',
                 height: '100%',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                backgroundColor: 'rgba(15, 23, 42, 0.25)'
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.45)' : 'rgba(15, 23, 42, 0.25)'
               }}
-              className="w-full h-full"
+              className="w-full h-full cursor-pointer"
             />
           </div>
         )}
         {activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
         <div
-          className={`fixed bottom-14 z-[1210] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 translate-y-6 pointer-events-none' : 'opacity-100 translate-y-0 pointer-events-none'}`}
+          className={`fixed bottom-14 ${isPromptSlashMenuOpen ? 'z-[250000]' : 'z-[1210]'} transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 translate-y-6 pointer-events-none' : 'opacity-100 translate-y-0 pointer-events-auto'}`}
           style={{
             left: `${blurLeftInset}px`,
             right: `${blurRightInset}px`,
@@ -49981,7 +49988,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       ))}
                     </div>
                   )}
-                  <div className="relative bg-white/70 backdrop-blur-xl border border-white/40 hover:border-violet-200 hover:shadow-[0_12px_45px_-12px_rgba(139,92,246,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] focus-within:border-violet-300 focus-within:ring-2 focus-within:ring-violet-500/10 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] rounded-2xl px-3 py-2 flex items-center gap-2 w-full transition-all duration-300">
+                  <div className={`relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 hover:border-violet-200 hover:shadow-[0_12px_45px_-12px_rgba(139,92,246,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] focus-within:border-violet-300 focus-within:ring-2 focus-within:ring-violet-500/10 ${isPromptSlashMenuOpen ? 'ring-1 ring-violet-500/30 dark:ring-violet-400/40 shadow-[0_16px_40px_rgba(0,0,0,0.18)]' : 'shadow-[0_4px_24px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.8)]'} rounded-2xl px-3 py-2 flex items-center gap-2 w-full transition-all duration-300`}>
                     <button
                       type="button"
                       onClick={() => {
@@ -50062,7 +50069,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onSelectOption={(opt) => selectPromptSlashOption(opt, 'floating')}
                           title="SLASH COMMANDS"
                           badgeText={`${filteredSlashOpts.length} AGENTS`}
-                          className="absolute bottom-full left-0 mb-2 w-80 z-[200005]"
+                          className="absolute bottom-full left-0 mb-2 w-80 z-[250020]"
                           source="floating"
                         />
                       );
