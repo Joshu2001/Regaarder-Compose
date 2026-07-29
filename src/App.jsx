@@ -8452,45 +8452,52 @@ export default function App() {
 
   const renderWorkspaceSwitcherDropdownContent = () => {
     return (
-      <div className="absolute left-0 top-8 pt-1 z-[450]">
-        <div className="w-[170px] rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg p-1.5 font-sans origin-top-left overflow-hidden">
-          <div className="flex flex-col gap-0.5">
-            {[
-              { mode: 'compose', label: 'Docs', icon: FileText },
-              { mode: 'sheets', label: 'Sheets', icon: Table },
-              { mode: 'deck', label: 'Decks', icon: MonitorPlay },
-              { mode: 'room', label: 'Room', icon: Users }
-            ].map((item) => {
-              const IconComponent = item.icon;
-              const isCurrent = productMode === item.mode;
-              return (
-                <button
-                  key={item.mode}
-                  type="button"
-                  onClick={() => {
-                    setProductMode(item.mode);
-                    setWorkspaceSwitcherOpen(false);
-                    showToast(`Switched to ${item.label}`);
-                  }}
-                  onPointerDown={(e) => e.preventDefault()}
-                  className={`group flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-left select-none transition-colors duration-100 w-full ${
-                    isCurrent
-                      ? 'bg-slate-100 dark:bg-zinc-800 text-violet-600 dark:text-violet-400 font-semibold'
-                      : 'bg-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 font-medium'
-                  }`}
-                >
-                  <div className="w-5 h-5 flex items-center justify-center shrink-0">
-                    <IconComponent size={17} strokeWidth={isCurrent ? 2.2 : 1.8} />
-                  </div>
-                  <span className="text-[12.5px] leading-none whitespace-nowrap">
-                    {item.label}
-                  </span>
-                </button>
-              );
-            })}
+      <>
+        {/* Subtle page dimming backdrop overlay */}
+        <div
+          className="fixed inset-0 z-[440] bg-slate-900/20 dark:bg-black/40 backdrop-blur-[1px] transition-opacity duration-150 animate-in fade-in"
+          onClick={() => setWorkspaceSwitcherOpen(false)}
+        />
+        <div className="absolute left-0 top-8 pt-1 z-[450]">
+          <div className="w-[170px] rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl p-1.5 font-sans origin-top-left overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex flex-col gap-0.5">
+              {[
+                { mode: 'compose', label: 'Docs', icon: FileText },
+                { mode: 'sheets', label: 'Sheets', icon: Table },
+                { mode: 'deck', label: 'Decks', icon: MonitorPlay },
+                { mode: 'room', label: 'Room', icon: Users }
+              ].map((item) => {
+                const IconComponent = item.icon;
+                const isCurrent = productMode === item.mode;
+                return (
+                  <button
+                    key={item.mode}
+                    type="button"
+                    onClick={() => {
+                      setProductMode(item.mode);
+                      setWorkspaceSwitcherOpen(false);
+                      showToast(`Switched to ${item.label}`);
+                    }}
+                    onPointerDown={(e) => e.preventDefault()}
+                    className={`group flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-left select-none transition-colors duration-100 w-full ${
+                      isCurrent
+                        ? 'bg-slate-100 dark:bg-zinc-800 text-violet-600 dark:text-violet-400 font-semibold'
+                        : 'bg-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 font-medium'
+                    }`}
+                  >
+                    <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                      <IconComponent size={17} strokeWidth={isCurrent ? 2.2 : 1.8} />
+                    </div>
+                    <span className="text-[12.5px] leading-none whitespace-nowrap">
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   };
 
@@ -35897,7 +35904,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
             <section className={`flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden relative transition-all duration-200 ${isSheetsMode ? 'bg-[#FAFAFC]' : 'bg-transparent'} ${(isSheetsMode && sheetToolbarTab === 'Data' && !hasImportedData) ? '' : 'p-4 gap-4'} ${productMode === 'compose' ? (rightSidebarOpen && !shareModalOpen ? 'mr-[380px]' : 'mr-3') : ''}`}>
             {/* Floating button removed as per requirements */}
-              <div className={`flex flex-col flex-1 relative z-10 min-h-0 overflow-hidden`}>
+              <div key={productMode} className="flex flex-col flex-1 relative z-10 min-h-0 overflow-hidden animate-in fade-in zoom-in-[0.99] duration-200 ease-out">
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 min-h-0 overflow-hidden bg-transparent flex flex-col relative">
                     <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#121214] flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">

@@ -1,6 +1,16 @@
 import { defineConfig } from 'vite';
+import path from 'path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@regaarder/ui': path.resolve(__dirname, '../packages/ui/src/index.js'),
+      canvg: path.resolve(__dirname, 'src/mock-canvg.js')
+    }
+  },
+  optimizeDeps: {
+    include: ['canvg']
+  },
   build: {
     minify: false,
     chunkSizeWarningLimit: 5000,
