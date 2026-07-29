@@ -35546,20 +35546,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <span>Export</span> <ChevronDown size={12} />
                     </button>
                     {deckExportMenuOpen && (
-                      <div className="absolute right-0 top-11 z-[230] w-52 bg-white border border-slate-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-2 flex flex-col gap-1 font-sans">
-                        {['PPTX', 'PDF', 'Images'].map(fmt => (
-                          <button
-                            key={fmt}
-                            onClick={() => {
-                              showToast(`Exporting as ${fmt}...`);
-                              setDeckExportMenuOpen(false);
-                            }}
-                            className="w-full flex items-center justify-between text-xs p-2 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors text-left font-medium"
-                          >
-                            {fmt}
-                          </button>
-                        ))}
-                      </div>
+                      <>
+                        <div
+                          className="fixed inset-0 z-[220] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+                          onClick={() => setDeckExportMenuOpen(false)}
+                        />
+                        <div className="absolute right-0 top-11 z-[230] w-52 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 flex flex-col gap-1 font-sans animate-in fade-in zoom-in-95 duration-150">
+                          {['PPTX', 'PDF', 'Images'].map(fmt => (
+                            <button
+                              key={fmt}
+                              onClick={() => {
+                                showToast(`Exporting as ${fmt}...`);
+                                setDeckExportMenuOpen(false);
+                              }}
+                              className="w-full flex items-center justify-between text-xs p-2 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-medium"
+                            >
+                              {fmt}
+                            </button>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -35974,68 +35980,74 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           Export {sheetsExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                         </button>
                         {sheetsExportMenuOpen && (
-                          <div className="absolute top-9 right-0 z-[230] w-56 bg-white border border-slate-200/80 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-3.5 flex flex-col gap-3 font-sans">
-                            <div className="flex flex-col gap-1.5">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Export as File</span>
-                              {[
-                                { format: 'Sheets', label: 'Sheets', desc: 'Original' },
-                                { format: 'XLSX', label: 'XLSX', desc: '.xlsx' },
-                                { format: 'CSV', label: 'CSV', desc: '.csv' },
-                                { format: 'JSON', label: 'JSON', desc: '.json' },
-                                { format: 'PDF', label: 'PDF', desc: '.pdf' }
-                              ].map(f => (
-                                <button 
-                                  key={f.format}
-                                  disabled={isExporting}
-                                  onClick={async () => {
-                                    setIsExporting(true);
-                                    try {
-                                      await exportSheets(f.format, sheetGrids[activeSheetId]?.cells || [], sheetsTitle || 'Sheets_Document');
-                                      showToast('Exported as ' + f.format);
-                                    } catch (e) {
-                                      showToast('Export failed: ' + e.message);
-                                    } finally {
-                                      setIsExporting(false);
-                                      setSheetsExportMenuOpen(false);
-                                    }
-                                  }}
-                                  className="w-full flex items-center justify-between text-xs py-1 rounded-lg text-slate-700 hover:text-violet-700 transition-colors text-left font-medium"
-                                >
-                                  <span>{f.label}</span>
-                                  <span className="text-[10px] text-slate-400 font-normal">{f.desc}</span>
-                                </button>
-                              ))}
+                          <>
+                            <div
+                              className="fixed inset-0 z-[220] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+                              onClick={() => setSheetsExportMenuOpen(false)}
+                            />
+                            <div className="absolute top-9 right-0 z-[230] w-56 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-3.5 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
+                              <div className="flex flex-col gap-1.5">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Export as File</span>
+                                {[
+                                  { format: 'Sheets', label: 'Sheets', desc: 'Original' },
+                                  { format: 'XLSX', label: 'XLSX', desc: '.xlsx' },
+                                  { format: 'CSV', label: 'CSV', desc: '.csv' },
+                                  { format: 'JSON', label: 'JSON', desc: '.json' },
+                                  { format: 'PDF', label: 'PDF', desc: '.pdf' }
+                                ].map(f => (
+                                  <button 
+                                    key={f.format}
+                                    disabled={isExporting}
+                                    onClick={async () => {
+                                      setIsExporting(true);
+                                      try {
+                                        await exportSheets(f.format, sheetGrids[activeSheetId]?.cells || [], sheetsTitle || 'Sheets_Document');
+                                        showToast('Exported as ' + f.format);
+                                      } catch (e) {
+                                        showToast('Export failed: ' + e.message);
+                                      } finally {
+                                        setIsExporting(false);
+                                        setSheetsExportMenuOpen(false);
+                                      }
+                                    }}
+                                    className="w-full flex items-center justify-between text-xs py-1 px-2 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-medium"
+                                  >
+                                    <span>{f.label}</span>
+                                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full"></div>
+                              <div className="flex flex-col gap-2">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Convert to</span>
+                                {[
+                                  { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
+                                  { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
+                                  { target: 'Whiteboard', icon: PenTool, color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/40' }
+                                ].map(t => (
+                                  <button 
+                                    key={t.target}
+                                    disabled={isExporting}
+                                    onClick={() => {
+                                      setIsExporting(true);
+                                      setTimeout(() => { 
+                                        setIsExporting(false); 
+                                        setSheetsExportMenuOpen(false); 
+                                        setProductMode(t.target.toLowerCase());
+                                        showToast('Converted to ' + t.target); 
+                                      }, 1500);
+                                    }}
+                                    className="w-full flex items-center gap-2.5 p-1 px-2 text-xs rounded-lg hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 transition-colors font-semibold text-slate-700 dark:text-zinc-200"
+                                  >
+                                    <div className={`p-1.5 rounded ${t.color}`}>
+                                      <t.icon size={13} />
+                                    </div>
+                                    {t.target}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
-                            <div className="h-px bg-slate-100 w-full"></div>
-                            <div className="flex flex-col gap-2">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Convert to</span>
-                              {[
-                                { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80' },
-                                { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50' },
-                                { target: 'Whiteboard', icon: PenTool, color: 'text-orange-500 bg-orange-50' }
-                              ].map(t => (
-                                <button 
-                                  key={t.target}
-                                  disabled={isExporting}
-                                  onClick={() => {
-                                    setIsExporting(true);
-                                    setTimeout(() => { 
-                                      setIsExporting(false); 
-                                      setSheetsExportMenuOpen(false); 
-                                      setProductMode(t.target.toLowerCase());
-                                      showToast('Converted to ' + t.target); 
-                                    }, 1500);
-                                  }}
-                                  className="w-full flex items-center gap-2.5 p-1 text-xs rounded-lg hover:bg-slate-50 transition-colors font-semibold text-slate-700"
-                                >
-                                  <div className={`p-1.5 rounded ${t.color}`}>
-                                    <t.icon size={13} />
-                                  </div>
-                                  {t.target}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
+                          </>
                         )}
                       </div>
                     </div>
@@ -43640,39 +43652,45 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   {composeExportMenuOpen ? <ChevronUp size={13} strokeWidth={1.5} className="text-slate-400" /> : <ChevronDown size={13} strokeWidth={1.5} className="text-slate-400" />}
                 </button>
                 {composeExportMenuOpen && (
-                  <div className="absolute top-10 right-0 z-[370] w-56 bg-white border border-slate-200/80 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.15)] p-3.5 flex flex-col gap-3 font-sans animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Export as File</span>
-                      {[
-                        { format: 'Compose', label: 'Compose', desc: 'Original' },
-                        { format: 'Word', label: 'Word', desc: '.docx' },
-                        { format: 'Docs', label: 'Docs', desc: 'Cloud' },
-                        { format: 'PDF', label: 'PDF', desc: '.pdf' },
-                        { format: 'Markdown', label: 'Markdown', desc: '.md' }
-                      ].map(f => (
-                        <button 
-                          key={f.format}
-                          disabled={isExporting}
-                          onClick={async () => {
-                            setIsExporting(true);
-                            try {
-                              await exportCompose(f.format, blankBodyRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
-                              showToast('Exported as ' + f.format);
-                            } catch (e) {
-                              showToast('Export failed: ' + e.message);
-                            } finally {
-                              setIsExporting(false);
-                              setComposeExportMenuOpen(false);
-                            }
-                          }}
-                          className="w-full flex items-center justify-between text-xs py-1.5 px-2 rounded-lg text-slate-700 hover:bg-violet-50 hover:text-violet-700 transition-colors text-left font-medium"
-                        >
-                          <span>{f.label}</span>
-                          <span className="text-[10px] text-slate-400 font-normal">{f.desc}</span>
-                        </button>
-                      ))}
+                  <>
+                    <div
+                      className="fixed inset-0 z-[360] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+                      onClick={() => setComposeExportMenuOpen(false)}
+                    />
+                    <div className="absolute top-10 right-0 z-[370] w-56 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-3.5 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Export as File</span>
+                        {[
+                          { format: 'Compose', label: 'Compose', desc: 'Original' },
+                          { format: 'Word', label: 'Word', desc: '.docx' },
+                          { format: 'Docs', label: 'Docs', desc: 'Cloud' },
+                          { format: 'PDF', label: 'PDF', desc: '.pdf' },
+                          { format: 'Markdown', label: 'Markdown', desc: '.md' }
+                        ].map(f => (
+                          <button 
+                            key={f.format}
+                            disabled={isExporting}
+                            onClick={async () => {
+                              setIsExporting(true);
+                              try {
+                                await exportCompose(f.format, blankBodyRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
+                                showToast('Exported as ' + f.format);
+                              } catch (e) {
+                                showToast('Export failed: ' + e.message);
+                              } finally {
+                                setIsExporting(false);
+                                setComposeExportMenuOpen(false);
+                              }
+                            }}
+                            className="w-full flex items-center justify-between text-xs py-1.5 px-2 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-medium"
+                          >
+                            <span>{f.label}</span>
+                            <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             )}
@@ -47115,67 +47133,73 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         Export {whiteboardExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                       </button>
                       {whiteboardExportMenuOpen && (
-                        <div className="absolute bottom-12 left-0 z-[230] w-56 bg-white border border-slate-200/80 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-3.5 flex flex-col gap-3 font-sans">
-                          <div className="flex flex-col gap-1.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Export as File</span>
-                            {[
-                              { format: 'Whiteboard', label: 'Whiteboard', desc: 'Original' },
-                              { format: 'PNG', label: 'PNG Image', desc: '.png' },
-                              { format: 'SVG', label: 'SVG Vector', desc: '.svg' },
-                              { format: 'PDF', label: 'PDF', desc: '.pdf' }
-                            ].map(f => (
-                              <button 
-                                key={f.format}
-                                disabled={isExporting}
-                                onClick={async () => {
-                                  setIsExporting(true);
-                                  try {
-                                    await exportWhiteboard(f.format, [...whiteboardShapes, ...whiteboardStrokes, ...whiteboardWidgets], whiteboardCanvasRef.current, 'Whiteboard_Export');
-                                    showToast('Exported as ' + f.format);
-                                  } catch (e) {
-                                    showToast('Export failed: ' + e.message);
-                                  } finally {
-                                    setIsExporting(false);
-                                    setWhiteboardExportMenuOpen(false);
-                                  }
-                                }}
-                                className="w-full flex items-center justify-between text-xs py-1 rounded-lg text-slate-700 hover:text-violet-700 transition-colors text-left font-medium"
-                              >
-                                <span>{f.label}</span>
-                                <span className="text-[10px] text-slate-400 font-normal">{f.desc}</span>
-                              </button>
-                            ))}
+                        <>
+                          <div
+                            className="fixed inset-0 z-[220] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+                            onClick={() => setWhiteboardExportMenuOpen(false)}
+                          />
+                          <div className="absolute bottom-12 left-0 z-[230] w-56 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-3.5 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
+                            <div className="flex flex-col gap-1.5">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Export as File</span>
+                              {[
+                                { format: 'Whiteboard', label: 'Whiteboard', desc: 'Original' },
+                                { format: 'PNG', label: 'PNG Image', desc: '.png' },
+                                { format: 'SVG', label: 'SVG Vector', desc: '.svg' },
+                                { format: 'PDF', label: 'PDF', desc: '.pdf' }
+                              ].map(f => (
+                                <button 
+                                  key={f.format}
+                                  disabled={isExporting}
+                                  onClick={async () => {
+                                    setIsExporting(true);
+                                    try {
+                                      await exportWhiteboard(f.format, [...whiteboardShapes, ...whiteboardStrokes, ...whiteboardWidgets], whiteboardCanvasRef.current, 'Whiteboard_Export');
+                                      showToast('Exported as ' + f.format);
+                                    } catch (e) {
+                                      showToast('Export failed: ' + e.message);
+                                    } finally {
+                                      setIsExporting(false);
+                                      setWhiteboardExportMenuOpen(false);
+                                    }
+                                  }}
+                                  className="w-full flex items-center justify-between text-xs py-1 px-2 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-medium"
+                                >
+                                  <span>{f.label}</span>
+                                  <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
+                                </button>
+                              ))}
+                            </div>
+                            <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full"></div>
+                            <div className="flex flex-col gap-2">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Convert to</span>
+                              {[
+                                { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
+                                { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
+                                { target: 'Sheets', icon: FileSpreadsheet, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40' }
+                              ].map(t => (
+                                <button 
+                                  key={t.target}
+                                  disabled={isExporting}
+                                  onClick={() => {
+                                    setIsExporting(true);
+                                    setTimeout(() => { 
+                                      setIsExporting(false); 
+                                      setWhiteboardExportMenuOpen(false); 
+                                      setProductMode(t.target.toLowerCase());
+                                      showToast('Converted to ' + t.target); 
+                                    }, 1500);
+                                  }}
+                                  className="w-full flex items-center gap-2.5 p-1 px-2 text-xs rounded-lg hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 transition-colors font-semibold text-slate-700 dark:text-zinc-200"
+                                >
+                                  <div className={`p-1.5 rounded ${t.color}`}>
+                                    <t.icon size={13} />
+                                  </div>
+                                  {t.target}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                          <div className="h-px bg-slate-100 w-full"></div>
-                          <div className="flex flex-col gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Convert to</span>
-                            {[
-                              { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80' },
-                              { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50' },
-                              { target: 'Sheets', icon: FileSpreadsheet, color: 'text-emerald-500 bg-emerald-50' }
-                            ].map(t => (
-                              <button 
-                                key={t.target}
-                                disabled={isExporting}
-                                onClick={() => {
-                                  setIsExporting(true);
-                                  setTimeout(() => { 
-                                    setIsExporting(false); 
-                                    setWhiteboardExportMenuOpen(false); 
-                                    setProductMode(t.target.toLowerCase());
-                                    showToast('Converted to ' + t.target); 
-                                  }, 1500);
-                                }}
-                                className="w-full flex items-center gap-2.5 p-1 text-xs rounded-lg hover:bg-slate-50 transition-colors font-semibold text-slate-700"
-                              >
-                                <div className={`p-1.5 rounded ${t.color}`}>
-                                  <t.icon size={13} />
-                                </div>
-                                {t.target}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
+                        </>
                       )}
                     </div>
                   </div>
