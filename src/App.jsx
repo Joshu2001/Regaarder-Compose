@@ -4042,6 +4042,7 @@ export default function App() {
 
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(320);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  const [isRightSideHovered, setIsRightSideHovered] = useState(false);
 
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
   const [rightPanelMaximized, setRightPanelMaximized] = useState(false);
@@ -6708,17 +6709,31 @@ export default function App() {
   const scheduleTouchStartXRef = useRef(0);
   const scheduleTouchCurrentXRef = useRef(0);
 
-  // Dismiss transient Schedule panel on Escape key
+  // Track mouse movement to show/hide right sidebar expand handle
   useEffect(() => {
-    const handleScheduleEscape = (event) => {
-      if (event.key === 'Escape' && rightSidebarOpen && activeRightTab === 'calendar') {
-        event.preventDefault();
-        setRightSidebarOpen(false);
+    const handleMouseMove = (e) => {
+      const rightThreshold = window.innerWidth - 300;
+      if (e.clientX >= rightThreshold) {
+        setIsRightSideHovered(true);
+      } else {
+        setIsRightSideHovered(false);
       }
     };
-    window.addEventListener('keydown', handleScheduleEscape);
-    return () => window.removeEventListener('keydown', handleScheduleEscape);
-  }, [rightSidebarOpen, activeRightTab]);
+
+    const handleKeyDown = (e) => {
+      // Ignore modifier keys alone
+      if (['Control', 'Shift', 'Alt', 'Meta', 'CapsLock', 'Tab'].includes(e.key)) return;
+      setIsRightSideHovered(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    window.addEventListener('keydown', handleKeyDown, { passive: true });
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
   
   // AI State machine
   const [isComposing, setIsComposing] = useState(false);
@@ -27402,6 +27417,8 @@ Respond with a JSON array of slide objects matching the schema.`;
         />
       )}
 
+
+
       {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (
         <div
           onMouseDown={(event) => beginPanelResize('right', event)}
@@ -31286,10 +31303,13 @@ Respond with a JSON array of slide objects matching the schema.`;
             {/* ── Auto-Hiding 2-Stage Expandable Sidebar Shell & Cohabitating Floating Rail ──────────── */}
             {productMode !== 'landing' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
               <div className="fixed right-4 top-0 h-full z-[300] group/sidebar-rail pointer-events-none">
-                {/* Floating Dock Handle: Offset by 16px (right-4) from window edge so native scrollbar is 100% untouched */}
+                {/* Floating Dock Handle */}
                 <div
-                  className="absolute right-0 top-24 pointer-events-auto flex items-center justify-center w-6 h-12 rounded-l-xl bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md border border-r-0 border-slate-200/80 dark:border-zinc-700/80 shadow-md cursor-pointer text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-200 group-hover/sidebar-rail:opacity-0 group-hover/sidebar-rail:pointer-events-none"
-                  title="Hover to open Quick Sidebar"
+                  onClick={() => setRightSidebarOpen(true)}
+                  className={`absolute right-0 top-24 pointer-events-auto flex items-center justify-center w-6 h-12 rounded-l-xl bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md border border-r-0 border-slate-200/80 dark:border-zinc-700/80 shadow-md cursor-pointer text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 ease-out ${
+                    isRightSideHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'
+                  }`}
+                  title="Expand right sidebar"
                 >
                   <ChevronLeft size={16} />
                 </div>
