@@ -8470,11 +8470,11 @@ export default function App() {
       <>
         {/* Subtle page dimming backdrop overlay */}
         <div
-          className="fixed inset-0 z-[440] bg-slate-900/20 dark:bg-black/40 backdrop-blur-[1px] transition-opacity duration-150 animate-in fade-in"
+          className="fixed inset-0 z-[440] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
           onClick={() => setWorkspaceSwitcherOpen(false)}
         />
         <div className="absolute left-0 top-8 pt-1 z-[450]">
-          <div className="w-[170px] rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl p-1.5 font-sans origin-top-left overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="w-[170px] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl p-1.5 font-sans origin-top-left overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="flex flex-col gap-0.5">
               {[
                 { mode: 'compose', label: 'Docs', icon: FileText },
