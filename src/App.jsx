@@ -35635,75 +35635,81 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     {/* Profile Dropdown Menu */}
                     {profileMenuOpen && (
-                      <div className="absolute right-0 top-9 z-[500] w-[236px] rounded-xl border border-slate-200/80 bg-white/95 dark:bg-[#1c1c1e]/95 dark:border-zinc-800 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.12)] p-3.5 font-sans animate-in fade-in slide-in-from-top-2 duration-200 backdrop-blur-md">
-                        {currentUser ? (
-                          // Logged In State
-                          <div className="flex flex-col gap-3">
-                            <div className="flex items-center gap-3 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                              <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-inner">
-                                {currentUser.name.charAt(0).toUpperCase()}
+                      <>
+                        <div
+                          className="fixed inset-0 z-[490] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+                          onClick={() => setProfileMenuOpen(false)}
+                        />
+                        <div className="absolute right-0 top-9 z-[500] w-[236px] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl p-3.5 font-sans animate-in fade-in zoom-in-95 duration-150">
+                          {currentUser ? (
+                            // Logged In State
+                            <div className="flex flex-col gap-3">
+                              <div className="flex items-center gap-3 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                                <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-inner">
+                                  {currentUser.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">{currentUser.name}</span>
+                                  <span className="text-[10px] text-slate-550 dark:text-zinc-400 truncate">{currentUser.email}</span>
+                                </div>
                               </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">{currentUser.name}</span>
-                                <span className="text-[10px] text-slate-550 dark:text-zinc-400 truncate">{currentUser.email}</span>
+                              <div className="flex flex-col gap-1 text-[10px] text-slate-400 dark:text-zinc-500">
+                                <div className="flex justify-between">
+                                  <span>Sign-in Provider</span>
+                                  <span className="font-medium text-slate-655 dark:text-zinc-400 capitalize">{currentUser.provider}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Status</span>
+                                  <span className="font-medium text-emerald-600 dark:text-emerald-400">Authenticated ✓</span>
+                                </div>
                               </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  localStorage.removeItem('rc.token');
+                                  localStorage.removeItem('rc.user');
+                                  setCurrentUser(null);
+                                  setProfileMenuOpen(false);
+                                  showToast('Disconnected successfully');
+                                }}
+                                className="w-full mt-1.5 py-1.5 px-3 text-[11px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-955/20 dark:text-rose-450 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950/30 transition-all duration-200"
+                              >
+                                Disconnect Account
+                              </button>
                             </div>
-                            <div className="flex flex-col gap-1 text-[10px] text-slate-400 dark:text-zinc-500">
-                              <div className="flex justify-between">
-                                <span>Sign-in Provider</span>
-                                <span className="font-medium text-slate-655 dark:text-zinc-400 capitalize">{currentUser.provider}</span>
+                          ) : (
+                            // Guest State
+                            <div className="flex flex-col items-center text-center py-0.5 px-0.5 gap-2">
+                              {/* Branded Glass Avatar with Glowing Ring & Micro Sparkle */}
+                              <div className="relative my-0.5 group cursor-default">
+                                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-violet-500/25 via-indigo-500/20 to-violet-500/25 blur-[6px] animate-pulse opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
+                                <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-slate-50 via-violet-50/90 to-indigo-100/70 dark:from-zinc-800 dark:via-violet-950/50 dark:to-zinc-900 border border-violet-200/70 dark:border-violet-800/40 text-violet-700 dark:text-violet-300 flex items-center justify-center font-bold shadow-[inset_0_1px_2px_rgba(255,255,255,0.9),0_2px_8px_-2px_rgba(124,58,237,0.15)] transition-transform duration-300 group-hover:scale-105">
+                                  <span className="text-[15px] font-bold tracking-tight bg-gradient-to-br from-violet-700 to-indigo-600 dark:from-violet-300 dark:to-indigo-300 bg-clip-text text-transparent">G</span>
+                                </div>
+                                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white dark:bg-zinc-800 border border-violet-200 dark:border-violet-700/60 shadow-sm flex items-center justify-center">
+                                  <Sparkles size={8.5} className="text-violet-500 fill-violet-500/20 animate-pulse" />
+                                </div>
                               </div>
-                              <div className="flex justify-between">
-                                <span>Status</span>
-                                <span className="font-medium text-emerald-600 dark:text-emerald-400">Authenticated ✓</span>
+                              <div className="flex flex-col items-center">
+                                <span className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">Guest Mode</span>
+                                <p className="text-[10.5px] text-slate-600 dark:text-zinc-300 mt-0.5 max-w-[190px] mx-auto leading-snug opacity-95">
+                                  Sign in to sync your work, collaborate, and access premium AI tools.
+                                </p>
                               </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setProfileMenuOpen(false);
+                                  setAuthModalOpen(true);
+                                }}
+                                className="w-full mt-1 py-1.5 px-3 text-[11.5px] font-semibold text-white bg-gradient-to-r from-violet-600/90 via-purple-600/90 to-indigo-600/90 hover:from-violet-600 hover:to-indigo-600 dark:from-violet-600 dark:to-indigo-600 dark:hover:from-violet-500 dark:hover:to-indigo-500 rounded-lg shadow-[0_2px_8px_-2px_rgba(124,58,237,0.25)] hover:shadow-[0_4px_12px_-2px_rgba(124,58,237,0.35)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
+                              >
+                                Sign In
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                localStorage.removeItem('rc.token');
-                                localStorage.removeItem('rc.user');
-                                setCurrentUser(null);
-                                setProfileMenuOpen(false);
-                                showToast('Disconnected successfully');
-                              }}
-                              className="w-full mt-1.5 py-1.5 px-3 text-[11px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-955/20 dark:text-rose-450 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950/30 transition-all duration-200"
-                            >
-                              Disconnect Account
-                            </button>
-                          </div>
-                        ) : (
-                          // Guest State
-                          <div className="flex flex-col items-center text-center py-0.5 px-0.5 gap-2">
-                            {/* Branded Glass Avatar with Glowing Ring & Micro Sparkle */}
-                            <div className="relative my-0.5 group cursor-default">
-                              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-violet-500/25 via-indigo-500/20 to-violet-500/25 blur-[6px] animate-pulse opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
-                              <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-slate-50 via-violet-50/90 to-indigo-100/70 dark:from-zinc-800 dark:via-violet-950/50 dark:to-zinc-900 border border-violet-200/70 dark:border-violet-800/40 text-violet-700 dark:text-violet-300 flex items-center justify-center font-bold shadow-[inset_0_1px_2px_rgba(255,255,255,0.9),0_2px_8px_-2px_rgba(124,58,237,0.15)] transition-transform duration-300 group-hover:scale-105">
-                                <span className="text-[15px] font-bold tracking-tight bg-gradient-to-br from-violet-700 to-indigo-600 dark:from-violet-300 dark:to-indigo-300 bg-clip-text text-transparent">G</span>
-                              </div>
-                              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white dark:bg-zinc-800 border border-violet-200 dark:border-violet-700/60 shadow-sm flex items-center justify-center">
-                                <Sparkles size={8.5} className="text-violet-500 fill-violet-500/20 animate-pulse" />
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-center">
-                              <span className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">Guest Mode</span>
-                              <p className="text-[10.5px] text-slate-600 dark:text-zinc-300 mt-0.5 max-w-[190px] mx-auto leading-snug opacity-95">
-                                Sign in to sync your work, collaborate, and access premium AI tools.
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setProfileMenuOpen(false);
-                                setAuthModalOpen(true);
-                              }}
-                              className="w-full mt-1 py-1.5 px-3 text-[11.5px] font-semibold text-white bg-gradient-to-r from-violet-600/90 via-purple-600/90 to-indigo-600/90 hover:from-violet-600 hover:to-indigo-600 dark:from-violet-600 dark:to-indigo-600 dark:hover:from-violet-500 dark:hover:to-indigo-500 rounded-lg shadow-[0_2px_8px_-2px_rgba(124,58,237,0.25)] hover:shadow-[0_4px_12px_-2px_rgba(124,58,237,0.35)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
-                            >
-                              Sign In
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                   <div className="relative" ref={notificationsPanelRef}>
@@ -43773,7 +43779,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
               {/* Profile Dropdown Menu */}
               {composeProfileMenuOpen && (
-                <div className="absolute right-0 top-9 z-[500] w-[236px] rounded-xl border border-slate-200/80 bg-white/95 dark:bg-[#1c1c1e]/95 dark:border-zinc-800 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.12)] p-3.5 font-sans animate-in fade-in slide-in-from-top-2 duration-200 backdrop-blur-md">
+                <>
+                  <div
+                    className="fixed inset-0 z-[490] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+                    onClick={() => setComposeProfileMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 top-9 z-[500] w-[236px] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl p-3.5 font-sans animate-in fade-in zoom-in-95 duration-150">
                   {currentUser ? (
                     // Logged In State
                     <div className="flex flex-col gap-3">
@@ -43842,6 +43853,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   )}
                 </div>
+                </>
               )}
             </div>
 
