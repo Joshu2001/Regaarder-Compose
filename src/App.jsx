@@ -16,7 +16,7 @@ import {
   File, User, PenTool, Pen, AlignLeft, AlignCenter, AlignRight, AlignJustify, 
   List, ListOrdered, Bold, Italic, Underline, Strikethrough, Type, X, ChevronDown, ChevronUp, Disc,
   Layout, LayoutGrid, Lock, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
-  AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
+  AlertTriangle, MonitorPlay, MessageCircle, FileQuestion, HelpCircle, LifeBuoy,
   Send, ListTodo, ShieldAlert, Shield, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, Phone, PhoneOff,
   UserPlus, ExternalLink, Link2 as LinkIcon, Link, Clock, Minimize2, Sidebar, Image as ImageIcon,
   FileEdit, CheckCircle2, Users2, Archive,
@@ -31,6 +31,7 @@ import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 import RoomLandingPage from './RoomLandingPage';
 import ComposeAIStudio from './compose-ai/ComposeAIStudio';
+import HelpSupportPanel from './components/HelpSupportPanel';
 
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
@@ -5268,17 +5269,14 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [hasVoiceInteraction, setHasVoiceInteraction] = useState(false);
   const [miniPromptOffset, setMiniPromptOffset] = useState({ x: 0, y: 0 });
-  const [dictationOffset, setDictationOffset] = useState(() => {
-    try {
-      const saved = localStorage.getItem('regaarderDictationOffset');
-      return saved ? JSON.parse(saved) : { x: 0, y: 0 };
-    } catch {
-      return { x: 0, y: 0 };
-    }
-  });
+  const [dictationOffset, setDictationOffset] = useState({ x: 0, y: 0 });
   
   useEffect(() => {
-    localStorage.setItem('regaarderDictationOffset', JSON.stringify(dictationOffset));
+    if (dictationOffset.x === 0 && dictationOffset.y === 0) {
+      try { localStorage.removeItem('regaarderDictationOffset'); } catch {}
+    } else {
+      localStorage.setItem('regaarderDictationOffset', JSON.stringify(dictationOffset));
+    }
   }, [dictationOffset]);
 
   const [dictationAnchor, setDictationAnchor] = useState({ left: 0, top: 0 });
@@ -6705,6 +6703,15 @@ export default function App() {
   const [selectedQuickAddDate, setSelectedQuickAddDate] = useState(null);
   const [selectedQuickAddCategory, setSelectedQuickAddCategory] = useState('General');
   const [activeAgendaDropdown, setActiveAgendaDropdown] = useState(null); // { id: number, type: 'duration' | 'category' } | null
+  
+  // Help & Support Concierge Panel State
+  const [helpActiveTab, setHelpActiveTab] = useState('troubleshoot'); // 'troubleshoot' | 'messaging' | 'feedback'
+  const [helpSearch, setHelpSearch] = useState('');
+  const [helpMessages, setHelpMessages] = useState([
+    { id: 1, sender: 'support', text: 'Hello! Welcome to Regaarder Concierge Support. How can we assist your workspace today?', time: 'Just now' }
+  ]);
+  const [helpInput, setHelpInput] = useState('');
+  const [feedbackForm, setFeedbackForm] = useState({ category: 'Bug Report', description: '', attachLogs: true });
   
   const scheduleTouchStartXRef = useRef(0);
   const scheduleTouchCurrentXRef = useRef(0);
@@ -26871,17 +26878,11 @@ Respond with a JSON array of slide objects matching the schema.`;
       const visibleBottom = Math.min(window.innerHeight, rect.bottom);
 
       const rightSidebarEdge = window.innerWidth - (rightSidebarOpen ? rightSidebarWidth : 0);
-      let rightX = (visibleRight + rightSidebarEdge) / 2;
-      
-      // Enforce a strict boundary: the center of the widget (rightX) 
-      // must never be closer than 100px to the right edge/sidebar.
-      // This guarantees it will never get clipped or cramped.
-      if (rightX > rightSidebarEdge - 100) {
-        rightX = rightSidebarEdge - 100;
+      let rightX = (visibleRight + rightSidebarEdge) / 2 - 10;
+      const maxAllowedX = rightSidebarEdge - 70;
+      if (rightX > maxAllowedX) {
+        rightX = maxAllowedX;
       }
-      
-      // Shift the widget 10px to the left to bring it closer to the document
-      rightX -= 10;
       
       const centerY = (visibleTop + visibleBottom) / 2 - 125;
 
@@ -26914,17 +26915,11 @@ Respond with a JSON array of slide objects matching the schema.`;
     if (productMode !== 'compose') {
       return;
     }
-    // Keep dictation centered when layout panels change.
+    // Keep dictation centered when major document layout panels change.
     setDictationOffset({ x: 0, y: 0 });
   }, [
     productMode,
     activeDocId,
-    leftSidebarOpen,
-    rightSidebarOpen,
-    leftSidebarWidth,
-    rightSidebarWidth,
-    showDocumentOutlineView,
-    isPromptExpanded,
   ]);
 
   useEffect(() => {
@@ -27471,7 +27466,7 @@ Respond with a JSON array of slide objects matching the schema.`;
 
   const sharedRightPanels = (
     <React.Fragment>
-      {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (activeRightTab === 'calendar' || activeRightTab === 'people' || activeRightTab === 'room') && (
+      {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (activeRightTab === 'calendar' || activeRightTab === 'people' || activeRightTab === 'room' || activeRightTab === 'help') && (
         <div
           className="fixed inset-0 z-[305] bg-black/5 dark:bg-black/20 backdrop-blur-[1px] transition-opacity duration-200 animate-in fade-in cursor-default"
           onPointerDown={(e) => {
@@ -27519,6 +27514,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                 { key: 'tasks', label: 'Tasks' },
                 { key: 'calendar', label: 'Schedule' },
                 { key: 'room', label: 'Room' },
+                { key: 'help', label: 'Help' },
                 { key: 'manageen', label: 'Manageen' },
                 { key: 'memory', label: 'Memory' },
                 { key: 'orb', label: 'Orb' },
@@ -30618,6 +30614,17 @@ Respond with a JSON array of slide objects matching the schema.`;
             </div>
           )}
 
+          {activeRightTab === 'help' && (
+            <HelpSupportPanel
+              onClose={() => setRightSidebarOpen(false)}
+              onOpenKeyboardShortcuts={() => setIsShortcutsModalOpen(true)}
+              onNavigateTab={(tab) => {
+                setActiveRightTab(tab);
+                setRightSidebarOpen(true);
+              }}
+            />
+          )}
+
           {activeRightTab === 'people' && (
             <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-5 pb-6 space-y-5 bg-white dark:bg-zinc-950 animate-fade-in thin-scrollbar select-none">
               
@@ -31288,6 +31295,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           { key: 'tasks',      label: 'Tasks',      icon: CheckSquare,      pinned: true },
           { key: 'calendar',   label: 'Schedule',   icon: Calendar,         pinned: true },
           { key: 'room',       label: 'Room',       icon: MonitorPlay,      pinned: true },
+          { key: 'help',       label: 'Help',       icon: HelpCircle,       pinned: true },
           { key: 'comments',   label: 'Comments',   icon: MessageSquareText, conditional: comments.length > 0 },
           { key: 'dm',         label: 'DMs',        icon: MessageSquare },
           { key: 'whiteboard', label: 'Whiteboard', icon: Shapes },
@@ -31298,7 +31306,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           { key: 'files',      label: 'Files',      icon: File },
         ];
 
-        const fixedKeys = new Set(['chat', 'assistant', 'ai-studio', 'tasks', 'calendar', 'room']);
+        const fixedKeys = new Set(['chat', 'assistant', 'ai-studio', 'tasks', 'calendar', 'room', 'help']);
         const visibleKeys = new Set([...fixedKeys, ...dynamicSlots]);
 
         const moreItems = ALL_FEATURES.filter(f =>
@@ -31368,13 +31376,25 @@ Respond with a JSON array of slide objects matching the schema.`;
           <>
             {/* ── Auto-Hiding 2-Stage Expandable Sidebar Shell & Cohabitating Floating Rail ──────────── */}
             {productMode !== 'landing' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
-              <div className="fixed right-4 top-0 h-full z-[300] group/sidebar-rail pointer-events-none">
+              <div
+                onMouseEnter={() => {
+                  setIsRightSideHovered(true);
+                  setMiniSidebarDismissed(false);
+                }}
+                onMouseLeave={() => setIsRightSideHovered(false)}
+                className="fixed right-0 top-0 h-full w-12 hover:w-auto z-[300] group/sidebar-rail pointer-events-auto flex justify-end"
+              >
                 {/* Floating Dock Handle */}
                 <div
-                  onClick={() => setRightSidebarOpen(true)}
-                  className={`absolute right-0 top-24 pointer-events-auto flex items-center justify-center w-6 h-12 rounded-l-xl bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md border border-r-0 border-slate-200/80 dark:border-zinc-700/80 shadow-md cursor-pointer text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 ease-out ${
-                    isRightSideHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'
-                  }`}
+                  onClick={() => {
+                    if (activeRightTab) {
+                      setRightSidebarOpen(true);
+                    } else {
+                      setActiveRightTab('assistant');
+                      setRightSidebarOpen(true);
+                    }
+                  }}
+                  className="absolute right-0 top-24 pointer-events-auto flex items-center justify-center w-6 h-12 rounded-l-xl bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md border border-r-0 border-slate-200/80 dark:border-zinc-700/80 shadow-md cursor-pointer text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 ease-out opacity-0 group-hover/sidebar-rail:opacity-100 group-hover/sidebar-rail:translate-x-0 translate-x-2"
                   title="Expand right sidebar"
                 >
                   <ChevronLeft size={16} />
@@ -31382,10 +31402,11 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                 {/* Sidebar Shell */}
                 <div
+                  onMouseEnter={() => setMiniSidebarDismissed(false)}
                   onMouseLeave={() => setMiniSidebarDismissed(false)}
                   className={`fixed right-0 top-0 h-full z-[301] w-[56px] hover:w-[165px] group/sidebar border-l border-slate-200/70 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl flex flex-col items-start px-2 py-4 gap-2.5 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] pointer-events-auto ${
                     miniSidebarDismissed
-                      ? 'translate-x-full opacity-0 pointer-events-none'
+                      ? 'translate-x-full opacity-0'
                       : 'translate-x-full group-hover/sidebar-rail:translate-x-0 opacity-0 group-hover/sidebar-rail:opacity-100'
                   }`}
                 >
@@ -31459,7 +31480,10 @@ Respond with a JSON array of slide objects matching the schema.`;
               <div className="w-full">{renderNavIcon({ key: 'calendar', label: 'Schedule', icon: Calendar })}</div>
 
               {/* ── Slot 7: Room (always fixed) ─── */}
-              <div className="w-full mb-1">{renderNavIcon({ key: 'room', label: 'Room', icon: MonitorPlay })}</div>
+              <div className="w-full">{renderNavIcon({ key: 'room', label: 'Room', icon: MonitorPlay })}</div>
+
+              {/* ── Slot 8: Help (always fixed) ─── */}
+              <div className="w-full mb-1">{renderNavIcon({ key: 'help', label: 'Help', icon: HelpCircle })}</div>
 
               {/* ── Slots: Dynamic (usage-promoted, excluding fixed slots) ─── */}
               {dynamicSlots
