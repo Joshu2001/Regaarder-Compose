@@ -27497,10 +27497,10 @@ Respond with a JSON array of slide objects matching the schema.`;
       <div 
         className={`no-fullscreen-toggle border-l border-slate-200/60 dark:border-zinc-800/80 flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl transition-all duration-200 shadow-[-12px_0_35px_-10px_rgba(15,23,42,0.08)] select-none overflow-hidden z-[310] ${
           productMode !== 'landing' && rightSidebarOpen && !shareModalOpen 
-            ? (productMode === 'compose' ? 'fixed top-0 right-0 bottom-0 animate-in fade-in slide-in-from-right-4' : 'h-full shrink-0') 
+            ? 'fixed top-0 right-0 bottom-0 animate-in fade-in slide-in-from-right-4'
             : 'w-0 h-0 hidden overflow-hidden border-l-0 pointer-events-none opacity-0'
         }`}
-        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : ( productMode === 'compose' ? { width: '380px', position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 310 } : { width: `${rightSidebarWidth}px`, zIndex: 310 } ) ) : { width: '0px', height: '0px', display: 'none' } }
+        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: productMode === 'compose' ? '380px' : `${rightSidebarWidth}px`, position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 310 } ) : { width: '0px', height: '0px', display: 'none' } }
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
