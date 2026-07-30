@@ -8831,6 +8831,8 @@ export default function App() {
   };
 
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
+  const [sheetFontSearch, setSheetFontSearch] = useState('');
+  const [sheetSizeSearch, setSheetSizeSearch] = useState('');
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [selectedSheetRange, setSelectedSheetRange] = useState(null);
   const [multiSelectedCells, setMultiSelectedCells] = useState([]);
@@ -36086,7 +36088,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   showToast(`${tab} tools ready`);
                                 }
                               }}
-                              className={`px-3 py-1.5 rounded-[6px] border text-sm font-semibold transition-colors ${sheetToolbarTab === tab ? 'border-slate-300 bg-slate-50 text-slate-900 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600' : 'border-transparent hover:bg-gray-100 text-[#374151] dark:text-[#a3a3a3] dark:hover:bg-[#1c1c1e]'}`}
+                              className={`px-3 py-1.5 rounded-md text-[13px] font-semibold transition-all duration-200 ease-out ${sheetToolbarTab === tab ? 'bg-slate-100 text-slate-800 border border-transparent' : 'border border-transparent text-slate-600 hover:bg-slate-50/60 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800/60'}`}
                             >
                               {tab}
                             </button>
@@ -36204,74 +36206,99 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               {docSearchPanelOpen && renderDocSearchPanel()}
                             </div>
                             <div className="relative flex items-center gap-1" ref={sheetToolbarMenuRef}>
+                              {/* Font picker — matches Compose Doc toolbar canonical style */}
                               <div className="relative">
                                 <button
                                   type="button"
                                   onPointerDown={(e) => {
                                     e.preventDefault();
                                     setSheetToolbarMenuOpen((prev) => prev === 'font' ? null : 'font');
+                                    setSheetFontSearch('');
                                   }}
-                                  className="inline-flex items-center gap-1 hover:bg-gray-100 rounded-lg px-2 py-1.5 bg-white text-[13px] text-[#374151] transition-colors"
+                                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-300 ease-out border text-[13px] font-medium ${sheetToolbarMenuOpen === 'font' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
                                 >
-                                  <span>{getSelectedCellFormat().fontFamily || sheetToolbarFont}</span>
-                                  <ChevronDown size={13} />
+                                  {getSelectedCellFormat().fontFamily || sheetToolbarFont}
+                                  <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
                                 </button>
                                 {sheetToolbarMenuOpen === 'font' && (
-                                  <div className="absolute z-[420] top-full mt-1 left-0 w-48 max-h-40 overflow-y-auto thin-scrollbar rounded-lg border border-gray-200 bg-white shadow-lg p-1">
-                                    {fontOptions.map((font) => (
-                                      <button
-                                        key={font}
-                                        type="button"
-                                        onPointerDown={(e) => {
-                                          e.preventDefault();
-                                          if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
-                                            updateSheetCellFormat(activeSheetId, 'fontFamily', font);
-                                          } else {
-                                            setSheetToolbarFont(font);
-                                          }
-                                          setSheetToolbarMenuOpen(null);
-                                        }}
-                                        className={`w-full text-left px-2 py-1 rounded text-xs ${sheetToolbarFont === font ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
-                                        style={{ fontFamily: font }}
-                                      >
-                                        {font}
-                                      </button>
-                                    ))}
+                                  <div className="absolute top-full left-0 mt-2 z-[420] w-48 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
+                                    <input
+                                      value={sheetFontSearch}
+                                      onChange={(e) => setSheetFontSearch(e.target.value)}
+                                      placeholder="Search font"
+                                      className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
+                                    />
+                                    <div className="max-h-40 overflow-y-auto thin-scrollbar">
+                                      {fontOptions
+                                        .filter((f) => f.toLowerCase().includes(sheetFontSearch.toLowerCase()))
+                                        .sort((a, b) => a.localeCompare(b))
+                                        .map((font) => (
+                                          <button
+                                            key={font}
+                                            type="button"
+                                            onPointerDown={(e) => {
+                                              e.preventDefault();
+                                              if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
+                                                updateSheetCellFormat(activeSheetId, 'fontFamily', font);
+                                              } else {
+                                                setSheetToolbarFont(font);
+                                              }
+                                              setSheetToolbarMenuOpen(null);
+                                            }}
+                                            className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
+                                            style={{ fontFamily: font }}
+                                          >
+                                            {font}
+                                          </button>
+                                        ))}
+                                    </div>
                                   </div>
                                 )}
                               </div>
+                              {/* Size picker — matches Compose Doc toolbar canonical style */}
                               <div className="relative">
                                 <button
                                   type="button"
                                   onPointerDown={(e) => {
                                     e.preventDefault();
                                     setSheetToolbarMenuOpen((prev) => prev === 'size' ? null : 'size');
+                                    setSheetSizeSearch('');
                                   }}
-                                  className="inline-flex items-center gap-1 hover:bg-gray-100 rounded-lg px-2 py-1.5 bg-white text-[13px] text-[#374151] transition-colors"
+                                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-300 ease-out border text-[13px] font-medium ${sheetToolbarMenuOpen === 'size' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
                                 >
-                                  <span>{getSelectedCellFormat().fontSize || sheetToolbarSize}</span>
-                                  <ChevronDown size={13} />
+                                  {getSelectedCellFormat().fontSize || sheetToolbarSize}
+                                  <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
                                 </button>
                                 {sheetToolbarMenuOpen === 'size' && (
-                                  <div className="absolute z-[420] top-full mt-1 left-0 w-24 max-h-40 overflow-y-auto thin-scrollbar rounded-lg border border-gray-200 bg-white shadow-lg p-1">
-                                    {sizeOptions.map((size) => (
-                                      <button
-                                        key={size}
-                                        type="button"
-                                        onPointerDown={(e) => {
-                                          e.preventDefault();
-                                          if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
-                                            updateSheetCellFormat(activeSheetId, 'fontSize', size);
-                                          } else {
-                                            setSheetToolbarSize(size);
-                                          }
-                                          setSheetToolbarMenuOpen(null);
-                                        }}
-                                        className={`w-full text-left px-2 py-1 rounded text-xs ${sheetToolbarSize === size ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
-                                      >
-                                        {size}
-                                      </button>
-                                    ))}
+                                  <div className="absolute top-full left-0 mt-2 z-[420] w-32 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
+                                    <input
+                                      value={sheetSizeSearch}
+                                      onChange={(e) => setSheetSizeSearch(e.target.value)}
+                                      placeholder="Search"
+                                      className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
+                                    />
+                                    <div className="max-h-40 overflow-y-auto thin-scrollbar">
+                                      {sizeOptions
+                                        .filter((s) => String(s).includes(sheetSizeSearch.trim()))
+                                        .map((size) => (
+                                          <button
+                                            key={size}
+                                            type="button"
+                                            onPointerDown={(e) => {
+                                              e.preventDefault();
+                                              if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
+                                                updateSheetCellFormat(activeSheetId, 'fontSize', size);
+                                              } else {
+                                                setSheetToolbarSize(size);
+                                              }
+                                              setSheetToolbarMenuOpen(null);
+                                            }}
+                                            className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
+                                          >
+                                            {size}
+                                          </button>
+                                        ))}
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -36279,11 +36306,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 const fmt = getSelectedCellFormat();
                                 return (
                                   <div className="flex items-center gap-1 mx-2 px-2 border-x border-gray-200">
-                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors font-bold ${fmt.bold ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>B</button>
-                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors italic font-serif ${fmt.italic ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>I</button>
-                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors underline ${fmt.underline ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>U</button>
-                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors line-through ${fmt.strikeThrough ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>S</button>
-                                    <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-gray-100 text-gray-500" title="Insert Link">
+                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 font-bold border ${fmt.bold ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)] font-bold' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>B</button>
+                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 italic font-serif border ${fmt.italic ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>I</button>
+                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 underline border ${fmt.underline ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>U</button>
+                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 line-through border ${fmt.strikeThrough ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>S</button>
+                                    <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-xl transition-all hover:bg-slate-50 text-slate-500 hover:text-slate-900" title="Insert Link">
                                       <LinkIcon size={14} />
                                     </button>
                                     <div className="relative text-style-menu-container flex items-center">
@@ -36293,13 +36320,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           e.preventDefault();
                                           setSheetToolbarMenuOpen((prev) => prev === 'textStyle' ? null : 'textStyle');
                                         }}
-                                        className="h-8 px-2 flex items-center justify-center gap-1.5 rounded-lg transition-colors hover:bg-gray-100 cursor-pointer text-[#374151]"
+                                        className="h-8 px-2 flex items-center justify-center gap-1.5 rounded-xl transition-all hover:bg-slate-50 cursor-pointer text-slate-700 hover:text-slate-900"
                                         title="Format options (Style & Colors)"
                                       >
-                                        <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
+                                        <Type size={14} /> <ChevronDown size={12} className="text-slate-400" />
                                       </button>
                                       {sheetToolbarMenuOpen === 'textStyle' && (
-                                        <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
+                                        <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-slate-200/80 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
                                           <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
                                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Text Color</span>
                                             <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
@@ -36324,8 +36351,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 );
                               })()}
                             </div>
-                            <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Row</button>
-                            <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Row</button>
+                            <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">+ Row</button>
+                            <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">- Row</button>
+                            <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">+ Col</button>
                             <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Col</button>
                             <button type="button" onClick={removeSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Col</button>
                             <div className="ml-auto flex items-center gap-4">
@@ -38002,10 +38030,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 const isSelected = !isShapeInteracting && (isExplicitAnchor || isInRange);
 
                                 let shadows = [];
-                                if (isTopEdge) shadows.push('inset 0 2px 0 0 #7c3aed');
-                                if (isBottomEdge) shadows.push('inset 0 -2px 0 0 #7c3aed');
-                                if (isLeftEdge) shadows.push('inset 2px 0 0 0 #7c3aed');
-                                if (isRightEdge) shadows.push('inset -2px 0 0 0 #7c3aed');
+                                if (isTopEdge) shadows.push('inset 0 1.5px 0 0 #7c3aed');
+                                if (isBottomEdge) shadows.push('inset 0 -1.5px 0 0 #7c3aed');
+                                if (isLeftEdge) shadows.push('inset 1.5px 0 0 0 #7c3aed');
+                                if (isRightEdge) shadows.push('inset -1.5px 0 0 0 #7c3aed');
                                 const shadowStyle = shadows.length > 0 && !isShapeInteracting ? { boxShadow: shadows.join(', '), zIndex: 11 } : {};
 
                                 const isInColBand = !isShapeInteracting && sheetSelectionMode === 'col' && selectedSheetRange &&
@@ -44627,19 +44655,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onChange={(e) => {
                     const nextSize = Number(e.target.value) || 14;
                     setActiveFontSize(nextSize);
-                    
-                    const range = getEditorSelectionRange();
-                    const ancestor = range?.commonAncestorContainer;
-                    const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-                    const isTitle = false;
-                    const isSubtitle = false;
-                    
-                    if (isTitle) {
-                      setEditorSize(nextSize);
-                    } else if (isSubtitle) {
-                      setSubtitleSize(nextSize);
-                    }
-                    
                     applyFormatCommand('fontSize', String(nextSize));
                   }}
                   className="w-10 bg-transparent border-none text-[13px] font-medium text-slate-600 focus:text-slate-900 text-center focus:outline-none h-6 flex items-center justify-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -44669,19 +44684,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             key={option}
                             onClick={() => {
                               setActiveFontSize(option);
-                              
-                              const range = getEditorSelectionRange();
-                              const ancestor = range?.commonAncestorContainer;
-                              const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-                              const isTitle = false;
-                               const isSubtitle = false;
-                              
-                              if (isTitle) {
-                                setEditorSize(option);
-                              } else if (isSubtitle) {
-                                setSubtitleSize(option);
-                              }
-                              
                               applyFormatCommand('fontSize', String(option));
                               setOpenDropdown(null);
                             }}

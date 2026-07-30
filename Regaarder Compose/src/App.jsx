@@ -2315,18 +2315,7 @@ const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
         </div>
       )}
 
-      {slashMenu.open && (
-        <div ref={slashRef} className={`fixed z-[200001] w-[240px] max-h-[260px] overflow-y-auto notes-scroller rounded-[20px] border p-2 flex flex-col gap-0.5 shadow-[0_12px_36px_rgba(0,0,0,0.15)] ${isDarkMode ? 'bg-slate-800/95 border-slate-700/60 text-slate-100' : 'bg-white/95 border-slate-200/60 text-slate-800'} backdrop-blur-2xl`} style={{ left: Math.min(slashMenu.x + 16, window.innerWidth - 248), top: slashMenu.y }}>
-          {filteredSlash.length === 0 ? (
-            <div className="px-4 py-3 text-sm text-slate-400 text-center font-medium">No results</div>
-          ) : filteredSlash.map((opt, idx) => (
-            <button key={opt.key} onPointerDown={e => { e.preventDefault(); execSlashCmd(opt.key); }} className={`w-full text-left px-3 py-2 rounded-[14px] text-sm transition-all flex flex-col gap-0.5 ${idx === slashMenu.activeIdx ? (isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100/80 text-slate-900 border-slate-200/40') : 'text-slate-600 hover:bg-slate-50/80 border border-transparent'}`}>
-              <span className="font-medium text-[13px]">{opt.label}</span>
-              <span className="text-[11px] text-slate-400 font-normal">{opt.desc}</span>
-            </button>
-          ))}
-        </div>
-      )}
+
 
       {dragHandle.visible && dragHandle.node && (
         <div
@@ -7729,6 +7718,8 @@ export default function App() {
   };
   const fontOptions = [
     'Manrope',
+    'Outfit',
+    'Inter',
     'Satoshi',
     'General Sans',
     'Plus Jakarta Sans',
@@ -15948,8 +15939,26 @@ Generate the updated output according to the instruction. Preserve layout and ta
           opt.label.toLowerCase().includes(activeSheetMenu.filterText.toLowerCase())
         );
 
+        if (event.key === 'Tab') {
+          event.preventDefault();
+          event.stopPropagation();
+          const selected = filteredOptions[activeSheetMenu.activeIndex];
+          if (selected) {
+            executeSheetSlashCommand(selected.key);
+          }
+          return;
+        }
+
+        if (event.key === 'Delete') {
+          event.preventDefault();
+          event.stopPropagation();
+          setSheetSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, anchorCell: null });
+          return;
+        }
+
         if (event.key === 'ArrowDown') {
           event.preventDefault();
+          event.stopPropagation();
           setSheetSlashMenu(prev => ({
             ...prev,
             activeIndex: (prev.activeIndex + 1) % Math.max(1, filteredOptions.length)
@@ -15959,6 +15968,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         
         if (event.key === 'ArrowUp') {
           event.preventDefault();
+          event.stopPropagation();
           setSheetSlashMenu(prev => ({
             ...prev,
             activeIndex: (prev.activeIndex - 1 + filteredOptions.length) % Math.max(1, filteredOptions.length)
@@ -15968,6 +15978,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         
         if (event.key === 'Enter') {
           event.preventDefault();
+          event.stopPropagation();
           const selected = filteredOptions[activeSheetMenu.activeIndex];
           if (selected) {
             executeSheetSlashCommand(selected.key);
@@ -15977,12 +15988,14 @@ Generate the updated output according to the instruction. Preserve layout and ta
         
         if (event.key === 'Escape') {
           event.preventDefault();
-          setSheetSlashMenu({ open: false, x: 0, y: 0, filterText: '', activeIndex: 0, anchorCell: null });
+          event.stopPropagation();
+          setSheetSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, anchorCell: null });
           return;
         }
 
         if (event.key === 'Backspace') {
           event.preventDefault();
+          event.stopPropagation();
           setSheetSlashMenu(prev => ({
             ...prev,
             filterText: prev.filterText.slice(0, -1),
@@ -15993,6 +16006,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
 
         if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey && event.key !== '/') {
           event.preventDefault();
+          event.stopPropagation();
           setSheetSlashMenu(prev => ({
             ...prev,
             filterText: prev.filterText + event.key,
@@ -16088,13 +16102,38 @@ Generate the updated output according to the instruction. Preserve layout and ta
             return;
           }
           event.preventDefault();
+          event.stopPropagation();
 
-          // Grid container is focused (no specific cell input) — center the menu
+          let cellRect = null;
+          if (selectedSheetCell) {
+            const cellEl = document.querySelector(`[data-row="${selectedSheetCell.row}"][data-col="${selectedSheetCell.col}"]`);
+            if (cellEl) {
+              cellRect = cellEl.getBoundingClientRect();
+            }
+          }
+          if (!cellRect && target && target.getBoundingClientRect) {
+            cellRect = target.getBoundingClientRect();
+          }
+
+          const menuHeight = 360;
+          const rawLeft = cellRect ? cellRect.left : window.innerWidth / 2;
+          const clampedLeft = Math.max(10, Math.min(window.innerWidth - 280, rawLeft));
+          const rawTop = cellRect ? cellRect.bottom + 2 : window.innerHeight / 2;
+          let top = `${rawTop}px`;
+          let bottom = 'auto';
+
+          if (cellRect && cellRect.bottom + menuHeight > window.innerHeight) {
+            bottom = `${window.innerHeight - cellRect.top + 4}px`;
+            top = 'auto';
+          } else if (!cellRect && rawTop + menuHeight > window.innerHeight) {
+            top = `${Math.max(10, window.innerHeight - 370)}px`;
+          }
+
           setSheetSlashMenu({ 
             open: true, 
-            left: event.target ? event.target.getBoundingClientRect().left : window.innerWidth / 2, 
-            top: event.target ? `${event.target.getBoundingClientRect().bottom}px` : `${window.innerHeight / 2}px`,
-            bottom: 'auto',
+            left: clampedLeft, 
+            top,
+            bottom,
             filterText: '', 
             activeIndex: 0, 
             anchorCell: selectedSheetCell 
@@ -25433,7 +25472,22 @@ Respond with a JSON array of slide objects matching the schema.`;
                               className="w-full text-[11px] px-2.5 py-1.5 rounded-lg border border-slate-200 focus:border-violet-400 focus:outline-none bg-white"
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' && e.target.value.trim()) {
-                                  con          {/* G. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE (LAUNCH TIMELINE) */}
+                                  addCommentReply(c.id, e.target.value.trim());
+                                  e.target.value = '';
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* G. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE (LAUNCH TIMELINE) */}
           {activeRightTab === 'calendar' && (
             <div className="flex-1 min-h-0 flex flex-col relative border-l border-slate-200/50 shadow-[-4px_0_12px_rgba(0,0,0,0.02)] animate-in fade-in-50 duration-200">
               <div className="flex-1 overflow-y-auto thin-scrollbar px-4 pt-4 pb-8 bg-slate-50/40 space-y-6">
@@ -31116,7 +31170,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'w-full flex-1'}`}>
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-transparent flex flex-col relative">
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#121214] flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
+                    <div className="mx-4 my-2 px-4 py-2.5 rounded-2xl bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-md border border-slate-200/80 dark:border-zinc-800 shadow-sm flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
                       <div className="flex items-center gap-4">
                         {['Data', 'Templates', 'Analyze', 'Visualize'].map((tab) => (
                           <button
@@ -31130,7 +31184,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 showToast(`${tab} tools ready`);
                               }
                             }}
-                            className={`px-3 py-1.5 rounded-[6px] border text-sm font-semibold transition-colors ${sheetToolbarTab === tab ? 'bg-slate-100 text-slate-900 border-transparent dark:bg-zinc-800 dark:text-zinc-100' : 'border-transparent hover:bg-gray-100 text-[#374151] dark:text-[#a3a3a3] dark:hover:bg-[#1c1c1e]'}`}
+                            className={`px-3 py-1.5 border text-sm font-semibold transition-colors ${sheetToolbarTab === tab ? 'bg-transparent text-[#7C4DFF] outline outline-[2px] outline-[#7C4DFF] border-transparent rounded-[6px]' : 'border-transparent hover:bg-gray-100 text-[#374151] dark:text-[#a3a3a3] dark:hover:bg-[#1c1c1e] rounded-[6px]'}`}
                           >
                             {tab}
                           </button>
@@ -31138,7 +31192,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                       <div className="relative export-menu-container">
                         <button
-                          onClick={() => {
+                          onPointerDown={(e) => {
+                            e.preventDefault();
                             closeTransientMenus();
                             setSheetsExportMenuOpen(!sheetsExportMenuOpen);
                           }}
@@ -31424,7 +31479,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       ) : (
                         <>
-                     <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
+                     <div className="mx-4 mb-2 px-4 py-2 rounded-2xl bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-md border border-slate-200/80 dark:border-zinc-800 shadow-sm flex items-center gap-3 text-[13px] font-medium text-[#374151]">
                       {/* Insert, Analyze, Visualize tabs buttons removed as per request to only show in dropdown */}
 
                       <div className="flex items-center gap-1 border-r border-gray-200 pr-3 mr-1">
@@ -31434,7 +31489,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <button type="button" onClick={saveDocumentLocally} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Save"><Save size={15} /></button>
                       </div>
                       <div className="relative" ref={docSearchPanelRef}>
-                        <button type="button" onClick={() => { closeTransientMenus(); setDocSearchPanelOpen((prev) => !prev); setDocSearchAutoPlay(false); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${docSearchPanelOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-gray-600'}`} title="Search"><Search size={15} /></button>
+                        <button type="button" onPointerDown={(e) => { e.preventDefault(); closeTransientMenus(); setDocSearchPanelOpen((prev) => !prev); setDocSearchAutoPlay(false); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${docSearchPanelOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-gray-600'}`} title="Search"><Search size={15} /></button>
                         {docSearchPanelOpen && (
                           <div className="absolute left-0 top-full mt-1 z-[420] w-[360px] rounded-xl border border-gray-200 bg-white p-3 shadow-2xl ring-1 ring-black/5">
                             <div className="flex items-center justify-between gap-2 mb-2">
@@ -31449,7 +31504,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     key={item.key}
                                     type="button"
                                     onClick={() => setDocSearchMode(item.key)}
-                                    className={`px-2 py-1 rounded-md transition-colors ${docSearchMode === item.key ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                                    className={`px-2 py-1 transition-colors ${docSearchMode === item.key ? 'bg-transparent text-[#7C4DFF] outline outline-[2px] outline-[#7C4DFF] border-transparent rounded-md' : 'text-gray-600 hover:bg-gray-100 rounded-md'}`}
                                   >
                                     {item.label}
                                   </button>
@@ -31610,10 +31665,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           const fmt = getSelectedCellFormat();
                           return (
                             <div className="flex items-center gap-1 mx-2 px-2 border-x border-gray-200">
-                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors font-bold ${fmt.bold ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>B</button>
-                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors italic font-serif ${fmt.italic ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>I</button>
-                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors underline ${fmt.underline ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>U</button>
-                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors line-through ${fmt.strikeThrough ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>S</button>
+                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors font-bold ${fmt.bold ? 'bg-transparent text-[#7C4DFF] outline outline-[2px] outline-[#7C4DFF] border-transparent' : 'hover:bg-gray-100 text-[#374151]'}`}>B</button>
+                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors italic font-serif ${fmt.italic ? 'bg-transparent text-[#7C4DFF] outline outline-[2px] outline-[#7C4DFF] border-transparent' : 'hover:bg-gray-100 text-[#374151]'}`}>I</button>
+                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors underline ${fmt.underline ? 'bg-transparent text-[#7C4DFF] outline outline-[2px] outline-[#7C4DFF] border-transparent' : 'hover:bg-gray-100 text-[#374151]'}`}>U</button>
+                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors line-through ${fmt.strikeThrough ? 'bg-transparent text-[#7C4DFF] outline outline-[2px] outline-[#7C4DFF] border-transparent' : 'hover:bg-gray-100 text-[#374151]'}`}>S</button>
                               <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-gray-100 text-gray-500" title="Insert Link">
                                 <LinkIcon size={14} />
                               </button>
@@ -31640,9 +31695,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       </div>
                                     </div>
                                     <div className="flex flex-col gap-1">
-                                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Highlight</span>
+                                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Fill Color</span>
                                       <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
-                                        <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
+                                        <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Fill"><X size={12} className="text-slate-400"/></button>
                                         {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
                                           <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
                                         ))}
@@ -31655,10 +31710,57 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           );
                         })()}
                       </div>
-                      <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Row</button>
-                      <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Row</button>
-                      <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Col</button>
-                      <button type="button" onClick={removeSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Col</button>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            setSheetToolbarMenuOpen((prev) => prev === 'gridStructure' ? null : 'gridStructure');
+                          }}
+                          className="inline-flex items-center gap-1.5 hover:bg-gray-100 rounded-lg px-2.5 py-1.5 bg-white dark:bg-[#1c1c1e] text-[13px] text-[#374151] dark:text-zinc-200 transition-colors"
+                          title="Grid Rows & Columns"
+                        >
+                          <span>Table Structure</span>
+                          <ChevronDown size={12} className="text-gray-400" />
+                        </button>
+                        {sheetToolbarMenuOpen === 'gridStructure' && (
+                          <div className="absolute z-[420] top-full mt-1 left-0 w-44 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] shadow-xl p-1.5 flex flex-col gap-1 text-xs">
+                            <button
+                              type="button"
+                              onPointerDown={(e) => { e.preventDefault(); addSheetRow(); setSheetToolbarMenuOpen(null); }}
+                              className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-[#374151] dark:text-zinc-200 flex items-center justify-between"
+                            >
+                              <span>Add Row</span>
+                              <span className="font-mono text-[10px] text-violet-600 dark:text-violet-400 font-bold">+ Row</span>
+                            </button>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => { e.preventDefault(); removeSheetRow(); setSheetToolbarMenuOpen(null); }}
+                              className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-[#374151] dark:text-zinc-200 flex items-center justify-between"
+                            >
+                              <span>Delete Row</span>
+                              <span className="font-mono text-[10px] text-red-500 font-bold">- Row</span>
+                            </button>
+                            <div className="my-0.5 border-t border-slate-100 dark:border-zinc-800" />
+                            <button
+                              type="button"
+                              onPointerDown={(e) => { e.preventDefault(); addSheetColumn(); setSheetToolbarMenuOpen(null); }}
+                              className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-[#374151] dark:text-zinc-200 flex items-center justify-between"
+                            >
+                              <span>Add Column</span>
+                              <span className="font-mono text-[10px] text-violet-600 dark:text-violet-400 font-bold">+ Col</span>
+                            </button>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => { e.preventDefault(); removeSheetColumn(); setSheetToolbarMenuOpen(null); }}
+                              className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-[#374151] dark:text-zinc-200 flex items-center justify-between"
+                            >
+                              <span>Delete Column</span>
+                              <span className="font-mono text-[10px] text-red-500 font-bold">- Col</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       <div className="ml-auto flex items-center gap-4">
                         <div className="flex items-center gap-1.5 text-xs text-gray-400">
                           <Cloud size={14} /> {savedStatusLabel}
@@ -31666,7 +31768,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button className="text-[11px] text-[#374151] px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 font-medium">More</button>
                       </div>
                     </div>
-                    <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
+                    <div className="mx-4 mb-2 px-4 py-2 rounded-2xl bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-md border border-slate-200/80 dark:border-zinc-800 shadow-sm flex items-center gap-3 text-[13px] font-medium text-[#374151]">
                       <div className="min-w-[72px] text-center border border-gray-200 rounded-lg bg-gray-50 py-1.5 px-2 text-[11px] font-mono font-semibold tracking-tight">
                         {sheetSelectionMode === 'all' ? 'All' :
                          sheetSelectionMode === 'col' && selectedSheetRange ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}` :
@@ -31683,10 +31785,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         onKeyDown={(e) => {
                           if (e.key === '/' && e.target.tagName === 'INPUT') {
                             e.preventDefault();
+                            let cellRect = null;
+                            if (selectedSheetCell) {
+                              const cellEl = document.querySelector(`[data-row="${selectedSheetCell.row}"][data-col="${selectedSheetCell.col}"]`);
+                              if (cellEl) cellRect = cellEl.getBoundingClientRect();
+                            }
+                            if (!cellRect && e.target && e.target.getBoundingClientRect) {
+                              cellRect = e.target.getBoundingClientRect();
+                            }
+                            const menuHeight = 360;
+                            let top = cellRect ? `${cellRect.bottom + 2}px` : `${window.innerHeight / 2}px`;
+                            let bottom = 'auto';
+                            let left = cellRect ? Math.max(16, cellRect.left) : (window.innerWidth / 2 - 130);
+                            if (cellRect && cellRect.bottom + menuHeight > window.innerHeight) {
+                              bottom = `${window.innerHeight - cellRect.top + 4}px`;
+                              top = 'auto';
+                            }
                             setSheetSlashMenu({
                               open: true,
-                              x: window.innerWidth / 2,
-                              y: window.innerHeight / 2,
+                              left,
+                              top,
+                              bottom,
                               filterText: '',
                               activeIndex: 0,
                               anchorCell: selectedSheetCell,
@@ -31697,6 +31816,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         placeholder="Enter value or formula"
                       />
                     </div>
+                    <div className="mx-4 flex-1 flex flex-col rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-[#121214] shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] overflow-hidden">
                     <div
                       ref={sheetHeaderWrapperRef}
                       className="overflow-hidden w-full bg-slate-50 border-b border-gray-200"
@@ -33827,18 +33947,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           if (e.key === '/' && !sheetSlashMenuRef.current?.open) {
                                             e.preventDefault();
                                             const rect = e.target.getBoundingClientRect();
+                                            const clampedLeft = Math.max(10, Math.min(window.innerWidth - 280, rect.left));
                                             const menuHeight = 360;
-                                            let top;
+                                            const rawTop = rect.bottom + 2;
+                                            let top = `${rawTop}px`;
                                             let bottom = 'auto';
-                                            if (rect.bottom + menuHeight > window.innerHeight) {
+                                            if (rawTop + menuHeight > window.innerHeight) {
                                               bottom = `${window.innerHeight - rect.top + 4}px`;
                                               top = 'auto';
-                                            } else {
-                                              top = `${rect.bottom + 2}px`;
                                             }
                                             setSheetSlashMenu({
                                               open: true,
-                                              left: rect.left,
+                                              left: clampedLeft,
                                               top,
                                               bottom,
                                               filterText: '',
@@ -33849,31 +33969,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           }
                                           // When slash menu is open: route all keypresses to menu, not the cell
                                           if (sheetSlashMenuRef.current?.open) {
+                                            e.preventDefault();
+                                            e.stopPropagation();
                                             const filtered = SHEET_SLASH_OPTIONS.filter(opt =>
                                               opt.label.toLowerCase().includes(sheetSlashMenuRef.current.filterText.toLowerCase())
                                             );
-                                            if (e.key === 'Escape') {
-                                              e.preventDefault();
+                                            if (e.key === 'Escape' || e.key === 'Delete') {
                                               setSheetSlashMenu(prev => ({ ...prev, open: false }));
                                               return;
                                             }
                                             if (e.key === 'ArrowDown') {
-                                              e.preventDefault();
                                               setSheetSlashMenu(prev => ({ ...prev, activeIndex: (prev.activeIndex + 1) % Math.max(1, filtered.length) }));
                                               return;
                                             }
                                             if (e.key === 'ArrowUp') {
-                                              e.preventDefault();
                                               setSheetSlashMenu(prev => ({ ...prev, activeIndex: (prev.activeIndex - 1 + filtered.length) % Math.max(1, filtered.length) }));
                                               return;
                                             }
-                                            if (e.key === 'Enter') {
-                                              e.preventDefault();
+                                            if (e.key === 'Enter' || e.key === 'Tab') {
                                               if (filtered.length > 0) executeSheetSlashCommand(filtered[sheetSlashMenu.activeIndex]?.key);
                                               return;
                                             }
                                             if (e.key === 'Backspace') {
-                                              e.preventDefault();
                                               setSheetSlashMenu(prev => {
                                                 if (prev.filterText.length === 0) return { ...prev, open: false };
                                                 return { ...prev, filterText: prev.filterText.slice(0, -1), activeIndex: 0 };
@@ -33881,7 +33998,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               return;
                                             }
                                             if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-                                              e.preventDefault();
                                               setSheetSlashMenu(prev => ({ ...prev, filterText: prev.filterText + e.key, activeIndex: 0 }));
                                               return;
                                             }
@@ -33939,10 +34055,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       </div>
                     </div>
-
+                  </div>
                       </>
-                    )}
-                    <div className="h-10 px-4 border-t border-gray-200 bg-white flex items-center justify-between gap-4">
+                  )}
+                    <div className="mx-4 my-2 h-11 px-4 rounded-2xl bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-md border border-slate-200/80 dark:border-zinc-800 shadow-sm flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3 overflow-x-auto thin-scrollbar">
                         {sheetsData.map((sheet) => (
                           <button
@@ -33952,7 +34068,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setActiveSheetId(sheet.id);
                               setSheetsTitle(sheet.title);
                             }}
-                            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-[13px] font-medium tracking-wide transition-colors ${activeSheetId === sheet.id ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
+                            className={`whitespace-nowrap px-3 py-1.5 text-[13px] font-medium tracking-wide transition-colors ${activeSheetId === sheet.id ? 'bg-transparent text-[#7C4DFF] outline outline-[2px] outline-[#7C4DFF] border-transparent rounded-lg' : 'hover:bg-gray-100 text-[#374151] rounded-lg'}`}
                           >
                             {sheet.title.split(' ')[0]}
                           </button>
@@ -34491,8 +34607,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 </div>
 )}
               </div>
-
-          </section>
+            </section>
           </div>
         </main>
 
@@ -34520,7 +34635,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 {(i === 1 || i === 3) && <div className="h-px bg-gray-100 my-1 mx-1" />}
                 <button
                   className="w-full text-left px-3 py-1.5 text-[13px] text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  onClick={() => {
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     executeHeaderContextMenuAction(item.key, headerContextMenu.type, headerContextMenu.index);
                     setHeaderContextMenu({ open: false, x: 0, y: 0, type: '', index: -1 });
                   }}
@@ -34787,59 +34904,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         />
       )}
 
-      {/* ── Sheet Slash Menu ── */}
-      {productMode === 'sheets' && sheetSlashMenu.open && (() => {
-        const filtered = SHEET_SLASH_OPTIONS.filter(opt =>
-          opt.label.toLowerCase().includes((sheetSlashMenu.filterText || '').toLowerCase())
-        );
-        return (
-          <div
-            ref={sheetSlashMenuContainerRef}
-            className="slash-menu-container animate-in fade-in zoom-in-95 duration-100"
-            style={{
-              position: 'fixed',
-              zIndex: 99999,
-              left: `${sheetSlashMenu.left}px`,
-              top: sheetSlashMenu.top,
-              bottom: sheetSlashMenu.bottom,
-              minWidth: '260px',
-              maxHeight: '360px',
-              overflowY: 'auto',
-            }}
-            onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
-          >
-            {sheetSlashMenu.filterText && (
-              <div className="px-3 py-2 border-b border-gray-100 text-[11px] text-gray-500 bg-gray-50">
-                Search: <span className="font-semibold text-gray-700">"{sheetSlashMenu.filterText}"</span>
-              </div>
-            )}
-            {filtered.length === 0 ? (
-              <div className="px-3 py-4 text-center text-xs text-gray-400">No matching actions</div>
-            ) : (
-              filtered.map((opt, idx) => {
-                const isActive = idx === sheetSlashMenu.activeIndex;
-                return (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onPointerDown={e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      executeSheetSlashCommand(opt.key);
-                      setSheetSlashMenu(prev => ({ ...prev, open: false }));
-                    }}
-                    onMouseEnter={() => setSheetSlashMenu(prev => ({ ...prev, activeIndex: idx }))}
-                    className={`slash-menu-option ${isActive ? 'active' : ''}`}
-                  >
-                    <span className="slash-menu-option-label">{opt.label}</span>
-                    <span className="slash-menu-option-desc">{opt.desc}</span>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        );
-      })()}
+
 
       {/* ── Table Presets ── */}
       {productMode === 'sheets' && sheetTablePresetMenu.open && (
@@ -34854,7 +34919,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {Object.entries(TABLE_PRESETS).map(([key, preset]) => (
               <button
                 key={key}
-                onClick={() => {
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   setSheetGrids(prev => {
                     const grid = prev[activeSheetId];
                     if (!grid || !grid.tables) return prev;
@@ -44955,9 +45022,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               style={{
                 position: 'fixed',
                 zIndex: 99999,
-                left: `${sheetSlashMenu.left}px`,
-                top: sheetSlashMenu.top,
-                bottom: sheetSlashMenu.bottom,
+                left: typeof sheetSlashMenu.left === 'number' ? `${sheetSlashMenu.left}px` : (sheetSlashMenu.left || 'auto'),
+                top: typeof sheetSlashMenu.top === 'number' ? `${sheetSlashMenu.top}px` : (sheetSlashMenu.top || 'auto'),
+                bottom: typeof sheetSlashMenu.bottom === 'number' ? `${sheetSlashMenu.bottom}px` : (sheetSlashMenu.bottom || 'auto'),
                 minWidth: '260px',
                 maxHeight: '360px',
                 overflowY: 'auto',

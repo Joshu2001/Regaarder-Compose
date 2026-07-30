@@ -263,7 +263,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 key={id}
                 type="button"
                 onClick={() => { setSelectedModule(id); setResults(null); }}
-                className={`w-full flex items-center justify-between text-left px-3.5 py-2.5 rounded-xl transition-all text-xs font-medium ${selectedModule === id ? 'bg-violet-50 text-violet-700 border-l-4 border-violet-600 dark:bg-violet-950/20 dark:text-violet-400' : 'text-slate-650 hover:bg-slate-50 dark:hover:bg-white/5'}`}
+                className={`w-full flex items-center justify-between text-left px-3.5 py-2.5 rounded-xl transition-all text-xs font-medium ${selectedModule === id ? 'bg-transparent text-[#7C4DFF] outline outline-[2px] outline-[#7C4DFF] border-transparent' : 'text-slate-600 hover:bg-slate-50 dark:hover:bg-white/5'}`}
               >
                 <span>{plugin.name}</span>
                 <span className="text-[10px] text-slate-400 font-normal">{plugin.category}</span>
@@ -272,7 +272,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
           </div>
 
           <div className="border-t border-slate-100 dark:border-zinc-800 pt-4 space-y-4">
-            <h4 className="text-xs font-bold text-slate-750">Parameters</h4>
+            <h4 className="text-xs font-bold text-slate-700">Parameters</h4>
 
             {/* Column A Picker */}
             {['descriptive_stats', 't_test', 'anova', 'chi_square', 'correlation', 'regression', 'forecasting', 'monte_carlo', 'risk_analysis', 'data_sampling'].includes(selectedModule) && (
@@ -407,7 +407,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             <button
               type="button"
               onClick={handleRunAnalysis}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-violet-600 hover:bg-violet-750 text-white rounded-xl text-xs font-semibold shadow-md active:scale-95 transition-all mt-4"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-semibold shadow-md active:scale-95 transition-all mt-4"
             >
               <Play size={13} fill="currentColor" /> Run Calculation
             </button>
@@ -432,9 +432,9 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                     {Object.entries(results).map(([key, value]) => {
                       if (typeof value === 'number') {
                         return (
-                          <div key={key} className="bg-slate-50 dark:bg-white/5 rounded-xl p-3.5 border border-slate-100 dark:border-zinc-850">
+                          <div key={key} className="bg-slate-50 dark:bg-white/5 rounded-xl p-3.5 border border-slate-100 dark:border-zinc-800">
                             <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{key.replace(/([A-Z])/g, ' $1')}</div>
-                            <div className="text-lg font-bold text-slate-800 dark:text-zinc-150 mt-1">{value.toFixed(4)}</div>
+                            <div className="text-lg font-bold text-slate-800 dark:text-zinc-100 mt-1">{value.toFixed(4)}</div>
                           </div>
                         );
                       }
@@ -444,7 +444,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
                   {/* Render Custom visualizer charts depending on output */}
                   {selectedModule === 'regression' && results.slope !== undefined && (
-                    <div className="border border-slate-150 dark:border-zinc-850 rounded-xl p-4 bg-slate-50/50 dark:bg-white/5 flex flex-col items-center">
+                    <div className="border border-slate-200 dark:border-zinc-800 rounded-xl p-4 bg-slate-50/50 dark:bg-white/5 flex flex-col items-center">
                       <div className="text-xs font-bold text-slate-700 mb-3">Regression Line Trend & Scatter</div>
                       <svg width="320" height="180" className="overflow-visible">
                         <line x1="30" y1="150" x2="300" y2="150" stroke="#94a3b8" strokeWidth="1.5" />
@@ -463,7 +463,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                   )}
 
                   {selectedModule === 'monte_carlo' && results.paths && (
-                    <div className="border border-slate-150 dark:border-zinc-850 rounded-xl p-4 bg-slate-50/50 dark:bg-white/5 flex flex-col items-center">
+                    <div className="border border-slate-200 dark:border-zinc-800 rounded-xl p-4 bg-slate-50/50 dark:bg-white/5 flex flex-col items-center">
                       <div className="text-xs font-bold text-slate-700 mb-3">Simulated Random Walks paths (Monte Carlo)</div>
                       <svg width="360" height="160" className="overflow-visible">
                         <line x1="30" y1="140" x2="330" y2="140" stroke="#cbd5e1" />
@@ -486,7 +486,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                   {/* Sampled data display */}
                   {selectedModule === 'data_sampling' && Array.isArray(results) && (
                     <div className="border border-slate-100 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-                      <div className="bg-slate-55 text-slate-600 px-4 py-2 text-xs font-semibold">Sampled Data Subsets</div>
+                      <div className="bg-slate-50 text-slate-600 px-4 py-2 text-xs font-semibold">Sampled Data Subsets</div>
                       <div className="bg-white dark:bg-transparent divide-y divide-slate-100 text-xs px-4 py-3">
                         {results.map((val, idx) => (
                           <div key={idx} className="py-2.5 text-slate-700 flex justify-between">
@@ -504,7 +504,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                       <div className="absolute top-0 right-0 p-3 opacity-20">
                         <Sparkles size={40} className="text-violet-600" />
                       </div>
-                      <h4 className="text-xs font-bold text-violet-850 dark:text-violet-400 flex items-center gap-1.5 tracking-wide uppercase">
+                      <h4 className="text-xs font-bold text-violet-800 dark:text-violet-400 flex items-center gap-1.5 tracking-wide uppercase">
                         <Sparkles size={14} className="text-violet-600" />
                         AI Analysis Recommendations
                       </h4>
@@ -535,7 +535,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
       </div>
 
       {/* SECURE AI AGENT TOOL CONSOLE */}
-      <div className="bg-[#121214] border border-zinc-800 rounded-2xl p-5 shadow-2xl mt-8 font-mono text-[12px] text-zinc-350">
+      <div className="bg-[#121214] border border-zinc-800 rounded-2xl p-5 shadow-2xl mt-8 font-mono text-[12px] text-zinc-400">
         <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-4">
           <div className="flex items-center gap-2">
             <Terminal className="text-emerald-500" size={16} />
@@ -550,7 +550,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
         {/* Sensitive Action Approval Alerts */}
         {activeConfirmations.length > 0 && (
-          <div className="bg-violet-950/30 border border-violet-850 rounded-xl p-4 mb-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-violet-950/30 border border-violet-800 rounded-xl p-4 mb-4 animate-in fade-in zoom-in-95 duration-200">
             {activeConfirmations.map((conf) => (
               <div key={conf.id} className="flex items-start justify-between gap-4">
                 <div>
@@ -563,7 +563,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                   <button 
                     type="button" 
                     onClick={() => { conf.confirm(); handleRunAnalysis(); }}
-                    className="px-3 py-1.5 bg-violet-600 hover:bg-violet-750 text-white rounded-lg text-[11px] font-bold shadow transition-all"
+                    className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-[11px] font-bold shadow transition-all"
                   >
                     Confirm & Execute
                   </button>
@@ -596,7 +596,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
         {/* Audit Logs Table */}
         <div className="space-y-2 mt-4">
           <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">Audit Logs</div>
-          <div className="max-h-[140px] overflow-y-auto thin-scrollbar divide-y divide-zinc-850 bg-zinc-950/50 rounded-xl border border-zinc-850 px-3">
+          <div className="max-h-[140px] overflow-y-auto thin-scrollbar divide-y divide-zinc-800 bg-zinc-950/50 rounded-xl border border-zinc-800 px-3">
             {auditLogs.length > 0 ? (
               auditLogs.map((log, idx) => (
                 <div key={idx} className="py-2 flex items-center justify-between text-[11px]">
@@ -606,7 +606,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                     <span className="text-zinc-300 font-mono">{log.toolId}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 font-semibold">
-                    <span className="text-zinc-550 max-w-[200px] truncate font-normal">{log.details}</span>
+                    <span className="text-zinc-500 max-w-[200px] truncate font-normal">{log.details}</span>
                     <span className={`px-2 py-0.5 rounded text-[10px] ${log.status === 'SUCCESS' ? 'bg-emerald-950/50 text-emerald-400 border border-emerald-900/30' : 'bg-red-950/50 text-red-400 border border-red-900/30'}`}>
                       {log.status}
                     </span>

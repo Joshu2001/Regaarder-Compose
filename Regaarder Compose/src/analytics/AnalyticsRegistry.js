@@ -1,4 +1,4 @@
-import * as modules from './AnalyticsModules';
+import * as modules from './AnalyticsModules.js';
 
 class AnalyticsRegistry {
   constructor() {
