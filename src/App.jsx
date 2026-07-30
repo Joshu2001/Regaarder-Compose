@@ -4355,7 +4355,7 @@ export default function App() {
   const [creationPickerOpen, setCreationPickerOpen] = useState(false);
   const [activeDeckSlideId, setActiveDeckSlideId] = useState(1);
   const [deckTitle, setDeckTitle] = useState('Untitled deck');
-  const [sheetsTitle, setSheetsTitle] = useState('Untitled sheet');
+  const [sheetsTitle, setSheetsTitle] = useState('Q2 Financial Overview');
   const [activeSheetId, setActiveSheetId] = useState(1);
   const [activeDropdownCell, setActiveDropdownCell] = useState(null); // { row, col }
   const [selectedGridColumn, setSelectedGridColumn] = useState(null);
@@ -25983,10 +25983,10 @@ Respond with a JSON array of slide objects matching the schema.`;
   }, [activeDeckSlide?.speakerNotes, chatAttachments, deckSlides, promptAttachments]);
 
   const activeSheet = sheetsData.find((sheet) => sheet.id === activeSheetId) || sheetsData[0];
-  const rawSheetGrid = sheetGrids[activeSheetId];
+  const rawSheetGrid = sheetGrids[activeSheetId] || (activeSheet ? sheetGrids[activeSheet.id] : null);
   const activeSheetGridRaw = {
-    rows: rawSheetGrid?.rows || 22,
-    cols: rawSheetGrid?.cols || 26,
+    rows: (rawSheetGrid?.rows && typeof rawSheetGrid.rows === 'number' && rawSheetGrid.rows > 0) ? rawSheetGrid.rows : 22,
+    cols: (rawSheetGrid?.cols && typeof rawSheetGrid.cols === 'number' && rawSheetGrid.cols > 0) ? rawSheetGrid.cols : 26,
     cells: (rawSheetGrid?.cells && rawSheetGrid.cells.length > 0) ? rawSheetGrid.cells : Array.from({ length: 22 }, () => Array(26).fill('')),
     formats: rawSheetGrid?.formats || {},
     tables: rawSheetGrid?.tables || [],
@@ -25995,7 +25995,9 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
   
   const activeSheetGrid = useMemo(() => {
-    if (!activeSheetGridRaw) return null;
+    if (!activeSheetGridRaw) return { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array(26).fill('')), formats: {}, tables: [], overlays: [], filters: {} };
+    const rows = (activeSheetGridRaw.rows && typeof activeSheetGridRaw.rows === 'number' && activeSheetGridRaw.rows > 0) ? activeSheetGridRaw.rows : 22;
+    const cols = (activeSheetGridRaw.cols && typeof activeSheetGridRaw.cols === 'number' && activeSheetGridRaw.cols > 0) ? activeSheetGridRaw.cols : 26;
     const parser = new Parser();
     
     parser.on('callCellValue', (cellCoord, done) => {
@@ -26069,6 +26071,8 @@ Respond with a JSON array of slide objects matching the schema.`;
 
     return {
       ...activeSheetGridRaw,
+      rows,
+      cols,
       cells: evaluatedCells
     };
   }, [activeSheetGridRaw]);
@@ -27491,10 +27495,10 @@ Respond with a JSON array of slide objects matching the schema.`;
       <div 
         className={`no-fullscreen-toggle border-l border-slate-200/60 dark:border-zinc-800/80 flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl transition-all duration-200 shadow-[-12px_0_35px_-10px_rgba(15,23,42,0.08)] select-none overflow-hidden z-[310] ${
           productMode !== 'landing' && rightSidebarOpen && !shareModalOpen 
-            ? (productMode === 'compose' ? 'fixed top-0 right-0 bottom-0 animate-in fade-in slide-in-from-right-4' : '') 
-            : 'w-0 overflow-hidden border-l-0 pointer-events-none opacity-0'
+            ? (productMode === 'compose' ? 'fixed top-0 right-0 bottom-0 animate-in fade-in slide-in-from-right-4' : 'h-full shrink-0') 
+            : 'w-0 h-0 hidden overflow-hidden border-l-0 pointer-events-none opacity-0'
         }`}
-        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : ( productMode === 'compose' ? { width: '380px', position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 310 } : { width: `${rightSidebarWidth}px`, zIndex: 310 } ) ) : { width: '0px' } }
+        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : ( productMode === 'compose' ? { width: '380px', position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 310 } : { width: `${rightSidebarWidth}px`, zIndex: 310 } ) ) : { width: '0px', height: '0px', display: 'none' } }
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
@@ -35503,7 +35507,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
 
-        <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-zinc-950">
+        <main className="flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-zinc-950">
           <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative z-[350]">
             <div className="flex items-center gap-3">
               <button
@@ -35875,7 +35879,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 flex relative">
+          <div className="flex-1 h-full min-h-0 flex relative">
             {!isSheetsMode && productMode !== 'deck' && (
                     <aside
                       className="border-r border-gray-100/50 flex flex-col bg-[#FAFAFC]/75 dark:bg-zinc-900/75 backdrop-blur-md shrink-0 select-none overflow-hidden transition-[width] duration-200"
@@ -35993,7 +35997,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         >
                           <div className="flex items-center gap-2">
                             <Plus size={14} className="text-[#7C4DFF]" />
-                            <span>New Slide</span>
+                            <span>{isSheetsMode ? 'New Sheet' : 'New Slide'}</span>
                           </div>
                           <ChevronDown size={12} className="text-gray-400" />
                         </button>
@@ -36065,7 +36069,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     {/* Right main area: floating island toolbar & sheet grid */}
                     {isSheetsMode ? (
-                      <div className="flex-1 flex flex-col min-w-0 relative z-10">
+                      <div className="flex-1 min-h-0 h-full flex flex-col min-w-0 relative z-10">
                       <div className="mx-4 mt-3 mb-2 p-3 border border-gray-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-[#121214]/80 backdrop-blur-md rounded-2xl shadow-sm flex flex-col gap-2.5 z-20 shrink-0">
                       {/* Top Row: Navigation Tabs & Export */}
                       <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
@@ -36192,7 +36196,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       ) : null}
 
                       {/* Bottom Row: Cell Formatting Tools */}
-                      {(sheetToolbarTab !== 'Data' || hasImportedData) && (
+                      {(sheetToolbarTab === 'Data' || sheetToolbarTab === 'Visualize' || hasImportedData) && (
                         <>
                           <div className="h-px bg-gray-200/60 dark:bg-zinc-800/60 w-full" />
                           <div className="flex items-center gap-3 text-[13px] font-medium text-[#374151]">
@@ -36333,7 +36337,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </>
                       )}
                     </div>
-                    <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
+
+                    <div className="flex-1 min-h-0 flex flex-col w-full overflow-hidden">
+                      <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151] shrink-0">
                       <div className="min-w-[72px] text-center border border-gray-200 rounded-lg bg-gray-50 py-1.5 px-2 text-[11px] font-mono font-semibold tracking-tight">
                         {sheetSelectionMode === 'all' ? 'All' :
                          sheetSelectionMode === 'col' && selectedSheetRange ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}` :
@@ -36378,7 +36384,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                     <div
                       ref={sheetHeaderWrapperRef}
-                      className="overflow-hidden w-full bg-slate-50 border-b border-gray-200"
+                      className="overflow-hidden w-full bg-slate-50 border-b border-gray-200 shrink-0"
                     >
                       <div
                         className="grid text-[11px] font-semibold text-slate-700"
@@ -36440,7 +36446,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
                     <div
-                      className="flex-1 overflow-auto thin-scrollbar relative bg-white sheet-grid-container"
+                      className="flex-1 min-h-0 min-w-0 flex-shrink flex-grow overflow-auto thin-scrollbar relative bg-white sheet-grid-container"
                       data-sheet-grid="true"
                       tabIndex={0}
                       onMouseUp={() => { sheetHeaderDragRef.current = { active: false, type: null, startIndex: null }; }}
@@ -38622,7 +38628,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
 
-                    <div className="h-10 px-4 border-t border-gray-200 bg-white flex items-center justify-between gap-4">
+                    <div className="h-10 px-4 border-t border-gray-200 bg-white flex items-center justify-between gap-4 shrink-0">
                       <div className="flex items-center gap-3 overflow-x-auto thin-scrollbar">
                         {sheetsData.map((sheet) => (
                           <button
@@ -38690,6 +38696,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <span className="text-[11px] font-medium hidden sm:inline">{isReadingAloud ? 'Reading...' : 'Audio'}</span>
                         </button>
                       </div>
+                    </div>
+                    {/* End scoped Sheet Grid View container */}
                     </div>
                   </div>
                 ) : (
