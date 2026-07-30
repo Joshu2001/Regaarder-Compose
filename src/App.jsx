@@ -36071,8 +36071,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     {/* Right main area: floating island toolbar & sheet grid */}
                     {isSheetsMode ? (
-                      <div className="flex-1 min-h-0 h-full flex flex-col min-w-0 relative z-10">
-                      <div className="mx-4 mt-3 mb-2 p-3 border border-gray-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-[#121214]/80 backdrop-blur-md rounded-2xl shadow-sm flex flex-col gap-2.5 z-20 shrink-0">
+                      <div className="flex-1 min-h-0 h-full flex flex-col min-w-0 relative z-10 bg-slate-50/30 backdrop-blur-[6px]">
+                        {/* Ambient orb blobs — Sheets identity: emerald / teal / cyan */}
+                        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.28]">
+                          <div className="absolute -top-[20%] -left-[10%] w-[65%] h-[65%] rounded-full bg-emerald-400/30 mix-blend-multiply filter blur-[120px]" />
+                          <div className="absolute top-[15%] -right-[10%] w-[55%] h-[55%] rounded-full bg-teal-400/25 mix-blend-multiply filter blur-[110px]" />
+                          <div className="absolute bottom-[5%] left-[10%] w-[75%] h-[75%] rounded-full bg-cyan-400/20 mix-blend-multiply filter blur-[130px]" />
+                        </div>
+                      <div className="mx-4 mt-3 mb-2 p-3 border border-slate-200/60 dark:border-zinc-700/50 bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl rounded-2xl shadow-[0_2px_16px_-4px_rgba(15,23,42,0.08)] ring-1 ring-white/60 dark:ring-zinc-700/30 flex flex-col gap-2.5 z-20 shrink-0">
                       {/* Top Row: Navigation Tabs & Export */}
                       <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
                         <div className="flex items-center gap-4">
@@ -38656,7 +38662,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
 
-                    <div className="h-10 px-4 border-t border-gray-200 bg-white flex items-center justify-between gap-4 shrink-0">
+                    <div className="h-10 px-4 border-t border-slate-200/70 dark:border-zinc-800/70 bg-white/85 dark:bg-zinc-900/85 backdrop-blur-sm flex items-center justify-between gap-4 shrink-0">
                       <div className="flex items-center gap-3 overflow-x-auto thin-scrollbar">
                         {sheetsData.map((sheet) => (
                           <button
