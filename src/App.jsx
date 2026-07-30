@@ -36338,7 +36338,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       )}
                     </div>
 
-                    <div className="flex-1 min-h-0 flex flex-col w-full overflow-hidden">
+                    <div className="mx-4 mb-3 flex-1 min-h-0 flex flex-col border border-gray-200/80 dark:border-zinc-800/80 bg-white dark:bg-[#121214] backdrop-blur-md rounded-2xl shadow-sm overflow-hidden z-10">
                       <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151] shrink-0">
                       <div className="min-w-[72px] text-center border border-gray-200 rounded-lg bg-gray-50 py-1.5 px-2 text-[11px] font-mono font-semibold tracking-tight">
                         {sheetSelectionMode === 'all' ? 'All' :
