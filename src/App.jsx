@@ -36056,525 +36056,282 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
                           {isSheetsMode ? sheetsData.length : deckSlidesData.length} {isSheetsMode ? 'sheets' : 'slides'}
                         </div>
-                        <div className="flex items-center gap-1 border border-gray-200 rounded-lg p-0.5 bg-gray-50">
                           <button type="button" className="p-1 rounded-md bg-white shadow-sm text-slate-700 hover:text-gray-900" title="Grid view">
                             <LayoutGrid size={13} />
                           </button>
-                          <button type="button" className="p-1 rounded-md text-slate-400 hover:text-gray-600" title="List view">
-                            <List size={13} />
-                          </button>
                         </div>
-                      </div>
-                    </aside>
+                      </aside>
                     )}
 
-            <section className={`flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden relative transition-all duration-200 ${isSheetsMode ? 'bg-[#FAFAFC]' : 'bg-transparent'} ${(isSheetsMode && sheetToolbarTab === 'Data' && !hasImportedData) ? '' : 'p-4 gap-4'} ${productMode === 'compose' ? (rightSidebarOpen && !shareModalOpen ? 'mr-[380px]' : 'mr-3') : ''}`}>
-            {/* Floating button removed as per requirements */}
-              <div key={productMode} className="flex flex-col flex-1 relative z-10 min-h-0 overflow-hidden animate-in fade-in zoom-in-[0.99] duration-200 ease-out">
-                {isSheetsMode ? (
-                  <div ref={sheetCanvasPreviewRef} className="flex-1 min-h-0 overflow-hidden bg-transparent flex flex-col relative">
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#121214] flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
-                      <div className="flex items-center gap-4">
-                        {['Data', 'Templates', 'Analyze', 'Visualize'].map((tab) => (
+                    {/* Right main area: floating island toolbar & sheet grid */}
+                    {isSheetsMode ? (
+                      <div className="flex-1 flex flex-col min-w-0 relative z-10">
+                      <div className="mx-4 mt-3 mb-2 p-3 border border-gray-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-[#121214]/80 backdrop-blur-md rounded-2xl shadow-sm flex flex-col gap-2.5 z-20 shrink-0">
+                      {/* Top Row: Navigation Tabs & Export */}
+                      <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
+                        <div className="flex items-center gap-4">
+                          {['Data', 'Templates', 'Analyze', 'Visualize'].map((tab) => (
+                            <button
+                              key={tab}
+                              type="button"
+                              onClick={(e) => {
+                                if (tab === 'Data') {
+                                  setSheetToolbarTab(sheetToolbarTab === 'Data' ? null : 'Data');
+                                } else {
+                                  setSheetToolbarTab(sheetToolbarTab === tab ? null : tab);
+                                  showToast(`${tab} tools ready`);
+                                }
+                              }}
+                              className={`px-3 py-1.5 rounded-[6px] border text-sm font-semibold transition-colors ${sheetToolbarTab === tab ? 'border-slate-300 bg-slate-50 text-slate-900 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600' : 'border-transparent hover:bg-gray-100 text-[#374151] dark:text-[#a3a3a3] dark:hover:bg-[#1c1c1e]'}`}
+                            >
+                              {tab}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="relative export-menu-container">
                           <button
-                            key={tab}
-                            type="button"
-                            onClick={(e) => {
-                              if (tab === 'Data') {
-                                setSheetToolbarTab(sheetToolbarTab === 'Data' ? null : 'Data');
-                              } else {
-                                setSheetToolbarTab(sheetToolbarTab === tab ? null : tab);
-                                showToast(`${tab} tools ready`);
-                              }
+                            onClick={() => {
+                              closeTransientMenus();
+                              setSheetsExportMenuOpen(!sheetsExportMenuOpen);
                             }}
-                            className={`px-3 py-1.5 rounded-[6px] border text-sm font-semibold transition-colors ${sheetToolbarTab === tab ? 'bg-slate-100 text-slate-900 border-transparent dark:bg-zinc-800 dark:text-zinc-100' : 'border-transparent hover:bg-gray-100 text-[#374151] dark:text-[#a3a3a3] dark:hover:bg-[#1c1c1e]'}`}
+                            className={`text-[13px] font-semibold px-3 py-1.5 rounded-lg border flex items-center gap-1 transition-colors ${sheetsExportMenuOpen ? 'border-violet-500 text-violet-700 bg-transparent dark:border-violet-400 dark:text-violet-400' : 'border-transparent hover:bg-gray-100 text-[#374151] dark:text-[#a3a3a3] dark:hover:bg-[#1c1c1e]'}`}
+                            title="Export options"
                           >
-                            {tab}
+                            Export {sheetsExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                           </button>
-                        ))}
-                      </div>
-                      <div className="relative export-menu-container">
-                        <button
-                          onClick={() => {
-                            closeTransientMenus();
-                            setSheetsExportMenuOpen(!sheetsExportMenuOpen);
-                          }}
-                          className={`text-[13px] font-semibold px-3 py-1.5 rounded-lg border flex items-center gap-1 transition-colors ${sheetsExportMenuOpen ? 'border-violet-500 text-violet-700 bg-transparent dark:border-violet-400 dark:text-violet-400' : 'border-transparent hover:bg-gray-100 text-[#374151] dark:text-[#a3a3a3] dark:hover:bg-[#1c1c1e]'}`}
-                          title="Export options"
-                        >
-                          Export {sheetsExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                        </button>
-                        {sheetsExportMenuOpen && (
-                          <>
-                            <div
-                              className="fixed inset-0 z-[220] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
-                              onClick={() => setSheetsExportMenuOpen(false)}
-                            />
-                            <div className="absolute top-9 right-0 z-[230] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
-                              <div className="flex flex-col gap-2">
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Export as File</span>
-                                {[
-                                  { format: 'Sheets', label: 'Sheets Document', desc: '.sheets' },
-                                  { format: 'XLSX', label: 'Excel Spreadsheet', desc: '.xlsx' },
-                                  { format: 'CSV', label: 'Comma Separated', desc: '.csv' },
-                                  { format: 'JSON', label: 'JSON Data', desc: '.json' },
-                                  { format: 'PDF', label: 'PDF Document', desc: '.pdf' }
-                                ].map(f => (
-                                  <button 
-                                    key={f.format}
-                                    disabled={isExporting}
-                                    onClick={async () => {
-                                      setIsExporting(true);
-                                      try {
-                                        await exportSheets(f.format, sheetGrids[activeSheetId]?.cells || [], sheetsTitle || 'Sheets_Document');
-                                        showToast('Exported as ' + f.format);
-                                      } catch (e) {
-                                        showToast('Export failed: ' + e.message);
-                                      } finally {
-                                        setIsExporting(false);
-                                        setSheetsExportMenuOpen(false);
-                                      }
-                                    }}
-                                    className="w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                                  >
-                                    <span>{f.label}</span>
-                                    <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
-                                  </button>
-                                ))}
+                          {sheetsExportMenuOpen && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-[220] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+                                onClick={() => setSheetsExportMenuOpen(false)}
+                              />
+                              <div className="absolute top-9 right-0 z-[230] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Export as File</span>
+                                  {[
+                                    { format: 'Sheets', label: 'Sheets Document', desc: '.sheets' },
+                                    { format: 'XLSX', label: 'Excel Spreadsheet', desc: '.xlsx' },
+                                    { format: 'CSV', label: 'Comma Separated', desc: '.csv' },
+                                    { format: 'JSON', label: 'JSON Data', desc: '.json' },
+                                    { format: 'PDF', label: 'PDF Document', desc: '.pdf' }
+                                  ].map(f => (
+                                    <button 
+                                      key={f.format}
+                                      disabled={isExporting}
+                                      onClick={async () => {
+                                        setIsExporting(true);
+                                        try {
+                                          await exportSheets(f.format, sheetGrids[activeSheetId]?.cells || [], sheetsTitle || 'Sheets_Document');
+                                          showToast('Exported as ' + f.format);
+                                        } catch (e) {
+                                          showToast('Export failed: ' + e.message);
+                                        } finally {
+                                          setIsExporting(false);
+                                          setSheetsExportMenuOpen(false);
+                                        }
+                                      }}
+                                      className="w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                                    >
+                                      <span>{f.label}</span>
+                                      <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full"></div>
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Convert to</span>
+                                  {[
+                                    { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
+                                    { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
+                                    { target: 'Whiteboard', icon: PenTool, color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/40' }
+                                  ].map(t => (
+                                    <button 
+                                      key={t.target}
+                                      disabled={isExporting}
+                                      onClick={() => {
+                                        setIsExporting(true);
+                                        setTimeout(() => { 
+                                          setIsExporting(false); 
+                                          setSheetsExportMenuOpen(false); 
+                                          setProductMode(t.target.toLowerCase());
+                                          showToast('Converted to ' + t.target); 
+                                        }, 1500);
+                                      }}
+                                      className="w-full flex items-center gap-2.5 p-1 px-2 text-xs rounded-lg hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 transition-colors font-semibold text-slate-700 dark:text-zinc-200"
+                                    >
+                                      <div className={`p-1.5 rounded ${t.color}`}>
+                                        <t.icon size={13} />
+                                      </div>
+                                      {t.target}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
-                              <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full"></div>
-                              <div className="flex flex-col gap-2">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Convert to</span>
-                                {[
-                                  { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
-                                  { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
-                                  { target: 'Whiteboard', icon: PenTool, color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/40' }
-                                ].map(t => (
-                                  <button 
-                                    key={t.target}
-                                    disabled={isExporting}
-                                    onClick={() => {
-                                      setIsExporting(true);
-                                      setTimeout(() => { 
-                                        setIsExporting(false); 
-                                        setSheetsExportMenuOpen(false); 
-                                        setProductMode(t.target.toLowerCase());
-                                        showToast('Converted to ' + t.target); 
-                                      }, 1500);
-                                    }}
-                                    className="w-full flex items-center gap-2.5 p-1 px-2 text-xs rounded-lg hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 transition-colors font-semibold text-slate-700 dark:text-zinc-200"
-                                  >
-                                    <div className={`p-1.5 rounded ${t.color}`}>
-                                      <t.icon size={13} />
-                                    </div>
-                                    {t.target}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </>
-                        )}
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
+                      {/* Sub-tab actions */}
                       {sheetToolbarTab === 'Templates' ? (
-    <div className="flex items-center gap-6 px-2 py-1">
-      <div className="flex items-center gap-1">
-        <button type="button" onClick={() => showToast('Loading Financial Models...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Financial</button>
-        <button type="button" onClick={() => showToast('Loading Project Tracking...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Project Tracking</button>
-      </div>
-    </div>
-  ) : sheetToolbarTab === 'Analyze' ? (
-    <AnalyticsHubUI 
-      activeSheetGrid={sheetGrids[activeSheetId]} 
-      activeSheetId={activeSheetId} 
-      updateSheetCell={updateSheetCell} 
-      showToast={showToast} 
-    />
-  ) : null}
-
-  {/* ── DATA TAB: OMNI-IMPORT PORTAL ─────────────────────── */}
-  {sheetToolbarTab === 'Data' && !hasImportedData ? (
-    <div className="flex-1 min-h-0 overflow-y-auto bg-[#FAFAFC] thin-scrollbar">
-      <div className="max-w-3xl w-full mx-auto flex flex-col gap-6 px-6 py-10 md:px-10 md:py-12">
-
-        {/* Relationship Detection Banner */}
-        {dataPortalRelationshipPrompt && (
-          <div className="flex items-start gap-3 bg-violet-50 border border-violet-200 rounded-2xl px-5 py-4 shadow-sm animate-in fade-in slide-in-from-top-3 duration-250">
-            <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5">
-              <GitMerge size={15} className="text-violet-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-violet-900">Relationships detected</p>
-              <p className="text-[12px] text-violet-700 mt-0.5">Matching customer IDs found across your uploaded files. Would you like to connect these datasets automatically?</p>
-              <div className="flex items-center gap-2 mt-3">
-                <button type="button" onClick={() => { setDataPortalRelationshipPrompt(false); setHasImportedData(true); showToast('Datasets connected — no VLOOKUP required!'); }} className="px-3 py-1.5 text-[12px] font-medium rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors">Connect Datasets</button>
-                <button type="button" onClick={() => setDataPortalRelationshipPrompt(false)} className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors">Dismiss</button>
-              </div>
-            </div>
-            <button type="button" onClick={() => setDataPortalRelationshipPrompt(false)} className="text-violet-400 hover:text-violet-600 shrink-0"><X size={15} /></button>
-          </div>
-        )}
-
-        {/* ZONE 1: Omni-Import Portal Main Card */}
-        <div
-          className={`relative rounded-3xl transition-all duration-200 bg-white shadow-sm border border-slate-200/80 ${dataPortalDragOver ? 'ring-2 ring-violet-200 bg-violet-50/20' : ''}`}
-          onDragOver={(e) => { e.preventDefault(); setDataPortalDragOver(true); }}
-          onDragLeave={() => setDataPortalDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDataPortalDragOver(false);
-            const files = Array.from(e.dataTransfer.files);
-            const fileNames = files.map(f => f.name);
-            if (files.length > 1) {
-              setDataPortalRelationshipPrompt(true);
-              setSelectedDatasets(fileNames);
-            } else if (files.length === 1) {
-              setSelectedDatasets([files[0].name]);
-              setHasImportedData(true);
-            }
-            files.forEach(f => {
-              setDataPortalImports(prev => [{ id: Date.now() + Math.random(), name: f.name, type: f.name.split('.').pop(), date: 'Just now', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50' }, ...prev]);
-            });
-            showToast(`${files.length} file${files.length > 1 ? 's' : ''} received — analyzing...`);
-          }}
-        >
-          <div className="p-8 md:p-10 flex flex-col items-center text-center gap-6">
-            {/* Hero Icon */}
-            <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-violet-600 text-white flex items-center justify-center shadow-md shadow-violet-500/20">
-                <Cpu size={28} />
-              </div>
-            </div>
-
-            {/* Headline */}
-            <div>
-              <h2 className="text-[22px] font-bold text-slate-900 tracking-tight">What would you like to analyze?</h2>
-              <p className="text-[13px] text-slate-500 mt-1 max-w-md mx-auto leading-relaxed">Drop any file or paste content — Regaarder converts it into structured, intelligent data.</p>
-            </div>
-
-            {/* Try Asking Prompt Pills */}
-            <div className="flex flex-col items-center gap-2.5">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Try asking:</span>
-              <div className="flex items-center gap-3 flex-wrap justify-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSheetsTitle('SOP Tracker');
-                    setHasImportedData(true);
-                    showToast('Creating SOP tracker...');
-                  }}
-                  className="px-4 py-2 bg-slate-50 hover:bg-violet-50/80 text-slate-700 hover:text-violet-700 border border-slate-200/80 hover:border-violet-200 rounded-xl text-xs font-medium transition-all shadow-2xs active:scale-98"
-                >
-                  "Turn this SOP into a tracker"
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSheetsTitle('CRM Database');
-                    setHasImportedData(true);
-                    showToast('Creating CRM database...');
-                  }}
-                  className="px-4 py-2 bg-slate-50 hover:bg-violet-50/80 text-slate-700 hover:text-violet-700 border border-slate-200/80 hover:border-violet-200 rounded-xl text-xs font-medium transition-all shadow-2xs active:scale-98"
-                >
-                  "Create a CRM from this PDF"
-                </button>
-              </div>
-            </div>
-
-            {/* Upload Area Dropzone */}
-            <div className="w-full max-w-lg mt-1 flex flex-col items-center gap-3 py-8 px-8 rounded-2xl border-2 border-dashed border-violet-200/80 bg-violet-50/20 hover:bg-violet-50/50 transition-colors relative">
-              <Upload size={32} className="text-slate-400" />
-              <div className="space-y-0.5">
-                <p className="text-[14px] text-slate-700 font-semibold">Drag and drop file here</p>
-                <p className="text-[12px] text-slate-400">or</p>
-              </div>
-              <label className="px-5 py-2 bg-white text-slate-800 text-[12px] font-semibold rounded-xl cursor-pointer hover:bg-slate-50 transition-colors border border-slate-200 shadow-xs">
-                Browse for file
-                <input type="file" multiple className="hidden" onChange={(e) => {
-                  const files = Array.from(e.target.files || []);
-                  const fileNames = files.map(f => f.name);
-                  if (files.length > 1) {
-                    setDataPortalRelationshipPrompt(true);
-                    setSelectedDatasets(fileNames);
-                  } else if (files.length === 1) {
-                    setSelectedDatasets([files[0].name]);
-                    setHasImportedData(true);
-                  }
-                  files.forEach(f => {
-                    setDataPortalImports(prev => [{ id: Date.now() + Math.random(), name: f.name, type: f.name.split('.').pop(), date: 'Just now', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50' }, ...prev]);
-                  });
-                  showToast(`${files.length} file${files.length > 1 ? 's' : ''} ready — converting to sheet...`);
-                }} />
-              </label>
-            </div>
-
-            {/* Secondary actions */}
-            <div className="flex items-center gap-6 mt-1">
-              <button type="button" onClick={() => { setHasImportedData(true); showToast('Paste content view loaded'); }} className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Paste Content</button>
-              <button type="button" onClick={() => { setHasImportedData(true); showToast('AI generation ready — describe your sheet'); }} className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Ask AI</button>
-              <button type="button" onClick={() => { setHasImportedData(true); showToast('Spreadsheet grid view opened'); }} className="text-[13px] text-violet-600 hover:underline font-semibold">Open Spreadsheet Grid</button>
-            </div>
-
-            {dataPortalDragOver && (
-              <div className="absolute inset-0 rounded-3xl bg-violet-50/80 flex items-center justify-center pointer-events-none z-10 backdrop-blur-[1px]">
-                <div className="flex flex-col items-center gap-3">
-                  <Upload size={40} className="text-violet-500" />
-                  <p className="text-[16px] font-semibold text-violet-700">Release to import</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ZONE 2: Quick Creation Templates */}
-        <div>
-          <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-3 text-center sm:text-left">Start from a template</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: 'Blank Sheet', icon: FilePlus2, color: 'text-slate-500', bg: 'bg-slate-50' },
-              { label: 'CRM', icon: Users2, color: 'text-blue-600', bg: 'bg-blue-50' },
-              { label: 'Budget Tracker', icon: BarChart2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-              { label: 'Inventory', icon: Database, color: 'text-amber-600', bg: 'bg-amber-50' },
-              { label: 'Project Tracker', icon: CheckSquare, color: 'text-violet-600', bg: 'bg-violet-50' },
-              { label: 'Content Calendar', icon: Calendar, color: 'text-pink-600', bg: 'bg-pink-50' },
-              { label: 'Sales Dashboard', icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-              { label: 'Expense Tracker', icon: PieChart, color: 'text-orange-600', bg: 'bg-orange-50' },
-            ].map(({ label, icon: Icon, color, bg }) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => {
-                  if (label === 'Blank Sheet') {
-                    setSheetsTitle('Blank Sheet');
-                    setHasImportedData(true);
-                    showToast('Blank sheet created');
-                  } else {
-                    setSheetsTitle(label + ' Template');
-                    setHasImportedData(true);
-                    showToast(`AI-generating "${label}" template...`);
-                  }
-                }}
-                className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all text-left group shadow-xs"
-              >
-                <div className={`w-8 h-8 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
-                  <Icon size={16} className={color} />
-                </div>
-                <span className="text-[13px] font-medium text-slate-700 group-hover:text-violet-700 transition-colors">{label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ZONE 3: Recent Data Sources */}
-        {dataPortalImports.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Recent imports</p>
-              <button type="button" className="text-[12px] text-violet-600 hover:underline font-medium">View all</button>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-xs divide-y divide-gray-50">
-              {dataPortalImports.slice(0, 5).map((item) => {
-                const Icon = item.icon;
-                const isSelected = selectedDatasets.includes(item.name);
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedDatasets(prev => {
-                        const next = prev.includes(item.name) ? prev.filter(n => n !== item.name) : [...prev, item.name];
-                        if (next.length > 1) {
-                          setDataPortalRelationshipPrompt(true);
-                        } else {
-                          setDataPortalRelationshipPrompt(false);
-                        }
-                        return next;
-                      });
-                      showToast(`${item.name} ${isSelected ? 'deselected' : 'selected'}`);
-                    }}
-                    onDoubleClick={() => {
-                      setSheetsTitle(item.name);
-                      setHasImportedData(true);
-                      showToast(`Opening "${item.name}"...`);
-                    }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50/60 transition-all text-left first:rounded-t-2xl last:rounded-b-2xl ${isSelected ? 'bg-violet-50/30 outline outline-2 outline-violet-500/30' : ''}`}
-                  >
-                    <div className={`w-9 h-9 rounded-xl ${item.color} flex items-center justify-center shrink-0`}>
-                      <Icon size={16} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-medium text-slate-800 truncate">{item.name}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">Imported {item.date} (Double-click to open)</p>
-                    </div>
-                    <ArrowRight size={14} className="text-slate-300 group-hover:text-violet-400 shrink-0" />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-      </div>
-    </div>
-  ) : (
-    <>
-      <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
-                      {/* Insert, Analyze, Visualize tabs buttons removed as per request to only show in dropdown */}
-
-                      <div className="flex items-center gap-1 border-r border-gray-200 pr-3 mr-1">
-                        <button type="button" onClick={undoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Undo"><Undo2 size={15} /></button>
-                        <button type="button" onClick={redoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Redo"><Redo2 size={15} /></button>
-                        <button type="button" onClick={openReplayPanel} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Edit replay"><Clock size={15} /></button>
-                      <button type="button" onClick={saveDocumentLocally} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Save"><Save size={15} /></button>
-                        <button
-                          id="compose-dictate-btn"
-                          type="button"
-                          onClick={() => toggleVoiceRecording('document')}
-                          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
-                            isVoiceActive && voiceTarget === 'document'
-                              ? 'bg-violet-100 text-violet-600 shadow-[0_0_0_2px_rgba(139,92,246,0.3)] animate-pulse'
-                              : 'hover:bg-gray-100 text-gray-600'
-                          }`}
-                          title={isVoiceActive && voiceTarget === 'document' ? 'Stop dictation' : 'Dictate into document'}
-                        >
-                          <Mic size={15} />
-                        </button>
-                      </div>
-                      <div className="relative" ref={docSearchPanelRef}>
-                        {docSearchPanelOpen && renderDocSearchPanel()}
-                      </div>
-                      <div className="relative flex items-center gap-1" ref={sheetToolbarMenuRef}>
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onPointerDown={(e) => {
-                              e.preventDefault();
-                              setSheetToolbarMenuOpen((prev) => prev === 'font' ? null : 'font');
-                            }}
-                            className="inline-flex items-center gap-1 hover:bg-gray-100 rounded-lg px-2 py-1.5 bg-white text-[13px] text-[#374151] transition-colors"
-                          >
-                            <span>{getSelectedCellFormat().fontFamily || sheetToolbarFont}</span>
-                            <ChevronDown size={13} />
-                          </button>
-                          {sheetToolbarMenuOpen === 'font' && (
-                            <div className="absolute z-[420] top-full mt-1 left-0 w-48 max-h-40 overflow-y-auto thin-scrollbar rounded-lg border border-gray-200 bg-white shadow-lg p-1">
-                              {fontOptions.map((font) => (
-                                <button
-                                  key={font}
-                                  type="button"
-                                  onPointerDown={(e) => {
-                                    e.preventDefault();
-                                    if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
-                                      updateSheetCellFormat(activeSheetId, 'fontFamily', font);
-                                    } else {
-                                      setSheetToolbarFont(font);
-                                    }
-                                    setSheetToolbarMenuOpen(null);
-                                  }}
-                                  className={`w-full text-left px-2 py-1 rounded text-xs ${sheetToolbarFont === font ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
-                                  style={{ fontFamily: font }}
-                                >
-                                  {font}
-                                </button>
-                              ))}
-                            </div>
-                          )}
+                        <div className="flex items-center gap-6 px-2 py-1 pt-1.5 border-t border-gray-200/60 dark:border-zinc-800">
+                          <div className="flex items-center gap-1">
+                            <button type="button" onClick={() => showToast('Loading Financial Models...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Financial</button>
+                            <button type="button" onClick={() => showToast('Loading Project Tracking...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Project Tracking</button>
+                          </div>
                         </div>
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onPointerDown={(e) => {
-                              e.preventDefault();
-                              setSheetToolbarMenuOpen((prev) => prev === 'size' ? null : 'size');
-                            }}
-                            className="inline-flex items-center gap-1 hover:bg-gray-100 rounded-lg px-2 py-1.5 bg-white text-[13px] text-[#374151] transition-colors"
-                          >
-                            <span>{getSelectedCellFormat().fontSize || sheetToolbarSize}</span>
-                            <ChevronDown size={13} />
-                          </button>
-                          {sheetToolbarMenuOpen === 'size' && (
-                            <div className="absolute z-[420] top-full mt-1 left-0 w-24 max-h-40 overflow-y-auto thin-scrollbar rounded-lg border border-gray-200 bg-white shadow-lg p-1">
-                              {sizeOptions.map((size) => (
-                                <button
-                                  key={size}
-                                  type="button"
-                                  onPointerDown={(e) => {
-                                    e.preventDefault();
-                                    if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
-                                      updateSheetCellFormat(activeSheetId, 'fontSize', size);
-                                    } else {
-                                      setSheetToolbarSize(size);
-                                    }
-                                    setSheetToolbarMenuOpen(null);
-                                  }}
-                                  className={`w-full text-left px-2 py-1 rounded text-xs ${sheetToolbarSize === size ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
-                                >
-                                  {size}
-                                </button>
-                              ))}
-                            </div>
-                          )}
+                      ) : sheetToolbarTab === 'Analyze' ? (
+                        <div className="pt-1.5 border-t border-gray-200/60 dark:border-zinc-800">
+                          <AnalyticsHubUI 
+                            activeSheetGrid={sheetGrids[activeSheetId]} 
+                            activeSheetId={activeSheetId} 
+                            updateSheetCell={updateSheetCell} 
+                            showToast={showToast} 
+                          />
                         </div>
-                        {(() => {
-                          const fmt = getSelectedCellFormat();
-                          return (
-                            <div className="flex items-center gap-1 mx-2 px-2 border-x border-gray-200">
-                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors font-bold ${fmt.bold ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>B</button>
-                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors italic font-serif ${fmt.italic ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>I</button>
-                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors underline ${fmt.underline ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>U</button>
-                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors line-through ${fmt.strikeThrough ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>S</button>
-                              <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-gray-100 text-gray-500" title="Insert Link">
-                                <LinkIcon size={14} />
-                              </button>
-                              <div className="relative text-style-menu-container flex items-center">
+                      ) : null}
+
+                      {/* Bottom Row: Cell Formatting Tools */}
+                      {(sheetToolbarTab !== 'Data' || hasImportedData) && (
+                        <>
+                          <div className="h-px bg-gray-200/60 dark:bg-zinc-800/60 w-full" />
+                          <div className="flex items-center gap-3 text-[13px] font-medium text-[#374151]">
+                            <div className="relative" ref={docSearchPanelRef}>
+                              {docSearchPanelOpen && renderDocSearchPanel()}
+                            </div>
+                            <div className="relative flex items-center gap-1" ref={sheetToolbarMenuRef}>
+                              <div className="relative">
                                 <button
                                   type="button"
                                   onPointerDown={(e) => {
                                     e.preventDefault();
-                                    setSheetToolbarMenuOpen((prev) => prev === 'textStyle' ? null : 'textStyle');
+                                    setSheetToolbarMenuOpen((prev) => prev === 'font' ? null : 'font');
                                   }}
-                                  className="h-8 px-2 flex items-center justify-center gap-1.5 rounded-lg transition-colors hover:bg-gray-100 cursor-pointer text-[#374151]"
-                                  title="Format options (Style & Colors)"
+                                  className="inline-flex items-center gap-1 hover:bg-gray-100 rounded-lg px-2 py-1.5 bg-white text-[13px] text-[#374151] transition-colors"
                                 >
-                                  <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
+                                  <span>{getSelectedCellFormat().fontFamily || sheetToolbarFont}</span>
+                                  <ChevronDown size={13} />
                                 </button>
-                                {sheetToolbarMenuOpen === 'textStyle' && (
-                                  <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
-                                    <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
-                                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Text Color</span>
-                                      <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
-                                        {['#000000', '#475569', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'].map(c => (
-                                          <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
-                                        ))}
-                                      </div>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Highlight</span>
-                                      <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
-                                        <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
-                                        {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
-                                          <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
-                                        ))}
-                                      </div>
-                                    </div>
+                                {sheetToolbarMenuOpen === 'font' && (
+                                  <div className="absolute z-[420] top-full mt-1 left-0 w-48 max-h-40 overflow-y-auto thin-scrollbar rounded-lg border border-gray-200 bg-white shadow-lg p-1">
+                                    {fontOptions.map((font) => (
+                                      <button
+                                        key={font}
+                                        type="button"
+                                        onPointerDown={(e) => {
+                                          e.preventDefault();
+                                          if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
+                                            updateSheetCellFormat(activeSheetId, 'fontFamily', font);
+                                          } else {
+                                            setSheetToolbarFont(font);
+                                          }
+                                          setSheetToolbarMenuOpen(null);
+                                        }}
+                                        className={`w-full text-left px-2 py-1 rounded text-xs ${sheetToolbarFont === font ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                                        style={{ fontFamily: font }}
+                                      >
+                                        {font}
+                                      </button>
+                                    ))}
                                   </div>
                                 )}
                               </div>
+                              <div className="relative">
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    setSheetToolbarMenuOpen((prev) => prev === 'size' ? null : 'size');
+                                  }}
+                                  className="inline-flex items-center gap-1 hover:bg-gray-100 rounded-lg px-2 py-1.5 bg-white text-[13px] text-[#374151] transition-colors"
+                                >
+                                  <span>{getSelectedCellFormat().fontSize || sheetToolbarSize}</span>
+                                  <ChevronDown size={13} />
+                                </button>
+                                {sheetToolbarMenuOpen === 'size' && (
+                                  <div className="absolute z-[420] top-full mt-1 left-0 w-24 max-h-40 overflow-y-auto thin-scrollbar rounded-lg border border-gray-200 bg-white shadow-lg p-1">
+                                    {sizeOptions.map((size) => (
+                                      <button
+                                        key={size}
+                                        type="button"
+                                        onPointerDown={(e) => {
+                                          e.preventDefault();
+                                          if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
+                                            updateSheetCellFormat(activeSheetId, 'fontSize', size);
+                                          } else {
+                                            setSheetToolbarSize(size);
+                                          }
+                                          setSheetToolbarMenuOpen(null);
+                                        }}
+                                        className={`w-full text-left px-2 py-1 rounded text-xs ${sheetToolbarSize === size ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                                      >
+                                        {size}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              {(() => {
+                                const fmt = getSelectedCellFormat();
+                                return (
+                                  <div className="flex items-center gap-1 mx-2 px-2 border-x border-gray-200">
+                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors font-bold ${fmt.bold ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>B</button>
+                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors italic font-serif ${fmt.italic ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>I</button>
+                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors underline ${fmt.underline ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>U</button>
+                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors line-through ${fmt.strikeThrough ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>S</button>
+                                    <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-gray-100 text-gray-500" title="Insert Link">
+                                      <LinkIcon size={14} />
+                                    </button>
+                                    <div className="relative text-style-menu-container flex items-center">
+                                      <button
+                                        type="button"
+                                        onPointerDown={(e) => {
+                                          e.preventDefault();
+                                          setSheetToolbarMenuOpen((prev) => prev === 'textStyle' ? null : 'textStyle');
+                                        }}
+                                        className="h-8 px-2 flex items-center justify-center gap-1.5 rounded-lg transition-colors hover:bg-gray-100 cursor-pointer text-[#374151]"
+                                        title="Format options (Style & Colors)"
+                                      >
+                                        <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
+                                      </button>
+                                      {sheetToolbarMenuOpen === 'textStyle' && (
+                                        <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
+                                          <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Text Color</span>
+                                            <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
+                                              {['#000000', '#475569', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'].map(c => (
+                                                <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                                              ))}
+                                            </div>
+                                          </div>
+                                          <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Highlight</span>
+                                            <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
+                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
+                                              {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
+                                                <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
-                          );
-                        })()}
-                      </div>
-                      <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Row</button>
-                      <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Row</button>
-                      <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Col</button>
-                      <button type="button" onClick={removeSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Col</button>
-                      <div className="ml-auto flex items-center gap-4">
-                        <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                          <Cloud size={14} /> {savedStatusLabel}
-                        </div>
-                        <button className="text-[11px] text-[#374151] px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 font-medium">More</button>
-                      </div>
+                            <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Row</button>
+                            <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Row</button>
+                            <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Col</button>
+                            <button type="button" onClick={removeSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Col</button>
+                            <div className="ml-auto flex items-center gap-4">
+                              <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                                <Cloud size={14} /> {savedStatusLabel}
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                     <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
                       <div className="min-w-[72px] text-center border border-gray-200 rounded-lg bg-gray-50 py-1.5 px-2 text-[11px] font-mono font-semibold tracking-tight">
@@ -38934,10 +38691,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                       </div>
                     </div>
-                  </>
-                )}
-              </div>
-            ) : (
+                  </div>
+                ) : (
               <div className="w-full h-full flex-1 flex overflow-hidden bg-[#F7F8FB] relative select-none">
                     {/* Workspace background vignette effect overlay */}
                     <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(240,242,247,0.8)_100%)] z-0" />
@@ -40095,12 +39850,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
     </div>
   </div>
 )}
-
-              </div>
-
-          </section>
-          </div>
-        </main>
+        </div>
+      </main>
 
         {sharedReplayPanel}
 
