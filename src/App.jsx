@@ -8254,19 +8254,12 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [assistantQuickPrompt]);
 
-  // Context-aware proximity detection: Minimize prompt box into floating button when text/caret is within 1-2 lines (~55px)
+  // Context-aware proximity detection: Minimize prompt box into floating button when text/caret or pasted content is within 1-2 lines (~55px)
   useEffect(() => {
     let animationFrameId = null;
 
     const checkProximity = () => {
       if (isPromptMinimized || isComposing) return;
-
-      const sel = window.getSelection();
-      if (!sel || !sel.rangeCount) return;
-      const range = sel.getRangeAt(0);
-
-      const rect = range.getBoundingClientRect();
-      if (!rect || (rect.width === 0 && rect.height === 0 && rect.top === 0)) return;
 
       const promptInputEl = document.querySelector('textarea[placeholder*="Describe what you\'d like to write"]');
       if (!promptInputEl) return;
@@ -8274,13 +8267,41 @@ export default function App() {
       if (!promptBoxEl) return;
 
       const promptRect = promptBoxEl.getBoundingClientRect();
+      let isNear = false;
 
-      // Calculate vertical gap between bottom of text line and top of prompt box
-      const verticalGap = promptRect.top - rect.bottom;
-      const horizontalOverlap = rect.left <= promptRect.right + 20 && rect.right >= promptRect.left - 20;
+      // 1. Check current selection / caret rect
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        if (rect && (rect.width > 0 || rect.height > 0 || rect.top > 0)) {
+          const verticalGap = promptRect.top - rect.bottom;
+          const horizontalOverlap = rect.left <= promptRect.right + 20 && rect.right >= promptRect.left - 20;
+          if (verticalGap >= -15 && verticalGap <= 55 && horizontalOverlap) {
+            isNear = true;
+          }
+        }
+      }
 
-      // If text/cursor is within 55px (approx 1-2 lines height) of prompt box top boundary
-      if (verticalGap >= -15 && verticalGap <= 55 && horizontalOverlap) {
+      // 2. Check editor content bottom element (e.g. for pasted multi-line text blocks)
+      if (!isNear && blankBodyRef.current) {
+        const children = Array.from(blankBodyRef.current.children);
+        if (children.length > 0) {
+          for (let i = children.length - 1; i >= 0; i--) {
+            const childRect = children[i].getBoundingClientRect();
+            if (childRect.height > 0) {
+              const verticalGap = promptRect.top - childRect.bottom;
+              const horizontalOverlap = childRect.left <= promptRect.right + 20 && childRect.right >= promptRect.left - 20;
+              if (verticalGap >= -15 && verticalGap <= 55 && horizontalOverlap) {
+                isNear = true;
+              }
+              break;
+            }
+          }
+        }
+      }
+
+      if (isNear) {
         setIsPromptMinimized(true);
       }
     };
@@ -8293,12 +8314,16 @@ export default function App() {
     window.addEventListener('scroll', handleProximityEvent, true);
     document.addEventListener('selectionchange', handleProximityEvent);
     document.addEventListener('keyup', handleProximityEvent);
+    document.addEventListener('paste', handleProximityEvent);
+    document.addEventListener('input', handleProximityEvent);
 
     return () => {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
       window.removeEventListener('scroll', handleProximityEvent, true);
       document.removeEventListener('selectionchange', handleProximityEvent);
       document.removeEventListener('keyup', handleProximityEvent);
+      document.removeEventListener('paste', handleProximityEvent);
+      document.removeEventListener('input', handleProximityEvent);
     };
   }, [isPromptMinimized, isComposing]);
   const [sheetToolbarFont, setSheetToolbarFont] = useState('Manrope');
