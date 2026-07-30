@@ -24753,60 +24753,42 @@ Respond with a JSON array of slide objects matching the schema.`;
         return;
       }
 
-      let rawText = '';
-      if (!curRange.collapsed) {
-        rawText = curRange.toString();
-      } else {
-        const blockEl = parentEl?.closest('p, div, h1, h2, h3, h4, h5, h6, section, article') || parentEl;
-        if (blockEl) {
-          rawText = blockEl.innerText || blockEl.textContent || '';
-          try {
-            curRange.selectNodeContents(blockEl);
-          } catch (_e) {}
-        }
-      }
-
-      const trimmedRaw = String(rawText || '').replace(/\r/g, '').trim();
-      if (!trimmedRaw) {
+      // If selection is a simple cursor (collapsed), use native execCommand to wrap current paragraph into a single bullet
+      if (curRange.collapsed) {
         document.execCommand(cmd, false, null);
         return;
       }
 
-      const lineBlocks = trimmedRaw.split(/\n+/);
-      const sentenceList = [];
-
-      for (const block of lineBlocks) {
-        const trimmedBlock = block.trim();
-        if (!trimmedBlock) continue;
-
-        const sentences = trimmedBlock
-          .split(/(?<=[.!?])\s+(?=[A-Z0-9\u00C0-\u024F])/)
-          .map(s => s.trim())
-          .filter(Boolean);
-
-        if (sentences.length > 1) {
-          sentenceList.push(...sentences);
-        } else {
-          sentenceList.push(trimmedBlock);
-        }
-      }
-
-      if (sentenceList.length === 0) {
-        document.execCommand(cmd, false, null);
-        return;
-      }
-
-      const lis = sentenceList
-        .map(item => `<li style="margin-bottom: 4px;">${escapeHtml(item)}</li>`)
-        .join('');
-      const listHtml = `<${tag} style="list-style-type: ${listStyle}; padding-left: 24px; margin: 8px 0;">${lis}</${tag}>`;
-
+      // Inspect selection contents
+      const container = document.createElement('div');
       try {
-        selection.removeAllRanges();
-        selection.addRange(curRange);
-      } catch (_e) {}
+        container.appendChild(curRange.cloneContents());
+      } catch (_e) {
+        document.execCommand(cmd, false, null);
+        return;
+      }
 
-      document.execCommand('insertHTML', false, listHtml);
+      const hasBlockBreak = container.querySelector('p, div, br, h1, h2, h3, h4, h5, h6, li') !== null;
+      const rawText = container.innerText || container.textContent || '';
+      const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+      // Only create multiple bullet items if selection contains multiple distinct hard line breaks
+      if ((hasBlockBreak || lines.length > 1) && lines.length > 1) {
+        const lis = lines
+          .map(item => `<li style="margin-bottom: 4px;">${escapeHtml(item)}</li>`)
+          .join('');
+        const listHtml = `<${tag} style="list-style-type: ${listStyle}; padding-left: 24px; margin: 8px 0;">${lis}</${tag}>`;
+
+        try {
+          selection.removeAllRanges();
+          selection.addRange(curRange);
+        } catch (_e) {}
+
+        document.execCommand('insertHTML', false, listHtml);
+      } else {
+        // Single continuous paragraph (with soft line wrapping): keep as ONE single bullet point
+        document.execCommand(cmd, false, null);
+      }
     };
 
     if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
