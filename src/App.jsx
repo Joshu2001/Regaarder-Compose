@@ -35423,13 +35423,31 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
 
-        <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-[#f5f7fc]">
-          <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between group/header relative z-[210]">
-            <div className="flex items-center gap-4 min-w-0">
+        <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-zinc-950">
+          <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative z-[350]">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (isSheetsMode) {
+                    setSheetsSidebarOpen((prev) => !prev);
+                  } else {
+                    setDeckSlidesPanelOpen((prev) => !prev);
+                  }
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:text-zinc-400 dark:hover:text-zinc-200 shrink-0 transition-colors"
+                title="Toggle sidebar"
+              >
+                {isSheetsMode
+                  ? (sheetsSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
+                  : (deckSlidesPanelOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
+                }
+              </button>
+
               {/* App Switcher Button */}
               <div
                 ref={workspaceSwitcherRef}
-                className="relative z-[200] flex items-center"
+                className="relative z-[360] flex items-center"
               >
                 <button
                   type="button"
@@ -35449,14 +35467,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
               {isSheetsMode ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => setSheetsSidebarOpen((prev) => !prev)}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
-                    title={sheetsSidebarOpen ? 'Hide sheets panel' : 'Show sheets panel'}
-                  >
-                    {sheetsSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-                  </button>
                   <div className="flex items-center gap-2">
                     {isEditingUnsavedDraftName ? (
                       <input
@@ -35471,124 +35481,155 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             setIsEditingUnsavedDraftName(false);
                           }
                         }}
-                        className="text-sm text-gray-800 font-semibold italic bg-white border border-violet-200 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-violet-400"
-                        placeholder="Saved Drafts"
+                        className="text-sm font-semibold text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-violet-200 dark:border-violet-700/60 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-violet-400 dark:focus:border-violet-500"
+                        placeholder="Untitled sheet"
                       />
                     ) : (
                       <button
                         type="button"
                         onClick={() => setIsEditingUnsavedDraftName(true)}
-                        className="text-sm font-semibold text-gray-800 italic hover:text-gray-600 px-1 py-0.5 rounded text-left truncate"
+                        className="text-sm font-semibold text-slate-800 dark:text-zinc-100 hover:text-slate-600 dark:hover:text-zinc-300 px-1 py-0.5 rounded text-left truncate transition-colors"
+                        title="Double-click or tap to rename"
                       >
-                        {sheetsTitle || 'Saved Drafts'}
+                        {sheetsTitle || 'Untitled sheet'}
                       </button>
                     )}
-                    <div className="flex items-center gap-1.5 text-[11px] font-normal text-slate-400/50 ml-2 hidden sm:flex">
-                      <Cloud size={13} className="text-slate-400/50" /> {savedStatusLabel}
+                    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 ml-2 hidden sm:flex">
+                      <Cloud size={14} /> {savedStatusLabel}
                     </div>
                   </div>
                 </>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => setDeckSlidesPanelOpen((prev) => !prev)}
-                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg text-gray-500 hover:text-gray-800 transition-colors shrink-0 mr-1"
-                    title={deckSlidesPanelOpen ? "Hide slides sidebar" : "Show slides sidebar"}
-                  >
-                    {deckSlidesPanelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-                  </button>
                   <div className="flex items-center gap-2">
                     <svg className="w-5 h-5 text-[#7C4DFF]" viewBox="0 0 24 24" fill="currentColor">
                       <rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(45 12 12)" />
                       <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
                     </svg>
-                    <span className="font-bold text-[16px] text-gray-900 tracking-tight">Deck</span>
+                    <span className="font-bold text-[16px] text-gray-900 dark:text-white tracking-tight">Deck</span>
                   </div>
-                  <button type="button" onClick={() => showToast('Opening saved decks')} className="flex items-center gap-1 text-[12px] text-gray-600 hover:text-gray-900 font-medium px-2.5 py-1.5 rounded-lg border border-gray-150 bg-white ml-3 transition-colors">
-                    <FolderOpen size={14} className="text-gray-500" />
+                  <button type="button" onClick={() => showToast('Opening saved decks')} className="flex items-center gap-1 text-[12px] text-gray-600 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white font-medium px-2.5 py-1.5 rounded-lg border border-gray-150 dark:border-zinc-800 bg-white dark:bg-zinc-800 ml-3 transition-colors">
+                    <FolderOpen size={14} className="text-gray-500 dark:text-zinc-400" />
                     <span>Saved decks</span>
                   </button>
-                  <div className="flex items-center gap-1.5 text-[12px] font-semibold text-gray-400 ml-4 hidden sm:flex">
-                    <Cloud size={14} className="text-gray-400" />
-                    <span>Saved just now</span>
+                  <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 ml-3 hidden sm:flex">
+                    <Cloud size={14} /> {savedStatusLabel}
                   </div>
                 </>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
-              {/* History Group */}
-              <div className="flex items-center gap-0.5 px-2">
-                <button onClick={undoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="Undo (Ctrl+Z)"><Undo2 size={16} /></button>
-                <button onClick={redoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="Redo (Ctrl+Y)"><Redo2 size={16} /></button>
-              </div>
-
-              <div className="w-px h-5 bg-gray-200 mx-1"></div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 pl-3">
                 <button
-                  type="button"
-                  onClick={handlePresentDeck}
-                  className="bg-white border border-gray-250 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 active:scale-95"
+                  onClick={undoDocumentChange}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
+                  title="Undo (Ctrl+Z)"
                 >
-                  <MonitorPlay size={14} /> Present
+                  <Undo2 size={16} strokeWidth={1.5} />
                 </button>
-                {!isSheetsMode && (
-                  <div className="relative export-menu-container">
-                    <button
-                      onClick={() => {
-                        closeTransientMenus();
-                        setDeckExportMenuOpen(!deckExportMenuOpen);
-                      }}
-                      className="bg-white border border-gray-250 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-3 py-2 rounded-lg flex items-center gap-1 shadow-sm transition-all"
-                    >
-                      <span>Export</span> <ChevronDown size={12} />
-                    </button>
-                    {deckExportMenuOpen && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-[220] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
-                          onClick={() => setDeckExportMenuOpen(false)}
-                        />
-                        <div className="absolute right-0 top-11 z-[230] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-2 font-sans animate-in fade-in zoom-in-95 duration-150">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 mb-0.5">Export Deck</span>
-                          {[
-                            { fmt: 'PPTX', label: 'PowerPoint (.pptx)' },
-                            { fmt: 'PDF', label: 'PDF Document (.pdf)' },
-                            { fmt: 'Images', label: 'Slide Images (.png)' }
-                          ].map(item => (
-                            <button
-                              key={item.fmt}
-                              onClick={() => {
-                                showToast(`Exporting as ${item.fmt}...`);
-                                setDeckExportMenuOpen(false);
-                              }}
-                              className="w-full flex items-center justify-between text-xs py-2 px-3 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                            >
-                              {item.label}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-                <div className="relative" ref={shareMenuRef}>
+                <button
+                  onClick={redoDocumentChange}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
+                  title="Redo (Ctrl+Y)"
+                >
+                  <Redo2 size={16} strokeWidth={1.5} />
+                </button>
+                <button
+                  onClick={openReplayPanel}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`}
+                  title="Open edit replay"
+                >
+                  <Clock size={16} strokeWidth={1.5} />
+                </button>
+                <button
+                  onClick={saveDocumentLocally}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
+                  title="Save locally (Ctrl+S)"
+                >
+                  <Save size={16} strokeWidth={1.5} />
+                </button>
+
+                <div className="relative" ref={docSearchPanelRef}>
                   <button
                     type="button"
                     onClick={() => {
-                      if (!shareModalOpen) {
-                        openShareModal(activeDocId || documents[0]?.id);
-                      } else {
-                        setShareModalOpen(false);
-                      }
+                      closeTransientMenus();
+                      setDocSearchPanelOpen((prev) => !prev);
+                      setDocSearchAutoPlay(false);
                     }}
-                    className="bg-[#7C4DFF] hover:bg-[#6C3DF0] text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+                    className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${docSearchPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400 font-semibold shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`}
+                    title="Find & Replace (Ctrl+F)"
                   >
-                    <Users size={14} /> Share
+                    <Search size={16} strokeWidth={1.5} />
                   </button>
+                  {docSearchPanelOpen && renderDocSearchPanel()}
+                </div>
+              </div>
+
+              {/* Export Dropdown Button */}
+              <div className="relative export-menu-container">
+                <button
+                  onClick={() => {
+                    closeTransientMenus();
+                    setDeckExportMenuOpen(!deckExportMenuOpen);
+                  }}
+                  className={`text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all border ${deckExportMenuOpen ? 'border-slate-300 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-sm' : 'text-slate-700 dark:text-zinc-200 hover:text-slate-900 hover:bg-slate-100/70 border-slate-200/80 bg-white dark:bg-zinc-800 dark:border-zinc-700'}`}
+                  title="Export"
+                >
+                  <Download size={14} strokeWidth={1.5} className="text-slate-500 dark:text-zinc-400" />
+                  <span>Export</span>
+                  {deckExportMenuOpen ? <ChevronUp size={13} strokeWidth={1.5} className="text-slate-400" /> : <ChevronDown size={13} strokeWidth={1.5} className="text-slate-400" />}
+                </button>
+                {deckExportMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-[360] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+                      onClick={() => setDeckExportMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-11 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-2 font-sans animate-in fade-in zoom-in-95 duration-150">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 mb-0.5">
+                        {isSheetsMode ? 'Export Sheet' : 'Export Deck'}
+                      </span>
+                      {(isSheetsMode ? [
+                        { fmt: 'XLSX', label: 'Excel Workbook (.xlsx)' },
+                        { fmt: 'CSV', label: 'CSV Spreadsheet (.csv)' },
+                        { fmt: 'PDF', label: 'PDF Document (.pdf)' }
+                      ] : [
+                        { fmt: 'PPTX', label: 'PowerPoint (.pptx)' },
+                        { fmt: 'PDF', label: 'PDF Document (.pdf)' },
+                        { fmt: 'Images', label: 'Slide Images (.png)' }
+                      ]).map(item => (
+                        <button
+                          key={item.fmt}
+                          onClick={() => {
+                            showToast(`Exporting as ${item.fmt}...`);
+                            setDeckExportMenuOpen(false);
+                          }}
+                          className="w-full flex items-center justify-between text-xs py-2 px-3 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Share Button */}
+              <div className="relative font-sans" ref={shareMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!shareModalOpen) {
+                      openShareModal(activeDocId || documents[0]?.id);
+                    } else {
+                      setShareModalOpen(false);
+                    }
+                  }}
+                  className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+                >
+                  <Users size={14} strokeWidth={1.5} /> Share
+                </button>
                   {shareModalOpen && (
                     <ShareModal
                       isOpen={shareModalOpen}
@@ -35753,8 +35794,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </button>
             </div>
           </div>
-        </div>
-      </header>
 
           <div className="flex-1 min-h-0 flex relative">
             {!isSheetsMode && productMode !== 'deck' && (
