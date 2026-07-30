@@ -8253,6 +8253,54 @@ export default function App() {
     }, 1500);
     return () => clearTimeout(timer);
   }, [assistantQuickPrompt]);
+
+  // Context-aware proximity detection: Minimize prompt box into floating button when text/caret is within 1-2 lines (~55px)
+  useEffect(() => {
+    let animationFrameId = null;
+
+    const checkProximity = () => {
+      if (isPromptMinimized || isComposing) return;
+
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+
+      const rect = range.getBoundingClientRect();
+      if (!rect || (rect.width === 0 && rect.height === 0 && rect.top === 0)) return;
+
+      const promptInputEl = document.querySelector('textarea[placeholder*="Describe what you\'d like to write"]');
+      if (!promptInputEl) return;
+      const promptBoxEl = promptInputEl.closest('.fixed');
+      if (!promptBoxEl) return;
+
+      const promptRect = promptBoxEl.getBoundingClientRect();
+
+      // Calculate vertical gap between bottom of text line and top of prompt box
+      const verticalGap = promptRect.top - rect.bottom;
+      const horizontalOverlap = rect.left <= promptRect.right + 20 && rect.right >= promptRect.left - 20;
+
+      // If text/cursor is within 55px (approx 1-2 lines height) of prompt box top boundary
+      if (verticalGap >= -15 && verticalGap <= 55 && horizontalOverlap) {
+        setIsPromptMinimized(true);
+      }
+    };
+
+    const handleProximityEvent = () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      animationFrameId = requestAnimationFrame(checkProximity);
+    };
+
+    window.addEventListener('scroll', handleProximityEvent, true);
+    document.addEventListener('selectionchange', handleProximityEvent);
+    document.addEventListener('keyup', handleProximityEvent);
+
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('scroll', handleProximityEvent, true);
+      document.removeEventListener('selectionchange', handleProximityEvent);
+      document.removeEventListener('keyup', handleProximityEvent);
+    };
+  }, [isPromptMinimized, isComposing]);
   const [sheetToolbarFont, setSheetToolbarFont] = useState('Manrope');
   const [sheetToolbarSize, setSheetToolbarSize] = useState(14);
   const [sheetZoomLevel, setSheetZoomLevel] = useState(100);
