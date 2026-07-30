@@ -31388,7 +31388,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   setMiniSidebarDismissed(false);
                 }}
                 onMouseLeave={() => setIsRightSideHovered(false)}
-                className="fixed right-0 top-0 h-full w-12 hover:w-auto z-[300] group/sidebar-rail pointer-events-auto flex justify-end"
+                className="fixed right-0 top-0 h-full w-12 hover:w-auto z-[360] group/sidebar-rail pointer-events-auto flex justify-end"
               >
                 {/* Floating Dock Handle */}
                 <div
@@ -31410,7 +31410,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                 <div
                   onMouseEnter={() => setMiniSidebarDismissed(false)}
                   onMouseLeave={() => setMiniSidebarDismissed(false)}
-                  className={`fixed right-0 top-0 h-full z-[301] w-[56px] hover:w-[165px] group/sidebar border-l border-slate-200/70 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl flex flex-col items-start px-2 py-4 gap-2.5 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] pointer-events-auto ${
+                  className={`fixed right-0 top-0 h-full z-[361] w-[56px] hover:w-[165px] group/sidebar border-l border-slate-200/70 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl flex flex-col items-start px-2 py-4 gap-2.5 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] pointer-events-auto ${
                     miniSidebarDismissed
                       ? 'translate-x-full opacity-0'
                       : 'translate-x-full group-hover/sidebar-rail:translate-x-0 opacity-0 group-hover/sidebar-rail:opacity-100'
