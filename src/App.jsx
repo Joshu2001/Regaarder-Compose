@@ -27474,7 +27474,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     <React.Fragment>
       {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (activeRightTab === 'calendar' || activeRightTab === 'people' || activeRightTab === 'room' || activeRightTab === 'help') && (
         <div
-          className="fixed inset-0 z-[305] bg-black/5 dark:bg-black/20 backdrop-blur-[1px] transition-opacity duration-200 animate-in fade-in cursor-default"
+          className="fixed inset-0 z-[395] bg-black/5 dark:bg-black/20 backdrop-blur-[1px] transition-opacity duration-200 animate-in fade-in cursor-default"
           onPointerDown={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -27489,18 +27489,18 @@ Respond with a JSON array of slide objects matching the schema.`;
       {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (
         <div
           onMouseDown={(event) => beginPanelResize('right', event)}
-          className="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-100 active:bg-violet-200 transition-colors opacity-0 hover:opacity-100"
+          className="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-100 active:bg-violet-200 transition-colors opacity-0 hover:opacity-100 z-[401] fixed right-0 top-0 bottom-0"
           aria-label="Resize right sidebar"
         />
       )}
 
       <div 
-        className={`no-fullscreen-toggle border-l border-slate-200/60 dark:border-zinc-800/80 flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl transition-all duration-200 shadow-[-12px_0_35px_-10px_rgba(15,23,42,0.08)] select-none overflow-hidden z-[310] ${
+        className={`no-fullscreen-toggle border-l border-slate-200/60 dark:border-zinc-800/80 flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl transition-all duration-200 shadow-[-12px_0_35px_-10px_rgba(15,23,42,0.08)] select-none overflow-hidden ${
           productMode !== 'landing' && rightSidebarOpen && !shareModalOpen 
             ? 'fixed top-0 right-0 bottom-0 animate-in fade-in slide-in-from-right-4'
             : 'w-0 h-0 hidden overflow-hidden border-l-0 pointer-events-none opacity-0'
         }`}
-        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: productMode === 'compose' ? '380px' : `${rightSidebarWidth}px`, position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 310 } ) : { width: '0px', height: '0px', display: 'none' } }
+        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: productMode === 'compose' ? '380px' : `${rightSidebarWidth}px`, position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
