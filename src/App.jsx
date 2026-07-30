@@ -8276,8 +8276,9 @@ export default function App() {
         const rect = range.getBoundingClientRect();
         if (rect && (rect.width > 0 || rect.height > 0 || rect.top > 0)) {
           const verticalGap = promptRect.top - rect.bottom;
-          const horizontalOverlap = rect.left <= promptRect.right + 20 && rect.right >= promptRect.left - 20;
-          if (verticalGap >= -15 && verticalGap <= 55 && horizontalOverlap) {
+          const horizontalOverlap = rect.left <= promptRect.right + 30 && rect.right >= promptRect.left - 30;
+          // Apple-style predictive pre-collapse: trigger at 80px gap before text ever physically touches box
+          if (verticalGap >= -20 && verticalGap <= 80 && horizontalOverlap) {
             isNear = true;
           }
         }
@@ -8291,8 +8292,8 @@ export default function App() {
             const childRect = children[i].getBoundingClientRect();
             if (childRect.height > 0) {
               const verticalGap = promptRect.top - childRect.bottom;
-              const horizontalOverlap = childRect.left <= promptRect.right + 20 && childRect.right >= promptRect.left - 20;
-              if (verticalGap >= -15 && verticalGap <= 55 && horizontalOverlap) {
+              const horizontalOverlap = childRect.left <= promptRect.right + 30 && childRect.right >= promptRect.left - 30;
+              if (verticalGap >= -20 && verticalGap <= 80 && horizontalOverlap) {
                 isNear = true;
               }
               break;
@@ -49826,7 +49827,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
         {activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
         <div
-          className={`fixed bottom-14 ${isPromptSlashMenuOpen ? 'z-[250000]' : 'z-[1210]'} transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 translate-y-6 pointer-events-none' : 'opacity-100 translate-y-0 pointer-events-auto'}`}
+          className={`fixed bottom-14 ${isPromptSlashMenuOpen ? 'z-[250000]' : 'z-[1210]'} transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 scale-95 translate-y-4 pointer-events-none' : 'opacity-100 scale-100 translate-y-0 pointer-events-auto'}`}
           style={{
             left: `${blurLeftInset}px`,
             right: `${blurRightInset}px`,
