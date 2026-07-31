@@ -21711,20 +21711,23 @@ Rules:
     setSelectedAIAgent(option.agentKey || option.key || 'health');
     setActiveAgentTag(`/${option.agentKey || option.key}`);
     setRightSidebarOpen(true);
-    setActiveRightTab('ai-studio');
     if (source === 'chat') {
+      setActiveRightTab('assistant');
       const lastSlash = chatInput.lastIndexOf('/');
       if (lastSlash !== -1) {
-        setChatInput(chatInput.slice(0, lastSlash).trim());
+        setChatInput(chatInput.slice(0, lastSlash) + `/${option.agentKey || option.key} `);
+      } else {
+        setChatInput(`/${option.agentKey || option.key} `);
       }
     } else if (source === 'floating') {
       const lastSlash = floatingPrompt.lastIndexOf('/');
       if (lastSlash !== -1) {
-        setFloatingPrompt(floatingPrompt.slice(0, lastSlash).trim());
+        setFloatingPrompt(floatingPrompt.slice(0, lastSlash) + `/${option.agentKey || option.key} `);
+      } else {
+        setFloatingPrompt(`/${option.agentKey || option.key} `);
       }
     }
     setIsPromptSlashMenuOpen(false);
-    showToast(`Switched agent to ${option.label}`);
   };
 
   const handleChatInputChange = (e) => {
@@ -36462,7 +36465,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             });
                           }
                         }}
-                        className="flex-1 border border-gray-200 rounded-lg bg-gray-50 px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-violet-500 font-normal"
+                        className="flex-1 border border-slate-200 dark:border-zinc-700 rounded-lg bg-slate-50 dark:bg-zinc-900/60 px-3 py-1.5 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600 text-slate-800 dark:text-zinc-200 font-normal transition-all"
                         placeholder="Enter value or formula"
                       />
                     </div>
