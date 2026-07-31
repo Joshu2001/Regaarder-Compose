@@ -35657,34 +35657,34 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   onClick={() => {
                     closeTransientMenus();
-                    setDeckExportMenuOpen(!deckExportMenuOpen);
+                    if (isSheetsMode) {
+                      setSheetsExportMenuOpen(!sheetsExportMenuOpen);
+                    } else {
+                      setDeckExportMenuOpen(!deckExportMenuOpen);
+                    }
                   }}
-                  className={`text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all border ${deckExportMenuOpen ? 'border-slate-300 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-sm' : 'text-slate-700 dark:text-zinc-200 hover:text-slate-900 hover:bg-slate-100/70 border-slate-200/80 bg-white dark:bg-zinc-800 dark:border-zinc-700'}`}
+                  className={`text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all border ${(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? 'border-slate-300 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-sm' : 'text-slate-700 dark:text-zinc-200 hover:text-slate-900 hover:bg-slate-100/70 border-slate-200/80 bg-white dark:bg-zinc-800 dark:border-zinc-700'}`}
                   title="Export"
                 >
                   <Download size={14} strokeWidth={1.5} className="text-slate-500 dark:text-zinc-400" />
                   <span>Export</span>
-                  {deckExportMenuOpen ? <ChevronUp size={13} strokeWidth={1.5} className="text-slate-400" /> : <ChevronDown size={13} strokeWidth={1.5} className="text-slate-400" />}
+                  {(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? <ChevronUp size={13} strokeWidth={1.5} className="text-slate-400" /> : <ChevronDown size={13} strokeWidth={1.5} className="text-slate-400" />}
                 </button>
-                {deckExportMenuOpen && (
+                {!isSheetsMode && deckExportMenuOpen && (
                   <>
                     <div
-                      className="fixed inset-0 z-[360] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+                      className="fixed inset-0 z-[360] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
                       onClick={() => setDeckExportMenuOpen(false)}
                     />
                     <div className="absolute right-0 top-11 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-2 font-sans animate-in fade-in zoom-in-95 duration-150">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 mb-0.5">
-                        {isSheetsMode ? 'Export Sheet' : 'Export Deck'}
+                        Export Deck
                       </span>
-                      {(isSheetsMode ? [
-                        { fmt: 'XLSX', label: 'Excel Workbook (.xlsx)' },
-                        { fmt: 'CSV', label: 'CSV Spreadsheet (.csv)' },
-                        { fmt: 'PDF', label: 'PDF Document (.pdf)' }
-                      ] : [
+                      {[
                         { fmt: 'PPTX', label: 'PowerPoint (.pptx)' },
                         { fmt: 'PDF', label: 'PDF Document (.pdf)' },
                         { fmt: 'Images', label: 'Slide Images (.png)' }
-                      ]).map(item => (
+                      ].map(item => (
                         <button
                           key={item.fmt}
                           onClick={() => {
@@ -36114,7 +36114,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           {sheetsExportMenuOpen && (
                             <>
                               <div
-                                className="fixed inset-0 z-[220] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+                                className="fixed inset-0 z-[220] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
                                 onClick={() => setSheetsExportMenuOpen(false)}
                               />
                               <div className="absolute top-9 right-0 z-[230] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
