@@ -797,7 +797,7 @@ const SlashMenuPopover = React.forwardRef(({
   position = 'above'
 }, ref) => {
   const displayBadgeText = badgeText !== null ? badgeText : `${options.length} AGENTS`;
-  const isBelow = position === 'below' || source === 'chat';
+  const isBelow = position ? position === 'below' : (source === 'chat' && position !== 'above');
   const posClasses = isBelow 
     ? 'top-full left-0 mt-2 slide-in-from-top-2' 
     : 'bottom-full left-0 mb-2 slide-in-from-bottom-2';
@@ -4354,8 +4354,8 @@ export default function App() {
   ]);
   const [creationPickerOpen, setCreationPickerOpen] = useState(false);
   const [activeDeckSlideId, setActiveDeckSlideId] = useState(1);
-  const [deckTitle, setDeckTitle] = useState('Untitled deck');
-  const [sheetsTitle, setSheetsTitle] = useState('Q2 Financial Overview');
+  const [deckTitle, setDeckTitle] = useState('Untitled Deck');
+  const [sheetsTitle, setSheetsTitle] = useState('Untitled Sheet');
   const [activeSheetId, setActiveSheetId] = useState(1);
   const [activeDropdownCell, setActiveDropdownCell] = useState(null); // { row, col }
   const [selectedGridColumn, setSelectedGridColumn] = useState(null);
@@ -4378,7 +4378,7 @@ export default function App() {
   const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(false);
   const [sheetsSidebarOpen, setSheetsSidebarOpen] = useState(false);
   const [deckActiveToolbarMenu, setDeckActiveToolbarMenu] = useState(null);
-  const [activeDeckTitle, setActiveDeckTitle] = useState('Product Roadmap 2025');
+  const [activeDeckTitle, setActiveDeckTitle] = useState('Untitled Deck');
   const [deckZoomLevel, setDeckZoomLevel] = useState(100);
   const [deckToolbarExpanded, setDeckToolbarExpanded] = useState(false);
   const [showResizeModal, setShowResizeModal] = useState(false);
@@ -21636,24 +21636,39 @@ Rules:
     setChatAttachments([]);
   };
 
+  const activeProductTitle = useMemo(() => {
+    if (productMode === 'sheets') return sheetsTitle?.trim() || 'Untitled Sheet';
+    if (productMode === 'deck') return (deckTitle || activeDeckTitle)?.trim() || 'Untitled Deck';
+    if (productMode === 'whiteboard') return 'Untitled Whiteboard';
+    return docTitle?.trim() || 'Untitled Document';
+  }, [productMode, sheetsTitle, deckTitle, activeDeckTitle, docTitle]);
+
+  const defaultDocNameForMode = useMemo(() => {
+    if (productMode === 'sheets') return 'Untitled Sheet';
+    if (productMode === 'deck') return 'Untitled Deck';
+    if (productMode === 'whiteboard') return 'Untitled Whiteboard';
+    return 'Untitled Document';
+  }, [productMode]);
+
   const availableDocs = useMemo(() => {
+    const activeTitle = activeProductTitle || defaultDocNameForMode;
     const rawList = (documents && documents.length)
-      ? documents.map((d) => (d.id === activeDocId ? { ...d, title: docTitle || d.title || 'Untitled document' } : d))
-      : [{ id: activeDocId || 'active-doc', title: docTitle || 'Untitled document' }];
+      ? documents.map((d) => (d.id === activeDocId ? { ...d, title: activeTitle || d.title || defaultDocNameForMode } : d))
+      : [{ id: activeDocId || 'active-doc', title: activeTitle || defaultDocNameForMode }];
 
     const hasActiveDoc = rawList.some((d) => d.id === activeDocId || d.id === 'active-doc');
     const fullList = hasActiveDoc
       ? rawList
-      : [{ id: activeDocId || 'active-doc', title: docTitle || 'Untitled document' }, ...rawList];
+      : [{ id: activeDocId || 'active-doc', title: activeTitle || defaultDocNameForMode }, ...rawList];
 
     if (!mentionSearch) return fullList;
     return fullList.filter((doc) =>
-      (doc.title || 'Untitled document').toLowerCase().includes(mentionSearch)
+      (doc.title || defaultDocNameForMode).toLowerCase().includes(mentionSearch)
     );
-  }, [documents, mentionSearch, activeDocId, docTitle]);
+  }, [documents, mentionSearch, activeDocId, activeProductTitle, defaultDocNameForMode]);
 
   const selectDocumentMention = (doc) => {
-    const title = doc.title?.trim() || 'Untitled document';
+    const title = doc.title?.trim() || defaultDocNameForMode;
     const docId = doc.id || 'active-doc';
     if (docId === activeDocId || docId === 'active-doc') {
       setIsDocContextActive(true);
@@ -23718,7 +23733,7 @@ Rules:
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('sheets');
-    setSheetsTitle('Q2 Financial Overview');
+    setSheetsTitle('Untitled Sheet');
     setLeftSidebarOpen(false);
     setActiveSheetId(1);
     setDeckPromptInput('');
@@ -28019,7 +28034,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                             {isDocContextActive && (
                               <div className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5.5 rounded-md border border-slate-200/50 dark:border-zinc-800/60 bg-slate-100/60 dark:bg-zinc-800/60 text-[11px] font-medium text-slate-700 dark:text-zinc-200 shadow-2xs group relative transition-all animate-in fade-in zoom-in-95 duration-150">
                                 <FileText size={10.5} className="text-slate-400/70 dark:text-zinc-500/70 shrink-0" />
-                                <span className="truncate max-w-[150px] font-sans text-[11px]">{docTitle || 'Untitled document'}</span>
+                                <span className="truncate max-w-[150px] font-sans text-[11px]">{activeProductTitle || defaultDocNameForMode}</span>
                                 <button
                                   type="button"
                                   onClick={() => setIsDocContextActive(false)}
@@ -28363,6 +28378,29 @@ Respond with a JSON array of slide objects matching the schema.`;
               {/* Bottom Input Bar when active messages exist */}
               {chatMessages.length > 0 && (
                 <form onSubmit={handleSidebarSend} className="p-3 border-t border-slate-100 dark:border-zinc-800/60 bg-slate-50/40 dark:bg-zinc-900/40 shrink-0 relative">
+                  {/* Floating / Slash Command Dropdown (SlashMenuPopover Component) */}
+                  {isPromptSlashMenuOpen && promptSlashSource === 'chat' && (() => {
+                    const filteredSlashOpts = PROMPT_SLASH_OPTIONS.filter((opt) =>
+                      opt.label.toLowerCase().includes(promptSlashSearch) ||
+                      opt.key.toLowerCase().includes(promptSlashSearch) ||
+                      opt.desc.toLowerCase().includes(promptSlashSearch)
+                    );
+
+                    return (
+                      <SlashMenuPopover
+                        ref={promptSlashMenuRef}
+                        options={filteredSlashOpts}
+                        selectedIndex={promptSlashSelectedIndex}
+                        onSelectOption={(opt) => selectPromptSlashOption(opt, 'chat')}
+                        title="SLASH COMMANDS"
+                        badgeText={`${filteredSlashOpts.length} AGENTS`}
+                        className="w-full z-[250020]"
+                        source="chat"
+                        position="above"
+                      />
+                    );
+                  })()}
+
                   {/* Floating @ Mention Dropdown */}
                   {isMentionMenuOpen && (
                     <div
@@ -28457,7 +28495,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         {isDocContextActive && (
                           <div className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5.5 rounded-md border border-slate-200/50 dark:border-zinc-800/60 bg-slate-100/60 dark:bg-zinc-800/60 text-[11px] font-medium text-slate-700 dark:text-zinc-200 shadow-2xs group relative transition-all animate-in fade-in zoom-in-95 duration-150">
                             <FileText size={10.5} className="text-slate-400/70 dark:text-zinc-500/70 shrink-0" />
-                            <span className="truncate max-w-[150px] font-sans text-[11px]">{docTitle || 'Untitled document'}</span>
+                            <span className="truncate max-w-[150px] font-sans text-[11px]">{activeProductTitle || defaultDocNameForMode}</span>
                             <button
                               type="button"
                               onClick={() => setIsDocContextActive(false)}
@@ -35567,7 +35605,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             setIsEditingUnsavedDraftName(false);
                           }
                         }}
-                        className="text-sm font-semibold text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-violet-200 dark:border-violet-700/60 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-violet-400 dark:focus:border-violet-500"
+                        className="text-sm font-semibold text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600"
                         placeholder="Untitled sheet"
                       />
                     ) : (
@@ -43481,7 +43519,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setUnsavedDraftNameInput('');
                       }
                     }}
-                    className="text-sm text-gray-700 font-medium bg-white border border-violet-200 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-violet-400"
+                    className="text-sm text-slate-800 dark:text-zinc-100 font-medium bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600"
                     placeholder="Rename draft"
                   />
                 ) : (
