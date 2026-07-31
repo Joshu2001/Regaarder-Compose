@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 // Trigger Vercel Build Safely
 import { io } from 'socket.io-client';
 import katex from 'katex';
@@ -6649,6 +6650,22 @@ export default function App() {
   const [floatingPrompt, setFloatingPrompt] = useState('');
   const [selectedAIAgent, setSelectedAIAgent] = useState('health');
   const [activeAgentTag, setActiveAgentTag] = useState(null);
+  const [isSheetsPresentationMode, setIsSheetsPresentationMode] = useState(false);
+
+  useEffect(() => {
+    if (!isSheetsPresentationMode) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsSheetsPresentationMode(false);
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSheetsPresentationMode]);
+
   const [newTaskInput, setNewTaskInput] = useState('');
   const newTaskInputRef = useRef('');
   const [newTaskOwner, setNewTaskOwner] = useState('user');
@@ -21715,16 +21732,16 @@ Rules:
       setActiveRightTab('assistant');
       const lastSlash = chatInput.lastIndexOf('/');
       if (lastSlash !== -1) {
-        setChatInput(chatInput.slice(0, lastSlash) + `/${option.agentKey || option.key} `);
+        setChatInput(chatInput.slice(0, lastSlash).trim());
       } else {
-        setChatInput(`/${option.agentKey || option.key} `);
+        setChatInput('');
       }
     } else if (source === 'floating') {
       const lastSlash = floatingPrompt.lastIndexOf('/');
       if (lastSlash !== -1) {
-        setFloatingPrompt(floatingPrompt.slice(0, lastSlash) + `/${option.agentKey || option.key} `);
+        setFloatingPrompt(floatingPrompt.slice(0, lastSlash).trim());
       } else {
-        setFloatingPrompt(`/${option.agentKey || option.key} `);
+        setFloatingPrompt('');
       }
     }
     setIsPromptSlashMenuOpen(false);
@@ -28504,9 +28521,27 @@ Respond with a JSON array of slide objects matching the schema.`;
                   )}
 
                   <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all shadow-2xs overflow-hidden">
-                    {/* Top Context Attachment Chips inside container (VS Code / Apple Token Style) */}
-                    {(isDocContextActive || chatAttachments.length > 0) && (
+                    {(isDocContextActive || activeAgentTag || chatAttachments.length > 0) && (
                       <div className="px-2.5 pt-2 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
+                        {activeAgentTag && (
+                          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100/90 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-medium text-xs tracking-tight group relative transition-all animate-in fade-in zoom-in-95 duration-150">
+                            <span className="font-mono text-[11px] font-semibold leading-tight">
+                              {activeAgentTag.startsWith('/') ? activeAgentTag : `/${activeAgentTag}`}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveAgentTag(null);
+                                setSelectedAIAgent(null);
+                              }}
+                              className="ml-0.5 p-0.5 text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 rounded hover:bg-blue-200/50 dark:hover:bg-blue-900/50 transition-colors"
+                              title="Remove subagent tag"
+                            >
+                              <X size={9.5} />
+                            </button>
+                          </div>
+                        )}
+
                         {isDocContextActive && (
                           <div className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5.5 rounded-md border border-slate-200/50 dark:border-zinc-800/60 bg-slate-100/60 dark:bg-zinc-800/60 text-[11px] font-medium text-slate-700 dark:text-zinc-200 shadow-2xs group relative transition-all animate-in fade-in zoom-in-95 duration-150">
                             <FileText size={10.5} className="text-slate-400/70 dark:text-zinc-500/70 shrink-0" />
@@ -31441,7 +31476,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   setMiniSidebarDismissed(false);
                 }}
                 onMouseLeave={() => setIsRightSideHovered(false)}
-                className="fixed right-0 top-0 h-full w-12 hover:w-auto z-[360] group/sidebar-rail pointer-events-auto flex justify-end"
+                className="fixed right-0 top-0 h-full w-3 hover:w-auto z-[360] group/sidebar-rail pointer-events-auto flex justify-end"
               >
                 {/* Floating Dock Handle */}
                 <div
@@ -35688,21 +35723,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <Save size={16} strokeWidth={1.5} />
                 </button>
 
-                <div className="relative" ref={docSearchPanelRef}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeTransientMenus();
-                      setDocSearchPanelOpen((prev) => !prev);
-                      setDocSearchAutoPlay(false);
-                    }}
-                    className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${docSearchPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400 font-semibold shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`}
-                    title="Find & Replace (Ctrl+F)"
-                  >
-                    <Search size={16} strokeWidth={1.5} />
-                  </button>
-                  {docSearchPanelOpen && renderDocSearchPanel()}
-                </div>
+                {!isSheetsMode && (
+                  <div className="relative" ref={docSearchPanelRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeTransientMenus();
+                        setDocSearchPanelOpen((prev) => !prev);
+                        setDocSearchAutoPlay(false);
+                      }}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${docSearchPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400 font-semibold shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`}
+                      title="Find & Replace (Ctrl+F)"
+                    >
+                      <Search size={16} strokeWidth={1.5} />
+                    </button>
+                    {docSearchPanelOpen && renderDocSearchPanel()}
+                  </div>
+                )}
               </div>
 
               {/* Export Dropdown Button */}
@@ -38782,6 +38819,29 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <Volume2 size={15} />
                           )}
                           <span className="text-[11px] font-medium hidden sm:inline">{isReadingAloud ? 'Reading...' : 'Audio'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsSheetsPresentationMode(true);
+                            if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+                              document.documentElement.requestFullscreen().catch(() => {});
+                            }
+                          }}
+                          onClick={() => {
+                            setIsSheetsPresentationMode(true);
+                            if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+                              document.documentElement.requestFullscreen().catch(() => {});
+                            }
+                          }}
+                          aria-label="Enter presentation mode"
+                          className="px-2 py-1 rounded-md transition-all duration-200 flex items-center gap-1.5 border border-transparent hover:border-gray-200 hover:bg-gray-100/80 text-gray-600 dark:text-zinc-400 dark:hover:bg-zinc-800 cursor-pointer"
+                          title="Enter presentation mode (Fullscreen)"
+                        >
+                          <MonitorPlay size={15} />
+                          <span className="text-[11px] font-medium hidden sm:inline">Present</span>
                         </button>
                       </div>
                     </div>
@@ -53507,9 +53567,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-
-
-
       {/* Compose Pickers */}
       <UnifiedMediaModal isOpen={mediaPickerOpen} setOpen={setMediaPickerOpen} anchorEl={document.getElementById('compose-media-btn')} mediaInsertionModal={mediaInsertionModal} setMediaInsertionModal={setMediaInsertionModal} />
       <EmojiGalleryPicker isOpen={composeEmojiPickerOpen} setOpen={setComposeEmojiPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
@@ -53518,18 +53575,124 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <BlockHoverMenu menu={hoveredBlockMenu} setMenu={setHoveredBlockMenu} focusedTableCell={focusedTableCell} setFocusedTableCell={setFocusedTableCell} isTableLocked={isTableLocked} setIsTableLocked={setIsTableLocked} />
       <TableGridPickerModal isOpen={tableGridModalOpen} setOpen={setTableGridModalOpen} rect={tableGridAnchor} />
       <ListGalleryPicker isOpen={!!listGalleryOpen} initialTab={typeof listGalleryOpen === 'string' ? listGalleryOpen : 'bullet'} setOpen={setListGalleryOpen} anchorEl={document.getElementById('compose-list-btn')} />
-      
+
       {/* Shared Chart and Shape Pickers */}
       {renderSharedChartPicker()}
       {renderSharedShapePicker()}
       {renderAuthModal()}
-      
-      <NotesModal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} notesCardRef={notesCardRef} isDarkMode={isDarkMode} />
 
+      <NotesModal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} notesCardRef={notesCardRef} isDarkMode={isDarkMode} />
       <SummaryModal isOpen={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)} />
       <MeetingsModal isOpen={isMeetingsModalOpen} onClose={() => setIsMeetingsModalOpen(false)} globalEvents={globalEvents} setGlobalEvents={setGlobalEvents} setInvites={setInvites} />
       <RecordingModal isOpen={isRecordingModalOpen} onClose={() => setIsRecordingModalOpen(false)} />
       <CalendarModal isOpen={isCalendarModalOpen} onClose={() => setIsCalendarModalOpen(false)} globalEvents={globalEvents} setGlobalEvents={setGlobalEvents} />
+
+      {/* Sheets Fullscreen Presentation Mode Overlay */}
+      {isSheetsPresentationMode && (
+        <div className="fixed inset-0 z-[999999] bg-white dark:bg-zinc-950 flex flex-col min-w-0 min-h-0 select-none animate-in fade-in duration-200">
+          {/* Fullscreen Edge-to-Edge Sheet Grid View */}
+          <div className="flex-1 min-h-0 overflow-auto bg-white dark:bg-zinc-950 relative thin-scrollbar">
+            <div className="inline-block min-w-full align-top">
+              {/* Sticky Column Headers */}
+              <div
+                className="grid sticky top-0 z-30 shadow-xs"
+                style={{
+                  gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, 100px)`).join(' ')}`,
+                  minWidth: 'max-content',
+                }}
+              >
+                <div className="h-8 border-b border-r border-gray-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-900 sticky left-0 z-40" />
+                {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => {
+                  const label = String.fromCharCode(65 + colIndex);
+                  return (
+                    <div
+                      key={`pres-ch-${colIndex}`}
+                      className="h-8 border-b border-r border-gray-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-[11px] font-bold text-slate-700 dark:text-zinc-300 flex items-center justify-center select-none"
+                      style={{ width: `var(--col-${colIndex}-width, 100px)` }}
+                    >
+                      {label}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Grid Rows — each row is a keyed React.Fragment to prevent unkeyed-array crash */}
+              <div
+                className="grid"
+                style={{
+                  gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, 100px)`).join(' ')}`,
+                  minWidth: 'max-content',
+                }}
+              >
+                {Array.from({ length: activeSheetGrid.rows }, (_, rowIndex) => {
+                  const num = rowIndex + 1;
+                  const rowHeight = `var(--row-${rowIndex}-height, 36px)`;
+                  return (
+                    <React.Fragment key={`pres-row-${rowIndex}`}>
+                      {/* Sticky row number header */}
+                      <div
+                        className="sticky left-0 z-20 border-b border-r border-gray-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-[11px] font-semibold text-slate-600 dark:text-zinc-400 flex items-center justify-center select-none"
+                        style={{ height: rowHeight }}
+                      >
+                        {num}
+                      </div>
+                      {/* Row cells */}
+                      {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => {
+                        const cellFormat = activeSheetGridRaw.formats?.[rowIndex]?.[colIndex] || {};
+                        const rawVal = activeSheetGrid.cells?.[rowIndex]?.[colIndex];
+                        const cellValue = formatCellValue(rawVal, cellFormat.format);
+                        const displayVal = (cellValue !== undefined && cellValue !== null) ? String(cellValue) : '';
+                        return (
+                          <div
+                            key={`pres-cell-${rowIndex}-${colIndex}`}
+                            className="relative border-b border-r border-gray-200/80 dark:border-zinc-800/80 px-2 py-1 text-xs text-slate-800 dark:text-zinc-200 flex items-center overflow-hidden"
+                            style={{
+                              height: rowHeight,
+                              width: `var(--col-${colIndex}-width, 100px)`,
+                              fontWeight: cellFormat.bold ? 'bold' : 'normal',
+                              fontStyle: cellFormat.italic ? 'italic' : 'normal',
+                              textDecoration: cellFormat.underline ? 'underline' : 'none',
+                              color: cellFormat.color || undefined,
+                              backgroundColor: cellFormat.fill || undefined,
+                              textAlign: cellFormat.align || 'left',
+                              justifyContent: cellFormat.align === 'right' ? 'flex-end' : cellFormat.align === 'center' ? 'center' : 'flex-start',
+                            }}
+                          >
+                            <span className="truncate w-full">{displayVal}</span>
+                          </div>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Floating Exit Button — collapses to a dot, expands on hover */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsSheetsPresentationMode(false);
+              if (document.fullscreenElement && document.exitFullscreen) {
+                document.exitFullscreen().catch(() => {});
+              }
+            }}
+            title="Exit Presentation Mode"
+            className="group/exit fixed bottom-5 right-5 z-[1000000] flex items-center gap-0 overflow-hidden
+              bg-slate-900/60 backdrop-blur-md border border-white/15 text-white shadow-xl
+              rounded-full cursor-pointer
+              transition-all duration-300 ease-out
+              w-3 h-3 opacity-40
+              hover:w-auto hover:h-auto hover:px-3.5 hover:py-2 hover:opacity-100 hover:gap-2 hover:bg-slate-900/90"
+          >
+            <X size={13} className="shrink-0 opacity-0 group-hover/exit:opacity-100 transition-opacity duration-200" />
+            <span className="text-[11px] font-medium whitespace-nowrap max-w-0 overflow-hidden group-hover/exit:max-w-[120px] transition-all duration-300 ease-out">
+              Exit Presentation
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
