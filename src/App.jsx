@@ -834,7 +834,7 @@ const SlashMenuPopover = React.forwardRef(({
             const isSelected = idx === selectedIndex;
             const isHovered = idx === hoveredIndex;
             const isExpanded = source === 'chat' ? isHovered : (isSelected || isHovered);
-            const isHighlighted = isSelected || isHovered;
+            const isHighlighted = source === 'chat' ? isHovered : (isSelected || isHovered);
             const IconComp = opt.icon;
             const tagText = opt.tag || (opt.key ? `/${opt.key}` : null);
             const description = opt.desc || opt.description;
