@@ -38499,6 +38499,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           setSheetSelectionMode('cell');
                                           setSelectedGridColumn(null);
                                           const persistedVal = activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '';
+                                          setEditingCellKey(cellKey);
                                           setEditingCellValue(persistedVal);
                                         }}
                                         onDoubleClick={() => {
