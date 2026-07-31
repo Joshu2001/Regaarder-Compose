@@ -796,6 +796,7 @@ const SlashMenuPopover = React.forwardRef(({
   source = 'default',
   position = 'above'
 }, ref) => {
+  const [hoveredIndex, setHoveredIndex] = useState(null);
   const displayBadgeText = badgeText !== null ? badgeText : `${options.length} AGENTS`;
   const isBelow = position ? position === 'below' : (source === 'chat' && position !== 'above');
   const posClasses = isBelow 
@@ -831,6 +832,8 @@ const SlashMenuPopover = React.forwardRef(({
         ) : (
           options.map((opt, idx) => {
             const isSelected = idx === selectedIndex;
+            const isHovered = idx === hoveredIndex;
+            const isExpanded = isSelected || isHovered;
             const IconComp = opt.icon;
             const tagText = opt.tag || (opt.key ? `/${opt.key}` : null);
             const description = opt.desc || opt.description;
@@ -839,43 +842,47 @@ const SlashMenuPopover = React.forwardRef(({
               <button
                 key={opt.key || idx}
                 type="button"
+                onPointerEnter={() => setHoveredIndex(idx)}
+                onPointerLeave={() => setHoveredIndex(null)}
                 onPointerDown={(e) => {
                   e.preventDefault();
                   onSelectOption && onSelectOption(opt);
                 }}
-                className={`w-full text-left px-3 py-2 rounded-xl transition-all duration-150 cursor-pointer flex flex-col justify-center border-none ${
-                  isSelected
-                    ? 'bg-[#f4f0fe] dark:bg-violet-950/60'
-                    : 'bg-transparent text-slate-700 dark:text-zinc-300 hover:bg-slate-50/80 dark:hover:bg-zinc-800/40'
+                className={`w-full text-left px-3 py-2.5 rounded-xl transition-all duration-200 ease-out cursor-pointer flex flex-col justify-center border ${
+                  isExpanded
+                    ? 'bg-[#f4f0fe] dark:bg-violet-950/70 border-violet-200/80 dark:border-violet-700/60 shadow-md scale-[1.015] z-10 relative'
+                    : 'bg-transparent border-transparent text-slate-700 dark:text-zinc-300 hover:bg-slate-50/80 dark:hover:bg-zinc-800/40'
                 }`}
               >
                 {IconComp ? (
                   <div className="flex items-start gap-2.5 w-full">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-                      isSelected
-                        ? 'bg-violet-100/80 text-[#8b5cf6] dark:bg-violet-900/60 dark:text-violet-300'
+                      isExpanded
+                        ? 'bg-violet-100/90 text-[#8b5cf6] dark:bg-violet-900/80 dark:text-violet-300 shadow-2xs'
                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400'
                     }`}>
                       <IconComp size={14} strokeWidth={1.75} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1.5 w-full">
-                        <span className={`text-[13px] font-semibold tracking-tight truncate ${
-                          isSelected ? 'text-[#8b5cf6] dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
+                        <span className={`text-[13px] font-semibold tracking-tight ${
+                          isExpanded ? 'text-[#8b5cf6] dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
                         }`}>
                           {opt.label}
                         </span>
                         {tagText && (
                           <span className={`text-[10px] font-mono shrink-0 ${
-                            isSelected ? 'text-[#a78bfa] dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500 opacity-60'
+                            isExpanded ? 'text-[#a78bfa] dark:text-violet-400 font-bold' : 'text-slate-400 dark:text-zinc-500 opacity-60'
                           }`}>
                             {tagText}
                           </span>
                         )}
                       </div>
                       {description && (
-                        <p className={`text-[11px] line-clamp-1 mt-0.5 font-normal truncate ${
-                          isSelected ? 'text-[#a78bfa] dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'
+                        <p className={`text-[11px] mt-0.5 font-normal transition-all duration-200 ${
+                          isExpanded
+                            ? 'text-slate-600 dark:text-zinc-300 whitespace-normal line-clamp-none leading-relaxed'
+                            : 'text-slate-400 dark:text-zinc-500 truncate line-clamp-1'
                         }`}>
                           {description}
                         </p>
@@ -886,21 +893,23 @@ const SlashMenuPopover = React.forwardRef(({
                   <>
                     <div className="flex items-center justify-between gap-1.5 w-full">
                       <span className={`text-[13px] font-semibold tracking-tight ${
-                        isSelected ? 'text-[#8b5cf6] dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
+                        isExpanded ? 'text-[#8b5cf6] dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
                       }`}>
                         {opt.label}
                       </span>
                       {tagText && (
                         <span className={`text-[10px] font-mono ${
-                          isSelected ? 'text-[#a78bfa] dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500 opacity-60'
+                          isExpanded ? 'text-[#a78bfa] dark:text-violet-400 font-bold' : 'text-slate-400 dark:text-zinc-500 opacity-60'
                         }`}>
                           {tagText}
                         </span>
                       )}
                     </div>
                     {description && (
-                      <p className={`text-[11px] line-clamp-1 mt-0.5 font-normal ${
-                        isSelected ? 'text-[#a78bfa] dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'
+                      <p className={`text-[11px] mt-0.5 font-normal transition-all duration-200 ${
+                        isExpanded
+                          ? 'text-slate-600 dark:text-zinc-300 whitespace-normal line-clamp-none leading-relaxed'
+                          : 'text-slate-400 dark:text-zinc-500 truncate line-clamp-1'
                       }`}>
                         {description}
                       </p>
