@@ -36072,11 +36072,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {/* Right main area: floating island toolbar & sheet grid */}
                     {isSheetsMode ? (
                       <div className="flex-1 min-h-0 h-full flex flex-col min-w-0 relative z-10 bg-slate-50/30 backdrop-blur-[6px]">
-                        {/* Ambient orb blobs — unified workspace palette: blue / purple / pink */}
+                        {/* Ambient orb blobs — Sheets identity: emerald / teal / cyan */}
                         <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.28]">
-                          <div className="absolute -top-[15%] -left-[15%] w-[70%] h-[70%] rounded-full bg-blue-400/35 mix-blend-multiply filter blur-[110px]" />
-                          <div className="absolute top-[20%] -right-[15%] w-[60%] h-[60%] rounded-full bg-purple-400/35 mix-blend-multiply filter blur-[110px]" />
-                          <div className="absolute bottom-[5%] left-[15%] w-[80%] h-[80%] rounded-full bg-pink-400/30 mix-blend-multiply filter blur-[120px]" />
+                          <div className="absolute -top-[20%] -left-[10%] w-[65%] h-[65%] rounded-full bg-emerald-400/30 mix-blend-multiply filter blur-[120px]" />
+                          <div className="absolute top-[15%] -right-[10%] w-[55%] h-[55%] rounded-full bg-teal-400/25 mix-blend-multiply filter blur-[110px]" />
+                          <div className="absolute bottom-[5%] left-[10%] w-[75%] h-[75%] rounded-full bg-cyan-400/20 mix-blend-multiply filter blur-[130px]" />
                         </div>
                       <div className="mx-4 mt-3 mb-2 p-3 border border-slate-200/60 dark:border-zinc-700/50 bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl rounded-2xl shadow-[0_2px_16px_-4px_rgba(15,23,42,0.08)] ring-1 ring-white/60 dark:ring-zinc-700/30 flex flex-col gap-2.5 z-20 shrink-0">
                       {/* Top Row: Navigation Tabs & Export */}
