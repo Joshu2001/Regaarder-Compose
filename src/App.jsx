@@ -26262,7 +26262,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     setSheetsData((prev) => [...prev, worksheet]);
     setSheetGrids((prev) => ({
       ...prev,
-      [nextId]: { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) },
+      [nextId]: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')) },
     }));
     setActiveSheetId(nextId);
     setSheetsTitle(worksheet.title);
@@ -26609,7 +26609,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           const nextId = (sheetsData[sheetsData.length - 1]?.id || 0) + 1;
           const clone = { ...source, id: nextId, title: `${source.title} Copy` };
           setSheetsData((prev) => [...prev, clone]);
-          const sourceGrid = sheetGrids[targetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
+          const sourceGrid = sheetGrids[targetId] || { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')) };
           setSheetGrids((prev) => ({
             ...prev,
             [nextId]: {
@@ -27007,7 +27007,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       const next = { ...prev };
       sheetsData.forEach((sheet) => {
         if (!next[sheet.id]) {
-          next[sheet.id] = { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
+          next[sheet.id] = { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')) };
         }
       });
       Object.keys(next).forEach((key) => {
