@@ -833,7 +833,8 @@ const SlashMenuPopover = React.forwardRef(({
           options.map((opt, idx) => {
             const isSelected = idx === selectedIndex;
             const isHovered = idx === hoveredIndex;
-            const isExpanded = isSelected || isHovered;
+            const isExpanded = source === 'chat' ? isHovered : (isSelected || isHovered);
+            const isHighlighted = isSelected || isHovered;
             const IconComp = opt.icon;
             const tagText = opt.tag || (opt.key ? `/${opt.key}` : null);
             const description = opt.desc || opt.description;
@@ -851,13 +852,15 @@ const SlashMenuPopover = React.forwardRef(({
                 className={`w-full text-left px-3 py-2.5 rounded-xl transition-all duration-200 ease-out cursor-pointer flex flex-col justify-center border ${
                   isExpanded
                     ? 'bg-[#f4f0fe] dark:bg-violet-950/70 border-violet-200/80 dark:border-violet-700/60 shadow-md scale-[1.015] z-10 relative'
+                    : isHighlighted
+                    ? 'bg-[#f4f0fe]/60 dark:bg-violet-950/40 border-violet-200/40 dark:border-violet-800/40 text-slate-800 dark:text-zinc-200'
                     : 'bg-transparent border-transparent text-slate-700 dark:text-zinc-300 hover:bg-slate-50/80 dark:hover:bg-zinc-800/40'
                 }`}
               >
                 {IconComp ? (
                   <div className="flex items-start gap-2.5 w-full">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-                      isExpanded
+                      isHighlighted
                         ? 'bg-violet-100/90 text-[#8b5cf6] dark:bg-violet-900/80 dark:text-violet-300 shadow-2xs'
                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400'
                     }`}>
@@ -866,13 +869,13 @@ const SlashMenuPopover = React.forwardRef(({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1.5 w-full">
                         <span className={`text-[13px] font-semibold tracking-tight ${
-                          isExpanded ? 'text-[#8b5cf6] dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
+                          isHighlighted ? 'text-[#8b5cf6] dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
                         }`}>
                           {opt.label}
                         </span>
                         {tagText && (
                           <span className={`text-[10px] font-mono shrink-0 ${
-                            isExpanded ? 'text-[#a78bfa] dark:text-violet-400 font-bold' : 'text-slate-400 dark:text-zinc-500 opacity-60'
+                            isHighlighted ? 'text-[#a78bfa] dark:text-violet-400 font-bold' : 'text-slate-400 dark:text-zinc-500 opacity-60'
                           }`}>
                             {tagText}
                           </span>
@@ -893,13 +896,13 @@ const SlashMenuPopover = React.forwardRef(({
                   <>
                     <div className="flex items-center justify-between gap-1.5 w-full">
                       <span className={`text-[13px] font-semibold tracking-tight ${
-                        isExpanded ? 'text-[#8b5cf6] dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
+                        isHighlighted ? 'text-[#8b5cf6] dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
                       }`}>
                         {opt.label}
                       </span>
                       {tagText && (
                         <span className={`text-[10px] font-mono ${
-                          isExpanded ? 'text-[#a78bfa] dark:text-violet-400 font-bold' : 'text-slate-400 dark:text-zinc-500 opacity-60'
+                          isHighlighted ? 'text-[#a78bfa] dark:text-violet-400 font-bold' : 'text-slate-400 dark:text-zinc-500 opacity-60'
                         }`}>
                           {tagText}
                         </span>
