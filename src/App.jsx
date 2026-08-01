@@ -9571,6 +9571,7 @@ export default function App() {
   const [documents, setDocuments] = useState([
     {
       id: Date.now(),
+      mode: 'compose',
       title: '',
       subtitle: '',
       initiatives: defaultInitiatives,
@@ -12331,17 +12332,25 @@ export default function App() {
         doc.id === activeDocId
           ? {
               ...doc,
+              mode: doc.mode || (productMode === 'landing' ? 'compose' : productMode),
               title: docTitle,
               subtitle: docSubtitle,
               initiatives,
               appendedSections,
               isBlank: isBlankDocument,
               bodyHtml: docBodyHtml,
+              sheetsTitle,
+              sheetsData,
+              sheetGrids,
+              activeSheetId,
+              deckTitle,
+              deckSlidesData,
+              activeDeckSlideId,
             }
           : doc,
       ),
     );
-  }, [activeDocId, appendedSections, docSubtitle, docTitle, initiatives, isBlankDocument, docBodyHtml]);
+  }, [activeDocId, appendedSections, docSubtitle, docTitle, initiatives, isBlankDocument, docBodyHtml, sheetsTitle, sheetsData, sheetGrids, activeSheetId, deckTitle, deckSlidesData, activeDeckSlideId, productMode]);
 
   useEffect(() => {
     if (!documentCardRef.current || typeof ResizeObserver === 'undefined') {
@@ -23627,18 +23636,40 @@ Rules:
     setAppendedSections(targetDoc.appendedSections);
     setIsBlankDocument(targetDoc.isBlank);
     setDocBodyHtml(targetDoc.bodyHtml || '');
+
+    // Restore mode-specific document state if saved
+    if (targetDoc.sheetsTitle !== undefined) setSheetsTitle(targetDoc.sheetsTitle);
+    if (targetDoc.sheetsData) setSheetsData(targetDoc.sheetsData);
+    if (targetDoc.sheetGrids) setSheetGrids(targetDoc.sheetGrids);
+    if (targetDoc.activeSheetId !== undefined) setActiveSheetId(targetDoc.activeSheetId);
+    if (targetDoc.deckTitle !== undefined) setDeckTitle(targetDoc.deckTitle);
+    if (targetDoc.deckSlidesData) setDeckSlidesData(targetDoc.deckSlidesData);
+    if (targetDoc.activeDeckSlideId !== undefined) setActiveDeckSlideId(targetDoc.activeDeckSlideId);
   };
 
   const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
+    const initialSheetsData = [{ id: 1, title: 'Sheet 1', subtitle: '' }];
+    const initialSheetGrids = { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } };
+    const initialDeckSlidesData = [{ id: 1, section: 'Opening', title: 'Title Slide', headline: 'Click to add title', blurb: 'Click to add subtitle', designPresetKey: 'blank', presetKey: 'blank', accent: 'from-indigo-500 to-violet-500', visualType: 'hero statement', layoutStyle: 'Title Slide', motionCue: 'Soft fade and stagger reveal', keyMetric: '', speakerNotes: '', footer: '' }];
+
+    const defaultTitleForMode = initialTitle || (productMode === 'sheets' ? 'Untitled Sheet' : productMode === 'deck' ? 'Untitled Deck' : '');
+
     const newDoc = {
       id: Date.now() + Math.floor(Math.random() * 1000),
-      title: initialTitle,
+      title: defaultTitleForMode,
       subtitle: '',
       initiatives: [],
       appendedSections: [],
       isBlank: !initialHtml && !initialTitle,
       bodyHtml: initialHtml,
       pinned: false,
+      sheetsTitle: productMode === 'sheets' ? (initialTitle || 'Untitled Sheet') : 'Untitled Sheet',
+      sheetsData: initialSheetsData,
+      sheetGrids: initialSheetGrids,
+      activeSheetId: 1,
+      deckTitle: productMode === 'deck' ? (initialTitle || 'Untitled Deck') : 'Untitled Deck',
+      deckSlidesData: initialDeckSlidesData,
+      activeDeckSlideId: 1,
     };
 
     if (activeRightTab === 'whiteboard') {
@@ -23647,19 +23678,31 @@ Rules:
 
     setDocuments((prev) => [...prev, newDoc]);
     setActiveDocId(newDoc.id);
-    setDocTitle(initialTitle);
+    setDocTitle(defaultTitleForMode);
     setDocSubtitle('');
     setIsBlankDocument(!initialHtml && !initialTitle);
     setAppendedSections([]);
     setInitiatives([]);
     setDocBodyHtml(initialHtml);
+
+    if (productMode === 'sheets') {
+      setSheetsTitle(initialTitle || 'Untitled Sheet');
+      setSheetsData(initialSheetsData);
+      setSheetGrids(initialSheetGrids);
+      setActiveSheetId(1);
+    } else if (productMode === 'deck') {
+      setDeckTitle(initialTitle || 'Untitled Deck');
+      setDeckSlidesData(initialDeckSlidesData);
+      setActiveDeckSlideId(1);
+    }
+
     setLastComposeRun(null);
     setLeftSidebarOpen(false);
     trackMemoryAction('document', silent ? 'Created new blank composition (auto)' : 'Created new blank composition', {
       documentId: String(newDoc.id),
     });
     if (!silent) {
-      showToast('Blank composition created');
+      showToast('Blank document created');
     }
     return newDoc.id;
   };
@@ -23936,16 +23979,8 @@ Rules:
       createWhiteboardExperience();
       return;
     }
-    if (productMode === 'compose') {
+    if (productMode === 'compose' || productMode === 'sheets' || productMode === 'deck') {
       createNewComposition();
-      return;
-    }
-    if (productMode === 'deck') {
-      createDeckExperience();
-      return;
-    }
-    if (productMode === 'sheets') {
-      createSheetsExperience();
       return;
     }
     if (productMode === 'dm') {
@@ -35597,8 +35632,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
 
-        <main className="flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-zinc-950">
-          <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative z-[350]">
+        <main className={`flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-zinc-950 ${isSheetsPresentationMode ? 'fixed inset-0 z-[9999] bg-white dark:bg-zinc-950' : ''}`}>
+          {!isSheetsPresentationMode && (
+            <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative z-[350]">
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -35959,17 +35995,103 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {notificationsOpen && renderNotificationsDropdownContent()}
                   </div>
 
-              {/* Settings Button */}
+                  {/* Settings Button */}
+                  <button
+                    type="button"
+                    onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
+                    title="Settings"
+                  >
+                    <Settings size={16} />
+                  </button>
+                </div>
+            </div>
+          )}
+
+          {/* Document Tab Strip - visible when not in presentation mode */}
+          {!isSheetsPresentationMode && (
+            <div className="h-10 border-b border-slate-200/50 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0 shrink-0 select-none">
+              {orderedDocuments.map((doc, docIndex) => {
+                const defaultName = productMode === 'sheets' ? 'Untitled Sheet' : productMode === 'deck' ? 'Untitled Deck' : `Tab ${docIndex + 1}`;
+                const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
+                  ? UNTITLED_WHITEBOARD_LABEL
+                  : (doc.title?.trim() ? doc.title : defaultName);
+                const isActive = activeDocId === doc.id;
+
+                return (
+                  <div
+                    key={doc.id}
+                    onClick={() => switchDocument(doc.id)}
+                    className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-slate-100 dark:bg-zinc-800 border-violet-200 text-violet-600 dark:text-violet-400 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:border-gray-200'}`}
+                  >
+                    {renamingDocId === doc.id ? (
+                      <input
+                        autoFocus
+                        value={renameDocValue}
+                        onChange={(e) => setRenameDocValue(e.target.value)}
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            commitRenameDocument(doc.id);
+                          }
+                          if (event.key === 'Escape') {
+                            setRenamingDocId(null);
+                            setRenameDocValue('');
+                          }
+                        }}
+                        onBlur={() => commitRenameDocument(doc.id)}
+                        className="w-[160px] bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
+                      />
+                    ) : (
+                      <span className="max-w-[160px] truncate">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
+                    )}
+                    <button
+                      data-doc-menu-root
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        closeTransientMenus();
+                        setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
+                      }}
+                      className="p-0.5 rounded hover:bg-gray-100 shrink-0"
+                      title="Document actions"
+                    >
+                      <MoreHorizontal size={12} />
+                    </button>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        requestCloseDocument(doc.id);
+                      }}
+                      className="p-0.5 rounded hover:bg-rose-50 text-gray-400 hover:text-rose-600 shrink-0"
+                      title="Close document"
+                    >
+                      <X size={12} />
+                    </button>
+                    {openDocMenuId === doc.id && (
+                      <div className="absolute right-0 top-full mt-1 z-[230] w-36 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1" data-doc-menu-root>
+                        <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('rename', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Rename</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('save', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Save</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('share', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Share</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('pin', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">{doc.pinned ? 'Unpin' : 'Pin'}</button>
+                        <div className="border-t border-gray-100 my-1"></div>
+                        <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('close', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-rose-50 text-rose-600">Close</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               <button
                 type="button"
-                onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-                title="Settings"
+                onClick={createItemForCurrentContext}
+                className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+                title="Create new item"
+                aria-label="Create new item"
               >
-                <Settings size={16} />
+                <Plus size={14} strokeWidth={1.5} />
               </button>
             </div>
-          </div>
+          )}
 
           <div className="flex-1 h-full min-h-0 flex relative">
             {!isSheetsMode && productMode !== 'deck' && (
@@ -36168,7 +36290,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <div className="absolute top-[20%] -right-[15%] w-[60%] h-[60%] rounded-full bg-purple-400/35 mix-blend-multiply filter blur-[110px]" />
                           <div className="absolute bottom-[5%] left-[15%] w-[80%] h-[80%] rounded-full bg-pink-400/30 mix-blend-multiply filter blur-[120px]" />
                         </div>
-                      <div className="mx-4 mt-3 mb-2 p-3 border border-slate-200/60 dark:border-zinc-700/50 bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl rounded-2xl shadow-[0_2px_16px_-4px_rgba(15,23,42,0.08)] ring-1 ring-white/60 dark:ring-zinc-700/30 flex flex-col gap-2.5 z-20 shrink-0">
+                      {!isSheetsPresentationMode && (
+                        <div className="mx-4 mt-3 mb-2 w-[calc(100%-2rem)] p-3.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col gap-2.5 z-20 shrink-0">
                       {/* Top Row: Navigation Tabs & Export */}
                       <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
                         <div className="flex items-center gap-4">
@@ -36461,9 +36584,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </>
                       )}
                     </div>
+                  )}
 
-                    <div className="mx-4 mb-3 flex-1 min-h-0 flex flex-col border border-gray-200/80 dark:border-zinc-800/80 bg-white dark:bg-[#121214] backdrop-blur-md rounded-2xl shadow-sm overflow-hidden z-10">
-                      <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151] shrink-0">
+                    <div className="mx-4 mb-3 w-[calc(100%-2rem)] flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm overflow-hidden z-10">
+                      {!isSheetsPresentationMode && (
+                        <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151] shrink-0">
                       <div className="min-w-[72px] text-center border border-gray-200 rounded-lg bg-gray-50 py-1.5 px-2 text-[11px] font-mono font-semibold tracking-tight">
                         {sheetSelectionMode === 'all' ? 'All' :
                          sheetSelectionMode === 'col' && selectedSheetRange ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}` :
@@ -36506,6 +36631,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         placeholder="Enter value or formula"
                       />
                     </div>
+                      )}
                     <div
                       ref={sheetHeaderWrapperRef}
                       className="overflow-hidden w-full bg-slate-50 border-b border-gray-200 shrink-0"
@@ -38826,14 +38952,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             e.preventDefault();
                             e.stopPropagation();
                             setIsSheetsPresentationMode(true);
-                            if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
-                              document.documentElement.requestFullscreen().catch(() => {});
+                            const docEl = document.documentElement;
+                            const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+                            if (requestFS && !document.fullscreenElement) {
+                              requestFS.call(docEl).catch(() => {});
                             }
                           }}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             setIsSheetsPresentationMode(true);
-                            if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
-                              document.documentElement.requestFullscreen().catch(() => {});
+                            const docEl = document.documentElement;
+                            const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+                            if (requestFS && !document.fullscreenElement) {
+                              requestFS.call(docEl).catch(() => {});
                             }
                           }}
                           aria-label="Enter presentation mode"
