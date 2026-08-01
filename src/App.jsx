@@ -35712,16 +35712,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               ) : (
                 <>
                   <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-[#7C4DFF]" viewBox="0 0 24 24" fill="currentColor">
-                      <rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(45 12 12)" />
-                      <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                    <span className="font-bold text-[16px] text-gray-900 dark:text-white tracking-tight">Deck</span>
                   </div>
-                  <button type="button" onClick={() => showToast('Opening saved decks')} className="flex items-center gap-1 text-[12px] text-gray-600 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white font-medium px-2.5 py-1.5 rounded-lg border border-gray-150 dark:border-zinc-800 bg-white dark:bg-zinc-800 ml-3 transition-colors">
-                    <FolderOpen size={14} className="text-gray-500 dark:text-zinc-400" />
-                    <span>Saved decks</span>
-                  </button>
                   <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 ml-3 hidden sm:flex">
                     <Cloud size={14} /> {savedStatusLabel}
                   </div>
@@ -39258,11 +39249,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </svg>
                                         <span className={`font-bold text-[16px] tracking-tight ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Acme Inc.</span>
                                       </div>
-                                      <span className={`text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-full border ${
-                                        isDarkTheme ? 'border-white/20 text-white/80 bg-white/10' : 'border-gray-200 text-gray-500 bg-gray-50'
-                                      }`}>
-                                        {activeDeckSlide?.section || 'Slide'}
-                                      </span>
                                     </div>
 
                                     {/* Dynamic Layout Content */}
@@ -39424,16 +39410,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           {/* Main Row: Bottom-left AI button + Center Carousel */}
                           <div className="w-full flex items-end justify-between px-4 relative min-h-[52px]">
                             {/* Circular magical purple button on the bottom left */}
-                            <button
-                              type="button"
-                              onClick={() => { setActiveRightTab('assistant'); setRightSidebarOpen(true); }}
-                              className="w-11 h-11 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-[0_8px_25px_rgba(124,77,255,0.35)] hover:bg-[#6C3DF0] hover:scale-105 active:scale-95 transition-all z-20 shrink-0 mb-1"
-                              title="Open AI Assistant"
-                            >
-                              <Sparkles size={18} />
-                            </button>
-
-                            {/* Horizontal mini carousel slider in the bottom center */}
                             <div className="absolute left-1/2 -translate-x-1/2 bottom-0 flex items-center gap-2 p-1.5 bg-white/70 backdrop-blur-md rounded-2xl border border-gray-200/60 shadow-sm max-w-[85%] overflow-x-auto no-scrollbar z-15">
                               {deckSlides.map((slide, idx) => {
                                 const isSlideActive = slide.id === activeDeckSlideId;
@@ -39471,84 +39447,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <span className="text-[10px] font-bold text-transparent">+</span>
                               </div>
                             </div>
-                          </div>
-
-                          {/* Floating bottom toolbar matching reference Image 2 */}
-                          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-gray-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-3 py-1 flex items-center gap-2 text-xs font-semibold text-gray-700 z-20 mt-1">
-                            <button
-                              type="button"
-                              onClick={() => showToast('Editing slide mode active')}
-                              className="flex items-center gap-1.5 bg-violet-100/80 text-[#7C4DFF] font-bold px-3 py-1.5 rounded-xl border border-violet-200/50 transition-all active:scale-95"
-                            >
-                              <Plus size={13} />
-                              <span>Edit</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeckContextRailTab('Outline')}
-                              className="px-3 py-1.5 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 hover:text-gray-900 transition-colors"
-                            >
-                              Outline
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => showToast('Opening Storyboard')}
-                              className="px-3 py-1.5 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 hover:text-gray-900 transition-colors"
-                            >
-                              Storyboard
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handlePresentDeck}
-                              className="px-3 py-1.5 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 hover:text-gray-900 transition-colors"
-                            >
-                              Presenter
-                            </button>
-
-                            <div className="w-px h-4 bg-gray-200 mx-1" />
-
-                            {/* Zoom controls */}
-                            <div className="flex items-center gap-1.5 text-gray-500">
-                              <button
-                                type="button"
-                                onClick={() => setDeckZoomLevel((prev) => Math.max(50, prev - 10))}
-                                className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 rounded-md transition-colors font-bold text-sm"
-                                title="Zoom out"
-                              >
-                                -
-                              </button>
-                              <span className="text-[11px] font-bold w-9 text-center text-gray-700">{deckZoomLevel}%</span>
-                              <button
-                                type="button"
-                                onClick={() => setDeckZoomLevel((prev) => Math.min(150, prev + 10))}
-                                className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 rounded-md transition-colors font-bold text-sm"
-                                title="Zoom in"
-                              >
-                                +
-                              </button>
-                            </div>
-
-                            <div className="w-px h-4 bg-gray-200 mx-1" />
-
-                            <button
-                              type="button"
-                              onClick={() => setShowDeckNotes((prev) => !prev)}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
-                                showDeckNotes ? 'bg-violet-100 text-[#7C4DFF] font-bold' : 'hover:bg-gray-100/80 text-gray-600 hover:text-gray-900'
-                              }`}
-                            >
-                              <FileText size={13} />
-                              <span>Notes</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => showToast('Duration settings')}
-                              className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 hover:text-gray-900 transition-colors"
-                            >
-                              <Clock size={13} />
-                              <span>Duration</span>
-                            </button>
                           </div>
 
                           {/* Bottom Status Bar matching Image 2 */}
