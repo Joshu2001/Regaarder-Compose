@@ -26,7 +26,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -5280,6 +5280,75 @@ export default function App() {
   const [isPromptAutoVisible, setIsPromptAutoVisible] = useState(false);
   const [isPromptDismissed, setIsPromptDismissed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [gridLineContrast, setGridLineContrast] = useState('medium'); // 'subtle' | 'medium' | 'high'
+  const [sheetsThemePalette, setSheetsThemePalette] = useState('default'); // 'default' | 'obsidian' | 'nordic' | 'emerald'
+  const [showGridLines, setShowGridLines] = useState(true);
+
+  const getGridLineColor = useCallback((isDark, palette = 'default', contrast = 'medium', showLines = true) => {
+    if (!showLines) return 'transparent';
+    if (isDark) {
+      if (palette === 'obsidian') {
+        if (contrast === 'subtle') return '#27272a';
+        if (contrast === 'high') return '#71717a';
+        return '#3f3f46';
+      }
+      if (palette === 'nordic') {
+        if (contrast === 'subtle') return '#2d3748';
+        if (contrast === 'high') return '#718096';
+        return '#4a5568';
+      }
+      if (palette === 'emerald') {
+        if (contrast === 'subtle') return '#132e2e';
+        if (contrast === 'high') return '#2d6a6a';
+        return '#1e4848';
+      }
+      // Default Dark Slate
+      if (contrast === 'subtle') return '#334155';
+      if (contrast === 'high') return '#64748b';
+      return '#475569'; // Slightly darkened default grid line for multi-row data tracking
+    } else {
+      if (palette === 'nordic') {
+        if (contrast === 'subtle') return '#e2ded4';
+        if (contrast === 'high') return '#b8af9b';
+        return '#d1cab9';
+      }
+      if (palette === 'emerald') {
+        if (contrast === 'subtle') return '#d1e7dd';
+        if (contrast === 'high') return '#95c2b0';
+        return '#b4d7c7';
+      }
+      // Default Light Mode
+      if (contrast === 'subtle') return '#e2e8f0';
+      if (contrast === 'high') return '#94a3b8';
+      return '#cbd5e1'; // Slightly darkened default grid line for multi-row data tracking
+    }
+  }, []);
+
+  const getSheetHeaderBg = useCallback((isDark, palette = 'default') => {
+    if (isDark) {
+      if (palette === 'obsidian') return '#09090b';
+      if (palette === 'nordic') return '#1a202c';
+      if (palette === 'emerald') return '#0a1919';
+      return '#0f172a';
+    } else {
+      if (palette === 'nordic') return '#f5f2eb';
+      if (palette === 'emerald') return '#f0f7f4';
+      return '#f8fafc';
+    }
+  }, []);
+
+  const getSheetHeaderTextColor = useCallback((isDark, palette = 'default') => {
+    if (isDark) {
+      if (palette === 'obsidian') return '#f4f4f5';
+      if (palette === 'nordic') return '#e2e8f0';
+      if (palette === 'emerald') return '#e6f4f1';
+      return '#cbd5e1';
+    } else {
+      if (palette === 'nordic') return '#4a4035';
+      if (palette === 'emerald') return '#064e3b';
+      return '#334155';
+    }
+  }, []);
   const [hasVoiceInteraction, setHasVoiceInteraction] = useState(false);
   const [miniPromptOffset, setMiniPromptOffset] = useState({ x: 0, y: 0 });
   const [dictationOffset, setDictationOffset] = useState({ x: 0, y: 0 });
@@ -11404,11 +11473,23 @@ export default function App() {
       const storedPromptLengthValue = localStorage.getItem('rc.promptLengthValue');
       const storedEditorPrefs = localStorage.getItem('rc.editorPrefs');
       const storedDarkMode = localStorage.getItem('rc.darkMode');
+      const storedGridContrast = localStorage.getItem('rc.gridLineContrast');
+      const storedThemePalette = localStorage.getItem('rc.themePalette');
+      const storedShowGridLines = localStorage.getItem('rc.showGridLines');
       if (storedCapture === 'true' || storedCapture === 'false') {
         setMemoryCaptureEnabled(storedCapture === 'true');
       }
       if (storedDarkMode === 'true' || storedDarkMode === 'false') {
         setIsDarkMode(storedDarkMode === 'true');
+      }
+      if (storedGridContrast && ['subtle', 'medium', 'high'].includes(storedGridContrast)) {
+        setGridLineContrast(storedGridContrast);
+      }
+      if (storedThemePalette && ['default', 'obsidian', 'nordic', 'emerald'].includes(storedThemePalette)) {
+        setSheetsThemePalette(storedThemePalette);
+      }
+      if (storedShowGridLines === 'true' || storedShowGridLines === 'false') {
+        setShowGridLines(storedShowGridLines === 'true');
       }
       if (storedRetention) {
         const parsedRetention = Number(storedRetention);
@@ -11499,6 +11580,18 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('rc.darkMode', String(isDarkMode));
   }, [isDarkMode]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.gridLineContrast', gridLineContrast);
+  }, [gridLineContrast]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.themePalette', sheetsThemePalette);
+  }, [sheetsThemePalette]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.showGridLines', String(showGridLines));
+  }, [showGridLines]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -36274,19 +36367,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     {/* Right main area: floating island toolbar & sheet grid */}
                     {isSheetsMode ? (
-                      <div className="flex-1 min-h-0 h-full flex flex-col min-w-0 relative z-10 bg-slate-50/30 backdrop-blur-[6px]">
-                        {/* Ambient orb blobs — unified workspace palette: blue / purple / pink */}
+                      <div className={`flex-1 min-h-0 h-full flex flex-col min-w-0 relative z-10 backdrop-blur-[6px] transition-colors ${sheetsThemePalette === 'obsidian' ? 'bg-zinc-950/90' : sheetsThemePalette === 'nordic' ? 'bg-slate-100/50' : sheetsThemePalette === 'emerald' ? 'bg-emerald-50/30' : 'bg-slate-50/30'}`}>
+                        {/* Ambient orb blobs — theme palette responsive */}
                         <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.28]">
-                          <div className="absolute -top-[15%] -left-[15%] w-[70%] h-[70%] rounded-full bg-blue-400/35 mix-blend-multiply filter blur-[110px]" />
-                          <div className="absolute top-[20%] -right-[15%] w-[60%] h-[60%] rounded-full bg-purple-400/35 mix-blend-multiply filter blur-[110px]" />
-                          <div className="absolute bottom-[5%] left-[15%] w-[80%] h-[80%] rounded-full bg-pink-400/30 mix-blend-multiply filter blur-[120px]" />
+                          <div className={`absolute -top-[15%] -left-[15%] w-[70%] h-[70%] rounded-full mix-blend-multiply filter blur-[110px] ${sheetsThemePalette === 'emerald' ? 'bg-emerald-400/40' : sheetsThemePalette === 'nordic' ? 'bg-cyan-400/35' : sheetsThemePalette === 'obsidian' ? 'bg-zinc-700/30' : 'bg-blue-400/35'}`} />
+                          <div className={`absolute top-[20%] -right-[15%] w-[60%] h-[60%] rounded-full mix-blend-multiply filter blur-[110px] ${sheetsThemePalette === 'emerald' ? 'bg-teal-400/40' : sheetsThemePalette === 'nordic' ? 'bg-sky-400/35' : sheetsThemePalette === 'obsidian' ? 'bg-slate-700/30' : 'bg-purple-400/35'}`} />
+                          <div className={`absolute bottom-[5%] left-[15%] w-[80%] h-[80%] rounded-full mix-blend-multiply filter blur-[120px] ${sheetsThemePalette === 'emerald' ? 'bg-mint-400/30' : sheetsThemePalette === 'nordic' ? 'bg-indigo-400/30' : sheetsThemePalette === 'obsidian' ? 'bg-zinc-800/30' : 'bg-pink-400/30'}`} />
                         </div>
                       {!isSheetsPresentationMode && (
                         <div className="mx-4 mt-3 mb-2 w-[calc(100%-2rem)] p-3.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col gap-2.5 z-20 shrink-0">
                       {/* Top Row: Navigation Tabs & Export */}
                       <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
                         <div className="flex items-center gap-4">
-                          {['Data', 'Templates', 'Analyze', 'Visualize'].map((tab) => (
+                          {['Data', 'Templates', 'Analyze', 'Visualize', 'View'].map((tab) => (
                             <button
                               key={tab}
                               type="button"
@@ -36298,7 +36391,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   showToast(`${tab} tools ready`);
                                 }
                               }}
-                              className={`px-3 py-1.5 rounded-md text-[13px] font-semibold transition-all duration-200 ease-out ${sheetToolbarTab === tab ? 'bg-slate-100 text-slate-800 border border-transparent' : 'border border-transparent text-slate-600 hover:bg-slate-50/60 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800/60'}`}
+                              className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 ease-out border ${sheetToolbarTab === tab ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600 shadow-sm' : 'border-transparent text-slate-600 hover:bg-slate-50/60 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800/60'}`}
                             >
                               {tab}
                             </button>
@@ -36404,6 +36497,61 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             updateSheetCell={updateSheetCell} 
                             showToast={showToast} 
                           />
+                        </div>
+                      ) : sheetToolbarTab === 'View' ? (
+                        <div className="flex flex-wrap items-center gap-4 px-2 py-1.5 pt-2 border-t border-gray-200/60 dark:border-zinc-800 text-xs font-medium">
+                          {/* Gridline Contrast */}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-slate-500 dark:text-zinc-400 font-medium">Gridlines:</span>
+                            <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
+                              {['subtle', 'medium', 'high'].map(c => (
+                                <button
+                                  key={c}
+                                  type="button"
+                                  onClick={() => { setGridLineContrast(c); showToast(`Grid contrast set to ${c}`); }}
+                                  className={`px-2 py-1 rounded-md text-[11px] font-medium capitalize transition-colors ${gridLineContrast === c ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 shadow-sm border border-slate-200/60 dark:border-zinc-600' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                                >
+                                  {c}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
+
+                          {/* Theme Palette */}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-slate-500 dark:text-zinc-400 font-medium">Theme:</span>
+                            <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
+                              {[
+                                { id: 'default', label: 'Slate' },
+                                { id: 'obsidian', label: 'Obsidian' },
+                                { id: 'nordic', label: 'Nordic' },
+                                { id: 'emerald', label: 'Emerald' }
+                              ].map(t => (
+                                <button
+                                  key={t.id}
+                                  type="button"
+                                  onClick={() => { setSheetsThemePalette(t.id); showToast(`Palette: ${t.label}`); }}
+                                  className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${sheetsThemePalette === t.id ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 shadow-sm border border-slate-200/60 dark:border-zinc-600' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                                >
+                                  {t.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
+
+                          {/* Grid Visibility Toggle */}
+                          <button
+                            type="button"
+                            onClick={() => setShowGridLines(!showGridLines)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 ${showGridLines ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600' : 'bg-transparent text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
+                          >
+                            <Grid size={13} />
+                            {showGridLines ? 'Gridlines: On' : 'Gridlines: Off'}
+                          </button>
                         </div>
                       ) : null}
 
@@ -38328,9 +38476,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       ...customBgStyle,
                                       ...tableBorderStyles,
                                       ...customBorders,
-                                      borderRightWidth: tableBorderStyles.borderRight ? '' : (computedFormat.fill ? '0px' : '1px'),
-                                      borderBottomWidth: tableBorderStyles.borderBottom ? '' : (computedFormat.fill ? '0px' : '1px'),
-                                      borderColor: tableIntersections.length > 0 ? (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1].presetStyle]?.border || TABLE_PRESETS.blue.border) : '#e5e7eb',
+                                      borderRightWidth: !showGridLines ? '0px' : (tableBorderStyles.borderRight ? '' : (computedFormat.fill ? '0px' : '1px')),
+                                      borderBottomWidth: !showGridLines ? '0px' : (tableBorderStyles.borderBottom ? '' : (computedFormat.fill ? '0px' : '1px')),
+                                      borderColor: tableIntersections.length > 0 ? (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1].presetStyle]?.border || TABLE_PRESETS.blue.border) : (gridLineContrast === 'high' ? (isDarkMode ? '#52525b' : '#cbd5e1') : gridLineContrast === 'subtle' ? (isDarkMode ? '#27272a' : '#f1f5f9') : (isDarkMode ? '#3f3f46' : '#e2e8f0')),
                                       zIndex: (tableIntersections.length > 0 && tableIntersections[tableIntersections.length - 1].id === hoveredTableId && rowIndex + 1 === tableIntersections[tableIntersections.length - 1].startRow && colIndex + 1 === tableIntersections[tableIntersections.length - 1].startCol) ? 40 : (computedFormat.rowSpan || computedFormat.colSpan ? 20 : undefined)
                                     }}
                                     onContextMenu={(e) => {

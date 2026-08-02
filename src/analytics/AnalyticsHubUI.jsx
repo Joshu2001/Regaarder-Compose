@@ -263,7 +263,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 key={id}
                 type="button"
                 onClick={() => { setSelectedModule(id); setResults(null); }}
-                className={`w-full flex items-center justify-between text-left px-3.5 py-2.5 rounded-md transition-all text-xs font-medium ${selectedModule === id ? 'bg-transparent text-[#7C4DFF] border border-[#7C4DFF]' : 'border border-transparent text-slate-650 hover:bg-slate-50 dark:hover:bg-white/5'}`}
+                className={`w-full flex items-center justify-between text-left px-3.5 py-2.5 rounded-lg transition-all text-xs font-medium border ${selectedModule === id ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600 shadow-sm' : 'border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800/60'}`}
               >
                 <span>{plugin.name}</span>
                 <span className="text-[10px] text-slate-400 font-normal">{plugin.category}</span>
