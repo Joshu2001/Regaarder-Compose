@@ -439,7 +439,7 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
   const isAIUnavailable = roomAIModal.answer && roomAIModal.answer.startsWith("AI is currently unavailable");
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden p-2 md:p-4 select-none">
+    <div className="w-full h-full relative bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden p-2 md:p-4 select-none">
       {/* Subtle vignette/radial glow overlay */}
       <div className="absolute inset-0 bg-black/[0.025] pointer-events-none z-0" />
 

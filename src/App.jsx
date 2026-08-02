@@ -36673,7 +36673,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </div>
                         </div>
                       ) : sheetToolbarTab === 'Analyze' ? (
-                        <div className="pt-1.5 border-t border-gray-200/60 dark:border-zinc-800">
+                        <div className="pt-1.5 border-t border-gray-200/60 dark:border-zinc-800 flex-1 min-h-0 flex flex-col overflow-hidden">
                           <AnalyticsHubUI 
                             activeSheetGrid={sheetGrids[activeSheetId]} 
                             activeSheetId={activeSheetId} 
