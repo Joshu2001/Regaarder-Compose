@@ -5299,6 +5299,8 @@ export default function App() {
       tokyo:     { bgSoft: 'bg-purple-950/80 text-purple-100 border-purple-700 dark:bg-purple-950/90 dark:text-purple-100', activeTab: 'bg-purple-950/90 text-purple-200 font-semibold border-purple-700', text: 'text-purple-300 dark:text-purple-200', fill: '#bb9af7' },
       amber:     { bgSoft: 'bg-amber-200/70 text-amber-950 border-amber-300 dark:bg-amber-900/60 dark:text-amber-100', activeTab: 'bg-amber-100/70 dark:bg-amber-900/70 text-amber-900 dark:text-amber-100 font-semibold border-amber-300 dark:border-amber-700', text: 'text-amber-800 dark:text-amber-300', fill: '#d97706' },
       parchment: { bgSoft: 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/60 dark:text-amber-100', activeTab: 'bg-amber-50 dark:bg-amber-900/60 text-amber-950 dark:text-amber-100 font-semibold border-amber-300 dark:border-amber-700', text: 'text-amber-900 dark:text-amber-300', fill: '#78350f' },
+      nature_botanical: { bgSoft: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200', activeTab: 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-semibold border-emerald-200/80 dark:border-emerald-800', text: 'text-emerald-600 dark:text-emerald-400', fill: '#15803d' },
+      ocean_water:      { bgSoft: 'bg-teal-100 text-teal-900 border-teal-300 dark:bg-teal-950 dark:text-teal-200', activeTab: 'bg-teal-50 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300 font-semibold border-teal-200/80 dark:border-teal-800', text: 'text-teal-600 dark:text-teal-400', fill: '#0d9488' },
     };
     return map[sheetsThemePalette] || map.default;
   }, [sheetsThemePalette]);
@@ -37050,7 +37052,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             if (filteredOptions.length > 0) {
-                              executeSheetSlashCommand(filteredOptions[sheetSlashMenu.activeIndex]?.key);
+                              setSheetSlashMenu(prev => {
+                                const selectedOpt = filteredOptions[prev.activeIndex];
+                                if (selectedOpt) {
+                                  executeSheetSlashCommand(selectedOpt.key);
+                                }
+                                return { ...prev, open: false };
+                              });
                             }
                             return;
                           }
@@ -39218,58 +39226,125 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     {/* Floating Zen Mode Overlay Pill */}
                     {isSheetZenMode && (
-                      <div className="fixed top-4 right-6 z-[99999] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 shadow-2xl rounded-2xl p-2 px-3 flex items-center gap-3 animate-in fade-in zoom-in-95 duration-150 select-none">
-                        <div className="flex items-center gap-1.5 border-r border-slate-200 dark:border-zinc-800 pr-3">
-                          <button 
-                            type="button" 
-                            onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}
-                            className="p-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
-                            title="Zoom Out (-10%)"
-                          >
-                            <ZoomOut size={14} />
-                          </button>
-                          <input
-                            type="range"
-                            min="50"
-                            max="200"
-                            step="5"
-                            value={sheetZoomLevel}
-                            onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
-                            className="w-24 h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-violet-600"
-                          />
-                          <button 
-                            type="button" 
-                            onClick={() => setSheetZoomLevel(prev => Math.min(200, prev + 10))}
-                            className="p-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
-                            title="Zoom In (+10%)"
-                          >
-                            <ZoomIn size={14} />
-                          </button>
-                          <select
-                            value={sheetZoomLevel}
-                            onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
-                            className="bg-transparent text-xs font-semibold text-slate-700 dark:text-zinc-300 border-none px-1 py-0 cursor-pointer focus:outline-none"
-                          >
-                            <option value={50}>50%</option>
-                            <option value={75}>75%</option>
-                            <option value={90}>90%</option>
-                            <option value={100}>100%</option>
-                            <option value={110}>110%</option>
-                            <option value={125}>125%</option>
-                            <option value={150}>150%</option>
-                            <option value={175}>175%</option>
-                            <option value={200}>200%</option>
-                          </select>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setIsSheetZenMode(false)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-black dark:bg-violet-600 dark:hover:bg-violet-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
-                        >
-                          <Minimize2 size={13} />
-                          <span>Exit Zen Mode</span>
-                          <kbd className="text-[9px] bg-white/20 px-1 py-0.5 rounded text-white/90 uppercase font-mono ml-1">ESC</kbd>
-                        </button>
+                      <div className="fixed top-12 right-6 z-[99999] group/zenpill select-none">
+                        {editingCellKey ? (
+                          <>
+                            {/* Hover expansion target showing full toolbar when user hovers over pulsing dot area */}
+                            <div className="hidden group-hover/zenpill:flex bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18),0_0_20px_rgba(255,255,255,0.4)] dark:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7),0_0_20px_rgba(255,255,255,0.05)] rounded-2xl p-2 px-3 items-center gap-3 animate-in fade-in zoom-in-95 duration-150">
+                              <div className="flex items-center gap-1.5 border-r border-slate-200/80 dark:border-zinc-700/80 pr-3">
+                                <button 
+                                  type="button" 
+                                  onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}
+                                  className="p-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
+                                  title="Zoom Out (-10%)"
+                                >
+                                  <ZoomOut size={14} />
+                                </button>
+                                <input
+                                  type="range"
+                                  min="50"
+                                  max="200"
+                                  step="5"
+                                  value={sheetZoomLevel}
+                                  onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
+                                  className="w-24 h-1.5 bg-slate-200/80 dark:bg-zinc-700/80 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                                />
+                                <button 
+                                  type="button" 
+                                  onClick={() => setSheetZoomLevel(prev => Math.min(200, prev + 10))}
+                                  className="p-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
+                                  title="Zoom In (+10%)"
+                                >
+                                  <ZoomIn size={14} />
+                                </button>
+                                <select
+                                  value={sheetZoomLevel}
+                                  onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
+                                  className="bg-transparent text-xs font-semibold text-slate-700 dark:text-zinc-300 border-none px-1 py-0 cursor-pointer focus:outline-none"
+                                >
+                                  <option value={50}>50%</option>
+                                  <option value={75}>75%</option>
+                                  <option value={90}>90%</option>
+                                  <option value={100}>100%</option>
+                                  <option value={110}>110%</option>
+                                  <option value={125}>125%</option>
+                                  <option value={150}>150%</option>
+                                  <option value={175}>175%</option>
+                                  <option value={200}>200%</option>
+                                </select>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setIsSheetZenMode(false)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/90 hover:bg-black dark:bg-violet-600/90 dark:hover:bg-violet-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+                              >
+                                <Minimize2 size={13} />
+                                <span>Exit Zen Mode</span>
+                              </button>
+                            </div>
+
+                            {/* Pulsing indicator dot shown while user is typing in a cell */}
+                            <div className="flex group-hover/zenpill:hidden items-center justify-center p-2 cursor-pointer" title="Hover to view Zen Mode Toolbar">
+                              <span className="relative flex h-5 w-5 items-center justify-center">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-violet-600 shadow-md border border-white"></span>
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18),0_0_20px_rgba(255,255,255,0.4)] dark:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7),0_0_20px_rgba(255,255,255,0.05)] rounded-2xl p-2 px-3 flex items-center gap-3 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="flex items-center gap-1.5 border-r border-slate-200/80 dark:border-zinc-700/80 pr-3">
+                              <button 
+                                type="button" 
+                                onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}
+                                className="p-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
+                                title="Zoom Out (-10%)"
+                              >
+                                <ZoomOut size={14} />
+                              </button>
+                              <input
+                                type="range"
+                                min="50"
+                                max="200"
+                                step="5"
+                                value={sheetZoomLevel}
+                                onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
+                                className="w-24 h-1.5 bg-slate-200/80 dark:bg-zinc-700/80 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                              />
+                              <button 
+                                type="button" 
+                                onClick={() => setSheetZoomLevel(prev => Math.min(200, prev + 10))}
+                                className="p-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
+                                title="Zoom In (+10%)"
+                              >
+                                <ZoomIn size={14} />
+                              </button>
+                              <select
+                                value={sheetZoomLevel}
+                                onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
+                                className="bg-transparent text-xs font-semibold text-slate-700 dark:text-zinc-300 border-none px-1 py-0 cursor-pointer focus:outline-none"
+                              >
+                                <option value={50}>50%</option>
+                                <option value={75}>75%</option>
+                                <option value={90}>90%</option>
+                                <option value={100}>100%</option>
+                                <option value={110}>110%</option>
+                                <option value={125}>125%</option>
+                                <option value={150}>150%</option>
+                                <option value={175}>175%</option>
+                                <option value={200}>200%</option>
+                              </select>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setIsSheetZenMode(false)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/90 hover:bg-black dark:bg-violet-600/90 dark:hover:bg-violet-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+                            >
+                              <Minimize2 size={13} />
+                              <span>Exit Zen Mode</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
 
