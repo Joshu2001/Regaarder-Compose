@@ -4,8 +4,7 @@ import { createPortal } from 'react-dom';
 import { io } from 'socket.io-client';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import { ShareModal } from '@regaarder/ui';
-import { DropdownModalShell } from '@regaarder/ui';
+import { ShareModal, DropdownModalShell, ThemeDropdown, SHEETS_THEME_OPTIONS } from '@regaarder/ui';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { Parser } from 'hot-formula-parser';
@@ -5283,6 +5282,26 @@ export default function App() {
   const [gridLineContrast, setGridLineContrast] = useState('medium'); // 'subtle' | 'medium' | 'high'
   const [sheetsThemePalette, setSheetsThemePalette] = useState('default'); // 'default' | 'obsidian' | 'nordic' | 'emerald'
   const [showGridLines, setShowGridLines] = useState(true);
+  const [gridlinePaintColor, setGridlinePaintColor] = useState('#3b82f6');
+  const [isGridlinePaintActive, setIsGridlinePaintActive] = useState(false);
+
+  const themeAccentStyles = useMemo(() => {
+    const map = {
+      default:   { bgSoft: 'bg-violet-100/90 text-violet-900 border-violet-300/60 dark:bg-violet-950/70 dark:text-violet-200', activeTab: 'bg-violet-50 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 font-semibold border-violet-200/80 dark:border-violet-800', text: 'text-violet-600 dark:text-violet-400', fill: '#7c3aed' },
+      obsidian:  { bgSoft: 'bg-zinc-800 text-zinc-100 border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100', activeTab: 'bg-zinc-800/90 text-zinc-100 font-semibold border-zinc-700', text: 'text-zinc-400 dark:text-zinc-300', fill: '#a1a1aa' },
+      nordic:    { bgSoft: 'bg-sky-100/90 text-sky-900 border-sky-300/60 dark:bg-sky-950/70 dark:text-sky-200', activeTab: 'bg-sky-50 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 font-semibold border-sky-200/80 dark:border-sky-800', text: 'text-sky-600 dark:text-sky-400', fill: '#0284c7' },
+      emerald:   { bgSoft: 'bg-emerald-100/90 text-emerald-900 border-emerald-300/60 dark:bg-emerald-950/70 dark:text-emerald-200', activeTab: 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-semibold border-emerald-200/80 dark:border-emerald-800', text: 'text-emerald-600 dark:text-emerald-400', fill: '#10b981' },
+      alabaster: { bgSoft: 'bg-stone-200/80 text-stone-900 border-stone-300 dark:bg-stone-800 dark:text-stone-100', activeTab: 'bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100 font-semibold border-stone-300 dark:border-stone-700', text: 'text-stone-700 dark:text-stone-300', fill: '#525252' },
+      indigo:    { bgSoft: 'bg-indigo-950/80 text-indigo-100 border-indigo-700 dark:bg-indigo-950/90 dark:text-indigo-100', activeTab: 'bg-indigo-950/90 text-indigo-200 font-semibold border-indigo-700', text: 'text-indigo-400 dark:text-indigo-300', fill: '#818cf8' },
+      sand:      { bgSoft: 'bg-amber-100/90 text-amber-900 border-amber-300/60 dark:bg-amber-950/70 dark:text-amber-200', activeTab: 'bg-amber-50 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-semibold border-amber-200/80 dark:border-amber-800', text: 'text-amber-700 dark:text-amber-400', fill: '#d97706' },
+      rose:      { bgSoft: 'bg-rose-100/90 text-rose-900 border-rose-300/60 dark:bg-rose-950/70 dark:text-rose-200', activeTab: 'bg-rose-50 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 font-semibold border-rose-200/80 dark:border-rose-800', text: 'text-rose-600 dark:text-rose-400', fill: '#f43f5e' },
+      carbon:    { bgSoft: 'bg-teal-950/80 text-teal-100 border-teal-700 dark:bg-teal-950/90 dark:text-teal-100', activeTab: 'bg-teal-950/90 text-teal-300 font-semibold border-teal-700', text: 'text-teal-400 dark:text-teal-300', fill: '#00f5d4' },
+      tokyo:     { bgSoft: 'bg-purple-950/80 text-purple-100 border-purple-700 dark:bg-purple-950/90 dark:text-purple-100', activeTab: 'bg-purple-950/90 text-purple-200 font-semibold border-purple-700', text: 'text-purple-300 dark:text-purple-200', fill: '#bb9af7' },
+      amber:     { bgSoft: 'bg-amber-200/70 text-amber-950 border-amber-300 dark:bg-amber-900/60 dark:text-amber-100', activeTab: 'bg-amber-100/70 dark:bg-amber-900/70 text-amber-900 dark:text-amber-100 font-semibold border-amber-300 dark:border-amber-700', text: 'text-amber-800 dark:text-amber-300', fill: '#d97706' },
+      parchment: { bgSoft: 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/60 dark:text-amber-100', activeTab: 'bg-amber-50 dark:bg-amber-900/60 text-amber-950 dark:text-amber-100 font-semibold border-amber-300 dark:border-amber-700', text: 'text-amber-900 dark:text-amber-300', fill: '#78350f' },
+    };
+    return map[sheetsThemePalette] || map.default;
+  }, [sheetsThemePalette]);
 
   const getGridLineColor = useCallback((isDark, palette = 'default', contrast = 'medium', showLines = true) => {
     if (!showLines) return 'transparent';
@@ -5291,6 +5310,11 @@ export default function App() {
         if (contrast === 'subtle') return '#27272a';
         if (contrast === 'high') return '#71717a';
         return '#3f3f46';
+      }
+      if (palette === 'indigo') {
+        if (contrast === 'subtle') return '#1e1b4b';
+        if (contrast === 'high') return '#4338ca';
+        return '#312e81';
       }
       if (palette === 'nordic') {
         if (contrast === 'subtle') return '#2d3748';
@@ -5302,11 +5326,46 @@ export default function App() {
         if (contrast === 'high') return '#2d6a6a';
         return '#1e4848';
       }
+      if (palette === 'alabaster') {
+        if (contrast === 'subtle') return '#262626';
+        if (contrast === 'high') return '#525252';
+        return '#3f3f46';
+      }
+      if (palette === 'sand') {
+        if (contrast === 'subtle') return '#292524';
+        if (contrast === 'high') return '#57534e';
+        return '#44403c';
+      }
+      if (palette === 'rose') {
+        if (contrast === 'subtle') return '#2d1a21';
+        if (contrast === 'high') return '#6b3648';
+        return '#4c2634';
+      }
       // Default Dark Slate
       if (contrast === 'subtle') return '#334155';
       if (contrast === 'high') return '#64748b';
-      return '#475569'; // Slightly darkened default grid line for multi-row data tracking
+      return '#475569';
     } else {
+      if (palette === 'alabaster') {
+        if (contrast === 'subtle') return '#e5e5e0';
+        if (contrast === 'high') return '#a3a39f';
+        return '#d4d4ce';
+      }
+      if (palette === 'indigo') {
+        if (contrast === 'subtle') return '#e0e7ff';
+        if (contrast === 'high') return '#818cf8';
+        return '#c7d2fe';
+      }
+      if (palette === 'sand') {
+        if (contrast === 'subtle') return '#e7e2d8';
+        if (contrast === 'high') return '#a89f91';
+        return '#c8beae';
+      }
+      if (palette === 'rose') {
+        if (contrast === 'subtle') return '#f3e8ea';
+        if (contrast === 'high') return '#c9a0a8';
+        return '#dbb9c0';
+      }
       if (palette === 'nordic') {
         if (contrast === 'subtle') return '#e2ded4';
         if (contrast === 'high') return '#b8af9b';
@@ -5320,17 +5379,25 @@ export default function App() {
       // Default Light Mode
       if (contrast === 'subtle') return '#e2e8f0';
       if (contrast === 'high') return '#94a3b8';
-      return '#cbd5e1'; // Slightly darkened default grid line for multi-row data tracking
+      return '#cbd5e1';
     }
   }, []);
 
   const getSheetHeaderBg = useCallback((isDark, palette = 'default') => {
     if (isDark) {
       if (palette === 'obsidian') return '#09090b';
+      if (palette === 'indigo') return '#090d16';
       if (palette === 'nordic') return '#1a202c';
       if (palette === 'emerald') return '#0a1919';
+      if (palette === 'alabaster') return '#1c1c1a';
+      if (palette === 'sand') return '#1c1917';
+      if (palette === 'rose') return '#1f1719';
       return '#0f172a';
     } else {
+      if (palette === 'alabaster') return '#f6f6f3';
+      if (palette === 'indigo') return '#eef2ff';
+      if (palette === 'sand') return '#f4efe6';
+      if (palette === 'rose') return '#f9f0f2';
       if (palette === 'nordic') return '#f5f2eb';
       if (palette === 'emerald') return '#f0f7f4';
       return '#f8fafc';
@@ -5340,10 +5407,18 @@ export default function App() {
   const getSheetHeaderTextColor = useCallback((isDark, palette = 'default') => {
     if (isDark) {
       if (palette === 'obsidian') return '#f4f4f5';
+      if (palette === 'indigo') return '#e0e7ff';
       if (palette === 'nordic') return '#e2e8f0';
       if (palette === 'emerald') return '#e6f4f1';
+      if (palette === 'alabaster') return '#f4f4f5';
+      if (palette === 'sand') return '#f5f5f4';
+      if (palette === 'rose') return '#fce7f3';
       return '#cbd5e1';
     } else {
+      if (palette === 'alabaster') return '#27272a';
+      if (palette === 'indigo') return '#3730a3';
+      if (palette === 'sand') return '#44403c';
+      if (palette === 'rose') return '#4c2830';
       if (palette === 'nordic') return '#4a4035';
       if (palette === 'emerald') return '#064e3b';
       return '#334155';
@@ -26614,6 +26689,42 @@ Respond with a JSON array of slide objects matching the schema.`;
     });
   };
 
+  const applyGridlineColorToRange = (color, range = selectedSheetRange || (selectedSheetCell ? { startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col } : null)) => {
+    if (!range || !activeSheetId) return;
+    const sRow = Math.min(range.startRow, range.endRow) - 1;
+    const eRow = Math.max(range.startRow, range.endRow) - 1;
+    const sCol = Math.min(range.startCol, range.endCol) - 1;
+    const eCol = Math.max(range.startCol, range.endCol) - 1;
+
+    setSheetGrids((prev) => {
+      const target = prev[activeSheetId];
+      if (!target) return prev;
+      const nextFormats = target.formats ? target.formats.map(row => [...row]) : Array.from({ length: target.rows }, () => Array.from({ length: target.cols }, () => null));
+
+      for (let r = sRow; r <= eRow; r++) {
+        if (!nextFormats[r]) nextFormats[r] = Array(target.cols).fill(null);
+        for (let c = sCol; c <= eCol; c++) {
+          const cellFmtRaw = nextFormats[r][c];
+          const existing = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? { ...cellFmtRaw } : {};
+          if (color === null || color === undefined) {
+            delete existing.borderColor;
+            nextFormats[r][c] = Object.keys(existing).length ? existing : null;
+          } else {
+            existing.borderColor = color;
+            nextFormats[r][c] = existing;
+          }
+        }
+      }
+      return {
+        ...prev,
+        [activeSheetId]: {
+          ...target,
+          formats: nextFormats
+        }
+      };
+    });
+  };
+
   const executeHeaderContextMenuAction = (actionKey, type, index) => {
     if (actionKey === 'select') {
       if (type === 'col') {
@@ -35968,6 +36079,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   )}
                 </div>
 
+                  {/* Dark Mode Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsDarkMode((prev) => !prev)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
+                    title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                    aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                  >
+                    {isDarkMode ? <Sun size={16} strokeWidth={1.5} /> : <Moon size={16} strokeWidth={1.5} />}
+                  </button>
+
                   {/* Local User Profile Avatar Button */}
                   <div className="relative" ref={profileMenuRef}>
                     <button
@@ -36367,12 +36489,64 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     {/* Right main area: floating island toolbar & sheet grid */}
                     {isSheetsMode ? (
-                      <div className={`flex-1 min-h-0 h-full flex flex-col min-w-0 relative z-10 backdrop-blur-[6px] transition-colors ${sheetsThemePalette === 'obsidian' ? 'bg-zinc-950/90' : sheetsThemePalette === 'nordic' ? 'bg-slate-100/50' : sheetsThemePalette === 'emerald' ? 'bg-emerald-50/30' : 'bg-slate-50/30'}`}>
+                      <div className={`flex-1 min-h-0 h-full flex flex-col min-w-0 relative z-10 backdrop-blur-[6px] transition-colors ${
+                        sheetsThemePalette === 'obsidian' ? 'bg-zinc-950/90' :
+                        sheetsThemePalette === 'indigo' ? 'bg-[#0b0f19]/95' :
+                        sheetsThemePalette === 'alabaster' ? 'bg-[#fbfbf9]' :
+                        sheetsThemePalette === 'sand' ? 'bg-[#f7f4ef]' :
+                        sheetsThemePalette === 'rose' ? 'bg-[#faf4f5]' :
+                        sheetsThemePalette === 'nordic' ? 'bg-slate-100/50' :
+                        sheetsThemePalette === 'emerald' ? 'bg-emerald-50/30' :
+                        sheetsThemePalette === 'carbon' ? 'bg-[#121619]' :
+                        sheetsThemePalette === 'tokyo' ? 'bg-[#1a1b26]' :
+                        sheetsThemePalette === 'amber' ? 'bg-[#fdf6e3]' :
+                        sheetsThemePalette === 'parchment' ? 'bg-[#fefcf3]' :
+                        'bg-slate-50/30'
+                      }`}>
                         {/* Ambient orb blobs — theme palette responsive */}
                         <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.28]">
-                          <div className={`absolute -top-[15%] -left-[15%] w-[70%] h-[70%] rounded-full mix-blend-multiply filter blur-[110px] ${sheetsThemePalette === 'emerald' ? 'bg-emerald-400/40' : sheetsThemePalette === 'nordic' ? 'bg-cyan-400/35' : sheetsThemePalette === 'obsidian' ? 'bg-zinc-700/30' : 'bg-blue-400/35'}`} />
-                          <div className={`absolute top-[20%] -right-[15%] w-[60%] h-[60%] rounded-full mix-blend-multiply filter blur-[110px] ${sheetsThemePalette === 'emerald' ? 'bg-teal-400/40' : sheetsThemePalette === 'nordic' ? 'bg-sky-400/35' : sheetsThemePalette === 'obsidian' ? 'bg-slate-700/30' : 'bg-purple-400/35'}`} />
-                          <div className={`absolute bottom-[5%] left-[15%] w-[80%] h-[80%] rounded-full mix-blend-multiply filter blur-[120px] ${sheetsThemePalette === 'emerald' ? 'bg-mint-400/30' : sheetsThemePalette === 'nordic' ? 'bg-indigo-400/30' : sheetsThemePalette === 'obsidian' ? 'bg-zinc-800/30' : 'bg-pink-400/30'}`} />
+                          <div className={`absolute -top-[15%] -left-[15%] w-[70%] h-[70%] rounded-full mix-blend-multiply filter blur-[110px] ${
+                            sheetsThemePalette === 'emerald' ? 'bg-emerald-400/40' :
+                            sheetsThemePalette === 'nordic' ? 'bg-cyan-400/35' :
+                            sheetsThemePalette === 'obsidian' ? 'bg-zinc-700/30' :
+                            sheetsThemePalette === 'indigo' ? 'bg-indigo-600/40' :
+                            sheetsThemePalette === 'alabaster' ? 'bg-stone-300/30' :
+                            sheetsThemePalette === 'sand' ? 'bg-amber-300/35' :
+                            sheetsThemePalette === 'rose' ? 'bg-rose-300/35' :
+                            sheetsThemePalette === 'carbon' ? 'bg-teal-500/30' :
+                            sheetsThemePalette === 'tokyo' ? 'bg-purple-600/40' :
+                            sheetsThemePalette === 'amber' ? 'bg-amber-400/35' :
+                            sheetsThemePalette === 'parchment' ? 'bg-amber-600/25' :
+                            'bg-blue-400/35'
+                          }`} />
+                          <div className={`absolute top-[20%] -right-[15%] w-[60%] h-[60%] rounded-full mix-blend-multiply filter blur-[110px] ${
+                            sheetsThemePalette === 'emerald' ? 'bg-teal-400/40' :
+                            sheetsThemePalette === 'nordic' ? 'bg-sky-400/35' :
+                            sheetsThemePalette === 'obsidian' ? 'bg-slate-700/30' :
+                            sheetsThemePalette === 'indigo' ? 'bg-violet-600/40' :
+                            sheetsThemePalette === 'alabaster' ? 'bg-slate-300/30' :
+                            sheetsThemePalette === 'sand' ? 'bg-orange-300/30' :
+                            sheetsThemePalette === 'rose' ? 'bg-pink-300/35' :
+                            sheetsThemePalette === 'carbon' ? 'bg-emerald-400/30' :
+                            sheetsThemePalette === 'tokyo' ? 'bg-pink-500/35' :
+                            sheetsThemePalette === 'amber' ? 'bg-orange-400/30' :
+                            sheetsThemePalette === 'parchment' ? 'bg-yellow-500/25' :
+                            'bg-purple-400/35'
+                          }`} />
+                          <div className={`absolute bottom-[5%] left-[15%] w-[80%] h-[80%] rounded-full mix-blend-multiply filter blur-[120px] ${
+                            sheetsThemePalette === 'emerald' ? 'bg-mint-400/30' :
+                            sheetsThemePalette === 'nordic' ? 'bg-indigo-400/30' :
+                            sheetsThemePalette === 'obsidian' ? 'bg-zinc-800/30' :
+                            sheetsThemePalette === 'indigo' ? 'bg-blue-600/35' :
+                            sheetsThemePalette === 'alabaster' ? 'bg-stone-200/30' :
+                            sheetsThemePalette === 'sand' ? 'bg-amber-200/30' :
+                            sheetsThemePalette === 'rose' ? 'bg-amber-200/30' :
+                            sheetsThemePalette === 'carbon' ? 'bg-cyan-500/30' :
+                            sheetsThemePalette === 'tokyo' ? 'bg-indigo-600/35' :
+                            sheetsThemePalette === 'amber' ? 'bg-yellow-500/30' :
+                            sheetsThemePalette === 'parchment' ? 'bg-orange-300/25' :
+                            'bg-pink-400/30'
+                          }`} />
                         </div>
                       {!isSheetsPresentationMode && (
                         <div className="mx-4 mt-3 mb-2 w-[calc(100%-2rem)] p-3.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col gap-2.5 z-20 shrink-0">
@@ -36519,27 +36693,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                           <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
 
-                          {/* Theme Palette */}
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-slate-500 dark:text-zinc-400 font-medium">Theme:</span>
-                            <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                              {[
-                                { id: 'default', label: 'Slate' },
-                                { id: 'obsidian', label: 'Obsidian' },
-                                { id: 'nordic', label: 'Nordic' },
-                                { id: 'emerald', label: 'Emerald' }
-                              ].map(t => (
-                                <button
-                                  key={t.id}
-                                  type="button"
-                                  onClick={() => { setSheetsThemePalette(t.id); showToast(`Palette: ${t.label}`); }}
-                                  className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${sheetsThemePalette === t.id ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 shadow-sm border border-slate-200/60 dark:border-zinc-600' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'}`}
-                                >
-                                  {t.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
+                          {/* Reusable Executive Theme Dropdown */}
+                          <ThemeDropdown
+                            value={sheetsThemePalette}
+                            onChange={(newThemeId) => {
+                              setSheetsThemePalette(newThemeId);
+                              const selectedTheme = SHEETS_THEME_OPTIONS.find(t => t.id === newThemeId);
+                              showToast(`Theme: ${selectedTheme?.label || newThemeId}`);
+                            }}
+                            options={SHEETS_THEME_OPTIONS}
+                            label="Theme"
+                          />
 
                           <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
 
@@ -36737,7 +36901,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                          `${toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}${selectedSheetCell.row}`}
                       </div>
                       <span 
-                        className="text-gray-400 font-mono cursor-pointer hover:text-violet-600 font-bold transition-colors select-none"
+                        className={`font-mono cursor-pointer hover:opacity-80 font-bold transition-colors select-none ${themeAccentStyles.text}`}
                         title="Tap to insert formula (=)"
                         onClick={() => {
                           const currentVal = activeSheetGridRaw.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || '';
@@ -36801,7 +36965,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <div
                                 key={col}
                                 className={`h-8 relative border-r border-gray-200 last:border-r-0 flex items-center justify-center select-none sheet-col-select-cursor text-[11px] font-semibold transition-colors
-                                  ${isColSelected ? 'bg-violet-200 text-violet-900 font-bold' : isColActive ? 'bg-violet-100 text-violet-800' : 'hover:bg-slate-100 text-slate-700'}`}
+                                  ${isColSelected ? `${themeAccentStyles.bgSoft} font-bold` : isColActive ? `${themeAccentStyles.bgSoft}` : 'hover:bg-slate-100 text-slate-700'}`}
                                 style={{ overflow: 'hidden', userSelect: 'none' }}
                                 onMouseDown={(e) => {
                                   e.preventDefault();
@@ -38319,7 +38483,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <div
                                 key={`rh-${rowIndex}`}
                                 className={`relative border-b border-r border-gray-200 text-[11px] font-semibold flex items-center justify-center select-none sheet-row-select-cursor transition-colors
-                                  ${isRowSelected ? 'bg-violet-200 text-violet-900 font-bold' : isRowActive ? 'bg-violet-100 text-violet-800' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
+                                  ${isRowSelected ? `${themeAccentStyles.bgSoft} font-bold` : isRowActive ? `${themeAccentStyles.bgSoft}` : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
                                 style={{ height: rowHeight, overflow: 'hidden', userSelect: 'none' }}
                                 onMouseDown={(e) => {
                                   e.preventDefault();
@@ -38390,11 +38554,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                 const isSelected = !isShapeInteracting && (isExplicitAnchor || isInRange);
 
+                                const selectionBorderColor =
+                                  sheetsThemePalette === 'indigo' ? '#818cf8' :
+                                  sheetsThemePalette === 'sand' ? '#d97706' :
+                                  sheetsThemePalette === 'rose' ? '#f43f5e' :
+                                  sheetsThemePalette === 'emerald' ? '#10b981' :
+                                  sheetsThemePalette === 'nordic' ? '#0284c7' :
+                                  sheetsThemePalette === 'obsidian' ? '#a1a1aa' :
+                                  sheetsThemePalette === 'alabaster' ? '#525252' :
+                                  sheetsThemePalette === 'carbon' ? '#00f5d4' :
+                                  sheetsThemePalette === 'tokyo' ? '#bb9af7' :
+                                  sheetsThemePalette === 'amber' ? '#d97706' :
+                                  sheetsThemePalette === 'parchment' ? '#78350f' :
+                                  '#7c3aed';
+
                                 let shadows = [];
-                                if (isTopEdge) shadows.push('inset 0 1.5px 0 0 #7c3aed');
-                                if (isBottomEdge) shadows.push('inset 0 -1.5px 0 0 #7c3aed');
-                                if (isLeftEdge) shadows.push('inset 1.5px 0 0 0 #7c3aed');
-                                if (isRightEdge) shadows.push('inset -1.5px 0 0 0 #7c3aed');
+                                if (isTopEdge) shadows.push(`inset 0 1.5px 0 0 ${selectionBorderColor}`);
+                                if (isBottomEdge) shadows.push(`inset 0 -1.5px 0 0 ${selectionBorderColor}`);
+                                if (isLeftEdge) shadows.push(`inset 1.5px 0 0 0 ${selectionBorderColor}`);
+                                if (isRightEdge) shadows.push(`inset -1.5px 0 0 0 ${selectionBorderColor}`);
                                 const shadowStyle = shadows.length > 0 && !isShapeInteracting ? { boxShadow: shadows.join(', '), zIndex: 11 } : {};
 
                                 const isInColBand = !isShapeInteracting && sheetSelectionMode === 'col' && selectedSheetRange &&
@@ -38476,9 +38654,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       ...customBgStyle,
                                       ...tableBorderStyles,
                                       ...customBorders,
-                                      borderRightWidth: !showGridLines ? '0px' : (tableBorderStyles.borderRight ? '' : (computedFormat.fill ? '0px' : '1px')),
-                                      borderBottomWidth: !showGridLines ? '0px' : (tableBorderStyles.borderBottom ? '' : (computedFormat.fill ? '0px' : '1px')),
-                                      borderColor: tableIntersections.length > 0 ? (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1].presetStyle]?.border || TABLE_PRESETS.blue.border) : (gridLineContrast === 'high' ? (isDarkMode ? '#52525b' : '#cbd5e1') : gridLineContrast === 'subtle' ? (isDarkMode ? '#27272a' : '#f1f5f9') : (isDarkMode ? '#3f3f46' : '#e2e8f0')),
+                                      borderRightWidth: computedFormat.borderColor ? '1px' : (!showGridLines ? '0px' : (tableBorderStyles.borderRight ? '' : (computedFormat.fill ? '0px' : '1px'))),
+                                      borderBottomWidth: computedFormat.borderColor ? '1px' : (!showGridLines ? '0px' : (tableBorderStyles.borderBottom ? '' : (computedFormat.fill ? '0px' : '1px'))),
+                                      borderColor: computedFormat.borderColor ? computedFormat.borderColor : (tableIntersections.length > 0 ? (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1].presetStyle]?.border || TABLE_PRESETS.blue.border) : (gridLineContrast === 'high' ? (isDarkMode ? '#52525b' : '#cbd5e1') : gridLineContrast === 'subtle' ? (isDarkMode ? '#27272a' : '#f1f5f9') : (isDarkMode ? '#3f3f46' : '#e2e8f0'))),
                                       zIndex: (tableIntersections.length > 0 && tableIntersections[tableIntersections.length - 1].id === hoveredTableId && rowIndex + 1 === tableIntersections[tableIntersections.length - 1].startRow && colIndex + 1 === tableIntersections[tableIntersections.length - 1].startCol) ? 40 : (computedFormat.rowSpan || computedFormat.colSpan ? 20 : undefined)
                                     }}
                                     onContextMenu={(e) => {
@@ -38516,18 +38694,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       if (e.shiftKey) {
                                         // Shift+Click: extend from anchor
                                         if (selectedSheetCell) {
-                                          setSelectedSheetRange({
+                                          const range = {
                                             startRow: Math.min(selectedSheetCell.row, num),
                                             startCol: Math.min(selectedSheetCell.col, colIndex + 1),
                                             endRow: Math.max(selectedSheetCell.row, num),
                                             endCol: Math.max(selectedSheetCell.col, colIndex + 1)
-                                          });
+                                          };
+                                          setSelectedSheetRange(range);
+                                          if (isGridlinePaintActive) applyGridlineColorToRange(gridlinePaintColor, range);
                                           setSheetSelectionMode('cell');
                                           setSelectedGridColumn(null);
                                         }
                                       } else {
                                         setSelectedSheetCell({ row: num, col: colIndex + 1 });
-                                        setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 });
+                                        const initialRange = { startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 };
+                                        setSelectedSheetRange(initialRange);
+                                        if (isGridlinePaintActive) applyGridlineColorToRange(gridlinePaintColor, initialRange);
                                         setSheetSelectionMode('cell');
                                         setSelectedGridColumn(null);
                                       }
@@ -39007,7 +39189,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       </svg>
                                     )}
                                     {isBottomRightCorner && (
-                                      <div className="absolute -bottom-[3px] -right-[3px] w-[6px] h-[6px] rounded-sm bg-violet-600 z-20 cursor-crosshair border border-white" />
+                                      <div 
+                                        className="absolute -bottom-[3.5px] -right-[3.5px] w-[7px] h-[7px] rounded-xs z-20 cursor-crosshair border border-white shadow-xs" 
+                                        style={{ backgroundColor: selectionBorderColor }}
+                                      />
                                     )}
                                   </div>
                                 );
@@ -45474,6 +45659,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsDarkMode((prev) => !prev)}
+                      className="h-8 w-8 rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors"
+                      title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                      aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                    >
+                      {isDarkMode ? <Sun size={15} strokeWidth={1.5} /> : <Moon size={15} strokeWidth={1.5} />}
+                    </button>
                     <button
                       type="button"
                       onClick={() => setIsWhiteboardImmersive((prev) => !prev)}
