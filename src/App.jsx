@@ -26145,6 +26145,16 @@ Respond with a JSON array of slide objects matching the schema.`;
     }
   }, [activeWorkspaceMode]);
 
+  const closeConfirmTerm = useMemo(() => {
+    if (!closeConfirmDocId) return { noun: 'document', title: 'Close this document?', button: 'Close Document' };
+    const closedDoc = documents.find((d) => d.id === closeConfirmDocId);
+    const mode = closedDoc ? getDocMode(closedDoc) : activeWorkspaceMode;
+    if (mode === 'sheets') return { noun: 'sheet', title: 'Close this sheet?', button: 'Close Sheet' };
+    if (mode === 'deck') return { noun: 'deck', title: 'Close this deck?', button: 'Close Deck' };
+    if (mode === 'whiteboard') return { noun: 'whiteboard', title: 'Close this whiteboard?', button: 'Close Whiteboard' };
+    return { noun: 'document', title: 'Close this document?', button: 'Close Document' };
+  }, [closeConfirmDocId, documents, activeWorkspaceMode, getDocMode]);
+
   const canShowComposeActions = Boolean(
     lastComposeRun
     && lastComposeRun.documentId === activeDocId
@@ -35776,6 +35786,31 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
 
+        {closeConfirmDocId && (
+          <div className="fixed inset-0 z-[100000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-[420px] max-w-[90vw] rounded-xl bg-white border border-gray-100 shadow-2xl p-5 animate-in fade-in zoom-in-95 duration-150">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">{closeConfirmTerm.title}</h3>
+              <p className="text-xs text-gray-500 mb-4">You can still create a new one after closing. This action will remove the selected tab.</p>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCloseConfirmDocId(null)}
+                  className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmCloseDocument}
+                  className="px-3 py-1.5 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700 font-medium shadow-sm transition-colors"
+                >
+                  {closeConfirmTerm.button}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {creationPickerOpen && (
           <div className="fixed inset-0 z-[620] bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="w-[680px] max-w-[95vw] rounded-2xl bg-white border border-gray-200 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.8)] p-6">
@@ -43425,29 +43460,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
                 <div className="text-sm font-semibold text-gray-900 mb-1">DMs</div>
                 <p className="text-xs text-gray-600">Dedicated team chat workspace with searchable conversation intelligence.</p>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {closeConfirmDocId && (
-        <div className="fixed inset-0 z-[100000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-[420px] max-w-[90vw] rounded-xl bg-white border border-gray-100 shadow-2xl p-5 animate-in fade-in zoom-in-95 duration-150">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">Close this document?</h3>
-            <p className="text-xs text-gray-500 mb-4">You can still create a new one after closing. This action will remove the selected tab.</p>
-            <div className="flex items-center justify-end gap-2">
-              <button
-                onClick={() => setCloseConfirmDocId(null)}
-                className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmCloseDocument}
-                className="px-3 py-1.5 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700 font-medium shadow-sm transition-colors"
-              >
-                Close Document
               </button>
             </div>
           </div>
@@ -54310,7 +54322,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
               w-3 h-3 opacity-40
               hover:w-auto hover:h-auto hover:px-3.5 hover:py-2 hover:opacity-100 hover:gap-2 hover:bg-slate-900/90"
           >
-            <X size={13} className="shrink-0 opacity-0 group-hover/exit:opacity-100 transition-opacity duration-200" />
             <span className="text-[11px] font-medium whitespace-nowrap max-w-0 overflow-hidden group-hover/exit:max-w-[120px] transition-all duration-300 ease-out">
               Exit Presentation
             </span>
