@@ -423,8 +423,8 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
         <div className="lg:col-span-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl rounded-2xl border border-white/60 dark:border-zinc-800/80 p-7 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.06)] space-y-7">
           
           <div className="flex items-start gap-3.5 border-b border-slate-100 dark:border-zinc-800 pb-5">
-            <div className="p-2 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 text-[#6d28d9] dark:text-violet-400 rounded-xl shadow-2xs shrink-0">
-              <IconComponent size={18} />
+            <div className="w-9 h-9 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 text-[#6d28d9] dark:text-violet-400 rounded-xl shadow-2xs shrink-0 flex items-center justify-center">
+              <IconComponent size={24} strokeWidth={2.5} />
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-zinc-100">
