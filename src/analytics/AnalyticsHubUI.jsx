@@ -9,9 +9,7 @@ import {
 } from './AnalyticsModules';
 
 /**
- * Reusable Executive Custom Dropdown & Editable Select Component
- * Reuses the design language of ThemeDropdown (@regaarder/ui) with touch-safe onPointerDown handling.
- * Allows picking from preset options OR entering a custom value/range.
+ * Reusable Executive Custom Dropdown & Editable Select Component with Glassmorphism
  */
 function CustomSelect({ label, value, onChange, options, allowCustom = true, placeholder = 'Select or type custom...' }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,17 +39,17 @@ function CustomSelect({ label, value, onChange, options, allowCustom = true, pla
           e.preventDefault();
           setIsOpen(!isOpen);
         }}
-        className={`w-full flex items-center justify-between px-3 py-2 bg-slate-50/80 dark:bg-zinc-800/70 hover:bg-slate-100 dark:hover:bg-zinc-800 border ${
-          isOpen ? 'border-violet-500 ring-2 ring-violet-500/20' : 'border-slate-200/80 dark:border-zinc-700'
-        } rounded-xl text-xs font-semibold text-slate-800 dark:text-zinc-200 transition-all shadow-2xs text-left cursor-pointer`}
+        className={`w-full flex items-center justify-between px-3 py-2 bg-white/70 dark:bg-zinc-800/70 hover:bg-slate-100/80 dark:hover:bg-zinc-800 border ${
+          isOpen ? 'border-violet-500 ring-2 ring-violet-500/20' : 'border-slate-200/80 dark:border-zinc-700/80'
+        } backdrop-blur-xl rounded-xl text-xs font-semibold text-slate-800 dark:text-zinc-200 transition-all shadow-2xs text-left cursor-pointer`}
       >
         <span className="truncate">{selectedOption.label || value || placeholder}</span>
         <ChevronDown size={14} className={`text-slate-400 dark:text-zinc-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-violet-600' : ''}`} />
       </button>
 
-      {/* Floating Menu */}
+      {/* Floating Glassmorphic Menu */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-[500] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-[0_16px_40px_-8px_rgba(0,0,0,0.18)] p-2 space-y-2 animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute left-0 right-0 top-full mt-1.5 z-[500] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-white/60 dark:border-zinc-800 rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18)] p-2 space-y-2 animate-in fade-in zoom-in-95 duration-150">
           
           {/* Options List */}
           <div className="max-h-48 overflow-y-auto thin-scrollbar space-y-1">
@@ -68,15 +66,15 @@ function CustomSelect({ label, value, onChange, options, allowCustom = true, pla
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
                     isSelected 
-                      ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-bold' 
-                      : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800'
+                      ? 'bg-[#f4f0ff] dark:bg-violet-950/50 text-[#6d28d9] dark:text-violet-300 font-bold' 
+                      : 'text-slate-700 dark:text-zinc-300 hover:bg-[#f4f0ff]/60 dark:hover:bg-zinc-800/80 hover:text-[#6d28d9]'
                   }`}
                 >
                   <div className="flex flex-col">
                     <span>{opt.label}</span>
                     {opt.sublabel && <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{opt.sublabel}</span>}
                   </div>
-                  {isSelected && <Check size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />}
+                  {isSelected && <Check size={14} className="text-[#6d28d9] dark:text-violet-400 shrink-0" />}
                 </button>
               );
             })}
@@ -97,7 +95,7 @@ function CustomSelect({ label, value, onChange, options, allowCustom = true, pla
                     setCustomInput('');
                   }
                 }}
-                className="flex-1 px-2.5 py-1.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 font-normal"
+                className="flex-1 px-2.5 py-1.5 bg-slate-50/80 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 font-normal"
               />
               <button
                 type="button"
@@ -126,11 +124,17 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   const [selectedAnalysis, setSelectedAnalysis] = useState('descriptive');
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Custom inputs state for various analysis types
+  // Data range selection & history state
   const [selectedDataRange, setSelectedDataRange] = useState('Entire Active Sheet');
+  const [rangeHistory, setRangeHistory] = useState([
+    { label: 'Entire Active Sheet', desc: 'All numerical columns' },
+    { label: 'Columns A & B', desc: 'Primary numerical dataset' },
+    { label: 'Selection (A1:B50)', desc: 'First 50 rows' }
+  ]);
   const [selectDataMenuOpen, setSelectDataMenuOpen] = useState(false);
   const [customRangeInput, setCustomRangeInput] = useState('');
   const selectDataRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const [varA, setVarA] = useState('Column A');
   const [varB, setVarB] = useState('Column B');
@@ -150,6 +154,16 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
     document.addEventListener('pointerdown', handleOutsideClick);
     return () => document.removeEventListener('pointerdown', handleOutsideClick);
   }, []);
+
+  // Adds range to history options if not present
+  const addRangeToHistory = (newRange) => {
+    if (!newRange) return;
+    setSelectedDataRange(newRange);
+    setRangeHistory(prev => {
+      if (prev.some(r => r.label === newRange)) return prev;
+      return [{ label: newRange, desc: 'Custom sheet range' }, ...prev];
+    });
+  };
 
   // Selection states for descriptive statistics checkboxes
   const [selectedStats, setSelectedStats] = useState({
@@ -277,6 +291,21 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   return (
     <div className="flex-1 h-full min-h-0 bg-[#F9F9FB] dark:bg-[#09090b] flex flex-col font-sans p-8 overflow-y-auto thin-scrollbar">
       
+      {/* Hidden File Input for Upload dataset action */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        accept=".csv,.xlsx,.json"
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            const fileName = e.target.files[0].name;
+            addRangeToHistory(`Uploaded: ${fileName}`);
+            showToast?.(`Uploaded dataset file: ${fileName}`);
+          }
+        }} 
+      />
+
       {/* Top Title Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -296,7 +325,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
         <button 
           type="button"
           onClick={() => showToast?.('Opening Analysis History...')}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all shadow-sm cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all shadow-sm cursor-pointer"
         >
           <History size={15} className="text-slate-500" />
           <span>History</span>
@@ -306,8 +335,8 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* Left Navigation Sidebar */}
-        <div className="lg:col-span-4 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200/70 dark:border-zinc-800 p-5 shadow-sm space-y-6">
+        {/* Left Navigation Sidebar with Glassmorphic styling */}
+        <div className="lg:col-span-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl rounded-2xl border border-white/60 dark:border-zinc-800/80 p-5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.06)] space-y-6">
           
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
@@ -316,13 +345,14 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search analysis"
-              className="w-full pl-9 pr-12 py-2.5 bg-slate-50/70 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl text-xs text-slate-800 dark:text-zinc-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all"
+              className="w-full pl-9 pr-12 py-2.5 bg-slate-50/80 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl text-xs text-slate-800 dark:text-zinc-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all"
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-[10px] font-semibold text-slate-400 border border-slate-200 dark:border-zinc-700 rounded px-1.5 py-0.5 bg-white dark:bg-zinc-800">
               ⌘K
             </div>
           </div>
 
+          {/* HYPOTHESIS TESTS Section with exact light violet pill active & hover highlights matching user screenshot */}
           <div>
             <h3 className="text-[11px] font-bold tracking-wider uppercase text-slate-400 mb-3 px-1">
               Hypothesis Tests
@@ -339,13 +369,13 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                       setSelectedAnalysis(item.id);
                       setAnalysisResults(null);
                     }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 text-left cursor-pointer ${
                       isSelected 
-                        ? 'bg-violet-50/80 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40 shadow-xs' 
-                        : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-200 border border-transparent'
+                        ? 'bg-[#f4f0ff] dark:bg-violet-950/50 text-[#6d28d9] dark:text-violet-300 font-bold' 
+                        : 'text-slate-600 dark:text-zinc-400 hover:bg-[#f4f0ff]/70 dark:hover:bg-zinc-800/60 hover:text-[#6d28d9] dark:hover:text-zinc-200'
                     }`}
                   >
-                    <Icon size={16} className={isSelected ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400'} />
+                    <Icon size={16} className={isSelected ? 'text-[#6d28d9] dark:text-violet-400' : 'text-[#6d28d9]/70 dark:text-zinc-400'} />
                     <span>{item.label}</span>
                   </button>
                 );
@@ -353,6 +383,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             </div>
           </div>
 
+          {/* CORRELATION & REGRESSION Section */}
           <div>
             <h3 className="text-[11px] font-bold tracking-wider uppercase text-slate-400 mb-3 px-1">
               Correlation & Regression
@@ -369,13 +400,13 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                       setSelectedAnalysis(item.id);
                       setAnalysisResults(null);
                     }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 text-left cursor-pointer ${
                       isSelected 
-                        ? 'bg-violet-50/80 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40 shadow-xs' 
-                        : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-200 border border-transparent'
+                        ? 'bg-[#f4f0ff] dark:bg-violet-950/50 text-[#6d28d9] dark:text-violet-300 font-bold' 
+                        : 'text-slate-600 dark:text-zinc-400 hover:bg-[#f4f0ff]/70 dark:hover:bg-zinc-800/60 hover:text-[#6d28d9] dark:hover:text-zinc-200'
                     }`}
                   >
-                    <Icon size={16} className={isSelected ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400'} />
+                    <Icon size={16} className={isSelected ? 'text-[#6d28d9] dark:text-violet-400' : 'text-[#6d28d9]/70 dark:text-zinc-400'} />
                     <span>{item.label}</span>
                   </button>
                 );
@@ -385,8 +416,8 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
         </div>
 
-        {/* Right Detail Content Panel */}
-        <div className="lg:col-span-8 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200/70 dark:border-zinc-800 p-7 shadow-sm space-y-7">
+        {/* Right Detail Content Panel with Glassmorphism */}
+        <div className="lg:col-span-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl rounded-2xl border border-white/60 dark:border-zinc-800/80 p-7 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.06)] space-y-7">
           
           <div className="flex items-start gap-3.5 border-b border-slate-100 dark:border-zinc-800 pb-5">
             <div className="p-2 bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 rounded-xl">
@@ -402,8 +433,8 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             </div>
           </div>
 
-          {/* Select Data Range or Upload Dropzone Box (Exact original UI restored) */}
-          <div className="border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center bg-slate-50/40 dark:bg-zinc-850/30">
+          {/* Select Data Range or Upload Dropzone Box with Glassmorphic overlay */}
+          <div className="border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-zinc-850/20 backdrop-blur-md">
             <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700 flex items-center justify-center text-slate-500 dark:text-zinc-400 shadow-sm mb-3">
               <FileText size={20} />
             </div>
@@ -422,39 +453,56 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                   e.preventDefault();
                   setSelectDataMenuOpen(!selectDataMenuOpen);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700 rounded-xl text-xs font-semibold text-violet-600 dark:text-violet-400 shadow-sm hover:bg-slate-50 transition-all cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 bg-white/90 dark:bg-zinc-800/90 border border-slate-200/80 dark:border-zinc-700 rounded-xl text-xs font-semibold text-violet-600 dark:text-violet-400 shadow-sm hover:bg-slate-50 transition-all cursor-pointer backdrop-blur-md"
               >
                 <span>{selectedDataRange === 'Entire Active Sheet' ? 'Select Data' : selectedDataRange}</span>
                 <ChevronDown size={14} className={`transition-transform duration-200 ${selectDataMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Data Selection Popover Menu with presets + custom range input */}
+              {/* Data Selection Popover Menu with Upload option & custom selected sheet range history */}
               {selectDataMenuOpen && (
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-[500] w-64 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-[0_16px_40px_-8px_rgba(0,0,0,0.18)] p-2 space-y-2 animate-in fade-in zoom-in-95 duration-150 text-left">
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Sheet Preset Ranges</div>
-                  {[
-                    { label: 'Entire Active Sheet', desc: 'All numerical columns' },
-                    { label: 'Columns A & B', desc: 'Primary numerical dataset' },
-                    { label: 'Selection (A1:B50)', desc: 'First 50 rows' }
-                  ].map((preset) => (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        setSelectedDataRange(preset.label);
-                        setSelectDataMenuOpen(false);
-                        showToast?.(`Selected ${preset.label}`);
-                      }}
-                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-slate-800 dark:text-zinc-200">{preset.label}</span>
-                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{preset.desc}</span>
-                      </div>
-                      {selectedDataRange === preset.label && <Check size={14} className="text-violet-600" />}
-                    </button>
-                  ))}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-[500] w-72 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/80 dark:border-zinc-800 rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22)] p-2 space-y-2 animate-in fade-in zoom-in-95 duration-150 text-left">
+                  
+                  {/* Upload Dataset File option directly inside dropdown */}
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      setSelectDataMenuOpen(false);
+                      fileInputRef.current?.click();
+                    }}
+                    className="w-full flex items-center gap-2.5 p-2.5 rounded-xl bg-violet-50/80 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-950/60 font-semibold text-xs transition-colors cursor-pointer border border-violet-200/60 dark:border-violet-800/40"
+                  >
+                    <Upload size={14} className="text-violet-600 dark:text-violet-400" />
+                    <div className="flex flex-col">
+                      <span>Upload Dataset / File</span>
+                      <span className="text-[10px] text-violet-500 font-normal">Import .CSV, .XLSX, or .JSON</span>
+                    </div>
+                  </button>
+
+                  <div className="px-2 pt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Sheet Ranges & Selection</div>
+                  
+                  <div className="max-h-40 overflow-y-auto thin-scrollbar space-y-1">
+                    {rangeHistory.map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          addRangeToHistory(preset.label);
+                          setSelectDataMenuOpen(false);
+                          showToast?.(`Selected ${preset.label}`);
+                        }}
+                        className="w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-slate-800 dark:text-zinc-200">{preset.label}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{preset.desc}</span>
+                        </div>
+                        {selectedDataRange === preset.label && <Check size={14} className="text-violet-600 shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
 
                   <div className="pt-2 border-t border-slate-100 dark:border-zinc-800">
                     <div className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Custom Sheet Range</div>
@@ -466,7 +514,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                         onChange={(e) => setCustomRangeInput(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && customRangeInput.trim()) {
-                            setSelectedDataRange(customRangeInput.trim());
+                            addRangeToHistory(customRangeInput.trim());
                             setSelectDataMenuOpen(false);
                             showToast?.(`Custom range set to ${customRangeInput.trim()}`);
                             setCustomRangeInput('');
@@ -479,7 +527,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                         onPointerDown={(e) => {
                           e.preventDefault();
                           if (customRangeInput.trim()) {
-                            setSelectedDataRange(customRangeInput.trim());
+                            addRangeToHistory(customRangeInput.trim());
                             setSelectDataMenuOpen(false);
                             showToast?.(`Custom range set to ${customRangeInput.trim()}`);
                             setCustomRangeInput('');
@@ -491,12 +539,13 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                       </button>
                     </div>
                   </div>
+
                 </div>
               )}
             </div>
           </div>
 
-          {/* Dynamic Configuration Form Controls using CustomSelect Popover Components */}
+          {/* Dynamic Configuration Form Controls (Removed outer container box around Options section per user request) */}
           {selectedAnalysis === 'descriptive' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
               <div>
@@ -547,6 +596,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 </div>
               </div>
 
+              {/* Options Section — Seamless containerless layout */}
               <div>
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-3">
                   Options
@@ -767,13 +817,13 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
           {/* Results Output Display Box when Run Analysis is executed */}
           {analysisResults && (
-            <div className="p-5 bg-violet-50/60 dark:bg-violet-950/20 border border-violet-200/80 dark:border-violet-800/50 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-2">
+            <div className="p-5 bg-[#f4f0ff]/80 dark:bg-violet-950/20 border border-violet-200/80 dark:border-violet-800/50 backdrop-blur-xl rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-violet-800 dark:text-violet-300 flex items-center gap-2">
-                  <Check size={14} className="text-violet-600" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#6d28d9] dark:text-violet-300 flex items-center gap-2">
+                  <Check size={14} className="text-[#6d28d9]" />
                   {activeConfig.label} Results Output ({selectedDataRange})
                 </h4>
-                <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 bg-white dark:bg-zinc-900 px-2.5 py-1 rounded-lg border border-violet-200 dark:border-violet-800">
+                <span className="text-[11px] font-semibold text-[#6d28d9] dark:text-violet-400 bg-white/90 dark:bg-zinc-900 px-2.5 py-1 rounded-lg border border-violet-200 dark:border-violet-800">
                   Computed Live
                 </span>
               </div>
@@ -782,7 +832,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 {Object.entries(analysisResults).map(([key, value]) => {
                   if (typeof value === 'object' || key === 'error') return null;
                   return (
-                    <div key={key} className="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-violet-100 dark:border-zinc-800 shadow-2xs">
+                    <div key={key} className="bg-white/90 dark:bg-zinc-900 p-3 rounded-xl border border-violet-100 dark:border-zinc-800 shadow-2xs">
                       <div className="text-[10.5px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-tight">
                         {key.replace(/([A-Z])/g, ' $1')}
                       </div>
