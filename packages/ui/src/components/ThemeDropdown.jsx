@@ -75,6 +75,69 @@ export const SHEETS_THEME_OPTIONS = [
     description: 'Soft quartz pink with refined crimson selection highlights.'
   },
   { 
+    id: 'barbie', 
+    label: 'Barbie Pink & Glam', 
+    category: 'Pop & Psychographic',
+    bg: '#fff0f6', 
+    accent: '#ec4899', 
+    previewColors: ['#fce7f3', '#fbcfe8', '#ec4899'],
+    description: 'Vibrant hot pink, magentas and glam pastels for Barbie lovers.'
+  },
+  { 
+    id: 'christian_cross', 
+    label: 'Stained Glass Cross', 
+    category: 'Pop & Psychographic',
+    bg: '#faf5ff', 
+    accent: '#8b5cf6', 
+    previewColors: ['#ef4444', '#3b82f6', '#eab308'],
+    description: 'Sacred stained-glass spectrum with ruby red, sapphire blue and radiant gold cross accents.'
+  },
+  { 
+    id: 'messi', 
+    label: 'Albiceleste 10', 
+    category: 'Pop & Psychographic',
+    bg: '#f0f9ff', 
+    accent: '#0284c7', 
+    previewColors: ['#bae6fd', '#fef08a', '#0284c7'],
+    description: 'Sky blue stripes, sun-gold emblem accents and championship navy.'
+  },
+  { 
+    id: 'apex_exec', 
+    label: 'Apex Executive Noir', 
+    category: 'Executive Classics',
+    bg: '#0f172a', 
+    accent: '#38bdf8', 
+    previewColors: ['#1e293b', '#334155', '#38bdf8'],
+    description: 'Ultra-luxurious dark slate & platinum glass built for executive boardrooms.'
+  },
+  { 
+    id: 'studio_bloom', 
+    label: 'Studio Bloom', 
+    category: 'Creative & Artistic',
+    bg: '#fdf2f8', 
+    accent: '#d946ef', 
+    previewColors: ['#fae8ff', '#f5d0fe', '#d946ef'],
+    description: 'Expressive gradient palette designed for designers, visionaries and creatives.'
+  },
+  { 
+    id: 'deep_zenith', 
+    label: 'Deep Zenith Focus', 
+    category: 'Focus & Calm',
+    bg: '#051923', 
+    accent: '#00a6fb', 
+    previewColors: ['#003554', '#0582ca', '#00a6fb'],
+    description: 'Zero-distraction deep oceanic dark mode tuned for intense deep focus.'
+  },
+  { 
+    id: 'honey_warmth', 
+    label: 'Honey Amber Warmth', 
+    category: 'Warm & Editorial',
+    bg: '#fffbeb', 
+    accent: '#b45309', 
+    previewColors: ['#fef3c7', '#fde68a', '#b45309'],
+    description: 'Cozy honey gold and warm amber glow for a comforting workspace.'
+  },
+  { 
     id: 'carbon', 
     label: 'Carbon Matrix', 
     category: 'Dark Synth & AMOLED',
@@ -102,13 +165,22 @@ export const SHEETS_THEME_OPTIONS = [
     description: 'Vintage warm terminal gold with warm sepia lines.'
   },
   { 
-    id: 'parchment', 
-    label: 'Editorial Parchment', 
-    category: 'Warm & Editorial',
-    bg: '#fefcf3', 
-    accent: '#78350f', 
-    previewColors: ['#fef3c7', '#fde68a', '#78350f'],
-    description: 'Classic editorial linen cream with antique bronze accents.'
+    id: 'nature_botanical', 
+    label: 'Nature Leaf', 
+    category: 'Creative & Nature',
+    bg: '#f2f9f4', 
+    accent: '#15803d', 
+    previewColors: ['#dcfce7', '#bbf7d0', '#15803d'],
+    description: 'Fresh organic canopy green with botanical leaf styling.'
+  },
+  { 
+    id: 'ocean_water', 
+    label: 'Ocean Water Droplets', 
+    category: 'Creative & Nature',
+    bg: '#f0fdfa', 
+    accent: '#0d9488', 
+    previewColors: ['#ccfbf1', '#99f6e4', '#0d9488'],
+    description: 'Aquatic aqua-cyan theme inspired by pristine ocean water droplets.'
   }
 ];
 
