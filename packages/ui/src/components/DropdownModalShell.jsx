@@ -17,8 +17,8 @@ export default function DropdownModalShell({
   topOffset = 'top-12',
   rightOffset = 'right-4',
   maxHeight = 'max-h-[calc(100vh-180px)]',
-  zIndexBackdrop = 'z-[510]',
-  zIndexModal = 'z-[520]',
+  zIndexBackdrop = 'z-[100000]',
+  zIndexModal = 'z-[100001]',
   allowOverflowVisible = false,
   className = ''
 }) {
