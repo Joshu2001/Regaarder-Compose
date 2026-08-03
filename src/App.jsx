@@ -25,7 +25,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -36337,18 +36337,84 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <X size={12} />
                     </button>
                     {openDocMenuId === doc.id && (
-                      <div
-                        style={{ position: 'fixed', top: `${docMenuPos.top}px`, left: `${docMenuPos.left}px`, zIndex: 99999 }}
-                        className="w-36 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1"
-                        data-doc-menu-root
-                      >
-                        <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('rename', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Rename</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('save', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Save</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('share', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Share</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('pin', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">{doc.pinned ? 'Unpin' : 'Pin'}</button>
-                        <div className="border-t border-gray-100 my-1"></div>
-                        <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('close', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-rose-50 text-rose-600">Close</button>
-                      </div>
+                      <>
+                        <div
+                          className="fixed inset-0 z-[99990] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenDocMenuId(null);
+                          }}
+                        />
+                        <div
+                          style={{ position: 'fixed', top: `${docMenuPos.top}px`, left: `${docMenuPos.left}px`, zIndex: 99999 }}
+                          className="w-48 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                          data-doc-menu-root
+                        >
+                          <div className="flex flex-col gap-0.5">
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDocumentAction('rename', doc.id);
+                              }}
+                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                            >
+                              <FileEdit size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                              <span>Rename</span>
+                            </button>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDocumentAction('save', doc.id);
+                              }}
+                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                            >
+                              <Save size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                              <span>Save</span>
+                            </button>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDocumentAction('share', doc.id);
+                              }}
+                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                            >
+                              <Users2 size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                              <span>Share</span>
+                            </button>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDocumentAction('pin', doc.id);
+                              }}
+                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                            >
+                              <Pin size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                              <span>{doc.pinned ? 'Unpin' : 'Pin'}</span>
+                            </button>
+                          </div>
+                          <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full my-0.5" />
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDocumentAction('close', doc.id);
+                            }}
+                            className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 transition-colors text-left font-semibold"
+                          >
+                            <X size={13} className="text-rose-500 dark:text-rose-400 shrink-0" />
+                            <span>Close</span>
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
                 );
@@ -45138,18 +45204,84 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <X size={12} />
                 </button>
                 {openDocMenuId === doc.id && (
-                  <div
-                    style={{ position: 'fixed', top: `${docMenuPos.top}px`, left: `${docMenuPos.left}px`, zIndex: 99999 }}
-                    className="w-36 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1"
-                    data-doc-menu-root
-                  >
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('rename', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Rename</button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('save', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Save</button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('share', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Share</button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('pin', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">{doc.pinned ? 'Unpin' : 'Pin'}</button>
-                    <div className="border-t border-gray-100 my-1"></div>
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('close', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-rose-50 text-rose-600">Close</button>
-                  </div>
+                  <>
+                    <div
+                      className="fixed inset-0 z-[99990] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenDocMenuId(null);
+                      }}
+                    />
+                    <div
+                      style={{ position: 'fixed', top: `${docMenuPos.top}px`, left: `${docMenuPos.left}px`, zIndex: 99999 }}
+                      className="w-48 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                      data-doc-menu-root
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDocumentAction('rename', doc.id);
+                          }}
+                          className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                        >
+                          <FileEdit size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                          <span>Rename</span>
+                        </button>
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDocumentAction('save', doc.id);
+                          }}
+                          className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                        >
+                          <Save size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                          <span>Save</span>
+                        </button>
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDocumentAction('share', doc.id);
+                          }}
+                          className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                        >
+                          <Users2 size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                          <span>Share</span>
+                        </button>
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDocumentAction('pin', doc.id);
+                          }}
+                          className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                        >
+                          <Pin size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                          <span>{doc.pinned ? 'Unpin' : 'Pin'}</span>
+                        </button>
+                      </div>
+                      <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full my-0.5" />
+                      <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDocumentAction('close', doc.id);
+                        }}
+                        className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 transition-colors text-left font-semibold"
+                      >
+                        <X size={13} className="text-rose-500 dark:text-rose-400 shrink-0" />
+                        <span>Close</span>
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
             );
