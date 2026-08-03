@@ -11288,6 +11288,8 @@ export default function App() {
   const historyMuteRef = useRef(false);
   const historyPastRef = useRef([]);
   const historyFutureRef = useRef([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   const lastSnapshotHashRef = useRef('');
   const replayTimerRef = useRef(null);
   const replayPanelRef = useRef(null);
@@ -11296,6 +11298,8 @@ export default function App() {
 
   const syncReplayTimeline = () => {
     setReplayTimeline([...historyPastRef.current]);
+    setCanUndo(historyPastRef.current.length >= 2);
+    setCanRedo(historyFutureRef.current.length > 0);
   };
 
   const formatReplayDuration = (durationMs) => {
@@ -35901,15 +35905,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="flex items-center gap-1">
                 <button
                   onClick={undoDocumentChange}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-                  title="Undo (Ctrl+Z)"
+                  disabled={!canUndo}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                    canUndo
+                      ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                      : 'text-gray-400 dark:text-gray-600 opacity-40 cursor-not-allowed'
+                  }`}
+                  title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
                 >
                   <Undo2 size={16} strokeWidth={1.5} />
                 </button>
                 <button
                   onClick={redoDocumentChange}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-                  title="Redo (Ctrl+Y)"
+                  disabled={!canRedo}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                    canRedo
+                      ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                      : 'text-gray-400 dark:text-gray-600 opacity-40 cursor-not-allowed'
+                  }`}
+                  title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
                 >
                   <Redo2 size={16} strokeWidth={1.5} />
                 </button>
@@ -44161,15 +44175,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="flex items-center gap-1">
               <button
                 onClick={undoDocumentChange}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-                title="Undo (Ctrl+Z)"
+                disabled={!canUndo}
+                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                  canUndo
+                    ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                    : 'text-gray-400 dark:text-gray-600 opacity-40 cursor-not-allowed'
+                }`}
+                title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
               >
                 <Undo2 size={16} strokeWidth={1.5} />
               </button>
               <button
                 onClick={redoDocumentChange}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-                title="Redo (Ctrl+Y)"
+                disabled={!canRedo}
+                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                  canRedo
+                    ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                    : 'text-gray-400 dark:text-gray-600 opacity-40 cursor-not-allowed'
+                }`}
+                title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
               >
                 <Redo2 size={16} strokeWidth={1.5} />
               </button>
