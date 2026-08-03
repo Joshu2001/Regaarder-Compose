@@ -8644,8 +8644,8 @@ export default function App() {
         headerExtra={headerExtra}
         width="w-[420px]"
         maxHeight="max-h-[395px]"
-        zIndexBackdrop="z-[440]"
-        zIndexModal="z-[450]"
+        zIndexBackdrop="z-[100000]"
+        zIndexModal="z-[100001]"
         footer={footerContent}
       >
         {notifications.length === 0 ? (
@@ -8733,10 +8733,10 @@ export default function App() {
       <>
         {/* Subtle page dimming backdrop overlay */}
         <div
-          className="fixed inset-0 z-[440] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+          className="fixed inset-0 z-[100000] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
           onClick={() => setWorkspaceSwitcherOpen(false)}
         />
-        <div className="absolute left-0 top-9 pt-1.5 z-[450]">
+        <div className="absolute left-0 top-9 pt-1.5 z-[100001]">
           <div className="w-[210px] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl p-2 font-sans origin-top-left overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="flex flex-col gap-1">
               {[
@@ -35810,7 +35810,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         <main className={`flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-zinc-950 ${isSheetsPresentationMode ? 'fixed inset-0 z-[9999] bg-white dark:bg-zinc-950' : ''}`}>
           {!isSheetsPresentationMode && (
-            <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative z-[350]">
+            <div className={`h-14 flex items-center justify-between px-6 border-b border-slate-200/50 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative z-[350] transition-all duration-200 ${
+              isSheetZenMode ? 'fixed top-0 left-0 right-0 z-[9000] opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto shadow-md border-b' : ''
+            }`}>
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -35868,7 +35870,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }
                         }}
                         className="text-sm font-semibold text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600"
-                        placeholder="Untitled sheet"
+                        placeholder="Untitled Sheet"
                       />
                     ) : (
                       <button
@@ -35877,7 +35879,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         className="text-sm font-semibold text-slate-800 dark:text-zinc-100 hover:text-slate-600 dark:hover:text-zinc-300 px-1 py-0.5 rounded text-left truncate transition-colors"
                         title="Double-click or tap to rename"
                       >
-                        {sheetsTitle || 'Untitled sheet'}
+                        {sheetsTitle || 'Untitled Sheet'}
                       </button>
                     )}
                     <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 ml-2 hidden sm:flex">
@@ -36186,8 +36188,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           )}
 
-          {/* Document Tab Strip - visible when not in presentation mode */}
-          {!isSheetsPresentationMode && (
+          {/* Document Tab Strip - visible when not in presentation mode and not in Zen mode */}
+          {!isSheetsPresentationMode && !isSheetZenMode && (
             <div className="h-10 border-b border-slate-200/50 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0 shrink-0 select-none">
               {orderedDocuments.map((doc, docIndex) => {
                 const defaultName = productMode === 'sheets' ? 'Untitled Sheet' : productMode === 'deck' ? 'Untitled Deck' : `Tab ${docIndex + 1}`;
@@ -36461,7 +36463,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     {/* Right main area: floating island toolbar & sheet grid */}
                     {isSheetsMode ? (
-                      <div className={`flex-1 min-h-0 h-full flex flex-col min-w-0 relative backdrop-blur-[6px] transition-all ${isSheetZenMode ? 'fixed inset-0 z-[9000] bg-white dark:bg-zinc-950 p-0 m-0' : 'z-10'} ${
+                      <div className={`flex-1 min-h-0 h-full flex flex-col min-w-0 relative backdrop-blur-[6px] transition-all ${isSheetZenMode ? 'fixed inset-0 z-40 bg-white dark:bg-zinc-950 p-0 m-0' : 'z-10'} ${
                         sheetsThemePalette === 'obsidian' ? 'bg-zinc-950/90' :
                         sheetsThemePalette === 'indigo' ? 'bg-[#0b0f19]/95' :
                         sheetsThemePalette === 'alabaster' ? 'bg-[#fbfbf9]' :
@@ -39190,19 +39192,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     {/* Floating Zen Mode Overlay Pill */}
                     {isSheetZenMode && (
-                      <div className="fixed top-12 right-6 z-[99999] group/zenpill select-none">
+                      <div className="fixed top-12 right-6 z-[90000] group/zenpill select-none animate-in fade-in zoom-in-95 duration-200">
                         {editingCellKey ? (
                           <>
                             {/* Hover expansion target showing full toolbar when user hovers over pulsing dot area */}
-                            <div className="hidden group-hover/zenpill:flex bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18),0_0_20px_rgba(255,255,255,0.4)] dark:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7),0_0_20px_rgba(255,255,255,0.05)] rounded-2xl p-2 px-3 items-center gap-3 animate-in fade-in zoom-in-95 duration-150">
-                              <div className="flex items-center gap-1.5 border-r border-slate-200/80 dark:border-zinc-700/80 pr-3">
+                            <div className="hidden group-hover/zenpill:flex bg-[#ffffffeb] dark:bg-[#18181beb] backdrop-blur-md border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_8px_24px_rgba(0,0,0,0.08)] rounded-[14px] px-2.5 py-1 items-center gap-2.5 transition-all">
+                              <div className="flex items-center gap-1.5 border-r border-slate-200/80 dark:border-zinc-700/80 pr-2.5">
                                 <button 
                                   type="button" 
                                   onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}
-                                  className="p-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
+                                  className="p-1 text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
                                   title="Zoom Out (-10%)"
                                 >
-                                  <ZoomOut size={14} />
+                                  <ZoomOut size={13} />
                                 </button>
                                 <input
                                   type="range"
@@ -39211,20 +39213,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   step="5"
                                   value={sheetZoomLevel}
                                   onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
-                                  className="w-24 h-1.5 bg-slate-200/80 dark:bg-zinc-700/80 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                                  className="w-16 h-1 bg-slate-200/80 dark:bg-zinc-700/80 rounded-lg appearance-none cursor-pointer accent-violet-600"
                                 />
                                 <button 
                                   type="button" 
                                   onClick={() => setSheetZoomLevel(prev => Math.min(200, prev + 10))}
-                                  className="p-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
+                                  className="p-1 text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
                                   title="Zoom In (+10%)"
                                 >
-                                  <ZoomIn size={14} />
+                                  <ZoomIn size={13} />
                                 </button>
                                 <select
                                   value={sheetZoomLevel}
                                   onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
-                                  className="bg-transparent text-xs font-semibold text-slate-700 dark:text-zinc-300 border-none px-1 py-0 cursor-pointer focus:outline-none"
+                                  className="bg-transparent text-[11px] font-medium text-slate-500 dark:text-zinc-400 border-none px-0.5 py-0 cursor-pointer focus:outline-none"
                                 >
                                   <option value={50}>50%</option>
                                   <option value={75}>75%</option>
@@ -39240,9 +39242,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <button
                                 type="button"
                                 onClick={() => setIsSheetZenMode(false)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/90 hover:bg-black dark:bg-violet-600/90 dark:hover:bg-violet-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+                                className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-900/90 hover:bg-black dark:bg-violet-600 dark:hover:bg-violet-700 text-white rounded-lg text-[11px] font-semibold shadow-2xs transition-all"
                               >
-                                <Minimize2 size={13} />
+                                <Minimize2 size={12} />
                                 <span>Exit Zen Mode</span>
                               </button>
                             </div>
@@ -39256,15 +39258,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             </div>
                           </>
                         ) : (
-                          <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18),0_0_20px_rgba(255,255,255,0.4)] dark:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7),0_0_20px_rgba(255,255,255,0.05)] rounded-2xl p-2 px-3 flex items-center gap-3 animate-in fade-in zoom-in-95 duration-150">
-                            <div className="flex items-center gap-1.5 border-r border-slate-200/80 dark:border-zinc-700/80 pr-3">
+                          <div className="bg-[#ffffffeb] dark:bg-[#18181beb] backdrop-blur-md border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_8px_24px_rgba(0,0,0,0.08)] rounded-[14px] px-2.5 py-1 flex items-center gap-2.5 transition-all animate-in fade-in zoom-in-95 duration-200">
+                            <div className="flex items-center gap-1.5 border-r border-slate-200/80 dark:border-zinc-700/80 pr-2.5">
                               <button 
                                 type="button" 
                                 onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}
-                                className="p-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
+                                className="p-1 text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
                                 title="Zoom Out (-10%)"
                               >
-                                <ZoomOut size={14} />
+                                <ZoomOut size={13} />
                               </button>
                               <input
                                 type="range"
@@ -39273,20 +39275,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 step="5"
                                 value={sheetZoomLevel}
                                 onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
-                                className="w-24 h-1.5 bg-slate-200/80 dark:bg-zinc-700/80 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                                className="w-16 h-1 bg-slate-200/80 dark:bg-zinc-700/80 rounded-lg appearance-none cursor-pointer accent-violet-600"
                               />
                               <button 
                                 type="button" 
                                 onClick={() => setSheetZoomLevel(prev => Math.min(200, prev + 10))}
-                                className="p-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
+                                className="p-1 text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
                                 title="Zoom In (+10%)"
                               >
-                                <ZoomIn size={14} />
+                                <ZoomIn size={13} />
                               </button>
                               <select
                                 value={sheetZoomLevel}
                                 onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
-                                className="bg-transparent text-xs font-semibold text-slate-700 dark:text-zinc-300 border-none px-1 py-0 cursor-pointer focus:outline-none"
+                                className="bg-transparent text-[11px] font-medium text-slate-500 dark:text-zinc-400 border-none px-0.5 py-0 cursor-pointer focus:outline-none"
                               >
                                 <option value={50}>50%</option>
                                 <option value={75}>75%</option>
@@ -39302,9 +39304,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <button
                               type="button"
                               onClick={() => setIsSheetZenMode(false)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/90 hover:bg-black dark:bg-violet-600/90 dark:hover:bg-violet-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+                              className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-900/90 hover:bg-black dark:bg-violet-600 dark:hover:bg-violet-700 text-white rounded-lg text-[11px] font-semibold shadow-2xs transition-all"
                             >
-                              <Minimize2 size={13} />
+                              <Minimize2 size={12} />
                               <span>Exit Zen Mode</span>
                             </button>
                           </div>
@@ -39312,24 +39314,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     )}
 
-                    {!isSheetZenMode && (
-                      <div className="h-10 px-4 border-t border-slate-200/70 dark:border-zinc-800/70 bg-white/85 dark:bg-zinc-900/85 backdrop-blur-sm flex items-center justify-between gap-4 shrink-0">
-                        <div className="flex items-center gap-3 overflow-x-auto thin-scrollbar">
-                          {sheetsData.map((sheet) => (
-                            <button
-                              key={sheet.id}
-                              type="button"
-                              onClick={() => {
-                                setActiveSheetId(sheet.id);
-                                setSheetsTitle(sheet.title);
-                              }}
-                              className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-[13px] font-medium tracking-wide transition-colors ${activeSheetId === sheet.id ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
-                            >
-                              {sheet.title.split(' ')[0]}
-                            </button>
-                          ))}
-                          <button type="button" onClick={addWorksheet} className="px-2 py-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">+</button>
-                        </div>
+                    <div className={`h-10 px-4 border-t border-slate-200/70 dark:border-zinc-800/70 bg-white/85 dark:bg-zinc-900/85 backdrop-blur-sm flex items-center justify-between gap-4 shrink-0 transition-all duration-200 ${
+                      isSheetZenMode 
+                        ? 'opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto fixed bottom-0 left-0 right-0 z-50 shadow-lg border-t bg-white/95 dark:bg-zinc-900/95' 
+                        : ''
+                    }`}>
+                      <div className="flex items-center gap-3 overflow-x-auto thin-scrollbar">
+                        {sheetsData.map((sheet) => (
+                          <button
+                            key={sheet.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveSheetId(sheet.id);
+                              setSheetsTitle(sheet.title);
+                            }}
+                            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-[13px] font-medium tracking-wide transition-colors ${activeSheetId === sheet.id ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
+                          >
+                            {sheet.title.split(' ')[0]}
+                          </button>
+                        ))}
+                        <button type="button" onClick={addWorksheet} className="px-2 py-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">+</button>
+                      </div>
                         <div className="flex items-center gap-4 text-[12px] font-medium text-gray-500 shrink-0 mr-auto ml-8 hidden md:flex">
                           {(() => {
                             if (!selectedSheetRange && sheetSelectionMode === 'cell') {
@@ -39469,8 +39474,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </button>
                         </div>
                       </div>
-                    )}
-                    {/* End scoped Sheet Grid View container */}
+
                     </div>
                     )}
                   </div>
