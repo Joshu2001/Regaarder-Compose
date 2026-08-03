@@ -45,7 +45,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   const filteredCorr = correlationRegression.filter(t => t.label.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
-    <div className="flex-1 bg-[#F9F9FB] dark:bg-[#09090b] flex flex-col min-h-0 font-sans p-8 overflow-y-auto thin-scrollbar">
+    <div className="flex-1 h-full min-h-0 bg-[#F9F9FB] dark:bg-[#09090b] flex flex-col font-sans p-8 overflow-y-auto thin-scrollbar">
       
       {/* Top Title & Subtitle Header */}
       <div className="flex items-center justify-between mb-8">

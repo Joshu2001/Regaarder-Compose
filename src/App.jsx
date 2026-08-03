@@ -10078,6 +10078,7 @@ export default function App() {
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isDocumentImmersive, setIsDocumentImmersive] = useState(false);
+  const wasNativeFullscreenRef = useRef(false);
 
   const [workspaceLauncherOpen, setWorkspaceLauncherOpen] = useState(false);
   // Smart sidebar: persisted usage counts (key → cumulative clicks)
@@ -12718,25 +12719,30 @@ export default function App() {
       if (isFilePickerActiveRef.current) {
         return; // Guard to prevent exit during native file picker dialog
       }
-      const immersiveActive = document.fullscreenElement === appShellRef.current;
-      if (immersiveActive && !isDocumentImmersive) {
-        setIsDocumentImmersive(true);
-      }
-      if (!immersiveActive && isDocumentImmersive) {
-        setIsDocumentImmersive(false);
-        setIsFocusMode(false);
-        setPulseCycleActive(true);
-        showToast('Fullscreen mode disabled. Click here to restore.', () => {
-          toggleDocumentImmersiveMode();
-        });
+      const isNativeActive = Boolean(document.fullscreenElement);
+      if (isNativeActive) {
+        wasNativeFullscreenRef.current = true;
+        if (!isDocumentImmersive) {
+          setIsDocumentImmersive(true);
+        }
+      } else {
+        // Only collapse immersive state if native window fullscreen WAS previously active (e.g. user pressed ESC key)
+        if (wasNativeFullscreenRef.current) {
+          wasNativeFullscreenRef.current = false;
+          if (isDocumentImmersive) {
+            setIsDocumentImmersive(false);
+            setIsFocusMode(false);
+            setPulseCycleActive(true);
+            showToast('Fullscreen mode disabled.');
+          }
+        }
       }
     };
 
     const handleWindowFocus = () => {
       if (isFilePickerActiveRef.current) {
         isFilePickerActiveRef.current = false;
-        // Re-request native fullscreen if we are in immersive mode but native fullscreen exited
-        if (isDocumentImmersive && !document.fullscreenElement) {
+        if (isDocumentImmersive && !document.fullscreenElement && wasNativeFullscreenRef.current) {
           if (appShellRef.current?.requestFullscreen) {
             appShellRef.current.requestFullscreen().catch(err => {
               console.log('Could not re-request native fullscreen:', err);
@@ -23072,42 +23078,29 @@ Rules:
     openLandingWorkspace(workspaceKey);
   };
 
-  const toggleDocumentImmersiveMode = async () => {
+  const toggleDocumentImmersiveMode = () => {
     const entering = !isDocumentImmersive;
-    try {
-      if (entering) {
-        setIsFocusMode(true);
-        setIsDocumentImmersive(true);
-        
-        // Try native fullscreen API
-        if (appShellRef.current?.requestFullscreen) {
-          try {
-            await appShellRef.current.requestFullscreen();
-          } catch (fsError) {
-            console.log('Fullscreen API failed, using CSS fullscreen', fsError);
-          }
-        }
-        showToast('Fullscreen mode enabled');
-        return;
+    if (entering) {
+      setIsFocusMode(true);
+      setIsDocumentImmersive(true);
+      if (appShellRef.current?.requestFullscreen) {
+        appShellRef.current.requestFullscreen().then(() => {
+          wasNativeFullscreenRef.current = true;
+        }).catch((fsError) => {
+          wasNativeFullscreenRef.current = false;
+          console.log('Native browser window fullscreen omitted or denied in Chrome; CSS Immersive Mode active:', fsError);
+        });
       }
-
-      // Exit fullscreen
+      showToast('Fullscreen mode enabled');
+    } else {
+      wasNativeFullscreenRef.current = false;
       if (document.fullscreenElement) {
-        await document.exitFullscreen();
+        document.exitFullscreen().catch((err) => console.error('exitFullscreen error:', err));
       }
       setIsDocumentImmersive(false);
       setIsFocusMode(false);
       setPulseCycleActive(true);
-      showToast('Fullscreen mode disabled. Click here to restore.', () => {
-        toggleDocumentImmersiveMode();
-      });
-    } catch (_error) {
-      console.error('Fullscreen toggle error:', _error);
-      if (entering) {
-        setIsFocusMode(false);
-        setIsDocumentImmersive(false);
-      }
-      showToast('Could not toggle fullscreen');
+      showToast('Fullscreen mode disabled.');
     }
   };
 
@@ -23144,43 +23137,7 @@ Rules:
   }, [rightSidebarOpen]);
 
 
-  // Listen for fullscreen changes and sync state
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      if (isFilePickerActiveRef.current) {
-        return; // Guard to prevent exit during native file picker dialog
-      }
-      if (!document.fullscreenElement && isDocumentImmersive) {
-        setIsDocumentImmersive(false);
-        setIsFocusMode(false);
-        setPulseCycleActive(true);
-        showToast('Fullscreen mode disabled. Click here to restore.', () => {
-          toggleDocumentImmersiveMode();
-        });
-      }
-    };
-    
-    const handleWindowFocus = () => {
-      if (isFilePickerActiveRef.current) {
-        isFilePickerActiveRef.current = false;
-        // Re-request native fullscreen if we are in immersive mode but native fullscreen exited
-        if (isDocumentImmersive && !document.fullscreenElement) {
-          if (appShellRef.current?.requestFullscreen) {
-            appShellRef.current.requestFullscreen().catch(err => {
-              console.log('Could not re-request native fullscreen:', err);
-            });
-          }
-        }
-      }
-    };
-    
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    window.addEventListener('focus', handleWindowFocus);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      window.removeEventListener('focus', handleWindowFocus);
-    };
-  }, [isDocumentImmersive]);
+
 
   const formatMeetingElapsed = useCallback((startedAt) => {
     if (!startedAt) {
@@ -33079,7 +33036,10 @@ You can recommend task creations on the board.`;
                 </div>
                 <button
                   type="button"
-                  onClick={toggleDocumentImmersiveMode}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    toggleDocumentImmersiveMode();
+                  }}
                   className={`p-1.5 rounded-md transition-all border ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 border-violet-200' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 border-transparent'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
                   title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
                   aria-label={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
@@ -34375,7 +34335,10 @@ You can recommend task creations on the board.`;
               }} className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:border-violet-200 hover:text-violet-700 inline-flex items-center gap-1.5"><ShieldAlert size={14} /> Team access</button>
               <button
                 type="button"
-                onClick={toggleDocumentImmersiveMode}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  toggleDocumentImmersiveMode();
+                }}
                 className={`p-1.5 rounded-md transition-all border ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 border-violet-200' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 border-transparent'}`}
                 title={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
                 aria-label={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
@@ -36673,7 +36636,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </div>
                         </div>
                       ) : sheetToolbarTab === 'Analyze' ? (
-                        <div className="pt-1.5 border-t border-gray-200/60 dark:border-zinc-800 flex-1 min-h-0 flex flex-col overflow-hidden">
+                        <div className="pt-1.5 border-t border-gray-200/60 dark:border-zinc-800 flex flex-col overflow-y-auto thin-scrollbar" style={{ maxHeight: '300px' }}>
                           <AnalyticsHubUI 
                             activeSheetGrid={sheetGrids[activeSheetId]} 
                             activeSheetId={activeSheetId} 
@@ -36898,6 +36861,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   )}
 
+                    {sheetToolbarTab === 'Analyze' ? (
+                      <div className={`flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] overflow-y-auto thin-scrollbar z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm'}`}>
+                        <AnalyticsHubUI 
+                          activeSheetGrid={sheetGrids[activeSheetId]} 
+                          activeSheetId={activeSheetId} 
+                          updateSheetCell={updateSheetCell} 
+                          showToast={showToast} 
+                        />
+                      </div>
+                    ) : (
                     <div className={`flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] overflow-hidden z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm'}`}>
                       {!isSheetsPresentationMode && !isSheetZenMode && (
                         <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151] shrink-0">
@@ -39508,6 +39481,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     )}
                     {/* End scoped Sheet Grid View container */}
                     </div>
+                    )}
                   </div>
                 ) : (
               <div className="w-full h-full flex-1 flex overflow-hidden bg-[#F7F8FB] relative select-none">
@@ -45521,7 +45495,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="flex items-center">
               <button
                 type="button"
-                onClick={toggleDocumentImmersiveMode}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  toggleDocumentImmersiveMode();
+                }}
                 className={`w-7.5 h-7.5 flex items-center justify-center rounded-xl transition-all border ${
                   isDocumentImmersive
                     ? 'bg-violet-100 text-violet-700 border-violet-200 shadow-sm'
@@ -54286,4 +54263,4 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
 
-// Triggering HMR refresh: 2026-07-23T00:03:45+08:00
+// Triggering HMR refresh: 2026-08-03T01:21:00+08:00
