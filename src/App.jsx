@@ -36635,15 +36635,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <button type="button" onClick={() => showToast('Loading Project Tracking...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Project Tracking</button>
                           </div>
                         </div>
-                      ) : sheetToolbarTab === 'Analyze' ? (
-                        <div className="pt-1.5 border-t border-gray-200/60 dark:border-zinc-800 flex flex-col overflow-y-auto thin-scrollbar" style={{ maxHeight: '300px' }}>
-                          <AnalyticsHubUI 
-                            activeSheetGrid={sheetGrids[activeSheetId]} 
-                            activeSheetId={activeSheetId} 
-                            updateSheetCell={updateSheetCell} 
-                            showToast={showToast} 
-                          />
-                        </div>
                       ) : sheetToolbarTab === 'View' ? (
                         <div className="flex flex-wrap items-center gap-4 px-2 py-1.5 pt-2 border-t border-gray-200/60 dark:border-zinc-800 text-xs font-medium">
                           {/* Gridline Contrast */}
