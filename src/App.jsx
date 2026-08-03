@@ -10049,6 +10049,7 @@ export default function App() {
   const [fontSearch, setFontSearch] = useState('');
   const [sizeSearch, setSizeSearch] = useState('');
   const [openDocMenuId, setOpenDocMenuId] = useState(null);
+  const [docMenuPos, setDocMenuPos] = useState({ top: 0, left: 0 });
   const [renamingDocId, setRenamingDocId] = useState(null);
   const [renameDocValue, setRenameDocValue] = useState('');
   const [whiteboards, setWhiteboards] = useState([
@@ -36245,6 +36246,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       onClick={(event) => {
                         event.stopPropagation();
                         closeTransientMenus();
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
                         setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
                       }}
                       className="p-0.5 rounded hover:bg-gray-100 shrink-0"
@@ -36263,7 +36266,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <X size={12} />
                     </button>
                     {openDocMenuId === doc.id && (
-                      <div className="absolute right-0 top-full mt-1 z-[230] w-36 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1" data-doc-menu-root>
+                      <div
+                        style={{ position: 'fixed', top: `${docMenuPos.top}px`, left: `${docMenuPos.left}px`, zIndex: 99999 }}
+                        className="w-36 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1"
+                        data-doc-menu-root
+                      >
                         <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('rename', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Rename</button>
                         <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('save', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Save</button>
                         <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('share', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Share</button>
@@ -43389,20 +43396,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {closeConfirmDocId && (
-        <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
-          <div className="w-[420px] max-w-[90vw] rounded-xl bg-white border border-gray-100 shadow-xl p-5">
+        <div className="fixed inset-0 z-[100000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-[420px] max-w-[90vw] rounded-xl bg-white border border-gray-100 shadow-2xl p-5 animate-in fade-in zoom-in-95 duration-150">
             <h3 className="text-sm font-semibold text-gray-900 mb-2">Close this document?</h3>
             <p className="text-xs text-gray-500 mb-4">You can still create a new one after closing. This action will remove the selected tab.</p>
             <div className="flex items-center justify-end gap-2">
               <button
                 onClick={() => setCloseConfirmDocId(null)}
-                className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50"
+                className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmCloseDocument}
-                className="px-3 py-1.5 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700"
+                className="px-3 py-1.5 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700 font-medium shadow-sm transition-colors"
               >
                 Close Document
               </button>
@@ -45063,6 +45070,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onClick={(event) => {
                     event.stopPropagation();
                     closeTransientMenus();
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
                     setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
                   }}
                   className="p-0.5 rounded hover:bg-gray-100 shrink-0"
@@ -45081,7 +45090,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <X size={12} />
                 </button>
                 {openDocMenuId === doc.id && (
-                  <div className="absolute right-0 top-full mt-1 z-[230] w-36 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1" data-doc-menu-root>
+                  <div
+                    style={{ position: 'fixed', top: `${docMenuPos.top}px`, left: `${docMenuPos.left}px`, zIndex: 99999 }}
+                    className="w-36 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1"
+                    data-doc-menu-root
+                  >
                     <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('rename', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Rename</button>
                     <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('save', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Save</button>
                     <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('share', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Share</button>
