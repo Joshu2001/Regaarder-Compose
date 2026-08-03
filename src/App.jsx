@@ -715,7 +715,7 @@ export const SHAPE_SECTIONS = [
 ];
 
 const SHEET_SLASH_OPTIONS = [
-  { key: 'special_characters', label: 'Special Characters & Formatting', desc: 'Insert currencies, math symbols, prefixes/suffixes, and number formatting' },
+  { key: 'special_characters', label: 'Special Formatting', desc: 'Currencies, math symbols & number formats' },
   { key: 'insert_date', label: 'Insert Date', desc: 'Insert today\'s date or select from calendar' },
   { key: 'insert_table', label: 'Insert Table', desc: 'Format selection as table' },
   { key: 'insert_chart', label: 'Insert Chart', desc: 'Add a beautiful chart or graph' },
@@ -39237,27 +39237,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 >
                                   <ZoomIn size={13} />
                                 </button>
-                                <select
+                                <ThemeDropdown
                                   value={sheetZoomLevel}
-                                  onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
-                                  className="bg-transparent text-[11px] font-medium text-slate-500 dark:text-zinc-400 border-none px-0.5 py-0 cursor-pointer focus:outline-none"
-                                >
-                                  <option value={50}>50%</option>
-                                  <option value={75}>75%</option>
-                                  <option value={90}>90%</option>
-                                  <option value={100}>100%</option>
-                                  <option value={110}>110%</option>
-                                  <option value={125}>125%</option>
-                                  <option value={150}>150%</option>
-                                  <option value={175}>175%</option>
-                                  <option value={200}>200%</option>
-                                </select>
+                                  onChange={(val) => setSheetZoomLevel(Number(val))}
+                                  options={[
+                                    { id: 50, label: '50%', category: 'Scale' },
+                                    { id: 75, label: '75%', category: 'Scale' },
+                                    { id: 90, label: '90%', category: 'Scale' },
+                                    { id: 100, label: '100%', category: 'Scale' },
+                                    { id: 110, label: '110%', category: 'Scale' },
+                                    { id: 125, label: '125%', category: 'Scale' },
+                                    { id: 150, label: '150%', category: 'Scale' },
+                                    { id: 175, label: '175%', category: 'Scale' },
+                                    { id: 200, label: '200%', category: 'Scale' }
+                                  ]}
+                                  label="Zoom"
+                                />
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => setIsSheetZenMode(false)}
-                                className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-900/90 hover:bg-black dark:bg-violet-600 dark:hover:bg-violet-700 text-white rounded-lg text-[11px] font-semibold shadow-2xs transition-all"
-                              >
+                             <button
+                              type="button"
+                              onClick={() => setIsSheetZenMode(false)}
+                              className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 rounded-lg text-[11px] font-medium shadow-2xs transition-all"
+                            >
                                 <Minimize2 size={12} />
                                 <span>Exit Zen Mode</span>
                               </button>
@@ -39299,26 +39300,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               >
                                 <ZoomIn size={13} />
                               </button>
-                              <select
+                              <ThemeDropdown
                                 value={sheetZoomLevel}
-                                onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
-                                className="bg-transparent text-[11px] font-medium text-slate-500 dark:text-zinc-400 border-none px-0.5 py-0 cursor-pointer focus:outline-none"
-                              >
-                                <option value={50}>50%</option>
-                                <option value={75}>75%</option>
-                                <option value={90}>90%</option>
-                                <option value={100}>100%</option>
-                                <option value={110}>110%</option>
-                                <option value={125}>125%</option>
-                                <option value={150}>150%</option>
-                                <option value={175}>175%</option>
-                                <option value={200}>200%</option>
-                              </select>
+                                onChange={(val) => setSheetZoomLevel(Number(val))}
+                                options={[
+                                  { id: 50, label: '50%', category: 'Scale' },
+                                  { id: 75, label: '75%', category: 'Scale' },
+                                  { id: 90, label: '90%', category: 'Scale' },
+                                  { id: 100, label: '100%', category: 'Scale' },
+                                  { id: 110, label: '110%', category: 'Scale' },
+                                  { id: 125, label: '125%', category: 'Scale' },
+                                  { id: 150, label: '150%', category: 'Scale' },
+                                  { id: 175, label: '175%', category: 'Scale' },
+                                  { id: 200, label: '200%', category: 'Scale' }
+                                ]}
+                                label="Zoom"
+                              />
                             </div>
                             <button
                               type="button"
                               onClick={() => setIsSheetZenMode(false)}
-                              className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-900/90 hover:bg-black dark:bg-violet-600 dark:hover:bg-violet-700 text-white rounded-lg text-[11px] font-semibold shadow-2xs transition-all"
+                              className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 rounded-lg text-[11px] font-medium shadow-2xs transition-all"
                             >
                               <Minimize2 size={12} />
                               <span>Exit Zen Mode</span>
