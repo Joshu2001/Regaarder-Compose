@@ -36,22 +36,22 @@ export default function DropdownModalShell({
 
   return (
     <>
-      {/* Subtle backdrop overlay with blur */}
+      {/* Backdrop overlay with toolbar blur */}
       <div 
-        className={`fixed inset-0 bg-black/10 dark:bg-black/40 backdrop-blur-[1.5px] ${zIndexBackdrop} transition-opacity duration-200 cursor-default`}
+        className={`fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm ${zIndexBackdrop} transition-opacity duration-200 cursor-default animate-in fade-in`}
         onPointerDown={(e) => {
           e.preventDefault();
           onClose?.();
         }}
       />
 
-      {/* Main macOS Executive Popover Container */}
+      {/* Main Glassmorphism Popover Container */}
       <div 
-        className={`absolute ${rightOffset} ${topOffset} ${zIndexModal} ${width} max-w-[calc(100vw-32px)] flex flex-col rounded-[22px] border border-slate-200/90 dark:border-zinc-800/90 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18),0_4px_16px_-4px_rgba(0,0,0,0.06)] font-sans text-left cursor-default origin-top-right ${allowOverflowVisible ? 'overflow-visible' : 'overflow-hidden'} animate-in zoom-in-95 fade-in duration-150 ${className}`}
+        className={`absolute ${rightOffset} ${topOffset} ${zIndexModal} ${width} max-w-[calc(100vw-32px)] flex flex-col rounded-[24px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-3xl shadow-2xl font-sans text-left cursor-default origin-top-right ${allowOverflowVisible ? 'overflow-visible' : 'overflow-hidden'} animate-in zoom-in-95 fade-in duration-150 ${className}`}
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Hero Header */}
-        <div className="px-6 pt-5 pb-3.5 flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/80 shrink-0">
+        <div className="px-6 pt-5 pb-3.5 flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-800/80 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             {IconComponent && (
               <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
@@ -86,7 +86,7 @@ export default function DropdownModalShell({
 
         {/* Integrated Footer (optional) */}
         {footer && (
-          <div className="border-t border-slate-100 dark:border-zinc-800/80 px-6 py-3.5 flex items-center justify-between bg-slate-50/70 dark:bg-zinc-900/70 backdrop-blur-md rounded-b-[22px] shrink-0">
+          <div className="border-t border-slate-200/50 dark:border-zinc-800/80 px-6 py-3.5 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-900/50 backdrop-blur-md rounded-b-[24px] shrink-0">
             {footer}
           </div>
         )}

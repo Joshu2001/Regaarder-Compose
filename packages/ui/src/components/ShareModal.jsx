@@ -51,7 +51,7 @@ function CustomSelect({ label, value, onChange, options }) {
               setIsOpen(false);
             }}
           />
-          <div className="absolute top-full left-0 right-0 mt-1.5 z-[600] rounded-2xl border border-slate-200 dark:border-zinc-700/90 bg-white/98 dark:bg-[#242427]/98 shadow-[0_20px_48px_-8px_rgba(0,0,0,0.22)] dark:shadow-[0_20px_48px_-8px_rgba(0,0,0,0.6)] p-1.5 backdrop-blur-xl animate-in fade-in slide-in-from-top-1 zoom-in-98 duration-150">
+          <div className="absolute top-full left-0 right-0 mt-1.5 z-[600] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/90 dark:bg-[#242427]/90 shadow-2xl p-1.5 backdrop-blur-3xl animate-in fade-in slide-in-from-top-1 zoom-in-98 duration-150">
             <div className="space-y-1 max-h-[220px] overflow-y-auto thin-scrollbar">
               {options.map((opt) => {
                 const val = opt.key || opt.value;
