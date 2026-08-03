@@ -39,9 +39,9 @@ function CustomSelect({ label, value, onChange, options, allowCustom = true, pla
           e.preventDefault();
           setIsOpen(!isOpen);
         }}
-        className={`w-full flex items-center justify-between px-3 py-2 bg-white/70 dark:bg-zinc-800/70 hover:bg-slate-100/80 dark:hover:bg-zinc-800 border ${
+        className={`w-full flex items-center justify-between px-3 py-2 bg-slate-50/80 dark:bg-zinc-800/70 hover:bg-slate-100/80 dark:hover:bg-zinc-800 border ${
           isOpen ? 'border-violet-500 ring-2 ring-violet-500/20' : 'border-slate-200/80 dark:border-zinc-700/80'
-        } backdrop-blur-xl rounded-xl text-xs font-semibold text-slate-800 dark:text-zinc-200 transition-all shadow-2xs text-left cursor-pointer`}
+        } rounded-xl text-xs font-semibold text-slate-800 dark:text-zinc-200 transition-all shadow-2xs text-left cursor-pointer`}
       >
         <span className="truncate">{selectedOption.label || value || placeholder}</span>
         <ChevronDown size={14} className={`text-slate-400 dark:text-zinc-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-violet-600' : ''}`} />
@@ -155,7 +155,6 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
     return () => document.removeEventListener('pointerdown', handleOutsideClick);
   }, []);
 
-  // Adds range to history options if not present
   const addRangeToHistory = (newRange) => {
     if (!newRange) return;
     setSelectedDataRange(newRange);
@@ -165,7 +164,6 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
     });
   };
 
-  // Selection states for descriptive statistics checkboxes
   const [selectedStats, setSelectedStats] = useState({
     mean: true,
     median: true,
@@ -241,7 +239,6 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   const filteredTests = hypothesisTests.filter(t => t.label.toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredCorr = correlationRegression.filter(t => t.label.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  // Handler to run analysis calculation on current sheet grid data or sample data
   const handleRunAnalysis = () => {
     const rawCells = activeSheetGrid?.cells || [];
     const parsedData = parseGridData(rawCells);
@@ -291,7 +288,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   return (
     <div className="flex-1 h-full min-h-0 bg-[#F9F9FB] dark:bg-[#09090b] flex flex-col font-sans p-8 overflow-y-auto thin-scrollbar">
       
-      {/* Hidden File Input for Upload dataset action */}
+      {/* Hidden File Input */}
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -322,12 +319,13 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
           </p>
         </div>
 
+        {/* History Button (No Container, matching Image 2) */}
         <button 
           type="button"
           onClick={() => showToast?.('Opening Analysis History...')}
-          className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all shadow-sm cursor-pointer"
+          className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors cursor-pointer py-1 px-1.5"
         >
-          <History size={15} className="text-slate-500" />
+          <History size={16} className="text-slate-500 dark:text-zinc-400" />
           <span>History</span>
         </button>
       </div>
@@ -335,7 +333,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* Left Navigation Sidebar with Glassmorphic styling */}
+        {/* Left Navigation Sidebar */}
         <div className="lg:col-span-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl rounded-2xl border border-white/60 dark:border-zinc-800/80 p-5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.06)] space-y-6">
           
           <div className="relative">
@@ -352,7 +350,6 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             </div>
           </div>
 
-          {/* HYPOTHESIS TESTS Section with exact light violet pill active & hover highlights matching user screenshot */}
           <div>
             <h3 className="text-[11px] font-bold tracking-wider uppercase text-slate-400 mb-3 px-1">
               Hypothesis Tests
@@ -383,7 +380,6 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             </div>
           </div>
 
-          {/* CORRELATION & REGRESSION Section */}
           <div>
             <h3 className="text-[11px] font-bold tracking-wider uppercase text-slate-400 mb-3 px-1">
               Correlation & Regression
@@ -416,7 +412,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
         </div>
 
-        {/* Right Detail Content Panel with Glassmorphism */}
+        {/* Right Detail Content Panel */}
         <div className="lg:col-span-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl rounded-2xl border border-white/60 dark:border-zinc-800/80 p-7 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.06)] space-y-7">
           
           <div className="flex items-start gap-3.5 border-b border-slate-100 dark:border-zinc-800 pb-5">
@@ -433,7 +429,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             </div>
           </div>
 
-          {/* Select Data Range or Upload Dropzone Box with Glassmorphic overlay */}
+          {/* Select Data Range or Upload Dropzone Box */}
           <div className="border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-zinc-850/20 backdrop-blur-md">
             <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700 flex items-center justify-center text-slate-500 dark:text-zinc-400 shadow-sm mb-3">
               <FileText size={20} />
@@ -445,7 +441,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               Choose a range from your sheet or import a file to get started.
             </p>
             
-            {/* "Select Data" Dropdown Pill Button */}
+            {/* "Select Data" Dropdown Pill Button (Exact Color & Vertical Split Line matching Image 1) */}
             <div className="relative" ref={selectDataRef}>
               <button 
                 type="button"
@@ -453,17 +449,17 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                   e.preventDefault();
                   setSelectDataMenuOpen(!selectDataMenuOpen);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-white/90 dark:bg-zinc-800/90 border border-slate-200/80 dark:border-zinc-700 rounded-xl text-xs font-semibold text-violet-600 dark:text-violet-400 shadow-sm hover:bg-slate-50 transition-all cursor-pointer backdrop-blur-md"
+                className="flex items-center px-4 py-2 bg-[#f4f0ff] dark:bg-violet-950/50 hover:bg-[#eae3fb] border border-violet-200/80 dark:border-violet-800/60 rounded-xl text-xs font-semibold text-[#6d28d9] dark:text-violet-300 shadow-2xs transition-all cursor-pointer backdrop-blur-md"
               >
                 <span>{selectedDataRange === 'Entire Active Sheet' ? 'Select Data' : selectedDataRange}</span>
-                <ChevronDown size={14} className={`transition-transform duration-200 ${selectDataMenuOpen ? 'rotate-180' : ''}`} />
+                <div className="h-3.5 w-px bg-violet-200/80 dark:bg-violet-800/80 mx-2 shrink-0" />
+                <ChevronDown size={14} className={`text-[#6d28d9] dark:text-violet-300 transition-transform duration-200 ${selectDataMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Data Selection Popover Menu with Upload option & custom selected sheet range history */}
+              {/* Data Selection Popover Menu */}
               {selectDataMenuOpen && (
                 <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-[500] w-72 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/80 dark:border-zinc-800 rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22)] p-2 space-y-2 animate-in fade-in zoom-in-95 duration-150 text-left">
                   
-                  {/* Upload Dataset File option directly inside dropdown */}
                   <button
                     type="button"
                     onPointerDown={(e) => {
@@ -471,9 +467,9 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                       setSelectDataMenuOpen(false);
                       fileInputRef.current?.click();
                     }}
-                    className="w-full flex items-center gap-2.5 p-2.5 rounded-xl bg-violet-50/80 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-950/60 font-semibold text-xs transition-colors cursor-pointer border border-violet-200/60 dark:border-violet-800/40"
+                    className="w-full flex items-center gap-2.5 p-2.5 rounded-xl bg-violet-50/80 dark:bg-violet-950/40 text-[#6d28d9] dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-950/60 font-semibold text-xs transition-colors cursor-pointer border border-violet-200/60 dark:border-violet-800/40"
                   >
-                    <Upload size={14} className="text-violet-600 dark:text-violet-400" />
+                    <Upload size={14} className="text-[#6d28d9] dark:text-violet-400" />
                     <div className="flex flex-col">
                       <span>Upload Dataset / File</span>
                       <span className="text-[10px] text-violet-500 font-normal">Import .CSV, .XLSX, or .JSON</span>
@@ -499,7 +495,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                           <span className="text-slate-800 dark:text-zinc-200">{preset.label}</span>
                           <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{preset.desc}</span>
                         </div>
-                        {selectedDataRange === preset.label && <Check size={14} className="text-violet-600 shrink-0" />}
+                        {selectedDataRange === preset.label && <Check size={14} className="text-[#6d28d9] shrink-0" />}
                       </button>
                     ))}
                   </div>
@@ -545,11 +541,12 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             </div>
           </div>
 
-          {/* Dynamic Configuration Form Controls (Removed outer container box around Options section per user request) */}
+          {/* Dynamic Form Controls wrapped in Thin Outline Cards matching Image 3 */}
           {selectedAnalysis === 'descriptive' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-              <div>
-                <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-3">
+              {/* STATISTICS Container Card */}
+              <div className="bg-white/60 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 rounded-2xl p-5 shadow-2xs space-y-3">
+                <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                   Statistics
                 </h4>
                 <div className="space-y-2.5">
@@ -572,8 +569,9 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 </div>
               </div>
 
-              <div>
-                <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-3">
+              {/* DISTRIBUTION Container Card */}
+              <div className="bg-white/60 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 rounded-2xl p-5 shadow-2xs space-y-3">
+                <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                   Distribution
                 </h4>
                 <div className="space-y-2.5">
@@ -596,9 +594,9 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 </div>
               </div>
 
-              {/* Options Section — Seamless containerless layout */}
-              <div>
-                <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-3">
+              {/* OPTIONS Container Card */}
+              <div className="bg-white/60 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 rounded-2xl p-5 shadow-2xs space-y-3">
+                <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                   Options
                 </h4>
                 <div className="space-y-4">
@@ -631,7 +629,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
           {(selectedAnalysis === 'ttest_ind' || selectedAnalysis === 'ttest_paired' || selectedAnalysis === 'mann_whitney') && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              <div className="space-y-4">
+              <div className="bg-white/60 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 rounded-2xl p-5 shadow-2xs space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                   Variables / Groups Selection
                 </h4>
@@ -657,7 +655,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 />
               </div>
 
-              <div className="space-y-4">
+              <div className="bg-white/60 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 rounded-2xl p-5 shadow-2xs space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                   Test Hypothesis & Parameters
                 </h4>
@@ -688,7 +686,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
           {selectedAnalysis === 'anova' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              <div className="space-y-4">
+              <div className="bg-white/60 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 rounded-2xl p-5 shadow-2xs space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">ANOVA Model Variables</h4>
                 <CustomSelect 
                   label="Dependent Variable (Continuous Outcome)"
@@ -709,7 +707,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                   ]}
                 />
               </div>
-              <div className="space-y-4">
+              <div className="bg-white/60 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 rounded-2xl p-5 shadow-2xs space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Post-Hoc Analysis Options</h4>
                 <CustomSelect 
                   label="Post-Hoc Test Method"
@@ -728,7 +726,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
           {selectedAnalysis === 'chisq' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              <div className="space-y-4">
+              <div className="bg-white/60 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 rounded-2xl p-5 shadow-2xs space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Contingency Matrix Input</h4>
                 <CustomSelect 
                   label="Row Factor (Variable 1)"
@@ -749,7 +747,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                   ]}
                 />
               </div>
-              <div className="space-y-4">
+              <div className="bg-white/60 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 rounded-2xl p-5 shadow-2xs space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Chi-Square Options</h4>
                 <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-zinc-300">
                   <input type="checkbox" defaultChecked className="rounded accent-violet-600" />
@@ -765,7 +763,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
           {(selectedAnalysis === 'correlation' || selectedAnalysis === 'regression') && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              <div className="space-y-4">
+              <div className="bg-white/60 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 rounded-2xl p-5 shadow-2xs space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Variables Selection</h4>
                 <CustomSelect 
                   label={selectedAnalysis === 'regression' ? 'Dependent Variable Y (Outcome)' : 'Variable X'}
@@ -786,7 +784,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                   ]}
                 />
               </div>
-              <div className="space-y-4">
+              <div className="bg-white/60 dark:bg-zinc-900/60 border border-slate-200/70 dark:border-zinc-800 rounded-2xl p-5 shadow-2xs space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Method & Output Options</h4>
                 {selectedAnalysis === 'correlation' ? (
                   <CustomSelect 
@@ -815,7 +813,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             </div>
           )}
 
-          {/* Results Output Display Box when Run Analysis is executed */}
+          {/* Results Output Display Box */}
           {analysisResults && (
             <div className="p-5 bg-[#f4f0ff]/80 dark:bg-violet-950/20 border border-violet-200/80 dark:border-violet-800/50 backdrop-blur-xl rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-2">
               <div className="flex items-center justify-between">
