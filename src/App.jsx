@@ -23791,10 +23791,12 @@ Rules:
     const initialSheetGrids = { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } };
     const initialDeckSlidesData = [{ id: 1, section: 'Opening', title: 'Title Slide', headline: 'Click to add title', blurb: 'Click to add subtitle', designPresetKey: 'blank', presetKey: 'blank', accent: 'from-indigo-500 to-violet-500', visualType: 'hero statement', layoutStyle: 'Title Slide', motionCue: 'Soft fade and stagger reveal', keyMetric: '', speakerNotes: '', footer: '' }];
 
-    const defaultTitleForMode = initialTitle || (productMode === 'sheets' ? 'Untitled Sheet' : productMode === 'deck' ? 'Untitled Deck' : '');
+    const currentWorkspaceMode = (activeRightTab === 'whiteboard' || productMode === 'whiteboard') ? 'whiteboard' : (productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose');
+    const defaultTitleForMode = initialTitle || (currentWorkspaceMode === 'sheets' ? 'Untitled Sheet' : currentWorkspaceMode === 'deck' ? 'Untitled Deck' : currentWorkspaceMode === 'whiteboard' ? 'Untitled Whiteboard' : '');
 
     const newDoc = {
       id: Date.now() + Math.floor(Math.random() * 1000),
+      mode: currentWorkspaceMode,
       title: defaultTitleForMode,
       subtitle: '',
       initiatives: [],
@@ -24279,17 +24281,20 @@ Rules:
       return;
     }
 
+    const targetDoc = documents.find((d) => d.id === closeConfirmDocId);
+    const targetDocMode = targetDoc ? getDocMode(targetDoc) : activeWorkspaceMode;
+
     const remaining = documents.filter((doc) => doc.id !== closeConfirmDocId);
-    if (!remaining.length) {
-      setCloseConfirmDocId(null);
-      createNewComposition();
-      return;
-    }
+    const remainingInMode = remaining.filter((doc) => getDocMode(doc) === targetDocMode);
 
     setDocuments(remaining);
-    const nextActive = remaining[0];
     setCloseConfirmDocId(null);
-    switchDocument(nextActive.id);
+
+    if (!remainingInMode.length) {
+      createNewComposition({ silent: true });
+    } else {
+      switchDocument(remainingInMode[0].id);
+    }
   };
 
   const openCreateWorkspaceModal = () => {
@@ -26102,12 +26107,43 @@ Respond with a JSON array of slide objects matching the schema.`;
     </div>
   );
 
-  const orderedDocuments = [...documents].sort((a, b) => {
-    if (!!a.pinned === !!b.pinned) {
-      return 0;
+  const getDocMode = useCallback((doc) => {
+    if (!doc) return 'compose';
+    if (doc.mode) return doc.mode;
+    if (doc.sheetsData && doc.sheetsData.length > 0 && (doc.title?.toLowerCase().includes('sheet') || doc.sheetsTitle)) return 'sheets';
+    if (doc.deckSlidesData && doc.deckSlidesData.length > 0 && (doc.title?.toLowerCase().includes('deck') || doc.deckTitle)) return 'deck';
+    return 'compose';
+  }, []);
+
+  const activeWorkspaceMode = useMemo(() => {
+    if (activeRightTab === 'whiteboard' || productMode === 'whiteboard') return 'whiteboard';
+    if (productMode === 'sheets') return 'sheets';
+    if (productMode === 'deck') return 'deck';
+    return 'compose';
+  }, [productMode, activeRightTab]);
+
+  const orderedDocuments = useMemo(() => {
+    const modeDocs = documents.filter((doc) => getDocMode(doc) === activeWorkspaceMode);
+    return [...modeDocs].sort((a, b) => {
+      if (!!a.pinned === !!b.pinned) {
+        return 0;
+      }
+      return a.pinned ? -1 : 1;
+    });
+  }, [documents, activeWorkspaceMode, getDocMode]);
+
+  useEffect(() => {
+    if (productMode === 'landing' || productMode === 'room' || productMode === 'dm') return;
+    const modeDocs = documents.filter((doc) => getDocMode(doc) === activeWorkspaceMode);
+    if (modeDocs.length > 0) {
+      const isCurrentActiveInMode = modeDocs.some((d) => d.id === activeDocId);
+      if (!isCurrentActiveInMode) {
+        switchDocument(modeDocs[0].id);
+      }
+    } else {
+      createNewComposition({ silent: true });
     }
-    return a.pinned ? -1 : 1;
-  });
+  }, [activeWorkspaceMode]);
 
   const canShowComposeActions = Boolean(
     lastComposeRun
