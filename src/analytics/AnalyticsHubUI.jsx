@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   BarChart2, Search, History, FileText, ChevronDown, Check, Play,
-  Sigma, GitCommit, Split, ArrowUpDown, Shield, HelpCircle, RefreshCw, Layers, Table, Edit3
+  Sigma, GitCommit, Split, ArrowUpDown, Shield, HelpCircle, RefreshCw, Layers, Table, Upload
 } from 'lucide-react';
 import { 
   parseGridData, getNumericalColumn, runDescriptiveStatistics, 
@@ -127,7 +127,11 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   const [searchQuery, setSearchQuery] = useState('');
   
   // Custom inputs state for various analysis types
-  const [customDataRange, setCustomDataRange] = useState('Sheet1!A1:B50');
+  const [selectedDataRange, setSelectedDataRange] = useState('Entire Active Sheet');
+  const [selectDataMenuOpen, setSelectDataMenuOpen] = useState(false);
+  const [customRangeInput, setCustomRangeInput] = useState('');
+  const selectDataRef = useRef(null);
+
   const [varA, setVarA] = useState('Column A');
   const [varB, setVarB] = useState('Column B');
   const [confidenceLevel, setConfidenceLevel] = useState('95%');
@@ -136,6 +140,16 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   const [corrMethod, setCorrMethod] = useState('pearson');
   const [postHocTest, setPostHocTest] = useState('tukey');
   const [analysisResults, setAnalysisResults] = useState(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (selectDataRef.current && !selectDataRef.current.contains(e.target)) {
+        setSelectDataMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+  }, []);
 
   // Selection states for descriptive statistics checkboxes
   const [selectedStats, setSelectedStats] = useState({
@@ -255,7 +269,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
     }
 
     setAnalysisResults(result);
-    showToast?.(`Ran ${activeConfig.label} on ${customDataRange}`);
+    showToast?.(`Ran ${activeConfig.label} on ${selectedDataRange}`);
   };
 
   const IconComponent = activeConfig.icon;
@@ -282,7 +296,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
         <button 
           type="button"
           onClick={() => showToast?.('Opening Analysis History...')}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all shadow-sm cursor-pointer"
         >
           <History size={15} className="text-slate-500" />
           <span>History</span>
@@ -388,35 +402,97 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             </div>
           </div>
 
-          {/* Editable Freeform Sheet Data Range Box */}
-          <div className="border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center bg-slate-50/40 dark:bg-zinc-850/30 space-y-3">
-            <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700 flex items-center justify-center text-slate-500 dark:text-zinc-400 shadow-sm">
-              <FileText size={18} />
+          {/* Select Data Range or Upload Dropzone Box (Exact original UI restored) */}
+          <div className="border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center bg-slate-50/40 dark:bg-zinc-850/30">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700 flex items-center justify-center text-slate-500 dark:text-zinc-400 shadow-sm mb-3">
+              <FileText size={20} />
             </div>
-            <div>
-              <h3 className="text-xs font-bold text-slate-800 dark:text-zinc-200">
-                Data Range Selection for {activeConfig.label}
-              </h3>
-              <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">
-                Type any custom range, cell selection, or dataset boundaries for full granularity.
-              </p>
-            </div>
+            <h3 className="text-xs font-bold text-slate-800 dark:text-zinc-200">
+              Select data range or upload a dataset
+            </h3>
+            <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-1 mb-4">
+              Choose a range from your sheet or import a file to get started.
+            </p>
             
-            <div className="w-full max-w-sm flex items-center gap-2">
-              <input 
-                type="text"
-                value={customDataRange}
-                onChange={(e) => setCustomDataRange(e.target.value)}
-                placeholder="e.g. Sheet1!A1:B100"
-                className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-mono font-medium text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-2xs"
-              />
+            {/* "Select Data" Dropdown Pill Button */}
+            <div className="relative" ref={selectDataRef}>
               <button 
                 type="button"
-                onClick={() => showToast?.(`Range set to ${customDataRange}`)}
-                className="px-3.5 py-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-300 transition-all cursor-pointer"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  setSelectDataMenuOpen(!selectDataMenuOpen);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700 rounded-xl text-xs font-semibold text-violet-600 dark:text-violet-400 shadow-sm hover:bg-slate-50 transition-all cursor-pointer"
               >
-                Apply Range
+                <span>{selectedDataRange === 'Entire Active Sheet' ? 'Select Data' : selectedDataRange}</span>
+                <ChevronDown size={14} className={`transition-transform duration-200 ${selectDataMenuOpen ? 'rotate-180' : ''}`} />
               </button>
+
+              {/* Data Selection Popover Menu with presets + custom range input */}
+              {selectDataMenuOpen && (
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-[500] w-64 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-[0_16px_40px_-8px_rgba(0,0,0,0.18)] p-2 space-y-2 animate-in fade-in zoom-in-95 duration-150 text-left">
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Sheet Preset Ranges</div>
+                  {[
+                    { label: 'Entire Active Sheet', desc: 'All numerical columns' },
+                    { label: 'Columns A & B', desc: 'Primary numerical dataset' },
+                    { label: 'Selection (A1:B50)', desc: 'First 50 rows' }
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        setSelectedDataRange(preset.label);
+                        setSelectDataMenuOpen(false);
+                        showToast?.(`Selected ${preset.label}`);
+                      }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-slate-800 dark:text-zinc-200">{preset.label}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{preset.desc}</span>
+                      </div>
+                      {selectedDataRange === preset.label && <Check size={14} className="text-violet-600" />}
+                    </button>
+                  ))}
+
+                  <div className="pt-2 border-t border-slate-100 dark:border-zinc-800">
+                    <div className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Custom Sheet Range</div>
+                    <div className="flex items-center gap-1.5 px-1">
+                      <input 
+                        type="text"
+                        placeholder="e.g. Sheet1!A1:B100"
+                        value={customRangeInput}
+                        onChange={(e) => setCustomRangeInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && customRangeInput.trim()) {
+                            setSelectedDataRange(customRangeInput.trim());
+                            setSelectDataMenuOpen(false);
+                            showToast?.(`Custom range set to ${customRangeInput.trim()}`);
+                            setCustomRangeInput('');
+                          }
+                        }}
+                        className="flex-1 px-2.5 py-1.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-mono text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 font-normal"
+                      />
+                      <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          if (customRangeInput.trim()) {
+                            setSelectedDataRange(customRangeInput.trim());
+                            setSelectDataMenuOpen(false);
+                            showToast?.(`Custom range set to ${customRangeInput.trim()}`);
+                            setCustomRangeInput('');
+                          }
+                        }}
+                        className="px-2.5 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-semibold hover:bg-violet-700 transition-colors"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -477,9 +553,10 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 </h4>
                 <div className="space-y-4">
                   <CustomSelect 
-                    label="Group by Column"
+                    label="Group by"
                     value={groupByColumn}
                     onChange={setGroupByColumn}
+                    placeholder="Select column"
                     options={[
                       { label: 'None (Entire Sheet)', value: 'None' },
                       { label: 'Column A (Category)', value: 'Column A' },
@@ -492,9 +569,9 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                     value={confidenceLevel}
                     onChange={setConfidenceLevel}
                     options={[
-                      { label: '95% (Standard α = 0.05)', value: '95%' },
-                      { label: '99% (Strict α = 0.01)', value: '99%' },
-                      { label: '90% (Exploratory α = 0.10)', value: '90%' }
+                      { label: '95%', value: '95%' },
+                      { label: '99%', value: '99%' },
+                      { label: '90%', value: '90%' }
                     ]}
                   />
                 </div>
@@ -694,7 +771,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-violet-800 dark:text-violet-300 flex items-center gap-2">
                   <Check size={14} className="text-violet-600" />
-                  {activeConfig.label} Results Output ({customDataRange})
+                  {activeConfig.label} Results Output ({selectedDataRange})
                 </h4>
                 <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 bg-white dark:bg-zinc-900 px-2.5 py-1 rounded-lg border border-violet-200 dark:border-violet-800">
                   Computed Live
