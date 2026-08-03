@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, EyeOff, Eye, Lock, Clock, Copy, ArrowUpRight, MessageSquare, Download, Share2, ChevronDown } from 'lucide-react';
+import { Check, EyeOff, Eye, Lock, Clock, Copy, ArrowUpRight, MessageSquare, Download, Share, Share2, ChevronDown } from 'lucide-react';
 import DropdownModalShell from './DropdownModalShell';
 
 function CustomSelect({ label, value, onChange, options }) {
@@ -210,7 +210,7 @@ export default function ShareModal({
       onClose={onClose}
       title="Share document"
       subtitle={shareTargetDocTitle || 'Untitled document'}
-      icon={Share2}
+      icon={Share}
       width="w-[390px]"
       topOffset="top-12"
       rightOffset="right-4"
