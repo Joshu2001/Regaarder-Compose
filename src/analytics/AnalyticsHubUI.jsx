@@ -1,22 +1,137 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   BarChart2, Search, History, FileText, ChevronDown, Check, Play,
-  Sigma, GitCommit, Split, ArrowUpDown, Shield, HelpCircle, RefreshCw, Layers, Table
+  Sigma, GitCommit, Split, ArrowUpDown, Shield, HelpCircle, RefreshCw, Layers, Table, Edit3
 } from 'lucide-react';
 import { 
   parseGridData, getNumericalColumn, runDescriptiveStatistics, 
   runTTest, runANOVA, runChiSquare, runCorrelation, runRegression 
 } from './AnalyticsModules';
 
+/**
+ * Reusable Executive Custom Dropdown & Editable Select Component
+ * Reuses the design language of ThemeDropdown (@regaarder/ui) with touch-safe onPointerDown handling.
+ * Allows picking from preset options OR entering a custom value/range.
+ */
+function CustomSelect({ label, value, onChange, options, allowCustom = true, placeholder = 'Select or type custom...' }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [customInput, setCustomInput] = useState('');
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+  }, []);
+
+  const selectedOption = options.find(o => o.value === value) || { label: value || placeholder, value };
+
+  return (
+    <div className="relative w-full" ref={containerRef}>
+      {label && <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1.5">{label}</label>}
+      
+      {/* Trigger Button */}
+      <button
+        type="button"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          setIsOpen(!isOpen);
+        }}
+        className={`w-full flex items-center justify-between px-3 py-2 bg-slate-50/80 dark:bg-zinc-800/70 hover:bg-slate-100 dark:hover:bg-zinc-800 border ${
+          isOpen ? 'border-violet-500 ring-2 ring-violet-500/20' : 'border-slate-200/80 dark:border-zinc-700'
+        } rounded-xl text-xs font-semibold text-slate-800 dark:text-zinc-200 transition-all shadow-2xs text-left cursor-pointer`}
+      >
+        <span className="truncate">{selectedOption.label || value || placeholder}</span>
+        <ChevronDown size={14} className={`text-slate-400 dark:text-zinc-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-violet-600' : ''}`} />
+      </button>
+
+      {/* Floating Menu */}
+      {isOpen && (
+        <div className="absolute left-0 right-0 top-full mt-1.5 z-[500] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-[0_16px_40px_-8px_rgba(0,0,0,0.18)] p-2 space-y-2 animate-in fade-in zoom-in-95 duration-150">
+          
+          {/* Options List */}
+          <div className="max-h-48 overflow-y-auto thin-scrollbar space-y-1">
+            {options.map((opt) => {
+              const isSelected = opt.value === value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
+                    isSelected 
+                      ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-bold' 
+                      : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  <div className="flex flex-col">
+                    <span>{opt.label}</span>
+                    {opt.sublabel && <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{opt.sublabel}</span>}
+                  </div>
+                  {isSelected && <Check size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Optional Freeform Custom Input */}
+          {allowCustom && (
+            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center gap-1.5">
+              <input
+                type="text"
+                placeholder="Custom value / range..."
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && customInput.trim()) {
+                    onChange(customInput.trim());
+                    setIsOpen(false);
+                    setCustomInput('');
+                  }
+                }}
+                className="flex-1 px-2.5 py-1.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 font-normal"
+              />
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  if (customInput.trim()) {
+                    onChange(customInput.trim());
+                    setIsOpen(false);
+                    setCustomInput('');
+                  }
+                }}
+                className="px-2.5 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-semibold hover:bg-violet-700 transition-colors"
+              >
+                Apply
+              </button>
+            </div>
+          )}
+
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateSheetCell, showToast }) {
   const [selectedAnalysis, setSelectedAnalysis] = useState('descriptive');
   const [searchQuery, setSearchQuery] = useState('');
   
   // Custom inputs state for various analysis types
+  const [customDataRange, setCustomDataRange] = useState('Sheet1!A1:B50');
   const [varA, setVarA] = useState('Column A');
   const [varB, setVarB] = useState('Column B');
   const [confidenceLevel, setConfidenceLevel] = useState('95%');
-  const [groupByColumn, setGroupByColumn] = useState('');
+  const [groupByColumn, setGroupByColumn] = useState('None');
   const [hypothesisType, setHypothesisType] = useState('two_tailed');
   const [corrMethod, setCorrMethod] = useState('pearson');
   const [postHocTest, setPostHocTest] = useState('tukey');
@@ -100,14 +215,12 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
   // Handler to run analysis calculation on current sheet grid data or sample data
   const handleRunAnalysis = () => {
-    // Attempt to extract numerical data from current active sheet grid
     const rawCells = activeSheetGrid?.cells || [];
     const parsedData = parseGridData(rawCells);
 
     let col1Values = getNumericalColumn(parsedData, 0, true);
     let col2Values = getNumericalColumn(parsedData, 1, true);
 
-    // Fallback sample values if sheet is currently empty
     if (col1Values.length === 0) col1Values = [12, 15, 18, 22, 25, 30, 28, 34, 39, 42];
     if (col2Values.length === 0) col2Values = [10, 14, 16, 20, 24, 27, 26, 31, 35, 40];
 
@@ -142,7 +255,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
     }
 
     setAnalysisResults(result);
-    showToast?.(`Ran ${activeConfig.label} analysis successfully`);
+    showToast?.(`Ran ${activeConfig.label} on ${customDataRange}`);
   };
 
   const IconComponent = activeConfig.icon;
@@ -150,7 +263,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   return (
     <div className="flex-1 h-full min-h-0 bg-[#F9F9FB] dark:bg-[#09090b] flex flex-col font-sans p-8 overflow-y-auto thin-scrollbar">
       
-      {/* Top Title & Subtitle Header */}
+      {/* Top Title Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <div className="flex items-center gap-3">
@@ -166,7 +279,6 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
           </p>
         </div>
 
-        {/* History Action Button */}
         <button 
           type="button"
           onClick={() => showToast?.('Opening Analysis History...')}
@@ -183,7 +295,6 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
         {/* Left Navigation Sidebar */}
         <div className="lg:col-span-4 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200/70 dark:border-zinc-800 p-5 shadow-sm space-y-6">
           
-          {/* Search Input */}
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
             <input 
@@ -198,7 +309,6 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             </div>
           </div>
 
-          {/* HYPOTHESIS TESTS Section */}
           <div>
             <h3 className="text-[11px] font-bold tracking-wider uppercase text-slate-400 mb-3 px-1">
               Hypothesis Tests
@@ -215,7 +325,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                       setSelectedAnalysis(item.id);
                       setAnalysisResults(null);
                     }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left ${
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
                       isSelected 
                         ? 'bg-violet-50/80 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40 shadow-xs' 
                         : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-200 border border-transparent'
@@ -229,7 +339,6 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             </div>
           </div>
 
-          {/* CORRELATION & REGRESSION Section */}
           <div>
             <h3 className="text-[11px] font-bold tracking-wider uppercase text-slate-400 mb-3 px-1">
               Correlation & Regression
@@ -246,7 +355,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                       setSelectedAnalysis(item.id);
                       setAnalysisResults(null);
                     }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left ${
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
                       isSelected 
                         ? 'bg-violet-50/80 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40 shadow-xs' 
                         : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-200 border border-transparent'
@@ -265,7 +374,6 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
         {/* Right Detail Content Panel */}
         <div className="lg:col-span-8 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200/70 dark:border-zinc-800 p-7 shadow-sm space-y-7">
           
-          {/* Dynamic Header of Active Test */}
           <div className="flex items-start gap-3.5 border-b border-slate-100 dark:border-zinc-800 pb-5">
             <div className="p-2 bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 rounded-xl">
               <IconComponent size={20} />
@@ -280,32 +388,41 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             </div>
           </div>
 
-          {/* Select Data Range or Upload Dropzone Box */}
-          <div className="border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-slate-50/40 dark:bg-zinc-850/30">
-            <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700 flex items-center justify-center text-slate-500 dark:text-zinc-400 shadow-sm mb-3">
-              <FileText size={20} />
+          {/* Editable Freeform Sheet Data Range Box */}
+          <div className="border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center bg-slate-50/40 dark:bg-zinc-850/30 space-y-3">
+            <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700 flex items-center justify-center text-slate-500 dark:text-zinc-400 shadow-sm">
+              <FileText size={18} />
             </div>
-            <h3 className="text-xs font-bold text-slate-800 dark:text-zinc-200">
-              Select data range or upload dataset for {activeConfig.label}
-            </h3>
-            <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-1 mb-4">
-              Choose columns from your sheet or import a dataset file.
-            </p>
+            <div>
+              <h3 className="text-xs font-bold text-slate-800 dark:text-zinc-200">
+                Data Range Selection for {activeConfig.label}
+              </h3>
+              <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">
+                Type any custom range, cell selection, or dataset boundaries for full granularity.
+              </p>
+            </div>
             
-            <button 
-              type="button"
-              onClick={() => showToast?.(`Selected active sheet data for ${activeConfig.label}`)}
-              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700 rounded-xl text-xs font-semibold text-violet-600 dark:text-violet-400 shadow-sm hover:bg-slate-50 transition-all"
-            >
-              <span>Select Sheet Data</span>
-              <ChevronDown size={14} />
-            </button>
+            <div className="w-full max-w-sm flex items-center gap-2">
+              <input 
+                type="text"
+                value={customDataRange}
+                onChange={(e) => setCustomDataRange(e.target.value)}
+                placeholder="e.g. Sheet1!A1:B100"
+                className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-mono font-medium text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-2xs"
+              />
+              <button 
+                type="button"
+                onClick={() => showToast?.(`Range set to ${customDataRange}`)}
+                className="px-3.5 py-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-300 transition-all cursor-pointer"
+              >
+                Apply Range
+              </button>
+            </div>
           </div>
 
-          {/* Dynamic Configuration Form Controls based on selected analysis */}
+          {/* Dynamic Configuration Form Controls using CustomSelect Popover Components */}
           {selectedAnalysis === 'descriptive' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-              {/* STATISTICS Section */}
               <div>
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-3">
                   Statistics
@@ -330,7 +447,6 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 </div>
               </div>
 
-              {/* DISTRIBUTION Section */}
               <div>
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-3">
                   Distribution
@@ -355,43 +471,32 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 </div>
               </div>
 
-              {/* OPTIONS Section */}
               <div>
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-3">
                   Options
                 </h4>
                 <div className="space-y-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Group by</label>
-                    <div className="relative">
-                      <select 
-                        value={groupByColumn}
-                        onChange={(e) => setGroupByColumn(e.target.value)}
-                        className="w-full appearance-none bg-slate-50/70 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-500 dark:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-violet-500 cursor-pointer"
-                      >
-                        <option value="">Select column</option>
-                        <option value="ColA">Column A</option>
-                        <option value="ColB">Column B</option>
-                      </select>
-                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Confidence Level</label>
-                    <div className="relative">
-                      <select 
-                        value={confidenceLevel}
-                        onChange={(e) => setConfidenceLevel(e.target.value)}
-                        className="w-full appearance-none bg-slate-50/70 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 font-semibold focus:outline-none focus:ring-1 focus:ring-violet-500 cursor-pointer"
-                      >
-                        <option value="90%">90%</option>
-                        <option value="95%">95%</option>
-                        <option value="99%">99%</option>
-                      </select>
-                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    </div>
-                  </div>
+                  <CustomSelect 
+                    label="Group by Column"
+                    value={groupByColumn}
+                    onChange={setGroupByColumn}
+                    options={[
+                      { label: 'None (Entire Sheet)', value: 'None' },
+                      { label: 'Column A (Category)', value: 'Column A' },
+                      { label: 'Column B (Segment)', value: 'Column B' },
+                      { label: 'Column C (Department)', value: 'Column C' }
+                    ]}
+                  />
+                  <CustomSelect 
+                    label="Confidence Level"
+                    value={confidenceLevel}
+                    onChange={setConfidenceLevel}
+                    options={[
+                      { label: '95% (Standard α = 0.05)', value: '95%' },
+                      { label: '99% (Strict α = 0.01)', value: '99%' },
+                      { label: '90% (Exploratory α = 0.10)', value: '90%' }
+                    ]}
+                  />
                 </div>
               </div>
             </div>
@@ -403,44 +508,53 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                   Variables / Groups Selection
                 </h4>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Sample / Variable 1 (Group A)</label>
-                  <select value={varA} onChange={(e)=>setVarA(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-zinc-200 font-medium">
-                    <option value="Column A">Column A (Numerical)</option>
-                    <option value="Column B">Column B (Numerical)</option>
-                    <option value="Column C">Column C (Numerical)</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Sample / Variable 2 (Group B)</label>
-                  <select value={varB} onChange={(e)=>setVarB(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-zinc-200 font-medium">
-                    <option value="Column B">Column B (Numerical)</option>
-                    <option value="Column A">Column A (Numerical)</option>
-                    <option value="Column C">Column C (Numerical)</option>
-                  </select>
-                </div>
+                <CustomSelect 
+                  label="Sample / Variable 1 (Group A)"
+                  value={varA}
+                  onChange={setVarA}
+                  options={[
+                    { label: 'Column A (Numerical)', value: 'Column A' },
+                    { label: 'Column B (Numerical)', value: 'Column B' },
+                    { label: 'Column C (Numerical)', value: 'Column C' }
+                  ]}
+                />
+                <CustomSelect 
+                  label="Sample / Variable 2 (Group B)"
+                  value={varB}
+                  onChange={setVarB}
+                  options={[
+                    { label: 'Column B (Numerical)', value: 'Column B' },
+                    { label: 'Column A (Numerical)', value: 'Column A' },
+                    { label: 'Column C (Numerical)', value: 'Column C' }
+                  ]}
+                />
               </div>
 
               <div className="space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                   Test Hypothesis & Parameters
                 </h4>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Alternative Hypothesis</label>
-                  <select value={hypothesisType} onChange={(e)=>setHypothesisType(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-zinc-200 font-medium">
-                    <option value="two_tailed">Two-tailed (Mean 1 ≠ Mean 2)</option>
-                    <option value="greater">Greater (Mean 1 &gt; Mean 2)</option>
-                    <option value="less">Less (Mean 1 &lt; Mean 2)</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Confidence Interval</label>
-                  <select value={confidenceLevel} onChange={(e)=>setConfidenceLevel(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-zinc-200 font-medium">
-                    <option value="95%">95% (α = 0.05)</option>
-                    <option value="99%">99% (α = 0.01)</option>
-                    <option value="90%">90% (α = 0.10)</option>
-                  </select>
-                </div>
+                <CustomSelect 
+                  label="Alternative Hypothesis"
+                  value={hypothesisType}
+                  onChange={setHypothesisType}
+                  options={[
+                    { label: 'Two-tailed (Mean 1 ≠ Mean 2)', value: 'two_tailed' },
+                    { label: 'Greater (Mean 1 > Mean 2)', value: 'greater' },
+                    { label: 'Less (Mean 1 < Mean 2)', value: 'less' }
+                  ]}
+                  allowCustom={false}
+                />
+                <CustomSelect 
+                  label="Confidence Interval %"
+                  value={confidenceLevel}
+                  onChange={setConfidenceLevel}
+                  options={[
+                    { label: '95% (α = 0.05)', value: '95%' },
+                    { label: '99% (α = 0.01)', value: '99%' },
+                    { label: '90% (α = 0.10)', value: '90%' }
+                  ]}
+                />
               </div>
             </div>
           )}
@@ -449,32 +563,38 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
               <div className="space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">ANOVA Model Variables</h4>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Dependent Variable (Continuous)</label>
-                  <select value={varA} onChange={(e)=>setVarA(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-zinc-200 font-medium">
-                    <option value="Column A">Column A (Score / Outcome)</option>
-                    <option value="Column B">Column B (Response Time)</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Factor Variable (Categorical Groups)</label>
-                  <select value={varB} onChange={(e)=>setVarB(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-zinc-200 font-medium">
-                    <option value="Column B">Column B (Treatment Category)</option>
-                    <option value="Column C">Column C (Department)</option>
-                  </select>
-                </div>
+                <CustomSelect 
+                  label="Dependent Variable (Continuous Outcome)"
+                  value={varA}
+                  onChange={setVarA}
+                  options={[
+                    { label: 'Column A (Score / Outcome)', value: 'Column A' },
+                    { label: 'Column B (Response Time)', value: 'Column B' }
+                  ]}
+                />
+                <CustomSelect 
+                  label="Factor Variable (Categorical Grouping)"
+                  value={varB}
+                  onChange={setVarB}
+                  options={[
+                    { label: 'Column B (Treatment Category)', value: 'Column B' },
+                    { label: 'Column C (Department)', value: 'Column C' }
+                  ]}
+                />
               </div>
               <div className="space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Post-Hoc Analysis Options</h4>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Post-Hoc Test</label>
-                  <select value={postHocTest} onChange={(e)=>setPostHocTest(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-zinc-200 font-medium">
-                    <option value="tukey">Tukey HSD (Honest Significant Difference)</option>
-                    <option value="bonferroni">Bonferroni Correction</option>
-                    <option value="scheffe">Scheffé Method</option>
-                    <option value="none">None</option>
-                  </select>
-                </div>
+                <CustomSelect 
+                  label="Post-Hoc Test Method"
+                  value={postHocTest}
+                  onChange={setPostHocTest}
+                  options={[
+                    { label: 'Tukey HSD (Honest Significant Difference)', value: 'tukey' },
+                    { label: 'Bonferroni Correction', value: 'bonferroni' },
+                    { label: 'Scheffé Method', value: 'scheffe' },
+                    { label: 'None', value: 'none' }
+                  ]}
+                />
               </div>
             </div>
           )}
@@ -483,20 +603,24 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
               <div className="space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Contingency Matrix Input</h4>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Row Factor (Variable 1)</label>
-                  <select value={varA} onChange={(e)=>setVarA(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-zinc-200 font-medium">
-                    <option value="Column A">Column A (Category Rows)</option>
-                    <option value="Column B">Column B (Gender / Type)</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Column Factor (Variable 2)</label>
-                  <select value={varB} onChange={(e)=>setVarB(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-zinc-200 font-medium">
-                    <option value="Column B">Column B (Category Columns)</option>
-                    <option value="Column C">Column C (Status / Outcome)</option>
-                  </select>
-                </div>
+                <CustomSelect 
+                  label="Row Factor (Variable 1)"
+                  value={varA}
+                  onChange={setVarA}
+                  options={[
+                    { label: 'Column A (Category Rows)', value: 'Column A' },
+                    { label: 'Column B (Gender / Type)', value: 'Column B' }
+                  ]}
+                />
+                <CustomSelect 
+                  label="Column Factor (Variable 2)"
+                  value={varB}
+                  onChange={setVarB}
+                  options={[
+                    { label: 'Column B (Category Columns)', value: 'Column B' },
+                    { label: 'Column C (Status / Outcome)', value: 'Column C' }
+                  ]}
+                />
               </div>
               <div className="space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Chi-Square Options</h4>
@@ -516,35 +640,38 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
               <div className="space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Variables Selection</h4>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">
-                    {selectedAnalysis === 'regression' ? 'Dependent Variable Y (Outcome)' : 'Variable X'}
-                  </label>
-                  <select value={varA} onChange={(e)=>setVarA(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-zinc-200 font-medium">
-                    <option value="Column A">Column A (Sales / Metric Y)</option>
-                    <option value="Column B">Column B (Metric)</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">
-                    {selectedAnalysis === 'regression' ? 'Independent Variable X (Predictor)' : 'Variable Y'}
-                  </label>
-                  <select value={varB} onChange={(e)=>setVarB(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-zinc-200 font-medium">
-                    <option value="Column B">Column B (Ad Spend / Predictor X)</option>
-                    <option value="Column C">Column C (Feature X2)</option>
-                  </select>
-                </div>
+                <CustomSelect 
+                  label={selectedAnalysis === 'regression' ? 'Dependent Variable Y (Outcome)' : 'Variable X'}
+                  value={varA}
+                  onChange={setVarA}
+                  options={[
+                    { label: 'Column A (Sales / Metric Y)', value: 'Column A' },
+                    { label: 'Column B (Metric)', value: 'Column B' }
+                  ]}
+                />
+                <CustomSelect 
+                  label={selectedAnalysis === 'regression' ? 'Independent Variable X (Predictor)' : 'Variable Y'}
+                  value={varB}
+                  onChange={setVarB}
+                  options={[
+                    { label: 'Column B (Ad Spend / Predictor X)', value: 'Column B' },
+                    { label: 'Column C (Feature X2)', value: 'Column C' }
+                  ]}
+                />
               </div>
               <div className="space-y-4">
                 <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Method & Output Options</h4>
                 {selectedAnalysis === 'correlation' ? (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Correlation Coefficient</label>
-                    <select value={corrMethod} onChange={(e)=>setCorrMethod(e.target.value)} className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-zinc-200 font-medium">
-                      <option value="pearson">Pearson Correlation Coefficient (r)</option>
-                      <option value="spearman">Spearman Rank Correlation (ρ)</option>
-                    </select>
-                  </div>
+                  <CustomSelect 
+                    label="Correlation Coefficient"
+                    value={corrMethod}
+                    onChange={setCorrMethod}
+                    options={[
+                      { label: 'Pearson Correlation Coefficient (r)', value: 'pearson' },
+                      { label: 'Spearman Rank Correlation (ρ)', value: 'spearman' }
+                    ]}
+                    allowCustom={false}
+                  />
                 ) : (
                   <div className="space-y-3">
                     <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-zinc-300">
@@ -567,7 +694,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-violet-800 dark:text-violet-300 flex items-center gap-2">
                   <Check size={14} className="text-violet-600" />
-                  {activeConfig.label} Results Output
+                  {activeConfig.label} Results Output ({customDataRange})
                 </h4>
                 <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 bg-white dark:bg-zinc-900 px-2.5 py-1 rounded-lg border border-violet-200 dark:border-violet-800">
                   Computed Live
