@@ -8532,6 +8532,14 @@ export default function App() {
   const [replayTimeline, setReplayTimeline] = useState([]);
   const [replaySharing, setReplaySharing] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [hasUserEnteredContent, setHasUserEnteredContent] = useState(false);
+  const userHasEnteredContentRef = useRef(false);
+
+  const markUserHasEdited = () => {
+    userHasEnteredContentRef.current = true;
+    setHasUserEnteredContent(true);
+    setLastSavedAt(Date.now());
+  };
   const [relativeNow, setRelativeNow] = useState(Date.now());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationCategoryFilter, setNotificationCategoryFilter] = useState('all');
@@ -11299,7 +11307,7 @@ export default function App() {
 
   const syncReplayTimeline = () => {
     setReplayTimeline([...historyPastRef.current]);
-    setCanUndo(historyPastRef.current.length >= 2);
+    setCanUndo(userHasEnteredContentRef.current && historyPastRef.current.length >= 2);
     setCanRedo(historyFutureRef.current.length > 0);
   };
 
@@ -11318,7 +11326,7 @@ export default function App() {
   };
 
   const formatRelativeSavedLabel = (savedAt) => {
-    if (!savedAt) {
+    if (!userHasEnteredContentRef.current || !savedAt) {
       return 'Not saved yet';
     }
 
@@ -11916,7 +11924,9 @@ export default function App() {
     
     historyCommitTimerRef.current = setTimeout(() => {
       historyCommitTimerRef.current = null;
-      recordHistoryAction(historyEventNameRef.current);
+      if (userHasEnteredContentRef.current) {
+        recordHistoryAction(historyEventNameRef.current);
+      }
       historyEventNameRef.current = 'State updated';
     }, 5);
     
@@ -11930,19 +11940,14 @@ export default function App() {
     appendedSections,
     docBodyHtml,
     isBlankDocument,
-    whiteboardTool,
-    whiteboardPenVariant,
-    whiteboardShapeVariant,
     whiteboardStrokes,
     whiteboardShapes,
     whiteboardWidgets,
     whiteboardComments,
     sheetsTitle,
-    activeSheetId,
     sheetsData,
     sheetGrids,
-    deckSlidesData,
-    activeDeckSlideId
+    deckSlidesData
   ]);
 
   useEffect(() => {
@@ -26797,6 +26802,7 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
 
   const updateSheetCell = (sheetId, rowIndex, colIndex, value) => {
+    markUserHasEdited();
     setSheetGrids((prev) => {
       const target = prev[sheetId];
       if (!target) return prev;
@@ -36622,6 +36628,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {/* Right main area: floating island toolbar & sheet grid */}
                     {isSheetsMode ? (
                       <div className={`flex-1 min-h-0 h-full flex flex-col min-w-0 relative backdrop-blur-[6px] transition-all ${isSheetZenMode ? 'fixed inset-0 z-40 bg-white dark:bg-zinc-950 p-0 m-0' : 'z-10'} ${
+                        sheetToolbarTab === 'Data' ? 'bg-[#f8f9fe] dark:bg-[#0b0d14]' :
                         sheetsThemePalette === 'obsidian' ? 'bg-zinc-950/90' :
                         sheetsThemePalette === 'indigo' ? 'bg-[#0b0f19]/95' :
                         sheetsThemePalette === 'alabaster' ? 'bg-[#fbfbf9]' :
@@ -36843,7 +36850,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       ) : null}
 
                       {/* Bottom Row: Cell Formatting Tools */}
-                      {(sheetToolbarTab === 'Data' || sheetToolbarTab === 'Visualize' || hasImportedData) && (
+                      {(sheetToolbarTab === 'Visualize' || (sheetToolbarTab !== 'Data' && hasImportedData)) && (
                         <>
                           <div className="h-px bg-gray-200/60 dark:bg-zinc-800/60 w-full" />
                           <div className="flex items-center gap-3 text-[13px] font-medium text-[#374151]">
@@ -37012,7 +37019,114 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   )}
 
-                    {sheetToolbarTab === 'Analyze' ? (
+                    {sheetToolbarTab === 'Data' ? (
+                      <div className={`flex-1 min-h-0 flex items-center justify-center p-6 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)]'}`}>
+                        <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-3xl p-10 border border-slate-100 dark:border-zinc-800 shadow-xl shadow-indigo-500/5 flex flex-col items-center text-center my-auto">
+                          {/* Icon Badge */}
+                          <div className="relative mb-6 shrink-0 flex items-center justify-center">
+                            {/* Soft Ambient Halo */}
+                            <div className="absolute inset-0 -m-3 rounded-full bg-gradient-to-tr from-violet-400/15 via-indigo-300/10 to-transparent blur-xl pointer-events-none" />
+                            {/* Soft Lavender Icon Tile */}
+                            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-100 via-purple-50 to-indigo-100/80 dark:from-violet-950/60 dark:via-purple-900/30 dark:to-indigo-950/40 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(124,58,237,0.08)]">
+                              <Cpu size={30} strokeWidth={2} />
+                            </div>
+                          </div>
+
+                          {/* Title */}
+                          <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-2">
+                            What would you like to analyze?
+                          </h2>
+
+                          {/* Subtitle */}
+                          <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-md mb-8 leading-relaxed">
+                            Drop any file or paste content — Regaarder converts it into structured, intelligent data.
+                          </p>
+
+                          {/* Replaced Header Section */}
+                          <div className="w-full flex flex-col items-center mb-6">
+                            <div className="flex items-center gap-3 w-full max-w-sm">
+                              <div className="h-px bg-slate-200/80 dark:bg-zinc-800 flex-1" />
+                              <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">GET STARTED:</span>
+                              <div className="h-px bg-slate-200/80 dark:bg-zinc-800 flex-1" />
+                            </div>
+                          </div>
+
+                          {/* Upload Dropzone */}
+                          <div
+                            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                            onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                const file = e.dataTransfer.files[0];
+                                showToast(`Importing ${file.name}...`);
+                                const reader = new FileReader();
+                                reader.onload = (evt) => {
+                                  const text = evt.target?.result;
+                                  if (typeof text === 'string') {
+                                    const lines = text.split(/\r?\n/).map(line => line.split(','));
+                                    lines.forEach((rowItems, rIdx) => {
+                                      rowItems.forEach((val, cIdx) => {
+                                        updateSheetCell(activeSheetId, rIdx, cIdx, val.trim());
+                                      });
+                                    });
+                                    showToast(`Loaded data from ${file.name}`);
+                                  }
+                                };
+                                if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+                                  reader.readAsText(file);
+                                } else {
+                                  showToast(`Imported ${file.name}`);
+                                }
+                              }
+                            }}
+                            onClick={() => document.getElementById('sheets-data-tab-file-input')?.click()}
+                            className="w-full border-2 border-dashed border-violet-200 dark:border-violet-900/50 bg-violet-50/20 dark:bg-violet-950/10 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-violet-50/50 hover:border-violet-300 dark:hover:border-violet-800 group"
+                          >
+                            <input
+                              type="file"
+                              id="sheets-data-tab-file-input"
+                              className="hidden"
+                              accept=".csv,.xlsx,.xls,.pdf,.json,.txt"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  const file = e.target.files[0];
+                                  showToast(`Importing ${file.name}...`);
+                                  const reader = new FileReader();
+                                  reader.onload = (evt) => {
+                                    const text = evt.target?.result;
+                                    if (typeof text === 'string') {
+                                      const lines = text.split(/\r?\n/).map(line => line.split(','));
+                                      lines.forEach((rowItems, rIdx) => {
+                                        rowItems.forEach((val, cIdx) => {
+                                          updateSheetCell(activeSheetId, rIdx, cIdx, val.trim());
+                                        });
+                                      });
+                                      showToast(`Loaded data from ${file.name}`);
+                                    }
+                                  };
+                                  if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+                                    reader.readAsText(file);
+                                  } else {
+                                    showToast(`Imported ${file.name}`);
+                                  }
+                                }
+                              }}
+                            />
+                            <div className="w-10 h-10 rounded-xl bg-violet-100/60 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                              <Upload size={20} />
+                            </div>
+                            <p className="text-sm font-semibold text-slate-700 dark:text-zinc-200 mb-1">
+                              Drop a file here or click to <span className="text-violet-600 dark:text-violet-400 font-bold hover:underline">browse</span>
+                            </p>
+                            <span className="text-xs text-slate-400 dark:text-zinc-500">
+                              Supports PDF, Excel, CSV, Google Sheets, and more
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : sheetToolbarTab === 'Analyze' ? (
                       <div className={`flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] overflow-y-auto thin-scrollbar z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm'}`}>
                         <AnalyticsHubUI 
                           activeSheetGrid={sheetGrids[activeSheetId]} 
