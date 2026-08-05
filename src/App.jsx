@@ -8522,6 +8522,7 @@ export default function App() {
 
   const [sheetToolbarTab, setSheetToolbarTab] = useState('Data');
   const [hasImportedData, setHasImportedData] = useState(false);
+  const [importedFileInfo, setImportedFileInfo] = useState(null);
   const [selectedDatasets, setSelectedDatasets] = useState([]);
   const [replayPanelOpen, setReplayPanelOpen] = useState(false);
   const [isReplayPlaying, setIsReplayPlaying] = useState(false);
@@ -26651,7 +26652,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     setSheetGrids((prev) => {
       const target = prev[sheetId];
       if (!target) return prev;
-      const nextFormats = target.formats ? target.formats.map(row => [...row]) : Array.from({ length: target.rows }, () => Array.from({ length: target.cols }, () => null));
+      const nextFormats = Array.isArray(target.formats) ? target.formats.map(row => [...row]) : Array.from({ length: target.rows }, () => Array.from({ length: target.cols }, () => null));
       const startRow = selectedSheetRange ? Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) - 1 : selectedSheetCell.row - 1;
       const endRow = selectedSheetRange ? Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) - 1 : selectedSheetCell.row - 1;
       const startCol = selectedSheetRange ? Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1 : selectedSheetCell.col - 1;
@@ -26721,7 +26722,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     setSheetGrids((prev) => {
       const target = prev[activeSheetId];
       if (!target) return prev;
-      const nextFormats = target.formats ? target.formats.map(row => [...row]) : Array.from({ length: target.rows }, () => Array.from({ length: target.cols }, () => null));
+      const nextFormats = Array.isArray(target.formats) ? target.formats.map(row => [...row]) : Array.from({ length: target.rows }, () => Array.from({ length: target.cols }, () => null));
 
       for (let r = sRow; r <= eRow; r++) {
         if (!nextFormats[r]) nextFormats[r] = Array(target.cols).fill(null);
@@ -26764,7 +26765,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       const target = prev[activeSheetId];
       if (!target) return prev;
       const nextCells = target.cells.map(r => [...r]);
-      const nextFormats = target.formats ? target.formats.map(r => [...r]) : Array.from({ length: target.rows }, () => Array.from({ length: target.cols }, () => null));
+      const nextFormats = Array.isArray(target.formats) ? target.formats.map(r => [...r]) : Array.from({ length: target.rows }, () => Array.from({ length: target.cols }, () => null));
       let nextRows = target.rows;
       let nextCols = target.cols;
       if (actionKey === 'insert-before' || actionKey === 'insert-after') {
@@ -36965,6 +36966,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-xl transition-all hover:bg-slate-50 text-slate-500 hover:text-slate-900" title="Insert Link">
                                       <LinkIcon size={14} />
                                     </button>
+                                    {/* Cell Color / Fill Palette Button */}
+                                    <div className="relative cell-fill-palette-container flex items-center">
+                                      <button
+                                        type="button"
+                                        onPointerDown={(e) => {
+                                          e.preventDefault();
+                                          setSheetToolbarMenuOpen((prev) => prev === 'cellFill' ? null : 'cellFill');
+                                        }}
+                                        className={`h-8 px-2 flex items-center justify-center gap-1 rounded-xl transition-all border ${sheetToolbarMenuOpen === 'cellFill' ? 'bg-white border-slate-200 shadow-sm text-purple-600' : 'border-transparent text-slate-700 hover:bg-slate-50 hover:text-slate-900'}`}
+                                        title="Cell Fill & Highlight Color"
+                                      >
+                                        <Palette size={15} className="text-purple-600" /> <ChevronDown size={11} className="text-slate-400" />
+                                      </button>
+                                      {sheetToolbarMenuOpen === 'cellFill' && (
+                                        <div className="absolute top-9 left-0 z-[230] w-52 bg-white border border-slate-200/80 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
+                                          <div className="flex flex-col gap-1">
+                                            <div className="flex items-center justify-between px-1">
+                                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cell Fill Color</span>
+                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="text-[10px] text-slate-400 hover:text-slate-600 underline">Clear</button>
+                                            </div>
+                                            <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
+                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Fill"><X size={12} className="text-slate-400"/></button>
+                                              {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff', '#e2e8f0', '#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f0abfc'].map(c => (
+                                                <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
                                     <div className="relative text-style-menu-container flex items-center">
                                       <button
                                         type="button"
@@ -36988,7 +37019,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             </div>
                                           </div>
                                           <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Highlight</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 font-bold">Highlight</span>
                                             <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
                                               <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
                                               {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
@@ -37022,34 +37053,120 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {sheetToolbarTab === 'Data' ? (
                       <div className={`flex-1 min-h-0 flex items-center justify-center p-6 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)]'}`}>
                         <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-3xl p-10 border border-slate-100 dark:border-zinc-800 shadow-xl shadow-indigo-500/5 flex flex-col items-center text-center my-auto">
-                          {/* Icon Badge */}
-                          <div className="relative mb-6 shrink-0 flex items-center justify-center">
-                            {/* Soft Ambient Halo */}
+                          
+                          {/* Top Icon Badge */}
+                          <div className="relative mb-5 shrink-0 flex items-center justify-center">
                             <div className="absolute inset-0 -m-3 rounded-full bg-gradient-to-tr from-violet-400/15 via-indigo-300/10 to-transparent blur-xl pointer-events-none" />
-                            {/* Soft Lavender Icon Tile */}
-                            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-100 via-purple-50 to-indigo-100/80 dark:from-violet-950/60 dark:via-purple-900/30 dark:to-indigo-950/40 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(124,58,237,0.08)]">
-                              <Cpu size={30} strokeWidth={2} />
+                            <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-100 via-purple-50 to-indigo-100/80 dark:from-violet-950/60 dark:via-purple-900/30 dark:to-indigo-950/40 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(124,58,237,0.08)]">
+                              {importedFileInfo || hasImportedData ? (
+                                <FileText size={26} strokeWidth={2} />
+                              ) : (
+                                <Database size={28} strokeWidth={2} />
+                              )}
                             </div>
                           </div>
 
-                          {/* Title */}
+                          {/* Title & Subtitle */}
                           <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-2">
-                            What would you like to analyze?
+                            {importedFileInfo || hasImportedData ? 'Your document is ready to analyze' : 'What would you like to analyze?'}
                           </h2>
-
-                          {/* Subtitle */}
-                          <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-md mb-8 leading-relaxed">
-                            Drop any file or paste content — Regaarder converts it into structured, intelligent data.
+                          <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-md mb-6 leading-relaxed">
+                            {importedFileInfo || hasImportedData
+                              ? "We've processed your file and extracted the data. Review the preview below or start asking questions."
+                              : 'Drop any file or paste content — Regaarder converts it into structured, intelligent data.'}
                           </p>
 
-                          {/* Replaced Header Section */}
-                          <div className="w-full flex flex-col items-center mb-6">
-                            <div className="flex items-center gap-3 w-full max-w-sm">
-                              <div className="h-px bg-slate-200/80 dark:bg-zinc-800 flex-1" />
-                              <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">GET STARTED:</span>
-                              <div className="h-px bg-slate-200/80 dark:bg-zinc-800 flex-1" />
+                          {/* Processed Document File Card */}
+                          {(importedFileInfo || hasImportedData) && (
+                            <div className="w-full bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-700/60 rounded-2xl p-4 mb-6 flex items-center justify-between text-left transition-all">
+                              <div className="flex items-center gap-3.5 min-w-0">
+                                <div className="w-10 h-12 rounded-lg bg-emerald-500 flex flex-col items-center justify-center text-white shrink-0 shadow-sm relative overflow-hidden">
+                                  <div className="text-[9px] font-black tracking-tighter uppercase mb-0.5">
+                                    {importedFileInfo?.name ? importedFileInfo.name.substring(importedFileInfo.name.lastIndexOf('.') + 1).toUpperCase() : 'XLSX'}
+                                  </div>
+                                  <Table size={14} />
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                                    {importedFileInfo?.name || 'Untitled Document'}
+                                  </h4>
+                                  <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
+                                    <span className="flex items-center gap-1"><Grid size={12} /> {importedFileInfo?.sheets ?? (sheetGrids ? Object.keys(sheetGrids).length : 1)} { (importedFileInfo?.sheets ?? (sheetGrids ? Object.keys(sheetGrids).length : 1)) === 1 ? 'Sheet' : 'Sheets' }</span>
+                                    <span className="flex items-center gap-1">
+                                      <BarChart2 size={12} /> {
+                                        importedFileInfo?.rows !== undefined && importedFileInfo?.rows !== null
+                                          ? `${importedFileInfo.rows.toLocaleString()} Rows`
+                                          : (() => {
+                                              const grid = sheetGrids[activeSheetId] || {};
+                                              const maxR = Math.max(-1, ...Object.keys(grid).map(Number));
+                                              const count = maxR >= 0 ? maxR + 1 : 0;
+                                              return `${count.toLocaleString()} Rows`;
+                                            })()
+                                      }
+                                    </span>
+                                    <span className="flex items-center gap-1"><Database size={12} /> {importedFileInfo?.size || '0 KB'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-medium border border-emerald-200/60 dark:border-emerald-800/40 shrink-0">
+                                <Check size={13} strokeWidth={2.5} />
+                                <span>Processed</span>
+                              </div>
                             </div>
-                          </div>
+                          )}
+
+                          {/* What's Next Options (shown when document is ready) */}
+                          {(importedFileInfo || hasImportedData) && (
+                            <div className="w-full mb-6">
+                              <div className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-3">
+                                WHAT'S NEXT?
+                              </div>
+                              <div className="grid grid-cols-3 gap-3">
+                                <button 
+                                  onClick={() => setSheetToolbarTab('Analyze')}
+                                  className="flex flex-col items-start p-3.5 rounded-xl border border-slate-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-950/20 text-left transition-all group"
+                                >
+                                  <div className="w-8 h-8 rounded-lg bg-violet-100/60 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                                    <Sparkles size={16} />
+                                  </div>
+                                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mb-0.5">Ask a question</span>
+                                  <span className="text-[11px] text-slate-400 dark:text-zinc-500 leading-tight">Get insights about your data</span>
+                                </button>
+
+                                <button 
+                                  onClick={() => setSheetToolbarTab('Analyze')}
+                                  className="flex flex-col items-start p-3.5 rounded-xl border border-slate-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-950/20 text-left transition-all group"
+                                >
+                                  <div className="w-8 h-8 rounded-lg bg-indigo-100/60 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                                    <BarChart2 size={16} />
+                                  </div>
+                                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mb-0.5">Run analysis</span>
+                                  <span className="text-[11px] text-slate-400 dark:text-zinc-500 leading-tight">Perform calculations and find patterns</span>
+                                </button>
+
+                                <button 
+                                  onClick={() => setSheetToolbarTab('View')}
+                                  className="flex flex-col items-start p-3.5 rounded-xl border border-slate-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-950/20 text-left transition-all group"
+                                >
+                                  <div className="w-8 h-8 rounded-lg bg-blue-100/60 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                                    <Grid size={16} />
+                                  </div>
+                                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mb-0.5">Open data</span>
+                                  <span className="text-[11px] text-slate-400 dark:text-zinc-500 leading-tight">Explore the data in spreadsheet view</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {!importedFileInfo && !hasImportedData && (
+                            <div className="w-full flex flex-col items-center mb-6">
+                              <div className="flex items-center gap-3 w-full max-w-sm">
+                                <div className="h-px bg-slate-200/80 dark:bg-zinc-800 flex-1" />
+                                <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">GET STARTED:</span>
+                                <div className="h-px bg-slate-200/80 dark:bg-zinc-800 flex-1" />
+                              </div>
+                            </div>
+                          )}
 
                           {/* Upload Dropzone */}
                           <div
@@ -37061,28 +37178,94 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               if (e.dataTransfer.files && e.dataTransfer.files[0]) {
                                 const file = e.dataTransfer.files[0];
                                 showToast(`Importing ${file.name}...`);
-                                const reader = new FileReader();
-                                reader.onload = (evt) => {
-                                  const text = evt.target?.result;
-                                  if (typeof text === 'string') {
-                                    const lines = text.split(/\r?\n/).map(line => line.split(','));
-                                    lines.forEach((rowItems, rIdx) => {
-                                      rowItems.forEach((val, cIdx) => {
-                                        updateSheetCell(activeSheetId, rIdx, cIdx, val.trim());
-                                      });
-                                    });
-                                    showToast(`Loaded data from ${file.name}`);
-                                  }
-                                };
-                                if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
-                                  reader.readAsText(file);
-                                } else {
-                                  showToast(`Imported ${file.name}`);
-                                }
+                                const formattedSize = file.size < 1024 * 1024 
+                                   ? `${(file.size / 1024).toFixed(1)} KB` 
+                                   : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+                                 setHasImportedData(true);
+                                 setImportedFileInfo({
+                                   name: file.name,
+                                   size: formattedSize,
+                                   sheets: 1,
+                                   rows: 0
+                                 });
+                                 const handleFileImport = async (fileObj) => {
+                                   try {
+                                     const ext = fileObj.name.substring(fileObj.name.lastIndexOf('.')).toLowerCase();
+                                     const fileSizeStr = fileObj.size < 1024 * 1024 
+                                       ? `${(fileObj.size / 1024).toFixed(1)} KB` 
+                                       : `${(fileObj.size / (1024 * 1024)).toFixed(1)} MB`;
+                                     if (ext === '.xlsx' || ext === '.xls') {
+                                       const XLSX = await import('xlsx');
+                                       const buffer = await fileObj.arrayBuffer();
+                                       const workbook = XLSX.read(buffer, { type: 'array' });
+                                       const firstSheetName = workbook.SheetNames[0];
+                                       const worksheet = workbook.Sheets[firstSheetName];
+                                       const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                                       rows.forEach((rowItems, rIdx) => {
+                                         if (Array.isArray(rowItems)) {
+                                           rowItems.forEach((val, cIdx) => {
+                                             updateSheetCell(activeSheetId, rIdx, cIdx, val !== undefined && val !== null ? String(val) : '');
+                                           });
+                                         }
+                                       });
+                                       setImportedFileInfo({
+                                         name: fileObj.name,
+                                         size: fileSizeStr,
+                                         sheets: workbook.SheetNames.length || 1,
+                                         rows: rows.length
+                                       });
+                                       showToast(`Loaded ${rows.length} rows from ${fileObj.name}`);
+                                     } else if (ext === '.json') {
+                                       const text = await fileObj.text();
+                                       const parsed = JSON.parse(text);
+                                       let rowCount = 0;
+                                       if (Array.isArray(parsed)) {
+                                         rowCount = parsed.length;
+                                         parsed.forEach((item, rIdx) => {
+                                           if (Array.isArray(item)) {
+                                             item.forEach((val, cIdx) => updateSheetCell(activeSheetId, rIdx, cIdx, String(val ?? '')));
+                                           } else if (typeof item === 'object' && item !== null) {
+                                             const keys = Object.keys(item);
+                                             if (rIdx === 0) {
+                                               keys.forEach((k, cIdx) => updateSheetCell(activeSheetId, 0, cIdx, k));
+                                             }
+                                             keys.forEach((k, cIdx) => updateSheetCell(activeSheetId, rIdx + 1, cIdx, String(item[k] ?? '')));
+                                           }
+                                         });
+                                       }
+                                       setImportedFileInfo({
+                                         name: fileObj.name,
+                                         size: fileSizeStr,
+                                         sheets: 1,
+                                         rows: rowCount
+                                       });
+                                       showToast(`Loaded data from ${fileObj.name}`);
+                                     } else {
+                                       const text = await fileObj.text();
+                                       const lines = text.split(/\r?\n/).map(line => line.split(','));
+                                       lines.forEach((rowItems, rIdx) => {
+                                         rowItems.forEach((val, cIdx) => {
+                                           updateSheetCell(activeSheetId, rIdx, cIdx, val.trim());
+                                         });
+                                       });
+                                       setImportedFileInfo({
+                                         name: fileObj.name,
+                                         size: fileSizeStr,
+                                         sheets: 1,
+                                         rows: lines.length
+                                       });
+                                       showToast(`Loaded ${lines.length} rows from ${fileObj.name}`);
+                                     }
+                                   } catch (err) {
+                                     console.error("Import failed:", err);
+                                     showToast(`Failed to parse ${fileObj.name}`);
+                                   }
+                                 };
+                                 handleFileImport(file);
                               }
                             }}
                             onClick={() => document.getElementById('sheets-data-tab-file-input')?.click()}
-                            className="w-full border-2 border-dashed border-violet-200 dark:border-violet-900/50 bg-violet-50/20 dark:bg-violet-950/10 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-violet-50/50 hover:border-violet-300 dark:hover:border-violet-800 group"
+                            className="w-full border-2 border-dashed border-violet-200 dark:border-violet-900/50 bg-violet-50/20 dark:bg-violet-950/10 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-violet-50/50 hover:border-violet-300 dark:hover:border-violet-800 group"
                           >
                             <input
                               type="file"
@@ -37093,24 +37276,90 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 if (e.target.files && e.target.files[0]) {
                                   const file = e.target.files[0];
                                   showToast(`Importing ${file.name}...`);
-                                  const reader = new FileReader();
-                                  reader.onload = (evt) => {
-                                    const text = evt.target?.result;
-                                    if (typeof text === 'string') {
-                                      const lines = text.split(/\r?\n/).map(line => line.split(','));
-                                      lines.forEach((rowItems, rIdx) => {
-                                        rowItems.forEach((val, cIdx) => {
-                                          updateSheetCell(activeSheetId, rIdx, cIdx, val.trim());
+                                  const formattedSize = file.size < 1024 * 1024 
+                                    ? `${(file.size / 1024).toFixed(1)} KB` 
+                                    : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+                                  setHasImportedData(true);
+                                  setImportedFileInfo({
+                                    name: file.name,
+                                    size: formattedSize,
+                                    sheets: 1,
+                                    rows: 0
+                                  });
+                                  const handleFileImport = async (fileObj) => {
+                                    try {
+                                      const ext = fileObj.name.substring(fileObj.name.lastIndexOf('.')).toLowerCase();
+                                      const fileSizeStr = fileObj.size < 1024 * 1024 
+                                        ? `${(fileObj.size / 1024).toFixed(1)} KB` 
+                                        : `${(fileObj.size / (1024 * 1024)).toFixed(1)} MB`;
+                                      if (ext === '.xlsx' || ext === '.xls') {
+                                        const XLSX = await import('xlsx');
+                                        const buffer = await fileObj.arrayBuffer();
+                                        const workbook = XLSX.read(buffer, { type: 'array' });
+                                        const firstSheetName = workbook.SheetNames[0];
+                                        const worksheet = workbook.Sheets[firstSheetName];
+                                        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                                        rows.forEach((rowItems, rIdx) => {
+                                          if (Array.isArray(rowItems)) {
+                                            rowItems.forEach((val, cIdx) => {
+                                              updateSheetCell(activeSheetId, rIdx, cIdx, val !== undefined && val !== null ? String(val) : '');
+                                            });
+                                          }
                                         });
-                                      });
-                                      showToast(`Loaded data from ${file.name}`);
+                                        setImportedFileInfo({
+                                          name: fileObj.name,
+                                          size: fileSizeStr,
+                                          sheets: workbook.SheetNames.length || 1,
+                                          rows: rows.length
+                                        });
+                                        showToast(`Loaded ${rows.length} rows from ${fileObj.name}`);
+                                      } else if (ext === '.json') {
+                                        const text = await fileObj.text();
+                                        const parsed = JSON.parse(text);
+                                        let rowCount = 0;
+                                        if (Array.isArray(parsed)) {
+                                          rowCount = parsed.length;
+                                          parsed.forEach((item, rIdx) => {
+                                            if (Array.isArray(item)) {
+                                              item.forEach((val, cIdx) => updateSheetCell(activeSheetId, rIdx, cIdx, String(val ?? '')));
+                                            } else if (typeof item === 'object' && item !== null) {
+                                              const keys = Object.keys(item);
+                                              if (rIdx === 0) {
+                                                keys.forEach((k, cIdx) => updateSheetCell(activeSheetId, 0, cIdx, k));
+                                              }
+                                              keys.forEach((k, cIdx) => updateSheetCell(activeSheetId, rIdx + 1, cIdx, String(item[k] ?? '')));
+                                            }
+                                          });
+                                        }
+                                        setImportedFileInfo({
+                                          name: fileObj.name,
+                                          size: fileSizeStr,
+                                          sheets: 1,
+                                          rows: rowCount
+                                        });
+                                        showToast(`Loaded data from ${fileObj.name}`);
+                                      } else {
+                                        const text = await fileObj.text();
+                                        const lines = text.split(/\r?\n/).map(line => line.split(','));
+                                        lines.forEach((rowItems, rIdx) => {
+                                          rowItems.forEach((val, cIdx) => {
+                                            updateSheetCell(activeSheetId, rIdx, cIdx, val.trim());
+                                          });
+                                        });
+                                        setImportedFileInfo({
+                                          name: fileObj.name,
+                                          size: `${(fileObj.size / (1024 * 1024)).toFixed(1)} MB`,
+                                          sheets: 1,
+                                          rows: lines.length
+                                        });
+                                        showToast(`Loaded ${lines.length} rows from ${fileObj.name}`);
+                                      }
+                                    } catch (err) {
+                                      console.error("Import failed:", err);
+                                      showToast(`Failed to parse ${fileObj.name}`);
                                     }
                                   };
-                                  if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
-                                    reader.readAsText(file);
-                                  } else {
-                                    showToast(`Imported ${file.name}`);
-                                  }
+                                  handleFileImport(file);
                                 }
                               }}
                             />
@@ -39274,11 +39523,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     ) : (
                                       <input
                                         type="text"
-                                        className={`w-full h-full px-1.5 focus:outline-none bg-transparent cursor-cell text-[#374151] placeholder-gray-300 ${cellFormat.bold ? 'font-bold' : ''}`}
+                                        className={`w-full h-full px-1.5 focus:outline-none bg-transparent cursor-cell placeholder-gray-300 ${computedFormat.bold || cellFormat.bold ? 'font-bold' : ''}`}
                                         style={{
                                           fontFamily: cellFormat.fontFamily || sheetToolbarFont,
                                           fontSize: cellFormat.fontSize ? `${cellFormat.fontSize}px` : `${sheetToolbarSize}px`,
-                                          fontWeight: cellFormat.bold ? 700 : 400,
+                                          fontWeight: (computedFormat.bold || cellFormat.bold) ? 700 : 400,
                                           fontStyle: cellFormat.italic ? 'italic' : 'normal',
                                           textDecoration: cellFormat.underline ? 'underline' : (cellFormat.strikeThrough ? 'line-through' : 'none'),
                                           textTransform: cellFormat.capitalization === 'UPPERCASE' ? 'uppercase' : cellFormat.capitalization === 'lowercase' ? 'lowercase' : cellFormat.capitalization === 'Title Case' ? 'capitalize' : undefined,
