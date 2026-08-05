@@ -13379,10 +13379,6 @@ export default function App() {
       }
 
       // Step 2: build the correct list HTML.
-      // Native CSS list-style-type values work directly on the element.
-      // Custom icon variants (arrow, check, diamond, star) are not valid
-      // CSS list-style-type values, so they use list-style:none +
-      // data-list-style attribute which ::before pseudo-elements pick up.
       const CUSTOM_STYLES = new Set(['arrow', 'check', 'diamond', 'star']);
       const isOrdered = tab === 'numbered' || tab === 'multilevel';
       const tag = isOrdered ? 'ol' : 'ul';
@@ -13390,7 +13386,6 @@ export default function App() {
       let listAttr = '';
       if (styleId && styleId !== 'none') {
         if (CUSTOM_STYLES.has(styleId)) {
-          // Custom: suppress native marker, use CSS ::before driven by data attr
           listAttr = `style="list-style:none;padding-left:1.75rem;" data-list-style="${styleId}"`;
         } else {
           listAttr = `style="list-style-type:${styleId};"`;
@@ -13426,11 +13421,33 @@ export default function App() {
       setDocBodyHtml(ed.innerHTML);
     };
 
+    // Industry-standard API endpoint for AI agents and external tools to programmatically set cell fill color/gradients
+    const handleSetCellFillColor = (colorOrGradient, options = {}) => {
+      try {
+        const targetSheetId = options.sheetId || activeSheetId;
+        if (!targetSheetId) {
+          return { success: false, message: 'No active sheet available' };
+        }
+        updateSheetCellFormat(targetSheetId, 'highlight', colorOrGradient || null);
+        return { success: true, message: `Cell fill color successfully set to ${colorOrGradient || 'none'}` };
+      } catch (err) {
+        return { success: false, message: err.message || 'Failed to update cell fill color' };
+      }
+    };
+
+    window.setCellFillColor = handleSetCellFillColor;
+    window.__composeSetCellFillColor = handleSetCellFillColor;
+    window.RegaarderAPI = window.RegaarderAPI || {};
+    window.RegaarderAPI.setCellFillColor = handleSetCellFillColor;
+
     return () => {
       delete window.__composeInsertHTML;
       delete window.__composeInsertText;
       delete window.__composeApplyFormatCommand;
       delete window.__composeApplyListStyle;
+      delete window.setCellFillColor;
+      delete window.__composeSetCellFillColor;
+      if (window.RegaarderAPI) delete window.RegaarderAPI.setCellFillColor;
     };
   }, []);
 
@@ -36980,17 +36997,65 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         <Palette size={15} className="text-purple-600" /> <ChevronDown size={11} className="text-slate-400" />
                                       </button>
                                       {sheetToolbarMenuOpen === 'cellFill' && (
-                                        <div className="absolute top-9 left-0 z-[230] w-52 bg-white border border-slate-200/80 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
-                                          <div className="flex flex-col gap-1">
+                                        <div className="absolute top-9 left-0 z-[230] w-64 bg-white border border-slate-200/90 rounded-2xl shadow-2xl p-3 flex flex-col gap-3 backdrop-blur-xl select-none" onPointerDown={e => e.stopPropagation()}>
+                                          <div className="flex flex-col gap-2">
                                             <div className="flex items-center justify-between px-1">
-                                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cell Fill Color</span>
-                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="text-[10px] text-slate-400 hover:text-slate-600 underline">Clear</button>
+                                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cell Fill & Gradient</span>
+                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">Clear Fill</button>
                                             </div>
-                                            <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
-                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Fill"><X size={12} className="text-slate-400"/></button>
-                                              {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff', '#e2e8f0', '#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f0abfc'].map(c => (
-                                                <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
-                                              ))}
+
+                                            {/* Preset Swatches (Shades & Gradients) */}
+                                            <div className="flex flex-col gap-1">
+                                              <span className="text-[9px] font-semibold text-slate-400 px-1 uppercase tracking-tight">Presets & Shades</span>
+                                              <div className="grid grid-cols-6 gap-1 px-1">
+                                                {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff', '#f1f5f9', '#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f0abfc', '#475569', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#0f172a', '#991b1b', '#9a3412', '#854d0e', '#065f46', '#155e75', '#1e40af', '#6b21a8', '#86198f'].map(c => (
+                                                  <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); }} className="w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c}></button>
+                                                ))}
+                                              </div>
+                                            </div>
+
+                                            <div className="flex flex-col gap-1 mt-1">
+                                              <span className="text-[9px] font-semibold text-slate-400 px-1 uppercase tracking-tight">Gradients</span>
+                                              <div className="grid grid-cols-5 gap-1 px-1">
+                                                {[
+                                                  'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)',
+                                                  'linear-gradient(135deg, #3b82f6 0%, #22c55e 100%)',
+                                                  'linear-gradient(135deg, #f97316 0%, #eab308 100%)',
+                                                  'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',
+                                                  'linear-gradient(135deg, #f43f5e 0%, #8b5cf6 100%)',
+                                                  'linear-gradient(135deg, #e0e7ff 0%, #fae8ff 100%)',
+                                                  'linear-gradient(135deg, #dcfce7 0%, #cffafe 100%)',
+                                                  'linear-gradient(135deg, #fef3c7 0%, #fee2e2 100%)',
+                                                  'linear-gradient(90deg, #4f46e5 0%, #06b6d4 100%)',
+                                                  'linear-gradient(90deg, #10b981 0%, #f59e0b 100%)'
+                                                ].map(g => (
+                                                  <button key={g} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', g); }} className="w-full h-5 rounded-md border border-slate-200 hover:scale-105 transition-transform shadow-xs cursor-pointer" style={{ background: g }} title={g}></button>
+                                                ))}
+                                              </div>
+                                            </div>
+
+                                            {/* Interactive Custom Color & Gradient Input Controls */}
+                                            <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-2 px-1">
+                                              <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight">Custom Hex / CSS / Gradient</span>
+                                              <div className="flex items-center gap-1.5">
+                                                <input
+                                                  type="color"
+                                                  className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer bg-transparent p-0 overflow-hidden"
+                                                  onChange={(e) => updateSheetCellFormat(activeSheetId, 'highlight', e.target.value)}
+                                                  title="Pick custom color by dragging mouse"
+                                                />
+                                                <input
+                                                  type="text"
+                                                  placeholder="#8b5cf6 or linear-gradient(...)"
+                                                  className="flex-1 h-7 px-2 text-[11px] font-mono border border-slate-200 rounded-lg outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 bg-slate-50/50"
+                                                  onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                      const val = e.currentTarget.value.trim();
+                                                      if (val) updateSheetCellFormat(activeSheetId, 'highlight', val);
+                                                    }
+                                                  }}
+                                                />
+                                              </div>
                                             </div>
                                           </div>
                                         </div>
