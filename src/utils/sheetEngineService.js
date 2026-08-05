@@ -621,15 +621,24 @@ export function specToNativeGrid(spec) {
 
       if (typeof rawVal === 'number') {
         if (col.type === 'currency' || col.label.includes('$')) {
-          displayVal = rawVal < 0 ? `-$${Math.abs(rawVal).toLocaleString()}` : `$${rawVal.toLocaleString()}`;
+          displayVal = rawVal < 0 ? `-$${Math.abs(rawVal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${rawVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
           align = 'right';
           if (rawVal < 0) fontColor = '#dc2626';
-        } else if (col.type === 'percentage' || col.label.includes('%')) {
-          displayVal = `${rawVal}%`;
+        } else if (col.type === 'percentage' || col.label.includes('%') || /margin|rate|churn|percent/i.test(col.label)) {
+          const pctVal = rawVal <= 1 && rawVal > 0 ? rawVal * 100 : rawVal;
+          displayVal = `${Number(pctVal.toFixed(pctVal % 1 === 0 ? 1 : 2))}%`;
           align = 'right';
         } else {
+          align = 'right';
           fontColor = '#4338ca';
-          cellBg = '#eef2ff';
+          cellBg = (rIdx % 2 === 1) ? '#f8fafc' : '#ffffff';
+        }
+      } else if (typeof rawVal === 'string' && rawVal.trim() !== '') {
+        const cleanStr = rawVal.trim();
+        if (cleanStr.endsWith('%')) {
+          align = 'right';
+        } else if (/^\$?\s*-?\d+(\.\d+)?$/.test(cleanStr)) {
+          align = 'right';
         }
       }
 
@@ -645,12 +654,13 @@ export function specToNativeGrid(spec) {
 /**
  * Takes a raw 2D string/primitive matrix from a CSV/XLSX file import and produces
  * a polished, styled spreadsheet grid with formatted headers, auto-detected currency/percentages,
- * right-aligned numbers, and comfortable column widths.
+ * right-aligned numbers, floating point precision fixes, and comfortable column widths.
  *
  * @param {Array<Array<any>>} matrix - Raw 2D row/col array
+ * @param {object} [options] - Formatting options (headerBg, formatTypes)
  * @returns {{ cells: Array<Array<string>>, formats: object, columnWidths: object, rows: number, cols: number }}
  */
-export function autoFormatMatrixAndGrid(matrix) {
+export function autoFormatMatrixAndGrid(matrix, options = {}) {
   if (!Array.isArray(matrix) || matrix.length === 0) {
     return { cells: [], formats: {}, columnWidths: {}, rows: 30, cols: 26 };
   }
@@ -665,6 +675,7 @@ export function autoFormatMatrixAndGrid(matrix) {
   const cells = Array.from({ length: reqRows }, () => Array(reqCols).fill(''));
   const formats = {};
   const columnWidths = {};
+  const headerBgColor = options.headerBg || '#800000';
 
   // Detect column formatting heuristics by inspecting data rows
   const colFormats = [];
@@ -682,7 +693,7 @@ export function autoFormatMatrixAndGrid(matrix) {
     cells[0][c] = rawVal;
     if (c < maxCols) {
       formats[0][c] = {
-        bg: '#312e81',
+        bg: headerBgColor,
         color: '#ffffff',
         fontWeight: 'bold',
         align: colFormats[c]?.isCurrencyCol || colFormats[c]?.isPercentageCol ? 'right' : 'left',
@@ -704,19 +715,22 @@ export function autoFormatMatrixAndGrid(matrix) {
 
       if (c < maxCols && rawVal !== '') {
         colFormats[c].maxCharLen = Math.max(colFormats[c].maxCharLen, rawVal.length);
-        const num = Number(rawVal);
-        const isNum = !Number.isNaN(num);
+        const cleanVal = rawVal.replace(/[$,%]/g, '');
+        const num = Number(cleanVal);
+        const isNum = !Number.isNaN(num) && cleanVal !== '';
 
         if (isNum) {
           align = 'right';
           if (colFormats[c].isCurrencyCol || rawVal.includes('$')) {
             formattedStr = num < 0 ? `-$${Math.abs(num).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
           } else if (colFormats[c].isPercentageCol || rawVal.includes('%')) {
-            // Handle decimal representation (e.g., 0.75 -> 75.0%, 0.0417 -> 4.17%)
+            // Handle decimal representation (e.g., 0.75 -> 75.0%, 0.0417 -> 4.17%) and fix floating point precision
             const pctVal = num <= 1 && num > 0 && !rawVal.includes('%') ? num * 100 : num;
-            formattedStr = `${pctVal.toFixed(pctVal % 1 === 0 ? 1 : 2)}%`;
+            const fixedPct = Number(pctVal.toFixed(pctVal % 1 === 0 ? 1 : 2));
+            formattedStr = `${fixedPct}%`;
           } else {
-            formattedStr = num.toLocaleString();
+            // Sanitize floating point imprecision for general numbers
+            formattedStr = Number.isInteger(num) ? num.toLocaleString() : Number(num.toFixed(4)).toLocaleString();
           }
         } else if (rawVal.toLowerCase().includes('month')) {
           align = 'center';
@@ -735,3 +749,23 @@ export function autoFormatMatrixAndGrid(matrix) {
 
   return { cells, formats, columnWidths, rows: reqRows, cols: reqCols };
 }
+
+// ─── API Tool Export for LLM & System Invocation ─────────────────────────────
+/**
+ * Exposes a tool function callable by LLMs or external APIs to apply formatting rules,
+ * auto-align numbers, convert raw decimals to percentages, and style spreadsheet matrices.
+ *
+ * @param {object} params
+ * @param {Array<Array<any>>} params.matrix - 2D raw data matrix
+ * @param {string} [params.headerBg] - Custom header background hex code
+ * @returns {{ success: boolean, formattedGrid: object }}
+ */
+export function formatSheetMatrix({ matrix, headerBg = '#800000' }) {
+  try {
+    const formattedGrid = autoFormatMatrixAndGrid(matrix, { headerBg });
+    return { success: true, formattedGrid };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+

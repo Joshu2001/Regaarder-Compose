@@ -25,7 +25,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -633,6 +633,8 @@ const RoomStageFeed = ({ stream, placeholder }) => {
 const TABLE_PRESETS = {
   purple: { headerBg: '#7C3AED', headerColor: 'white', oddBg: 'white', evenBg: '#F5F3FF', border: '#7C3AED' },
   pink: { headerBg: '#DB2777', headerColor: 'white', oddBg: 'white', evenBg: '#FCE7F3', border: '#DB2777' },
+  burgundy: { headerBg: '#800000', headerColor: 'white', oddBg: 'white', evenBg: '#FAF5F5', border: '#800000' },
+  maroon: { headerBg: '#800000', headerColor: 'white', oddBg: 'white', evenBg: '#FAF5F5', border: '#800000' },
   dark_blue: { headerBg: '#1e3a8a', headerColor: 'white', oddBg: 'white', evenBg: '#eff6ff', border: '#1e3a8a' },
   blue: { headerBg: '#2563EB', headerColor: 'white', oddBg: 'white', evenBg: '#DBEAFE', border: '#2563EB' },
   red: { headerBg: '#DC2626', headerColor: 'white', oddBg: 'white', evenBg: '#FEE2E2', border: '#DC2626' },
@@ -723,6 +725,8 @@ const SHEET_SLASH_OPTIONS = [
   { key: 'insert_textbox', label: 'Insert Text Box', desc: 'Add a floating text box' },
   { key: 'insert_comment', label: 'Insert Comment', desc: 'Add a comment' },
   { key: 'format_cell', label: 'Format Cell', desc: 'Open cell formatting options' },
+  { key: 'copy_style', label: 'Copy Style', desc: 'Copy cell formatting' },
+  { key: 'paste_style', label: 'Paste Style', desc: 'Apply copied cell formatting' },
   { key: 'merge_cells', label: 'Merge Cells', desc: 'Merge selected cells' },
   { key: 'clear_format', label: 'Clear Formatting', desc: 'Reset all cell styles' },
   { key: 'add_row', label: 'Add Row', desc: 'Insert a new row below' },
@@ -736,8 +740,20 @@ const SHEET_SLASH_OPTIONS = [
   { key: 'media', label: 'Media', desc: 'Insert an image, video or file' },
   { key: 'hyperlink', label: 'Hyperlink', desc: 'Add a link to selected text' },
   { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block' },
-  { key: 'import_equation', label: 'Import Equation', desc: 'AI Generate or Upload Math' },
 ];
+
+const getFilteredSheetSlashOptions = (filterText = '', copiedStyle = null) => {
+  const hasCopied = copiedStyle && Object.keys(copiedStyle).length > 0;
+  return SHEET_SLASH_OPTIONS.filter(opt => {
+    if (opt.key === 'copy_style' && hasCopied && !filterText) return false;
+    if (opt.key === 'paste_style' && !hasCopied && !filterText) return false;
+    if (filterText) {
+      const ft = filterText.toLowerCase();
+      return opt.label.toLowerCase().includes(ft) || (opt.desc && opt.desc.toLowerCase().includes(ft));
+    }
+    return true;
+  });
+};
 
 const SLASH_OPTIONS = [
   { key: 'table', label: 'Table (AI)', desc: 'Generate an AI table' },
@@ -9027,6 +9043,8 @@ export default function App() {
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [selectedSheetRange, setSelectedSheetRange] = useState(null);
   const [multiSelectedCells, setMultiSelectedCells] = useState([]);
+  const [copiedCellStyle, setCopiedCellStyle] = useState(null);
+  const [formatPainterActive, setFormatPainterActive] = useState(false);
 
   const [quickChartPreview, setQuickChartPreview] = useState(null);
   const [activeChartMenu, setActiveChartMenu] = useState(null);
@@ -18190,6 +18208,16 @@ Generate the updated output according to the instruction. Preserve layout and ta
       return;
     }
 
+    if (key === 'copy_style') {
+      copySelectedStyle();
+      return;
+    }
+
+    if (key === 'paste_style') {
+      pasteCopiedStyle();
+      return;
+    }
+
     if (key === 'insert_chart') {
       setSheetChartMenu({
         open: true,
@@ -18813,9 +18841,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           return; // only let standard chat boxes handle their own typing
         }
 
-        const filteredOptions = SHEET_SLASH_OPTIONS.filter(opt => 
-          opt.label.toLowerCase().includes(activeSheetMenu.filterText.toLowerCase())
-        );
+        const filteredOptions = getFilteredSheetSlashOptions(activeSheetMenu.filterText, copiedCellStyle);
 
         if (event.key === 'ArrowDown') {
           event.preventDefault();
@@ -25824,6 +25850,44 @@ Respond with a JSON array of slide objects matching the schema.`;
   }, [productMode, selectedSheetRange, selectedSheetCell, activeSheetId]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.regaarderSpreadsheet = {
+        formatCells: (sheetId, startRow, startCol, endRow, endCol, styleObj) => {
+          const targetId = sheetId || activeSheetId;
+          setSheetGrids((prev) => {
+            const target = prev[targetId];
+            if (!target) return prev;
+            const nextFormats = Array.isArray(target.formats)
+              ? target.formats.map(row => [...row])
+              : Array.from({ length: target.rows }, () => Array(target.cols).fill(null));
+            const sRow = (startRow || 1) - 1;
+            const eRow = (endRow || startRow || 1) - 1;
+            const sCol = (startCol || 1) - 1;
+            const eCol = (endCol || startCol || 1) - 1;
+            for (let r = sRow; r <= eRow; r++) {
+              if (!nextFormats[r]) nextFormats[r] = [];
+              for (let c = sCol; c <= eCol; c++) {
+                nextFormats[r][c] = { ...(nextFormats[r][c] || {}), ...styleObj };
+              }
+            }
+            return { ...prev, [targetId]: { ...target, formats: nextFormats } };
+          });
+          showToast('Cell styles updated via Regaarder API');
+        },
+        setNumberFormat: (sheetId, startRow, startCol, endRow, endCol, formatType) => {
+          window.regaarderSpreadsheet.formatCells(sheetId, startRow, startCol, endRow, endCol, { format: formatType });
+        },
+        setHeaderTheme: (sheetId, themePresetOrColor) => {
+          const targetId = sheetId || activeSheetId;
+          const isHex = themePresetOrColor && themePresetOrColor.startsWith('#');
+          const headerBg = isHex ? themePresetOrColor : (TABLE_PRESETS[themePresetOrColor]?.headerBg || '#800000');
+          window.regaarderSpreadsheet.formatCells(targetId, 1, 1, 1, 26, { fill: headerBg, color: '#ffffff', bold: true });
+        }
+      };
+    }
+  }, [activeSheetId]);
+
+  useEffect(() => {
     const handleArrowPageNavigation = (e) => {
       const activeEl = document.activeElement;
       if (activeEl) {
@@ -26558,13 +26622,41 @@ Respond with a JSON array of slide objects matching the schema.`;
     setSheetsTitle(worksheet.title);
     showToast(`${worksheet.title} created`);
   };
-  const formatCellValue = (val, formatType) => {
+  const formatCellValue = (val, formatTypeArg, headerNameArg = '') => {
     if (val === null || val === undefined || val === '') return val;
-    const num = Number(val);
-    if (isNaN(num)) return val;
-    if (formatType === 'currency') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
-    if (formatType === 'percent') return new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 2 }).format(num);
-    if (formatType === 'decimal') return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+    const strVal = String(val).trim();
+
+    let formatType = formatTypeArg;
+    let headerName = headerNameArg;
+    if (formatTypeArg && typeof formatTypeArg === 'object') {
+      formatType = formatTypeArg.format || formatTypeArg.type;
+      headerName = formatTypeArg.headerName || headerNameArg;
+    }
+
+    // Explicit percentage format or string already ending with %
+    if (formatType === 'percent' || formatType === 'percentage' || strVal.endsWith('%')) {
+      if (strVal.endsWith('%')) return strVal;
+      const num = Number(val);
+      if (!isNaN(num)) {
+        const pctVal = (num > 0 && num < 1) ? num * 100 : num;
+        const decimals = (pctVal % 1 === 0) ? 1 : 2;
+        return `${pctVal.toFixed(decimals)}%`;
+      }
+    }
+
+    // Auto-detect percentage / ratio / margin / churn columns if formatType is auto or unassigned
+    const lowHeader = String(headerName || '').toLowerCase();
+    const isPctHeader = lowHeader.includes('margin') || lowHeader.includes('churn') || lowHeader.includes('rate') || lowHeader.includes('%');
+    const numVal = Number(val);
+    if (isPctHeader && !isNaN(numVal)) {
+      const pctVal = (numVal > 0 && numVal < 1) ? numVal * 100 : numVal;
+      const decimals = lowHeader.includes('gross') ? 1 : 2;
+      return `${pctVal.toFixed(decimals)}%`;
+    }
+
+    if (isNaN(numVal)) return val;
+    if (formatType === 'currency') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numVal);
+    if (formatType === 'decimal') return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(numVal);
     return val;
   };
 
@@ -26819,7 +26911,85 @@ Respond with a JSON array of slide objects matching the schema.`;
     });
   };
 
-  const updateSheetCell = (sheetId, rowIndex, colIndex, value) => {
+  const getStyle = (sheetId = activeSheetId, r, c) => {
+    const target = sheetGrids[sheetId];
+    if (!target || !target.formats || !target.formats[r]) return null;
+    return target.formats[r][c] || null;
+  };
+
+  const copySelectedStyle = () => {
+    if (!activeSheetId || !selectedSheetCell) return;
+    const r = selectedSheetCell.row - 1;
+    const c = selectedSheetCell.col - 1;
+    const fmt = getStyle(activeSheetId, r, c);
+    setCopiedCellStyle(fmt ? { ...fmt } : {});
+    showToast('Style copied');
+  };
+
+  const pasteCopiedStyle = () => {
+    if (!activeSheetId || !copiedCellStyle) {
+      showToast('No style copied yet');
+      return;
+    }
+    setSheetGrids((prev) => {
+      const target = prev[activeSheetId];
+      if (!target) return prev;
+      const nextFormats = Array.isArray(target.formats)
+        ? target.formats.map(row => [...row])
+        : Array.from({ length: target.rows }, () => Array(target.cols).fill(null));
+
+      const cellsToApply = [];
+      if (selectedSheetRange) {
+        const sRow = Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) - 1;
+        const eRow = Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) - 1;
+        const sCol = Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1;
+        const eCol = Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1;
+        for (let r = sRow; r <= eRow; r++) {
+          for (let c = sCol; c <= eCol; c++) {
+            cellsToApply.push({ r, c });
+          }
+        }
+      } else if (selectedSheetCell) {
+        cellsToApply.push({ r: selectedSheetCell.row - 1, c: selectedSheetCell.col - 1 });
+      }
+
+      cellsToApply.forEach(({ r, c }) => {
+        if (!nextFormats[r]) nextFormats[r] = [];
+        nextFormats[r][c] = Object.keys(copiedCellStyle).length > 0 ? { ...copiedCellStyle } : null;
+      });
+
+      return { ...prev, [activeSheetId]: { ...target, formats: nextFormats } };
+    });
+    setCopiedCellStyle(null);
+    showToast('Style applied');
+  };
+
+  const inheritAdjacentStyle = (sheetId, rowIndex, colIndex) => {
+    const target = sheetGrids[sheetId];
+    if (!target) return null;
+    const formats = target.formats || [];
+
+    if (rowIndex === 0) {
+      const leftHeaderFmt = colIndex > 0 ? formats[0]?.[colIndex - 1] : null;
+      if (leftHeaderFmt && Object.keys(leftHeaderFmt).length > 0) {
+        return { ...leftHeaderFmt };
+      }
+      return { fill: '#1F497D', color: '#FFFFFF', bold: true };
+    }
+
+    const topFmt = rowIndex > 0 ? formats[rowIndex - 1]?.[colIndex] : null;
+    if (topFmt && Object.keys(topFmt).length > 0) {
+      return { ...topFmt };
+    }
+    const leftFmt = colIndex > 0 ? formats[rowIndex]?.[colIndex - 1] : null;
+    if (leftFmt && Object.keys(leftFmt).length > 0) {
+      return { ...leftFmt };
+    }
+
+    return null;
+  };
+
+  const updateSheetCell = (sheetId, rowIndex, colIndex, value, options = {}) => {
     markUserHasEdited();
     setSheetGrids((prev) => {
       const target = prev[sheetId];
@@ -26827,15 +26997,46 @@ Respond with a JSON array of slide objects matching the schema.`;
       const nextCells = target.cells.map((row) => [...row]);
       if (!nextCells[rowIndex]) return prev;
       nextCells[rowIndex][colIndex] = value;
+
+      const nextFormats = Array.isArray(target.formats)
+        ? target.formats.map((row) => [...row])
+        : Array.from({ length: target.rows }, () => Array(target.cols).fill(null));
+
+      if (options.style) {
+        if (!nextFormats[rowIndex]) nextFormats[rowIndex] = [];
+        nextFormats[rowIndex][colIndex] = { ...(nextFormats[rowIndex][colIndex] || {}), ...options.style };
+      } else if (options.inheritStyle !== false) {
+        const existingFmt = nextFormats[rowIndex]?.[colIndex];
+        if (!existingFmt || Object.keys(existingFmt).length === 0) {
+          const inherited = inheritAdjacentStyle(sheetId, rowIndex, colIndex);
+          if (inherited) {
+            if (!nextFormats[rowIndex]) nextFormats[rowIndex] = [];
+            nextFormats[rowIndex][colIndex] = inherited;
+          }
+        }
+      }
+
       return {
         ...prev,
         [sheetId]: {
           ...target,
           cells: nextCells,
+          formats: nextFormats
         },
       };
     });
   };
+
+  useEffect(() => {
+    window.__sheetStyleAPI = {
+      getStyle,
+      copyStyle: copySelectedStyle,
+      pasteStyle: pasteCopiedStyle,
+      inheritAdjacentStyle,
+      updateSheetCell,
+      updateSheetCellFormat
+    };
+  }, [activeSheetId, sheetGrids, selectedSheetCell, selectedSheetRange, copiedCellStyle]);
 
   const updateSheetSettings = (sheetId, updates) => {
     setSheetGrids((prev) => {
@@ -37399,7 +37600,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }
                                     if (colorObj.indexed !== undefined && colorObj.indexed !== null) {
                                       if (colorObj.indexed === 1) return '#FFFFFF';
-                                      if (colorObj.indexed === 0) return '#000000';
+                                    if (colorObj.indexed === 0) return '#000000';
                                     }
                                     return null;
                                   };
@@ -37411,14 +37612,65 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     const firstSheetName = workbook.SheetNames[0];
                                     const worksheet = workbook.Sheets[firstSheetName];
                                     
-                                    const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
-                                    rawRows.forEach((rowItems, rIdx) => {
-                                      if (Array.isArray(rowItems)) {
-                                        rowItems.forEach((val, cIdx) => {
-                                          updateSheetCell(activeSheetId, rIdx, cIdx, val !== undefined && val !== null ? String(val) : '');
-                                        });
+                                    const range = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
+                                    const colMaxLengths = {};
+                                    const importedColWidths = {};
+
+                                    if (range) {
+                                      for (let R = range.s.r; R <= range.e.r; ++R) {
+                                        for (let C = range.s.c; C <= range.e.c; ++C) {
+                                          const cell = worksheet[XLSX.utils.encode_cell({ r: R, c: C })];
+                                          let val = '';
+                                          if (cell) {
+                                            if (cell.w !== undefined && cell.w !== null) {
+                                              val = String(cell.w);
+                                            } else if (cell.v !== undefined && cell.v !== null) {
+                                              val = String(cell.v);
+                                            }
+                                          }
+                                          updateSheetCell(activeSheetId, R, C, val);
+                                          if (val) {
+                                            colMaxLengths[C] = Math.max(colMaxLengths[C] || 0, val.length);
+                                          }
+                                        }
                                       }
-                                    });
+
+                                      const root = document.documentElement;
+                                      for (let C = range.s.c; C <= range.e.c; ++C) {
+                                        const colInfo = worksheet['!cols']?.[C];
+                                        let colWidth = 140;
+                                        if (colInfo && colInfo.wch) {
+                                          colWidth = Math.max(130, Math.round(colInfo.wch * 9 + 28));
+                                        } else if (colInfo && colInfo.wpx) {
+                                          colWidth = Math.max(130, Math.round(colInfo.wpx));
+                                        } else if (colMaxLengths[C]) {
+                                          colWidth = Math.max(140, Math.min(380, Math.round(colMaxLengths[C] * 10 + 36)));
+                                        }
+                                        importedColWidths[C] = colWidth;
+                                        if (root) {
+                                          root.style.setProperty(`--col-${C}-width`, `${colWidth}px`);
+                                        }
+                                      }
+                                    } else {
+                                      const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+                                      rawRows.forEach((rowItems, rIdx) => {
+                                        if (Array.isArray(rowItems)) {
+                                          rowItems.forEach((val, cIdx) => {
+                                            const valStr = val !== undefined && val !== null ? String(val) : '';
+                                            updateSheetCell(activeSheetId, rIdx, cIdx, valStr);
+                                            if (valStr) {
+                                              colMaxLengths[cIdx] = Math.max(colMaxLengths[cIdx] || 0, valStr.length);
+                                            }
+                                          });
+                                        }
+                                      });
+                                      const root = document.documentElement;
+                                      Object.keys(colMaxLengths).forEach(cIdx => {
+                                        const colWidth = Math.max(140, Math.min(380, Math.round(colMaxLengths[cIdx] * 10 + 36)));
+                                        importedColWidths[cIdx] = colWidth;
+                                        if (root) root.style.setProperty(`--col-${cIdx}-width`, `${colWidth}px`);
+                                      });
+                                    }
 
                                     if (worksheet['!ref']) {
                                       const range = XLSX.utils.decode_range(worksheet['!ref']);
@@ -37426,6 +37678,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       const totalCols = range.e.c + 1;
                                       const formats2D = Array.from({ length: totalRows }, () => Array(totalCols).fill(null));
                                       
+                                      const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
                                       const isRowZeroHeader = rawRows[0] && Array.isArray(rawRows[0]) && rawRows[0].some(v => typeof v === 'string' && v.trim().length > 0);
 
                                       for (let R = range.s.r; R <= range.e.r; ++R) {
@@ -37463,23 +37716,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         }
                                       }
 
-                                      const hasAnyFormat = formats2D.some(row => row.some(c => c !== null));
-                                      if (hasAnyFormat) {
-                                        setSheetGrids(prev => {
-                                          const target = prev[activeSheetId];
-                                          if (!target) return prev;
-                                          const existingFormats = Array.isArray(target.formats)
-                                            ? target.formats.map(r => [...r])
-                                            : Array.from({ length: target.rows }, () => Array(target.cols).fill(null));
-                                          formats2D.forEach((rowFmts, rIdx) => {
-                                            if (!existingFormats[rIdx]) existingFormats[rIdx] = [];
-                                            rowFmts.forEach((fmt, cIdx) => {
-                                              if (fmt !== null) existingFormats[rIdx][cIdx] = fmt;
-                                            });
+                                      setSheetGrids(prev => {
+                                        const target = prev[activeSheetId];
+                                        if (!target) return prev;
+                                        const existingFormats = Array.isArray(target.formats)
+                                          ? target.formats.map(r => [...r])
+                                          : Array.from({ length: target.rows }, () => Array(target.cols).fill(null));
+                                        formats2D.forEach((rowFmts, rIdx) => {
+                                          if (!existingFormats[rIdx]) existingFormats[rIdx] = [];
+                                          rowFmts.forEach((fmt, cIdx) => {
+                                            if (fmt !== null) existingFormats[rIdx][cIdx] = fmt;
                                           });
-                                          return { ...prev, [activeSheetId]: { ...target, formats: existingFormats } };
                                         });
-                                      }
+                                        return {
+                                          ...prev,
+                                          [activeSheetId]: {
+                                            ...target,
+                                            formats: existingFormats,
+                                            columnWidths: { ...(target.columnWidths || {}), ...importedColWidths }
+                                          }
+                                        };
+                                      });
                                     }
 
                                     const fileSizeStr = fileObj.size < 1024 * 1024 
@@ -37718,7 +37975,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             setSheetSlashMenu(prev => ({ ...prev, open: false }));
                             return;
                           }
-                          const filteredOptions = SHEET_SLASH_OPTIONS.filter(opt => opt.label.toLowerCase().includes(sheetSlashMenuRef.current.filterText.toLowerCase()));
+                          const filteredOptions = getFilteredSheetSlashOptions(sheetSlashMenuRef.current.filterText, copiedCellStyle);
                           if (e.key === 'ArrowDown') {
                             e.preventDefault();
                             setSheetSlashMenu(prev => ({ ...prev, activeIndex: (prev.activeIndex + 1) % Math.max(1, filteredOptions.length) }));
@@ -39303,40 +39560,54 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   rowIndex + 1 >= t.startRow && rowIndex + 1 <= t.endRow && colIndex + 1 >= t.startCol && colIndex + 1 <= t.endCol
                                 );
                                 if (tableIntersections.length > 0) {
-                                  const table = tableIntersections[tableIntersections.length - 1];
-                                  const preset = TABLE_PRESETS[table.presetStyle] || TABLE_PRESETS.blue;
-                                  const isHeader = rowIndex + 1 === table.startRow;
-                                  computedFormat.fill = isHeader ? preset.headerBg : ((rowIndex + 1 - table.startRow) % 2 === 0 ? preset.oddBg : preset.evenBg);
-                                  computedFormat.color = isHeader ? preset.headerColor : '#333';
-                                  computedFormat.bold = isHeader;
-                                  computedFormat.isHeader = isHeader;
-                                  // Apply borders for the edges of the table
-                                  const isTableTop = rowIndex + 1 === table.startRow;
-                                  const isTableBottom = rowIndex + 1 === table.endRow;
-                                  const isTableLeft = colIndex + 1 === table.startCol;
-                                  const isTableRight = colIndex + 1 === table.endCol;
-                                  isTableBottomRight = isTableBottom && isTableRight;
-                                  tableBorderStyles = {
-                                    borderTop: isTableTop ? `2px solid ${preset.border}` : '',
-                                    borderBottom: isTableBottom ? `2px solid ${preset.border}` : `1px solid ${preset.border}`,
-                                    borderLeft: isTableLeft ? `2px solid ${preset.border}` : '',
-                                    borderRight: isTableRight ? `2px solid ${preset.border}` : `1px solid ${preset.border}`
-                                  };
-                                }
+                                   const table = tableIntersections[tableIntersections.length - 1];
+                                   const preset = TABLE_PRESETS[table.presetStyle] || TABLE_PRESETS.blue;
+                                   const isHeader = rowIndex + 1 === table.startRow;
+                                   computedFormat.fill = isHeader ? preset.headerBg : ((rowIndex + 1 - table.startRow) % 2 === 0 ? preset.oddBg : preset.evenBg);
+                                   computedFormat.color = isHeader ? preset.headerColor : '#333';
+                                   computedFormat.bold = isHeader;
+                                   computedFormat.isHeader = isHeader;
+                                   const isTableTop = rowIndex + 1 === table.startRow;
+                                   const isTableBottom = rowIndex + 1 === table.endRow;
+                                   const isTableLeft = colIndex + 1 === table.startCol;
+                                   const isTableRight = colIndex + 1 === table.endCol;
+                                   isTableBottomRight = isTableBottom && isTableRight;
+                                   tableBorderStyles = {
+                                     borderTop: isTableTop ? `2px solid ${preset.border}` : '',
+                                     borderBottom: isTableBottom ? `2px solid ${preset.border}` : `1px solid ${preset.border}`,
+                                     borderLeft: isTableLeft ? `2px solid ${preset.border}` : '',
+                                     borderRight: isTableRight ? `2px solid ${preset.border}` : `1px solid ${preset.border}`
+                                   };
+                                 }
+
+                                 const customBgStyle = computedFormat.fill ? { background: computedFormat.fill } : {};
+                                 const customTextStyle = computedFormat.color ? { color: computedFormat.color } : {};
+                                 const cellKey = `${rowIndex}-${colIndex}`;
+                                 const isEditingThisCell = editingCellKey === cellKey;
+                                 
+                                 const colHeaderName = activeSheetGridRaw?.cells?.[0]?.[colIndex] || '';
+                                 const rawGridVal = activeSheetGridRaw.cells?.[rowIndex]?.[colIndex];
+
+                                 let defaultAlign = 'left';
+                                 if (computedFormat.isHeader || rowIndex === 0) {
+                                   defaultAlign = 'center';
+                                 } else if (typeof rawGridVal === 'number' || (typeof rawGridVal === 'string' && (rawGridVal.includes('$') || rawGridVal.includes('%') || (!isNaN(Number(rawGridVal)) && rawGridVal.trim() !== '')))) {
+                                   defaultAlign = 'right';
+                                 } else if (typeof rawGridVal === 'string' && (rawGridVal.toLowerCase().includes('month') || rawGridVal.toLowerCase().includes('year'))) {
+                                   defaultAlign = 'center';
+                                 }
+
+                                 const resolvedCellAlign = computedFormat.align || cellFormat.textAlign || cellFormat.align || defaultAlign;
 
                                 const cellBg = isExplicitAnchor && sheetSelectionMode === 'cell' 
                                   ? 'bg-white/50' 
                                   : (isInRange ? 'bg-[#ebf0fc]/50' : (isInColBand || isInRowBand || isAllSelected ? 'bg-slate-50/50' : ''));
 
-                                const customBgStyle = computedFormat.fill ? { background: computedFormat.fill } : {};
-                                const customTextStyle = computedFormat.color ? { color: computedFormat.color } : {};
-                                const cellKey = `${rowIndex}-${colIndex}`;
-                                const isEditingThisCell = editingCellKey === cellKey;
                                 // Use local buffer while user is actively typing to avoid mid-keystroke re-render truncation.
                                 // Fall back to grid data when not editing.
                                 const cellValue = isEditingThisCell
                                   ? editingCellValue
-                                  : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], computedFormat);
+                                  : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], { ...computedFormat, headerName: colHeaderName });
 
                                 const hasComment = comments.some(c => c.targetId === activeSheetId && c.metadata?.row === num && c.metadata?.col === colIndex + 1);
 
@@ -41638,9 +41909,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Sheet Slash Menu ── */}
       {productMode === 'sheets' && sheetSlashMenu.open && (() => {
-        const filtered = SHEET_SLASH_OPTIONS.filter(opt =>
-          opt.label.toLowerCase().includes((sheetSlashMenu.filterText || '').toLowerCase())
-        );
+        const filtered = getFilteredSheetSlashOptions(sheetSlashMenu.filterText || '', copiedCellStyle);
         return (
           <div
             ref={sheetSlashMenuContainerRef}
@@ -52343,9 +52612,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Sheet Slash Menu ────────────────────────────────────── */}
       {productMode === 'sheets' && sheetSlashMenu.open && (() => {
-        const filtered = SHEET_SLASH_OPTIONS.filter(opt =>
-          opt.label.toLowerCase().includes((sheetSlashMenu.filterText || '').toLowerCase())
-        );
+        const filtered = getFilteredSheetSlashOptions(sheetSlashMenu.filterText || '', copiedCellStyle);
         return (
           <>
             <div
