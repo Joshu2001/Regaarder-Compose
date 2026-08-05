@@ -1031,6 +1031,15 @@ const toColumnLabel = (index) => {
   return label;
 };
 
+const toColumnIndex = (label) => {
+  let index = 0;
+  const cleaned = label.toUpperCase().replace(/[^A-Z]/g, '');
+  for (let i = 0; i < cleaned.length; i++) {
+    index = index * 26 + (cleaned.charCodeAt(i) - 64);
+  }
+  return index - 1;
+};
+
 
 
 
@@ -1488,6 +1497,7 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
     const text = focusedTableCell.textContent || '';
     focusedTableCell.innerHTML = text.trim() || '&nbsp;';
     focusedTableCell.contentEditable = 'true';
+    element.dispatchEvent(new Event('input', { bubbles: true }));
   };
 
   return (
@@ -1596,6 +1606,10 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
                                 menu.style.display = 'none';
                                 btn.style.borderColor = '#e2e8f0';
                                 btn.style.boxShadow = 'none';
+                                const block = this.closest('.table-block');
+                                if (block) {
+                                  block.dispatchEvent(new Event('input', { bubbles: true }));
+                                }
                                 event.stopPropagation();
                               " onmouseover="this.style.background='#f5f3ff'; this.style.color='#7c3aed';" onmouseout="this.style.background='transparent'; this.style.color='#334155';" style="padding:6px 12px; font-size:11px; color:#334155; cursor:pointer; text-align:left; transition:background 0.15s, color 0.15s; font-weight: 500; font-family: inherit; border-radius: 4px;">${opt}</div>
                             `).join('');
@@ -1616,6 +1630,7 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
     ${optionItems}
   </div>
 </div>`;
+                            element.dispatchEvent(new Event('input', { bubbles: true }));
                             setShowDropdownChoicesInput(false);
                           }
                         }}
@@ -1648,6 +1663,7 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
                           e.preventDefault();
                           if (buttonLabelText.trim()) {
                             focusedTableCell.innerHTML = `<button contenteditable="false" onclick="alert('Action triggered: ' + this.innerText)" style="background:#7c3aed; color:white; border:none; border-radius:6px; padding:4px 12px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; margin:1px 0; transition:all 0.15s; outline:none; box-shadow: 0 2px 4px rgba(124,58,237,0.15);">${buttonLabelText.trim()}</button>`;
+                            element.dispatchEvent(new Event('input', { bubbles: true }));
                             setShowButtonLabelInput(false);
                           }
                         }}
@@ -3447,6 +3463,117 @@ const CalendarModal = ({ isOpen, onClose, globalEvents, setGlobalEvents }) => {
   );
 };
 
+const SPREADSHEET_FUNCTIONS = [
+  {
+    name: 'SUM',
+    syntax: 'SUM(value1, [value2], ...)',
+    description: 'Returns the sum of a series of numbers and/or cells.',
+    examples: ['=SUM(A1:A10)', '=SUM(A1, B2, C3:C5)'],
+  },
+  {
+    name: 'AVERAGE',
+    syntax: 'AVERAGE(value1, [value2], ...)',
+    description: 'Returns the numerical average value in a dataset, ignoring text.',
+    examples: ['=AVERAGE(A1:A10)', '=AVERAGE(C2:G2)'],
+  },
+  {
+    name: 'COUNT',
+    syntax: 'COUNT(value1, [value2], ...)',
+    description: 'Returns the number of numeric values in a dataset.',
+    examples: ['=COUNT(A1:A10)', '=COUNT(B2:E20)'],
+  },
+  {
+    name: 'COUNTA',
+    syntax: 'COUNTA(value1, [value2], ...)',
+    description: 'Returns the number of values (numeric or text) in a dataset.',
+    examples: ['=COUNTA(A1:A10)'],
+  },
+  {
+    name: 'COUNTIF',
+    syntax: 'COUNTIF(range, criterion)',
+    description: 'Returns a conditional count across a range.',
+    examples: ['=COUNTIF(A1:A10, ">20")', '=COUNTIF(B2:B20, "North")'],
+  },
+  {
+    name: 'SUMIF',
+    syntax: 'SUMIF(range, criterion, [sum_range])',
+    description: 'Returns a conditional sum across a range.',
+    examples: ['=SUMIF(A1:A10, ">20")', '=SUMIF(A1:A10, "Region A", B1:B10)'],
+  },
+  {
+    name: 'AVERAGEIF',
+    syntax: 'AVERAGEIF(range, criterion, [average_range])',
+    description: 'Returns a conditional average across a range.',
+    examples: ['=AVERAGEIF(A1:A10, ">20")', '=AVERAGEIF(A1:A10, "Region A", B1:B10)'],
+  },
+  {
+    name: 'MAX',
+    syntax: 'MAX(value1, [value2], ...)',
+    description: 'Returns the maximum value in a numeric dataset.',
+    examples: ['=MAX(A1:A10)'],
+  },
+  {
+    name: 'MIN',
+    syntax: 'MIN(value1, [value2], ...)',
+    description: 'Returns the minimum value in a numeric dataset.',
+    examples: ['=MIN(A1:A10)'],
+  },
+  {
+    name: 'IF',
+    syntax: 'IF(logical_test, value_if_true, value_if_false)',
+    description: 'Returns one value if a logical expression is TRUE and another if FALSE.',
+    examples: ['=IF(A1>50, "Pass", "Fail")', '=IF(B2="", 0, B2*0.1)'],
+  },
+  {
+    name: 'VLOOKUP',
+    syntax: 'VLOOKUP(search_key, range, index, [is_sorted])',
+    description: 'Vertical lookup. Searches down the first column of a range for a key and returns the value of a specified cell in the row found.',
+    examples: ['=VLOOKUP(A1, B2:D20, 2, FALSE)', '=VLOOKUP("Apple", A2:F100, 3, FALSE)'],
+  },
+  {
+    name: 'CONCATENATE',
+    syntax: 'CONCATENATE(string1, [string2], ...)',
+    description: 'Appends strings to one another.',
+    examples: ['=CONCATENATE(A1, " ", B1)', '=CONCATENATE("Result: ", C2)'],
+  },
+  {
+    name: 'LEFT',
+    syntax: 'LEFT(string, [number_of_characters])',
+    description: 'Returns a substring from the beginning of a specified string.',
+    examples: ['=LEFT(A1, 5)'],
+  },
+  {
+    name: 'RIGHT',
+    syntax: 'RIGHT(string, [number_of_characters])',
+    description: 'Returns a substring from the end of a specified string.',
+    examples: ['=RIGHT(A1, 5)'],
+  },
+  {
+    name: 'MID',
+    syntax: 'MID(string, start_character, number_of_characters)',
+    description: 'Returns a segment of a string.',
+    examples: ['=MID(A1, 2, 4)'],
+  },
+  {
+    name: 'LEN',
+    syntax: 'LEN(text)',
+    description: 'Returns the length of a string.',
+    examples: ['=LEN(A1)'],
+  },
+  {
+    name: 'AND',
+    syntax: 'AND(logical_expression1, [logical_expression2], ...)',
+    description: 'Returns TRUE if all of the provided arguments are logically TRUE, and FALSE otherwise.',
+    examples: ['=AND(A1>0, B1<10)'],
+  },
+  {
+    name: 'OR',
+    syntax: 'OR(logical_expression1, [logical_expression2], ...)',
+    description: 'Returns TRUE if any of the provided arguments are logically TRUE, and FALSE otherwise.',
+    examples: ['=OR(A1>0, B1>0)'],
+  }
+];
+
 
 export default function App() {
   const [guestUser] = useState(() => ({
@@ -4387,6 +4514,7 @@ export default function App() {
   const [activeSheetId, setActiveSheetId] = useState(1);
   const [activeDropdownCell, setActiveDropdownCell] = useState(null); // { row, col }
   const [selectedGridColumn, setSelectedGridColumn] = useState(null);
+  const [addressTemp, setAddressTemp] = useState(null);
   const [sheetsData, setSheetsData] = useState([
     { id: 1, title: 'Sheet 1', subtitle: '' },
   ]);
@@ -9045,6 +9173,30 @@ export default function App() {
   const [multiSelectedCells, setMultiSelectedCells] = useState([]);
   const [copiedCellStyle, setCopiedCellStyle] = useState(null);
   const [formatPainterActive, setFormatPainterActive] = useState(false);
+  const [addressInputText, setAddressInputText] = useState('');
+  const [isAddressEditing, setIsAddressEditing] = useState(false);
+
+  const [sheetFormulaAssistant, setSheetFormulaAssistant] = useState({
+    open: false,
+    x: 0,
+    y: 0,
+    filterText: '',
+    activeIndex: 0,
+    anchorInput: null, // 'formulaBar' or 'cell'
+    activeFuncName: ''
+  });
+  const [sheetNamedRanges, setSheetNamedRanges] = useState([
+    { name: 'TaxRate', cell: 'B1' },
+    { name: 'Discount', cell: 'C1' }
+  ]);
+  const [sheetNamedRangeMenuOpen, setSheetNamedRangeMenuOpen] = useState(false);
+  const [newNamedRangeName, setNewNamedRangeName] = useState('');
+  const [isAIFormulaMode, setIsAIFormulaMode] = useState(false);
+  const [aiFormulaPrompt, setAiFormulaPrompt] = useState('');
+  const [isGeneratingAIFormula, setIsGeneratingAIFormula] = useState(false);
+  const [aiFormulaPreview, setAiFormulaPreview] = useState(null);
+
+  const sheetNamedRangeMenuRef = useRef(null);
 
   const [quickChartPreview, setQuickChartPreview] = useState(null);
   const [activeChartMenu, setActiveChartMenu] = useState(null);
@@ -11351,10 +11503,14 @@ export default function App() {
     }
 
     const diffMs = Math.max(0, relativeNow - savedAt);
-    const minutes = Math.floor(diffMs / 60000);
-    if (minutes < 1) {
+    const seconds = Math.floor(diffMs / 1000);
+    if (seconds < 5) {
       return 'Saved just now';
     }
+    if (seconds < 60) {
+      return `Saved ${seconds} second${seconds === 1 ? '' : 's'} ago`;
+    }
+    const minutes = Math.floor(diffMs / 60000);
     if (minutes < 60) {
       return `Saved ${minutes} minute${minutes === 1 ? '' : 's'} ago`;
     }
@@ -11716,7 +11872,7 @@ export default function App() {
     const tick = () => {
       setRelativeNow(Date.now());
       const elapsedMs = Date.now() - (lastSavedAt || Date.now());
-      const nextDelay = elapsedMs >= 3600000 ? 1800000 : 60000;
+      const nextDelay = elapsedMs < 60000 ? 1000 : (elapsedMs >= 3600000 ? 1800000 : 60000);
       timeoutId = window.setTimeout(tick, nextDelay);
     };
     tick();
@@ -18428,7 +18584,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
 
     // Format changes
-    const newFormats = { ...activeSheetGridRaw.formats };
+    const newFormats = cloneFormats(activeSheetGridRaw.formats);
     
     if (key === 'format_cell') {
       setFocusedModule('analyzer'); // open format panel
@@ -18488,7 +18644,6 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const cMax = Math.max(range.startCol, range.endCol) - 1;
       
       const newCells = [...(activeSheetGridRaw.cells || [])];
-      const newFormats = [...(activeSheetGridRaw.formats || [])];
       const seen = new Set();
       const rowsToKeep = [];
       const formatsToKeep = [];
@@ -18508,10 +18663,29 @@ Generate the updated output according to the instruction. Preserve layout and ta
       
       if (removedCount > 0) {
         newCells.splice(rMin, rMax - rMin + 1, ...rowsToKeep);
-        newFormats.splice(rMin, rMax - rMin + 1, ...formatsToKeep);
-        while (newCells.length < activeSheetGridRaw.rows) {
-          newCells.push(Array(activeSheetGridRaw.cols).fill(''));
-          newFormats.push(null);
+        if (Array.isArray(newFormats)) {
+          newFormats.splice(rMin, rMax - rMin + 1, ...formatsToKeep);
+          while (newCells.length < activeSheetGridRaw.rows) {
+            newCells.push(Array(activeSheetGridRaw.cols).fill(''));
+            newFormats.push(null);
+          }
+        } else {
+          const tempFormats = {};
+          for (let i = 0; i < rMin; i++) {
+            if (newFormats[i]) tempFormats[i] = newFormats[i];
+          }
+          for (let i = 0; i < formatsToKeep.length; i++) {
+            if (formatsToKeep[i]) tempFormats[rMin + i] = formatsToKeep[i];
+          }
+          const shift = removedCount;
+          for (const rStr in newFormats) {
+            const r = parseInt(rStr, 10);
+            if (r > rMax) {
+              tempFormats[r - shift] = newFormats[rStr];
+            }
+          }
+          for (const key in newFormats) delete newFormats[key];
+          Object.assign(newFormats, tempFormats);
         }
         updateSheetSettings(activeSheetId, { cells: newCells, formats: newFormats });
       }
@@ -18537,14 +18711,13 @@ Generate the updated output according to the instruction. Preserve layout and ta
 
     if (key === 'schedule') {
       const newCells = [...(activeSheetGridRaw.cells || [])];
-      const newFormats = { ...(activeSheetGridRaw.formats || {}) };
       const range = allRanges[0];
       if (range) {
         const r = range.startRow - 1;
         const c = range.startCol - 1;
         if (!newCells[r]) newCells[r] = [];
         newCells[r][c] = new Date().toISOString().split('T')[0];
-        if (!newFormats[r]) newFormats[r] = {};
+        if (!newFormats[r]) newFormats[r] = Array.isArray(newFormats) ? [] : {};
         newFormats[r][c] = { ...newFormats[r][c], format: 'date' };
         updateSheetSettings(activeSheetId, { cells: newCells, formats: newFormats });
         showToast('Inserted date schedule');
@@ -18607,7 +18780,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const globalCMax = Math.max(...allRanges.map(r => Math.max(r.startCol, r.endCol)));
       
       if (globalRMax > globalRMin || globalCMax > globalCMin) {
-        if (!newFormats[globalRMin - 1]) newFormats[globalRMin - 1] = {};
+        if (!newFormats[globalRMin - 1]) newFormats[globalRMin - 1] = Array.isArray(newFormats) ? [] : {};
         newFormats[globalRMin - 1][globalCMin - 1] = {
           ...newFormats[globalRMin - 1][globalCMin - 1],
           rowSpan: globalRMax - globalRMin + 1,
@@ -18616,7 +18789,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         for (let r = globalRMin; r <= globalRMax; r++) {
           for (let c = globalCMin; c <= globalCMax; c++) {
             if (r === globalRMin && c === globalCMin) continue; // Keep top-left
-            if (!newFormats[r - 1]) newFormats[r - 1] = {};
+            if (!newFormats[r - 1]) newFormats[r - 1] = Array.isArray(newFormats) ? [] : {};
             newFormats[r - 1][c - 1] = { ...newFormats[r - 1][c - 1], hidden: true };
           }
         }
@@ -18633,7 +18806,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const cMax = Math.max(range.startCol, range.endCol);
         for (let r = rMin; r <= rMax; r++) {
           for (let c = cMin; c <= cMax; c++) {
-            if (!newFormats[r-1]) newFormats[r-1] = {};
+            if (!newFormats[r-1]) newFormats[r-1] = Array.isArray(newFormats) ? [] : {};
             if (key === 'clear_format') {
               newFormats[r-1][c-1] = {};
             } else if (key === 'redact') {
@@ -25864,15 +26037,17 @@ Respond with a JSON array of slide objects matching the schema.`;
           setSheetGrids((prev) => {
             const target = prev[targetId];
             if (!target) return prev;
-            const nextFormats = Array.isArray(target.formats)
-              ? target.formats.map(row => [...row])
-              : Array.from({ length: target.rows }, () => Array(target.cols).fill(null));
+            const nextFormats = cloneFormats(target.formats);
             const sRow = (startRow || 1) - 1;
             const eRow = (endRow || startRow || 1) - 1;
             const sCol = (startCol || 1) - 1;
             const eCol = (endCol || startCol || 1) - 1;
             for (let r = sRow; r <= eRow; r++) {
-              if (!nextFormats[r]) nextFormats[r] = [];
+              if (Array.isArray(nextFormats)) {
+                if (!nextFormats[r]) nextFormats[r] = [];
+              } else {
+                if (!nextFormats[r]) nextFormats[r] = {};
+              }
               for (let c = sCol; c <= eCol; c++) {
                 nextFormats[r][c] = { ...(nextFormats[r][c] || {}), ...styleObj };
               }
@@ -26676,7 +26851,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     const url = sheetLinkModal.url.trim();
     
     const newCells = [...(sheetGrids[activeSheetId]?.cells || [])];
-    const newFormats = { ...(sheetGrids[activeSheetId]?.formats || {}) };
+    const newFormats = cloneFormats(sheetGrids[activeSheetId]?.formats);
     
     const range = selectedSheetRange || { startRow: selectedSheetCell?.row, endRow: selectedSheetCell?.row, startCol: selectedSheetCell?.col, endCol: selectedSheetCell?.col };
     
@@ -26688,7 +26863,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       
       if (sheetLinkModal.type === 'bookmark') {
         newCells[r][c] = `📌 ${label}`;
-        if (!newFormats[r]) newFormats[r] = {};
+        if (!newFormats[r]) newFormats[r] = Array.isArray(newFormats) ? [] : {};
         newFormats[r][c] = {
           ...newFormats[r][c],
           link: url.startsWith('#') ? url : `#${url}`,
@@ -26698,7 +26873,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         };
       } else {
         newCells[r][c] = label;
-        if (!newFormats[r]) newFormats[r] = {};
+        if (!newFormats[r]) newFormats[r] = Array.isArray(newFormats) ? [] : {};
         newFormats[r][c] = {
           ...newFormats[r][c],
           link: url,
@@ -26768,7 +26943,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     setSheetGrids((prev) => {
       const target = prev[sheetId];
       if (!target) return prev;
-      const nextFormats = Array.isArray(target.formats) ? target.formats.map(row => [...row]) : Array.from({ length: target.rows }, () => Array.from({ length: target.cols }, () => null));
+      const nextFormats = cloneFormats(target.formats);
       const startRow = selectedSheetRange ? Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) - 1 : selectedSheetCell.row - 1;
       const endRow = selectedSheetRange ? Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) - 1 : selectedSheetCell.row - 1;
       const startCol = selectedSheetRange ? Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1 : selectedSheetCell.col - 1;
@@ -26791,8 +26966,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         let allHaveFormat = true;
         if (formatValue === undefined) {
           for (const { r, c } of cellsToFormat) {
-            const rowFormats = nextFormats[r] || [];
-            const cellFmtRaw = rowFormats[c];
+            const cellFmtRaw = nextFormats[r]?.[c];
             const cellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : {};
             if (!cellFmt[formatType]) {
               allHaveFormat = false;
@@ -26803,7 +26977,9 @@ Respond with a JSON array of slide objects matching the schema.`;
         const newValue = formatValue !== undefined ? formatValue : !allHaveFormat;
 
         for (const { r, c } of cellsToFormat) {
-          if (!nextFormats[r]) nextFormats[r] = [];
+          if (!nextFormats[r]) {
+            nextFormats[r] = Array.isArray(nextFormats) ? [] : {};
+          }
           const cellFmtRaw = nextFormats[r][c];
           const currentCellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : { type: cellFmtRaw };
           if (currentCellFmt.type === null || currentCellFmt.type === undefined) delete currentCellFmt.type;
@@ -26818,7 +26994,9 @@ Respond with a JSON array of slide objects matching the schema.`;
         }
       } else {
         for (const { r, c } of cellsToFormat) {
-          if (!nextFormats[r]) nextFormats[r] = [];
+          if (!nextFormats[r]) {
+            nextFormats[r] = Array.isArray(nextFormats) ? [] : {};
+          }
           const cellFmtRaw = nextFormats[r][c];
           const currentCellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : { type: cellFmtRaw };
           nextFormats[r][c] = { ...currentCellFmt, type: currentCellFmt.type === formatType ? null : formatType };
@@ -26838,10 +27016,10 @@ Respond with a JSON array of slide objects matching the schema.`;
     setSheetGrids((prev) => {
       const target = prev[activeSheetId];
       if (!target) return prev;
-      const nextFormats = Array.isArray(target.formats) ? target.formats.map(row => [...row]) : Array.from({ length: target.rows }, () => Array.from({ length: target.cols }, () => null));
+      const nextFormats = cloneFormats(target.formats);
 
       for (let r = sRow; r <= eRow; r++) {
-        if (!nextFormats[r]) nextFormats[r] = Array(target.cols).fill(null);
+        if (!nextFormats[r]) nextFormats[r] = Array.isArray(nextFormats) ? [] : {};
         for (let c = sCol; c <= eCol; c++) {
           const cellFmtRaw = nextFormats[r][c];
           const existing = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? { ...cellFmtRaw } : {};
@@ -26881,37 +27059,37 @@ Respond with a JSON array of slide objects matching the schema.`;
       const target = prev[activeSheetId];
       if (!target) return prev;
       const nextCells = target.cells.map(r => [...r]);
-      const nextFormats = Array.isArray(target.formats) ? target.formats.map(r => [...r]) : Array.from({ length: target.rows }, () => Array.from({ length: target.cols }, () => null));
+      let nextFormats = cloneFormats(target.formats);
       let nextRows = target.rows;
       let nextCols = target.cols;
       if (actionKey === 'insert-before' || actionKey === 'insert-after') {
         const offset = actionKey === 'insert-after' ? 1 : 0;
         if (type === 'row') {
           nextCells.splice(index + offset, 0, Array.from({ length: target.cols }, () => ''));
-          nextFormats.splice(index + offset, 0, Array.from({ length: target.cols }, () => null));
+          nextFormats = insertRowInFormats(nextFormats, index + offset);
           nextRows++;
         } else {
           nextCells.forEach(r => r.splice(index + offset, 0, ''));
-          nextFormats.forEach(r => r.splice(index + offset, 0, null));
+          nextFormats = insertColInFormats(nextFormats, index + offset);
           nextCols++;
         }
       } else if (actionKey === 'delete') {
         if (type === 'row') {
           nextCells.splice(index, 1);
-          nextFormats.splice(index, 1);
+          nextFormats = deleteRowInFormats(nextFormats, index);
           nextRows = Math.max(1, nextRows - 1);
         } else {
           nextCells.forEach(r => r.splice(index, 1));
-          nextFormats.forEach(r => r.splice(index, 1));
+          nextFormats = deleteColInFormats(nextFormats, index);
           nextCols = Math.max(1, nextCols - 1);
         }
       } else if (actionKey === 'clear') {
         if (type === 'row') {
           nextCells[index] = Array.from({ length: target.cols }, () => '');
-          nextFormats[index] = Array.from({ length: target.cols }, () => null);
+          nextFormats = clearRowInFormats(nextFormats, index);
         } else {
           nextCells.forEach(r => r[index] = '');
-          nextFormats.forEach(r => r[index] = null);
+          nextFormats = clearColInFormats(nextFormats, index);
         }
       }
       return { ...prev, [activeSheetId]: { ...target, rows: nextRows, cols: nextCols, cells: nextCells, formats: nextFormats } };
@@ -26941,9 +27119,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     setSheetGrids((prev) => {
       const target = prev[activeSheetId];
       if (!target) return prev;
-      const nextFormats = Array.isArray(target.formats)
-        ? target.formats.map(row => [...row])
-        : Array.from({ length: target.rows }, () => Array(target.cols).fill(null));
+      const nextFormats = cloneFormats(target.formats);
 
       const cellsToApply = [];
       if (selectedSheetRange) {
@@ -26961,8 +27137,13 @@ Respond with a JSON array of slide objects matching the schema.`;
       }
 
       cellsToApply.forEach(({ r, c }) => {
-        if (!nextFormats[r]) nextFormats[r] = [];
-        nextFormats[r][c] = Object.keys(copiedCellStyle).length > 0 ? { ...copiedCellStyle } : null;
+        if (Array.isArray(nextFormats)) {
+          if (!nextFormats[r]) nextFormats[r] = [];
+          nextFormats[r][c] = Object.keys(copiedCellStyle).length > 0 ? { ...copiedCellStyle } : null;
+        } else {
+          if (!nextFormats[r]) nextFormats[r] = {};
+          nextFormats[r][c] = Object.keys(copiedCellStyle).length > 0 ? { ...copiedCellStyle } : null;
+        }
       });
 
       return { ...prev, [activeSheetId]: { ...target, formats: nextFormats } };
@@ -26996,6 +27177,296 @@ Respond with a JSON array of slide objects matching the schema.`;
     return null;
   };
 
+  const handleCellAddressInput = (val) => {
+    if (!val) return;
+    const input = val.trim().toUpperCase();
+    const activeSheetGrid = sheetGrids[activeSheetId];
+    if (!activeSheetGrid) return;
+    
+    if (input === 'ALL') {
+      setSheetSelectionMode('all');
+      setSelectedSheetRange({ startRow: 1, startCol: 1, endRow: activeSheetGrid.rows, endCol: activeSheetGrid.cols });
+      setAdditionalSheetRanges([]);
+      setSelectedGridColumn(null);
+      return;
+    }
+    
+    // Range selection (like A1:B2, A:B, 1:2)
+    if (input.includes(':')) {
+      const parts = input.split(':');
+      if (parts.length === 2) {
+        const p1 = parts[0].trim();
+        const p2 = parts[1].trim();
+        
+        // Check for columns (e.g. A:B)
+        const colRegex = /^[A-Z]+$/;
+        if (colRegex.test(p1) && colRegex.test(p2)) {
+          const c1 = toColumnIndex(p1) + 1;
+          const c2 = toColumnIndex(p2) + 1;
+          const startCol = Math.min(c1, c2);
+          const endCol = Math.max(c1, c2);
+          setSheetSelectionMode('col');
+          setSelectedSheetRange({ startRow: 1, startCol, endRow: activeSheetGrid.rows, endCol });
+          setSelectedSheetCell({ row: 1, col: startCol });
+          setAdditionalSheetRanges([]);
+          setSelectedGridColumn(startCol - 1);
+          return;
+        }
+        
+        // Check for rows (e.g. 1:2)
+        const rowRegex = /^\d+$/;
+        if (rowRegex.test(p1) && rowRegex.test(p2)) {
+          const r1 = parseInt(p1, 10);
+          const r2 = parseInt(p2, 10);
+          const startRow = Math.min(r1, r2);
+          const endRow = Math.max(r1, r2);
+          setSheetSelectionMode('row');
+          setSelectedSheetRange({ startRow, startCol: 1, endRow, endCol: activeSheetGrid.cols });
+          setSelectedSheetCell({ row: startRow, col: 1 });
+          setAdditionalSheetRanges([]);
+          setSelectedGridColumn(null);
+          return;
+        }
+        
+        // A1:B2 range
+        const cellRegex = /^([A-Z]+)(\d+)$/;
+        const m1 = p1.match(cellRegex);
+        const m2 = p2.match(cellRegex);
+        if (m1 && m2) {
+          const c1 = toColumnIndex(m1[1]) + 1;
+          const r1 = parseInt(m1[2], 10);
+          const c2 = toColumnIndex(m2[1]) + 1;
+          const r2 = parseInt(m2[2], 10);
+          
+          const startRow = Math.min(r1, r2);
+          const endRow = Math.max(r1, r2);
+          const startCol = Math.min(c1, c2);
+          const endCol = Math.max(c1, c2);
+          
+          setSheetSelectionMode('cell');
+          setSelectedSheetRange({ startRow, startCol, endRow, endCol });
+          setSelectedSheetCell({ row: startRow, col: startCol });
+          setAdditionalSheetRanges([]);
+          setSelectedGridColumn(null);
+          return;
+        }
+      }
+    } else {
+      // Single cell/column/row input (e.g. A1, A, 1)
+      const cellRegex = /^([A-Z]+)(\d+)$/;
+      const m = input.match(cellRegex);
+      if (m) {
+        const c = toColumnIndex(m[1]) + 1;
+        const r = parseInt(m[2], 10);
+        setSheetSelectionMode('cell');
+        setSelectedSheetRange(null);
+        setSelectedSheetCell({ row: r, col: c });
+        setAdditionalSheetRanges([]);
+        setSelectedGridColumn(null);
+        return;
+      }
+      
+      // Single column (e.g. A)
+      const colRegex = /^[A-Z]+$/;
+      if (colRegex.test(input)) {
+        const c = toColumnIndex(input) + 1;
+        setSheetSelectionMode('col');
+        setSelectedSheetRange({ startRow: 1, startCol: c, endRow: activeSheetGrid.rows, endCol: c });
+        setSelectedSheetCell({ row: 1, col: c });
+        setAdditionalSheetRanges([]);
+        setSelectedGridColumn(c - 1);
+        return;
+      }
+      
+      // Single row (e.g. 1)
+      const rowRegex = /^\d+$/;
+      if (rowRegex.test(input)) {
+        const r = parseInt(input, 10);
+        setSheetSelectionMode('row');
+        setSelectedSheetRange({ startRow: r, startCol: 1, endRow: r, endCol: activeSheetGrid.cols });
+        setSelectedSheetCell({ row: r, col: 1 });
+        setAdditionalSheetRanges([]);
+        setSelectedGridColumn(null);
+        return;
+      }
+    }
+  };
+
+  const cloneFormats = (formats) => {
+    if (Array.isArray(formats)) {
+      return formats.map(row => {
+        if (Array.isArray(row)) {
+          return row.map(cell => (cell && typeof cell === 'object' ? { ...cell } : cell));
+        } else if (row && typeof row === 'object') {
+          const newRow = {};
+          Object.keys(row).forEach(c => {
+            newRow[c] = row[c] && typeof row[c] === 'object' ? { ...row[c] } : row[c];
+          });
+          return newRow;
+        }
+        return row;
+      });
+    } else if (formats && typeof formats === 'object') {
+      const newFormats = {};
+      Object.keys(formats).forEach(r => {
+        if (formats[r] && typeof formats[r] === 'object') {
+          newFormats[r] = {};
+          Object.keys(formats[r]).forEach(c => {
+            newFormats[r][c] = formats[r][c] && typeof formats[r][c] === 'object' ? { ...formats[r][c] } : formats[r][c];
+          });
+        }
+      });
+      return newFormats;
+    }
+    return {};
+  };
+
+  const insertRowInFormats = (formats, index) => {
+    if (Array.isArray(formats)) {
+      formats.splice(index, 0, []);
+      return formats;
+    }
+    const next = {};
+    for (const rStr in formats) {
+      const r = parseInt(rStr, 10);
+      if (r >= index) {
+        next[r + 1] = formats[rStr];
+      } else {
+        next[r] = formats[rStr];
+      }
+    }
+    return next;
+  };
+
+  const deleteRowInFormats = (formats, index) => {
+    if (Array.isArray(formats)) {
+      formats.splice(index, 1);
+      return formats;
+    }
+    const next = {};
+    for (const rStr in formats) {
+      const r = parseInt(rStr, 10);
+      if (r > index) {
+        next[r - 1] = formats[rStr];
+      } else if (r < index) {
+        next[r] = formats[rStr];
+      }
+    }
+    return next;
+  };
+
+  const insertColInFormats = (formats, index) => {
+    if (Array.isArray(formats)) {
+      formats.forEach(r => {
+        if (Array.isArray(r)) {
+          r.splice(index, 0, null);
+        } else if (r && typeof r === 'object') {
+          const nextRow = {};
+          for (const cStr in r) {
+            const c = parseInt(cStr, 10);
+            if (c >= index) {
+              nextRow[c + 1] = r[cStr];
+            } else {
+              nextRow[c] = r[cStr];
+            }
+          }
+          for (const key in r) delete r[key];
+          Object.assign(r, nextRow);
+        }
+      });
+      return formats;
+    }
+    const next = {};
+    for (const rStr in formats) {
+      const row = formats[rStr];
+      if (row) {
+        const nextRow = {};
+        for (const cStr in row) {
+          const c = parseInt(cStr, 10);
+          if (c >= index) {
+            nextRow[c + 1] = row[cStr];
+          } else {
+            nextRow[c] = row[cStr];
+          }
+        }
+        next[rStr] = nextRow;
+      }
+    }
+    return next;
+  };
+
+  const deleteColInFormats = (formats, index) => {
+    if (Array.isArray(formats)) {
+      formats.forEach(r => {
+        if (Array.isArray(r)) {
+          r.splice(index, 1);
+        } else if (r && typeof r === 'object') {
+          const nextRow = {};
+          for (const cStr in r) {
+            const c = parseInt(cStr, 10);
+            if (c > index) {
+              nextRow[c - 1] = r[cStr];
+            } else if (c < index) {
+              nextRow[c] = r[cStr];
+            }
+          }
+          for (const key in r) delete r[key];
+          Object.assign(r, nextRow);
+        }
+      });
+      return formats;
+    }
+    const next = {};
+    for (const rStr in formats) {
+      const row = formats[rStr];
+      if (row) {
+        const nextRow = {};
+        for (const cStr in row) {
+          const c = parseInt(cStr, 10);
+          if (c > index) {
+            nextRow[c - 1] = row[cStr];
+          } else if (c < index) {
+            nextRow[c] = row[cStr];
+          }
+        }
+        next[rStr] = nextRow;
+      }
+    }
+    return next;
+  };
+
+  const clearRowInFormats = (formats, index) => {
+    if (Array.isArray(formats)) {
+      formats[index] = [];
+      return formats;
+    }
+    const next = { ...formats };
+    delete next[index];
+    return next;
+  };
+
+  const clearColInFormats = (formats, index) => {
+    if (Array.isArray(formats)) {
+      formats.forEach(r => {
+        if (Array.isArray(r)) {
+          r[index] = null;
+        } else if (r && typeof r === 'object') {
+          delete r[index];
+        }
+      });
+      return formats;
+    }
+    const next = {};
+    for (const rStr in formats) {
+      if (formats[rStr]) {
+        const row = { ...formats[rStr] };
+        delete row[index];
+        next[rStr] = row;
+      }
+    }
+    return next;
+  };
+
   const updateSheetCell = (sheetId, rowIndex, colIndex, value, options = {}) => {
     markUserHasEdited();
     setSheetGrids((prev) => {
@@ -27005,19 +27476,22 @@ Respond with a JSON array of slide objects matching the schema.`;
       if (!nextCells[rowIndex]) return prev;
       nextCells[rowIndex][colIndex] = value;
 
-      const nextFormats = Array.isArray(target.formats)
-        ? target.formats.map((row) => [...row])
-        : Array.from({ length: target.rows }, () => Array(target.cols).fill(null));
+      const nextFormats = cloneFormats(target.formats);
 
       if (options.style) {
-        if (!nextFormats[rowIndex]) nextFormats[rowIndex] = [];
-        nextFormats[rowIndex][colIndex] = { ...(nextFormats[rowIndex][colIndex] || {}), ...options.style };
+        if (!nextFormats[rowIndex]) {
+          nextFormats[rowIndex] = Array.isArray(nextFormats) ? [] : {};
+        }
+        const currentFmt = nextFormats[rowIndex][colIndex] || {};
+        nextFormats[rowIndex][colIndex] = { ...currentFmt, ...options.style };
       } else if (options.inheritStyle !== false) {
         const existingFmt = nextFormats[rowIndex]?.[colIndex];
         if (!existingFmt || Object.keys(existingFmt).length === 0) {
           const inherited = inheritAdjacentStyle(sheetId, rowIndex, colIndex);
           if (inherited) {
-            if (!nextFormats[rowIndex]) nextFormats[rowIndex] = [];
+            if (!nextFormats[rowIndex]) {
+              nextFormats[rowIndex] = Array.isArray(nextFormats) ? [] : {};
+            }
             nextFormats[rowIndex][colIndex] = inherited;
           }
         }
@@ -37845,14 +38319,52 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <div className={`flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] overflow-hidden z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm'}`}>
                       {!isSheetsPresentationMode && !isSheetZenMode && (
                         <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151] shrink-0">
-                      <div className="min-w-[72px] text-center border border-gray-200 rounded-lg bg-gray-50 py-1.5 px-2 text-[11px] font-mono font-semibold tracking-tight">
-                        {sheetSelectionMode === 'all' ? 'All' :
-                         sheetSelectionMode === 'col' && selectedSheetRange ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}` :
-                         sheetSelectionMode === 'row' && selectedSheetRange ? `${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}` :
-                         selectedSheetRange && !(selectedSheetRange.startRow === selectedSheetRange.endRow && selectedSheetRange.startCol === selectedSheetRange.endCol) ?
-                           `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}` :
-                         `${toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}${selectedSheetCell.row}`}
-                      </div>
+                      <input
+                        type="text"
+                        className="min-w-[72px] max-w-[120px] text-center border border-gray-200 dark:border-zinc-800 rounded-lg bg-gray-50 dark:bg-zinc-900/60 py-1.5 px-2 text-[11px] font-mono font-semibold tracking-tight text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600 transition-all"
+                        value={
+                          addressTemp !== null
+                            ? addressTemp
+                            : sheetSelectionMode === 'all'
+                            ? 'ALL'
+                            : sheetSelectionMode === 'col' && selectedSheetRange
+                            ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}`
+                            : sheetSelectionMode === 'row' && selectedSheetRange
+                            ? `${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}`
+                            : selectedSheetRange && !(selectedSheetRange.startRow === selectedSheetRange.endRow && selectedSheetRange.startCol === selectedSheetRange.endCol)
+                            ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}`
+                            : `${toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}${selectedSheetCell.row}`
+                        }
+                        onChange={(e) => setAddressTemp(e.target.value)}
+                        onFocus={() => {
+                          const currentVal = sheetSelectionMode === 'all'
+                            ? 'ALL'
+                            : sheetSelectionMode === 'col' && selectedSheetRange
+                            ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}`
+                            : sheetSelectionMode === 'row' && selectedSheetRange
+                            ? `${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}`
+                            : selectedSheetRange && !(selectedSheetRange.startRow === selectedSheetRange.endRow && selectedSheetRange.startCol === selectedSheetRange.endCol)
+                            ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}`
+                            : `${toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}${selectedSheetCell.row}`;
+                          setAddressTemp(currentVal);
+                        }}
+                        onBlur={() => {
+                          if (addressTemp !== null) {
+                            handleCellAddressInput(addressTemp);
+                            setAddressTemp(null);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleCellAddressInput(e.target.value);
+                            setAddressTemp(null);
+                            e.target.blur();
+                          } else if (e.key === 'Escape') {
+                            setAddressTemp(null);
+                            e.target.blur();
+                          }
+                        }}
+                      />
                       <span 
                         className={`font-mono cursor-pointer hover:opacity-80 font-bold transition-colors select-none ${themeAccentStyles.text}`}
                         title="Tap to insert formula (=)"
@@ -50919,7 +51431,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && docState !== 'ready' && docState !== 'archived'}
                   suppressContentEditableWarning
                   onKeyDown={handleEditorKeyDown}
-                  onInput={(e) => normalizeEditableDirection(e.currentTarget)}
+                  onInput={(e) => {
+                    normalizeEditableDirection(e.currentTarget);
+                    if (!e.nativeEvent || e.nativeEvent.inputType === undefined) {
+                      commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml);
+                    }
+                  }}
                   onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocBodyHtml(target.innerHTML))}
                   onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml, e)}
                   onClick={(e) => {
