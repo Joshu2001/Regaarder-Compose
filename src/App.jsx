@@ -40870,6 +40870,40 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           })()}
                         </div>
                         <div className="flex items-center gap-3 text-[13px] font-medium text-gray-500 shrink-0">
+                          <button 
+                            onClick={handleTtsToggle} 
+                            aria-label="Read sheet out loud (Text to speech)"
+                            className={`px-2 py-1 rounded-md transition-all duration-200 flex items-center gap-1.5 border ${
+                              isReadingAloud 
+                                ? 'text-violet-700 bg-violet-50 border-violet-200 outline outline-1 outline-violet-400/40 font-semibold shadow-xs' 
+                                : 'border-transparent hover:border-gray-200 hover:bg-gray-100/80 text-gray-600'
+                            }`} 
+                            title={isReadingAloud ? "Stop audio playback" : "Read sheet out loud (Text-to-speech)"}
+                          >
+                            {isReadingAloud ? (
+                              <div className="flex items-center gap-0.5 h-3.5 px-0.5">
+                                <span className="w-0.5 h-2 bg-violet-600 animate-[bounce_0.8s_infinite_100ms] rounded-full"></span>
+                                <span className="w-0.5 h-3 bg-violet-600 animate-[bounce_0.8s_infinite_200ms] rounded-full"></span>
+                                <span className="w-0.5 h-1.5 bg-violet-600 animate-[bounce_0.8s_infinite_300ms] rounded-full"></span>
+                              </div>
+                            ) : (
+                              <Volume2 size={15} />
+                            )}
+                            <span className="text-[11px] font-medium hidden sm:inline">{isReadingAloud ? 'Reading...' : 'Audio'}</span>
+                          </button>
+
+                          {/* Fullscreen Zen View Toggle */}
+                          <button
+                            type="button"
+                            onClick={() => setIsSheetZenMode(!isSheetZenMode)}
+                            aria-label={isSheetZenMode ? "Exit Zen Mode" : "Enter Zen Mode"}
+                            className="px-2 py-1 rounded-md transition-all duration-200 flex items-center gap-1.5 border border-transparent hover:border-gray-200 hover:bg-gray-100/80 text-gray-600 dark:text-zinc-400 dark:hover:bg-zinc-800 cursor-pointer"
+                            title="Enter Fullscreen Zen Mode (Hide toolbars & headers)"
+                          >
+                            <Maximize2 size={15} />
+                            <span className="text-[11px] font-medium hidden sm:inline">Zen View</span>
+                          </button>
+
                           {/* Zoom Controls */}
                           <div className="relative flex items-center gap-2" ref={sheetZoomControlRef}>
                             <button
@@ -40931,40 +40965,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </div>
                             )}
                           </div>
-
-                          <button 
-                            onClick={handleTtsToggle} 
-                            aria-label="Read sheet out loud (Text to speech)"
-                            className={`px-2 py-1 rounded-md transition-all duration-200 flex items-center gap-1.5 border ${
-                              isReadingAloud 
-                                ? 'text-violet-700 bg-violet-50 border-violet-200 outline outline-1 outline-violet-400/40 font-semibold shadow-xs' 
-                                : 'border-transparent hover:border-gray-200 hover:bg-gray-100/80 text-gray-600'
-                            }`} 
-                            title={isReadingAloud ? "Stop audio playback" : "Read sheet out loud (Text-to-speech)"}
-                          >
-                            {isReadingAloud ? (
-                              <div className="flex items-center gap-0.5 h-3.5 px-0.5">
-                                <span className="w-0.5 h-2 bg-violet-600 animate-[bounce_0.8s_infinite_100ms] rounded-full"></span>
-                                <span className="w-0.5 h-3 bg-violet-600 animate-[bounce_0.8s_infinite_200ms] rounded-full"></span>
-                                <span className="w-0.5 h-1.5 bg-violet-600 animate-[bounce_0.8s_infinite_300ms] rounded-full"></span>
-                              </div>
-                            ) : (
-                              <Volume2 size={15} />
-                            )}
-                            <span className="text-[11px] font-medium hidden sm:inline">{isReadingAloud ? 'Reading...' : 'Audio'}</span>
-                          </button>
-
-                          {/* Fullscreen Zen View Toggle */}
-                          <button
-                            type="button"
-                            onClick={() => setIsSheetZenMode(!isSheetZenMode)}
-                            aria-label={isSheetZenMode ? "Exit Zen Mode" : "Enter Zen Mode"}
-                            className="px-2 py-1 rounded-md transition-all duration-200 flex items-center gap-1.5 border border-transparent hover:border-gray-200 hover:bg-gray-100/80 text-gray-600 dark:text-zinc-400 dark:hover:bg-zinc-800 cursor-pointer"
-                            title="Enter Fullscreen Zen Mode (Hide toolbars & headers)"
-                          >
-                            <Maximize2 size={15} />
-                            <span className="text-[11px] font-medium hidden sm:inline">Zen View</span>
-                          </button>
 
                           <button
                             type="button"

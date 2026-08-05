@@ -129,3 +129,21 @@ This walkthrough details the visual improvements, event-handler corrections, and
   - Correctly positioned the top-edge gradient accent line on hover for cards.
 - **Done Action Button**:
   - Added a premium, modern "Done" button at the bottom of the templates list inside the selection modal, consistent with Apple/Regaarder design language guidelines (using matching violet backgrounds, custom hover transitions, and rounded borders).
+
+---
+
+## 14. Interactive Cell Address Input & Real-Time Sync Polishing
+
+- **Address Bar Form-Input Transformation**:
+  - Transformed the static formula/range string representation inside the spreadsheet's top header into a premium, interactive `input` field.
+  - Users can now type coordinates directly into the address box (e.g. `A1`, `B2`, `ALL`) and press Enter or blur to focus and select that cell or range immediately.
+  - Designed with elegant focus rings, escape key dismissal, and automatic alignment syncing.
+- **Robust Table Paste & State Synchronization**:
+  - Refactored `normalizeEditableDirection` on the document's main editing canvas to hook into state syncing when programmatic changes occur (such as during paste, inline command insertion, or formatting actions).
+  - This guarantees that inserting tables, images, or AI prompts from selection menus immediately triggers Y.js changes and propagates updates across real-time room sessions without relying on standard keystroke triggers.
+- **Sparse Formats Object/Array Safeguard**:
+  - Standardized mutations on `sheetGrids[sheetId].formats` to support both sparse objects (used by the database/backend representation) and 2D arrays (used by the grid editor) seamlessly.
+  - This fixes runtime `TypeError: Map is not a function` and type mismatches when importing external templates, applying styles, or rendering cell contents by using custom `cloneFormats` deep-cloners and type guards.
+- **Address Selection Dispatcher**:
+  - Developed `handleCellAddressInput` to parse arbitrary range and cell coordinates (e.g. `ALL`, `A1`, `C5:D10`, `R1`, `C1`), perform mathematical boundary clamps based on sheet dimensions, and dispatch selection state changes immediately.
+
