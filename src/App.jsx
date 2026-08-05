@@ -37068,27 +37068,56 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           e.preventDefault();
                                           setSheetToolbarMenuOpen((prev) => prev === 'textStyle' ? null : 'textStyle');
                                         }}
-                                        className="h-8 px-2 flex items-center justify-center gap-1.5 rounded-xl transition-all hover:bg-slate-50 cursor-pointer text-slate-700 hover:text-slate-900"
-                                        title="Format options (Style & Colors)"
+                                        className={`h-8 px-2 flex items-center justify-center gap-1.5 rounded-xl transition-all border ${sheetToolbarMenuOpen === 'textStyle' ? 'bg-white border-slate-200 shadow-sm text-purple-600' : 'border-transparent text-slate-700 hover:bg-slate-50 hover:text-slate-900'}`}
+                                        title="Text & Highlight Color Palette"
                                       >
-                                        <Type size={14} /> <ChevronDown size={12} className="text-slate-400" />
+                                        <Type size={14} className={sheetToolbarMenuOpen === 'textStyle' ? 'text-purple-600' : ''} /> <ChevronDown size={12} className="text-slate-400" />
                                       </button>
                                       {sheetToolbarMenuOpen === 'textStyle' && (
-                                        <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-slate-200/80 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
-                                          <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Text Color</span>
-                                            <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
-                                              {['#000000', '#475569', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'].map(c => (
-                                                <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                                        <div className="absolute top-9 left-0 z-[230] w-64 bg-white border border-slate-200/90 rounded-2xl shadow-2xl p-3 flex flex-col gap-3 backdrop-blur-xl select-none" onPointerDown={e => e.stopPropagation()}>
+                                          <div className="flex flex-col gap-2">
+                                            {/* Text Color Section */}
+                                            <div className="flex items-center justify-between px-1">
+                                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Text Color</span>
+                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">Reset</button>
+                                            </div>
+                                            <div className="grid grid-cols-6 gap-1 px-1">
+                                              {['#ffffff', '#000000', '#1e293b', '#475569', '#64748b', '#94a3b8', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ec4899', '#991b1b', '#9a3412', '#854d0e', '#065f46', '#155e75', '#1e40af', '#3730a3', '#6b21a8'].map(c => (
+                                                <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', c); }} className="w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c === '#ffffff' ? 'White (#ffffff)' : c}></button>
                                               ))}
                                             </div>
-                                          </div>
-                                          <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 font-bold">Highlight</span>
-                                            <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
-                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
-                                              {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
-                                                <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                                            <div className="flex items-center gap-1.5 px-1 pt-1">
+                                              <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight">Custom Text Hex</span>
+                                              <input
+                                                type="color"
+                                                className="w-6 h-6 rounded-md border border-slate-200 cursor-pointer bg-transparent p-0 overflow-hidden"
+                                                onChange={(e) => updateSheetCellFormat(activeSheetId, 'color', e.target.value)}
+                                                title="Pick custom text color"
+                                              />
+                                              <input
+                                                type="text"
+                                                placeholder="#ffffff"
+                                                className="flex-1 h-6 px-1.5 text-[10px] font-mono border border-slate-200 rounded-md outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 bg-slate-50/50"
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter') {
+                                                    const val = e.currentTarget.value.trim();
+                                                    if (val) updateSheetCellFormat(activeSheetId, 'color', val);
+                                                  }
+                                                }}
+                                              />
+                                            </div>
+
+                                            <div className="border-t border-slate-100 my-1" />
+
+                                            {/* Highlight Section */}
+                                            <div className="flex items-center justify-between px-1">
+                                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Text Highlight</span>
+                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">Clear Highlight</button>
+                                            </div>
+                                            <div className="grid grid-cols-6 gap-1 px-1">
+                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); }} className="w-5 h-5 rounded-md border border-slate-200 bg-white hover:scale-110 transition-transform flex items-center justify-center cursor-pointer" title="No Highlight"><X size={11} className="text-slate-400"/></button>
+                                              {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff', '#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f0abfc'].map(c => (
+                                                <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); }} className="w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c}></button>
                                               ))}
                                             </div>
                                           </div>
@@ -37348,9 +37377,125 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   setImportedFileInfo({
                                     name: file.name,
                                     size: formattedSize,
-                                    sheets: 1,
-                                    rows: 0
+                                    sheets: 1
                                   });
+                                  const parseColorObj = (colorObj) => {
+                                    if (!colorObj) return null;
+                                    if (typeof colorObj === 'string') {
+                                      if (colorObj.startsWith('#')) return colorObj;
+                                      if (colorObj.length === 6) return `#${colorObj}`;
+                                      if (colorObj.length === 8) return `#${colorObj.slice(2)}`;
+                                    }
+                                    if (colorObj.rgb) {
+                                      const rgb = String(colorObj.rgb);
+                                      if (rgb !== 'FFFFFFFF' && rgb !== '00000000' && rgb.toLowerCase() !== 'auto') {
+                                        return `#${rgb.length === 8 ? rgb.slice(2) : rgb}`;
+                                      }
+                                    }
+                                    const THEME_COLORS = ['#FFFFFF', '#000000', '#E7E6E6', '#1F497D', '#4F81BD', '#C0504D', '#9BBB59', '#8064A2', '#4BACC6', '#F79646'];
+                                    if (colorObj.theme !== undefined && colorObj.theme !== null) {
+                                      const tIdx = Number(colorObj.theme);
+                                      if (THEME_COLORS[tIdx]) return THEME_COLORS[tIdx];
+                                    }
+                                    if (colorObj.indexed !== undefined && colorObj.indexed !== null) {
+                                      if (colorObj.indexed === 1) return '#FFFFFF';
+                                      if (colorObj.indexed === 0) return '#000000';
+                                    }
+                                    return null;
+                                  };
+
+                                  const processExcelWorkbook = async (fileObj) => {
+                                    const XLSX = await import('xlsx');
+                                    const buffer = await fileObj.arrayBuffer();
+                                    const workbook = XLSX.read(buffer, { type: 'array', cellStyles: true, cellFormulas: true, cellDates: true, cellNF: true });
+                                    const firstSheetName = workbook.SheetNames[0];
+                                    const worksheet = workbook.Sheets[firstSheetName];
+                                    
+                                    const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+                                    rawRows.forEach((rowItems, rIdx) => {
+                                      if (Array.isArray(rowItems)) {
+                                        rowItems.forEach((val, cIdx) => {
+                                          updateSheetCell(activeSheetId, rIdx, cIdx, val !== undefined && val !== null ? String(val) : '');
+                                        });
+                                      }
+                                    });
+
+                                    if (worksheet['!ref']) {
+                                      const range = XLSX.utils.decode_range(worksheet['!ref']);
+                                      const totalRows = range.e.r + 1;
+                                      const totalCols = range.e.c + 1;
+                                      const formats2D = Array.from({ length: totalRows }, () => Array(totalCols).fill(null));
+                                      
+                                      const isRowZeroHeader = rawRows[0] && Array.isArray(rawRows[0]) && rawRows[0].some(v => typeof v === 'string' && v.trim().length > 0);
+
+                                      for (let R = range.s.r; R <= range.e.r; ++R) {
+                                        for (let C = range.s.c; C <= range.e.c; ++C) {
+                                          const cell = worksheet[XLSX.utils.encode_cell({ r: R, c: C })];
+                                          const fmt = {};
+                                          if (cell && cell.s) {
+                                            if (cell.s.fill) {
+                                              const fillClr = parseColorObj(cell.s.fill.fgColor || cell.s.fill.bgColor || cell.s.fill);
+                                              if (fillClr) fmt.fill = fillClr;
+                                            }
+                                            if (cell.s.font) {
+                                              const fontClr = parseColorObj(cell.s.font.color || cell.s.font);
+                                              if (fontClr) fmt.color = fontClr;
+                                              if (cell.s.font.bold) fmt.bold = true;
+                                              if (cell.s.font.italic) fmt.italic = true;
+                                              if (cell.s.font.underline) fmt.underline = true;
+                                              if (cell.s.font.name) fmt.fontFamily = cell.s.font.name;
+                                              if (cell.s.font.sz) fmt.fontSize = String(cell.s.font.sz);
+                                            }
+                                            if (cell.s.alignment && cell.s.alignment.horizontal) {
+                                              fmt.align = cell.s.alignment.horizontal;
+                                            }
+                                          }
+
+                                          if (R === 0 && isRowZeroHeader) {
+                                            if (!fmt.fill) fmt.fill = '#1F497D';
+                                            if (!fmt.color) fmt.color = '#FFFFFF';
+                                            fmt.bold = true;
+                                          }
+
+                                          if (Object.keys(fmt).length > 0) {
+                                            formats2D[R][C] = fmt;
+                                          }
+                                        }
+                                      }
+
+                                      const hasAnyFormat = formats2D.some(row => row.some(c => c !== null));
+                                      if (hasAnyFormat) {
+                                        setSheetGrids(prev => {
+                                          const target = prev[activeSheetId];
+                                          if (!target) return prev;
+                                          const existingFormats = Array.isArray(target.formats)
+                                            ? target.formats.map(r => [...r])
+                                            : Array.from({ length: target.rows }, () => Array(target.cols).fill(null));
+                                          formats2D.forEach((rowFmts, rIdx) => {
+                                            if (!existingFormats[rIdx]) existingFormats[rIdx] = [];
+                                            rowFmts.forEach((fmt, cIdx) => {
+                                              if (fmt !== null) existingFormats[rIdx][cIdx] = fmt;
+                                            });
+                                          });
+                                          return { ...prev, [activeSheetId]: { ...target, formats: existingFormats } };
+                                        });
+                                      }
+                                    }
+
+                                    const fileSizeStr = fileObj.size < 1024 * 1024 
+                                      ? `${(fileObj.size / 1024).toFixed(1)} KB` 
+                                      : `${(fileObj.size / (1024 * 1024)).toFixed(1)} MB`;
+
+                                    setHasImportedData(true);
+                                    setImportedFileInfo({
+                                      name: fileObj.name,
+                                      size: fileSizeStr,
+                                      sheets: workbook.SheetNames.length || 1,
+                                      rows: rawRows.length
+                                    });
+                                    showToast(`Loaded ${rawRows.length} rows with styles from ${fileObj.name}`);
+                                  };
+
                                   const handleFileImport = async (fileObj) => {
                                     try {
                                       const ext = fileObj.name.substring(fileObj.name.lastIndexOf('.')).toLowerCase();
@@ -37358,26 +37503,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         ? `${(fileObj.size / 1024).toFixed(1)} KB` 
                                         : `${(fileObj.size / (1024 * 1024)).toFixed(1)} MB`;
                                       if (ext === '.xlsx' || ext === '.xls') {
-                                        const XLSX = await import('xlsx');
-                                        const buffer = await fileObj.arrayBuffer();
-                                        const workbook = XLSX.read(buffer, { type: 'array' });
-                                        const firstSheetName = workbook.SheetNames[0];
-                                        const worksheet = workbook.Sheets[firstSheetName];
-                                        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                                        rows.forEach((rowItems, rIdx) => {
-                                          if (Array.isArray(rowItems)) {
-                                            rowItems.forEach((val, cIdx) => {
-                                              updateSheetCell(activeSheetId, rIdx, cIdx, val !== undefined && val !== null ? String(val) : '');
-                                            });
-                                          }
-                                        });
-                                        setImportedFileInfo({
-                                          name: fileObj.name,
-                                          size: fileSizeStr,
-                                          sheets: workbook.SheetNames.length || 1,
-                                          rows: rows.length
-                                        });
-                                        showToast(`Loaded ${rows.length} rows from ${fileObj.name}`);
+                                        await processExcelWorkbook(fileObj);
                                       } else if (ext === '.json') {
                                         const text = await fileObj.text();
                                         const parsed = JSON.parse(text);
@@ -37396,6 +37522,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             }
                                           });
                                         }
+                                        setHasImportedData(true);
                                         setImportedFileInfo({
                                           name: fileObj.name,
                                           size: fileSizeStr,
@@ -37411,9 +37538,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             updateSheetCell(activeSheetId, rIdx, cIdx, val.trim());
                                           });
                                         });
+                                        setHasImportedData(true);
                                         setImportedFileInfo({
                                           name: fileObj.name,
-                                          size: `${(fileObj.size / (1024 * 1024)).toFixed(1)} MB`,
+                                          size: fileSizeStr,
                                           sheets: 1,
                                           rows: lines.length
                                         });
@@ -39197,10 +39325,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 }
 
                                 const cellBg = isExplicitAnchor && sheetSelectionMode === 'cell' 
-                                  ? 'bg-white' 
-                                  : (isInRange ? 'bg-[#ebf0fc]' : (isInColBand || isInRowBand || isAllSelected ? 'bg-slate-50' : ''));
+                                  ? 'bg-white/50' 
+                                  : (isInRange ? 'bg-[#ebf0fc]/50' : (isInColBand || isInRowBand || isAllSelected ? 'bg-slate-50/50' : ''));
 
-                                const customBgStyle = computedFormat.fill ? { backgroundColor: computedFormat.fill } : {};
+                                const customBgStyle = computedFormat.fill ? { background: computedFormat.fill } : {};
                                 const customTextStyle = computedFormat.color ? { color: computedFormat.color } : {};
                                 const cellKey = `${rowIndex}-${colIndex}`;
                                 const isEditingThisCell = editingCellKey === cellKey;
@@ -39215,7 +39343,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 return (
                                   <div
                                     key={`${num}-${colIndex + 1}`}
-                                    className={`relative transition-colors ${computedFormat.fill ? '' : cellBg} ${isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange ? 'z-10' : ''}`}
+                                    className={`relative transition-colors ${cellBg} ${isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange ? 'z-10' : ''}`}
                                     style={{ 
                                       height: computedFormat.rowSpan ? '100%' : rowHeight, 
                                       display: computedFormat.hidden ? 'none' : 'flex',
