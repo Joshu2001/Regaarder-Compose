@@ -9690,6 +9690,7 @@ export default function App() {
   const pageContextMenuRef = useRef(null);
   const headerContextMenuRef = useRef(null);
   const sheetToolbarMenuRef = useRef(null);
+  const sheetZoomControlRef = useRef(null);
   const deckToolbarMenuRef = useRef(null);
   const selectionActionMenuRef = useRef(null);
   const selectionMenuInputRef = useRef(null);
@@ -11711,14 +11712,17 @@ export default function App() {
   }, [showGridLines]);
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
+    let timeoutId;
+    const tick = () => {
       setRelativeNow(Date.now());
-    }, 60000);
-    return () => window.clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    setRelativeNow(Date.now());
+      const elapsedMs = Date.now() - (lastSavedAt || Date.now());
+      const nextDelay = elapsedMs >= 3600000 ? 1800000 : 60000;
+      timeoutId = window.setTimeout(tick, nextDelay);
+    };
+    tick();
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
   }, [lastSavedAt]);
 
   useEffect(() => {
@@ -12682,6 +12686,9 @@ export default function App() {
       if (sheetToolbarMenuRef.current && !sheetToolbarMenuRef.current.contains(event.target)) {
         setSheetToolbarMenuOpen(null);
       }
+      if (sheetZoomControlRef.current && !sheetZoomControlRef.current.contains(event.target)) {
+        setSheetZoomDropdownOpen(false);
+      }
       if (deckToolbarMenuRef.current && !deckToolbarMenuRef.current.contains(event.target)) {
         setDeckToolbarMenuOpen(false);
       }
@@ -12716,7 +12723,7 @@ export default function App() {
 
     window.addEventListener('pointerdown', handleClickOutside);
     return () => window.removeEventListener('pointerdown', handleClickOutside);
-  }, [openDropdown]);
+  }, [openDropdown, sheetZoomDropdownOpen]);
 
   const clampRoomStageFrame = useCallback((nextFrame) => {
     const viewportWidth = window.innerWidth;
@@ -40352,48 +40359,65 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                         <div className="flex items-center gap-3 text-[13px] font-medium text-gray-500 shrink-0">
                           {/* Zoom Controls */}
-                          <div className="hidden sm:flex items-center gap-1 bg-slate-100/90 dark:bg-zinc-800/90 px-2 py-0.5 rounded-lg border border-slate-200/70 dark:border-zinc-700/70">
+                          <div className="relative flex items-center gap-2" ref={sheetZoomControlRef}>
                             <button
                               type="button"
-                              onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}
-                              className="p-0.5 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 rounded hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors"
-                              title="Zoom Out (-10%)"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                setSheetZoomLevel(prev => Math.max(50, prev - 10));
+                              }}
+                              className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded cursor-pointer"
+                              title="Zoom out"
                             >
-                              <ZoomOut size={13} />
+                              -
                             </button>
-                            <input
-                              type="range"
-                              min="50"
-                              max="200"
-                              step="5"
-                              value={sheetZoomLevel}
-                              onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
-                              className="w-16 sm:w-20 h-1 bg-slate-300 dark:bg-zinc-600 rounded-lg appearance-none cursor-pointer accent-violet-600"
-                              title={`Zoom level: ${sheetZoomLevel}%`}
+                            <span
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                setSheetZoomDropdownOpen(prev => !prev);
+                              }}
+                              className="w-8 text-center cursor-pointer select-none text-slate-700 font-medium"
+                              title="Zoom options"
+                            >
+                              {sheetZoomLevel}%
+                            </span>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                setSheetZoomLevel(prev => Math.min(200, prev + 10));
+                              }}
+                              className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded cursor-pointer"
+                              title="Zoom in"
+                            >
+                              +
+                            </button>
+                            <ChevronDown
+                              size={12}
+                              className="cursor-pointer text-gray-400 hover:text-gray-600"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                setSheetZoomDropdownOpen(prev => !prev);
+                              }}
                             />
-                            <button
-                              type="button"
-                              onClick={() => setSheetZoomLevel(prev => Math.min(200, prev + 10))}
-                              className="p-0.5 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 rounded hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors"
-                              title="Zoom In (+10%)"
-                            >
-                              <ZoomIn size={13} />
-                            </button>
-                            <select
-                              value={sheetZoomLevel}
-                              onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
-                              className="bg-transparent text-[11px] font-semibold text-slate-700 dark:text-zinc-300 border-none px-1 py-0 cursor-pointer focus:outline-none"
-                            >
-                              <option value={50}>50%</option>
-                              <option value={75}>75%</option>
-                              <option value={90}>90%</option>
-                              <option value={100}>100%</option>
-                              <option value={110}>110%</option>
-                              <option value={125}>125%</option>
-                              <option value={150}>150%</option>
-                              <option value={175}>175%</option>
-                              <option value={200}>200%</option>
-                            </select>
+                            {sheetZoomDropdownOpen && (
+                              <div className="absolute right-0 bottom-full mb-1.5 z-50 w-24 bg-white border border-slate-200 rounded-xl shadow-lg p-1 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-100">
+                                {[50, 75, 90, 100, 125, 150, 200].map((level) => (
+                                  <button
+                                    key={level}
+                                    type="button"
+                                    onPointerDown={(e) => {
+                                      e.preventDefault();
+                                      setSheetZoomLevel(level);
+                                      setSheetZoomDropdownOpen(false);
+                                    }}
+                                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${sheetZoomLevel === level ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'}`}
+                                  >
+                                    {level}%
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
 
                           <button 
