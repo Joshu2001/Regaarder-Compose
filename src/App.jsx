@@ -26538,11 +26538,36 @@ Respond with a JSON array of slide objects matching the schema.`;
     const cols = (activeSheetGridRaw.cols && typeof activeSheetGridRaw.cols === 'number' && activeSheetGridRaw.cols > 0) ? activeSheetGridRaw.cols : 26;
     const parser = new Parser();
     
+    const cleanNumericValue = (rawVal) => {
+      if (rawVal === null || rawVal === undefined) return 0;
+      if (typeof rawVal === 'number') return rawVal;
+      if (typeof rawVal === 'string') {
+        const s = rawVal.trim();
+        if (!s) return 0;
+        if (!isNaN(Number(s))) return parseFloat(s);
+        if (/^[-+]?\d+(?:\.\d+)?\s*%$/.test(s)) {
+          return parseFloat(s.replace('%', '')) / 100;
+        }
+        const cleanCurrency = s.replace(/[\$\€\£\¥\s,]/g, '');
+        if (!isNaN(Number(cleanCurrency)) && cleanCurrency.length > 0) {
+          return parseFloat(cleanCurrency);
+        }
+        const matchWithUnit = s.match(/^([\$\€\£\¥]?\s*[-+]?[\d,]+(?:\.\d+)?)\s*([a-zA-Z%]+.*)$/);
+        if (matchWithUnit) {
+          const numPart = matchWithUnit[1].replace(/[\$\€\£\¥\s,]/g, '');
+          if (!isNaN(Number(numPart)) && numPart.length > 0) {
+            return parseFloat(numPart);
+          }
+        }
+      }
+      return rawVal;
+    };
+
     parser.on('callCellValue', (cellCoord, done) => {
       const rowIndex = cellCoord.row.index;
       const colIndex = cellCoord.column.index;
       const val = activeSheetGridRaw.cells?.[rowIndex]?.[colIndex];
-      done(val);
+      done(cleanNumericValue(val));
     });
 
     parser.on('callRangeValue', (startCellCoord, endCellCoord, done) => {
@@ -26551,7 +26576,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         const rowData = activeSheetGridRaw.cells?.[row];
         const colFragment = [];
         for (let col = startCellCoord.column.index; col <= endCellCoord.column.index; col++) {
-          colFragment.push(rowData ? rowData[col] : null);
+          colFragment.push(rowData ? cleanNumericValue(rowData[col]) : null);
         }
         fragment.push(colFragment);
       }
@@ -26815,29 +26840,22 @@ Respond with a JSON array of slide objects matching the schema.`;
       headerName = formatTypeArg.headerName || headerNameArg;
     }
 
-    // Explicit percentage format or string already ending with %
-    if (formatType === 'percent' || formatType === 'percentage' || strVal.endsWith('%')) {
+    const lowHeader = String(headerName || '').toLowerCase();
+    const isPctHeader = lowHeader.includes('margin') || lowHeader.includes('churn') || lowHeader.includes('rate') || lowHeader.includes('%');
+    const numVal = Number(val);
+
+    // Explicit percentage format, string already ending with %, or percentage header keyword
+    if (formatType === 'percent' || formatType === 'percentage' || strVal.endsWith('%') || isPctHeader) {
       if (strVal.endsWith('%')) return strVal;
-      const num = Number(val);
-      if (!isNaN(num)) {
-        const pctVal = (num > 0 && num < 1) ? num * 100 : num;
-        const decimals = (pctVal % 1 === 0) ? 1 : 2;
+      if (!isNaN(numVal)) {
+        const pctVal = (Math.abs(numVal) > 0 && Math.abs(numVal) < 1) ? numVal * 100 : numVal;
+        const decimals = (lowHeader.includes('gross') || pctVal % 1 === 0) ? 1 : 2;
         return `${pctVal.toFixed(decimals)}%`;
       }
     }
 
-    // Auto-detect percentage / ratio / margin / churn columns if formatType is auto or unassigned
-    const lowHeader = String(headerName || '').toLowerCase();
-    const isPctHeader = lowHeader.includes('margin') || lowHeader.includes('churn') || lowHeader.includes('rate') || lowHeader.includes('%');
-    const numVal = Number(val);
-    if (isPctHeader && !isNaN(numVal)) {
-      const pctVal = (numVal > 0 && numVal < 1) ? numVal * 100 : numVal;
-      const decimals = lowHeader.includes('gross') ? 1 : 2;
-      return `${pctVal.toFixed(decimals)}%`;
-    }
-
     if (isNaN(numVal)) return val;
-    if (formatType === 'currency') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numVal);
+    if (formatType === 'currency' && !isPctHeader) return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numVal);
     if (formatType === 'decimal') return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(numVal);
     return val;
   };
@@ -38096,6 +38114,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     const range = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
                                     const colMaxLengths = {};
                                     const importedColWidths = {};
+                                    const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
 
                                     if (range) {
                                       for (let R = range.s.r; R <= range.e.r; ++R) {
@@ -38133,7 +38152,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         }
                                       }
                                     } else {
-                                      const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
                                       rawRows.forEach((rowItems, rIdx) => {
                                         if (Array.isArray(rowItems)) {
                                           rowItems.forEach((val, cIdx) => {
@@ -38159,7 +38177,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       const totalCols = range.e.c + 1;
                                       const formats2D = Array.from({ length: totalRows }, () => Array(totalCols).fill(null));
                                       
-                                      const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
                                       const isRowZeroHeader = rawRows[0] && Array.isArray(rawRows[0]) && rawRows[0].some(v => typeof v === 'string' && v.trim().length > 0);
 
                                       for (let R = range.s.r; R <= range.e.r; ++R) {
