@@ -8669,6 +8669,7 @@ export default function App() {
   const [hasImportedData, setHasImportedData] = useState(false);
   const [importedFileInfo, setImportedFileInfo] = useState(null);
   const [importedFilesList, setImportedFilesList] = useState([]);
+  const [isDataFilesDropdownOpen, setIsDataFilesDropdownOpen] = useState(true);
   const [mergeSheetModalOpen, setMergeSheetModalOpen] = useState(false);
   const [mergeSheetSourceDocId, setMergeSheetSourceDocId] = useState(null);
   const [selectedDatasets, setSelectedDatasets] = useState([]);
@@ -37914,55 +37915,102 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </p>
 
                           {/* Processed Document File Cards List */}
-                          {(importedFilesList.length > 0 || importedFileInfo || hasImportedData) && (
-                            <div className="w-full space-y-2.5 mb-6">
-                              {(importedFilesList.length > 0 ? importedFilesList : [importedFileInfo || { id: 'default', name: 'Untitled Document', size: '0 KB', sheets: 1, rows: 100 }]).map((fileItem) => {
-                                const ext = fileItem?.name ? fileItem.name.substring(fileItem.name.lastIndexOf('.') + 1).toUpperCase() : 'XLSX';
-                                return (
-                                  <div key={fileItem.id || fileItem.name} className="w-full bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-700/60 rounded-2xl p-3.5 flex items-center justify-between text-left transition-all hover:border-slate-300 dark:hover:border-zinc-600">
-                                    <div className="flex items-center gap-3.5 min-w-0">
-                                      <div className="w-10 h-11 rounded-lg bg-emerald-500 flex flex-col items-center justify-center text-white shrink-0 shadow-sm relative overflow-hidden">
-                                        <div className="text-[9px] font-black tracking-tighter uppercase mb-0.5">
-                                          {ext}
-                                        </div>
-                                        <Table size={14} />
+                          {(importedFilesList.length > 0 || importedFileInfo || hasImportedData) && (() => {
+                            const activeFilesList = importedFilesList.length > 0 
+                              ? importedFilesList 
+                              : [importedFileInfo || { id: 'default', name: 'Untitled Document', size: '0 KB', sheets: 1, rows: 100 }];
+                            const hasMoreThan3Docs = activeFilesList.length >= 4;
+                            const filesToRender = (hasMoreThan3Docs && !isDataFilesDropdownOpen)
+                              ? activeFilesList.slice(0, 2)
+                              : activeFilesList;
+
+                            return (
+                              <div className="w-full mb-6 text-left">
+                                {/* Thin Dropdown Header when 4 or more documents are present */}
+                                {hasMoreThan3Docs && (
+                                  <div className="w-full flex items-center justify-between px-3 py-2 mb-2.5 bg-slate-50/90 dark:bg-zinc-800/60 rounded-xl border border-slate-200/70 dark:border-zinc-700/60 text-xs transition-all">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-5 h-5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center font-bold text-[11px]">
+                                        {activeFilesList.length}
                                       </div>
-                                      <div className="min-w-0">
-                                        <h4 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 truncate">
-                                          {fileItem?.name || 'Untitled Document'}
-                                        </h4>
-                                        <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
-                                          <span className="flex items-center gap-1"><Grid size={12} /> {fileItem?.sheets ?? 1} { (fileItem?.sheets ?? 1) === 1 ? 'Sheet' : 'Sheets' }</span>
-                                          <span className="flex items-center gap-1">
-                                            <BarChart2 size={12} /> {fileItem?.rows ? `${fileItem.rows.toLocaleString()} Rows` : '100 Rows'}
-                                          </span>
-                                          <span className="flex items-center gap-1"><Database size={12} /> {fileItem?.size || '0 KB'}</span>
-                                        </div>
-                                      </div>
+                                      <span className="font-semibold text-slate-700 dark:text-zinc-200 text-xs">
+                                        Uploaded Documents ({activeFilesList.length})
+                                      </span>
                                     </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-medium border border-emerald-200/60 dark:border-emerald-800/40">
-                                        <Check size={13} strokeWidth={2.5} />
-                                        <span>Processed</span>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onPointerDown={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          handleRemoveImportedFileItem(fileItem.id, fileItem.docId);
-                                        }}
-                                        title="Remove file"
-                                        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 dark:text-zinc-500 transition-colors"
-                                      >
-                                        <X size={15} />
-                                      </button>
-                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setIsDataFilesDropdownOpen((prev) => !prev)}
+                                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 font-medium text-xs border border-slate-200 dark:border-zinc-700 shadow-sm hover:border-violet-300 dark:hover:border-violet-700 hover:text-violet-600 dark:hover:text-violet-400 transition-all"
+                                    >
+                                      <span>{isDataFilesDropdownOpen ? 'Collapse View' : `View All (${activeFilesList.length})`}</span>
+                                      <ChevronDown size={13} className={`transition-transform duration-200 ${isDataFilesDropdownOpen ? 'rotate-180 text-violet-500' : 'text-slate-400'}`} />
+                                    </button>
                                   </div>
-                                );
-                              })}
-                            </div>
-                          )}
+                                )}
+
+                                {/* Document Cards List with Scrolling */}
+                                <div className={`w-full space-y-2.5 ${hasMoreThan3Docs && isDataFilesDropdownOpen ? 'max-h-[220px] overflow-y-auto thin-scrollbar pr-1.5' : ''}`}>
+                                  {filesToRender.map((fileItem) => {
+                                    const ext = fileItem?.name ? fileItem.name.substring(fileItem.name.lastIndexOf('.') + 1).toUpperCase() : 'XLSX';
+                                    return (
+                                      <div key={fileItem.id || fileItem.name} className="w-full bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-700/60 rounded-2xl p-3.5 flex items-center justify-between text-left transition-all hover:border-slate-300 dark:hover:border-zinc-600">
+                                        <div className="flex items-center gap-3.5 min-w-0">
+                                          <div className="w-10 h-11 rounded-lg bg-emerald-500 flex flex-col items-center justify-center text-white shrink-0 shadow-sm relative overflow-hidden">
+                                            <div className="text-[9px] font-black tracking-tighter uppercase mb-0.5">
+                                              {ext}
+                                            </div>
+                                            <Table size={14} />
+                                          </div>
+                                          <div className="min-w-0">
+                                            <h4 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                                              {fileItem?.name || 'Untitled Document'}
+                                            </h4>
+                                            <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
+                                              <span className="flex items-center gap-1"><Grid size={12} /> {fileItem?.sheets ?? 1} { (fileItem?.sheets ?? 1) === 1 ? 'Sheet' : 'Sheets' }</span>
+                                              <span className="flex items-center gap-1">
+                                                <BarChart2 size={12} /> {fileItem?.rows ? `${fileItem.rows.toLocaleString()} Rows` : '100 Rows'}
+                                              </span>
+                                              <span className="flex items-center gap-1"><Database size={12} /> {fileItem?.size || '0 KB'}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-medium border border-emerald-200/60 dark:border-emerald-800/40">
+                                            <Check size={13} strokeWidth={2.5} />
+                                            <span>Processed</span>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onPointerDown={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              handleRemoveImportedFileItem(fileItem.id, fileItem.docId);
+                                            }}
+                                            title="Remove file"
+                                            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 dark:text-zinc-500 transition-colors"
+                                          >
+                                            <X size={15} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Expand Pill when collapsed */}
+                                {hasMoreThan3Docs && !isDataFilesDropdownOpen && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsDataFilesDropdownOpen(true)}
+                                    className="w-full mt-2.5 py-2 px-3 bg-slate-50/70 dark:bg-zinc-800/40 hover:bg-violet-50/60 dark:hover:bg-violet-950/40 border border-dashed border-slate-200/90 dark:border-zinc-700/70 rounded-xl text-xs font-medium text-violet-600 dark:text-violet-400 flex items-center justify-center gap-1.5 transition-all"
+                                  >
+                                    <span>+ {activeFilesList.length - 2} more uploaded documents</span>
+                                    <ChevronDown size={13} />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })()}
 
                           {/* What's Next Options (shown when document is ready) */}
                           {(importedFileInfo || hasImportedData) && (
