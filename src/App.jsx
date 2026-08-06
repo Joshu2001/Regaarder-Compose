@@ -37963,354 +37963,252 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           )}
 
                           {/* Upload Dropzone */}
-                          <div
-                            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                            onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                            onDrop={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                                const file = e.dataTransfer.files[0];
-                                showToast(`Importing ${file.name}...`);
-                                const formattedSize = file.size < 1024 * 1024 
-                                   ? `${(file.size / 1024).toFixed(1)} KB` 
-                                   : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
-                                 setHasImportedData(true);
-                                 setImportedFileInfo({
-                                   name: file.name,
-                                   size: formattedSize,
-                                   sheets: 1,
-                                   rows: 0
-                                 });
-                                 const handleFileImport = async (fileObj) => {
-                                   try {
-                                     const ext = fileObj.name.substring(fileObj.name.lastIndexOf('.')).toLowerCase();
-                                     const fileSizeStr = fileObj.size < 1024 * 1024 
-                                       ? `${(fileObj.size / 1024).toFixed(1)} KB` 
-                                       : `${(fileObj.size / (1024 * 1024)).toFixed(1)} MB`;
-                                     if (ext === '.xlsx' || ext === '.xls') {
-                                       const XLSX = await import('xlsx');
-                                       const buffer = await fileObj.arrayBuffer();
-                                       const workbook = XLSX.read(buffer, { type: 'array' });
-                                       const firstSheetName = workbook.SheetNames[0];
-                                       const worksheet = workbook.Sheets[firstSheetName];
-                                       const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                                       rows.forEach((rowItems, rIdx) => {
-                                         if (Array.isArray(rowItems)) {
-                                           rowItems.forEach((val, cIdx) => {
-                                             updateSheetCell(activeSheetId, rIdx, cIdx, val !== undefined && val !== null ? String(val) : '');
-                                           });
-                                         }
-                                       });
-                                       setImportedFileInfo({
-                                         name: fileObj.name,
-                                         size: fileSizeStr,
-                                         sheets: workbook.SheetNames.length || 1,
-                                         rows: rows.length
-                                       });
-                                       showToast(`Loaded ${rows.length} rows from ${fileObj.name}`);
-                                     } else if (ext === '.json') {
-                                       const text = await fileObj.text();
-                                       const parsed = JSON.parse(text);
-                                       let rowCount = 0;
-                                       if (Array.isArray(parsed)) {
-                                         rowCount = parsed.length;
-                                         parsed.forEach((item, rIdx) => {
-                                           if (Array.isArray(item)) {
-                                             item.forEach((val, cIdx) => updateSheetCell(activeSheetId, rIdx, cIdx, String(val ?? '')));
-                                           } else if (typeof item === 'object' && item !== null) {
-                                             const keys = Object.keys(item);
-                                             if (rIdx === 0) {
-                                               keys.forEach((k, cIdx) => updateSheetCell(activeSheetId, 0, cIdx, k));
-                                             }
-                                             keys.forEach((k, cIdx) => updateSheetCell(activeSheetId, rIdx + 1, cIdx, String(item[k] ?? '')));
-                                           }
-                                         });
-                                       }
-                                       setImportedFileInfo({
-                                         name: fileObj.name,
-                                         size: fileSizeStr,
-                                         sheets: 1,
-                                         rows: rowCount
-                                       });
-                                       showToast(`Loaded data from ${fileObj.name}`);
-                                     } else {
-                                       const text = await fileObj.text();
-                                       const lines = text.split(/\r?\n/).map(line => line.split(','));
-                                       lines.forEach((rowItems, rIdx) => {
-                                         rowItems.forEach((val, cIdx) => {
-                                           updateSheetCell(activeSheetId, rIdx, cIdx, val.trim());
-                                         });
-                                       });
-                                       setImportedFileInfo({
-                                         name: fileObj.name,
-                                         size: fileSizeStr,
-                                         sheets: 1,
-                                         rows: lines.length
-                                       });
-                                       showToast(`Loaded ${lines.length} rows from ${fileObj.name}`);
-                                     }
-                                   } catch (err) {
-                                     console.error("Import failed:", err);
-                                     showToast(`Failed to parse ${fileObj.name}`);
-                                   }
-                                 };
-                                 handleFileImport(file);
+                          {(() => {
+                            const parseColorObj = (colorObj) => {
+                              if (!colorObj) return null;
+                              if (typeof colorObj === 'string') {
+                                if (colorObj.startsWith('#')) return colorObj;
+                                if (colorObj.length === 6) return `#${colorObj}`;
+                                if (colorObj.length === 8) return `#${colorObj.slice(2)}`;
                               }
-                            }}
-                            onClick={() => document.getElementById('sheets-data-tab-file-input')?.click()}
-                            className="w-full border-2 border-dashed border-violet-200 dark:border-violet-900/50 bg-violet-50/20 dark:bg-violet-950/10 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-violet-50/50 hover:border-violet-300 dark:hover:border-violet-800 group"
-                          >
-                            <input
-                              type="file"
-                              id="sheets-data-tab-file-input"
-                              className="hidden"
-                              accept=".csv,.xlsx,.xls,.pdf,.json,.txt"
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  const file = e.target.files[0];
-                                  showToast(`Importing ${file.name}...`);
-                                  const formattedSize = file.size < 1024 * 1024 
-                                    ? `${(file.size / 1024).toFixed(1)} KB` 
-                                    : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+                              if (colorObj.argb) {
+                                const argb = String(colorObj.argb);
+                                if (argb !== 'FFFFFFFF' && argb !== '00000000' && argb.toLowerCase() !== 'auto') {
+                                  return `#${argb.length === 8 ? argb.slice(2) : argb}`;
+                                }
+                              }
+                              const THEME_COLORS = ['#FFFFFF', '#000000', '#E7E6E6', '#1F497D', '#4F81BD', '#C0504D', '#9BBB59', '#8064A2', '#4BACC6', '#F79646'];
+                              if (colorObj.theme !== undefined && colorObj.theme !== null) {
+                                const tIdx = Number(colorObj.theme);
+                                if (THEME_COLORS[tIdx]) return THEME_COLORS[tIdx];
+                              }
+                              if (colorObj.indexed !== undefined && colorObj.indexed !== null) {
+                                if (colorObj.indexed === 1) return '#FFFFFF';
+                                if (colorObj.indexed === 0) return '#000000';
+                              }
+                              return null;
+                            };
+
+                            const processExcelWorkbook = async (fileObj) => {
+                              try {
+                                const ExcelJS = await import('exceljs');
+                                const buffer = await fileObj.arrayBuffer();
+                                const workbook = new ExcelJS.Workbook();
+                                await workbook.xlsx.load(buffer);
+                                
+                                const worksheet = workbook.worksheets[0];
+                                if (!worksheet) return;
+
+                                const colMaxLengths = {};
+                                const importedColWidths = {};
+                                const rowCount = worksheet.rowCount || 0;
+                                const colCount = worksheet.columnCount || 0;
+                                const formats2D = Array.from({ length: Math.max(rowCount, 1) }, () => Array(Math.max(colCount, 1)).fill(null));
+                                let maxRowIdx = 0;
+
+                                worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+                                  const rIdx = rowNumber - 1;
+                                  maxRowIdx = Math.max(maxRowIdx, rowNumber);
+                                  row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                                    const cIdx = colNumber - 1;
+                                    
+                                    let valStr = '';
+                                    if (cell.value !== undefined && cell.value !== null) {
+                                      if (typeof cell.value === 'object') {
+                                        if (cell.value.result !== undefined && cell.value.result !== null) {
+                                          valStr = String(cell.value.result);
+                                        } else if (cell.value.richText && Array.isArray(cell.value.richText)) {
+                                          valStr = cell.value.richText.map(rt => rt.text || '').join('');
+                                        } else if (cell.value.text) {
+                                          valStr = String(cell.value.text);
+                                        } else if (cell.value instanceof Date) {
+                                          valStr = cell.value.toLocaleDateString();
+                                        } else {
+                                          valStr = String(cell.text || '');
+                                        }
+                                      } else {
+                                        valStr = String(cell.value);
+                                      }
+                                    }
+
+                                    updateSheetCell(activeSheetId, rIdx, cIdx, valStr);
+
+                                    if (valStr) {
+                                      colMaxLengths[cIdx] = Math.max(colMaxLengths[cIdx] || 0, valStr.length);
+                                    }
+
+                                    const fmt = {};
+                                    if (cell.font) {
+                                      if (cell.font.bold) fmt.bold = true;
+                                      if (cell.font.italic) fmt.italic = true;
+                                      if (cell.font.underline) fmt.underline = true;
+                                      if (cell.font.name) fmt.fontFamily = cell.font.name;
+                                      if (cell.font.size) fmt.fontSize = String(cell.font.size);
+                                      const fontClr = parseColorObj(cell.font.color);
+                                      if (fontClr) fmt.color = fontClr;
+                                    }
+
+                                    if (cell.fill) {
+                                      if (cell.fill.fgColor) {
+                                        const fillClr = parseColorObj(cell.fill.fgColor);
+                                        if (fillClr) fmt.fill = fillClr;
+                                      } else if (cell.fill.bgColor) {
+                                        const fillClr = parseColorObj(cell.fill.bgColor);
+                                        if (fillClr) fmt.fill = fillClr;
+                                      }
+                                    }
+
+                                    if (cell.alignment && cell.alignment.horizontal) {
+                                      fmt.align = cell.alignment.horizontal;
+                                    }
+
+                                    if (!formats2D[rIdx]) formats2D[rIdx] = [];
+                                    if (Object.keys(fmt).length > 0) {
+                                      formats2D[rIdx][cIdx] = fmt;
+                                    }
+                                  });
+                                });
+
+                                const root = document.documentElement;
+                                if (worksheet.columns) {
+                                  worksheet.columns.forEach((col, cIdx) => {
+                                    let colWidth = 140;
+                                    if (col.width) {
+                                      colWidth = Math.max(130, Math.round(col.width * 7.5 + 28));
+                                    } else if (colMaxLengths[cIdx]) {
+                                      colWidth = Math.max(140, Math.min(380, Math.round(colMaxLengths[cIdx] * 10 + 36)));
+                                    }
+                                    importedColWidths[cIdx] = colWidth;
+                                    if (root) root.style.setProperty(`--col-${cIdx}-width`, `${colWidth}px`);
+                                  });
+                                }
+
+                                setSheetGrids(prev => {
+                                  const target = prev[activeSheetId];
+                                  if (!target) return prev;
+                                  const existingFormats = Array.isArray(target.formats)
+                                    ? target.formats.map(r => [...r])
+                                    : Array.from({ length: target.rows }, () => Array(target.cols).fill(null));
+                                  formats2D.forEach((rowFmts, rIdx) => {
+                                    if (!existingFormats[rIdx]) existingFormats[rIdx] = [];
+                                    rowFmts?.forEach((fmt, cIdx) => {
+                                      if (fmt !== null) existingFormats[rIdx][cIdx] = fmt;
+                                    });
+                                  });
+                                  return {
+                                    ...prev,
+                                    [activeSheetId]: {
+                                      ...target,
+                                      formats: existingFormats,
+                                      columnWidths: { ...(target.columnWidths || {}), ...importedColWidths }
+                                    }
+                                  };
+                                });
+
+                                const fileSizeStr = fileObj.size < 1024 * 1024 
+                                  ? `${(fileObj.size / 1024).toFixed(1)} KB` 
+                                  : `${(fileObj.size / (1024 * 1024)).toFixed(1)} MB`;
+
+                                setHasImportedData(true);
+                                setImportedFileInfo({
+                                  name: fileObj.name,
+                                  size: fileSizeStr,
+                                  sheets: workbook.worksheets.length || 1,
+                                  rows: maxRowIdx
+                                });
+                                showToast(`Loaded ${maxRowIdx} rows with styles from ${fileObj.name}`);
+                              } catch (err) {
+                                console.error("Excel processing failed:", err);
+                                showToast(`Failed to parse ${fileObj.name}`);
+                              }
+                            };
+
+                            const handleFileImport = async (fileObj) => {
+                              try {
+                                const ext = fileObj.name.substring(fileObj.name.lastIndexOf('.')).toLowerCase();
+                                const fileSizeStr = fileObj.size < 1024 * 1024 
+                                  ? `${(fileObj.size / 1024).toFixed(1)} KB` 
+                                  : `${(fileObj.size / (1024 * 1024)).toFixed(1)} MB`;
+                                if (ext === '.xlsx' || ext === '.xls') {
+                                  await processExcelWorkbook(fileObj);
+                                } else if (ext === '.json') {
+                                  const text = await fileObj.text();
+                                  const parsed = JSON.parse(text);
+                                  let rowCount = 0;
+                                  if (Array.isArray(parsed)) {
+                                    rowCount = parsed.length;
+                                    parsed.forEach((item, rIdx) => {
+                                      if (Array.isArray(item)) {
+                                        item.forEach((val, cIdx) => updateSheetCell(activeSheetId, rIdx, cIdx, String(val ?? '')));
+                                      } else if (typeof item === 'object' && item !== null) {
+                                        const keys = Object.keys(item);
+                                        if (rIdx === 0) {
+                                          keys.forEach((k, cIdx) => updateSheetCell(activeSheetId, 0, cIdx, k));
+                                        }
+                                        keys.forEach((k, cIdx) => updateSheetCell(activeSheetId, rIdx + 1, cIdx, String(item[k] ?? '')));
+                                      }
+                                    });
+                                  }
                                   setHasImportedData(true);
                                   setImportedFileInfo({
-                                    name: file.name,
-                                    size: formattedSize,
-                                    sheets: 1
+                                    name: fileObj.name,
+                                    size: fileSizeStr,
+                                    sheets: 1,
+                                    rows: rowCount
                                   });
-                                  const parseColorObj = (colorObj) => {
-                                    if (!colorObj) return null;
-                                    if (typeof colorObj === 'string') {
-                                      if (colorObj.startsWith('#')) return colorObj;
-                                      if (colorObj.length === 6) return `#${colorObj}`;
-                                      if (colorObj.length === 8) return `#${colorObj.slice(2)}`;
-                                    }
-                                    if (colorObj.rgb) {
-                                      const rgb = String(colorObj.rgb);
-                                      if (rgb !== 'FFFFFFFF' && rgb !== '00000000' && rgb.toLowerCase() !== 'auto') {
-                                        return `#${rgb.length === 8 ? rgb.slice(2) : rgb}`;
-                                      }
-                                    }
-                                    const THEME_COLORS = ['#FFFFFF', '#000000', '#E7E6E6', '#1F497D', '#4F81BD', '#C0504D', '#9BBB59', '#8064A2', '#4BACC6', '#F79646'];
-                                    if (colorObj.theme !== undefined && colorObj.theme !== null) {
-                                      const tIdx = Number(colorObj.theme);
-                                      if (THEME_COLORS[tIdx]) return THEME_COLORS[tIdx];
-                                    }
-                                    if (colorObj.indexed !== undefined && colorObj.indexed !== null) {
-                                      if (colorObj.indexed === 1) return '#FFFFFF';
-                                    if (colorObj.indexed === 0) return '#000000';
-                                    }
-                                    return null;
-                                  };
-
-                                  const processExcelWorkbook = async (fileObj) => {
-                                    const XLSX = await import('xlsx');
-                                    const buffer = await fileObj.arrayBuffer();
-                                    const workbook = XLSX.read(buffer, { type: 'array', cellStyles: true, cellFormulas: true, cellDates: true, cellNF: true });
-                                    const firstSheetName = workbook.SheetNames[0];
-                                    const worksheet = workbook.Sheets[firstSheetName];
-                                    
-                                    const range = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
-                                    const colMaxLengths = {};
-                                    const importedColWidths = {};
-                                    const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
-
-                                    if (range) {
-                                      for (let R = range.s.r; R <= range.e.r; ++R) {
-                                        for (let C = range.s.c; C <= range.e.c; ++C) {
-                                          const cell = worksheet[XLSX.utils.encode_cell({ r: R, c: C })];
-                                          let val = '';
-                                          if (cell) {
-                                            if (cell.w !== undefined && cell.w !== null) {
-                                              val = String(cell.w);
-                                            } else if (cell.v !== undefined && cell.v !== null) {
-                                              val = String(cell.v);
-                                            }
-                                          }
-                                          updateSheetCell(activeSheetId, R, C, val);
-                                          if (val) {
-                                            colMaxLengths[C] = Math.max(colMaxLengths[C] || 0, val.length);
-                                          }
-                                        }
-                                      }
-
-                                      const root = document.documentElement;
-                                      for (let C = range.s.c; C <= range.e.c; ++C) {
-                                        const colInfo = worksheet['!cols']?.[C];
-                                        let colWidth = 140;
-                                        if (colInfo && colInfo.wch) {
-                                          colWidth = Math.max(130, Math.round(colInfo.wch * 9 + 28));
-                                        } else if (colInfo && colInfo.wpx) {
-                                          colWidth = Math.max(130, Math.round(colInfo.wpx));
-                                        } else if (colMaxLengths[C]) {
-                                          colWidth = Math.max(140, Math.min(380, Math.round(colMaxLengths[C] * 10 + 36)));
-                                        }
-                                        importedColWidths[C] = colWidth;
-                                        if (root) {
-                                          root.style.setProperty(`--col-${C}-width`, `${colWidth}px`);
-                                        }
-                                      }
-                                    } else {
-                                      rawRows.forEach((rowItems, rIdx) => {
-                                        if (Array.isArray(rowItems)) {
-                                          rowItems.forEach((val, cIdx) => {
-                                            const valStr = val !== undefined && val !== null ? String(val) : '';
-                                            updateSheetCell(activeSheetId, rIdx, cIdx, valStr);
-                                            if (valStr) {
-                                              colMaxLengths[cIdx] = Math.max(colMaxLengths[cIdx] || 0, valStr.length);
-                                            }
-                                          });
-                                        }
-                                      });
-                                      const root = document.documentElement;
-                                      Object.keys(colMaxLengths).forEach(cIdx => {
-                                        const colWidth = Math.max(140, Math.min(380, Math.round(colMaxLengths[cIdx] * 10 + 36)));
-                                        importedColWidths[cIdx] = colWidth;
-                                        if (root) root.style.setProperty(`--col-${cIdx}-width`, `${colWidth}px`);
-                                      });
-                                    }
-
-                                    if (worksheet['!ref']) {
-                                      const range = XLSX.utils.decode_range(worksheet['!ref']);
-                                      const totalRows = range.e.r + 1;
-                                      const totalCols = range.e.c + 1;
-                                      const formats2D = Array.from({ length: totalRows }, () => Array(totalCols).fill(null));
-                                      
-                                      const isRowZeroHeader = rawRows[0] && Array.isArray(rawRows[0]) && rawRows[0].some(v => typeof v === 'string' && v.trim().length > 0);
-
-                                      for (let R = range.s.r; R <= range.e.r; ++R) {
-                                        for (let C = range.s.c; C <= range.e.c; ++C) {
-                                          const cell = worksheet[XLSX.utils.encode_cell({ r: R, c: C })];
-                                          const fmt = {};
-                                          if (cell && cell.s) {
-                                            if (cell.s.fill) {
-                                              const fillClr = parseColorObj(cell.s.fill.fgColor || cell.s.fill.bgColor || cell.s.fill);
-                                              if (fillClr) fmt.fill = fillClr;
-                                            }
-                                            if (cell.s.font) {
-                                              const fontClr = parseColorObj(cell.s.font.color || cell.s.font);
-                                              if (fontClr) fmt.color = fontClr;
-                                              if (cell.s.font.bold) fmt.bold = true;
-                                              if (cell.s.font.italic) fmt.italic = true;
-                                              if (cell.s.font.underline) fmt.underline = true;
-                                              if (cell.s.font.name) fmt.fontFamily = cell.s.font.name;
-                                              if (cell.s.font.sz) fmt.fontSize = String(cell.s.font.sz);
-                                            }
-                                            if (cell.s.alignment && cell.s.alignment.horizontal) {
-                                              fmt.align = cell.s.alignment.horizontal;
-                                            }
-                                          }
-
-                                          if (R === 0 && isRowZeroHeader) {
-                                            if (!fmt.fill) fmt.fill = '#1F497D';
-                                            if (!fmt.color) fmt.color = '#FFFFFF';
-                                            fmt.bold = true;
-                                          }
-
-                                          if (Object.keys(fmt).length > 0) {
-                                            formats2D[R][C] = fmt;
-                                          }
-                                        }
-                                      }
-
-                                      setSheetGrids(prev => {
-                                        const target = prev[activeSheetId];
-                                        if (!target) return prev;
-                                        const existingFormats = Array.isArray(target.formats)
-                                          ? target.formats.map(r => [...r])
-                                          : Array.from({ length: target.rows }, () => Array(target.cols).fill(null));
-                                        formats2D.forEach((rowFmts, rIdx) => {
-                                          if (!existingFormats[rIdx]) existingFormats[rIdx] = [];
-                                          rowFmts.forEach((fmt, cIdx) => {
-                                            if (fmt !== null) existingFormats[rIdx][cIdx] = fmt;
-                                          });
-                                        });
-                                        return {
-                                          ...prev,
-                                          [activeSheetId]: {
-                                            ...target,
-                                            formats: existingFormats,
-                                            columnWidths: { ...(target.columnWidths || {}), ...importedColWidths }
-                                          }
-                                        };
-                                      });
-                                    }
-
-                                    const fileSizeStr = fileObj.size < 1024 * 1024 
-                                      ? `${(fileObj.size / 1024).toFixed(1)} KB` 
-                                      : `${(fileObj.size / (1024 * 1024)).toFixed(1)} MB`;
-
-                                    setHasImportedData(true);
-                                    setImportedFileInfo({
-                                      name: fileObj.name,
-                                      size: fileSizeStr,
-                                      sheets: workbook.SheetNames.length || 1,
-                                      rows: rawRows.length
+                                  showToast(`Loaded data from ${fileObj.name}`);
+                                } else {
+                                  const text = await fileObj.text();
+                                  const lines = text.split(/\r?\n/).map(line => line.split(','));
+                                  lines.forEach((rowItems, rIdx) => {
+                                    rowItems.forEach((val, cIdx) => {
+                                      updateSheetCell(activeSheetId, rIdx, cIdx, val.trim());
                                     });
-                                    showToast(`Loaded ${rawRows.length} rows with styles from ${fileObj.name}`);
-                                  };
-
-                                  const handleFileImport = async (fileObj) => {
-                                    try {
-                                      const ext = fileObj.name.substring(fileObj.name.lastIndexOf('.')).toLowerCase();
-                                      const fileSizeStr = fileObj.size < 1024 * 1024 
-                                        ? `${(fileObj.size / 1024).toFixed(1)} KB` 
-                                        : `${(fileObj.size / (1024 * 1024)).toFixed(1)} MB`;
-                                      if (ext === '.xlsx' || ext === '.xls') {
-                                        await processExcelWorkbook(fileObj);
-                                      } else if (ext === '.json') {
-                                        const text = await fileObj.text();
-                                        const parsed = JSON.parse(text);
-                                        let rowCount = 0;
-                                        if (Array.isArray(parsed)) {
-                                          rowCount = parsed.length;
-                                          parsed.forEach((item, rIdx) => {
-                                            if (Array.isArray(item)) {
-                                              item.forEach((val, cIdx) => updateSheetCell(activeSheetId, rIdx, cIdx, String(val ?? '')));
-                                            } else if (typeof item === 'object' && item !== null) {
-                                              const keys = Object.keys(item);
-                                              if (rIdx === 0) {
-                                                keys.forEach((k, cIdx) => updateSheetCell(activeSheetId, 0, cIdx, k));
-                                              }
-                                              keys.forEach((k, cIdx) => updateSheetCell(activeSheetId, rIdx + 1, cIdx, String(item[k] ?? '')));
-                                            }
-                                          });
-                                        }
-                                        setHasImportedData(true);
-                                        setImportedFileInfo({
-                                          name: fileObj.name,
-                                          size: fileSizeStr,
-                                          sheets: 1,
-                                          rows: rowCount
-                                        });
-                                        showToast(`Loaded data from ${fileObj.name}`);
-                                      } else {
-                                        const text = await fileObj.text();
-                                        const lines = text.split(/\r?\n/).map(line => line.split(','));
-                                        lines.forEach((rowItems, rIdx) => {
-                                          rowItems.forEach((val, cIdx) => {
-                                            updateSheetCell(activeSheetId, rIdx, cIdx, val.trim());
-                                          });
-                                        });
-                                        setHasImportedData(true);
-                                        setImportedFileInfo({
-                                          name: fileObj.name,
-                                          size: fileSizeStr,
-                                          sheets: 1,
-                                          rows: lines.length
-                                        });
-                                        showToast(`Loaded ${lines.length} rows from ${fileObj.name}`);
-                                      }
-                                    } catch (err) {
-                                      console.error("Import failed:", err);
-                                      showToast(`Failed to parse ${fileObj.name}`);
-                                    }
-                                  };
-                                  handleFileImport(file);
+                                  });
+                                  setHasImportedData(true);
+                                  setImportedFileInfo({
+                                    name: fileObj.name,
+                                    size: fileSizeStr,
+                                    sheets: 1,
+                                    rows: lines.length
+                                  });
+                                  showToast(`Loaded ${lines.length} rows from ${fileObj.name}`);
                                 }
-                              }}
-                            />
+                              } catch (err) {
+                                console.error("Import failed:", err);
+                                showToast(`Failed to parse ${fileObj.name}`);
+                              }
+                            };
+
+                            return (
+                              <div
+                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                    const file = e.dataTransfer.files[0];
+                                    showToast(`Importing ${file.name}...`);
+                                    handleFileImport(file);
+                                  }
+                                }}
+                                onClick={() => document.getElementById('sheets-data-tab-file-input')?.click()}
+                                className="w-full border-2 border-dashed border-violet-200 dark:border-violet-900/50 bg-violet-50/20 dark:bg-violet-950/10 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-violet-50/50 hover:border-violet-300 dark:hover:border-violet-800 group"
+                              >
+                                <input
+                                  type="file"
+                                  id="sheets-data-tab-file-input"
+                                  className="hidden"
+                                  accept=".csv,.xlsx,.xls,.pdf,.json,.txt"
+                                  onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                      const file = e.target.files[0];
+                                      showToast(`Importing ${file.name}...`);
+                                      handleFileImport(file);
+                                    }
+                                  }}
+                                />
                             <div className="w-10 h-10 rounded-xl bg-violet-100/60 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
                               <Upload size={20} />
                             </div>
@@ -38321,6 +38219,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               Supports PDF, Excel, CSV, Google Sheets, and more
                             </span>
                           </div>
+                          );
+                        })()}
                         </div>
                       </div>
                     ) : sheetToolbarTab === 'Analyze' ? (
