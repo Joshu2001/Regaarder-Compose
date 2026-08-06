@@ -8666,6 +8666,7 @@ export default function App() {
   const [sheetZoomLevel, setSheetZoomLevel] = useState(100);
 
   const [sheetToolbarTab, setSheetToolbarTab] = useState('Data');
+  const [isSheetToolbarCollapsed, setIsSheetToolbarCollapsed] = useState(false);
   const [hasImportedData, setHasImportedData] = useState(false);
   const [importedFileInfo, setImportedFileInfo] = useState(null);
   const [importedFilesList, setImportedFilesList] = useState([]);
@@ -37451,7 +37452,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       {!isSheetsPresentationMode && !isSheetZenMode && (
                         <div className="mx-4 mt-3 mb-2 w-[calc(100%-2rem)] p-3.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col gap-2.5 z-20 shrink-0">
-                      {/* Top Row: Navigation Tabs & Export */}
+                      {/* Top Row: Navigation Tabs & Collapse/Expand Button */}
                       <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
                         <div className="flex items-center gap-4">
                           {['Data', 'Templates', 'Analyze', 'Visualize', 'View'].map((tab) => (
@@ -37459,6 +37460,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               key={tab}
                               type="button"
                               onClick={(e) => {
+                                if (isSheetToolbarCollapsed) {
+                                  setIsSheetToolbarCollapsed(false);
+                                }
                                 if (tab === 'Data') {
                                   setSheetToolbarTab(sheetToolbarTab === 'Data' ? null : 'Data');
                                 } else {
@@ -37472,423 +37476,356 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             </button>
                           ))}
                         </div>
-                        <div className="relative export-menu-container">
-                          <button
-                            onClick={() => {
-                              closeTransientMenus();
-                              setSheetsExportMenuOpen(!sheetsExportMenuOpen);
-                            }}
-                            className={`text-[13px] font-semibold px-3 py-1.5 rounded-lg border flex items-center gap-1 transition-colors ${sheetsExportMenuOpen ? 'border-violet-500 text-violet-700 bg-transparent dark:border-violet-400 dark:text-violet-400' : 'border-transparent hover:bg-gray-100 text-[#374151] dark:text-[#a3a3a3] dark:hover:bg-[#1c1c1e]'}`}
-                            title="Export options"
-                          >
-                            Export {sheetsExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                          </button>
-                          {sheetsExportMenuOpen && (
-                            <>
-                              <div
-                                className="fixed inset-0 z-[220] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
-                                onClick={() => setSheetsExportMenuOpen(false)}
-                              />
-                              <div className="absolute top-9 right-0 z-[230] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
-                                <div className="flex flex-col gap-2">
-                                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Export as File</span>
-                                  {[
-                                    { format: 'Sheets', label: 'Sheets Document', desc: '.sheets' },
-                                    { format: 'XLSX', label: 'Excel Spreadsheet', desc: '.xlsx' },
-                                    { format: 'CSV', label: 'Comma Separated', desc: '.csv' },
-                                    { format: 'JSON', label: 'JSON Data', desc: '.json' },
-                                    { format: 'PDF', label: 'PDF Document', desc: '.pdf' }
-                                  ].map(f => (
-                                    <button 
-                                      key={f.format}
-                                      disabled={isExporting}
-                                      onClick={async () => {
-                                        setIsExporting(true);
-                                        try {
-                                          await exportSheets(f.format, sheetGrids[activeSheetId]?.cells || [], sheetsTitle || 'Sheets_Document');
-                                          showToast('Exported as ' + f.format);
-                                        } catch (e) {
-                                          showToast('Export failed: ' + e.message);
-                                        } finally {
-                                          setIsExporting(false);
-                                          setSheetsExportMenuOpen(false);
-                                        }
-                                      }}
-                                      className="w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                        {/* Collapse / Expand Toggle Button replacing Export */}
+                        <button
+                          type="button"
+                          onClick={() => setIsSheetToolbarCollapsed((prev) => !prev)}
+                          className="text-[13px] font-semibold px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-all text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/60 shadow-sm"
+                          title={isSheetToolbarCollapsed ? "Expand toolbar details" : "Collapse toolbar details"}
+                        >
+                          <span>{isSheetToolbarCollapsed ? 'Expand' : 'Collapse'}</span>
+                          <ChevronDown size={14} className={`transition-transform duration-200 ${isSheetToolbarCollapsed ? '' : 'rotate-180 text-violet-500'}`} />
+                        </button>
+                      </div>
+
+                      {/* Toolbar Details (Sub-tabs & Formatting Tools) shown when expanded */}
+                      {!isSheetToolbarCollapsed && (
+                        <>
+                          {/* Sub-tab actions */}
+                          {sheetToolbarTab === 'Templates' ? (
+                            <div className="flex items-center gap-6 px-2 py-1 pt-1.5 border-t border-gray-200/60 dark:border-zinc-800">
+                              <div className="flex items-center gap-1">
+                                <button type="button" onClick={() => showToast('Loading Financial Models...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Financial</button>
+                                <button type="button" onClick={() => showToast('Loading Project Tracking...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Project Tracking</button>
+                              </div>
+                            </div>
+                          ) : sheetToolbarTab === 'View' ? (
+                            <div className="flex flex-wrap items-center gap-4 px-2 py-1.5 pt-2 border-t border-gray-200/60 dark:border-zinc-800 text-xs font-medium">
+                              {/* Gridline Contrast */}
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-slate-500 dark:text-zinc-400 font-medium">Gridlines:</span>
+                                <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
+                                  {['subtle', 'medium', 'high'].map(c => (
+                                    <button
+                                      key={c}
+                                      type="button"
+                                      onClick={() => { setGridLineContrast(c); showToast(`Grid contrast set to ${c}`); }}
+                                      className={`px-2 py-1 rounded-md text-[11px] font-medium capitalize transition-colors ${gridLineContrast === c ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 shadow-sm border border-slate-200/60 dark:border-zinc-600' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'}`}
                                     >
-                                      <span>{f.label}</span>
-                                      <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
+                                      {c}
                                     </button>
                                   ))}
                                 </div>
-                                <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full"></div>
-                                <div className="flex flex-col gap-2">
-                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Convert to</span>
-                                  {[
-                                    { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
-                                    { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
-                                    { target: 'Whiteboard', icon: PenTool, color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/40' }
-                                  ].map(t => (
-                                    <button 
-                                      key={t.target}
-                                      disabled={isExporting}
-                                      onClick={() => {
-                                        setIsExporting(true);
-                                        setTimeout(() => { 
-                                          setIsExporting(false); 
-                                          setSheetsExportMenuOpen(false); 
-                                          setProductMode(t.target.toLowerCase());
-                                          showToast('Converted to ' + t.target); 
-                                        }, 1500);
+                              </div>
+
+                              <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
+
+                              {/* Reusable Executive Theme Dropdown */}
+                              <ThemeDropdown
+                                value={sheetsThemePalette}
+                                onChange={(newThemeId) => {
+                                  setSheetsThemePalette(newThemeId);
+                                  const selectedTheme = SHEETS_THEME_OPTIONS.find(t => t.id === newThemeId);
+                                  showToast(`Theme: ${selectedTheme?.label || newThemeId}`);
+                                }}
+                                options={SHEETS_THEME_OPTIONS}
+                                label="Theme"
+                              />
+
+                              <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
+
+                              {/* Grid Visibility Toggle */}
+                              <button
+                                type="button"
+                                onClick={() => setShowGridLines(!showGridLines)}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 ${showGridLines ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600' : 'bg-transparent text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
+                              >
+                                <Grid size={13} />
+                                {showGridLines ? 'Gridlines: On' : 'Gridlines: Off'}
+                              </button>
+                            </div>
+                          ) : null}
+
+                          {/* Bottom Row: Cell Formatting Tools */}
+                          {(sheetToolbarTab === 'Visualize' || (sheetToolbarTab !== 'Data' && hasImportedData)) && (
+                            <>
+                              <div className="h-px bg-gray-200/60 dark:bg-zinc-800/60 w-full" />
+                              <div className="flex items-center gap-3 text-[13px] font-medium text-[#374151]">
+                                <div className="relative" ref={docSearchPanelRef}>
+                                  {docSearchPanelOpen && renderDocSearchPanel()}
+                                </div>
+                                <div className="relative flex items-center gap-1" ref={sheetToolbarMenuRef}>
+                                  {/* Font picker — matches Compose Doc toolbar canonical style */}
+                                  <div className="relative">
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        setSheetToolbarMenuOpen((prev) => prev === 'font' ? null : 'font');
+                                        setSheetFontSearch('');
                                       }}
-                                      className="w-full flex items-center gap-2.5 p-1 px-2 text-xs rounded-lg hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 transition-colors font-semibold text-slate-700 dark:text-zinc-200"
+                                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-300 ease-out border text-[13px] font-medium ${sheetToolbarMenuOpen === 'font' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
                                     >
-                                      <div className={`p-1.5 rounded ${t.color}`}>
-                                        <t.icon size={13} />
-                                      </div>
-                                      {t.target}
+                                      {getSelectedCellFormat().fontFamily || sheetToolbarFont}
+                                      <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
                                     </button>
-                                  ))}
+                                    {sheetToolbarMenuOpen === 'font' && (
+                                      <div className="absolute top-full left-0 mt-2 z-[420] w-48 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
+                                        <input
+                                          value={sheetFontSearch}
+                                          onChange={(e) => setSheetFontSearch(e.target.value)}
+                                          placeholder="Search font"
+                                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
+                                        />
+                                        <div className="max-h-40 overflow-y-auto thin-scrollbar">
+                                          {fontOptions
+                                            .filter((f) => f.toLowerCase().includes(sheetFontSearch.toLowerCase()))
+                                            .sort((a, b) => a.localeCompare(b))
+                                            .map((font) => (
+                                              <button
+                                                key={font}
+                                                type="button"
+                                                onPointerDown={(e) => {
+                                                  e.preventDefault();
+                                                  if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
+                                                    updateSheetCellFormat(activeSheetId, 'fontFamily', font);
+                                                  } else {
+                                                    setSheetToolbarFont(font);
+                                                  }
+                                                  setSheetToolbarMenuOpen(null);
+                                                }}
+                                                className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
+                                                style={{ fontFamily: font }}
+                                              >
+                                                {font}
+                                              </button>
+                                            ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {/* Size picker — matches Compose Doc toolbar canonical style */}
+                                  <div className="relative">
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        setSheetToolbarMenuOpen((prev) => prev === 'size' ? null : 'size');
+                                        setSheetSizeSearch('');
+                                      }}
+                                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-300 ease-out border text-[13px] font-medium ${sheetToolbarMenuOpen === 'size' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
+                                    >
+                                      {getSelectedCellFormat().fontSize || sheetToolbarSize}
+                                      <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
+                                    </button>
+                                    {sheetToolbarMenuOpen === 'size' && (
+                                      <div className="absolute top-full left-0 mt-2 z-[420] w-32 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
+                                        <input
+                                          value={sheetSizeSearch}
+                                          onChange={(e) => setSheetSizeSearch(e.target.value)}
+                                          placeholder="Search"
+                                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
+                                        />
+                                        <div className="max-h-40 overflow-y-auto thin-scrollbar">
+                                          {sizeOptions
+                                            .filter((s) => String(s).includes(sheetSizeSearch.trim()))
+                                            .map((size) => (
+                                              <button
+                                                key={size}
+                                                type="button"
+                                                onPointerDown={(e) => {
+                                                  e.preventDefault();
+                                                  if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
+                                                    updateSheetCellFormat(activeSheetId, 'fontSize', size);
+                                                  } else {
+                                                    setSheetToolbarSize(size);
+                                                  }
+                                                  setSheetToolbarMenuOpen(null);
+                                                }}
+                                                className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
+                                              >
+                                                {size}
+                                              </button>
+                                            ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {(() => {
+                                    const fmt = getSelectedCellFormat();
+                                    return (
+                                      <div className="flex items-center gap-1 mx-2 px-2 border-x border-gray-200">
+                                        <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 font-bold border ${fmt.bold ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)] font-bold' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>B</button>
+                                        <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 italic font-serif border ${fmt.italic ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>I</button>
+                                        <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 underline border ${fmt.underline ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>U</button>
+                                        <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 line-through border ${fmt.strikeThrough ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>S</button>
+                                        <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-xl transition-all hover:bg-slate-50 text-slate-500 hover:text-slate-900" title="Insert Link">
+                                          <LinkIcon size={14} />
+                                        </button>
+                                        {/* Cell Color / Fill Palette Button */}
+                                        <div className="relative cell-fill-palette-container flex items-center">
+                                          <button
+                                            type="button"
+                                            onPointerDown={(e) => {
+                                              e.preventDefault();
+                                              setSheetToolbarMenuOpen((prev) => prev === 'cellFill' ? null : 'cellFill');
+                                            }}
+                                            className={`h-8 px-2 flex items-center justify-center gap-1 rounded-xl transition-all border ${sheetToolbarMenuOpen === 'cellFill' ? 'bg-white border-slate-200 shadow-sm text-purple-600' : 'border-transparent text-slate-700 hover:bg-slate-50 hover:text-slate-900'}`}
+                                            title="Cell Fill & Highlight Color"
+                                          >
+                                            <Palette size={15} className="text-purple-600" /> <ChevronDown size={11} className="text-slate-400" />
+                                          </button>
+                                          {sheetToolbarMenuOpen === 'cellFill' && (
+                                            <div className="absolute top-9 left-0 z-[230] w-64 bg-white border border-slate-200/90 rounded-2xl shadow-2xl p-3 flex flex-col gap-3 backdrop-blur-xl select-none" onPointerDown={e => e.stopPropagation()}>
+                                              <div className="flex flex-col gap-2">
+                                                <div className="flex items-center justify-between px-1">
+                                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cell Fill & Gradient</span>
+                                                  <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">Clear Fill</button>
+                                                </div>
+
+                                                {/* Preset Swatches (Shades & Gradients) */}
+                                                <div className="flex flex-col gap-1">
+                                                  <span className="text-[9px] font-semibold text-slate-400 px-1 uppercase tracking-tight">Presets & Shades</span>
+                                                  <div className="grid grid-cols-6 gap-1 px-1">
+                                                    {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff', '#f1f5f9', '#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f0abfc', '#475569', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#0f172a', '#991b1b', '#9a3412', '#854d0e', '#065f46', '#155e75', '#1e40af', '#6b21a8', '#86198f'].map(c => (
+                                                      <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); }} className="w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c}></button>
+                                                    ))}
+                                                  </div>
+                                                </div>
+
+                                                <div className="flex flex-col gap-1 mt-1">
+                                                  <span className="text-[9px] font-semibold text-slate-400 px-1 uppercase tracking-tight">Gradients</span>
+                                                  <div className="grid grid-cols-5 gap-1 px-1">
+                                                    {[
+                                                      'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)',
+                                                      'linear-gradient(135deg, #3b82f6 0%, #22c55e 100%)',
+                                                      'linear-gradient(135deg, #f97316 0%, #eab308 100%)',
+                                                      'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',
+                                                      'linear-gradient(135deg, #f43f5e 0%, #8b5cf6 100%)',
+                                                      'linear-gradient(135deg, #e0e7ff 0%, #fae8ff 100%)',
+                                                      'linear-gradient(135deg, #dcfce7 0%, #cffafe 100%)',
+                                                      'linear-gradient(135deg, #fef3c7 0%, #fee2e2 100%)',
+                                                      'linear-gradient(90deg, #4f46e5 0%, #06b6d4 100%)',
+                                                      'linear-gradient(90deg, #10b981 0%, #f59e0b 100%)'
+                                                    ].map(g => (
+                                                      <button key={g} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', g); }} className="w-full h-5 rounded-md border border-slate-200 hover:scale-105 transition-transform shadow-xs cursor-pointer" style={{ background: g }} title={g}></button>
+                                                    ))}
+                                                  </div>
+                                                </div>
+
+                                                {/* Interactive Custom Color & Gradient Input Controls */}
+                                                <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-2 px-1">
+                                                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight">Custom Hex / CSS / Gradient</span>
+                                                  <div className="flex items-center gap-1.5">
+                                                    <input
+                                                      type="color"
+                                                      className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer bg-transparent p-0 overflow-hidden"
+                                                      onChange={(e) => updateSheetCellFormat(activeSheetId, 'highlight', e.target.value)}
+                                                      title="Pick custom color by dragging mouse"
+                                                    />
+                                                    <input
+                                                      type="text"
+                                                      placeholder="#8b5cf6 or linear-gradient(...)"
+                                                      className="flex-1 h-7 px-2 text-[11px] font-mono border border-slate-200 rounded-lg outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 bg-slate-50/50"
+                                                      onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                          const val = e.currentTarget.value.trim();
+                                                          if (val) updateSheetCellFormat(activeSheetId, 'highlight', val);
+                                                        }
+                                                      }}
+                                                    />
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="relative text-style-menu-container flex items-center">
+                                          <button
+                                            type="button"
+                                            onPointerDown={(e) => {
+                                              e.preventDefault();
+                                              setSheetToolbarMenuOpen((prev) => prev === 'textStyle' ? null : 'textStyle');
+                                            }}
+                                            className={`h-8 px-2 flex items-center justify-center gap-1.5 rounded-xl transition-all border ${sheetToolbarMenuOpen === 'textStyle' ? 'bg-white border-slate-200 shadow-sm text-purple-600' : 'border-transparent text-slate-700 hover:bg-slate-50 hover:text-slate-900'}`}
+                                            title="Text & Highlight Color Palette"
+                                          >
+                                            <Type size={14} className={sheetToolbarMenuOpen === 'textStyle' ? 'text-purple-600' : ''} /> <ChevronDown size={12} className="text-slate-400" />
+                                          </button>
+                                          {sheetToolbarMenuOpen === 'textStyle' && (
+                                            <div className="absolute top-9 left-0 z-[230] w-64 bg-white border border-slate-200/90 rounded-2xl shadow-2xl p-3 flex flex-col gap-3 backdrop-blur-xl select-none" onPointerDown={e => e.stopPropagation()}>
+                                              <div className="flex flex-col gap-2">
+                                                {/* Text Color Section */}
+                                                <div className="flex items-center justify-between px-1">
+                                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Text Color</span>
+                                                  <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">Reset</button>
+                                                </div>
+                                                <div className="grid grid-cols-6 gap-1 px-1">
+                                                  {['#ffffff', '#000000', '#1e293b', '#475569', '#64748b', '#94a3b8', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ec4899', '#991b1b', '#9a3412', '#854d0e', '#065f46', '#155e75', '#1e40af', '#3730a3', '#6b21a8'].map(c => (
+                                                    <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', c); }} className="w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c === '#ffffff' ? 'White (#ffffff)' : c}></button>
+                                                  ))}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 px-1 pt-1">
+                                                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight">Custom Text Hex</span>
+                                                  <input
+                                                    type="color"
+                                                    className="w-6 h-6 rounded-md border border-slate-200 cursor-pointer bg-transparent p-0 overflow-hidden"
+                                                    onChange={(e) => updateSheetCellFormat(activeSheetId, 'color', e.target.value)}
+                                                    title="Pick custom text color"
+                                                  />
+                                                  <input
+                                                    type="text"
+                                                    placeholder="#ffffff"
+                                                    className="flex-1 h-6 px-1.5 text-[10px] font-mono border border-slate-200 rounded-md outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 bg-slate-50/50"
+                                                    onKeyDown={(e) => {
+                                                      if (e.key === 'Enter') {
+                                                        const val = e.currentTarget.value.trim();
+                                                        if (val) updateSheetCellFormat(activeSheetId, 'color', val);
+                                                      }
+                                                    }}
+                                                  />
+                                                </div>
+
+                                                <div className="border-t border-slate-100 my-1" />
+
+                                                {/* Highlight Section */}
+                                                <div className="flex items-center justify-between px-1">
+                                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Text Highlight</span>
+                                                  <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">Clear Highlight</button>
+                                                </div>
+                                                <div className="grid grid-cols-6 gap-1 px-1">
+                                                  <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); }} className="w-5 h-5 rounded-md border border-slate-200 bg-white hover:scale-110 transition-transform flex items-center justify-center cursor-pointer" title="No Highlight"><X size={11} className="text-slate-400"/></button>
+                                                  {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff', '#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f0abfc'].map(c => (
+                                                    <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); }} className="w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c}></button>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                                <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">+ Row</button>
+                                <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">- Row</button>
+                                <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">+ Col</button>
+                                <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Col</button>
+                                <button type="button" onClick={removeSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Col</button>
+                                <div className="ml-auto flex items-center gap-4">
+                                  <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                                    <Cloud size={14} /> {savedStatusLabel}
+                                  </div>
                                 </div>
                               </div>
                             </>
                           )}
-                        </div>
-                      </div>
-
-                      {/* Sub-tab actions */}
-                      {sheetToolbarTab === 'Templates' ? (
-                        <div className="flex items-center gap-6 px-2 py-1 pt-1.5 border-t border-gray-200/60 dark:border-zinc-800">
-                          <div className="flex items-center gap-1">
-                            <button type="button" onClick={() => showToast('Loading Financial Models...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Financial</button>
-                            <button type="button" onClick={() => showToast('Loading Project Tracking...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Project Tracking</button>
-                          </div>
-                        </div>
-                      ) : sheetToolbarTab === 'View' ? (
-                        <div className="flex flex-wrap items-center gap-4 px-2 py-1.5 pt-2 border-t border-gray-200/60 dark:border-zinc-800 text-xs font-medium">
-                          {/* Gridline Contrast */}
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-slate-500 dark:text-zinc-400 font-medium">Gridlines:</span>
-                            <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                              {['subtle', 'medium', 'high'].map(c => (
-                                <button
-                                  key={c}
-                                  type="button"
-                                  onClick={() => { setGridLineContrast(c); showToast(`Grid contrast set to ${c}`); }}
-                                  className={`px-2 py-1 rounded-md text-[11px] font-medium capitalize transition-colors ${gridLineContrast === c ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 shadow-sm border border-slate-200/60 dark:border-zinc-600' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'}`}
-                                >
-                                  {c}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
-
-                          {/* Reusable Executive Theme Dropdown */}
-                          <ThemeDropdown
-                            value={sheetsThemePalette}
-                            onChange={(newThemeId) => {
-                              setSheetsThemePalette(newThemeId);
-                              const selectedTheme = SHEETS_THEME_OPTIONS.find(t => t.id === newThemeId);
-                              showToast(`Theme: ${selectedTheme?.label || newThemeId}`);
-                            }}
-                            options={SHEETS_THEME_OPTIONS}
-                            label="Theme"
-                          />
-
-                          <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
-
-                          {/* Grid Visibility Toggle */}
-                          <button
-                            type="button"
-                            onClick={() => setShowGridLines(!showGridLines)}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 ${showGridLines ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600' : 'bg-transparent text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
-                          >
-                            <Grid size={13} />
-                            {showGridLines ? 'Gridlines: On' : 'Gridlines: Off'}
-                          </button>
-                        </div>
-                      ) : null}
-
-                      {/* Bottom Row: Cell Formatting Tools */}
-                      {(sheetToolbarTab === 'Visualize' || (sheetToolbarTab !== 'Data' && hasImportedData)) && (
-                        <>
-                          <div className="h-px bg-gray-200/60 dark:bg-zinc-800/60 w-full" />
-                          <div className="flex items-center gap-3 text-[13px] font-medium text-[#374151]">
-                            <div className="relative" ref={docSearchPanelRef}>
-                              {docSearchPanelOpen && renderDocSearchPanel()}
-                            </div>
-                            <div className="relative flex items-center gap-1" ref={sheetToolbarMenuRef}>
-                              {/* Font picker — matches Compose Doc toolbar canonical style */}
-                              <div className="relative">
-                                <button
-                                  type="button"
-                                  onPointerDown={(e) => {
-                                    e.preventDefault();
-                                    setSheetToolbarMenuOpen((prev) => prev === 'font' ? null : 'font');
-                                    setSheetFontSearch('');
-                                  }}
-                                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-300 ease-out border text-[13px] font-medium ${sheetToolbarMenuOpen === 'font' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
-                                >
-                                  {getSelectedCellFormat().fontFamily || sheetToolbarFont}
-                                  <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
-                                </button>
-                                {sheetToolbarMenuOpen === 'font' && (
-                                  <div className="absolute top-full left-0 mt-2 z-[420] w-48 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
-                                    <input
-                                      value={sheetFontSearch}
-                                      onChange={(e) => setSheetFontSearch(e.target.value)}
-                                      placeholder="Search font"
-                                      className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
-                                    />
-                                    <div className="max-h-40 overflow-y-auto thin-scrollbar">
-                                      {fontOptions
-                                        .filter((f) => f.toLowerCase().includes(sheetFontSearch.toLowerCase()))
-                                        .sort((a, b) => a.localeCompare(b))
-                                        .map((font) => (
-                                          <button
-                                            key={font}
-                                            type="button"
-                                            onPointerDown={(e) => {
-                                              e.preventDefault();
-                                              if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
-                                                updateSheetCellFormat(activeSheetId, 'fontFamily', font);
-                                              } else {
-                                                setSheetToolbarFont(font);
-                                              }
-                                              setSheetToolbarMenuOpen(null);
-                                            }}
-                                            className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
-                                            style={{ fontFamily: font }}
-                                          >
-                                            {font}
-                                          </button>
-                                        ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              {/* Size picker — matches Compose Doc toolbar canonical style */}
-                              <div className="relative">
-                                <button
-                                  type="button"
-                                  onPointerDown={(e) => {
-                                    e.preventDefault();
-                                    setSheetToolbarMenuOpen((prev) => prev === 'size' ? null : 'size');
-                                    setSheetSizeSearch('');
-                                  }}
-                                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-300 ease-out border text-[13px] font-medium ${sheetToolbarMenuOpen === 'size' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
-                                >
-                                  {getSelectedCellFormat().fontSize || sheetToolbarSize}
-                                  <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
-                                </button>
-                                {sheetToolbarMenuOpen === 'size' && (
-                                  <div className="absolute top-full left-0 mt-2 z-[420] w-32 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
-                                    <input
-                                      value={sheetSizeSearch}
-                                      onChange={(e) => setSheetSizeSearch(e.target.value)}
-                                      placeholder="Search"
-                                      className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
-                                    />
-                                    <div className="max-h-40 overflow-y-auto thin-scrollbar">
-                                      {sizeOptions
-                                        .filter((s) => String(s).includes(sheetSizeSearch.trim()))
-                                        .map((size) => (
-                                          <button
-                                            key={size}
-                                            type="button"
-                                            onPointerDown={(e) => {
-                                              e.preventDefault();
-                                              if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
-                                                updateSheetCellFormat(activeSheetId, 'fontSize', size);
-                                              } else {
-                                                setSheetToolbarSize(size);
-                                              }
-                                              setSheetToolbarMenuOpen(null);
-                                            }}
-                                            className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
-                                          >
-                                            {size}
-                                          </button>
-                                        ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              {(() => {
-                                const fmt = getSelectedCellFormat();
-                                return (
-                                  <div className="flex items-center gap-1 mx-2 px-2 border-x border-gray-200">
-                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 font-bold border ${fmt.bold ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)] font-bold' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>B</button>
-                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 italic font-serif border ${fmt.italic ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>I</button>
-                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 underline border ${fmt.underline ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>U</button>
-                                    <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 line-through border ${fmt.strikeThrough ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>S</button>
-                                    <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-xl transition-all hover:bg-slate-50 text-slate-500 hover:text-slate-900" title="Insert Link">
-                                      <LinkIcon size={14} />
-                                    </button>
-                                    {/* Cell Color / Fill Palette Button */}
-                                    <div className="relative cell-fill-palette-container flex items-center">
-                                      <button
-                                        type="button"
-                                        onPointerDown={(e) => {
-                                          e.preventDefault();
-                                          setSheetToolbarMenuOpen((prev) => prev === 'cellFill' ? null : 'cellFill');
-                                        }}
-                                        className={`h-8 px-2 flex items-center justify-center gap-1 rounded-xl transition-all border ${sheetToolbarMenuOpen === 'cellFill' ? 'bg-white border-slate-200 shadow-sm text-purple-600' : 'border-transparent text-slate-700 hover:bg-slate-50 hover:text-slate-900'}`}
-                                        title="Cell Fill & Highlight Color"
-                                      >
-                                        <Palette size={15} className="text-purple-600" /> <ChevronDown size={11} className="text-slate-400" />
-                                      </button>
-                                      {sheetToolbarMenuOpen === 'cellFill' && (
-                                        <div className="absolute top-9 left-0 z-[230] w-64 bg-white border border-slate-200/90 rounded-2xl shadow-2xl p-3 flex flex-col gap-3 backdrop-blur-xl select-none" onPointerDown={e => e.stopPropagation()}>
-                                          <div className="flex flex-col gap-2">
-                                            <div className="flex items-center justify-between px-1">
-                                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cell Fill & Gradient</span>
-                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">Clear Fill</button>
-                                            </div>
-
-                                            {/* Preset Swatches (Shades & Gradients) */}
-                                            <div className="flex flex-col gap-1">
-                                              <span className="text-[9px] font-semibold text-slate-400 px-1 uppercase tracking-tight">Presets & Shades</span>
-                                              <div className="grid grid-cols-6 gap-1 px-1">
-                                                {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff', '#f1f5f9', '#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f0abfc', '#475569', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#0f172a', '#991b1b', '#9a3412', '#854d0e', '#065f46', '#155e75', '#1e40af', '#6b21a8', '#86198f'].map(c => (
-                                                  <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); }} className="w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c}></button>
-                                                ))}
-                                              </div>
-                                            </div>
-
-                                            <div className="flex flex-col gap-1 mt-1">
-                                              <span className="text-[9px] font-semibold text-slate-400 px-1 uppercase tracking-tight">Gradients</span>
-                                              <div className="grid grid-cols-5 gap-1 px-1">
-                                                {[
-                                                  'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)',
-                                                  'linear-gradient(135deg, #3b82f6 0%, #22c55e 100%)',
-                                                  'linear-gradient(135deg, #f97316 0%, #eab308 100%)',
-                                                  'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',
-                                                  'linear-gradient(135deg, #f43f5e 0%, #8b5cf6 100%)',
-                                                  'linear-gradient(135deg, #e0e7ff 0%, #fae8ff 100%)',
-                                                  'linear-gradient(135deg, #dcfce7 0%, #cffafe 100%)',
-                                                  'linear-gradient(135deg, #fef3c7 0%, #fee2e2 100%)',
-                                                  'linear-gradient(90deg, #4f46e5 0%, #06b6d4 100%)',
-                                                  'linear-gradient(90deg, #10b981 0%, #f59e0b 100%)'
-                                                ].map(g => (
-                                                  <button key={g} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', g); }} className="w-full h-5 rounded-md border border-slate-200 hover:scale-105 transition-transform shadow-xs cursor-pointer" style={{ background: g }} title={g}></button>
-                                                ))}
-                                              </div>
-                                            </div>
-
-                                            {/* Interactive Custom Color & Gradient Input Controls */}
-                                            <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-2 px-1">
-                                              <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight">Custom Hex / CSS / Gradient</span>
-                                              <div className="flex items-center gap-1.5">
-                                                <input
-                                                  type="color"
-                                                  className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer bg-transparent p-0 overflow-hidden"
-                                                  onChange={(e) => updateSheetCellFormat(activeSheetId, 'highlight', e.target.value)}
-                                                  title="Pick custom color by dragging mouse"
-                                                />
-                                                <input
-                                                  type="text"
-                                                  placeholder="#8b5cf6 or linear-gradient(...)"
-                                                  className="flex-1 h-7 px-2 text-[11px] font-mono border border-slate-200 rounded-lg outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 bg-slate-50/50"
-                                                  onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                      const val = e.currentTarget.value.trim();
-                                                      if (val) updateSheetCellFormat(activeSheetId, 'highlight', val);
-                                                    }
-                                                  }}
-                                                />
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="relative text-style-menu-container flex items-center">
-                                      <button
-                                        type="button"
-                                        onPointerDown={(e) => {
-                                          e.preventDefault();
-                                          setSheetToolbarMenuOpen((prev) => prev === 'textStyle' ? null : 'textStyle');
-                                        }}
-                                        className={`h-8 px-2 flex items-center justify-center gap-1.5 rounded-xl transition-all border ${sheetToolbarMenuOpen === 'textStyle' ? 'bg-white border-slate-200 shadow-sm text-purple-600' : 'border-transparent text-slate-700 hover:bg-slate-50 hover:text-slate-900'}`}
-                                        title="Text & Highlight Color Palette"
-                                      >
-                                        <Type size={14} className={sheetToolbarMenuOpen === 'textStyle' ? 'text-purple-600' : ''} /> <ChevronDown size={12} className="text-slate-400" />
-                                      </button>
-                                      {sheetToolbarMenuOpen === 'textStyle' && (
-                                        <div className="absolute top-9 left-0 z-[230] w-64 bg-white border border-slate-200/90 rounded-2xl shadow-2xl p-3 flex flex-col gap-3 backdrop-blur-xl select-none" onPointerDown={e => e.stopPropagation()}>
-                                          <div className="flex flex-col gap-2">
-                                            {/* Text Color Section */}
-                                            <div className="flex items-center justify-between px-1">
-                                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Text Color</span>
-                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">Reset</button>
-                                            </div>
-                                            <div className="grid grid-cols-6 gap-1 px-1">
-                                              {['#ffffff', '#000000', '#1e293b', '#475569', '#64748b', '#94a3b8', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ec4899', '#991b1b', '#9a3412', '#854d0e', '#065f46', '#155e75', '#1e40af', '#3730a3', '#6b21a8'].map(c => (
-                                                <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', c); }} className="w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c === '#ffffff' ? 'White (#ffffff)' : c}></button>
-                                              ))}
-                                            </div>
-                                            <div className="flex items-center gap-1.5 px-1 pt-1">
-                                              <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight">Custom Text Hex</span>
-                                              <input
-                                                type="color"
-                                                className="w-6 h-6 rounded-md border border-slate-200 cursor-pointer bg-transparent p-0 overflow-hidden"
-                                                onChange={(e) => updateSheetCellFormat(activeSheetId, 'color', e.target.value)}
-                                                title="Pick custom text color"
-                                              />
-                                              <input
-                                                type="text"
-                                                placeholder="#ffffff"
-                                                className="flex-1 h-6 px-1.5 text-[10px] font-mono border border-slate-200 rounded-md outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 bg-slate-50/50"
-                                                onKeyDown={(e) => {
-                                                  if (e.key === 'Enter') {
-                                                    const val = e.currentTarget.value.trim();
-                                                    if (val) updateSheetCellFormat(activeSheetId, 'color', val);
-                                                  }
-                                                }}
-                                              />
-                                            </div>
-
-                                            <div className="border-t border-slate-100 my-1" />
-
-                                            {/* Highlight Section */}
-                                            <div className="flex items-center justify-between px-1">
-                                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Text Highlight</span>
-                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">Clear Highlight</button>
-                                            </div>
-                                            <div className="grid grid-cols-6 gap-1 px-1">
-                                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); }} className="w-5 h-5 rounded-md border border-slate-200 bg-white hover:scale-110 transition-transform flex items-center justify-center cursor-pointer" title="No Highlight"><X size={11} className="text-slate-400"/></button>
-                                              {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff', '#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f0abfc'].map(c => (
-                                                <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); }} className="w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c}></button>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                            <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">+ Row</button>
-                            <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">- Row</button>
-                            <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">+ Col</button>
-                            <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Col</button>
-                            <button type="button" onClick={removeSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Col</button>
-                            <div className="ml-auto flex items-center gap-4">
-                              <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                                <Cloud size={14} /> {savedStatusLabel}
-                              </div>
-                            </div>
-                          </div>
                         </>
                       )}
                     </div>
                   )}
 
-                    {sheetToolbarTab === 'Data' ? (
+                    {!isSheetToolbarCollapsed && sheetToolbarTab === 'Data' ? (
                       <div className={`flex-1 min-h-0 flex items-center justify-center p-6 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)]'}`}>
                         <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-3xl p-10 border border-slate-100 dark:border-zinc-800 shadow-xl shadow-indigo-500/5 flex flex-col items-center text-center my-auto">
                           
@@ -38486,7 +38423,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         })()}
                         </div>
                       </div>
-                    ) : sheetToolbarTab === 'Analyze' ? (
+                    ) : !isSheetToolbarCollapsed && sheetToolbarTab === 'Analyze' ? (
                       <div className={`flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] overflow-y-auto thin-scrollbar z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm'}`}>
                         <AnalyticsHubUI 
                           activeSheetGrid={sheetGrids[activeSheetId]} 
