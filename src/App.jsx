@@ -38253,7 +38253,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         if (cell.font.italic) fmt.italic = true;
                                         if (cell.font.underline) fmt.underline = true;
                                         if (cell.font.name) fmt.fontFamily = cell.font.name;
-                                        if (cell.font.size) fmt.fontSize = String(cell.font.size);
+                                        if (cell.font.size) {
+                                          const rawSize = Number(cell.font.size);
+                                          if (!isNaN(rawSize) && rawSize > 0) {
+                                            const boosted = rawSize <= 11 ? rawSize + 3 : rawSize + 2;
+                                            fmt.fontSize = String(boosted);
+                                          }
+                                        } else {
+                                          fmt.fontSize = '14';
+                                        }
                                         const fontClr = parseColorObj(cell.font.color);
                                         if (fontClr) fmt.color = fontClr;
                                       }
