@@ -83,3 +83,11 @@ Avoid monolithic blocks, band-aid fixes, or summarized placeholders. Treat this 
 - **Mandatory Briefing:** Before coding, updating, or reviewing any user interface layouts, panels, menus, or interactive states, you must read and adhere to the core principles in [APPLE_GUIDING_PRINCIPLES.md](file:///c:/Users/user/Downloads/Project%20MOAT/.agents/APPLE_GUIDING_PRINCIPLES.md).
 - **Rethink Cluttered UIs:** Avoid cluttered Microsoft Office or WPS-style ribbons and multi-layered tabs. Implement modern progressive disclosure overlays, dropdown lists, and contextual slash commands (`/`).
 
+
+## 9. Spreadsheet Cell Controls & Data Validation Guidelines
+
+### Interactive Dropdowns vs. Plain Text
+- **Options & Status Triggers:** When building templates or generating spreadsheet grids, fields representing categorical options, choices, or triggers (such as `Priority`, `Status`, `Category`, `Stage`, or `Assignee`) MUST be configured as interactive dropdown cells (`type: 'dropdown'` with explicit `options` list) rather than plain static text strings.
+- **Percentage Formatting:** Percentage values in progress or metric columns MUST be formatted natively with `%` symbols (e.g., `65%`, `40%`, `100%`) from the start, rather than raw unformatted decimals (e.g., `0.65`, `0.4`).
+
+
