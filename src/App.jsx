@@ -27012,6 +27012,368 @@ Respond with a JSON array of slide objects matching the schema.`;
 
     showToast('Project Tracking template loaded!');
   };
+
+  const applyDashboardTheme = (themeKey, sheetId = activeSheetId) => {
+    const targetId = sheetId || activeSheetId || 1;
+    const grid = sheetGrids[targetId];
+    if (!grid || !grid.cells) return;
+
+    const paletteMap = {
+      default: { titleBg: '#0f172a', titleColor: '#ffffff', summaryBg: '#f1f5f9', summaryColor: '#1e293b', headerBg: '#0284c7', headerColor: '#ffffff', evenBg: '#f8fafc', oddBg: '#ffffff', text: '#334155' },
+      obsidian: { titleBg: '#0f0f11', titleColor: '#fef08a', summaryBg: '#fefce8', summaryColor: '#713f12', headerBg: '#d4af37', headerColor: '#0f0f11', evenBg: '#fdfbf7', oddBg: '#ffffff', text: '#292524' },
+      emerald: { titleBg: '#064e3b', titleColor: '#ffffff', summaryBg: '#ecfdf5', summaryColor: '#065f46', headerBg: '#059669', headerColor: '#ffffff', evenBg: '#f0fdf4', oddBg: '#ffffff', text: '#164e63' },
+      nordic: { titleBg: '#27272a', titleColor: '#ffffff', summaryBg: '#f4f4f5', summaryColor: '#18181b', headerBg: '#52525b', headerColor: '#ffffff', evenBg: '#fafafa', oddBg: '#ffffff', text: '#27272a' },
+      indigo: { titleBg: '#0b0f19', titleColor: '#38bdf8', summaryBg: '#1e1b4b', summaryColor: '#c084fc', headerBg: '#7c3aed', headerColor: '#ffffff', evenBg: '#0f172a', oddBg: '#1e293b', text: '#f1f5f9' },
+    };
+
+    const palette = paletteMap[themeKey] || paletteMap.default;
+
+    const updatedFormats = grid.formats ? grid.formats.map((row, rIdx) => {
+      return row.map((cellFmt, cIdx) => {
+        const fmt = { ...(cellFmt || {}) };
+        if (rIdx === 0) {
+          if (!fmt.hidden) {
+            fmt.fill = palette.titleBg;
+            fmt.bgColor = palette.titleBg;
+            fmt.color = palette.titleColor;
+            fmt.textColor = palette.titleColor;
+          }
+        } else if (rIdx === 1) {
+          fmt.fill = palette.summaryBg;
+          fmt.bgColor = palette.summaryBg;
+          fmt.color = palette.summaryColor;
+          fmt.textColor = palette.summaryColor;
+        } else if (rIdx === 2) {
+          fmt.fill = palette.headerBg;
+          fmt.bgColor = palette.headerBg;
+          fmt.color = palette.headerColor;
+          fmt.textColor = palette.headerColor;
+        } else if (rIdx >= 3 && grid.cells[rIdx]?.[cIdx] !== undefined && grid.cells[rIdx]?.[cIdx] !== '') {
+          if (!fmt.options) {
+            const isEven = rIdx % 2 === 0;
+            fmt.fill = isEven ? palette.evenBg : palette.oddBg;
+            fmt.bgColor = fmt.fill;
+            fmt.color = palette.text;
+            fmt.textColor = palette.text;
+          }
+        }
+        return fmt;
+      });
+    }) : [];
+
+    setSheetGrids(prev => ({
+      ...prev,
+      [targetId]: {
+        ...prev[targetId],
+        formats: updatedFormats
+      }
+    }));
+  };
+
+  const loadFinancialModelTemplate = (sheetId = activeSheetId) => {
+    const targetId = sheetId || activeSheetId || 1;
+    const rowsCount = 25;
+    const colsCount = 26;
+    const newCells = Array.from({ length: rowsCount }, () => Array.from({ length: colsCount }, () => ''));
+    const newFormats = Array.from({ length: rowsCount }, () => Array.from({ length: colsCount }, () => ({})));
+
+    const templateRows = [
+      ['3-5 Year Financial & Revenue Model', '', '', '', '', '', '', '', ''],
+      ['ARR Target: $10M', 'Gross Margin: 78%', 'OpEx: $3.2M', 'EBITDA Margin: 32%', 'CAGR: 45%', '', '', '', ''],
+      ['Financial Line Item', 'Category', 'Year 1 (2026)', 'Year 2 (2027)', 'Year 3 (2028)', 'Year 4 (2029)', 'Year 5 (2030)', 'Growth Rate', 'Status'],
+      ['Enterprise Subscriptions', 'Revenue', '$1,200,000', '$2,100,000', '$3,500,000', '$5,800,000', '$9,200,000', '52%', 'On Track'],
+      ['SMB & Self-Serve Revenue', 'Revenue', '$450,000', '$750,000', '$1,150,000', '$1,650,000', '$2,300,000', '38%', 'On Track'],
+      ['Professional Services', 'Revenue', '$150,000', '$220,000', '$300,000', '$400,000', '$500,000', '27%', 'On Track'],
+      ['Cost of Goods Sold (COGS)', 'Cost', '$396,000', '$675,000', '$1,089,000', '$1,727,000', '$2,640,000', '46%', 'Within Budget'],
+      ['Gross Profit', 'Profit', '$1,404,000', '$2,395,000', '$3,861,000', '$6,123,000', '$9,360,000', '46%', 'Achieved'],
+      ['Gross Margin %', 'Profitability', '78%', '78%', '78%', '78%', '78%', '0%', 'Achieved'],
+      ['Sales & Marketing OpEx', 'Expense', '$600,000', '$950,000', '$1,400,000', '$2,000,000', '$2,800,000', '36%', 'Optimized'],
+      ['Research & Development (R&D)', 'Expense', '$450,000', '$700,000', '$1,000,000', '$1,400,000', '$1,900,000', '33%', 'Optimized'],
+      ['General & Administrative (G&A)', 'Expense', '$250,000', '$350,000', '$480,000', '$650,000', '$850,000', '28%', 'Optimized'],
+      ['EBITDA', 'Profitability', '$104,000', '$395,000', '$981,000', '$2,073,000', '$3,810,000', '146%', 'Surpassed'],
+      ['EBITDA Margin %', 'Profitability', '6%', '13%', '20%', '26%', '32%', '26%', 'Achieved']
+    ];
+
+    templateRows.forEach((rowItems, rIdx) => {
+      rowItems.forEach((val, cIdx) => {
+        newCells[rIdx][cIdx] = val;
+        if (rIdx === 0) {
+          if (cIdx === 0) {
+            newFormats[rIdx][cIdx] = { fill: '#0f172a', color: '#ffffff', bgColor: '#0f172a', textColor: '#ffffff', bold: true, fontSize: 16, align: 'center', colSpan: 9 };
+          } else {
+            newFormats[rIdx][cIdx] = { hidden: true };
+          }
+        } else if (rIdx === 1) {
+          newFormats[rIdx][cIdx] = { fill: '#f1f5f9', color: '#1e293b', bgColor: '#f1f5f9', textColor: '#1e293b', bold: true, fontSize: 11, align: 'center' };
+        } else if (rIdx === 2) {
+          newFormats[rIdx][cIdx] = { fill: '#0284c7', color: '#ffffff', bgColor: '#0284c7', textColor: '#ffffff', bold: true, fontSize: 13, align: 'center' };
+        } else {
+          const isEven = rIdx % 2 === 0;
+          let rowBg = isEven ? '#f8fafc' : '#ffffff';
+          let textColor = '#334155';
+          let isBold = (cIdx === 0 || rIdx === 7 || rIdx === 12);
+          
+          if (cIdx === 8) {
+            if (val === 'Achieved' || val === 'Surpassed') { rowBg = '#d1fae5'; textColor = '#065f46'; isBold = true; }
+            else if (val === 'On Track' || val === 'Optimized' || val === 'Within Budget') { rowBg = '#dbeafe'; textColor = '#1e40af'; isBold = true; }
+          }
+          const align = (cIdx >= 2 && cIdx <= 7) ? 'right' : (cIdx === 1 || cIdx === 8) ? 'center' : 'left';
+          const cellFmt = { fill: rowBg, color: textColor, bgColor: rowBg, textColor, bold: isBold, fontSize: 12, align };
+          if (cIdx === 7 || rIdx === 8 || rIdx === 13) cellFmt.formatType = 'percentage';
+          if (cIdx === 8) { cellFmt.type = 'dropdown'; cellFmt.options = ['On Track', 'Achieved', 'Surpassed', 'Within Budget', 'Optimized', 'At Risk']; }
+          newFormats[rIdx][cIdx] = cellFmt;
+        }
+      });
+    });
+
+    setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
+    showToast('Financial Model template loaded!');
+  };
+
+  const loadSaaSMetricsTemplate = (sheetId = activeSheetId) => {
+    const targetId = sheetId || activeSheetId || 1;
+    const rowsCount = 25;
+    const colsCount = 26;
+    const newCells = Array.from({ length: rowsCount }, () => Array.from({ length: colsCount }, () => ''));
+    const newFormats = Array.from({ length: rowsCount }, () => Array.from({ length: colsCount }, () => ({})));
+
+    const templateRows = [
+      ['SaaS Executive Metrics & Unit Economics Dashboard', '', '', '', '', '', '', '', ''],
+      ['Current MRR: $185,000', 'ARR: $2.22M', 'Net Revenue Retention: 118%', 'Gross Churn: 1.4%', 'LTV:CAC: 4.8x', '', '', '', ''],
+      ['Metric ID', 'Metric Name', 'Current Value', 'Prior Quarter', 'YoY Target', 'Change %', 'Benchmark', 'Status', 'Owner'],
+      ['MET-01', 'Monthly Recurring Revenue (MRR)', '$185,000', '$162,000', '$220,000', '14.2%', '$200k+', 'On Track', 'Sarah Chen'],
+      ['MET-02', 'Annual Recurring Revenue (ARR)', '$2,220,000', '$1,944,000', '$2,640,000', '14.2%', '$2.5M+', 'On Track', 'Sarah Chen'],
+      ['MET-03', 'Net Revenue Retention (NRR)', '118%', '114%', '120%', '3.5%', '110%+', 'Achieved', 'Alex Rivera'],
+      ['MET-04', 'Gross Logo Churn Rate', '1.4%', '1.8%', '1.2%', '-22.2%', '< 2.0%', 'Achieved', 'Elena Rostova'],
+      ['MET-05', 'Customer Acquisition Cost (CAC)', '$4,200', '$4,600', '$4,000', '-8.7%', '< $4.5k', 'Achieved', 'Marcus Vance'],
+      ['MET-06', 'Customer Lifetime Value (LTV)', '$20,160', '$18,400', '$22,000', '9.6%', '$18k+', 'Surpassed', 'David Kim'],
+      ['MET-07', 'LTV : CAC Ratio', '4.8x', '4.0x', '5.0x', '20.0%', '> 3.0x', 'Optimal', 'Sarah Chen'],
+      ['MET-08', 'CAC Payback Period (Months)', '7.2', '8.4', '6.5', '-14.3%', '< 12 Mos', 'Achieved', 'Jessica Taylor'],
+      ['MET-09', 'Average Revenue Per User (ARPU)', '$680', '$620', '$750', '9.7%', '$650+', 'On Track', 'Liam O\'Connor'],
+      ['MET-10', 'Active Paid Subscriptions', '272', '261', '300', '4.2%', '280+', 'In Progress', 'Sophia Martinez']
+    ];
+
+    templateRows.forEach((rowItems, rIdx) => {
+      rowItems.forEach((val, cIdx) => {
+        newCells[rIdx][cIdx] = val;
+        if (rIdx === 0) {
+          if (cIdx === 0) {
+            newFormats[rIdx][cIdx] = { fill: '#0f172a', color: '#ffffff', bgColor: '#0f172a', textColor: '#ffffff', bold: true, fontSize: 16, align: 'center', colSpan: 9 };
+          } else {
+            newFormats[rIdx][cIdx] = { hidden: true };
+          }
+        } else if (rIdx === 1) {
+          newFormats[rIdx][cIdx] = { fill: '#f1f5f9', color: '#1e293b', bgColor: '#f1f5f9', textColor: '#1e293b', bold: true, fontSize: 11, align: 'center' };
+        } else if (rIdx === 2) {
+          newFormats[rIdx][cIdx] = { fill: '#0284c7', color: '#ffffff', bgColor: '#0284c7', textColor: '#ffffff', bold: true, fontSize: 13, align: 'center' };
+        } else {
+          const isEven = rIdx % 2 === 0;
+          let rowBg = isEven ? '#f8fafc' : '#ffffff';
+          let textColor = '#334155';
+          let isBold = cIdx === 0 || cIdx === 1;
+          
+          if (cIdx === 7) {
+            if (val === 'Achieved' || val === 'Surpassed' || val === 'Optimal') { rowBg = '#d1fae5'; textColor = '#065f46'; isBold = true; }
+            else if (val === 'On Track' || val === 'In Progress') { rowBg = '#dbeafe'; textColor = '#1e40af'; isBold = true; }
+          }
+          const align = (cIdx >= 2 && cIdx <= 5) ? 'right' : (cIdx === 0 || cIdx === 6 || cIdx === 7) ? 'center' : 'left';
+          const cellFmt = { fill: rowBg, color: textColor, bgColor: rowBg, textColor, bold: isBold, fontSize: 12, align };
+          if (cIdx === 5 || val.endsWith('%')) cellFmt.formatType = 'percentage';
+          if (cIdx === 7) { cellFmt.type = 'dropdown'; cellFmt.options = ['On Track', 'Achieved', 'Surpassed', 'Optimal', 'In Progress', 'At Risk']; }
+          newFormats[rIdx][cIdx] = cellFmt;
+        }
+      });
+    });
+
+    setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
+    showToast('SaaS Metrics template loaded!');
+  };
+
+  const loadSalesCRMPipelineTemplate = (sheetId = activeSheetId) => {
+    const targetId = sheetId || activeSheetId || 1;
+    const rowsCount = 25;
+    const colsCount = 26;
+    const newCells = Array.from({ length: rowsCount }, () => Array.from({ length: colsCount }, () => ''));
+    const newFormats = Array.from({ length: rowsCount }, () => Array.from({ length: colsCount }, () => ({})));
+
+    const templateRows = [
+      ['Sales CRM & Deal Pipeline Dashboard', '', '', '', '', '', '', '', ''],
+      ['Total Deals: 10', 'Pipeline Value: $845,000', 'Weighted Forecast: $462,000', 'Win Rate: 54.6%', 'Avg Cycle: 28 Days', '', '', '', ''],
+      ['Deal ID', 'Opportunity Name', 'Account / Company', 'Stage', 'Deal Value', 'Probability %', 'Expected Close Date', 'Owner', 'Priority'],
+      ['OPP-201', 'Enterprise ERP Renewal', 'Acme Global Corp', 'Negotiation', '$180,000', '85%', '2026-08-25', 'Sarah Chen', 'Critical'],
+      ['OPP-202', 'Cloud Infrastructure Expansion', 'Apex Financial Services', 'Proposal', '$120,000', '60%', '2026-09-10', 'Alex Rivera', 'High'],
+      ['OPP-203', 'AI Analytics Suite Pilot', 'Nexus Technologies', 'Demo', '$65,000', '40%', '2026-09-15', 'Elena Rostova', 'Medium'],
+      ['OPP-204', 'Global Security Audit Contract', 'Vanguard Logistics', 'Closed Won', '$150,000', '100%', '2026-08-04', 'Marcus Vance', 'High'],
+      ['OPP-205', 'SaaS Operations Platform', 'Horizon Media Group', 'Qualified', '$45,000', '20%', '2026-09-30', 'David Kim', 'Low'],
+      ['OPP-206', 'Data Warehouse Migration', 'Starlight Healthcare', 'Proposal', '$95,000', '60%', '2026-09-05', 'Jessica Taylor', 'High'],
+      ['OPP-207', 'Customer Success Portal', 'Quantum Dynamics', 'Negotiation', '$70,000', '80%', '2026-08-20', 'Michael Chang', 'Critical'],
+      ['OPP-208', 'Automated Compliance Engine', 'Pioneer Energy', 'Qualified', '$50,000', '20%', '2026-10-05', 'Amanda Foster', 'Medium'],
+      ['OPP-209', 'DevOps Automation Licenses', 'Summit BioTech', 'Closed Won', '$40,000', '100%', '2026-08-01', 'Liam O\'Connor', 'Medium'],
+      ['OPP-210', 'Omnichannel Messaging Pilot', 'AeroSpace United', 'Demo', '$30,000', '40%', '2026-09-20', 'Sophia Martinez', 'Low']
+    ];
+
+    templateRows.forEach((rowItems, rIdx) => {
+      rowItems.forEach((val, cIdx) => {
+        newCells[rIdx][cIdx] = val;
+        if (rIdx === 0) {
+          if (cIdx === 0) {
+            newFormats[rIdx][cIdx] = { fill: '#0f172a', color: '#ffffff', bgColor: '#0f172a', textColor: '#ffffff', bold: true, fontSize: 16, align: 'center', colSpan: 9 };
+          } else {
+            newFormats[rIdx][cIdx] = { hidden: true };
+          }
+        } else if (rIdx === 1) {
+          newFormats[rIdx][cIdx] = { fill: '#f1f5f9', color: '#1e293b', bgColor: '#f1f5f9', textColor: '#1e293b', bold: true, fontSize: 11, align: 'center' };
+        } else if (rIdx === 2) {
+          newFormats[rIdx][cIdx] = { fill: '#0284c7', color: '#ffffff', bgColor: '#0284c7', textColor: '#ffffff', bold: true, fontSize: 13, align: 'center' };
+        } else {
+          const isEven = rIdx % 2 === 0;
+          let rowBg = isEven ? '#f8fafc' : '#ffffff';
+          let textColor = '#334155';
+          let isBold = cIdx === 0 || cIdx === 1;
+          
+          if (cIdx === 3) {
+            if (val === 'Closed Won') { rowBg = '#d1fae5'; textColor = '#065f46'; isBold = true; }
+            else if (val === 'Negotiation' || val === 'Proposal') { rowBg = '#dbeafe'; textColor = '#1e40af'; isBold = true; }
+          } else if (cIdx === 8) {
+            if (val === 'Critical') { rowBg = '#fee2e2'; textColor = '#991b1b'; isBold = true; }
+            else if (val === 'High') { rowBg = '#ffedd5'; textColor = '#c2410c'; isBold = true; }
+          }
+          const align = (cIdx === 4 || cIdx === 5) ? 'right' : (cIdx === 0 || cIdx === 3 || cIdx === 6 || cIdx === 8) ? 'center' : 'left';
+          const cellFmt = { fill: rowBg, color: textColor, bgColor: rowBg, textColor, bold: isBold, fontSize: 12, align };
+          if (cIdx === 3) { cellFmt.type = 'dropdown'; cellFmt.options = ['Qualified', 'Demo', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost']; }
+          if (cIdx === 5) cellFmt.formatType = 'percentage';
+          if (cIdx === 6) { cellFmt.type = 'date'; cellFmt.format = 'date'; }
+          if (cIdx === 8) { cellFmt.type = 'dropdown'; cellFmt.options = ['Critical', 'High', 'Medium', 'Low']; }
+          newFormats[rIdx][cIdx] = cellFmt;
+        }
+      });
+    });
+
+    setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
+    showToast('Sales CRM Pipeline template loaded!');
+  };
+
+  const loadCashFlowForecastTemplate = (sheetId = activeSheetId) => {
+    const targetId = sheetId || activeSheetId || 1;
+    const rowsCount = 25;
+    const colsCount = 26;
+    const newCells = Array.from({ length: rowsCount }, () => Array.from({ length: colsCount }, () => ''));
+    const newFormats = Array.from({ length: rowsCount }, () => Array.from({ length: colsCount }, () => ({})));
+
+    const templateRows = [
+      ['12-Month Cash Flow & Runway Forecast', '', '', '', '', '', '', ''],
+      ['Starting Cash: $1,500,000', 'Net Cash Flow: +$240,000', 'Ending Cash: $1,740,000', 'Estimated Runway: 24.5 Mos', '', '', '', ''],
+      ['Category / Flow Line', 'Type', 'Q1 2026', 'Q2 2026', 'Q3 2026', 'Q4 2026', 'Full Year Total', 'Trend / Status'],
+      ['Beginning Cash Balance', 'Balance', '$1,500,000', '$1,545,000', '$1,605,000', '$1,675,000', '$1,500,000', 'Healthy'],
+      ['Customer Receipts (Inflows)', 'Inflow', '$950,000', '$1,120,000', '$1,350,000', '$1,600,000', '$5,020,000', 'Growing'],
+      ['Investment & Interest Inflows', 'Inflow', '$15,000', '$18,000', '$20,000', '$22,000', '$75,000', 'Stable'],
+      ['Payroll & Personnel Expenses', 'Outflow', '$520,000', '$580,000', '$640,000', '$720,000', '$2,460,000', 'Controlled'],
+      ['Marketing & Sales Programs', 'Outflow', '$180,000', '$220,000', '$270,000', '$320,000', '$990,000', 'Scaling'],
+      ['Cloud & Infrastructure', 'Outflow', '$85,000', '$95,000', '$110,000', '$130,000', '$420,000', 'Optimized'],
+      ['Office, Legal & Overhead', 'Outflow', '$65,000', '$70,000', '$75,000', '$80,000', '$290,000', 'Fixed'],
+      ['Capital Expenditure (CapEx)', 'Outflow', '$70,000', '$13,000', '$15,000', '$17,000', '$115,000', 'Within Plan'],
+      ['Net Cash Flow', 'Net', '+$45,000', '+$60,000', '+$70,000', '+$65,000', '+$240,000', 'Positive'],
+      ['Ending Cash Balance', 'Balance', '$1,545,000', '$1,605,000', '$1,675,000', '$1,740,000', '$1,740,000', 'Surplus']
+    ];
+
+    templateRows.forEach((rowItems, rIdx) => {
+      rowItems.forEach((val, cIdx) => {
+        newCells[rIdx][cIdx] = val;
+        if (rIdx === 0) {
+          if (cIdx === 0) {
+            newFormats[rIdx][cIdx] = { fill: '#0f172a', color: '#ffffff', bgColor: '#0f172a', textColor: '#ffffff', bold: true, fontSize: 16, align: 'center', colSpan: 8 };
+          } else {
+            newFormats[rIdx][cIdx] = { hidden: true };
+          }
+        } else if (rIdx === 1) {
+          newFormats[rIdx][cIdx] = { fill: '#f1f5f9', color: '#1e293b', bgColor: '#f1f5f9', textColor: '#1e293b', bold: true, fontSize: 11, align: 'center' };
+        } else if (rIdx === 2) {
+          newFormats[rIdx][cIdx] = { fill: '#0284c7', color: '#ffffff', bgColor: '#0284c7', textColor: '#ffffff', bold: true, fontSize: 13, align: 'center' };
+        } else {
+          const isEven = rIdx % 2 === 0;
+          let rowBg = isEven ? '#f8fafc' : '#ffffff';
+          let textColor = '#334155';
+          let isBold = cIdx === 0 || rIdx === 11 || rIdx === 12;
+          
+          if (cIdx === 7) {
+            if (val === 'Surplus' || val === 'Healthy' || val === 'Positive') { rowBg = '#d1fae5'; textColor = '#065f46'; isBold = true; }
+            else if (val === 'Growing' || val === 'Optimized' || val === 'Controlled') { rowBg = '#dbeafe'; textColor = '#1e40af'; isBold = true; }
+          }
+          const align = (cIdx >= 2 && cIdx <= 6) ? 'right' : (cIdx === 1 || cIdx === 7) ? 'center' : 'left';
+          const cellFmt = { fill: rowBg, color: textColor, bgColor: rowBg, textColor, bold: isBold, fontSize: 12, align };
+          if (cIdx === 1) { cellFmt.type = 'dropdown'; cellFmt.options = ['Balance', 'Inflow', 'Outflow', 'Net']; }
+          if (cIdx === 7) { cellFmt.type = 'dropdown'; cellFmt.options = ['Healthy', 'Growing', 'Stable', 'Controlled', 'Scaling', 'Optimized', 'Fixed', 'Within Plan', 'Positive', 'Surplus']; }
+          newFormats[rIdx][cIdx] = cellFmt;
+        }
+      });
+    });
+
+    setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
+    showToast('Cash Flow Forecast template loaded!');
+  };
+
+  const loadKPIDashboardTemplate = (sheetId = activeSheetId) => {
+    const targetId = sheetId || activeSheetId || 1;
+    const rowsCount = 25;
+    const colsCount = 26;
+    const newCells = Array.from({ length: rowsCount }, () => Array.from({ length: colsCount }, () => ''));
+    const newFormats = Array.from({ length: rowsCount }, () => Array.from({ length: colsCount }, () => ({})));
+
+    const templateRows = [
+      ['Executive Key Performance Indicator (KPI) Dashboard', '', '', '', '', '', '', '', ''],
+      ['Total KPIs: 10', 'On Track / Achieved: 8', 'At Risk: 2', 'Avg Goal Achievement: 94.8%', '', '', '', '', ''],
+      ['KPI Code', 'Strategic Metric', 'Department', 'Q3 Target', 'Actual YTD', 'Achievement %', 'Owner', 'Priority', 'Status'],
+      ['KPI-01', 'Customer Satisfaction (CSAT)', 'Customer Support', '92.0%', '94.5%', '102.7%', 'Sarah Chen', 'High', 'Achieved'],
+      ['KPI-02', 'Monthly Active Users (MAU)', 'Product Growth', '125,000', '132,400', '105.9%', 'Alex Rivera', 'Critical', 'Surpassed'],
+      ['KPI-03', 'Platform Uptime SLA', 'Engineering', '99.90%', '99.95%', '100.1%', 'Elena Rostova', 'Critical', 'Achieved'],
+      ['KPI-04', 'Sales Pipeline Velocity', 'Sales Ops', '$250,000', '$215,000', '86.0%', 'Marcus Vance', 'High', 'At Risk'],
+      ['KPI-05', 'Net Promoter Score (NPS)', 'Product Experience', '65', '68', '104.6%', 'David Kim', 'Medium', 'Achieved'],
+      ['KPI-06', 'Gross Margin Percentage', 'Finance', '75.0%', '78.2%', '104.3%', 'Jessica Taylor', 'Critical', 'Achieved'],
+      ['KPI-07', 'Employee Retention Rate', 'People & HR', '90.0%', '93.5%', '103.9%', 'Michael Chang', 'Medium', 'Achieved'],
+      ['KPI-08', 'Organic Search Lead Gen', 'Marketing', '1,200', '1,050', '87.5%', 'Amanda Foster', 'Medium', 'At Risk'],
+      ['KPI-09', 'Average First Response Time', 'Customer Support', '15 Mins', '11 Mins', '127.3%', 'Liam O\'Connor', 'Low', 'Surpassed'],
+      ['KPI-10', 'Feature Release Cadence', 'Engineering', '8 Releases', '8 Releases', '100.0%', 'Sophia Martinez', 'High', 'Achieved']
+    ];
+
+    templateRows.forEach((rowItems, rIdx) => {
+      rowItems.forEach((val, cIdx) => {
+        newCells[rIdx][cIdx] = val;
+        if (rIdx === 0) {
+          if (cIdx === 0) {
+            newFormats[rIdx][cIdx] = { fill: '#0f172a', color: '#ffffff', bgColor: '#0f172a', textColor: '#ffffff', bold: true, fontSize: 16, align: 'center', colSpan: 9 };
+          } else {
+            newFormats[rIdx][cIdx] = { hidden: true };
+          }
+        } else if (rIdx === 1) {
+          newFormats[rIdx][cIdx] = { fill: '#f1f5f9', color: '#1e293b', bgColor: '#f1f5f9', textColor: '#1e293b', bold: true, fontSize: 11, align: 'center' };
+        } else if (rIdx === 2) {
+          newFormats[rIdx][cIdx] = { fill: '#0284c7', color: '#ffffff', bgColor: '#0284c7', textColor: '#ffffff', bold: true, fontSize: 13, align: 'center' };
+        } else {
+          const isEven = rIdx % 2 === 0;
+          let rowBg = isEven ? '#f8fafc' : '#ffffff';
+          let textColor = '#334155';
+          let isBold = cIdx === 0 || cIdx === 1;
+          
+          if (cIdx === 8) {
+            if (val === 'Achieved' || val === 'Surpassed') { rowBg = '#d1fae5'; textColor = '#065f46'; isBold = true; }
+            else if (val === 'At Risk') { rowBg = '#fee2e2'; textColor = '#991b1b'; isBold = true; }
+          } else if (cIdx === 7) {
+            if (val === 'Critical') { rowBg = '#fee2e2'; textColor = '#991b1b'; isBold = true; }
+            else if (val === 'High') { rowBg = '#ffedd5'; textColor = '#c2410c'; isBold = true; }
+          }
+          const align = (cIdx >= 3 && cIdx <= 5) ? 'right' : (cIdx === 0 || cIdx === 7 || cIdx === 8) ? 'center' : 'left';
+          const cellFmt = { fill: rowBg, color: textColor, bgColor: rowBg, textColor, bold: isBold, fontSize: 12, align };
+          if (cIdx === 5) cellFmt.formatType = 'percentage';
+          if (cIdx === 7) { cellFmt.type = 'dropdown'; cellFmt.options = ['Critical', 'High', 'Medium', 'Low']; }
+          if (cIdx === 8) { cellFmt.type = 'dropdown'; cellFmt.options = ['Achieved', 'Surpassed', 'On Track', 'At Risk', 'Behind']; }
+          newFormats[rIdx][cIdx] = cellFmt;
+        }
+      });
+    });
+
+    setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
+    showToast('KPI Dashboard template loaded!');
+  };
   const formatCellValue = (val, formatTypeArg, headerNameArg = '') => {
     if (val === null || val === undefined || val === '') return val;
     const strVal = String(val).trim();
@@ -37646,11 +38008,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <>
                           {/* Sub-tab actions */}
                           {sheetToolbarTab === 'Templates' ? (
-                            <div className="flex items-center gap-6 px-2 py-1 pt-1.5 border-t border-gray-200/60 dark:border-zinc-800">
-                              <div className="flex items-center gap-1">
-                                <button type="button" onClick={() => showToast('Loading Financial Models...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Financial</button>
-                                <button type="button" onClick={() => loadProjectTrackingTemplate()} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Project Tracking</button>
-                              </div>
+                            <div className="flex flex-wrap items-center gap-1.5 px-2 py-1 pt-1.5 border-t border-gray-200/60 dark:border-zinc-800">
+                              <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mr-1">Dashboards:</span>
+                              <button type="button" onClick={() => loadProjectTrackingTemplate()} className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200/60 dark:border-zinc-700 transition-colors">Project Tracking</button>
+                              <button type="button" onClick={() => loadFinancialModelTemplate()} className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200/60 dark:border-zinc-700 transition-colors">Financial Model</button>
+                              <button type="button" onClick={() => loadSaaSMetricsTemplate()} className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200/60 dark:border-zinc-700 transition-colors">SaaS Metrics</button>
+                              <button type="button" onClick={() => loadSalesCRMPipelineTemplate()} className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200/60 dark:border-zinc-700 transition-colors">Sales CRM</button>
+                              <button type="button" onClick={() => loadCashFlowForecastTemplate()} className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200/60 dark:border-zinc-700 transition-colors">Cash Flow</button>
+                              <button type="button" onClick={() => loadKPIDashboardTemplate()} className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200/60 dark:border-zinc-700 transition-colors">KPI Dashboard</button>
                             </div>
                           ) : sheetToolbarTab === 'View' ? (
                             <div className="flex flex-wrap items-center gap-4 px-2 py-1.5 pt-2 border-t border-gray-200/60 dark:border-zinc-800 text-xs font-medium">
@@ -37678,6 +38043,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 value={sheetsThemePalette}
                                 onChange={(newThemeId) => {
                                   setSheetsThemePalette(newThemeId);
+                                  applyDashboardTheme(newThemeId);
                                   const selectedTheme = SHEETS_THEME_OPTIONS.find(t => t.id === newThemeId);
                                   showToast(`Theme: ${selectedTheme?.label || newThemeId}`);
                                 }}
