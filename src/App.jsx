@@ -40099,24 +40099,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    };
                                  }
 
-                                 const customBgStyle = computedFormat.fill ? { background: computedFormat.fill } : {};
-                                 const customTextStyle = computedFormat.color ? { color: computedFormat.color } : {};
-                                 const cellKey = `${rowIndex}-${colIndex}`;
-                                 const isEditingThisCell = editingCellKey === cellKey;
-                                 
-                                 const colHeaderName = activeSheetGridRaw?.cells?.[0]?.[colIndex] || '';
-                                 const rawGridVal = activeSheetGridRaw.cells?.[rowIndex]?.[colIndex];
+                                const customBgColor = computedFormat.fill || computedFormat.highlight || cellFormat.highlight;
+                                const customBgStyle = customBgColor ? { background: customBgColor } : {};
+                                const customTextStyle = computedFormat.color ? { color: computedFormat.color } : {};
+                                const cellKey = `${rowIndex}-${colIndex}`;
+                                const isEditingThisCell = editingCellKey === cellKey;
+                                
+                                const colHeaderName = activeSheetGridRaw?.cells?.[0]?.[colIndex] || '';
+                                const rawGridVal = activeSheetGridRaw.cells?.[rowIndex]?.[colIndex];
 
-                                 let defaultAlign = 'left';
-                                 if (computedFormat.isHeader || rowIndex === 0) {
-                                   defaultAlign = 'center';
-                                 } else if (typeof rawGridVal === 'number' || (typeof rawGridVal === 'string' && (rawGridVal.includes('$') || rawGridVal.includes('%') || (!isNaN(Number(rawGridVal)) && rawGridVal.trim() !== '')))) {
-                                   defaultAlign = 'right';
-                                 } else if (typeof rawGridVal === 'string' && (rawGridVal.toLowerCase().includes('month') || rawGridVal.toLowerCase().includes('year'))) {
-                                   defaultAlign = 'center';
-                                 }
+                                let defaultAlign = 'left';
+                                if (computedFormat.isHeader || rowIndex === 0) {
+                                  defaultAlign = 'center';
+                                } else if (typeof rawGridVal === 'number' || (typeof rawGridVal === 'string' && (rawGridVal.includes('$') || rawGridVal.includes('%') || (!isNaN(Number(rawGridVal)) && rawGridVal.trim() !== '')))) {
+                                  defaultAlign = 'right';
+                                } else if (typeof rawGridVal === 'string' && (rawGridVal.toLowerCase().includes('month') || rawGridVal.toLowerCase().includes('year'))) {
+                                  defaultAlign = 'center';
+                                }
 
-                                 const resolvedCellAlign = computedFormat.align || cellFormat.textAlign || cellFormat.align || defaultAlign;
+                                const resolvedCellAlign = computedFormat.align || cellFormat.textAlign || cellFormat.align || defaultAlign;
 
                                 const cellBg = isExplicitAnchor && sheetSelectionMode === 'cell' 
                                   ? 'bg-white/50' 
@@ -40406,7 +40407,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             color: computedFormat.color || undefined,
                                             textAlign: computedFormat.align || 'center'
                                           }}
-                                          onClick={(e) => {
+                                          onPointerDown={(e) => {
+                                            e.preventDefault();
                                             e.stopPropagation();
                                             const btnLabel = computedFormat.buttonLabel || cellValue || 'Action';
                                             if (btnLabel.toLowerCase().includes('draft')) {
@@ -40469,7 +40471,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               textAlign: computedFormat.align || undefined,
                                               ...customTextStyle
                                             }}
-                                            onClick={(e) => {
+                                            onPointerDown={(e) => {
+                                              e.preventDefault();
                                               e.stopPropagation();
                                               if (activeDropdownCell && activeDropdownCell.row === rowIndex && activeDropdownCell.col === colIndex) {
                                                 setActiveDropdownCell(null);
@@ -40483,14 +40486,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           </div>
                                          {activeDropdownCell && activeDropdownCell.row === rowIndex && activeDropdownCell.col === colIndex && (
                                            <>
-                                             <div className="fixed inset-0 z-[49]" onClick={(e) => { e.stopPropagation(); setActiveDropdownCell(null); }} />
+                                             <div className="fixed inset-0 z-[49]" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setActiveDropdownCell(null); }} />
                                              <div className="absolute left-0 top-full mt-1 z-[50] min-w-[130px] bg-white border border-[#e6e3fb] shadow-[0_8px_24px_rgba(76,29,149,0.12)] rounded-lg py-1 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
                                                {(computedFormat.options || ['Option 1', 'Option 2', 'Option 3']).map(opt => (
                                                  <button
                                                    key={opt}
                                                    type="button"
                                                    className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-violet-50 hover:text-violet-700 font-medium transition-colors"
-                                                   onClick={(e) => {
+                                                   onPointerDown={(e) => {
+                                                     e.preventDefault();
                                                      e.stopPropagation();
                                                      updateSheetCell(activeSheetId, rowIndex, colIndex, opt);
                                                      setActiveDropdownCell(null);
