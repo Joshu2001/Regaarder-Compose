@@ -1074,8 +1074,8 @@ const UnifiedMediaModal = ({ isOpen, setOpen, mediaInsertionModal, setMediaInser
   };
 
   const handleDeviceUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         if (file.type.startsWith('image/')) {
@@ -1090,7 +1090,8 @@ const UnifiedMediaModal = ({ isOpen, setOpen, mediaInsertionModal, setMediaInser
         }
       };
       reader.readAsDataURL(file);
-    }
+    });
+    if (e.target) e.target.value = '';
   };
 
   const handleGenerateAI = () => {
@@ -1176,7 +1177,7 @@ const UnifiedMediaModal = ({ isOpen, setOpen, mediaInsertionModal, setMediaInser
               <p className="text-sm text-slate-500 mb-6 max-w-sm">Select photos, videos, or documents from your computer to insert into the editor.</p>
               <label className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm shadow-blue-600/20 transition-all cursor-pointer">
                 Choose File
-                <input type="file" className="hidden" onChange={handleDeviceUpload} accept="image/*,video/*,.pdf,.doc,.docx,.txt" />
+                <input type="file" className="hidden" multiple onChange={handleDeviceUpload} accept="image/*,video/*,.pdf,.doc,.docx,.txt" />
               </label>
             </div>
           )}
@@ -31065,6 +31066,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   <input
                     ref={scheduleFileInputRef}
                     type="file"
+                    multiple
                     className="hidden"
                     onChange={async (event) => {
                       await ingestScheduleAttachments(event.target.files);
@@ -42329,13 +42331,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onDrop={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                      const file = e.dataTransfer.files[0];
-                      if (file.type.startsWith('image/')) {
-                        setEquationFile(file);
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+                      if (files.length > 0) {
+                        setEquationFile(files[0]);
                         const reader = new FileReader();
                         reader.onloadend = () => setEquationFilePreview(reader.result);
-                        reader.readAsDataURL(file);
+                        reader.readAsDataURL(files[0]);
                       }
                     }
                   }}
@@ -42345,14 +42347,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     type="file" 
                     id="equation-file-input" 
                     className="hidden" 
+                    multiple
                     accept="image/*"
                     onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        const file = e.target.files[0];
-                        setEquationFile(file);
-                        const reader = new FileReader();
-                        reader.onloadend = () => setEquationFilePreview(reader.result);
-                        reader.readAsDataURL(file);
+                      if (e.target.files && e.target.files.length > 0) {
+                        const files = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
+                        if (files.length > 0) {
+                          setEquationFile(files[0]);
+                          const reader = new FileReader();
+                          reader.onloadend = () => setEquationFilePreview(reader.result);
+                          reader.readAsDataURL(files[0]);
+                        }
                       }
                     }}
                   />
@@ -45111,13 +45116,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onDrop={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                      const file = e.dataTransfer.files[0];
-                      if (file.type.startsWith('image/')) {
-                        setEquationFile(file);
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+                      if (files.length > 0) {
+                        setEquationFile(files[0]);
                         const reader = new FileReader();
                         reader.onloadend = () => setEquationFilePreview(reader.result);
-                        reader.readAsDataURL(file);
+                        reader.readAsDataURL(files[0]);
                       }
                     }
                   }}
@@ -45127,14 +45132,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     type="file" 
                     id="equation-file-input" 
                     className="hidden" 
+                    multiple
                     accept="image/*"
                     onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        const file = e.target.files[0];
-                        setEquationFile(file);
-                        const reader = new FileReader();
-                        reader.onloadend = () => setEquationFilePreview(reader.result);
-                        reader.readAsDataURL(file);
+                      if (e.target.files && e.target.files.length > 0) {
+                        const files = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
+                        if (files.length > 0) {
+                          setEquationFile(files[0]);
+                          const reader = new FileReader();
+                          reader.onloadend = () => setEquationFilePreview(reader.result);
+                          reader.readAsDataURL(files[0]);
+                        }
                       }
                     }}
                   />

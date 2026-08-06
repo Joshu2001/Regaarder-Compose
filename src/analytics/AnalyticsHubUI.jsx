@@ -437,12 +437,16 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
         type="file" 
         ref={fileInputRef} 
         className="hidden" 
-        accept=".csv,.xlsx,.json"
+        multiple
+        accept=".csv,.xlsx,.json,.xls"
         onChange={(e) => {
-          if (e.target.files && e.target.files[0]) {
-            const fileName = e.target.files[0].name;
-            addRangeToHistory(`Uploaded: ${fileName}`);
-            showToast?.(`Uploaded dataset file: ${fileName}`);
+          if (e.target.files && e.target.files.length > 0) {
+            const files = Array.from(e.target.files);
+            files.forEach((file) => {
+              addRangeToHistory(`Uploaded: ${file.name}`);
+            });
+            showToast?.(`Uploaded ${files.length} dataset file${files.length > 1 ? 's' : ''}: ${files.map(f => f.name).join(', ')}`);
+            e.target.value = '';
           }
         }} 
       />
@@ -581,7 +585,23 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
           </div>
 
           {/* Select Data Range or Upload Dropzone Box */}
-          <div className="border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-zinc-850/20 backdrop-blur-md">
+          <div 
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                const files = Array.from(e.dataTransfer.files);
+                files.forEach((file) => {
+                  addRangeToHistory(`Uploaded: ${file.name}`);
+                });
+                showToast?.(`Uploaded ${files.length} dataset file${files.length > 1 ? 's' : ''}: ${files.map(f => f.name).join(', ')}`);
+              }
+            }}
+            className="border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-zinc-850/20 backdrop-blur-md transition-colors hover:border-violet-300 dark:hover:border-violet-800 cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
             <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700 flex items-center justify-center text-slate-500 dark:text-zinc-400 shadow-sm mb-3">
               <FileText size={20} />
             </div>
