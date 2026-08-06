@@ -13,7 +13,7 @@ import {
   ChevronLeft, ChevronRight, Cloud, Users, Home, Inbox, Star, 
   FileText, Trash, Settings, MoreHorizontal, MoreVertical,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
-  File, User, PenTool, Pen, AlignLeft, AlignCenter, AlignRight, AlignJustify, 
+  File, User, PenTool, Pen, PenLine, AlignLeft, AlignCenter, AlignRight, AlignJustify, 
   List, ListOrdered, Bold, Italic, Underline, Strikethrough, Type, X, ChevronDown, ChevronUp, Disc,
   Layout, LayoutGrid, Lock, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion, HelpCircle, LifeBuoy,
@@ -8667,6 +8667,9 @@ export default function App() {
   const [sheetToolbarTab, setSheetToolbarTab] = useState('Data');
   const [hasImportedData, setHasImportedData] = useState(false);
   const [importedFileInfo, setImportedFileInfo] = useState(null);
+  const [importedFilesList, setImportedFilesList] = useState([]);
+  const [mergeSheetModalOpen, setMergeSheetModalOpen] = useState(false);
+  const [mergeSheetSourceDocId, setMergeSheetSourceDocId] = useState(null);
   const [selectedDatasets, setSelectedDatasets] = useState([]);
   const [replayPanelOpen, setReplayPanelOpen] = useState(false);
   const [isReplayPlaying, setIsReplayPlaying] = useState(false);
@@ -9717,6 +9720,7 @@ export default function App() {
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
   const activeDocIdRef = useRef(null);
+  const topDocTabsContainerRef = useRef(null);
   const sheetShapeMenuRef = useRef(null);
   const sheetChartMenuRef = useRef(null);
   const sheetTablePresetMenuRef = useRef(null);
@@ -26639,6 +26643,29 @@ Respond with a JSON array of slide objects matching the schema.`;
       cells: evaluatedCells
     };
   }, [activeSheetGridRaw]);
+
+  useEffect(() => {
+    if (!activeSheetGrid || !activeSheetGrid.cells) return;
+    const root = document.documentElement;
+    if (!root) return;
+    const cols = activeSheetGrid.cols || 26;
+    const colWidths = activeSheetGridRaw?.columnWidths || {};
+    for (let c = 0; c < cols; c++) {
+      let maxCharLen = 0;
+      for (let r = 0; r < activeSheetGrid.cells.length; r++) {
+        const val = activeSheetGrid.cells[r]?.[c];
+        if (val !== undefined && val !== null) {
+          const str = String(val);
+          if (str.length > maxCharLen) maxCharLen = str.length;
+        }
+      }
+      const contentWidth = maxCharLen > 0 ? Math.round(maxCharLen * 9.5 + 38) : 140;
+      const baseWidth = colWidths[c] || 140;
+      const optimalWidth = Math.max(140, Math.min(560, Math.max(baseWidth, contentWidth)));
+      root.style.setProperty(`--col-${c}-width`, `${optimalWidth}px`);
+    }
+  }, [activeSheetId, activeSheetGrid]);
+
   const isSheetsMode = productMode === 'sheets';
   const updateDeckSlideField = (slideId, field, value) => {
     setDeckSlidesData((prev) => prev.map((slide) => {
@@ -37123,6 +37150,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <Pin size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
                               <span>{doc.pinned ? 'Unpin' : 'Pin'}</span>
                             </button>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setMergeSheetSourceDocId(doc.id);
+                                setMergeSheetModalOpen(true);
+                                setOpenDocMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                            >
+                              <Layers size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                              <span>Merge Sheet</span>
+                            </button>
                           </div>
                           <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full my-0.5" />
                           <button
@@ -37870,42 +37911,54 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               : 'Drop any file or paste content — Regaarder converts it into structured, intelligent data.'}
                           </p>
 
-                          {/* Processed Document File Card */}
-                          {(importedFileInfo || hasImportedData) && (
-                            <div className="w-full bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-700/60 rounded-2xl p-4 mb-6 flex items-center justify-between text-left transition-all">
-                              <div className="flex items-center gap-3.5 min-w-0">
-                                <div className="w-10 h-12 rounded-lg bg-emerald-500 flex flex-col items-center justify-center text-white shrink-0 shadow-sm relative overflow-hidden">
-                                  <div className="text-[9px] font-black tracking-tighter uppercase mb-0.5">
-                                    {importedFileInfo?.name ? importedFileInfo.name.substring(importedFileInfo.name.lastIndexOf('.') + 1).toUpperCase() : 'XLSX'}
+                          {/* Processed Document File Cards List */}
+                          {(importedFilesList.length > 0 || importedFileInfo || hasImportedData) && (
+                            <div className="w-full space-y-2.5 mb-6">
+                              {(importedFilesList.length > 0 ? importedFilesList : [importedFileInfo || { id: 'default', name: 'Untitled Document', size: '0 KB', sheets: 1, rows: 100 }]).map((fileItem) => {
+                                const ext = fileItem?.name ? fileItem.name.substring(fileItem.name.lastIndexOf('.') + 1).toUpperCase() : 'XLSX';
+                                return (
+                                  <div key={fileItem.id || fileItem.name} className="w-full bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-700/60 rounded-2xl p-3.5 flex items-center justify-between text-left transition-all hover:border-slate-300 dark:hover:border-zinc-600">
+                                    <div className="flex items-center gap-3.5 min-w-0">
+                                      <div className="w-10 h-11 rounded-lg bg-emerald-500 flex flex-col items-center justify-center text-white shrink-0 shadow-sm relative overflow-hidden">
+                                        <div className="text-[9px] font-black tracking-tighter uppercase mb-0.5">
+                                          {ext}
+                                        </div>
+                                        <Table size={14} />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <h4 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                                          {fileItem?.name || 'Untitled Document'}
+                                        </h4>
+                                        <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
+                                          <span className="flex items-center gap-1"><Grid size={12} /> {fileItem?.sheets ?? 1} { (fileItem?.sheets ?? 1) === 1 ? 'Sheet' : 'Sheets' }</span>
+                                          <span className="flex items-center gap-1">
+                                            <BarChart2 size={12} /> {fileItem?.rows ? `${fileItem.rows.toLocaleString()} Rows` : '100 Rows'}
+                                          </span>
+                                          <span className="flex items-center gap-1"><Database size={12} /> {fileItem?.size || '0 KB'}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-medium border border-emerald-200/60 dark:border-emerald-800/40">
+                                        <Check size={13} strokeWidth={2.5} />
+                                        <span>Processed</span>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onPointerDown={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          handleRemoveImportedFileItem(fileItem.id, fileItem.docId);
+                                        }}
+                                        title="Remove file"
+                                        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 dark:text-zinc-500 transition-colors"
+                                      >
+                                        <X size={15} />
+                                      </button>
+                                    </div>
                                   </div>
-                                  <Table size={14} />
-                                </div>
-                                <div className="min-w-0">
-                                  <h4 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 truncate">
-                                    {importedFileInfo?.name || 'Untitled Document'}
-                                  </h4>
-                                  <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
-                                    <span className="flex items-center gap-1"><Grid size={12} /> {importedFileInfo?.sheets ?? (sheetGrids ? Object.keys(sheetGrids).length : 1)} { (importedFileInfo?.sheets ?? (sheetGrids ? Object.keys(sheetGrids).length : 1)) === 1 ? 'Sheet' : 'Sheets' }</span>
-                                    <span className="flex items-center gap-1">
-                                      <BarChart2 size={12} /> {
-                                        importedFileInfo?.rows !== undefined && importedFileInfo?.rows !== null
-                                          ? `${importedFileInfo.rows.toLocaleString()} Rows`
-                                          : (() => {
-                                              const grid = sheetGrids[activeSheetId] || {};
-                                              const maxR = Math.max(-1, ...Object.keys(grid).map(Number));
-                                              const count = maxR >= 0 ? maxR + 1 : 0;
-                                              return `${count.toLocaleString()} Rows`;
-                                            })()
-                                      }
-                                    </span>
-                                    <span className="flex items-center gap-1"><Database size={12} /> {importedFileInfo?.size || '0 KB'}</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-medium border border-emerald-200/60 dark:border-emerald-800/40 shrink-0">
-                                <Check size={13} strokeWidth={2.5} />
-                                <span>Processed</span>
-                              </div>
+                                );
+                              })}
                             </div>
                           )}
 
@@ -37989,6 +38042,101 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               return null;
                             };
 
+                            const handleRemoveImportedFileItem = (fileId, targetDocId = null) => {
+                              setImportedFilesList((prev) => {
+                                const next = prev.filter((item) => item.id !== fileId);
+                                if (next.length === 0) {
+                                  setHasImportedData(false);
+                                  setImportedFileInfo(null);
+                                }
+                                return next;
+                              });
+                              if (targetDocId) {
+                                setDocuments((prev) => prev.filter((d) => d.id !== targetDocId));
+                              }
+                              showToast('Removed file');
+                            };
+
+                            const createSheetTabWithData = (fileName, cells2D, formats2D = null, columnWidths = {}) => {
+                              const cleanTitle = fileName ? fileName.replace(/\.[^/.]+$/, "") : "Imported Sheet";
+                              const rowCount = Math.max(22, cells2D.length);
+                              let maxColInRows = 0;
+                              for (let r = 0; r < cells2D.length; r++) {
+                                if (cells2D[r] && cells2D[r].length > maxColInRows) {
+                                  maxColInRows = cells2D[r].length;
+                                }
+                              }
+                              const colCount = Math.max(26, maxColInRows);
+
+                              const normalizedCells = Array.from({ length: rowCount }, (_, rIdx) => {
+                                const row = cells2D[rIdx] || [];
+                                return Array.from({ length: colCount }, (_, cIdx) => String(row[cIdx] ?? ''));
+                              });
+
+                              const computedWidths = { ...(columnWidths || {}) };
+                              for (let c = 0; c < colCount; c++) {
+                                let maxCharLen = 0;
+                                for (let r = 0; r < normalizedCells.length; r++) {
+                                  const val = normalizedCells[r]?.[c] || '';
+                                  if (val.length > maxCharLen) maxCharLen = val.length;
+                                }
+                                const stringWidth = maxCharLen > 0 ? Math.round(maxCharLen * 9.5 + 38) : 140;
+                                computedWidths[c] = Math.max(computedWidths[c] || 140, Math.min(560, stringWidth));
+                              }
+
+                              const root = document.documentElement;
+                              if (root) {
+                                Object.keys(computedWidths).forEach((cIdx) => {
+                                  root.style.setProperty(`--col-${cIdx}-width`, `${computedWidths[cIdx]}px`);
+                                });
+                              }
+
+                              const sheetId = Date.now() + Math.floor(Math.random() * 10000);
+                              const docId = Date.now() + Math.floor(Math.random() * 10000);
+
+                              const newDoc = {
+                                id: docId,
+                                mode: 'sheets',
+                                title: cleanTitle,
+                                subtitle: 'Imported Document',
+                                initiatives: [],
+                                appendedSections: [],
+                                isBlank: false,
+                                bodyHtml: '',
+                                pinned: false,
+                                sheetsTitle: cleanTitle,
+                                sheetsData: [{ id: sheetId, title: cleanTitle, subtitle: 'Imported Data' }],
+                                sheetGrids: {
+                                  [sheetId]: {
+                                    rows: rowCount,
+                                    cols: colCount,
+                                    cells: normalizedCells,
+                                    formats: formats2D || Array.from({ length: rowCount }, () => Array(colCount).fill(null)),
+                                    columnWidths: computedWidths
+                                  }
+                                },
+                                activeSheetId: sheetId,
+                              };
+
+                              setDocuments((prev) => [...prev, newDoc]);
+                              setActiveDocId(docId);
+                              setDocTitle(cleanTitle);
+                              setSheetsTitle(cleanTitle);
+                              setSheetsData([{ id: sheetId, title: cleanTitle, subtitle: 'Imported Data' }]);
+                              setSheetGrids({
+                                [sheetId]: {
+                                  rows: rowCount,
+                                  cols: colCount,
+                                  cells: normalizedCells,
+                                  formats: formats2D || Array.from({ length: rowCount }, () => Array(colCount).fill(null)),
+                                  columnWidths: computedWidths
+                                }
+                              });
+                              setActiveSheetId(sheetId);
+
+                              return { docId, sheetId, rows: rowCount, title: cleanTitle };
+                            };
+
                             const processExcelWorkbook = async (fileObj) => {
                               try {
                                 const ExcelJS = await import('exceljs');
@@ -37996,127 +38144,173 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 const workbook = new ExcelJS.Workbook();
                                 await workbook.xlsx.load(buffer);
                                 
-                                const worksheet = workbook.worksheets[0];
-                                if (!worksheet) return;
+                                const sheetsToProcess = workbook.worksheets.filter(ws => ws && ws.rowCount > 0);
+                                const validWorksheets = sheetsToProcess.length > 0 ? sheetsToProcess : [workbook.worksheets[0]].filter(Boolean);
+                                if (validWorksheets.length === 0) return;
 
-                                const colMaxLengths = {};
-                                const importedColWidths = {};
-                                const rowCount = worksheet.rowCount || 0;
-                                const colCount = worksheet.columnCount || 0;
-                                const formats2D = Array.from({ length: Math.max(rowCount, 1) }, () => Array(Math.max(colCount, 1)).fill(null));
-                                let maxRowIdx = 0;
-
-                                worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-                                  const rIdx = rowNumber - 1;
-                                  maxRowIdx = Math.max(maxRowIdx, rowNumber);
-                                  row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-                                    const cIdx = colNumber - 1;
-                                    
-                                    let valStr = '';
-                                    if (cell.value !== undefined && cell.value !== null) {
-                                      if (typeof cell.value === 'object') {
-                                        if (cell.value.result !== undefined && cell.value.result !== null) {
-                                          valStr = String(cell.value.result);
-                                        } else if (cell.value.richText && Array.isArray(cell.value.richText)) {
-                                          valStr = cell.value.richText.map(rt => rt.text || '').join('');
-                                        } else if (cell.value.text) {
-                                          valStr = String(cell.value.text);
-                                        } else if (cell.value instanceof Date) {
-                                          valStr = cell.value.toLocaleDateString();
-                                        } else {
-                                          valStr = String(cell.text || '');
-                                        }
-                                      } else {
-                                        valStr = String(cell.value);
-                                      }
-                                    }
-
-                                    updateSheetCell(activeSheetId, rIdx, cIdx, valStr);
-
-                                    if (valStr) {
-                                      colMaxLengths[cIdx] = Math.max(colMaxLengths[cIdx] || 0, valStr.length);
-                                    }
-
-                                    const fmt = {};
-                                    if (cell.font) {
-                                      if (cell.font.bold) fmt.bold = true;
-                                      if (cell.font.italic) fmt.italic = true;
-                                      if (cell.font.underline) fmt.underline = true;
-                                      if (cell.font.name) fmt.fontFamily = cell.font.name;
-                                      if (cell.font.size) fmt.fontSize = String(cell.font.size);
-                                      const fontClr = parseColorObj(cell.font.color);
-                                      if (fontClr) fmt.color = fontClr;
-                                    }
-
-                                    if (cell.fill) {
-                                      if (cell.fill.fgColor) {
-                                        const fillClr = parseColorObj(cell.fill.fgColor);
-                                        if (fillClr) fmt.fill = fillClr;
-                                      } else if (cell.fill.bgColor) {
-                                        const fillClr = parseColorObj(cell.fill.bgColor);
-                                        if (fillClr) fmt.fill = fillClr;
-                                      }
-                                    }
-
-                                    if (cell.alignment && cell.alignment.horizontal) {
-                                      fmt.align = cell.alignment.horizontal;
-                                    }
-
-                                    if (!formats2D[rIdx]) formats2D[rIdx] = [];
-                                    if (Object.keys(fmt).length > 0) {
-                                      formats2D[rIdx][cIdx] = fmt;
-                                    }
-                                  });
-                                });
-
+                                const cleanFileName = fileObj.name.replace(/\.[^/.]+$/, "");
+                                const docId = Date.now() + Math.floor(Math.random() * 10000);
                                 const root = document.documentElement;
-                                if (worksheet.columns) {
-                                  worksheet.columns.forEach((col, cIdx) => {
-                                    let colWidth = 140;
-                                    if (col.width) {
-                                      colWidth = Math.max(130, Math.round(col.width * 7.5 + 28));
-                                    } else if (colMaxLengths[cIdx]) {
-                                      colWidth = Math.max(140, Math.min(380, Math.round(colMaxLengths[cIdx] * 10 + 36)));
-                                    }
-                                    importedColWidths[cIdx] = colWidth;
-                                    if (root) root.style.setProperty(`--col-${cIdx}-width`, `${colWidth}px`);
-                                  });
-                                }
 
-                                setSheetGrids(prev => {
-                                  const target = prev[activeSheetId];
-                                  if (!target) return prev;
-                                  const existingFormats = Array.isArray(target.formats)
-                                    ? target.formats.map(r => [...r])
-                                    : Array.from({ length: target.rows }, () => Array(target.cols).fill(null));
-                                  formats2D.forEach((rowFmts, rIdx) => {
-                                    if (!existingFormats[rIdx]) existingFormats[rIdx] = [];
-                                    rowFmts?.forEach((fmt, cIdx) => {
-                                      if (fmt !== null) existingFormats[rIdx][cIdx] = fmt;
+                                const sheetsDataAcc = [];
+                                const sheetGridsAcc = {};
+
+                                validWorksheets.forEach((worksheet, sIdx) => {
+                                  const sheetId = Date.now() + Math.floor(Math.random() * 100000) + sIdx;
+                                  const sheetTitle = worksheet.name || `Sheet ${sIdx + 1}`;
+                                  
+                                  const colMaxLengths = {};
+                                  const importedColWidths = {};
+                                  const rowCount = worksheet.rowCount || 0;
+                                  const colCount = worksheet.columnCount || 0;
+                                  const cells2D = Array.from({ length: Math.max(rowCount, 1) }, () => []);
+                                  const formats2D = Array.from({ length: Math.max(rowCount, 1) }, () => []);
+
+                                  worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+                                    const rIdx = rowNumber - 1;
+                                    if (!cells2D[rIdx]) cells2D[rIdx] = [];
+                                    if (!formats2D[rIdx]) formats2D[rIdx] = [];
+
+                                    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                                      const cIdx = colNumber - 1;
+                                      let valStr = '';
+                                      if (cell.value !== undefined && cell.value !== null) {
+                                        if (typeof cell.value === 'object') {
+                                          if (cell.value.result !== undefined && cell.value.result !== null) {
+                                            valStr = String(cell.value.result);
+                                          } else if (cell.value.richText && Array.isArray(cell.value.richText)) {
+                                            valStr = cell.value.richText.map(rt => rt.text || '').join('');
+                                          } else if (cell.value.text) {
+                                            valStr = String(cell.value.text);
+                                          } else if (cell.value instanceof Date) {
+                                            valStr = cell.value.toLocaleDateString();
+                                          } else {
+                                            valStr = String(cell.text || '');
+                                          }
+                                        } else {
+                                          valStr = String(cell.value);
+                                        }
+                                      }
+
+                                      cells2D[rIdx][cIdx] = valStr;
+                                      if (valStr) {
+                                        colMaxLengths[cIdx] = Math.max(colMaxLengths[cIdx] || 0, valStr.length);
+                                      }
+
+                                      const fmt = {};
+                                      if (cell.font) {
+                                        if (cell.font.bold) fmt.bold = true;
+                                        if (cell.font.italic) fmt.italic = true;
+                                        if (cell.font.underline) fmt.underline = true;
+                                        if (cell.font.name) fmt.fontFamily = cell.font.name;
+                                        if (cell.font.size) fmt.fontSize = String(cell.font.size);
+                                        const fontClr = parseColorObj(cell.font.color);
+                                        if (fontClr) fmt.color = fontClr;
+                                      }
+
+                                      if (cell.fill) {
+                                        if (cell.fill.fgColor) {
+                                          const fillClr = parseColorObj(cell.fill.fgColor);
+                                          if (fillClr) fmt.fill = fillClr;
+                                        } else if (cell.fill.bgColor) {
+                                          const fillClr = parseColorObj(cell.fill.bgColor);
+                                          if (fillClr) fmt.fill = fillClr;
+                                        }
+                                      }
+
+                                      if (cell.alignment && cell.alignment.horizontal) {
+                                        fmt.align = cell.alignment.horizontal;
+                                      }
+
+                                      if (Object.keys(fmt).length > 0) {
+                                        formats2D[rIdx][cIdx] = fmt;
+                                      }
                                     });
                                   });
-                                  return {
-                                    ...prev,
-                                    [activeSheetId]: {
-                                      ...target,
-                                      formats: existingFormats,
-                                      columnWidths: { ...(target.columnWidths || {}), ...importedColWidths }
+
+                                  let maxColsInGrid = Math.max(26, colCount);
+                                  for (let r = 0; r < cells2D.length; r++) {
+                                    if (cells2D[r] && cells2D[r].length > maxColsInGrid) {
+                                      maxColsInGrid = cells2D[r].length;
                                     }
+                                  }
+
+                                  const normalizedCells = Array.from({ length: Math.max(22, cells2D.length) }, (_, rIdx) => {
+                                    const row = cells2D[rIdx] || [];
+                                    return Array.from({ length: maxColsInGrid }, (_, cIdx) => String(row[cIdx] ?? ''));
+                                  });
+
+                                  for (let c = 0; c < maxColsInGrid; c++) {
+                                    let maxCharLen = colMaxLengths[c] || 0;
+                                    for (let r = 0; r < normalizedCells.length; r++) {
+                                      const val = normalizedCells[r]?.[c] || '';
+                                      if (val.length > maxCharLen) maxCharLen = val.length;
+                                    }
+                                    let baseWidth = 140;
+                                    if (worksheet.columns && worksheet.columns[c] && worksheet.columns[c].width) {
+                                      baseWidth = Math.round(worksheet.columns[c].width * 7.5 + 28);
+                                    }
+                                    const contentWidth = maxCharLen > 0 ? Math.round(maxCharLen * 9.5 + 38) : 140;
+                                    importedColWidths[c] = Math.max(140, Math.min(560, Math.max(baseWidth, contentWidth)));
+                                  }
+
+                                  if (sIdx === 0 && root) {
+                                    Object.keys(importedColWidths).forEach((cIdx) => {
+                                      root.style.setProperty(`--col-${cIdx}-width`, `${importedColWidths[cIdx]}px`);
+                                    });
+                                  }
+
+                                  sheetsDataAcc.push({ id: sheetId, title: sheetTitle, subtitle: 'Imported Data' });
+                                  sheetGridsAcc[sheetId] = {
+                                    rows: normalizedCells.length,
+                                    cols: maxColsInGrid,
+                                    cells: normalizedCells,
+                                    formats: formats2D,
+                                    columnWidths: importedColWidths
                                   };
                                 });
+
+                                const newDoc = {
+                                  id: docId,
+                                  mode: 'sheets',
+                                  title: cleanFileName,
+                                  subtitle: 'Imported Document',
+                                  initiatives: [],
+                                  appendedSections: [],
+                                  isBlank: false,
+                                  bodyHtml: '',
+                                  pinned: false,
+                                  sheetsTitle: cleanFileName,
+                                  sheetsData: sheetsDataAcc,
+                                  sheetGrids: sheetGridsAcc,
+                                  activeSheetId: sheetsDataAcc[0]?.id
+                                };
+
+                                setDocuments((prev) => [...prev, newDoc]);
+                                setActiveDocId(docId);
+                                setDocTitle(cleanFileName);
+                                setSheetsTitle(cleanFileName);
+                                setSheetsData(sheetsDataAcc);
+                                setSheetGrids(sheetGridsAcc);
+                                setActiveSheetId(sheetsDataAcc[0]?.id);
 
                                 const fileSizeStr = fileObj.size < 1024 * 1024 
                                   ? `${(fileObj.size / 1024).toFixed(1)} KB` 
                                   : `${(fileObj.size / (1024 * 1024)).toFixed(1)} MB`;
 
-                                setHasImportedData(true);
-                                setImportedFileInfo({
+                                const fileItem = {
+                                  id: Date.now() + Math.random(),
                                   name: fileObj.name,
                                   size: fileSizeStr,
-                                  sheets: workbook.worksheets.length || 1,
-                                  rows: maxRowIdx
-                                });
-                                showToast(`Loaded ${maxRowIdx} rows with styles from ${fileObj.name}`);
+                                  sheets: validWorksheets.length || 1,
+                                  rows: sheetGridsAcc[sheetsDataAcc[0]?.id]?.rows || 100,
+                                  docId: docId
+                                };
+
+                                setHasImportedData(true);
+                                setImportedFileInfo(fileItem);
+                                setImportedFilesList((prev) => [...prev.filter((f) => f.name !== fileObj.name), fileItem]);
+                                showToast(`Created document page for ${fileObj.name}`);
                               } catch (err) {
                                 console.error("Excel processing failed:", err);
                                 showToast(`Failed to parse ${fileObj.name}`);
@@ -38134,49 +38328,62 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 } else if (ext === '.json') {
                                   const text = await fileObj.text();
                                   const parsed = JSON.parse(text);
-                                  let rowCount = 0;
+                                  const cells2D = [];
                                   if (Array.isArray(parsed)) {
-                                    rowCount = parsed.length;
                                     parsed.forEach((item, rIdx) => {
                                       if (Array.isArray(item)) {
-                                        item.forEach((val, cIdx) => updateSheetCell(activeSheetId, rIdx, cIdx, String(val ?? '')));
+                                        cells2D.push(item.map(v => String(v ?? '')));
                                       } else if (typeof item === 'object' && item !== null) {
                                         const keys = Object.keys(item);
                                         if (rIdx === 0) {
-                                          keys.forEach((k, cIdx) => updateSheetCell(activeSheetId, 0, cIdx, k));
+                                          cells2D.push(keys);
                                         }
-                                        keys.forEach((k, cIdx) => updateSheetCell(activeSheetId, rIdx + 1, cIdx, String(item[k] ?? '')));
+                                        cells2D.push(keys.map(k => String(item[k] ?? '')));
                                       }
                                     });
                                   }
-                                  setHasImportedData(true);
-                                  setImportedFileInfo({
+                                  const res = createSheetTabWithData(fileObj.name, cells2D);
+                                  const fileItem = {
+                                    id: Date.now() + Math.random(),
                                     name: fileObj.name,
                                     size: fileSizeStr,
                                     sheets: 1,
-                                    rows: rowCount
-                                  });
-                                  showToast(`Loaded data from ${fileObj.name}`);
+                                    rows: cells2D.length,
+                                    docId: res.docId
+                                  };
+                                  setHasImportedData(true);
+                                  setImportedFileInfo(fileItem);
+                                  setImportedFilesList((prev) => [...prev.filter((f) => f.name !== fileObj.name), fileItem]);
+                                  showToast(`Created page tab for ${fileObj.name}`);
                                 } else {
                                   const text = await fileObj.text();
-                                  const lines = text.split(/\r?\n/).map(line => line.split(','));
-                                  lines.forEach((rowItems, rIdx) => {
-                                    rowItems.forEach((val, cIdx) => {
-                                      updateSheetCell(activeSheetId, rIdx, cIdx, val.trim());
-                                    });
-                                  });
-                                  setHasImportedData(true);
-                                  setImportedFileInfo({
+                                  const lines = text.split(/\r?\n/).map(line => line.split(',').map(val => val.trim()));
+                                  const res = createSheetTabWithData(fileObj.name, lines);
+                                  const fileItem = {
+                                    id: Date.now() + Math.random(),
                                     name: fileObj.name,
                                     size: fileSizeStr,
                                     sheets: 1,
-                                    rows: lines.length
-                                  });
-                                  showToast(`Loaded ${lines.length} rows from ${fileObj.name}`);
+                                    rows: lines.length,
+                                    docId: res.docId
+                                  };
+                                  setHasImportedData(true);
+                                  setImportedFileInfo(fileItem);
+                                  setImportedFilesList((prev) => [...prev.filter((f) => f.name !== fileObj.name), fileItem]);
+                                  showToast(`Created page tab for ${fileObj.name}`);
                                 }
                               } catch (err) {
                                 console.error("Import failed:", err);
                                 showToast(`Failed to parse ${fileObj.name}`);
+                              }
+                            };
+
+                            const handleMultipleFiles = async (filesList) => {
+                              if (!filesList || filesList.length === 0) return;
+                              const files = Array.from(filesList);
+                              for (let i = 0; i < files.length; i++) {
+                                showToast(`Importing file ${i + 1} of ${files.length}: ${files[i].name}...`);
+                                await handleFileImport(files[i]);
                               }
                             };
 
@@ -38187,10 +38394,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 onDrop={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                                    const file = e.dataTransfer.files[0];
-                                    showToast(`Importing ${file.name}...`);
-                                    handleFileImport(file);
+                                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                                    handleMultipleFiles(e.dataTransfer.files);
                                   }
                                 }}
                                 onClick={() => document.getElementById('sheets-data-tab-file-input')?.click()}
@@ -38200,12 +38405,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   type="file"
                                   id="sheets-data-tab-file-input"
                                   className="hidden"
+                                  multiple
                                   accept=".csv,.xlsx,.xls,.pdf,.json,.txt"
                                   onChange={(e) => {
-                                    if (e.target.files && e.target.files[0]) {
-                                      const file = e.target.files[0];
-                                      showToast(`Importing ${file.name}...`);
-                                      handleFileImport(file);
+                                    if (e.target.files && e.target.files.length > 0) {
+                                      handleMultipleFiles(e.target.files);
+                                      e.target.value = '';
                                     }
                                   }}
                                 />
@@ -38213,10 +38418,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <Upload size={20} />
                             </div>
                             <p className="text-sm font-semibold text-slate-700 dark:text-zinc-200 mb-1">
-                              Drop a file here or click to <span className="text-violet-600 dark:text-violet-400 font-bold hover:underline">browse</span>
+                              Drop file(s) here or click to <span className="text-violet-600 dark:text-violet-400 font-bold hover:underline">browse</span>
                             </p>
                             <span className="text-xs text-slate-400 dark:text-zinc-500">
-                              Supports PDF, Excel, CSV, Google Sheets, and more
+                              Supports simultaneous multi-file upload for PDF, Excel, CSV, JSON, and more
                             </span>
                           </div>
                           );
@@ -43596,7 +43801,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               setHoveredCellCoord(null);
             }}
           >
-            <Settings size={13} />
+            <PenLine size={13} />
           </button>
           
           <button 
@@ -46421,157 +46626,200 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-        {/* Document Tab Strip - always visible */}
-        <div className="h-10 border-b border-slate-200/50 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0">
-          {orderedDocuments.map((doc, docIndex) => {
-            const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
-              ? UNTITLED_WHITEBOARD_LABEL
-              : (doc.title?.trim() ? doc.title : `Tab ${docIndex + 1}`);
-            const isActive = activeDocId === doc.id;
-
-            return (
-              <div
-                key={doc.id}
-                onClick={() => switchDocument(doc.id)}
-                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-slate-100 dark:bg-zinc-800 border-violet-200 text-violet-600 dark:text-violet-400 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:border-gray-200'}`}
-              >
-                {renamingDocId === doc.id ? (
-                  <input
-                    autoFocus
-                    value={renameDocValue}
-                    onChange={(e) => setRenameDocValue(e.target.value)}
-                    onClick={(event) => event.stopPropagation()}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        commitRenameDocument(doc.id);
-                      }
-                      if (event.key === 'Escape') {
-                        setRenamingDocId(null);
-                        setRenameDocValue('');
-                      }
-                    }}
-                    onBlur={() => commitRenameDocument(doc.id)}
-                    className="w-[160px] bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
-                  />
-                ) : (
-                  <span className="max-w-[160px] truncate">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
-                )}
-                <button
-                  data-doc-menu-root
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    closeTransientMenus();
-                    const rect = event.currentTarget.getBoundingClientRect();
-                    setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
-                    setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
-                  }}
-                  className="p-0.5 rounded hover:bg-gray-100 shrink-0"
-                  title="Document actions"
-                >
-                  <MoreHorizontal size={12} />
-                </button>
-                <button
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    requestCloseDocument(doc.id);
-                  }}
-                  className="p-0.5 rounded hover:bg-rose-50 text-gray-400 hover:text-rose-600 shrink-0"
-                  title="Close document"
-                >
-                  <X size={12} />
-                </button>
-                {openDocMenuId === doc.id && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-[99990] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenDocMenuId(null);
-                      }}
-                    />
-                    <div
-                      style={{ position: 'fixed', top: `${docMenuPos.top}px`, left: `${docMenuPos.left}px`, zIndex: 99999 }}
-                      className="w-48 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
-                      data-doc-menu-root
-                    >
-                      <div className="flex flex-col gap-0.5">
-                        <button
-                          type="button"
-                          onPointerDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDocumentAction('rename', doc.id);
-                          }}
-                          className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                        >
-                          <FileEdit size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                          <span>Rename</span>
-                        </button>
-                        <button
-                          type="button"
-                          onPointerDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDocumentAction('save', doc.id);
-                          }}
-                          className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                        >
-                          <Save size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                          <span>Save</span>
-                        </button>
-                        <button
-                          type="button"
-                          onPointerDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDocumentAction('share', doc.id);
-                          }}
-                          className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                        >
-                          <Users2 size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                          <span>Share</span>
-                        </button>
-                        <button
-                          type="button"
-                          onPointerDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDocumentAction('pin', doc.id);
-                          }}
-                          className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                        >
-                          <Pin size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                          <span>{doc.pinned ? 'Unpin' : 'Pin'}</span>
-                        </button>
-                      </div>
-                      <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full my-0.5" />
-                      <button
-                        type="button"
-                        onPointerDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleDocumentAction('close', doc.id);
-                        }}
-                        className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 transition-colors text-left font-semibold"
-                      >
-                        <X size={13} className="text-rose-500 dark:text-rose-400 shrink-0" />
-                        <span>Close</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })}
+        {/* Document Tab Strip - always visible with scroll arrows */}
+        <div className="h-10 border-b border-slate-200/50 px-2 flex items-center bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0 group">
           <button
             type="button"
-            onClick={createItemForCurrentContext}
-            className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
-            title="Create new item"
-            aria-label="Create new item"
+            onClick={() => {
+              if (topDocTabsContainerRef.current) {
+                topDocTabsContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+              }
+            }}
+            className="shrink-0 p-1 mr-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded transition-colors"
+            title="Scroll tabs left"
           >
-            <Plus size={14} strokeWidth={1.5} />
+            <ChevronLeft size={16} />
+          </button>
+          <div
+            ref={topDocTabsContainerRef}
+            className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-1"
+          >
+            {orderedDocuments.map((doc, docIndex) => {
+              const rawTitle = doc.title?.trim();
+              const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
+                ? UNTITLED_WHITEBOARD_LABEL
+                : (rawTitle ? rawTitle : `Tab ${docIndex + 1}`);
+              const isActive = activeDocId === doc.id;
+
+              return (
+                <div
+                  key={doc.id}
+                  onClick={() => switchDocument(doc.id)}
+                  className={`relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-white dark:bg-zinc-800 border-slate-300 dark:border-zinc-600 text-violet-600 dark:text-violet-400 shadow-xs font-semibold' : 'bg-transparent border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/60 hover:border-slate-200'}`}
+                >
+                  {renamingDocId === doc.id ? (
+                    <input
+                      autoFocus
+                      value={renameDocValue}
+                      onChange={(e) => setRenameDocValue(e.target.value)}
+                      onClick={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          commitRenameDocument(doc.id);
+                        }
+                        if (event.key === 'Escape') {
+                          setRenamingDocId(null);
+                          setRenameDocValue('');
+                        }
+                      }}
+                      onBlur={() => commitRenameDocument(doc.id)}
+                      className="w-[160px] bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
+                    />
+                  ) : (
+                    <span className="max-w-[180px] truncate">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
+                  )}
+                  <button
+                    data-doc-menu-root
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      closeTransientMenus();
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
+                      setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
+                    }}
+                    className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-700 shrink-0"
+                    title="Document actions"
+                  >
+                    <MoreHorizontal size={12} />
+                  </button>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      requestCloseDocument(doc.id);
+                    }}
+                    className="p-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950 text-gray-400 hover:text-rose-600 shrink-0"
+                    title="Close document"
+                  >
+                    <X size={12} />
+                  </button>
+                  {openDocMenuId === doc.id && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-[99990] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDocMenuId(null);
+                        }}
+                      />
+                      <div
+                        style={{ position: 'fixed', top: `${docMenuPos.top}px`, left: `${docMenuPos.left}px`, zIndex: 99999 }}
+                        className="w-48 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                        data-doc-menu-root
+                      >
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDocumentAction('rename', doc.id);
+                            }}
+                            className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                          >
+                            <FileEdit size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                            <span>Rename</span>
+                          </button>
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDocumentAction(doc.pinned ? 'unpin' : 'pin', doc.id);
+                            }}
+                            className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                          >
+                            <Pin size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                            <span>{doc.pinned ? 'Unpin' : 'Pin to Left'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDocumentAction('duplicate', doc.id);
+                            }}
+                            className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                          >
+                            <Copy size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                            <span>Duplicate</span>
+                          </button>
+                          <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDocumentAction('closeOthers', doc.id);
+                            }}
+                            className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                          >
+                            <Layers size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                            <span>Close Other Tabs</span>
+                          </button>
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDocumentAction('closeAll', doc.id);
+                            }}
+                            className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                          >
+                            <X size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                            <span>Close All Tabs</span>
+                          </button>
+                          <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDocumentAction('close', doc.id);
+                            }}
+                            className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 transition-colors text-left font-semibold"
+                          >
+                            <X size={13} className="text-rose-500 dark:text-rose-400 shrink-0" />
+                            <span>Close</span>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+            <button
+              type="button"
+              onClick={createItemForCurrentContext}
+              className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+              title="Create new item"
+              aria-label="Create new item"
+            >
+              <Plus size={14} strokeWidth={1.5} />
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (topDocTabsContainerRef.current) {
+                topDocTabsContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+              }
+            }}
+            className="shrink-0 p-1 ml-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded transition-colors"
+            title="Scroll tabs right"
+          >
+            <ChevronRight size={16} />
           </button>
         </div>
 
