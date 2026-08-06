@@ -26859,6 +26859,159 @@ Respond with a JSON array of slide objects matching the schema.`;
     setSheetsTitle(worksheet.title);
     showToast(`${worksheet.title} created`);
   };
+
+  const loadProjectTrackingTemplate = (sheetId = activeSheetId) => {
+    const targetId = sheetId || activeSheetId || 1;
+    const rowsCount = 25;
+    const colsCount = 26;
+    const newCells = Array.from({ length: rowsCount }, () => Array.from({ length: colsCount }, () => ''));
+    const newFormats = Array.from({ length: rowsCount }, () => Array.from({ length: colsCount }, () => ({})));
+
+    const templateRows = [
+      ['Project Tracking & Operations Dashboard', '', '', '', '', '', ''],
+      ['Total Tasks: 10', 'In Progress: 5', 'Completed: 3', 'Critical: 2', 'High: 4', 'Avg Completion: 62%', ''],
+      ['Task ID', 'Task Description', 'Owner', 'Priority', 'Status', 'Due Date', 'Progress'],
+      ['TASK-101', 'Q3 System Architecture Review', 'Sarah Chen', 'High', 'In Progress', '2026-08-15', '65%'],
+      ['TASK-102', 'Database Migration & Indexing', 'Alex Rivera', 'Critical', 'In Progress', '2026-08-20', '40%'],
+      ['TASK-103', 'UI/UX Mobile Design Polish', 'Elena Rostova', 'Medium', 'Completed', '2026-08-10', '100%'],
+      ['TASK-104', 'Security & Penetration Testing', 'Marcus Vance', 'Critical', 'Not Started', '2026-08-28', '0%'],
+      ['TASK-105', 'API Gateways & Rate Limiting', 'David Kim', 'High', 'In Progress', '2026-08-22', '80%'],
+      ['TASK-106', 'Executive Quarterly Report', 'Jessica Taylor', 'Low', 'Completed', '2026-08-05', '100%'],
+      ['TASK-107', 'Cloud Infrastructure Optimization', 'Michael Chang', 'Medium', 'In Progress', '2026-08-30', '50%'],
+      ['TASK-108', 'Disaster Recovery Strategy', 'Amanda Foster', 'High', 'Not Started', '2026-09-05', '0%'],
+      ['TASK-109', 'Customer Onboarding Flow', 'Liam O\'Connor', 'Low', 'Completed', '2026-08-12', '100%'],
+      ['TASK-110', 'Automated CI/CD Pipeline', 'Sophia Martinez', 'High', 'In Progress', '2026-08-25', '75%']
+    ];
+
+    templateRows.forEach((rowItems, rIdx) => {
+      rowItems.forEach((val, cIdx) => {
+        // Target column cIdx directly starting from column A (0)
+        newCells[rIdx][cIdx] = val;
+
+        if (rIdx === 0) {
+          if (cIdx === 0) {
+            newFormats[rIdx][cIdx] = {
+              fill: '#0f172a',
+              color: '#ffffff',
+              bgColor: '#0f172a',
+              textColor: '#ffffff',
+              bold: true,
+              fontSize: 16,
+              align: 'center',
+              colSpan: 7
+            };
+          } else {
+            newFormats[rIdx][cIdx] = {
+              hidden: true
+            };
+          }
+        } else if (rIdx === 1) {
+          newFormats[rIdx][cIdx] = {
+            fill: '#f1f5f9',
+            color: '#1e293b',
+            bgColor: '#f1f5f9',
+            textColor: '#1e293b',
+            bold: true,
+            fontSize: 11,
+            align: 'center'
+          };
+        } else if (rIdx === 2) {
+          newFormats[rIdx][cIdx] = {
+            fill: '#0284c7',
+            color: '#ffffff',
+            bgColor: '#0284c7',
+            textColor: '#ffffff',
+            bold: true,
+            fontSize: 13,
+            align: 'center'
+          };
+        } else {
+          const isEven = rIdx % 2 === 0;
+          let rowBg = isEven ? '#f8fafc' : '#ffffff';
+          let textColor = '#334155';
+          let isBold = false;
+          let isItalic = false;
+
+          if (cIdx === 3) {
+            if (val === 'Critical') { rowBg = '#fee2e2'; textColor = '#991b1b'; isBold = true; }
+            else if (val === 'High') { rowBg = '#ffedd5'; textColor = '#c2410c'; isBold = true; }
+            else if (val === 'Medium') { rowBg = '#fef9c3'; textColor = '#854d0e'; }
+            else if (val === 'Low') { rowBg = '#dcfce7'; textColor = '#166534'; }
+          }
+          else if (cIdx === 4) {
+            if (val === 'Completed') { rowBg = '#d1fae5'; textColor = '#065f46'; isBold = true; }
+            else if (val === 'In Progress') { rowBg = '#dbeafe'; textColor = '#1e40af'; isBold = true; }
+            else if (val === 'Not Started') { rowBg = '#f3f4f6'; textColor = '#4b5563'; }
+          }
+          else if (cIdx === 0) {
+            isBold = true;
+            textColor = '#0f172a';
+          }
+          else if (cIdx === 6) {
+            isBold = true;
+            textColor = '#0284c7';
+          }
+
+          const align = (cIdx === 0 || cIdx === 3 || cIdx === 4 || cIdx === 5 || cIdx === 6) ? 'center' : 'left';
+
+          const cellFmt = {
+            fill: rowBg,
+            color: textColor,
+            bgColor: rowBg,
+            textColor: textColor,
+            bold: isBold,
+            italic: isItalic,
+            fontSize: 12,
+            align: align
+          };
+
+          if (cIdx === 3) {
+            cellFmt.type = 'dropdown';
+            cellFmt.options = ['Critical', 'High', 'Medium', 'Low'];
+          } else if (cIdx === 4) {
+            cellFmt.type = 'dropdown';
+            cellFmt.options = ['Not Started', 'In Progress', 'Completed'];
+          } else if (cIdx === 5) {
+            cellFmt.type = 'date';
+            cellFmt.format = 'date';
+          } else if (cIdx === 6) {
+            cellFmt.format = 'percentage';
+            cellFmt.formatType = 'percentage';
+          }
+
+          newFormats[rIdx][cIdx] = cellFmt;
+        }
+      });
+    });
+
+    setSheetGrids((prev) => ({
+      ...prev,
+      [targetId]: {
+        rows: rowsCount,
+        cols: colsCount,
+        cells: newCells,
+        formats: newFormats
+      }
+    }));
+    if (typeof setHasImportedData === 'function') {
+      setHasImportedData(true);
+    }
+    if (typeof setSelectedSheetRange === 'function') {
+      setSelectedSheetRange({ startRow: 0, endRow: 0, startCol: 0, endCol: 0 });
+    }
+    if (typeof setEditingCellKey === 'function') {
+      setEditingCellKey(null);
+    }
+    setTimeout(() => {
+      const container = document.querySelector('.sheet-grid-container');
+      if (container) {
+        container.scrollLeft = 0;
+        container.scrollTop = 0;
+      }
+    }, 50);
+
+    showToast('Project Tracking template loaded!');
+  };
   const formatCellValue = (val, formatTypeArg, headerNameArg = '') => {
     if (val === null || val === undefined || val === '') return val;
     const strVal = String(val).trim();
@@ -26871,15 +27024,15 @@ Respond with a JSON array of slide objects matching the schema.`;
     }
 
     const lowHeader = String(headerName || '').toLowerCase();
-    const isPctHeader = lowHeader.includes('margin') || lowHeader.includes('churn') || lowHeader.includes('rate') || lowHeader.includes('%');
+    const isPctHeader = lowHeader.includes('margin') || lowHeader.includes('churn') || lowHeader.includes('rate') || lowHeader.includes('%') || lowHeader.includes('progress');
     const numVal = Number(val);
 
     // Explicit percentage format, string already ending with %, or percentage header keyword
     if (formatType === 'percent' || formatType === 'percentage' || strVal.endsWith('%') || isPctHeader) {
       if (strVal.endsWith('%')) return strVal;
       if (!isNaN(numVal)) {
-        const pctVal = (Math.abs(numVal) > 0 && Math.abs(numVal) < 1) ? numVal * 100 : numVal;
-        const decimals = (lowHeader.includes('gross') || pctVal % 1 === 0) ? 1 : 2;
+        const pctVal = (Math.abs(numVal) > 0 && Math.abs(numVal) <= 1) ? numVal * 100 : numVal;
+        const decimals = (pctVal % 1 === 0) ? 0 : 1;
         return `${pctVal.toFixed(decimals)}%`;
       }
     }
@@ -37496,7 +37649,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <div className="flex items-center gap-6 px-2 py-1 pt-1.5 border-t border-gray-200/60 dark:border-zinc-800">
                               <div className="flex items-center gap-1">
                                 <button type="button" onClick={() => showToast('Loading Financial Models...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Financial</button>
-                                <button type="button" onClick={() => showToast('Loading Project Tracking...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Project Tracking</button>
+                                <button type="button" onClick={() => loadProjectTrackingTemplate()} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Project Tracking</button>
                               </div>
                             </div>
                           ) : sheetToolbarTab === 'View' ? (
@@ -40619,6 +40772,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                              </div>
                                            </>
                                         )}
+                                      </div>
+                                    ) : (computedFormat.type === 'date' || (activeSheetGridRaw.cells?.[0]?.[colIndex] && String(activeSheetGridRaw.cells[0][colIndex]).toLowerCase().includes('date') && rowIndex > 0)) ? (
+                                      <div className="relative w-full h-full p-1 flex items-center justify-center">
+                                        <div 
+                                          className={`w-full h-full min-h-[24px] max-h-8 px-2 py-1 flex items-center justify-between cursor-pointer select-none text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/80 shadow-[0_1.5px_3px_rgba(0,0,0,0.03)] rounded-md transition-all hover:scale-[1.01] hover:border-violet-300 ${cellFormat.bold ? 'font-bold' : ''}`}
+                                          style={{
+                                            fontFamily: cellFormat.fontFamily || sheetToolbarFont,
+                                            fontSize: cellFormat.fontSize ? `${cellFormat.fontSize}px` : `${sheetToolbarSize}px`,
+                                            fontWeight: cellFormat.bold ? 700 : 400,
+                                            fontStyle: cellFormat.italic ? 'italic' : 'normal',
+                                            color: computedFormat.color || cellFormat.color || undefined,
+                                            backgroundColor: computedFormat.fill || cellFormat.highlight || undefined,
+                                            textAlign: computedFormat.align || undefined,
+                                            ...customTextStyle
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setSheetDatePicker({
+                                              open: true,
+                                              x: rect.left,
+                                              y: rect.bottom + 4,
+                                              rowIndex: rowIndex,
+                                              colIndex: colIndex
+                                            });
+                                          }}
+                                        >
+                                          <span className="truncate pr-1 text-slate-700 font-medium">{cellValue || 'Select Date...'}</span>
+                                          <Calendar size={12} className="text-violet-500 opacity-90 shrink-0 ml-1" />
+                                        </div>
                                       </div>
                                     ) : (
                                       <input
@@ -43850,52 +44033,61 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {sheetDatePicker.open && (
-        <div 
-          className="absolute z-[310] bg-white rounded-xl p-4 shadow-[0_12px_32px_rgba(0,0,0,0.15)] border border-slate-200 flex flex-col gap-2 w-64 text-left font-sans sheet-date-picker-container"
-          style={{ left: `${sheetDatePicker.x}px`, top: `${sheetDatePicker.y}px` }}
-          onMouseDown={e => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-1">
-            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-              📅 Insert Date
-            </span>
-            <button 
-              type="button" 
-              className="text-slate-450 hover:text-slate-700 text-lg font-bold"
-              onClick={() => setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 })}
-            >
-              &times;
-            </button>
-          </div>
-          <button 
-            type="button"
-            className="w-full py-2 px-3 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors text-center"
-            onClick={() => {
-              updateSheetCell(activeSheetId, sheetDatePicker.rowIndex, sheetDatePicker.colIndex, new Date().toLocaleDateString());
-              setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
-              showToast("Today's date inserted");
-            }}
+        <>
+          <div className="fixed inset-0 z-[9998]" onClick={() => setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 })} />
+          <div 
+            className="fixed z-[9999] bg-white/90 backdrop-blur-xl rounded-2xl p-4 shadow-[0_20px_48px_-8px_rgba(0,0,0,0.15),0_4px_16px_-2px_rgba(0,0,0,0.06)] border border-white/80 ring-1 ring-slate-900/5 flex flex-col gap-3 w-72 text-left font-sans sheet-date-picker-container animate-in fade-in zoom-in-95 duration-150"
+            style={{ left: `${sheetDatePicker.x}px`, top: `${sheetDatePicker.y}px` }}
+            onMouseDown={e => e.stopPropagation()}
           >
-            Insert Today ({`${new Date().toLocaleDateString()}`})
-          </button>
-          <div className="h-px bg-slate-100 my-1" />
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-slate-500 font-medium">Or Choose from Calendar</span>
-            <input 
-              type="date"
-              className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white"
-              onChange={(e) => {
-                if (e.target.value) {
-                  const parts = e.target.value.split('-');
-                  const formattedDate = `${parts[1]}/${parts[2]}/${parts[0]}`;
-                  updateSheetCell(activeSheetId, sheetDatePicker.rowIndex, sheetDatePicker.colIndex, formattedDate);
-                  setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
-                  showToast(`Selected date inserted`);
-                }
+            <div className="flex items-center justify-between border-b border-slate-100/90 pb-2.5">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-violet-50 flex items-center justify-center border border-violet-100/80 shadow-2xs">
+                  <Calendar size={13} className="text-violet-600" />
+                </div>
+                <span className="text-xs font-semibold text-slate-800 tracking-tight">
+                  Insert Date
+                </span>
+              </div>
+            </div>
+            <button 
+              type="button"
+              className="w-full py-2.5 px-3 text-xs font-medium text-slate-700 bg-gradient-to-b from-slate-50 to-slate-100/90 hover:from-violet-50 hover:to-indigo-50/80 text-slate-700 hover:text-violet-700 border border-slate-200/80 hover:border-violet-200/80 rounded-xl transition-all flex items-center justify-between shadow-[0_1.5px_4px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_12px_rgba(124,58,237,0.08)] active:scale-[0.98] group cursor-pointer"
+              onClick={() => {
+                const isoToday = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+                updateSheetCell(activeSheetId, sheetDatePicker.rowIndex, sheetDatePicker.colIndex, isoToday);
+                setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
+                showToast("Today's date inserted");
               }}
-            />
+            >
+              <span className="flex items-center gap-2 font-medium">
+                <Clock size={13} className="text-slate-400 group-hover:text-violet-600 transition-colors" />
+                <span>Insert Today</span>
+              </span>
+              <span className="text-[11px] font-mono text-slate-500 group-hover:text-violet-600 bg-white/90 group-hover:bg-white px-2 py-0.5 rounded-md border border-slate-200/60 group-hover:border-violet-200/60 transition-colors shadow-2xs">
+                {`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`}
+              </span>
+            </button>
+            <div className="flex items-center gap-2 my-0.5">
+              <div className="h-px bg-slate-200/60 flex-1" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">or choose date</span>
+              <div className="h-px bg-slate-200/60 flex-1" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <input 
+                type="date"
+                className="w-full text-xs font-mono border border-slate-200/80 rounded-xl px-3 py-2 bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all text-slate-700 cursor-pointer shadow-2xs"
+                onChange={(e) => {
+                  if (e.target.value) {
+                    updateSheetCell(activeSheetId, sheetDatePicker.rowIndex, sheetDatePicker.colIndex, e.target.value);
+                    setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
+                    showToast(`Selected date inserted`);
+                  }
+                }}
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {mediaInsertionModal.open && (
@@ -54491,52 +54683,61 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {sheetDatePicker.open && (
-        <div 
-          className="absolute z-[310] bg-white rounded-xl p-4 shadow-[0_12px_32px_rgba(0,0,0,0.15)] border border-slate-200 flex flex-col gap-2 w-64 text-left font-sans sheet-date-picker-container"
-          style={{ left: `${sheetDatePicker.x}px`, top: `${sheetDatePicker.y}px` }}
-          onMouseDown={e => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-1">
-            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-              📅 Insert Date
-            </span>
-            <button 
-              type="button" 
-              className="text-slate-450 hover:text-slate-700 text-lg font-bold"
-              onClick={() => setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 })}
-            >
-              &times;
-            </button>
-          </div>
-          <button 
-            type="button"
-            className="w-full py-2 px-3 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors text-center"
-            onClick={() => {
-              updateSheetCell(activeSheetId, sheetDatePicker.rowIndex, sheetDatePicker.colIndex, new Date().toLocaleDateString());
-              setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
-              showToast("Today's date inserted");
-            }}
+        <>
+          <div className="fixed inset-0 z-[9998]" onClick={() => setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 })} />
+          <div 
+            className="fixed z-[9999] bg-white/90 backdrop-blur-xl rounded-2xl p-4 shadow-[0_20px_48px_-8px_rgba(0,0,0,0.15),0_4px_16px_-2px_rgba(0,0,0,0.06)] border border-white/80 ring-1 ring-slate-900/5 flex flex-col gap-3 w-72 text-left font-sans sheet-date-picker-container animate-in fade-in zoom-in-95 duration-150"
+            style={{ left: `${sheetDatePicker.x}px`, top: `${sheetDatePicker.y}px` }}
+            onMouseDown={e => e.stopPropagation()}
           >
-            Insert Today ({`${new Date().toLocaleDateString()}`})
-          </button>
-          <div className="h-px bg-slate-100 my-1" />
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-slate-500 font-medium">Or Choose from Calendar</span>
-            <input 
-              type="date"
-              className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white"
-              onChange={(e) => {
-                if (e.target.value) {
-                  const parts = e.target.value.split('-');
-                  const formattedDate = `${parts[1]}/${parts[2]}/${parts[0]}`;
-                  updateSheetCell(activeSheetId, sheetDatePicker.rowIndex, sheetDatePicker.colIndex, formattedDate);
-                  setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
-                  showToast(`Selected date inserted`);
-                }
+            <div className="flex items-center justify-between border-b border-slate-100/90 pb-2.5">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-violet-50 flex items-center justify-center border border-violet-100/80 shadow-2xs">
+                  <Calendar size={13} className="text-violet-600" />
+                </div>
+                <span className="text-xs font-semibold text-slate-800 tracking-tight">
+                  Insert Date
+                </span>
+              </div>
+            </div>
+            <button 
+              type="button"
+              className="w-full py-2.5 px-3 text-xs font-medium text-slate-700 bg-gradient-to-b from-slate-50 to-slate-100/90 hover:from-violet-50 hover:to-indigo-50/80 text-slate-700 hover:text-violet-700 border border-slate-200/80 hover:border-violet-200/80 rounded-xl transition-all flex items-center justify-between shadow-[0_1.5px_4px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_12px_rgba(124,58,237,0.08)] active:scale-[0.98] group cursor-pointer"
+              onClick={() => {
+                const isoToday = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+                updateSheetCell(activeSheetId, sheetDatePicker.rowIndex, sheetDatePicker.colIndex, isoToday);
+                setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
+                showToast("Today's date inserted");
               }}
-            />
+            >
+              <span className="flex items-center gap-2 font-medium">
+                <Clock size={13} className="text-slate-400 group-hover:text-violet-600 transition-colors" />
+                <span>Insert Today</span>
+              </span>
+              <span className="text-[11px] font-mono text-slate-500 group-hover:text-violet-600 bg-white/90 group-hover:bg-white px-2 py-0.5 rounded-md border border-slate-200/60 group-hover:border-violet-200/60 transition-colors shadow-2xs">
+                {`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`}
+              </span>
+            </button>
+            <div className="flex items-center gap-2 my-0.5">
+              <div className="h-px bg-slate-200/60 flex-1" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">or choose date</span>
+              <div className="h-px bg-slate-200/60 flex-1" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <input 
+                type="date"
+                className="w-full text-xs font-mono border border-slate-200/80 rounded-xl px-3 py-2 bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all text-slate-700 cursor-pointer shadow-2xs"
+                onChange={(e) => {
+                  if (e.target.value) {
+                    updateSheetCell(activeSheetId, sheetDatePicker.rowIndex, sheetDatePicker.colIndex, e.target.value);
+                    setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
+                    showToast(`Selected date inserted`);
+                  }
+                }}
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {brandKitModalOpen && (
