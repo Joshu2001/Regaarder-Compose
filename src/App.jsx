@@ -9699,6 +9699,9 @@ export default function App() {
       }
     }
 
+    const total = seriesData.reduce((a, b) => a + b, 0);
+    const avg = seriesData.length ? total / seriesData.length : 0;
+    const max = seriesData.length ? Math.max(...seriesData) : 0;
     const min = seriesData.length ? Math.min(...seriesData) : 0;
 
     return {
