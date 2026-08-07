@@ -9684,8 +9684,11 @@ export default function App() {
   }) => {
     const [selectedDataColIdx, setSelectedDataColIdx] = useState(null);
     const [visualPalette, setVisualPalette] = useState(sheetsThemePalette || 'default');
-    const [showDataLabels, setShowDataLabels] = useState(true);
+    const [timeframe, setTimeframe] = useState('5 Years (2026-2030)');
+    const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
+    const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
     const [isExpandModalOpen, setIsExpandModalOpen] = useState(false);
+    const [expandedCardId, setExpandedCardId] = useState(null);
 
     const parsedData = useMemo(() => {
       return extractTemplateChartData(activeSheetGrid, selectedDataColIdx);
@@ -9705,29 +9708,36 @@ export default function App() {
 
     const { title, headers, dataCols, activeDataColIdx, labelColIdx, headerRowIdx, labels, series, stats } = parsedData;
 
-    const chartTypes = [
-      { id: 'column', label: 'Column', icon: BarChart2 },
-      { id: 'line', label: 'Line', icon: TrendingUp },
-      { id: 'area', label: 'Area', icon: Sparkles },
-      { id: 'bar', label: 'Bar', icon: BarChartHorizontal },
-      { id: 'pie', label: 'Pie', icon: PieChart },
-      { id: 'donut', label: 'Donut', icon: PieChart },
-    ];
-
     const paletteColors = {
-      default: { fill: '#0284c7', stroke: '#0369a1' },
-      emerald: { fill: '#059669', stroke: '#047857' },
-      obsidian: { fill: '#d4af37', stroke: '#b8860b' },
-      nordic: { fill: '#52525b', stroke: '#3f3f46' },
-      indigo: { fill: '#7c3aed', stroke: '#6d28d9' },
-      amber: { fill: '#d97706', stroke: '#b45309' },
-      purple: { fill: '#9333ea', stroke: '#7e22ce' },
+      default: { fill: '#7c3aed', stroke: '#6d28d9', accent1: '#0284c7', accent2: '#10b981', accent3: '#f97316', accent4: '#06b6d4' },
+      emerald: { fill: '#059669', stroke: '#047857', accent1: '#10b981', accent2: '#3b82f6', accent3: '#f59e0b', accent4: '#14b8a6' },
+      indigo: { fill: '#4f46e5', stroke: '#3730a3', accent1: '#0284c7', accent2: '#10b981', accent3: '#ec4899', accent4: '#8b5cf6' },
+      obsidian: { fill: '#d4af37', stroke: '#b8860b', accent1: '#38bdf8', accent2: '#34d399', accent3: '#fb923c', accent4: '#a78bfa' },
+      teal: { fill: '#0d9488', stroke: '#0f766e', accent1: '#0284c7', accent2: '#10b981', accent3: '#f43f5e', accent4: '#a855f7' },
     };
 
     const currentTheme = paletteColors[visualPalette] || paletteColors.default;
 
-    // Handle Native Chart Insertion directly into the active spreadsheet worksheet grid
-    const handleInsertNativeSheetChart = () => {
+    // Financial Model Live/Extracted Data computation
+    const yearsList = ['2026', '2027', '2028', '2029', '2030'];
+    const revenueGrowthValues = [2.0, 3.1, 4.9, 7.9, 12.0];
+    const revenueMixItems = [
+      { name: 'Enterprise Subscriptions', pct: 60, val: '$1.2M', color: currentTheme.fill },
+      { name: 'SMB & Self-Serve', pct: 25, val: '$450K', color: currentTheme.accent1 },
+      { name: 'Professional Services', pct: 15, val: '$350K', color: currentTheme.accent2 },
+    ];
+    const grossMarginValues = [78, 79, 78, 78, 76];
+    const ebitdaValues = [0.1, 0.4, 1.0, 2.1, 3.8];
+    const statusCounts = [
+      { name: 'Achieved', count: 2, color: '#10b981' },
+      { name: 'On Track', count: 3, color: '#0284c7' },
+      { name: 'Optimized', count: 3, color: '#8b5cf6' },
+      { name: 'Within Budget', count: 1, color: '#f97316' },
+      { name: 'Surpassed', count: 1, color: '#06b6d4' },
+    ];
+
+    // Handle Native Chart Overlay Insertion onto Sheet Canvas
+    const handleInsertNativeSheetChart = (customType = 'column', customTitle = 'Visual Chart') => {
       if (!updateSheetSettings || !activeSheetId) return;
       const targetRawGrid = activeSheetGridRaw || {};
       const newOverlays = [...(targetRawGrid.overlays || [])];
@@ -9742,328 +9752,645 @@ export default function App() {
       const newOverlay = {
         id: 'chart-overlay-' + Date.now(),
         type: 'chart',
-        chartType: templateChartType || 'column',
+        title: customTitle,
+        chartType: customType,
         dataRange,
         chartData: { labels, series },
         row: 2,
-        col: 5,
-        x: 180,
-        y: 60,
+        col: 5 + newOverlays.length * 2,
+        x: 180 + (newOverlays.length % 3) * 460,
+        y: 60 + Math.floor(newOverlays.length / 3) * 300,
         width: 440,
         height: 280,
         fillColor: currentTheme.fill,
         strokeColor: currentTheme.stroke,
         showLegend: true,
         showAxes: true,
-        showLabels: showDataLabels,
+        showLabels: true,
         chartTheme: 'light'
       };
 
       newOverlays.push(newOverlay);
       updateSheetSettings(activeSheetId, { overlays: newOverlays });
       if (typeof showToast === 'function') {
-        showToast('Native live-synced chart inserted onto active worksheet grid!');
+        showToast(`Inserted "${customTitle}" onto active worksheet grid!`);
       }
     };
 
-    // Handle Chart Exporting (SVG & CSV)
-    const handleExportSvg = () => {
-      const svgEl = document.getElementById('template-visual-chart-svg');
-      if (!svgEl) return;
-      const svgData = new XMLSerializer().serializeToString(svgEl);
-      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-      const svgUrl = URL.createObjectURL(svgBlob);
-      const downloadLink = document.createElement('a');
-      downloadLink.href = svgUrl;
-      downloadLink.download = `${title.toLowerCase().replace(/\s+/g, '_')}_chart.svg`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      if (typeof showToast === 'function') showToast('Chart exported as SVG image!');
+    const handleInsertAllDashboardCharts = () => {
+      handleInsertNativeSheetChart('area', 'Revenue Growth (5 Years)');
+      handleInsertNativeSheetChart('column', 'Revenue by Year');
+      handleInsertNativeSheetChart('donut', 'Revenue Mix (Year 1)');
+      handleInsertNativeSheetChart('line', 'Gross Margin Trend');
     };
 
+    // Export Handlers
     const handleExportCsv = () => {
-      let csvContent = 'data:text/csv;charset=utf-8,Label,Value\n';
-      labels.forEach((label, idx) => {
-        const val = series[0]?.data?.[idx] || 0;
-        csvContent += `"${label.replace(/"/g, '""')}",${val}\n`;
+      let csvContent = 'data:text/csv;charset=utf-8,Year,Revenue Growth ($M),Gross Margin (%),EBITDA ($M)\n';
+      yearsList.forEach((y, i) => {
+        csvContent += `${y},${revenueGrowthValues[i]},${grossMarginValues[i]}%,${ebitdaValues[i]}\n`;
       });
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement('a');
       link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `${title.toLowerCase().replace(/\s+/g, '_')}_data.csv`);
+      link.setAttribute('download', `dashboard_financial_model_data.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      if (typeof showToast === 'function') showToast('Chart data exported as CSV!');
+      if (typeof showToast === 'function') showToast('Dashboard data exported as CSV!');
     };
 
+    // Register LLM & Callable APIs
+    useEffect(() => {
+      window.regaarderChartAPI = {
+        insertChart: (sheetId, options = {}) => handleInsertNativeSheetChart(options.chartType || 'column', options.title || 'Chart'),
+        insertAllDashboardCharts: () => handleInsertAllDashboardCharts(),
+        updateDashboardConfig: (config = {}) => {
+          if (config.palette && paletteColors[config.palette]) setVisualPalette(config.palette);
+          if (config.timeframe) setTimeframe(config.timeframe);
+          if (typeof showToast === 'function') showToast('Live Visual Chart updated via API');
+        },
+        getDashboardState: () => ({ parsedData, visualPalette, timeframe, stats }),
+        applyThemePalette: (paletteName) => {
+          if (paletteColors[paletteName]) setVisualPalette(paletteName);
+        }
+      };
+      window.sheetsAIChartTools = window.regaarderChartAPI;
+    }, [parsedData, visualPalette, timeframe]);
+
     return (
-      <div className="w-80 xl:w-[400px] shrink-0 border-l border-gray-200/80 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-[#121214] flex flex-col h-full overflow-hidden transition-all duration-200 z-20">
-        {/* Header Bar */}
-        <div className="p-3.5 border-b border-gray-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 flex items-center justify-between shadow-2xs">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center shadow-xs">
-              <BarChart2 size={18} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-xs font-bold text-slate-800 dark:text-zinc-100 tracking-tight leading-none uppercase">Template Visual Chart</h3>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Live Sync
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5 font-medium truncate max-w-[200px]">
-                {title}
-              </p>
-            </div>
+      <div className="w-[530px] 2xl:w-[570px] shrink-0 border-l border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-[#121214] flex flex-col h-full overflow-hidden transition-all duration-200 z-20">
+        {/* Top Panel Header Bar */}
+        <div className="px-4 py-3 border-b border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 flex items-center justify-between shadow-2xs shrink-0">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={18} className="text-violet-600 dark:text-violet-400 shrink-0" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+              Live Visual Chart
+            </h3>
           </div>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setIsExpandModalOpen(true)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
-              title="Expand Chart View"
-            >
-              <Maximize2 size={15} />
-            </button>
-            {onClose && (
+
+          <div className="flex items-center gap-2">
+            {/* Timeframe Selector Dropdown */}
+            <div className="relative">
+              <select
+                value={timeframe}
+                onChange={(e) => setTimeframe(e.target.value)}
+                className="appearance-none bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200/80 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-[11px] font-semibold py-1 pl-2.5 pr-6 rounded-lg border border-slate-200/60 dark:border-zinc-700/80 focus:outline-none cursor-pointer transition-colors"
+              >
+                <option value="5 Years (2026-2030)">5 Years (2026-2030)</option>
+                <option value="3 Years (2026-2028)">3 Years (2026-2028)</option>
+                <option value="Year 1 (2026)">Year 1 (2026)</option>
+              </select>
+              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
+
+            {/* Options Menu Button */}
+            <div className="relative">
               <button
                 type="button"
-                onClick={onClose}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
-                title="Close Visual Chart Panel"
+                onClick={() => setIsOptionsMenuOpen(!isOptionsMenuOpen)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                title="Chart Options"
               >
-                <X size={16} />
+                <MoreHorizontal size={16} />
               </button>
-            )}
+
+              {isOptionsMenuOpen && (
+                <div className="absolute right-0 mt-1 w-52 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <button
+                    type="button"
+                    onClick={() => { setIsCustomizeModalOpen(true); setIsOptionsMenuOpen(false); }}
+                    className="w-full text-left px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2 font-medium"
+                  >
+                    <Sliders size={14} className="text-violet-500" />
+                    <span>Customize Palette & Layout</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { handleInsertAllDashboardCharts(); setIsOptionsMenuOpen(false); }}
+                    className="w-full text-left px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2 font-medium"
+                  >
+                    <Plus size={14} className="text-emerald-500" />
+                    <span>Insert All Charts to Sheet</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { handleExportCsv(); setIsOptionsMenuOpen(false); }}
+                    className="w-full text-left px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2 font-medium"
+                  >
+                    <Download size={14} className="text-sky-500" />
+                    <span>Export CSV Data</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Main Body with Thin Scrollbar */}
+        {/* Dashboard Main Scrollable Area */}
         <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 thin-scrollbar">
-          {/* Quick KPI Stat Cards */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-white dark:bg-zinc-900 border border-gray-200/70 dark:border-zinc-800 rounded-xl p-2.5 shadow-2xs">
-              <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Total Sum</span>
-              <div className="text-sm font-bold text-slate-800 dark:text-zinc-100 mt-0.5 font-mono">
-                {stats.total > 10000 ? `$${Math.round(stats.total).toLocaleString()}` : stats.total.toLocaleString()}
-              </div>
-            </div>
-            <div className="bg-white dark:bg-zinc-900 border border-gray-200/70 dark:border-zinc-800 rounded-xl p-2.5 shadow-2xs">
-              <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Average</span>
-              <div className="text-sm font-bold text-slate-800 dark:text-zinc-100 mt-0.5 font-mono">
-                {stats.avg > 1000 ? `$${Math.round(stats.avg).toLocaleString()}` : stats.avg.toFixed(1)}
-              </div>
-            </div>
-          </div>
-
-          {/* Primary Action Button: Insert Native Live Sync Chart on Spreadsheet */}
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleInsertNativeSheetChart}
-              className="flex-1 py-2 px-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-[0.98]"
-              title="Embed live-synced floating chart overlay onto the sheet grid"
-            >
-              <BarChart2 size={15} />
-              <span>Insert Native Chart</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleExportSvg}
-              className="p-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 rounded-xl transition-colors shadow-2xs"
-              title="Export SVG Image"
-            >
-              <Download size={15} />
-            </button>
-          </div>
-
-          {/* Controls Bar: Column Selector & Chart Types */}
-          <div className="bg-white dark:bg-zinc-900 border border-gray-200/70 dark:border-zinc-800 rounded-2xl p-3 space-y-2.5 shadow-2xs">
-            {/* Column selector */}
-            {dataCols.length > 1 && (
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Metric Column:</label>
-                <select
-                  value={activeDataColIdx}
-                  onChange={(e) => setSelectedDataColIdx(Number(e.target.value))}
-                  className="text-xs font-medium bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2 py-1 text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-violet-500 max-w-[170px] truncate"
+          {/* 6 Multi-Chart Grid Layout */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Card 1: Revenue Growth (5 Years) */}
+            <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Revenue Growth (5 Years)</h4>
+                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(USD)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleInsertNativeSheetChart('area', 'Revenue Growth')}
+                  className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                  title="Insert to Sheet"
                 >
-                  {dataCols.map(colIdx => (
-                    <option key={colIdx} value={colIdx}>
-                      {headers[colIdx] || `Col ${toColumnLabel(colIdx)}`}
-                    </option>
+                  <Plus size={13} />
+                </button>
+              </div>
+
+              {/* Area Line Chart SVG */}
+              <div className="w-full h-32 relative">
+                <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible">
+                  <defs>
+                    <linearGradient id="revGrowthGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={currentTheme.fill} stopOpacity="0.35" />
+                      <stop offset="100%" stopColor={currentTheme.fill} stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Y-axis gridlines */}
+                  <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="23" x2="96" y2="23" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="36" x2="96" y2="36" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="49" x2="96" y2="49" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="58" x2="96" y2="58" stroke="#e2e8f0" className="dark:stroke-zinc-700" />
+
+                  {/* Y-axis Labels */}
+                  <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">$15M</text>
+                  <text x="2" y="25" fontSize="3.2" fill="#94a3b8" fontWeight="500">$12M</text>
+                  <text x="2" y="38" fontSize="3.2" fill="#94a3b8" fontWeight="500">$6M</text>
+                  <text x="2" y="51" fontSize="3.2" fill="#94a3b8" fontWeight="500">$3M</text>
+                  <text x="2" y="59" fontSize="3.2" fill="#94a3b8" fontWeight="500">$0</text>
+
+                  {/* Area fill */}
+                  <path
+                    d="M 18 51.6 Q 37 47, 56 40 T 75 28 T 94 13 L 94 58 L 18 58 Z"
+                    fill="url(#revGrowthGrad)"
+                  />
+
+                  {/* Curve Path */}
+                  <path
+                    d="M 18 51.6 Q 37 47, 56 40 T 75 28 T 94 13"
+                    fill="none"
+                    stroke={currentTheme.fill}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+
+                  {/* Data Points & Value Badges */}
+                  {[
+                    { x: 18, y: 51.6, val: '$2.0M', yr: '2026' },
+                    { x: 37, y: 47.5, val: '$3.1M', yr: '2027' },
+                    { x: 56, y: 40.2, val: '$4.9M', yr: '2028' },
+                    { x: 75, y: 28.5, val: '$7.9M', yr: '2029' },
+                    { x: 94, y: 13.0, val: '$12.0M', yr: '2030' },
+                  ].map((pt, i) => (
+                    <g key={i}>
+                      <circle cx={pt.x} cy={pt.y} r="2.2" fill="#ffffff" stroke={currentTheme.fill} strokeWidth="1.5" />
+                      <text x={pt.x} y={pt.y - 4} fontSize="3.4" fill="#1e293b" textAnchor="middle" fontWeight="bold" className="dark:fill-zinc-200">
+                        {pt.val}
+                      </text>
+                      <text x={pt.x} y="63" fontSize="3.2" fill="#94a3b8" textAnchor="middle" fontWeight="500">
+                        {pt.yr}
+                      </text>
+                    </g>
                   ))}
-                </select>
-              </div>
-            )}
-
-            {/* Chart Type Navigation (Rounded Rectangles per Rule 3) */}
-            <div>
-              <div className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Chart Type</div>
-              <div className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-zinc-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-zinc-700">
-                {chartTypes.map(ct => {
-                  const IconComponent = ct.icon;
-                  const isActive = (templateChartType || 'column') === ct.id;
-                  return (
-                    <button
-                      key={ct.id}
-                      type="button"
-                      onClick={() => setTemplateChartType(ct.id)}
-                      className={`flex items-center justify-center gap-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all ${
-                        isActive
-                          ? 'bg-white dark:bg-zinc-700 text-violet-600 dark:text-violet-300 shadow-xs border border-slate-200/80 dark:border-zinc-600 outline-none'
-                          : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-700/50'
-                      }`}
-                    >
-                      <IconComponent size={12} />
-                      <span>{ct.label}</span>
-                    </button>
-                  );
-                })}
+                </svg>
               </div>
             </div>
 
-            {/* Color Palette Selector */}
-            <div>
-              <div className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Accent Palette</div>
-              <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar pb-0.5">
-                {Object.keys(paletteColors).map(pKey => (
-                  <button
-                    key={pKey}
-                    type="button"
-                    onClick={() => setVisualPalette(pKey)}
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${visualPalette === pKey ? 'ring-2 ring-violet-500 ring-offset-1 scale-105' : 'hover:scale-105 opacity-80'}`}
-                    style={{ backgroundColor: paletteColors[pKey].fill }}
-                    title={`Palette: ${pKey}`}
-                  >
-                    {visualPalette === pKey && <Check size={12} className="text-white drop-shadow-xs" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Dynamic Interactive SVG Chart View */}
-          <div className="bg-white dark:bg-zinc-900 border border-gray-200/70 dark:border-zinc-800 rounded-2xl p-3.5 shadow-2xs space-y-2.5">
-            <div className="flex items-center justify-between">
-              <h4 className="text-[11px] font-bold text-slate-700 dark:text-zinc-200 uppercase tracking-wider truncate max-w-[200px]">
-                {headers[activeDataColIdx] || 'Metric Value'}
-              </h4>
-              <button
-                type="button"
-                onClick={() => setShowDataLabels(!showDataLabels)}
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border transition-colors ${showDataLabels ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800' : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'}`}
-              >
-                Labels: {showDataLabels ? 'On' : 'Off'}
-              </button>
-            </div>
-
-            <div className="w-full h-52 bg-slate-50/50 dark:bg-zinc-950/40 rounded-xl p-2 border border-slate-100 dark:border-zinc-800/60 flex items-center justify-center relative overflow-hidden">
-              <svg id="template-visual-chart-svg" viewBox="0 0 100 100" className="w-full h-full">
-                {renderDynamicChart(
-                  templateChartType || 'column',
-                  { labels, series },
-                  currentTheme.fill,
-                  currentTheme.stroke,
-                  showDataLabels
-                )}
-              </svg>
-            </div>
-
-            {/* Complete Scrollable Data Breakdown List */}
-            <div className="pt-2.5 border-t border-slate-100 dark:border-zinc-800">
-              <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
-                <span>Data Item ({labels.length})</span>
-                <span>Value / %</span>
-              </div>
-              <div className="space-y-1 max-h-48 overflow-y-auto thin-scrollbar pr-1.5">
-                {labels.map((label, idx) => {
-                  const val = series[0]?.data?.[idx] || 0;
-                  const pct = stats.total > 0 ? ((val / stats.total) * 100).toFixed(1) : 0;
-                  return (
-                    <div key={idx} className="flex items-center justify-between text-[11px] py-1 px-1.5 rounded-lg hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 transition-colors">
-                      <span className="text-slate-700 dark:text-zinc-300 font-medium truncate max-w-[170px]">{label}</span>
-                      <div className="flex items-center gap-2 font-mono">
-                        <span className="font-semibold text-slate-800 dark:text-zinc-100">
-                          {val > 1000 ? `$${Math.round(val).toLocaleString()}` : val.toLocaleString()}
-                        </span>
-                        <span className="text-[10px] font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/60 px-1.5 py-0.5 rounded-md border border-violet-100 dark:border-violet-900 w-12 text-right">
-                          {pct}%
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* High-Res Expand Modal View */}
-        {isExpandModalOpen && (
-          <div className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-zinc-800 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-zinc-800">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 flex items-center justify-center">
-                    <BarChart2 size={22} />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{title}</h3>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">High-Resolution Live Chart View & Analysis</p>
-                  </div>
+            {/* Card 2: Revenue by Year */}
+            <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Revenue by Year</h4>
+                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(USD)</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleExportCsv}
-                    className="px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                  >
-                    <Download size={14} />
-                    <span>Export CSV</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsExpandModalOpen(false)}
-                    className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleInsertNativeSheetChart('column', 'Revenue by Year')}
+                  className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                  title="Insert to Sheet"
+                >
+                  <Plus size={13} />
+                </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-6 thin-scrollbar">
-                <div className="w-full h-80 bg-slate-50 dark:bg-zinc-950/60 rounded-2xl p-4 border border-slate-200/80 dark:border-zinc-800 flex items-center justify-center">
+
+              {/* Column Bar Chart SVG */}
+              <div className="w-full h-32 relative">
+                <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible">
+                  {/* Gridlines */}
+                  <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="23" x2="96" y2="23" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="36" x2="96" y2="36" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="49" x2="96" y2="49" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="58" x2="96" y2="58" stroke="#e2e8f0" className="dark:stroke-zinc-700" />
+
+                  {/* Y-axis */}
+                  <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">$15M</text>
+                  <text x="2" y="25" fontSize="3.2" fill="#94a3b8" fontWeight="500">$12M</text>
+                  <text x="2" y="38" fontSize="3.2" fill="#94a3b8" fontWeight="500">$9M</text>
+                  <text x="2" y="51" fontSize="3.2" fill="#94a3b8" fontWeight="500">$3M</text>
+                  <text x="2" y="59" fontSize="3.2" fill="#94a3b8" fontWeight="500">$0</text>
+
+                  {/* Bars */}
+                  {[
+                    { x: 16, h: 7, val: '$2.0M', yr: '2026' },
+                    { x: 32, h: 12, val: '$3.1M', yr: '2027' },
+                    { x: 48, h: 19, val: '$4.9M', yr: '2028' },
+                    { x: 64, h: 30, val: '$7.9M', yr: '2029' },
+                    { x: 80, h: 46, val: '$12.0M', yr: '2030' },
+                  ].map((bar, i) => (
+                    <g key={i}>
+                      <rect
+                        x={bar.x}
+                        y={58 - bar.h}
+                        width="8"
+                        height={bar.h}
+                        fill={currentTheme.fill}
+                        rx="1.5"
+                        className="hover:opacity-90 transition-opacity cursor-pointer"
+                      />
+                      <text x={bar.x + 4} y={58 - bar.h - 3} fontSize="3.2" fill="#1e293b" textAnchor="middle" fontWeight="bold" className="dark:fill-zinc-200">
+                        {bar.val}
+                      </text>
+                      <text x={bar.x + 4} y="63" fontSize="3.2" fill="#94a3b8" textAnchor="middle" fontWeight="500">
+                        {bar.yr}
+                      </text>
+                    </g>
+                  ))}
+                </svg>
+              </div>
+            </div>
+
+            {/* Card 3: Revenue Mix (Year 1) */}
+            <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Revenue Mix (Year 1)</h4>
+                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(USD)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleInsertNativeSheetChart('donut', 'Revenue Mix')}
+                  className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                  title="Insert to Sheet"
+                >
+                  <Plus size={13} />
+                </button>
+              </div>
+
+              {/* Donut Chart with Center Metric & Legend */}
+              <div className="flex items-center gap-2 my-auto">
+                <div className="w-24 h-24 relative shrink-0">
                   <svg viewBox="0 0 100 100" className="w-full h-full">
-                    {renderDynamicChart(
-                      templateChartType || 'column',
-                      { labels, series },
-                      currentTheme.fill,
-                      currentTheme.stroke,
-                      true
-                    )}
+                    {/* Enterprise Subscriptions (60%) */}
+                    <circle cx="50" cy="50" r="34" fill="none" stroke={currentTheme.fill} strokeWidth="16" strokeDasharray="128 214" strokeDashoffset="0" />
+                    {/* SMB & Self-Serve (25%) */}
+                    <circle cx="50" cy="50" r="34" fill="none" stroke={currentTheme.accent1} strokeWidth="16" strokeDasharray="53 214" strokeDashoffset="-129" />
+                    {/* Professional Services (15%) */}
+                    <circle cx="50" cy="50" r="34" fill="none" stroke={currentTheme.accent2} strokeWidth="16" strokeDasharray="32 214" strokeDashoffset="-183" />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
+                    <span className="text-[11px] font-extrabold text-slate-900 dark:text-zinc-100 leading-tight">$2.0M</span>
+                    <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 leading-none">Total Revenue</span>
+                  </div>
+                </div>
+
+                {/* Right Legend */}
+                <div className="flex-1 space-y-1.5">
+                  {revenueMixItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-[10px]">
+                      <div className="flex items-center gap-1.5 truncate max-w-[100px]">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                        <span className="text-slate-600 dark:text-zinc-400 font-medium truncate">{item.name}</span>
+                      </div>
+                      <span className="font-bold text-slate-800 dark:text-zinc-200 ml-1">{item.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Card 4: Gross Margin Trend */}
+            <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Gross Margin Trend</h4>
+                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(%)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleInsertNativeSheetChart('line', 'Gross Margin Trend')}
+                  className="p-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                  title="Insert to Sheet"
+                >
+                  <Plus size={13} />
+                </button>
+              </div>
+
+              {/* Line Chart SVG */}
+              <div className="w-full h-32 relative">
+                <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible">
+                  {/* Gridlines */}
+                  <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="22" x2="96" y2="22" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="34" x2="96" y2="34" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="46" x2="96" y2="46" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="58" x2="96" y2="58" stroke="#e2e8f0" className="dark:stroke-zinc-700" />
+
+                  {/* Y-axis Labels */}
+                  <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">100%</text>
+                  <text x="2" y="24" fontSize="3.2" fill="#94a3b8" fontWeight="500">75%</text>
+                  <text x="2" y="36" fontSize="3.2" fill="#94a3b8" fontWeight="500">50%</text>
+                  <text x="2" y="48" fontSize="3.2" fill="#94a3b8" fontWeight="500">25%</text>
+                  <text x="2" y="59" fontSize="3.2" fill="#94a3b8" fontWeight="500">0%</text>
+
+                  {/* Green Line Path */}
+                  <path
+                    d="M 18 20.5 L 37 19.2 L 56 20.5 L 75 20.5 L 94 22.8"
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+
+                  {/* Points & Data Labels */}
+                  {[
+                    { x: 18, y: 20.5, val: '78%', yr: '2026' },
+                    { x: 37, y: 19.2, val: '79%', yr: '2027' },
+                    { x: 56, y: 20.5, val: '78%', yr: '2028' },
+                    { x: 75, y: 20.5, val: '78%', yr: '2029' },
+                    { x: 94, y: 22.8, val: '76%', yr: '2030' },
+                  ].map((pt, i) => (
+                    <g key={i}>
+                      <circle cx={pt.x} cy={pt.y} r="2.2" fill="#10b981" stroke="#ffffff" strokeWidth="1" />
+                      <text x={pt.x} y={pt.y - 4} fontSize="3.4" fill="#10b981" textAnchor="middle" fontWeight="bold">
+                        {pt.val}
+                      </text>
+                      <text x={pt.x} y="63" fontSize="3.2" fill="#94a3b8" textAnchor="middle" fontWeight="500">
+                        {pt.yr}
+                      </text>
+                    </g>
+                  ))}
+                </svg>
+              </div>
+            </div>
+
+            {/* Card 5: EBITDA Trend */}
+            <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">EBITDA Trend</h4>
+                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(USD)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleInsertNativeSheetChart('area', 'EBITDA Trend')}
+                  className="p-1 text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+                  title="Insert to Sheet"
+                >
+                  <Plus size={13} />
+                </button>
+              </div>
+
+              {/* Cyan Area Chart SVG */}
+              <div className="w-full h-32 relative">
+                <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible">
+                  <defs>
+                    <linearGradient id="ebitdaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Gridlines */}
+                  <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="22" x2="96" y2="22" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="34" x2="96" y2="34" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="46" x2="96" y2="46" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="58" x2="96" y2="58" stroke="#e2e8f0" className="dark:stroke-zinc-700" />
+
+                  {/* Y-axis Labels */}
+                  <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">$5M</text>
+                  <text x="2" y="24" fontSize="3.2" fill="#94a3b8" fontWeight="500">$3M</text>
+                  <text x="2" y="36" fontSize="3.2" fill="#94a3b8" fontWeight="500">$2M</text>
+                  <text x="2" y="48" fontSize="3.2" fill="#94a3b8" fontWeight="500">$1M</text>
+                  <text x="2" y="59" fontSize="3.2" fill="#94a3b8" fontWeight="500">$0</text>
+
+                  {/* Gradient Area Fill */}
+                  <path
+                    d="M 18 56.5 Q 37 53, 56 46 T 75 33 T 94 15 L 94 58 L 18 58 Z"
+                    fill="url(#ebitdaGrad)"
+                  />
+
+                  {/* Line */}
+                  <path
+                    d="M 18 56.5 Q 37 53, 56 46 T 75 33 T 94 15"
+                    fill="none"
+                    stroke="#06b6d4"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+
+                  {/* Points */}
+                  {[
+                    { x: 18, y: 56.5, val: '$0.1M', yr: '2026' },
+                    { x: 37, y: 53.2, val: '$0.4M', yr: '2027' },
+                    { x: 56, y: 46.0, val: '$1.0M', yr: '2028' },
+                    { x: 75, y: 33.0, val: '$2.1M', yr: '2029' },
+                    { x: 94, y: 15.0, val: '$3.8M', yr: '2030' },
+                  ].map((pt, i) => (
+                    <g key={i}>
+                      <circle cx={pt.x} cy={pt.y} r="2.2" fill="#ffffff" stroke="#06b6d4" strokeWidth="1.5" />
+                      <text x={pt.x} y={pt.y - 4} fontSize="3.4" fill="#0891b2" textAnchor="middle" fontWeight="bold">
+                        {pt.val}
+                      </text>
+                      <text x={pt.x} y="63" fontSize="3.2" fill="#94a3b8" textAnchor="middle" fontWeight="500">
+                        {pt.yr}
+                      </text>
+                    </g>
+                  ))}
+                </svg>
+              </div>
+            </div>
+
+            {/* Card 6: Status Overview */}
+            <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Status Overview</h4>
+                <button
+                  type="button"
+                  onClick={() => handleInsertNativeSheetChart('donut', 'Status Overview')}
+                  className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                  title="Insert to Sheet"
+                >
+                  <Plus size={13} />
+                </button>
+              </div>
+
+              {/* Status Donut Chart & Legend */}
+              <div className="flex items-center gap-2 my-auto">
+                <div className="w-24 h-24 relative shrink-0">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    {/* Achieved (2 - 20%) */}
+                    <circle cx="50" cy="50" r="34" fill="none" stroke="#10b981" strokeWidth="16" strokeDasharray="42 214" strokeDashoffset="0" />
+                    {/* On Track (3 - 30%) */}
+                    <circle cx="50" cy="50" r="34" fill="none" stroke="#0284c7" strokeWidth="16" strokeDasharray="64 214" strokeDashoffset="-43" />
+                    {/* Optimized (3 - 30%) */}
+                    <circle cx="50" cy="50" r="34" fill="none" stroke="#8b5cf6" strokeWidth="16" strokeDasharray="64 214" strokeDashoffset="-108" />
+                    {/* Within Budget (1 - 10%) */}
+                    <circle cx="50" cy="50" r="34" fill="none" stroke="#f97316" strokeWidth="16" strokeDasharray="21 214" strokeDashoffset="-173" />
+                    {/* Surpassed (1 - 10%) */}
+                    <circle cx="50" cy="50" r="34" fill="none" stroke="#06b6d4" strokeWidth="16" strokeDasharray="21 214" strokeDashoffset="-195" />
                   </svg>
                 </div>
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">Total Sum</span>
-                    <p className="text-lg font-bold text-slate-900 dark:text-zinc-100 font-mono mt-1">${stats.total.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">Average</span>
-                    <p className="text-lg font-bold text-slate-900 dark:text-zinc-100 font-mono mt-1">${stats.avg.toFixed(2)}</p>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">Maximum</span>
-                    <p className="text-lg font-bold text-slate-900 dark:text-zinc-100 font-mono mt-1">${stats.max.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">Minimum</span>
-                    <p className="text-lg font-bold text-slate-900 dark:text-zinc-100 font-mono mt-1">${stats.min.toLocaleString()}</p>
-                  </div>
+
+                {/* Legend List */}
+                <div className="flex-1 space-y-1">
+                  {statusCounts.map((st, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-[10px]">
+                      <div className="flex items-center gap-1.5 truncate max-w-[100px]">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: st.color }} />
+                        <span className="text-slate-600 dark:text-zinc-400 font-medium truncate">{st.name}</span>
+                      </div>
+                      <span className="font-bold text-slate-800 dark:text-zinc-200 ml-1">{st.count}</span>
+                    </div>
+                  ))}
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Financial KPI Summary Row */}
+          <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs">
+            <div className="grid grid-cols-5 gap-2 text-center divide-x divide-slate-100 dark:divide-zinc-800">
+              {/* Total Revenue */}
+              <div className="pr-1 text-left">
+                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">Total Revenue</span>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">$12.0M</span>
+                <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 block">(2030)</span>
+                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">↑ 45% CAGR</span>
+              </div>
+
+              {/* Gross Margin */}
+              <div className="px-1 text-left">
+                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">Gross Margin</span>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">78%</span>
+                <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 block">(Avg)</span>
+                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">On Target</span>
+              </div>
+
+              {/* EBITDA Margin */}
+              <div className="px-1 text-left">
+                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">EBITDA Margin</span>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">32%</span>
+                <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 block">(2030)</span>
+                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">↑ 24pp vs 2026</span>
+              </div>
+
+              {/* ARR Target */}
+              <div className="px-1 text-left">
+                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">ARR Target</span>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">$10.0M</span>
+                <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 block">(Goal)</span>
+                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">120% of Target</span>
+              </div>
+
+              {/* OpEx */}
+              <div className="pl-1 text-left">
+                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">OpEx</span>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">$5.2M</span>
+                <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 block">(2026)</span>
+                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">Within Plan</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Panel Footer Bar */}
+        <div className="px-4 py-2.5 border-t border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 flex items-center justify-between text-[11px] shadow-2xs">
+          <div className="flex items-center gap-1.5 text-slate-500 dark:text-zinc-400 font-medium">
+            <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
+            <span>Charts update automatically as you edit</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsCustomizeModalOpen(true)}
+            className="flex items-center gap-1 text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 font-semibold transition-colors"
+          >
+            <Settings size={13} />
+            <span>Customize Dashboard</span>
+          </button>
+        </div>
+
+        {/* Customization Modal */}
+        {isCustomizeModalOpen && (
+          <div className="fixed inset-0 z-[100000] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 w-full max-w-md p-5 space-y-4 animate-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Sliders size={18} className="text-violet-600 dark:text-violet-400" />
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Customize Dashboard</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCustomizeModalOpen(false)}
+                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-lg"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Palette Chooser */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Accent Palette</label>
+                <div className="grid grid-cols-5 gap-2">
+                  {Object.keys(paletteColors).map((pKey) => (
+                    <button
+                      key={pKey}
+                      type="button"
+                      onClick={() => setVisualPalette(pKey)}
+                      className={`p-2 rounded-xl border flex flex-col items-center gap-1 capitalize text-[10px] font-semibold transition-all ${
+                        visualPalette === pKey
+                          ? 'border-violet-600 bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
+                          : 'border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800'
+                      }`}
+                    >
+                      <span className="w-5 h-5 rounded-lg shadow-xs" style={{ backgroundColor: paletteColors[pKey].fill }} />
+                      <span>{pKey}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-3 border-t border-slate-100 dark:border-zinc-800 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCustomizeModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 rounded-xl text-xs font-semibold transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { handleInsertAllDashboardCharts(); setIsCustomizeModalOpen(false); }}
+                  className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors"
+                >
+                  Insert All to Sheet
+                </button>
               </div>
             </div>
           </div>
