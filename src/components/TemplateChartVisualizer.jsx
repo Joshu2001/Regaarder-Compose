@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   TrendingUp, ChevronDown, MoreHorizontal, Sliders, Plus, RefreshCw,
   Download, FileText, Copy, Send, Pin, Share2, RotateCcw, Maximize2,
-  Settings, X, BarChart2
+  Settings, X, BarChart2, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 const toColumnLabel = (index) => {
@@ -329,6 +329,34 @@ export default function TemplateChartVisualizer({
       min: sMin
     };
   });
+
+  const availableCharts = useMemo(() => {
+    if (!parsedData) return [];
+    const list = [
+      { id: 'trend', type: 'area', title: `${activeSeriesName} Trend`, points: chartPoints, max: seriesMax, min: seriesMin },
+      { id: 'column', type: 'column', title: `${activeSeriesName} by Item`, points: chartPoints, max: seriesMax, min: seriesMin }
+    ];
+    secondaryColsCards.forEach((sc, idx) => {
+      list.push({ id: `sec-${idx}`, type: 'line', title: `${sc.name} Trend`, points: sc.points, max: sc.max, min: sc.min });
+    });
+    return list;
+  }, [parsedData, activeSeriesName, chartPoints, seriesMax, seriesMin, secondaryColsCards]);
+
+  const currentExpandedIdx = useMemo(() => {
+    if (!expandedCard || availableCharts.length === 0) return 0;
+    const idx = availableCharts.findIndex(c => c.id === expandedCard.id || c.title === expandedCard.title);
+    return idx >= 0 ? idx : 0;
+  }, [expandedCard, availableCharts]);
+
+  const handleNavigateChart = (direction) => {
+    if (availableCharts.length === 0) return;
+    let nextIdx = currentExpandedIdx + direction;
+    if (nextIdx < 0) nextIdx = availableCharts.length - 1;
+    if (nextIdx >= availableCharts.length) nextIdx = 0;
+    const nextChart = availableCharts[nextIdx];
+    setExpandedCard(nextChart);
+    setExpandedTitle(nextChart.title);
+  };
 
   // Native Overlay Insertion
   const handleInsertNativeSheetChart = (customType = 'column', customTitle = 'Visual Chart') => {
@@ -1423,7 +1451,7 @@ export default function TemplateChartVisualizer({
       {expandedCard && createPortal(
         <div className="fixed inset-0 z-[1000000] bg-black/85 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-150">
           <div className="bg-white/95 dark:bg-zinc-900/95 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 w-full max-w-4xl p-6 space-y-4 flex flex-col max-h-[90vh] overflow-hidden">
-            {/* Header & Editable Title Bar */}
+            {/* Header & Editable Title Bar with Carousel Navigation (< / >) */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3 shrink-0">
               <div className="flex items-center gap-3 flex-1 mr-4">
                 <input
@@ -1431,13 +1459,37 @@ export default function TemplateChartVisualizer({
                   value={expandedTitle || expandedCard.title}
                   onChange={(e) => setExpandedTitle(e.target.value)}
                   placeholder="Chart Title..."
-                  className="text-base font-bold text-slate-900 dark:text-zinc-100 bg-transparent border-b border-transparent hover:border-slate-300 dark:hover:border-zinc-700 focus:border-violet-500 focus:outline-none transition-colors px-1 py-0.5 w-full max-w-md"
+                  className="text-base font-bold text-slate-900 dark:text-zinc-100 bg-transparent border-b border-transparent hover:border-slate-300 dark:hover:border-zinc-700 focus:border-violet-500 focus:outline-none transition-colors px-1 py-0.5 w-full max-w-sm"
                 />
                 <span className="text-xs px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-bold shrink-0">
                   Interactive Focus View
                 </span>
               </div>
+
+              {/* Chart Carousel (< / >) Navigation */}
               <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-lg border border-slate-200/60 dark:border-zinc-700/80">
+                  <button
+                    type="button"
+                    onClick={() => handleNavigateChart(-1)}
+                    className="p-1 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer"
+                    title="Previous Chart (<)"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="text-[11px] font-extrabold text-slate-700 dark:text-zinc-200 px-2 font-mono">
+                    {currentExpandedIdx + 1} / {availableCharts.length || 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleNavigateChart(1)}
+                    className="p-1 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer"
+                    title="Next Chart (>)"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+
                 <button
                   type="button"
                   onClick={handleExportPngChart}
@@ -1456,10 +1508,34 @@ export default function TemplateChartVisualizer({
               </div>
             </div>
 
-            {/* Quick Chart Style Controls Bar */}
+            {/* Executive Quick Chart Style Controls Bar */}
             <div className="flex items-center justify-between gap-4 p-2.5 bg-slate-50 dark:bg-zinc-800/50 rounded-lg text-xs shrink-0">
               <div className="flex items-center gap-3">
-                <span className="font-bold text-slate-600 dark:text-zinc-300">Stroke Thinness:</span>
+                <span className="font-bold text-slate-600 dark:text-zinc-300 flex items-center gap-1.5">
+                  <Sliders size={13} className="text-violet-500" />
+                  Stroke Thinness:
+                </span>
+                <div className="flex items-center gap-1 bg-white dark:bg-zinc-800 p-0.5 rounded-lg border border-slate-200/80 dark:border-zinc-700">
+                  {[
+                    { val: 1, label: '1px' },
+                    { val: 2, label: '2px' },
+                    { val: 2.5, label: '2.5px' },
+                    { val: 4, label: '4px' }
+                  ].map(p => (
+                    <button
+                      key={p.val}
+                      type="button"
+                      onClick={() => setStrokeWidth(p.val)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                        strokeWidth === p.val
+                          ? 'bg-violet-600 text-white shadow-2xs'
+                          : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
                 <input
                   type="range"
                   min="1"
@@ -1467,9 +1543,11 @@ export default function TemplateChartVisualizer({
                   step="0.5"
                   value={strokeWidth}
                   onChange={(e) => setStrokeWidth(Number(e.target.value))}
-                  className="w-28 accent-violet-600 cursor-pointer"
+                  className="w-24 accent-violet-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-lg"
                 />
-                <span className="font-mono text-slate-400">{strokeWidth}px</span>
+                <span className="font-mono text-xs font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/60 px-1.5 py-0.5 rounded-md border border-violet-200 dark:border-violet-800/60">
+                  {strokeWidth}px
+                </span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -1486,9 +1564,9 @@ export default function TemplateChartVisualizer({
               </div>
             </div>
 
-            {/* Main Interactive Expanded SVG Area */}
-            <div className="w-full flex-1 min-h-[300px] relative bg-white dark:bg-zinc-950 rounded-xl p-4 border border-slate-100 dark:border-zinc-800/80 shadow-inner flex flex-col justify-between">
-              <svg viewBox="0 0 100 68" className="w-full h-full overflow-visible">
+            {/* Main Interactive Expanded SVG Area with Thin Scrollbar Container */}
+            <div className="w-full flex-1 max-h-[60vh] overflow-y-auto overflow-x-auto thin-scrollbar relative bg-white dark:bg-zinc-950 rounded-xl p-4 border border-slate-100 dark:border-zinc-800/80 shadow-inner">
+              <svg viewBox="0 0 100 78" className="w-full h-full overflow-visible min-h-[340px]">
                 {showGridlines && (
                   <>
                     <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
@@ -1555,7 +1633,7 @@ export default function TemplateChartVisualizer({
 
               {/* Data Inspector Hover Badge */}
               {expandedHoverPt && (
-                <div className="absolute bottom-3 left-4 right-4 bg-slate-900/90 dark:bg-zinc-800/90 text-white rounded-lg p-2 flex items-center justify-between text-xs backdrop-blur-xs animate-in fade-in duration-100">
+                <div className="sticky bottom-2 left-4 right-4 bg-slate-900/90 dark:bg-zinc-800/90 text-white rounded-lg p-2 flex items-center justify-between text-xs backdrop-blur-xs animate-in fade-in duration-100">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-violet-400" />
                     <span className="font-semibold">{expandedHoverPt.label}</span>
