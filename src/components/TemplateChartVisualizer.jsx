@@ -183,8 +183,11 @@ export default function TemplateChartVisualizer({
   const [expandedColor, setExpandedColor] = useState('#7c3aed');
   const [cardTypeOverrides, setCardTypeOverrides] = useState({});
   const optionsMenuRef = useRef(null);
-  // Zoom & Interactive Label Dragging
-  const [zoomLevel, setZoomLevel] = useState(100);
+  // Zoom, Height & Interactive Dragging
+  const [zoomLevel, setZoomLevel] = useState(70);
+  const [chartHeight, setChartHeight] = useState(360);
+  const [isResizingChart, setIsResizingChart] = useState(false);
+  const [showInspector, setShowInspector] = useState(true);
   const [labelOffsets, setLabelOffsets] = useState({});
   const [draggingIdx, setDraggingIdx] = useState(null);
 
@@ -751,10 +754,11 @@ export default function TemplateChartVisualizer({
                 <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{activeSeriesName} Trend</h4>
                 <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(Uploaded Sheet Data)</span>
               </div>
-              <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1.5 opacity-100 shrink-0 z-10">
                 <button
                   type="button"
-                  onClick={() => setExpandedCard({ type: 'area', title: `${activeSeriesName} Trend`, points: chartPoints, max: seriesMax, min: seriesMin })}
+                  onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedCard({ type: 'area', title: `${activeSeriesName} Trend`, points: chartPoints, max: seriesMax, min: seriesMin }); setExpandedTitle(`${activeSeriesName} Trend`); }}
+                  onClick={() => { setExpandedCard({ type: 'area', title: `${activeSeriesName} Trend`, points: chartPoints, max: seriesMax, min: seriesMin }); setExpandedTitle(`${activeSeriesName} Trend`); }}
                   className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
                   title="Hover Zoom / Inspect"
                 >
@@ -841,10 +845,11 @@ export default function TemplateChartVisualizer({
                 <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{activeSeriesName} by Item</h4>
                 <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(Column Comparison)</span>
               </div>
-              <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1.5 opacity-100 shrink-0 z-10">
                 <button
                   type="button"
-                  onClick={() => setExpandedCard({ type: 'column', title: `${activeSeriesName} by Item`, points: chartPoints, max: seriesMax, min: seriesMin })}
+                  onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedCard({ type: 'column', title: `${activeSeriesName} by Item`, points: chartPoints, max: seriesMax, min: seriesMin }); setExpandedTitle(`${activeSeriesName} by Item`); }}
+                  onClick={() => { setExpandedCard({ type: 'column', title: `${activeSeriesName} by Item`, points: chartPoints, max: seriesMax, min: seriesMin }); setExpandedTitle(`${activeSeriesName} by Item`); }}
                   className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
                   title="Hover Zoom / Inspect"
                 >
@@ -984,6 +989,16 @@ export default function TemplateChartVisualizer({
                   <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{scCard.name} Trend</h4>
                   <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(Column {scIdx+2})</span>
                 </div>
+              <div className="flex items-center gap-1.5 opacity-100 shrink-0 z-10">
+                <button
+                  type="button"
+                  onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedCard({ type: 'line', title: `${scCard.name} Trend`, points: scCard.points, max: scCard.max, min: scCard.min }); setExpandedTitle(`${scCard.name} Trend`); }}
+                  onClick={() => { setExpandedCard({ type: 'line', title: `${scCard.name} Trend`, points: scCard.points, max: scCard.max, min: scCard.min }); setExpandedTitle(`${scCard.name} Trend`); }}
+                  className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
+                  title="Hover Zoom / Inspect"
+                >
+                  <Maximize2 size={13} />
+                </button>
                 <button
                   type="button"
                   onClick={() => handleInsertNativeSheetChart('line', `${scCard.name} Trend`)}
@@ -992,6 +1007,7 @@ export default function TemplateChartVisualizer({
                 >
                   <Plus size={13} />
                 </button>
+              </div>
               </div>
 
               <div className="w-full h-32 relative overflow-hidden group/zoom">
@@ -1524,7 +1540,7 @@ export default function TemplateChartVisualizer({
             </div>
 
             {/* Executive Quick Chart Style Controls Bar */}
-            <div className="flex items-center justify-between gap-4 p-2.5 bg-slate-50 dark:bg-zinc-800/50 rounded-lg text-xs shrink-0">
+            <div className="flex items-center justify-between gap-4 p-2.5 bg-slate-50 dark:bg-zinc-800/50 rounded-lg text-xs shrink-0 flex-wrap">
               <div className="flex items-center gap-3">
                 <span className="font-bold text-slate-600 dark:text-zinc-300 flex items-center gap-1.5">
                   <Sliders size={13} className="text-violet-500" />
@@ -1565,6 +1581,32 @@ export default function TemplateChartVisualizer({
                 </span>
               </div>
 
+              {/* Chart Height Presets */}
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-slate-600 dark:text-zinc-300">Canvas Height:</span>
+                <div className="flex items-center gap-1 bg-white dark:bg-zinc-800 p-0.5 rounded-lg border border-slate-200/80 dark:border-zinc-700">
+                  {[
+                    { val: 280, label: 'Short' },
+                    { val: 360, label: 'Med' },
+                    { val: 480, label: 'Tall' },
+                    { val: 600, label: 'Full' }
+                  ].map(h => (
+                    <button
+                      key={h.val}
+                      type="button"
+                      onClick={() => setChartHeight(h.val)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                        chartHeight === h.val
+                          ? 'bg-violet-600 text-white shadow-2xs'
+                          : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100'
+                      }`}
+                    >
+                      {h.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex items-center gap-2">
                 <span className="font-bold text-slate-600 dark:text-zinc-300">Color:</span>
                 {['#7c3aed', '#059669', '#4f46e5', '#d4af37', '#f43f5e'].map(c => (
@@ -1579,10 +1621,10 @@ export default function TemplateChartVisualizer({
               </div>
             </div>
 
-            {/* Main Interactive Expanded SVG Area with Thin Scrollbar & Dynamic Chart Types */}
+            {/* Main Interactive Expanded SVG Area with Thin Scrollbar & Dynamic Chart Height */}
             <div className="w-full flex-1 max-h-[58vh] overflow-y-auto overflow-x-auto thin-scrollbar relative bg-white dark:bg-zinc-950 rounded-xl p-4 border border-slate-100 dark:border-zinc-800/80 shadow-inner">
               <div style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left', transition: 'transform 0.15s ease-out' }}>
-                <svg viewBox="0 0 100 78" className="w-full h-full overflow-visible min-h-[340px]">
+                <svg viewBox="0 0 100 78" style={{ minHeight: `${chartHeight}px` }} className="w-full h-full overflow-visible">
                   {showGridlines && (
                     <>
                       <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
@@ -1706,32 +1748,67 @@ export default function TemplateChartVisualizer({
                 </svg>
               </div>
 
-              {/* Data Inspector Hover Badge */}
-              {expandedHoverPt && (
+              {/* Dismissable Data Inspector Hover Badge (Fix for Image 2) */}
+              {expandedHoverPt && showInspector && (
                 <div className="sticky bottom-2 left-4 right-4 bg-slate-900/90 dark:bg-zinc-800/90 text-white rounded-lg p-2 flex items-center justify-between text-xs backdrop-blur-xs animate-in fade-in duration-100 z-10">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
                     <span className="font-semibold">{expandedHoverPt.label}</span>
                   </div>
-                  <div className="flex items-center gap-4 font-mono">
+                  <div className="flex items-center gap-3 font-mono">
                     <span>Value: <strong>{expandedHoverPt.val}</strong></span>
                     {expandedHoverPt.rowIdx && <span>Row #{expandedHoverPt.rowIdx}</span>}
+                    <button
+                      type="button"
+                      onClick={() => setShowInspector(false)}
+                      className="p-1 text-slate-400 hover:text-white rounded cursor-pointer"
+                      title="Dismiss Inspector Bar"
+                    >
+                      <X size={13} />
+                    </button>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Bottom Modal Footer with Image 2 Style Zoom Controls ([-] 100% [+]) */}
+            {/* Interactive Drag Handle for Vertical Chart Resizing */}
+            <div
+              onPointerDown={(e) => {
+                e.preventDefault();
+                setIsResizingChart(true);
+                try { e.target.setPointerCapture(e.pointerId); } catch {}
+              }}
+              onPointerMove={(e) => {
+                if (!isResizingChart) return;
+                setChartHeight(prev => Math.max(240, Math.min(750, prev + e.movementY)));
+              }}
+              onPointerUp={() => setIsResizingChart(false)}
+              className="w-full h-3 bg-slate-100 dark:bg-zinc-800 hover:bg-violet-100 dark:hover:bg-violet-950/60 rounded-b-xl flex items-center justify-center cursor-ns-resize transition-colors border-t border-slate-200/60 dark:border-zinc-700/60 group shrink-0"
+              title="Drag up/down to resize chart canvas height"
+            >
+              <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 group-hover:bg-violet-500 transition-colors" />
+            </div>
+
+            {/* Bottom Modal Footer with 70% Default Zoom Controls */}
             <div className="flex items-center justify-between border-t border-slate-100 dark:border-zinc-800 pt-2 shrink-0 text-xs">
-              <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
-                Tip: Drag labels around chart or tap outside to close
+              <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium flex items-center gap-2">
+                <span>Tip: Drag labels around chart, drag bottom bar to resize, or tap outside to close</span>
+                {!showInspector && (
+                  <button
+                    type="button"
+                    onClick={() => setShowInspector(true)}
+                    className="text-violet-600 dark:text-violet-400 underline font-bold cursor-pointer"
+                  >
+                    Show Inspector
+                  </button>
+                )}
               </span>
 
-              {/* Bottom Right Zoom Control Widget (Image 2 Mirror) */}
+              {/* Bottom Right Zoom Control Widget (70% Default) */}
               <div className="flex items-center gap-1 bg-white/90 dark:bg-zinc-800/90 border border-slate-200/80 dark:border-zinc-700/80 rounded-lg px-2 py-1 shadow-md text-xs backdrop-blur-xs font-mono shrink-0">
                 <button
                   type="button"
-                  onClick={() => setZoomLevel(prev => Math.max(50, prev - 10))}
+                  onClick={() => setZoomLevel(prev => Math.max(40, prev - 10))}
                   className="w-6 h-6 flex items-center justify-center rounded-md bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-600 font-bold transition-colors cursor-pointer"
                   title="Zoom Out (-)"
                 >
@@ -1750,9 +1827,9 @@ export default function TemplateChartVisualizer({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setZoomLevel(100)}
+                  onClick={() => setZoomLevel(70)}
                   className="ml-1 text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 font-semibold cursor-pointer"
-                  title="Reset to 100%"
+                  title="Reset to default 70%"
                 >
                   Reset
                 </button>
