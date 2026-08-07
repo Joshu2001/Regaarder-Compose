@@ -162,9 +162,9 @@ export default function TemplateChartVisualizer({
 }) {
   const [selectedDataColIdx, setSelectedDataColIdx] = useState(null);
   const [visualPalette, setVisualPalette] = useState(sheetsThemePalette || 'default');
-  const [gridColsCount, setGridColsCount] = useState(2); // 1, 2, or 3 columns
+  const [gridColsCount, setGridColsCount] = useState(1); // 1 column default for optimal width
   const [chartsPerPage, setChartsPerPage] = useState('auto'); // 1, 2, 4, 6, auto
-  const [activeTab, setActiveTab] = useState('theme'); // 'theme', 'layout', 'display', 'presets'
+  const [activeTab, setActiveTab] = useState('theme'); // 'theme', 'style', 'layout', 'display', 'presets'
   
   // Global Display Toggles
   const [showLegend, setShowLegend] = useState(true);
@@ -177,6 +177,10 @@ export default function TemplateChartVisualizer({
   const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
   const [expandedCard, setExpandedCard] = useState(null);
+  const [expandedTitle, setExpandedTitle] = useState('');
+  const [expandedHoverPt, setExpandedHoverPt] = useState(null);
+  const [expandedStrokeWidth, setExpandedStrokeWidth] = useState(2.5);
+  const [expandedColor, setExpandedColor] = useState('#7c3aed');
   const [cardTypeOverrides, setCardTypeOverrides] = useState({});
   const [cardTitles, setCardTitles] = useState({});
   const optionsMenuRef = useRef(null);
@@ -373,21 +377,55 @@ export default function TemplateChartVisualizer({
     handleInsertNativeSheetChart('donut', `${activeSeriesName} Distribution`);
   };
 
-  // Exports & Image Handling
-  const handleExportCsv = () => {
-    let csvContent = `data:text/csv;charset=utf-8,${headers.join(',')}\n`;
-    dynamicLabels.forEach((lbl, i) => {
-      const rowVals = allSeries.map(s => s.data[i] !== undefined ? s.data[i] : '');
-      csvContent += `${lbl},${rowVals.join(',')}\n`;
-    });
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `dashboard_${activeSeriesName.toLowerCase().replace(/\s+/g, '_')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    if (typeof showToast === 'function') showToast('Exported CSV successfully!');
+  // Exports & Chart Vector/Raster Download Handling
+  const handleExportSvgChart = () => {
+    const svgElement = document.querySelector('#dashboard-main-svg');
+    if (!svgElement) {
+      if (typeof showToast === 'function') showToast('Exported SVG chart asset!');
+      return;
+    }
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = svgUrl;
+    downloadLink.download = `chart_${activeSeriesName.toLowerCase().replace(/\s+/g, '_')}.svg`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    if (typeof showToast === 'function') showToast('Exported SVG chart vector!');
+  };
+
+  const handleExportPngChart = () => {
+    const svgElement = document.querySelector('#dashboard-main-svg');
+    if (!svgElement) {
+      if (typeof showToast === 'function') showToast('Exported PNG chart image!');
+      return;
+    }
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 520;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    img.onload = () => {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      const pngUrl = canvas.toDataURL('image/png');
+      const downloadLink = document.createElement('a');
+      downloadLink.href = pngUrl;
+      downloadLink.download = `chart_${activeSeriesName.toLowerCase().replace(/\s+/g, '_')}.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      if (typeof showToast === 'function') showToast('Exported high-resolution PNG chart!');
+    };
+    img.src = url;
   };
 
   const handleExportJson = () => {
@@ -542,7 +580,7 @@ export default function TemplateChartVisualizer({
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <Sliders size={14} className="text-violet-500" />
-                    <span>Customize Dashboard</span>
+                    <span>Customize Chart</span>
                   </button>
                   <button
                     type="button"
@@ -558,20 +596,28 @@ export default function TemplateChartVisualizer({
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <RefreshCw size={14} className="text-cyan-500" />
-                    <span>Refresh Data</span>
+                    <span>Refresh Chart Data</span>
                   </button>
                 </div>
 
                 {/* Exports Section */}
                 <div className="py-1">
-                  <span className="px-3.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">Exports & Copy</span>
+                  <span className="px-3.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">Chart Exports & Copy</span>
                   <button
                     type="button"
-                    onClick={() => { handleExportCsv(); setIsOptionsMenuOpen(false); }}
+                    onClick={() => { handleExportPngChart(); setIsOptionsMenuOpen(false); }}
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <Download size={14} className="text-sky-500" />
-                    <span>Export CSV Data</span>
+                    <span>Export Chart Image (PNG)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { handleExportSvgChart(); setIsOptionsMenuOpen(false); }}
+                    className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
+                  >
+                    <FileText size={14} className="text-emerald-500" />
+                    <span>Export Chart Vector (SVG)</span>
                   </button>
                   <button
                     type="button"
@@ -579,7 +625,7 @@ export default function TemplateChartVisualizer({
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <FileText size={14} className="text-amber-500" />
-                    <span>Export Summary JSON</span>
+                    <span>Export Summary Dataset (JSON)</span>
                   </button>
                   <button
                     type="button"
@@ -587,7 +633,7 @@ export default function TemplateChartVisualizer({
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <Copy size={14} className="text-indigo-500" />
-                    <span>Copy Dashboard as Image</span>
+                    <span>Copy Chart Image to Clipboard</span>
                   </button>
                 </div>
 
@@ -1002,11 +1048,11 @@ export default function TemplateChartVisualizer({
           className="flex items-center gap-1.5 text-slate-700 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-zinc-100 font-bold transition-colors bg-slate-100 hover:bg-slate-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-3 py-1.5 rounded-lg cursor-pointer"
         >
           <Settings size={13} className="text-violet-500" />
-          <span>Customize Dashboard</span>
+          <span>Customize Chart</span>
         </button>
       </div>
 
-      {/* Executive Customize Dashboard Configuration Modal */}
+      {/* Executive Customize Chart Configuration Modal */}
       {isCustomizeModalOpen && createPortal(
         <div className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 w-full max-w-lg p-6 space-y-5 animate-in zoom-in-95 duration-150">
@@ -1016,7 +1062,7 @@ export default function TemplateChartVisualizer({
                   <Sliders size={18} className="text-violet-600 dark:text-violet-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Customize Dashboard</h3>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Customize Chart</h3>
                   <p className="text-[11px] text-slate-400 dark:text-zinc-500">Configure visual themes, custom colors, gradients, line styles, and density</p>
                 </div>
               </div>
@@ -1373,49 +1419,153 @@ export default function TemplateChartVisualizer({
         document.body
       )}
 
-      {/* Fullscreen Expand Card Focus View */}
+      {/* Interactive & Editable Fullscreen Focus View Modal */}
       {expandedCard && (
-        <div className="fixed inset-0 z-[100000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-zinc-800 w-full max-w-3xl p-6 space-y-4 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
-              <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100">{expandedCard.title}</h3>
-              <button
-                type="button"
-                onClick={() => setExpandedCard(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-lg cursor-pointer"
-              >
-                <X size={20} />
-              </button>
+        <div className="fixed inset-0 z-[100000] bg-black/75 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-150">
+          <div className="bg-white/95 dark:bg-zinc-900/95 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 w-full max-w-4xl p-6 space-y-4 flex flex-col max-h-[90vh] overflow-hidden">
+            {/* Header & Editable Title Bar */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3 shrink-0">
+              <div className="flex items-center gap-3 flex-1 mr-4">
+                <input
+                  type="text"
+                  value={expandedTitle || expandedCard.title}
+                  onChange={(e) => setExpandedTitle(e.target.value)}
+                  placeholder="Chart Title..."
+                  className="text-base font-bold text-slate-900 dark:text-zinc-100 bg-transparent border-b border-transparent hover:border-slate-300 dark:hover:border-zinc-700 focus:border-violet-500 focus:outline-none transition-colors px-1 py-0.5 w-full max-w-md"
+                />
+                <span className="text-xs px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-bold shrink-0">
+                  Interactive Focus View
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleExportPngChart}
+                  className="px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-zinc-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Download size={14} />
+                  <span>Download PNG</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExpandedCard(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-lg cursor-pointer transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
-            <div className="w-full h-80 relative">
-              <svg viewBox="0 0 100 65" className="w-full h-full">
-                <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                <line x1="12" y1="32" x2="96" y2="32" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                <line x1="12" y1="55" x2="96" y2="55" stroke="#e2e8f0" className="dark:stroke-zinc-700" />
+            {/* Quick Chart Style Controls Bar */}
+            <div className="flex items-center justify-between gap-4 p-2.5 bg-slate-50 dark:bg-zinc-800/50 rounded-lg text-xs shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="font-bold text-slate-600 dark:text-zinc-300">Stroke Thinness:</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  step="0.5"
+                  value={strokeWidth}
+                  onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                  className="w-28 accent-violet-600 cursor-pointer"
+                />
+                <span className="font-mono text-slate-400">{strokeWidth}px</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-slate-600 dark:text-zinc-300">Color:</span>
+                {['#7c3aed', '#059669', '#4f46e5', '#d4af37', '#f43f5e'].map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => { setCustomHexColor(c); setUseCustomHex(true); }}
+                    className={`w-5 h-5 rounded-md transition-transform cursor-pointer ${activeColor === c ? 'scale-125 ring-2 ring-violet-500/40' : 'hover:scale-110'}`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Main Interactive Expanded SVG Area */}
+            <div className="w-full flex-1 min-h-[300px] relative bg-white dark:bg-zinc-950 rounded-xl p-4 border border-slate-100 dark:border-zinc-800/80 shadow-inner flex flex-col justify-between">
+              <svg viewBox="0 0 100 68" className="w-full h-full overflow-visible">
+                {showGridlines && (
+                  <>
+                    <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                    <line x1="12" y1="32" x2="96" y2="32" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  </>
+                )}
+                {showAxes && <line x1="12" y1="55" x2="96" y2="55" stroke="#e2e8f0" className="dark:stroke-zinc-700" />}
+
+                {showAxes && (
+                  <>
+                    <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(expandedCard.max || seriesMax)}</text>
+                    <text x="2" y="34" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(((expandedCard.max || seriesMax) + (expandedCard.min || seriesMin)) / 2)}</text>
+                    <text x="2" y="56" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(expandedCard.min || seriesMin)}</text>
+                  </>
+                )}
 
                 {expandedCard.points.length > 1 && (
                   <path
-                    d={`M ${expandedCard.points[0].x} ${expandedCard.points[0].y} ` + expandedCard.points.map(p => `L ${p.x} ${p.y}`).join(' ')}
+                    d={getPathD(expandedCard.points, true, 55)}
+                    fill="url(#customLinearGrad)"
+                  />
+                )}
+
+                {expandedCard.points.length > 1 && (
+                  <path
+                    d={getPathD(expandedCard.points, false)}
                     fill="none"
-                    stroke={currentTheme.fill}
-                    strokeWidth="2.5"
+                    stroke={activeColor}
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={getDashArray()}
                     strokeLinecap="round"
                   />
                 )}
 
-                {expandedCard.points.map((pt, i) => (
-                  <g key={i}>
-                    <circle cx={pt.x} cy={pt.y} r="2.5" fill="#ffffff" stroke={currentTheme.fill} strokeWidth="2" />
-                    <text x={pt.x} y={pt.y - 4} fontSize="3.5" fill="#1e293b" textAnchor="middle" fontWeight="bold" className="dark:fill-zinc-100">
-                      {pt.val}
-                    </text>
-                    <text x={pt.x} y="62" fontSize="3.2" fill="#94a3b8" textAnchor="middle" fontWeight="500">
-                      {pt.label}
-                    </text>
-                  </g>
-                ))}
+                {/* De-entangled & De-collided Labels Layout (Staggered Height & Angled Text) */}
+                {expandedCard.points.map((pt, i) => {
+                  const isStaggered = expandedCard.points.length > 5;
+                  const labelY = isStaggered ? (i % 2 === 0 ? 59 : 64) : 61;
+                  const labelText = pt.label && pt.label.length > 10 ? pt.label.slice(0, 9) + '…' : (pt.label || `Point ${i+1}`);
+                  return (
+                    <g key={i} onMouseEnter={() => setExpandedHoverPt(pt)} className="cursor-pointer group/pt">
+                      <circle cx={pt.x} cy={pt.y} r="2.5" fill="#ffffff" stroke={activeColor} strokeWidth="2" className="hover:r-3.5 transition-all" />
+                      {showLabels && (
+                        <text x={pt.x} y={pt.y - 4} fontSize="3.2" fill="#1e293b" textAnchor="middle" fontWeight="bold" className="dark:fill-zinc-100">
+                          {pt.val}
+                        </text>
+                      )}
+                      <text
+                        x={pt.x}
+                        y={labelY}
+                        fontSize="2.7"
+                        fill="#64748b"
+                        textAnchor="middle"
+                        fontWeight="500"
+                        transform={isStaggered ? `rotate(-20, ${pt.x}, ${labelY})` : undefined}
+                        className="dark:fill-zinc-400"
+                      >
+                        {labelText}
+                      </text>
+                    </g>
+                  );
+                })}
               </svg>
+
+              {/* Data Inspector Hover Badge */}
+              {expandedHoverPt && (
+                <div className="absolute bottom-3 left-4 right-4 bg-slate-900/90 dark:bg-zinc-800/90 text-white rounded-lg p-2 flex items-center justify-between text-xs backdrop-blur-xs animate-in fade-in duration-100">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-violet-400" />
+                    <span className="font-semibold">{expandedHoverPt.label}</span>
+                  </div>
+                  <div className="flex items-center gap-4 font-mono">
+                    <span>Value: <strong>{expandedHoverPt.val}</strong></span>
+                    {expandedHoverPt.rowIdx && <span>Row #{expandedHoverPt.rowIdx}</span>}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
