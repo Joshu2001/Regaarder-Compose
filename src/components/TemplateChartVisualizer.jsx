@@ -183,7 +183,10 @@ export default function TemplateChartVisualizer({
   const [expandedColor, setExpandedColor] = useState('#7c3aed');
   const [cardTypeOverrides, setCardTypeOverrides] = useState({});
   const [cardTitles, setCardTitles] = useState({});
-  const optionsMenuRef = useRef(null);
+  // Zoom & Interactive Label Dragging
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const [labelOffsets, setLabelOffsets] = useState({});
+  const [draggingIdx, setDraggingIdx] = useState(null);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -200,6 +203,14 @@ export default function TemplateChartVisualizer({
       document.removeEventListener('pointerdown', handleOutsideClick);
     };
   }, [isOptionsMenuOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setExpandedCard(null);
+    };
+    if (expandedCard) window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [expandedCard]);
 
   // Presets
   const [customPresets, setCustomPresets] = useState(() => {
@@ -1072,6 +1083,7 @@ export default function TemplateChartVisualizer({
 
         <button
           type="button"
+          onPointerDown={(e) => { e.preventDefault(); setIsCustomizeModalOpen(true); }}
           onClick={() => setIsCustomizeModalOpen(true)}
           className="flex items-center gap-1.5 text-slate-700 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-zinc-100 font-bold transition-colors bg-slate-100 hover:bg-slate-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-3 py-1.5 rounded-lg cursor-pointer"
         >
@@ -1449,8 +1461,18 @@ export default function TemplateChartVisualizer({
 
       {/* Interactive & Editable Fullscreen Focus View Modal */}
       {expandedCard && createPortal(
-        <div className="fixed inset-0 z-[1000000] bg-black/85 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-150">
-          <div className="bg-white/95 dark:bg-zinc-900/95 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 w-full max-w-4xl p-6 space-y-4 flex flex-col max-h-[90vh] overflow-hidden">
+        <div
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) {
+              setExpandedCard(null);
+            }
+          }}
+          className="fixed inset-0 z-[1000000] bg-black/85 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-150 cursor-pointer"
+        >
+          <div
+            onPointerDown={(e) => e.stopPropagation()}
+            className="bg-white/95 dark:bg-zinc-900/95 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 w-full max-w-4xl p-6 space-y-4 flex flex-col max-h-[90vh] overflow-hidden cursor-default relative"
+          >
             {/* Header & Editable Title Bar with Carousel Navigation (< / >) */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3 shrink-0">
               <div className="flex items-center gap-3 flex-1 mr-4">
@@ -1462,16 +1484,16 @@ export default function TemplateChartVisualizer({
                   className="text-base font-bold text-slate-900 dark:text-zinc-100 bg-transparent border-b border-transparent hover:border-slate-300 dark:hover:border-zinc-700 focus:border-violet-500 focus:outline-none transition-colors px-1 py-0.5 w-full max-w-sm"
                 />
                 <span className="text-xs px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-bold shrink-0">
-                  Interactive Focus View
+                  {expandedCard.type ? `${expandedCard.type.toUpperCase()} View` : 'Focus View'}
                 </span>
               </div>
 
-              {/* Chart Carousel (< / >) Navigation */}
+              {/* Chart Carousel (< / >) Navigation & Quick Actions */}
               <div className="flex items-center gap-2 shrink-0">
                 <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-lg border border-slate-200/60 dark:border-zinc-700/80">
                   <button
                     type="button"
-                    onClick={() => handleNavigateChart(-1)}
+                    onPointerDown={(e) => { e.preventDefault(); handleNavigateChart(-1); }}
                     className="p-1 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer"
                     title="Previous Chart (<)"
                   >
@@ -1482,7 +1504,7 @@ export default function TemplateChartVisualizer({
                   </span>
                   <button
                     type="button"
-                    onClick={() => handleNavigateChart(1)}
+                    onPointerDown={(e) => { e.preventDefault(); handleNavigateChart(1); }}
                     className="p-1 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer"
                     title="Next Chart (>)"
                   >
@@ -1492,18 +1514,11 @@ export default function TemplateChartVisualizer({
 
                 <button
                   type="button"
-                  onClick={handleExportPngChart}
+                  onPointerDown={(e) => { e.preventDefault(); handleExportPngChart(); }}
                   className="px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-zinc-200 flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Download size={14} />
                   <span>Download PNG</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setExpandedCard(null)}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-lg cursor-pointer transition-colors"
-                >
-                  <X size={20} />
                 </button>
               </div>
             </div>
@@ -1564,78 +1579,138 @@ export default function TemplateChartVisualizer({
               </div>
             </div>
 
-            {/* Main Interactive Expanded SVG Area with Thin Scrollbar Container */}
-            <div className="w-full flex-1 max-h-[60vh] overflow-y-auto overflow-x-auto thin-scrollbar relative bg-white dark:bg-zinc-950 rounded-xl p-4 border border-slate-100 dark:border-zinc-800/80 shadow-inner">
-              <svg viewBox="0 0 100 78" className="w-full h-full overflow-visible min-h-[340px]">
-                {showGridlines && (
-                  <>
-                    <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                    <line x1="12" y1="32" x2="96" y2="32" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  </>
-                )}
-                {showAxes && <line x1="12" y1="55" x2="96" y2="55" stroke="#e2e8f0" className="dark:stroke-zinc-700" />}
+            {/* Main Interactive Expanded SVG Area with Thin Scrollbar & Dynamic Chart Types */}
+            <div className="w-full flex-1 max-h-[58vh] overflow-y-auto overflow-x-auto thin-scrollbar relative bg-white dark:bg-zinc-950 rounded-xl p-4 border border-slate-100 dark:border-zinc-800/80 shadow-inner">
+              <div style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left', transition: 'transform 0.15s ease-out' }}>
+                <svg viewBox="0 0 100 78" className="w-full h-full overflow-visible min-h-[340px]">
+                  {showGridlines && (
+                    <>
+                      <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                      <line x1="12" y1="32" x2="96" y2="32" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                    </>
+                  )}
+                  {showAxes && <line x1="12" y1="55" x2="96" y2="55" stroke="#e2e8f0" className="dark:stroke-zinc-700" />}
 
-                {showAxes && (
-                  <>
-                    <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(expandedCard.max || seriesMax)}</text>
-                    <text x="2" y="34" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(((expandedCard.max || seriesMax) + (expandedCard.min || seriesMin)) / 2)}</text>
-                    <text x="2" y="56" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(expandedCard.min || seriesMin)}</text>
-                  </>
-                )}
+                  {showAxes && (
+                    <>
+                      <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(expandedCard.max || seriesMax)}</text>
+                      <text x="2" y="34" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(((expandedCard.max || seriesMax) + (expandedCard.min || seriesMin)) / 2)}</text>
+                      <text x="2" y="56" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(expandedCard.min || seriesMin)}</text>
+                    </>
+                  )}
 
-                {expandedCard.points.length > 1 && (
-                  <path
-                    d={getPathD(expandedCard.points, true, 55)}
-                    fill="url(#customLinearGrad)"
-                  />
-                )}
-
-                {expandedCard.points.length > 1 && (
-                  <path
-                    d={getPathD(expandedCard.points, false)}
-                    fill="none"
-                    stroke={activeColor}
-                    strokeWidth={strokeWidth}
-                    strokeDasharray={getDashArray()}
-                    strokeLinecap="round"
-                  />
-                )}
-
-                {/* De-entangled & De-collided Labels Layout (Staggered Height & Angled Text) */}
-                {expandedCard.points.map((pt, i) => {
-                  const isStaggered = expandedCard.points.length > 5;
-                  const labelY = isStaggered ? (i % 2 === 0 ? 59 : 64) : 61;
-                  const labelText = pt.label && pt.label.length > 10 ? pt.label.slice(0, 9) + '…' : (pt.label || `Point ${i+1}`);
-                  return (
-                    <g key={i} onMouseEnter={() => setExpandedHoverPt(pt)} className="cursor-pointer group/pt">
-                      <circle cx={pt.x} cy={pt.y} r="2.5" fill="#ffffff" stroke={activeColor} strokeWidth="2" className="hover:r-3.5 transition-all" />
-                      {showLabels && (
-                        <text x={pt.x} y={pt.y - 4} fontSize="3.2" fill="#1e293b" textAnchor="middle" fontWeight="bold" className="dark:fill-zinc-100">
-                          {pt.val}
-                        </text>
-                      )}
-                      <text
-                        x={pt.x}
-                        y={labelY}
-                        fontSize="2.7"
-                        fill="#64748b"
-                        textAnchor="middle"
-                        fontWeight="500"
-                        transform={isStaggered ? `rotate(-20, ${pt.x}, ${labelY})` : undefined}
-                        className="dark:fill-zinc-400"
-                      >
-                        {labelText}
+                  {/* Chart Type Specific Visualizations */}
+                  {expandedCard.type === 'column' ? (
+                    expandedCard.points.map((pt, i) => {
+                      const barHeight = Math.max(2, 55 - pt.y);
+                      const barWidth = Math.max(3.5, 70 / expandedCard.points.length - 2);
+                      return (
+                        <rect
+                          key={i}
+                          x={pt.x - barWidth / 2}
+                          y={pt.y}
+                          width={barWidth}
+                          height={barHeight}
+                          rx="1.5"
+                          fill={activeColor}
+                          opacity="0.85"
+                          className="hover:opacity-100 transition-opacity cursor-pointer"
+                        />
+                      );
+                    })
+                  ) : expandedCard.type === 'donut' ? (
+                    <g transform="translate(54, 32)">
+                      <circle cx="0" cy="0" r="18" fill="none" stroke={activeColor} strokeWidth="8" strokeDasharray="85 30" />
+                      <circle cx="0" cy="0" r="18" fill="none" stroke="#059669" strokeWidth="8" strokeDasharray="25 90" strokeDashoffset="-85" />
+                      <text x="0" y="2" fontSize="3.5" fill="#1e293b" textAnchor="middle" fontWeight="bold" className="dark:fill-zinc-100">
+                        {expandedCard.title}
                       </text>
                     </g>
-                  );
-                })}
-              </svg>
+                  ) : (
+                    <>
+                      {expandedCard.points.length > 1 && (
+                        <path
+                          d={getPathD(expandedCard.points, true, 55)}
+                          fill="url(#customLinearGrad)"
+                        />
+                      )}
+
+                      {expandedCard.points.length > 1 && (
+                        <path
+                          d={getPathD(expandedCard.points, false)}
+                          fill="none"
+                          stroke={activeColor}
+                          strokeWidth={strokeWidth}
+                          strokeDasharray={getDashArray()}
+                          strokeLinecap="round"
+                        />
+                      )}
+                    </>
+                  )}
+
+                  {/* Draggable Value Labels Layout */}
+                  {expandedCard.points.map((pt, i) => {
+                    const isStaggered = expandedCard.points.length > 5;
+                    const defaultLabelY = isStaggered ? (i % 2 === 0 ? 59 : 64) : 61;
+                    const offset = labelOffsets[i] || { x: 0, y: 0 };
+                    const posX = pt.x + offset.x;
+                    const posY = defaultLabelY + offset.y;
+                    const labelText = pt.label && pt.label.length > 10 ? pt.label.slice(0, 9) + '…' : (pt.label || `Point ${i+1}`);
+
+                    return (
+                      <g
+                        key={i}
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDraggingIdx(i);
+                          try { e.target.setPointerCapture(e.pointerId); } catch {}
+                        }}
+                        onPointerMove={(e) => {
+                          if (draggingIdx !== i) return;
+                          setLabelOffsets(prev => ({
+                            ...prev,
+                            [i]: {
+                              x: (prev[i]?.x || 0) + e.movementX * 0.15,
+                              y: (prev[i]?.y || 0) + e.movementY * 0.15
+                            }
+                          }));
+                        }}
+                        onPointerUp={(e) => {
+                          if (draggingIdx === i) setDraggingIdx(null);
+                        }}
+                        onMouseEnter={() => setExpandedHoverPt(pt)}
+                        className="cursor-grab active:cursor-grabbing group/pt select-none"
+                      >
+                        <circle cx={pt.x} cy={pt.y} r="2.5" fill="#ffffff" stroke={activeColor} strokeWidth="2" className="hover:r-3.5 transition-all" />
+                        {showLabels && (
+                          <text x={posX} y={pt.y - 4 + offset.y} fontSize="3.2" fill="#1e293b" textAnchor="middle" fontWeight="bold" className="dark:fill-zinc-100">
+                            {pt.val}
+                          </text>
+                        )}
+                        <text
+                          x={posX}
+                          y={posY}
+                          fontSize="2.7"
+                          fill="#64748b"
+                          textAnchor="middle"
+                          fontWeight="500"
+                          transform={isStaggered && !offset.x && !offset.y ? `rotate(-20, ${posX}, ${posY})` : undefined}
+                          className="dark:fill-zinc-400 font-medium"
+                        >
+                          {labelText}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
 
               {/* Data Inspector Hover Badge */}
               {expandedHoverPt && (
-                <div className="sticky bottom-2 left-4 right-4 bg-slate-900/90 dark:bg-zinc-800/90 text-white rounded-lg p-2 flex items-center justify-between text-xs backdrop-blur-xs animate-in fade-in duration-100">
+                <div className="sticky bottom-2 left-4 right-4 bg-slate-900/90 dark:bg-zinc-800/90 text-white rounded-lg p-2 flex items-center justify-between text-xs backdrop-blur-xs animate-in fade-in duration-100 z-10">
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-violet-400" />
+                    <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
                     <span className="font-semibold">{expandedHoverPt.label}</span>
                   </div>
                   <div className="flex items-center gap-4 font-mono">
@@ -1644,6 +1719,44 @@ export default function TemplateChartVisualizer({
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Bottom Modal Footer with Image 2 Style Zoom Controls ([-] 100% [+]) */}
+            <div className="flex items-center justify-between border-t border-slate-100 dark:border-zinc-800 pt-2 shrink-0 text-xs">
+              <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+                Tip: Drag labels around chart or tap outside to close
+              </span>
+
+              {/* Bottom Right Zoom Control Widget (Image 2 Mirror) */}
+              <div className="flex items-center gap-1 bg-white/90 dark:bg-zinc-800/90 border border-slate-200/80 dark:border-zinc-700/80 rounded-lg px-2 py-1 shadow-md text-xs backdrop-blur-xs font-mono shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel(prev => Math.max(50, prev - 10))}
+                  className="w-6 h-6 flex items-center justify-center rounded-md bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-600 font-bold transition-colors cursor-pointer"
+                  title="Zoom Out (-)"
+                >
+                  -
+                </button>
+                <span className="px-2 font-extrabold text-slate-800 dark:text-zinc-100 min-w-[44px] text-center">
+                  {zoomLevel}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel(prev => Math.min(200, prev + 10))}
+                  className="w-6 h-6 flex items-center justify-center rounded-md bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-600 font-bold transition-colors cursor-pointer"
+                  title="Zoom In (+)"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel(100)}
+                  className="ml-1 text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 font-semibold cursor-pointer"
+                  title="Reset to 100%"
+                >
+                  Reset
+                </button>
+              </div>
             </div>
           </div>
         </div>,
