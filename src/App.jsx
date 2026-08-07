@@ -37371,7 +37371,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         <main className={`flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-zinc-950 ${isSheetsPresentationMode ? 'fixed inset-0 z-[9999] bg-white dark:bg-zinc-950' : ''}`}>
           {!isSheetsPresentationMode && (
-            <div className={`h-14 flex items-center justify-between px-6 border-b border-slate-200/70 dark:border-zinc-800/80 bg-[#f3f4f6]/80 dark:bg-zinc-900/80 backdrop-blur-md shrink-0 select-none group/header relative z-[350] transition-all duration-200 shadow-[0_1px_3px_rgba(0,0,0,0.02)] ${
+            <div className={`h-12 flex items-center justify-between px-5 border-b border-slate-200/80 dark:border-zinc-800/80 bg-[#f4f5f7]/88 dark:bg-zinc-900/88 backdrop-blur-[20px] shrink-0 select-none group/header relative z-[350] transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] ${
               isSheetZenMode ? 'fixed top-0 left-0 right-0 z-[9000] opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto shadow-md border-b' : ''
             }`}>
             <div className="flex items-center gap-3">
@@ -46488,13 +46488,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
         {!isSheetsMode && (
           <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.35]">
             <div className="absolute -top-[15%] -left-[15%] w-[70%] h-[70%] rounded-full bg-blue-400/35 dark:bg-blue-900/20 mix-blend-multiply dark:mix-blend-screen filter blur-[110px]" />
-            <div className="absolute top-[20%] -right-[15%] w-[60%] h-[60%] rounded-full bg-purple-400/35 dark:bg-purple-900/20 mix-blend-multiply dark:mix-blend-screen filter blur-[110px]" />
-            <div className="absolute bottom-[5%] left-[15%] w-[80%] h-[80%] rounded-full bg-pink-400/30 dark:bg-pink-900/15 mix-blend-multiply dark:mix-blend-screen filter blur-[120px]" />
+            <div className="absolute top-[20%] -right-[15%] w-[60%] h-[60%] rounded-full bg-purple-400/25 dark:bg-purple-900/12 mix-blend-multiply dark:mix-blend-screen filter blur-[110px]" />
+            <div className="absolute bottom-[5%] left-[15%] w-[80%] h-[80%] rounded-full bg-pink-400/20 dark:bg-pink-900/10 mix-blend-multiply dark:mix-blend-screen filter blur-[120px]" />
           </div>
         )}
         
         {/* Top Header */}
-        <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative z-[350]">
+        <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200/80 dark:border-zinc-800/80 bg-[#f4f5f7]/88 dark:bg-zinc-900/88 backdrop-blur-[20px] shrink-0 select-none group/header relative z-[350] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {

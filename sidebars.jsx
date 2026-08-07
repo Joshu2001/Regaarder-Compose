@@ -15,14 +15,14 @@
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && (
-        <div className="flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC]">
+        <div className="flex border-b border-slate-200/80 dark:border-zinc-800/80 text-xs font-semibold select-none bg-[#f4f5f7]/88 dark:bg-zinc-900/88 backdrop-blur-[20px] h-12 items-center">
           <div
             className="flex-1 min-w-0 overflow-x-auto no-scrollbar"
             tabIndex={0}
             onKeyDown={handleRightSidebarTabsKeyDown}
             aria-label="Right panel tabs"
           >
-            <div className="inline-flex min-w-max">
+            <div className="inline-flex min-w-max items-center h-full">
               {[
                 { key: 'chat', label: 'AI Chat' },
                 { key: 'assistant', label: 'AI Assistant' },
@@ -36,7 +36,7 @@
               ].map((tab) => (
                 <button
                   key={tab.key}
-                  className={`shrink-0 px-3 py-4 transition-all border-b-2 ${activeRightTab === tab.key ? 'text-violet-600 border-violet-600 bg-white' : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'}`}
+                  className={`shrink-0 px-3 py-2.5 transition-all border-b-2 ${activeRightTab === tab.key ? 'text-violet-600 dark:text-violet-400 border-violet-600 dark:border-violet-500 bg-white/70 dark:bg-zinc-800/70 font-semibold' : 'text-gray-500 dark:text-zinc-400 border-transparent hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-white/40 dark:hover:bg-zinc-800/40'}`}
                   onClick={() => {
                     if (tab.key === 'manageen') {
                       createManageenExperience();
