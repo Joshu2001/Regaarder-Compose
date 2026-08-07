@@ -9594,29 +9594,58 @@ export default function App() {
     const rowsCount = cells.length;
     const colsCount = cells[0]?.length || 0;
 
-    const title = (cells[0]?.[0] || 'Template Data Visualizer').toString().trim();
+    // 1. Detect title & header row
+    let headerRowIdx = 0;
+    for (let r = 0; r < Math.min(rowsCount, 5); r++) {
+      const nonCount = (cells[r] || []).filter(c => c !== undefined && c !== null && String(c).trim() !== '').length;
+      if (nonCount >= 2) {
+        headerRowIdx = r;
+        break;
+      }
+    }
 
-    let headerRowIdx = 2;
-    if (cells[2] && cells[2].some(c => c !== '')) {
-      headerRowIdx = 2;
-    } else if (cells[1] && cells[1].some(c => c !== '')) {
-      headerRowIdx = 1;
-    } else {
-      headerRowIdx = 0;
+    // Title inference (prefer row 0 cell 0 if row 0 is a banner, otherwise first non-empty text)
+    let title = 'Worksheet Visualizer';
+    if (cells[0]?.[0] && String(cells[0][0]).trim() !== '') {
+      title = String(cells[0][0]).trim();
+    } else if (cells[headerRowIdx]?.[0] && String(cells[headerRowIdx][0]).trim() !== '') {
+      title = String(cells[headerRowIdx][0]).trim();
     }
 
     const headers = [];
     for (let c = 0; c < colsCount; c++) {
-      headers.push(cells[headerRowIdx]?.[c] || `Col ${toColumnLabel(c)}`);
+      const rawHeader = cells[headerRowIdx]?.[c];
+      headers.push((rawHeader !== undefined && rawHeader !== null && String(rawHeader).trim() !== '') 
+        ? String(rawHeader).trim() 
+        : `Col ${toColumnLabel(c)}`);
     }
 
+    // 2. Isolate intersection cell (0,0) / (headerRowIdx, 0) and scan remaining columns/rows for types
     let labelColIdx = 0;
-    if (headerRowIdx === 2 && cells[3]?.[0] && String(cells[3][0]).startsWith('TASK-')) {
-      labelColIdx = 1;
-    } else if (cells[headerRowIdx + 1]?.[1] && typeof cells[headerRowIdx + 1][1] === 'string' && isNaN(Number(cells[headerRowIdx + 1][1]))) {
-      labelColIdx = 0;
+    let maxTextCount = -1;
+
+    for (let c = 0; c < colsCount; c++) {
+      let textCount = 0;
+      let numCount = 0;
+      for (let r = headerRowIdx + 1; r < rowsCount; r++) {
+        const val = cells[r]?.[c];
+        if (val !== undefined && val !== null && String(val).trim() !== '') {
+          const strVal = String(val).trim();
+          const cleanNum = Number(strVal.replace(/[\$,%\sxa-zA-Z]/g, ''));
+          if (!isNaN(cleanNum) && strVal !== '') {
+            numCount++;
+          } else {
+            textCount++;
+          }
+        }
+      }
+      if (textCount > numCount && textCount > maxTextCount) {
+        maxTextCount = textCount;
+        labelColIdx = c;
+      }
     }
 
+    // 3. Find all numerical columns
     const dataCols = [];
     for (let c = 0; c < colsCount; c++) {
       if (c === labelColIdx) continue;
@@ -9624,10 +9653,10 @@ export default function App() {
       let totalCount = 0;
       for (let r = headerRowIdx + 1; r < rowsCount; r++) {
         const rawVal = cells[r]?.[c];
-        if (rawVal !== undefined && rawVal !== null && rawVal !== '') {
+        if (rawVal !== undefined && rawVal !== null && String(rawVal).trim() !== '') {
           totalCount++;
-          const num = Number(String(rawVal).replace(/[\$,%\sxa-zA-Z]/g, ''));
-          if (!isNaN(num)) numericCount++;
+          const cleanNum = Number(String(rawVal).replace(/[\$,%\sxa-zA-Z]/g, ''));
+          if (!isNaN(cleanNum)) numericCount++;
         }
       }
       if (totalCount > 0 && numericCount / totalCount >= 0.4) {
@@ -9637,19 +9666,36 @@ export default function App() {
 
     const activeDataColIdx = (selectedColIdxOverride !== null && selectedColIdxOverride !== undefined)
       ? selectedColIdxOverride
-      : (dataCols.length > 0 ? dataCols[0] : 2);
+      : (dataCols.length > 0 ? dataCols[0] : (labelColIdx === 0 ? 1 : 0));
 
+    // 4. Extract labels and multi-series values dynamically
     const labels = [];
     const seriesData = [];
+    const allSeriesMap = dataCols.map(colIdx => ({
+      name: headers[colIdx] || `Series ${toColumnLabel(colIdx)}`,
+      colIdx,
+      data: []
+    }));
+
     for (let r = headerRowIdx + 1; r < rowsCount; r++) {
       const labelVal = cells[r]?.[labelColIdx];
-      const dataValRaw = cells[r]?.[activeDataColIdx];
+      const primaryDataValRaw = cells[r]?.[activeDataColIdx];
 
-      if ((labelVal !== undefined && labelVal !== '') || (dataValRaw !== undefined && dataValRaw !== '')) {
-        const cleanLabel = String(labelVal || `Row ${r}`).trim();
-        const numVal = Number(String(dataValRaw || 0).replace(/[\$,%\sxa-zA-Z]/g, '')) || 0;
+      const hasLabel = labelVal !== undefined && labelVal !== null && String(labelVal).trim() !== '';
+      const hasData = primaryDataValRaw !== undefined && primaryDataValRaw !== null && String(primaryDataValRaw).trim() !== '';
+
+      if (hasLabel || hasData) {
+        const cleanLabel = hasLabel ? String(labelVal).trim() : `Row ${r}`;
         labels.push(cleanLabel);
-        seriesData.push(numVal);
+
+        const primaryNum = Number(String(primaryDataValRaw || 0).replace(/[\$,%\sxa-zA-Z]/g, '')) || 0;
+        seriesData.push(primaryNum);
+
+        allSeriesMap.forEach(s => {
+          const rawV = cells[r]?.[s.colIdx];
+          const parsedV = Number(String(rawV || 0).replace(/[\$,%\sxa-zA-Z]/g, '')) || 0;
+          s.data.push(parsedV);
+        });
       }
     }
 
@@ -9667,6 +9713,7 @@ export default function App() {
       labelColIdx,
       labels,
       series: [{ name: headers[activeDataColIdx] || 'Value', data: seriesData }],
+      allSeries: allSeriesMap.length > 0 ? allSeriesMap : [{ name: headers[activeDataColIdx] || 'Value', data: seriesData }],
       stats: { total, avg, max, min, count: seriesData.length }
     };
   }, []);
@@ -9718,23 +9765,66 @@ export default function App() {
 
     const currentTheme = paletteColors[visualPalette] || paletteColors.default;
 
-    // Financial Model Live/Extracted Data computation
-    const yearsList = ['2026', '2027', '2028', '2029', '2030'];
-    const revenueGrowthValues = [2.0, 3.1, 4.9, 7.9, 12.0];
-    const revenueMixItems = [
-      { name: 'Enterprise Subscriptions', pct: 60, val: '$1.2M', color: currentTheme.fill },
-      { name: 'SMB & Self-Serve', pct: 25, val: '$450K', color: currentTheme.accent1 },
-      { name: 'Professional Services', pct: 15, val: '$350K', color: currentTheme.accent2 },
-    ];
-    const grossMarginValues = [78, 79, 78, 78, 76];
-    const ebitdaValues = [0.1, 0.4, 1.0, 2.1, 3.8];
-    const statusCounts = [
-      { name: 'Achieved', count: 2, color: '#10b981' },
-      { name: 'On Track', count: 3, color: '#0284c7' },
-      { name: 'Optimized', count: 3, color: '#8b5cf6' },
-      { name: 'Within Budget', count: 1, color: '#f97316' },
-      { name: 'Surpassed', count: 1, color: '#06b6d4' },
-    ];
+    // Dynamic Data Processing from sheet parsedData
+    const dynamicLabels = parsedData.labels || [];
+    const activeSeriesName = parsedData.series[0]?.name || 'Primary Metric';
+    const activeSeriesData = parsedData.series[0]?.data || [];
+    const allSeries = parsedData.allSeries || [];
+
+    // Helper for formatting values for UI badges and axis labels
+    const formatValue = (num) => {
+      if (Math.abs(num) >= 1e6) return `$${(num / 1e6).toFixed(1)}M`;
+      if (Math.abs(num) >= 1e3) return `$${(num / 1e3).toFixed(1)}K`;
+      return Number.isInteger(num) ? `${num}` : `${num.toFixed(1)}`;
+    };
+
+    // Calculate dynamic scaling min/max for SVG charts
+    const seriesMax = Math.max(...activeSeriesData, 1);
+    const seriesMin = Math.min(...activeSeriesData, 0);
+    const range = seriesMax - seriesMin || 1;
+
+    // Build dynamic points for SVG Area/Line charts (0-100 x 0-65 viewbox bounds)
+    const chartPoints = activeSeriesData.map((val, idx) => {
+      const step = dynamicLabels.length > 1 ? 76 / (dynamicLabels.length - 1) : 0;
+      const x = 18 + idx * step;
+      // y ranges between 12 (top) and 55 (bottom)
+      const y = 55 - ((val - seriesMin) / range) * 43;
+      return { x, y, val: formatValue(val), rawVal: val, label: dynamicLabels[idx] || `Item ${idx+1}` };
+    });
+
+    // Donut Mix items dynamically built from data rows or sub-series
+    const totalPrimary = activeSeriesData.reduce((a, b) => a + b, 0) || 1;
+    const donutItems = dynamicLabels.slice(0, 5).map((label, idx) => {
+      const val = activeSeriesData[idx] || 0;
+      const pct = Math.round((val / totalPrimary) * 100) || 0;
+      const colors = [currentTheme.fill, currentTheme.accent1, currentTheme.accent2, currentTheme.accent3, currentTheme.accent4];
+      return {
+        name: label,
+        pct,
+        val: formatValue(val),
+        color: colors[idx % colors.length]
+      };
+    });
+
+    // Multi-series cards dynamically built from numerical columns in sheet
+    const secondaryColsCards = allSeries.slice(0, 3).map((colSeries, sIdx) => {
+      const sMax = Math.max(...colSeries.data, 1);
+      const sMin = Math.min(...colSeries.data, 0);
+      const sRange = sMax - sMin || 1;
+      const sPoints = colSeries.data.map((val, idx) => {
+        const step = dynamicLabels.length > 1 ? 76 / (dynamicLabels.length - 1) : 0;
+        const x = 18 + idx * step;
+        const y = 55 - ((val - sMin) / sRange) * 43;
+        return { x, y, val: formatValue(val), yr: dynamicLabels[idx] };
+      });
+      return {
+        name: colSeries.name,
+        series: colSeries,
+        points: sPoints,
+        max: sMax,
+        min: sMin
+      };
+    });
 
     // Handle Native Chart Overlay Insertion onto Sheet Canvas
     const handleInsertNativeSheetChart = (customType = 'column', customTitle = 'Visual Chart') => {
@@ -9778,22 +9868,22 @@ export default function App() {
     };
 
     const handleInsertAllDashboardCharts = () => {
-      handleInsertNativeSheetChart('area', 'Revenue Growth (5 Years)');
-      handleInsertNativeSheetChart('column', 'Revenue by Year');
-      handleInsertNativeSheetChart('donut', 'Revenue Mix (Year 1)');
-      handleInsertNativeSheetChart('line', 'Gross Margin Trend');
+      handleInsertNativeSheetChart('area', `${activeSeriesName} Trend`);
+      handleInsertNativeSheetChart('column', `${activeSeriesName} Breakdown`);
+      handleInsertNativeSheetChart('donut', `${activeSeriesName} Distribution`);
     };
 
     // Export Handlers
     const handleExportCsv = () => {
-      let csvContent = 'data:text/csv;charset=utf-8,Year,Revenue Growth ($M),Gross Margin (%),EBITDA ($M)\n';
-      yearsList.forEach((y, i) => {
-        csvContent += `${y},${revenueGrowthValues[i]},${grossMarginValues[i]}%,${ebitdaValues[i]}\n`;
+      let csvContent = `data:text/csv;charset=utf-8,${headers.join(',')}\n`;
+      dynamicLabels.forEach((lbl, i) => {
+        const rowVals = allSeries.map(s => s.data[i] !== undefined ? s.data[i] : '');
+        csvContent += `${lbl},${rowVals.join(',')}\n`;
       });
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement('a');
       link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `dashboard_financial_model_data.csv`);
+      link.setAttribute('download', `dashboard_data_${activeSeriesName.toLowerCase().replace(/\s+/g, '_')}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -9825,24 +9915,26 @@ export default function App() {
           <div className="flex items-center gap-2">
             <TrendingUp size={18} className="text-violet-600 dark:text-violet-400 shrink-0" />
             <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
-              Live Visual Chart
+              Live Visual Chart ({activeSeriesName})
             </h3>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Timeframe Selector Dropdown */}
-            <div className="relative">
-              <select
-                value={timeframe}
-                onChange={(e) => setTimeframe(e.target.value)}
-                className="appearance-none bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200/80 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-[11px] font-semibold py-1 pl-2.5 pr-6 rounded-lg border border-slate-200/60 dark:border-zinc-700/80 focus:outline-none cursor-pointer transition-colors"
-              >
-                <option value="5 Years (2026-2030)">5 Years (2026-2030)</option>
-                <option value="3 Years (2026-2028)">3 Years (2026-2028)</option>
-                <option value="Year 1 (2026)">Year 1 (2026)</option>
-              </select>
-              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            </div>
+            {/* Column Data Selector Dropdown */}
+            {dataCols.length > 1 && (
+              <div className="relative">
+                <select
+                  value={activeDataColIdx}
+                  onChange={(e) => setSelectedDataColIdx(Number(e.target.value))}
+                  className="appearance-none bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200/80 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-[11px] font-semibold py-1 pl-2.5 pr-6 rounded-lg border border-slate-200/60 dark:border-zinc-700/80 focus:outline-none cursor-pointer transition-colors"
+                >
+                  {dataCols.map(cIdx => (
+                    <option key={cIdx} value={cIdx}>Column: {headers[cIdx] || `Col ${cIdx+1}`}</option>
+                  ))}
+                </select>
+                <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+            )}
 
             {/* Options Menu Button */}
             <div className="relative">
@@ -9889,18 +9981,18 @@ export default function App() {
 
         {/* Dashboard Main Scrollable Area */}
         <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 thin-scrollbar">
-          {/* 6 Multi-Chart Grid Layout */}
+          {/* Multi-Chart Grid Layout */}
           <div className="grid grid-cols-2 gap-3">
-            {/* Card 1: Revenue Growth (5 Years) */}
+            {/* Card 1: Primary Trend Line/Area Chart */}
             <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Revenue Growth (5 Years)</h4>
-                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(USD)</span>
+                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{activeSeriesName} Trend</h4>
+                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(Uploaded Sheet Data)</span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleInsertNativeSheetChart('area', 'Revenue Growth')}
+                  onClick={() => handleInsertNativeSheetChart('area', `${activeSeriesName} Trend`)}
                   className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
                   title="Insert to Sheet"
                 >
@@ -9912,7 +10004,7 @@ export default function App() {
               <div className="w-full h-32 relative">
                 <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible">
                   <defs>
-                    <linearGradient id="revGrowthGrad" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="dynamicTrendGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={currentTheme.fill} stopOpacity="0.35" />
                       <stop offset="100%" stopColor={currentTheme.fill} stopOpacity="0.0" />
                     </linearGradient>
@@ -9920,48 +10012,43 @@ export default function App() {
 
                   {/* Y-axis gridlines */}
                   <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="23" x2="96" y2="23" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="36" x2="96" y2="36" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="49" x2="96" y2="49" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="58" x2="96" y2="58" stroke="#e2e8f0" className="dark:stroke-zinc-700" />
+                  <line x1="12" y1="25" x2="96" y2="25" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="40" x2="96" y2="40" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="55" x2="96" y2="55" stroke="#e2e8f0" className="dark:stroke-zinc-700" />
 
                   {/* Y-axis Labels */}
-                  <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">$15M</text>
-                  <text x="2" y="25" fontSize="3.2" fill="#94a3b8" fontWeight="500">$12M</text>
-                  <text x="2" y="38" fontSize="3.2" fill="#94a3b8" fontWeight="500">$6M</text>
-                  <text x="2" y="51" fontSize="3.2" fill="#94a3b8" fontWeight="500">$3M</text>
-                  <text x="2" y="59" fontSize="3.2" fill="#94a3b8" fontWeight="500">$0</text>
+                  <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(seriesMax)}</text>
+                  <text x="2" y="34" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue((seriesMax + seriesMin) / 2)}</text>
+                  <text x="2" y="56" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(seriesMin)}</text>
 
                   {/* Area fill */}
-                  <path
-                    d="M 18 51.6 Q 37 47, 56 40 T 75 28 T 94 13 L 94 58 L 18 58 Z"
-                    fill="url(#revGrowthGrad)"
-                  />
+                  {chartPoints.length > 1 && (
+                    <path
+                      d={`M ${chartPoints[0].x} ${chartPoints[0].y} ` + chartPoints.map(p => `L ${p.x} ${p.y}`).join(' ') + ` L ${chartPoints[chartPoints.length - 1].x} 55 L ${chartPoints[0].x} 55 Z`}
+                      fill="url(#dynamicTrendGrad)"
+                    />
+                  )}
 
                   {/* Curve Path */}
-                  <path
-                    d="M 18 51.6 Q 37 47, 56 40 T 75 28 T 94 13"
-                    fill="none"
-                    stroke={currentTheme.fill}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
+                  {chartPoints.length > 1 && (
+                    <path
+                      d={`M ${chartPoints[0].x} ${chartPoints[0].y} ` + chartPoints.map(p => `L ${p.x} ${p.y}`).join(' ')}
+                      fill="none"
+                      stroke={currentTheme.fill}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  )}
 
                   {/* Data Points & Value Badges */}
-                  {[
-                    { x: 18, y: 51.6, val: '$2.0M', yr: '2026' },
-                    { x: 37, y: 47.5, val: '$3.1M', yr: '2027' },
-                    { x: 56, y: 40.2, val: '$4.9M', yr: '2028' },
-                    { x: 75, y: 28.5, val: '$7.9M', yr: '2029' },
-                    { x: 94, y: 13.0, val: '$12.0M', yr: '2030' },
-                  ].map((pt, i) => (
+                  {chartPoints.map((pt, i) => (
                     <g key={i}>
                       <circle cx={pt.x} cy={pt.y} r="2.2" fill="#ffffff" stroke={currentTheme.fill} strokeWidth="1.5" />
-                      <text x={pt.x} y={pt.y - 4} fontSize="3.4" fill="#1e293b" textAnchor="middle" fontWeight="bold" className="dark:fill-zinc-200">
+                      <text x={pt.x} y={pt.y - 4} fontSize="3.2" fill="#1e293b" textAnchor="middle" fontWeight="bold" className="dark:fill-zinc-200">
                         {pt.val}
                       </text>
-                      <text x={pt.x} y="63" fontSize="3.2" fill="#94a3b8" textAnchor="middle" fontWeight="500">
-                        {pt.yr}
+                      <text x={pt.x} y="62" fontSize="3.0" fill="#94a3b8" textAnchor="middle" fontWeight="500">
+                        {pt.label.length > 6 ? pt.label.slice(0, 5) + '…' : pt.label}
                       </text>
                     </g>
                   ))}
@@ -9969,16 +10056,16 @@ export default function App() {
               </div>
             </div>
 
-            {/* Card 2: Revenue by Year */}
+            {/* Card 2: Bar Breakdown */}
             <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Revenue by Year</h4>
-                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(USD)</span>
+                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{activeSeriesName} by Item</h4>
+                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(Column Comparison)</span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleInsertNativeSheetChart('column', 'Revenue by Year')}
+                  onClick={() => handleInsertNativeSheetChart('column', `${activeSeriesName} Breakdown`)}
                   className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
                   title="Insert to Sheet"
                 >
@@ -9989,60 +10076,54 @@ export default function App() {
               {/* Column Bar Chart SVG */}
               <div className="w-full h-32 relative">
                 <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible">
-                  {/* Gridlines */}
                   <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="23" x2="96" y2="23" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="36" x2="96" y2="36" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="49" x2="96" y2="49" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="58" x2="96" y2="58" stroke="#e2e8f0" className="dark:stroke-zinc-700" />
+                  <line x1="12" y1="25" x2="96" y2="25" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="40" x2="96" y2="40" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                  <line x1="12" y1="55" x2="96" y2="55" stroke="#e2e8f0" className="dark:stroke-zinc-700" />
 
-                  {/* Y-axis */}
-                  <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">$15M</text>
-                  <text x="2" y="25" fontSize="3.2" fill="#94a3b8" fontWeight="500">$12M</text>
-                  <text x="2" y="38" fontSize="3.2" fill="#94a3b8" fontWeight="500">$9M</text>
-                  <text x="2" y="51" fontSize="3.2" fill="#94a3b8" fontWeight="500">$3M</text>
-                  <text x="2" y="59" fontSize="3.2" fill="#94a3b8" fontWeight="500">$0</text>
+                  <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(seriesMax)}</text>
+                  <text x="2" y="34" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue((seriesMax + seriesMin) / 2)}</text>
+                  <text x="2" y="56" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(seriesMin)}</text>
 
                   {/* Bars */}
-                  {[
-                    { x: 16, h: 7, val: '$2.0M', yr: '2026' },
-                    { x: 32, h: 12, val: '$3.1M', yr: '2027' },
-                    { x: 48, h: 19, val: '$4.9M', yr: '2028' },
-                    { x: 64, h: 30, val: '$7.9M', yr: '2029' },
-                    { x: 80, h: 46, val: '$12.0M', yr: '2030' },
-                  ].map((bar, i) => (
-                    <g key={i}>
-                      <rect
-                        x={bar.x}
-                        y={58 - bar.h}
-                        width="8"
-                        height={bar.h}
-                        fill={currentTheme.fill}
-                        rx="1.5"
-                        className="hover:opacity-90 transition-opacity cursor-pointer"
-                      />
-                      <text x={bar.x + 4} y={58 - bar.h - 3} fontSize="3.2" fill="#1e293b" textAnchor="middle" fontWeight="bold" className="dark:fill-zinc-200">
-                        {bar.val}
-                      </text>
-                      <text x={bar.x + 4} y="63" fontSize="3.2" fill="#94a3b8" textAnchor="middle" fontWeight="500">
-                        {bar.yr}
-                      </text>
-                    </g>
-                  ))}
+                  {chartPoints.map((pt, i) => {
+                    const barH = Math.max(2, ((pt.rawVal - seriesMin) / range) * 40);
+                    const barWidth = Math.min(10, Math.max(4, 70 / chartPoints.length));
+                    const barX = pt.x - barWidth / 2;
+                    return (
+                      <g key={i}>
+                        <rect
+                          x={barX}
+                          y={55 - barH}
+                          width={barWidth}
+                          height={barH}
+                          fill={currentTheme.fill}
+                          rx="1.5"
+                          className="hover:opacity-90 transition-opacity cursor-pointer"
+                        />
+                        <text x={pt.x} y={55 - barH - 3} fontSize="3.0" fill="#1e293b" textAnchor="middle" fontWeight="bold" className="dark:fill-zinc-200">
+                          {pt.val}
+                        </text>
+                        <text x={pt.x} y="62" fontSize="3.0" fill="#94a3b8" textAnchor="middle" fontWeight="500">
+                          {pt.label.length > 6 ? pt.label.slice(0, 5) + '…' : pt.label}
+                        </text>
+                      </g>
+                    );
+                  })}
                 </svg>
               </div>
             </div>
 
-            {/* Card 3: Revenue Mix (Year 1) */}
+            {/* Card 3: Dynamic Donut Share */}
             <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Revenue Mix (Year 1)</h4>
-                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(USD)</span>
+                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{activeSeriesName} Share</h4>
+                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(Category Distribution)</span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleInsertNativeSheetChart('donut', 'Revenue Mix')}
+                  onClick={() => handleInsertNativeSheetChart('donut', `${activeSeriesName} Distribution`)}
                   className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
                   title="Insert to Sheet"
                 >
@@ -10054,24 +10135,20 @@ export default function App() {
               <div className="flex items-center gap-2 my-auto">
                 <div className="w-24 h-24 relative shrink-0">
                   <svg viewBox="0 0 100 100" className="w-full h-full">
-                    {/* Enterprise Subscriptions (60%) */}
-                    <circle cx="50" cy="50" r="34" fill="none" stroke={currentTheme.fill} strokeWidth="16" strokeDasharray="128 214" strokeDashoffset="0" />
-                    {/* SMB & Self-Serve (25%) */}
-                    <circle cx="50" cy="50" r="34" fill="none" stroke={currentTheme.accent1} strokeWidth="16" strokeDasharray="53 214" strokeDashoffset="-129" />
-                    {/* Professional Services (15%) */}
-                    <circle cx="50" cy="50" r="34" fill="none" stroke={currentTheme.accent2} strokeWidth="16" strokeDasharray="32 214" strokeDashoffset="-183" />
+                    <circle cx="50" cy="50" r="34" fill="none" stroke={currentTheme.fill} strokeWidth="16" strokeDasharray="150 214" strokeDashoffset="0" />
+                    <circle cx="50" cy="50" r="34" fill="none" stroke={currentTheme.accent1} strokeWidth="16" strokeDasharray="64 214" strokeDashoffset="-150" />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
-                    <span className="text-[11px] font-extrabold text-slate-900 dark:text-zinc-100 leading-tight">$2.0M</span>
-                    <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 leading-none">Total Revenue</span>
+                    <span className="text-[10px] font-extrabold text-slate-900 dark:text-zinc-100 leading-tight">{formatValue(stats.total)}</span>
+                    <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 leading-none">Total</span>
                   </div>
                 </div>
 
                 {/* Right Legend */}
-                <div className="flex-1 space-y-1.5">
-                  {revenueMixItems.map((item, idx) => (
+                <div className="flex-1 space-y-1.5 overflow-hidden">
+                  {donutItems.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between text-[10px]">
-                      <div className="flex items-center gap-1.5 truncate max-w-[100px]">
+                      <div className="flex items-center gap-1.5 truncate max-w-[90px]">
                         <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                         <span className="text-slate-600 dark:text-zinc-400 font-medium truncate">{item.name}</span>
                       </div>
@@ -10082,237 +10159,82 @@ export default function App() {
               </div>
             </div>
 
-            {/* Card 4: Gross Margin Trend */}
-            <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Gross Margin Trend</h4>
-                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(%)</span>
+            {/* Render secondary numerical column trends if available */}
+            {secondaryColsCards.map((scCard, scIdx) => (
+              <div key={scIdx} className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{scCard.name} Trend</h4>
+                    <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(Column {scIdx+2})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertNativeSheetChart('line', `${scCard.name} Trend`)}
+                    className="p-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                    title="Insert to Sheet"
+                  >
+                    <Plus size={13} />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleInsertNativeSheetChart('line', 'Gross Margin Trend')}
-                  className="p-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-                  title="Insert to Sheet"
-                >
-                  <Plus size={13} />
-                </button>
-              </div>
 
-              {/* Line Chart SVG */}
-              <div className="w-full h-32 relative">
-                <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible">
-                  {/* Gridlines */}
-                  <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="22" x2="96" y2="22" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="34" x2="96" y2="34" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="46" x2="96" y2="46" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="58" x2="96" y2="58" stroke="#e2e8f0" className="dark:stroke-zinc-700" />
+                <div className="w-full h-32 relative">
+                  <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible">
+                    <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                    <line x1="12" y1="32" x2="96" y2="32" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
+                    <line x1="12" y1="55" x2="96" y2="55" stroke="#e2e8f0" className="dark:stroke-zinc-700" />
 
-                  {/* Y-axis Labels */}
-                  <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">100%</text>
-                  <text x="2" y="24" fontSize="3.2" fill="#94a3b8" fontWeight="500">75%</text>
-                  <text x="2" y="36" fontSize="3.2" fill="#94a3b8" fontWeight="500">50%</text>
-                  <text x="2" y="48" fontSize="3.2" fill="#94a3b8" fontWeight="500">25%</text>
-                  <text x="2" y="59" fontSize="3.2" fill="#94a3b8" fontWeight="500">0%</text>
+                    <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(scCard.max)}</text>
+                    <text x="2" y="56" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(scCard.min)}</text>
 
-                  {/* Green Line Path */}
-                  <path
-                    d="M 18 20.5 L 37 19.2 L 56 20.5 L 75 20.5 L 94 22.8"
-                    fill="none"
-                    stroke="#10b981"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
+                    {scCard.points.length > 1 && (
+                      <path
+                        d={`M ${scCard.points[0].x} ${scCard.points[0].y} ` + scCard.points.map(p => `L ${p.x} ${p.y}`).join(' ')}
+                        fill="none"
+                        stroke={currentTheme.accent1}
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    )}
 
-                  {/* Points & Data Labels */}
-                  {[
-                    { x: 18, y: 20.5, val: '78%', yr: '2026' },
-                    { x: 37, y: 19.2, val: '79%', yr: '2027' },
-                    { x: 56, y: 20.5, val: '78%', yr: '2028' },
-                    { x: 75, y: 20.5, val: '78%', yr: '2029' },
-                    { x: 94, y: 22.8, val: '76%', yr: '2030' },
-                  ].map((pt, i) => (
-                    <g key={i}>
-                      <circle cx={pt.x} cy={pt.y} r="2.2" fill="#10b981" stroke="#ffffff" strokeWidth="1" />
-                      <text x={pt.x} y={pt.y - 4} fontSize="3.4" fill="#10b981" textAnchor="middle" fontWeight="bold">
-                        {pt.val}
-                      </text>
-                      <text x={pt.x} y="63" fontSize="3.2" fill="#94a3b8" textAnchor="middle" fontWeight="500">
-                        {pt.yr}
-                      </text>
-                    </g>
-                  ))}
-                </svg>
-              </div>
-            </div>
-
-            {/* Card 5: EBITDA Trend */}
-            <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">EBITDA Trend</h4>
-                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(USD)</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleInsertNativeSheetChart('area', 'EBITDA Trend')}
-                  className="p-1 text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
-                  title="Insert to Sheet"
-                >
-                  <Plus size={13} />
-                </button>
-              </div>
-
-              {/* Cyan Area Chart SVG */}
-              <div className="w-full h-32 relative">
-                <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible">
-                  <defs>
-                    <linearGradient id="ebitdaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Gridlines */}
-                  <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="22" x2="96" y2="22" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="34" x2="96" y2="34" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="46" x2="96" y2="46" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
-                  <line x1="12" y1="58" x2="96" y2="58" stroke="#e2e8f0" className="dark:stroke-zinc-700" />
-
-                  {/* Y-axis Labels */}
-                  <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">$5M</text>
-                  <text x="2" y="24" fontSize="3.2" fill="#94a3b8" fontWeight="500">$3M</text>
-                  <text x="2" y="36" fontSize="3.2" fill="#94a3b8" fontWeight="500">$2M</text>
-                  <text x="2" y="48" fontSize="3.2" fill="#94a3b8" fontWeight="500">$1M</text>
-                  <text x="2" y="59" fontSize="3.2" fill="#94a3b8" fontWeight="500">$0</text>
-
-                  {/* Gradient Area Fill */}
-                  <path
-                    d="M 18 56.5 Q 37 53, 56 46 T 75 33 T 94 15 L 94 58 L 18 58 Z"
-                    fill="url(#ebitdaGrad)"
-                  />
-
-                  {/* Line */}
-                  <path
-                    d="M 18 56.5 Q 37 53, 56 46 T 75 33 T 94 15"
-                    fill="none"
-                    stroke="#06b6d4"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-
-                  {/* Points */}
-                  {[
-                    { x: 18, y: 56.5, val: '$0.1M', yr: '2026' },
-                    { x: 37, y: 53.2, val: '$0.4M', yr: '2027' },
-                    { x: 56, y: 46.0, val: '$1.0M', yr: '2028' },
-                    { x: 75, y: 33.0, val: '$2.1M', yr: '2029' },
-                    { x: 94, y: 15.0, val: '$3.8M', yr: '2030' },
-                  ].map((pt, i) => (
-                    <g key={i}>
-                      <circle cx={pt.x} cy={pt.y} r="2.2" fill="#ffffff" stroke="#06b6d4" strokeWidth="1.5" />
-                      <text x={pt.x} y={pt.y - 4} fontSize="3.4" fill="#0891b2" textAnchor="middle" fontWeight="bold">
-                        {pt.val}
-                      </text>
-                      <text x={pt.x} y="63" fontSize="3.2" fill="#94a3b8" textAnchor="middle" fontWeight="500">
-                        {pt.yr}
-                      </text>
-                    </g>
-                  ))}
-                </svg>
-              </div>
-            </div>
-
-            {/* Card 6: Status Overview */}
-            <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Status Overview</h4>
-                <button
-                  type="button"
-                  onClick={() => handleInsertNativeSheetChart('donut', 'Status Overview')}
-                  className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
-                  title="Insert to Sheet"
-                >
-                  <Plus size={13} />
-                </button>
-              </div>
-
-              {/* Status Donut Chart & Legend */}
-              <div className="flex items-center gap-2 my-auto">
-                <div className="w-24 h-24 relative shrink-0">
-                  <svg viewBox="0 0 100 100" className="w-full h-full">
-                    {/* Achieved (2 - 20%) */}
-                    <circle cx="50" cy="50" r="34" fill="none" stroke="#10b981" strokeWidth="16" strokeDasharray="42 214" strokeDashoffset="0" />
-                    {/* On Track (3 - 30%) */}
-                    <circle cx="50" cy="50" r="34" fill="none" stroke="#0284c7" strokeWidth="16" strokeDasharray="64 214" strokeDashoffset="-43" />
-                    {/* Optimized (3 - 30%) */}
-                    <circle cx="50" cy="50" r="34" fill="none" stroke="#8b5cf6" strokeWidth="16" strokeDasharray="64 214" strokeDashoffset="-108" />
-                    {/* Within Budget (1 - 10%) */}
-                    <circle cx="50" cy="50" r="34" fill="none" stroke="#f97316" strokeWidth="16" strokeDasharray="21 214" strokeDashoffset="-173" />
-                    {/* Surpassed (1 - 10%) */}
-                    <circle cx="50" cy="50" r="34" fill="none" stroke="#06b6d4" strokeWidth="16" strokeDasharray="21 214" strokeDashoffset="-195" />
+                    {scCard.points.map((pt, i) => (
+                      <g key={i}>
+                        <circle cx={pt.x} cy={pt.y} r="2.2" fill={currentTheme.accent1} stroke="#ffffff" strokeWidth="1" />
+                        <text x={pt.x} y={pt.y - 4} fontSize="3.2" fill="#10b981" textAnchor="middle" fontWeight="bold">
+                          {pt.val}
+                        </text>
+                      </g>
+                    ))}
                   </svg>
                 </div>
-
-                {/* Legend List */}
-                <div className="flex-1 space-y-1">
-                  {statusCounts.map((st, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-[10px]">
-                      <div className="flex items-center gap-1.5 truncate max-w-[100px]">
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: st.color }} />
-                        <span className="text-slate-600 dark:text-zinc-400 font-medium truncate">{st.name}</span>
-                      </div>
-                      <span className="font-bold text-slate-800 dark:text-zinc-200 ml-1">{st.count}</span>
-                    </div>
-                  ))}
-                </div>
               </div>
-            </div>
+            ))}
           </div>
 
-          {/* Bottom Financial KPI Summary Row */}
+          {/* Dynamic KPI Summary Row based on uploaded data */}
           <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs">
-            <div className="grid grid-cols-5 gap-2 text-center divide-x divide-slate-100 dark:divide-zinc-800">
-              {/* Total Revenue */}
+            <div className="grid grid-cols-4 gap-2 text-center divide-x divide-slate-100 dark:divide-zinc-800">
               <div className="pr-1 text-left">
-                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">Total Revenue</span>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">$12.0M</span>
-                <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 block">(2030)</span>
-                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">↑ 45% CAGR</span>
+                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">Total ({activeSeriesName})</span>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">{formatValue(stats.total)}</span>
+                <span className="text-[8px] font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5 block">{stats.count} Data Rows</span>
               </div>
 
-              {/* Gross Margin */}
               <div className="px-1 text-left">
-                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">Gross Margin</span>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">78%</span>
-                <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 block">(Avg)</span>
-                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">On Target</span>
+                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">Average</span>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">{formatValue(stats.avg)}</span>
+                <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 block">Mean value</span>
               </div>
 
-              {/* EBITDA Margin */}
               <div className="px-1 text-left">
-                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">EBITDA Margin</span>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">32%</span>
-                <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 block">(2030)</span>
-                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">↑ 24pp vs 2026</span>
+                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">Peak Max</span>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">{formatValue(stats.max)}</span>
+                <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 block">Highest point</span>
               </div>
 
-              {/* ARR Target */}
-              <div className="px-1 text-left">
-                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">ARR Target</span>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">$10.0M</span>
-                <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 block">(Goal)</span>
-                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">120% of Target</span>
-              </div>
-
-              {/* OpEx */}
               <div className="pl-1 text-left">
-                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">OpEx</span>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">$5.2M</span>
-                <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 block">(2026)</span>
-                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">Within Plan</span>
+                <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">Minimum</span>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 block font-mono mt-0.5">{formatValue(stats.min)}</span>
+                <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 block">Lowest point</span>
               </div>
             </div>
           </div>
