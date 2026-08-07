@@ -209,11 +209,14 @@ export default function TemplateChartVisualizer({
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setExpandedCard(null);
+      if (e.key === 'Escape') {
+        setExpandedCard(null);
+        setIsCustomizeModalOpen(false);
+      }
     };
-    if (expandedCard) window.addEventListener('keydown', handleKeyDown);
+    if (expandedCard || isCustomizeModalOpen) window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [expandedCard]);
+  }, [expandedCard, isCustomizeModalOpen]);
 
   // Presets
   const [customPresets, setCustomPresets] = useState(() => {
@@ -1110,25 +1113,28 @@ export default function TemplateChartVisualizer({
 
       {/* Executive Customize Chart Configuration Modal */}
       {isCustomizeModalOpen && createPortal(
-        <div className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 w-full max-w-lg p-6 space-y-5 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3.5">
+        <div
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsCustomizeModalOpen(false);
+            }
+          }}
+          className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
+        >
+          <div
+            onPointerDown={(e) => e.stopPropagation()}
+            className="bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 dark:border-zinc-700/50 w-full max-w-lg p-6 space-y-5 animate-in zoom-in-95 duration-150 cursor-default"
+          >
+            <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-800/80 pb-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-950/60 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-violet-100/80 dark:bg-violet-950/60 flex items-center justify-center">
                   <Sliders size={18} className="text-violet-600 dark:text-violet-400" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Customize Chart</h3>
-                  <p className="text-[11px] text-slate-400 dark:text-zinc-500">Configure visual themes, custom colors, gradients, line styles, and density</p>
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400">Configure visual themes, custom colors, gradients, line styles, and density</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsCustomizeModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-md cursor-pointer"
-              >
-                <X size={18} />
-              </button>
             </div>
 
             {/* Progressive Tab Bar - Rule 3 Compliance (Slightly rounded rectangles) */}
