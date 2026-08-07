@@ -182,7 +182,7 @@ export default function TemplateChartVisualizer({
   const [expandedStrokeWidth, setExpandedStrokeWidth] = useState(2.5);
   const [expandedColor, setExpandedColor] = useState('#7c3aed');
   const [cardTypeOverrides, setCardTypeOverrides] = useState({});
-  const [cardTitles, setCardTitles] = useState({});
+  const optionsMenuRef = useRef(null);
   // Zoom & Interactive Label Dragging
   const [zoomLevel, setZoomLevel] = useState(100);
   const [labelOffsets, setLabelOffsets] = useState({});
