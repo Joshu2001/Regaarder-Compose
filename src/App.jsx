@@ -9674,6 +9674,8 @@ export default function App() {
   const TemplateChartVisualizer = ({
     activeSheetGrid,
     activeSheetId,
+    activeSheetGridRaw,
+    updateSheetSettings,
     sheetsThemePalette = 'default',
     onClose,
     templateChartType = 'column',
@@ -9681,6 +9683,9 @@ export default function App() {
     showToast
   }) => {
     const [selectedDataColIdx, setSelectedDataColIdx] = useState(null);
+    const [visualPalette, setVisualPalette] = useState(sheetsThemePalette || 'default');
+    const [showDataLabels, setShowDataLabels] = useState(true);
+    const [isExpandModalOpen, setIsExpandModalOpen] = useState(false);
 
     const parsedData = useMemo(() => {
       return extractTemplateChartData(activeSheetGrid, selectedDataColIdx);
@@ -9698,13 +9703,13 @@ export default function App() {
       );
     }
 
-    const { title, headers, dataCols, activeDataColIdx, labels, series, stats } = parsedData;
+    const { title, headers, dataCols, activeDataColIdx, labelColIdx, headerRowIdx, labels, series, stats } = parsedData;
 
     const chartTypes = [
       { id: 'column', label: 'Column', icon: BarChart2 },
       { id: 'line', label: 'Line', icon: TrendingUp },
       { id: 'area', label: 'Area', icon: Sparkles },
-      { id: 'bar', label: 'Bar', icon: LayoutGrid },
+      { id: 'bar', label: 'Bar', icon: BarChartHorizontal },
       { id: 'pie', label: 'Pie', icon: PieChart },
       { id: 'donut', label: 'Donut', icon: PieChart },
     ];
@@ -9715,9 +9720,83 @@ export default function App() {
       obsidian: { fill: '#d4af37', stroke: '#b8860b' },
       nordic: { fill: '#52525b', stroke: '#3f3f46' },
       indigo: { fill: '#7c3aed', stroke: '#6d28d9' },
+      amber: { fill: '#d97706', stroke: '#b45309' },
+      purple: { fill: '#9333ea', stroke: '#7e22ce' },
     };
 
-    const currentTheme = paletteColors[sheetsThemePalette] || paletteColors.default;
+    const currentTheme = paletteColors[visualPalette] || paletteColors.default;
+
+    // Handle Native Chart Insertion directly into the active spreadsheet worksheet grid
+    const handleInsertNativeSheetChart = () => {
+      if (!updateSheetSettings || !activeSheetId) return;
+      const targetRawGrid = activeSheetGridRaw || {};
+      const newOverlays = [...(targetRawGrid.overlays || [])];
+      
+      const dataRange = {
+        startRow: (headerRowIdx || 0) + 1,
+        endRow: (headerRowIdx || 0) + labels.length + 1,
+        startCol: (labelColIdx || 0) + 1,
+        endCol: (activeDataColIdx || 0) + 1
+      };
+
+      const newOverlay = {
+        id: 'chart-overlay-' + Date.now(),
+        type: 'chart',
+        chartType: templateChartType || 'column',
+        dataRange,
+        chartData: { labels, series },
+        row: 2,
+        col: 5,
+        x: 180,
+        y: 60,
+        width: 440,
+        height: 280,
+        fillColor: currentTheme.fill,
+        strokeColor: currentTheme.stroke,
+        showLegend: true,
+        showAxes: true,
+        showLabels: showDataLabels,
+        chartTheme: 'light'
+      };
+
+      newOverlays.push(newOverlay);
+      updateSheetSettings(activeSheetId, { overlays: newOverlays });
+      if (typeof showToast === 'function') {
+        showToast('Native live-synced chart inserted onto active worksheet grid!');
+      }
+    };
+
+    // Handle Chart Exporting (SVG & CSV)
+    const handleExportSvg = () => {
+      const svgEl = document.getElementById('template-visual-chart-svg');
+      if (!svgEl) return;
+      const svgData = new XMLSerializer().serializeToString(svgEl);
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = svgUrl;
+      downloadLink.download = `${title.toLowerCase().replace(/\s+/g, '_')}_chart.svg`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      if (typeof showToast === 'function') showToast('Chart exported as SVG image!');
+    };
+
+    const handleExportCsv = () => {
+      let csvContent = 'data:text/csv;charset=utf-8,Label,Value\n';
+      labels.forEach((label, idx) => {
+        const val = series[0]?.data?.[idx] || 0;
+        csvContent += `"${label.replace(/"/g, '""')}",${val}\n`;
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `${title.toLowerCase().replace(/\s+/g, '_')}_data.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      if (typeof showToast === 'function') showToast('Chart data exported as CSV!');
+    };
 
     return (
       <div className="w-80 xl:w-[400px] shrink-0 border-l border-gray-200/80 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-[#121214] flex flex-col h-full overflow-hidden transition-all duration-200 z-20">
@@ -9740,19 +9819,29 @@ export default function App() {
               </p>
             </div>
           </div>
-          {onClose && (
+          <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => setIsExpandModalOpen(true)}
               className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
-              title="Close Visual Chart Panel"
+              title="Expand Chart View"
             >
-              <X size={16} />
+              <Maximize2 size={15} />
             </button>
-          )}
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                title="Close Visual Chart Panel"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Main Body */}
+        {/* Main Body with Thin Scrollbar */}
         <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 thin-scrollbar">
           {/* Quick KPI Stat Cards */}
           <div className="grid grid-cols-2 gap-2">
@@ -9768,6 +9857,27 @@ export default function App() {
                 {stats.avg > 1000 ? `$${Math.round(stats.avg).toLocaleString()}` : stats.avg.toFixed(1)}
               </div>
             </div>
+          </div>
+
+          {/* Primary Action Button: Insert Native Live Sync Chart on Spreadsheet */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleInsertNativeSheetChart}
+              className="flex-1 py-2 px-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-[0.98]"
+              title="Embed live-synced floating chart overlay onto the sheet grid"
+            >
+              <BarChart2 size={15} />
+              <span>Insert Native Chart</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportSvg}
+              className="p-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 rounded-xl transition-colors shadow-2xs"
+              title="Export SVG Image"
+            >
+              <Download size={15} />
+            </button>
           </div>
 
           {/* Controls Bar: Column Selector & Chart Types */}
@@ -9815,6 +9925,25 @@ export default function App() {
                 })}
               </div>
             </div>
+
+            {/* Color Palette Selector */}
+            <div>
+              <div className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Accent Palette</div>
+              <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar pb-0.5">
+                {Object.keys(paletteColors).map(pKey => (
+                  <button
+                    key={pKey}
+                    type="button"
+                    onClick={() => setVisualPalette(pKey)}
+                    className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${visualPalette === pKey ? 'ring-2 ring-violet-500 ring-offset-1 scale-105' : 'hover:scale-105 opacity-80'}`}
+                    style={{ backgroundColor: paletteColors[pKey].fill }}
+                    title={`Palette: ${pKey}`}
+                  >
+                    {visualPalette === pKey && <Check size={12} className="text-white drop-shadow-xs" />}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Dynamic Interactive SVG Chart View */}
@@ -9823,43 +9952,122 @@ export default function App() {
               <h4 className="text-[11px] font-bold text-slate-700 dark:text-zinc-200 uppercase tracking-wider truncate max-w-[200px]">
                 {headers[activeDataColIdx] || 'Metric Value'}
               </h4>
-              <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 shrink-0">
-                {labels.length} Items
-              </span>
+              <button
+                type="button"
+                onClick={() => setShowDataLabels(!showDataLabels)}
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border transition-colors ${showDataLabels ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800' : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'}`}
+              >
+                Labels: {showDataLabels ? 'On' : 'Off'}
+              </button>
             </div>
 
-            <div className="w-full h-48 bg-slate-50/50 dark:bg-zinc-950/40 rounded-xl p-2 border border-slate-100 dark:border-zinc-800/60 flex items-center justify-center relative overflow-hidden">
-              <svg viewBox="0 0 100 100" className="w-full h-full">
+            <div className="w-full h-52 bg-slate-50/50 dark:bg-zinc-950/40 rounded-xl p-2 border border-slate-100 dark:border-zinc-800/60 flex items-center justify-center relative overflow-hidden">
+              <svg id="template-visual-chart-svg" viewBox="0 0 100 100" className="w-full h-full">
                 {renderDynamicChart(
                   templateChartType || 'column',
                   { labels, series },
                   currentTheme.fill,
                   currentTheme.stroke,
-                  true
+                  showDataLabels
                 )}
               </svg>
             </div>
 
-            {/* Breakdown List */}
-            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 space-y-1 max-h-32 overflow-y-auto thin-scrollbar">
-              {labels.slice(0, 8).map((label, idx) => {
-                const val = series[0]?.data?.[idx] || 0;
-                const pct = stats.total > 0 ? ((val / stats.total) * 100).toFixed(1) : 0;
-                return (
-                  <div key={idx} className="flex items-center justify-between text-[11px] py-0.5 px-1 rounded hover:bg-slate-50 dark:hover:bg-zinc-800/50">
-                    <span className="text-slate-600 dark:text-zinc-400 font-medium truncate max-w-[160px]">{label}</span>
-                    <div className="flex items-center gap-2 font-mono">
-                      <span className="font-semibold text-slate-800 dark:text-zinc-200">
-                        {val > 1000 ? `$${Math.round(val).toLocaleString()}` : val}
-                      </span>
-                      <span className="text-[10px] text-slate-400 dark:text-zinc-500 w-9 text-right">{pct}%</span>
+            {/* Complete Scrollable Data Breakdown List */}
+            <div className="pt-2.5 border-t border-slate-100 dark:border-zinc-800">
+              <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
+                <span>Data Item ({labels.length})</span>
+                <span>Value / %</span>
+              </div>
+              <div className="space-y-1 max-h-48 overflow-y-auto thin-scrollbar pr-1.5">
+                {labels.map((label, idx) => {
+                  const val = series[0]?.data?.[idx] || 0;
+                  const pct = stats.total > 0 ? ((val / stats.total) * 100).toFixed(1) : 0;
+                  return (
+                    <div key={idx} className="flex items-center justify-between text-[11px] py-1 px-1.5 rounded-lg hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 transition-colors">
+                      <span className="text-slate-700 dark:text-zinc-300 font-medium truncate max-w-[170px]">{label}</span>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="font-semibold text-slate-800 dark:text-zinc-100">
+                          {val > 1000 ? `$${Math.round(val).toLocaleString()}` : val.toLocaleString()}
+                        </span>
+                        <span className="text-[10px] font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/60 px-1.5 py-0.5 rounded-md border border-violet-100 dark:border-violet-900 w-12 text-right">
+                          {pct}%
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* High-Res Expand Modal View */}
+        {isExpandModalOpen && (
+          <div className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-zinc-800 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-zinc-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                    <BarChart2 size={22} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{title}</h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">High-Resolution Live Chart View & Analysis</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleExportCsv}
+                    className="px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                  >
+                    <Download size={14} />
+                    <span>Export CSV</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsExpandModalOpen(false)}
+                    className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 thin-scrollbar">
+                <div className="w-full h-80 bg-slate-50 dark:bg-zinc-950/60 rounded-2xl p-4 border border-slate-200/80 dark:border-zinc-800 flex items-center justify-center">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    {renderDynamicChart(
+                      templateChartType || 'column',
+                      { labels, series },
+                      currentTheme.fill,
+                      currentTheme.stroke,
+                      true
+                    )}
+                  </svg>
+                </div>
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
+                    <span className="text-xs font-semibold text-slate-400 uppercase">Total Sum</span>
+                    <p className="text-lg font-bold text-slate-900 dark:text-zinc-100 font-mono mt-1">${stats.total.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
+                    <span className="text-xs font-semibold text-slate-400 uppercase">Average</span>
+                    <p className="text-lg font-bold text-slate-900 dark:text-zinc-100 font-mono mt-1">${stats.avg.toFixed(2)}</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
+                    <span className="text-xs font-semibold text-slate-400 uppercase">Maximum</span>
+                    <p className="text-lg font-bold text-slate-900 dark:text-zinc-100 font-mono mt-1">${stats.max.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
+                    <span className="text-xs font-semibold text-slate-400 uppercase">Minimum</span>
+                    <p className="text-lg font-bold text-slate-900 dark:text-zinc-100 font-mono mt-1">${stats.min.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
