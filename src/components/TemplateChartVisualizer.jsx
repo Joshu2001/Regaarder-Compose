@@ -202,7 +202,20 @@ export default function TemplateChartVisualizer({
     try { return JSON.parse(localStorage.getItem('regaarder_dashboard_presets') || '[]'); }
     catch { return []; }
   });
-  const [newPresetName, setNewPresetName] = useState('');
+  // Custom Color, Gradient, Glassmorphism & Chart Line Customization
+  const [customHexColor, setCustomHexColor] = useState('#7c3aed');
+  const [useCustomHex, setUseCustomHex] = useState(false);
+  const [gradientStart, setGradientStart] = useState('#7c3aed');
+  const [gradientEnd, setGradientEnd] = useState('#06b6d4');
+  const [useGradient, setUseGradient] = useState(false);
+  const [enableGlassmorphism, setEnableGlassmorphism] = useState(false);
+
+  // Chart Stroke & Line Editing Controls
+  const [strokeWidth, setStrokeWidth] = useState(2.5);
+  const [strokeDashStyle, setStrokeDashStyle] = useState('solid'); // 'solid', 'dashed', 'dotted'
+  const [curveType, setCurveType] = useState('smooth'); // 'smooth', 'straight'
+  const [fillOpacity, setFillOpacity] = useState(0.25);
+  const [hoveredCardId, setHoveredCardId] = useState(null);
 
   const parsedData = useMemo(() => {
     return extractTemplateChartData(activeSheetGrid, selectedDataColIdx);
@@ -221,6 +234,42 @@ export default function TemplateChartVisualizer({
   };
 
   const currentTheme = paletteColors[visualPalette] || paletteColors.default;
+  const activeColor = useCustomHex ? customHexColor : currentTheme.fill;
+
+  const getDashArray = () => {
+    if (strokeDashStyle === 'dashed') return '6 4';
+    if (strokeDashStyle === 'dotted') return '2 3';
+    return 'none';
+  };
+
+  const getPathD = (pts, isClosed = false, maxY = 55) => {
+    if (!pts || pts.length === 0) return '';
+    if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+
+    if (curveType === 'straight') {
+      const lineD = `M ${pts[0].x} ${pts[0].y} ` + pts.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ');
+      return isClosed ? lineD + ` L ${pts[pts.length - 1].x} ${maxY} L ${pts[0].x} ${maxY} Z` : lineD;
+    }
+
+    let d = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i === 0 ? 0 : i - 1];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2 < pts.length ? i + 2 : i + 1];
+
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+      d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x} ${p2.y}`;
+    }
+    if (isClosed) {
+      d += ` L ${pts[pts.length - 1].x} ${maxY} L ${pts[0].x} ${maxY} Z`;
+    }
+    return d;
+  };
 
   const dynamicLabels = parsedData?.labels || [];
   const activeSeriesName = parsedData?.series?.[0]?.name || 'Primary Metric';
@@ -590,28 +639,46 @@ export default function TemplateChartVisualizer({
 
       {/* Dashboard Main Scrollable Area */}
       <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 thin-scrollbar">
+        {/* SVG Global Definitions for Custom Fills & Gradients */}
+        <svg className="absolute w-0 h-0 overflow-hidden" aria-hidden="true">
+          <defs>
+            <linearGradient id="customLinearGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={useGradient ? gradientStart : activeColor} stopOpacity={fillOpacity + 0.15} />
+              <stop offset="100%" stopColor={useGradient ? gradientEnd : activeColor} stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+        </svg>
+
         {/* Multi-Chart Dynamic Grid Layout */}
-        <div className={`grid gap-3 ${gridColsCount === 1 ? 'grid-cols-1' : gridColsCount === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <div className={`grid gap-3.5 ${gridColsCount === 1 ? 'grid-cols-1' : gridColsCount === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
           {/* Card 1: Primary Trend Chart */}
-          <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3.5 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between group relative">
+          <div
+            onMouseEnter={() => setHoveredCardId('card-trend')}
+            onMouseLeave={() => setHoveredCardId(null)}
+            className={`rounded-xl p-3.5 transition-all duration-200 flex flex-col justify-between group relative ${
+              enableGlassmorphism
+                ? 'backdrop-blur-md bg-white/70 dark:bg-zinc-900/70 border border-white/40 dark:border-zinc-700/50 shadow-lg'
+                : 'bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 shadow-2xs hover:shadow-md'
+            } ${hoveredCardId === 'card-trend' ? 'scale-[1.015] z-10 border-violet-500/40' : ''}`}
+          >
             <div className="flex items-center justify-between mb-2">
               <div>
                 <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{activeSeriesName} Trend</h4>
                 <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(Uploaded Sheet Data)</span>
               </div>
-              <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
                 <button
                   type="button"
                   onClick={() => setExpandedCard({ type: 'area', title: `${activeSeriesName} Trend`, points: chartPoints, max: seriesMax, min: seriesMin })}
-                  className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer"
-                  title="Maximize / Focus"
+                  className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
+                  title="Hover Zoom / Inspect"
                 >
                   <Maximize2 size={13} />
                 </button>
                 <button
                   type="button"
                   onClick={() => handleInsertNativeSheetChart('area', `${activeSeriesName} Trend`)}
-                  className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 cursor-pointer"
+                  className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
                   title="Insert to Sheet"
                 >
                   <Plus size={13} />
@@ -620,15 +687,8 @@ export default function TemplateChartVisualizer({
             </div>
 
             {/* Area Line Chart SVG */}
-            <div className="w-full h-32 relative">
-              <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible">
-                <defs>
-                  <linearGradient id="dynamicTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={currentTheme.fill} stopOpacity="0.35" />
-                    <stop offset="100%" stopColor={currentTheme.fill} stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-
+            <div className="w-full h-32 relative overflow-hidden group/zoom">
+              <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible transition-transform duration-300 group-hover/zoom:scale-[1.03]">
                 {showGridlines && (
                   <>
                     <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
@@ -648,24 +708,25 @@ export default function TemplateChartVisualizer({
 
                 {chartPoints.length > 1 && (
                   <path
-                    d={`M ${chartPoints[0].x} ${chartPoints[0].y} ` + chartPoints.map(p => `L ${p.x} ${p.y}`).join(' ') + ` L ${chartPoints[chartPoints.length - 1].x} 55 L ${chartPoints[0].x} 55 Z`}
-                    fill="url(#dynamicTrendGrad)"
+                    d={getPathD(chartPoints, true, 55)}
+                    fill="url(#customLinearGrad)"
                   />
                 )}
 
                 {chartPoints.length > 1 && (
                   <path
-                    d={`M ${chartPoints[0].x} ${chartPoints[0].y} ` + chartPoints.map(p => `L ${p.x} ${p.y}`).join(' ')}
+                    d={getPathD(chartPoints, false)}
                     fill="none"
-                    stroke={currentTheme.fill}
-                    strokeWidth="2"
+                    stroke={activeColor}
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={getDashArray()}
                     strokeLinecap="round"
                   />
                 )}
 
                 {chartPoints.map((pt, i) => (
                   <g key={i} className="cursor-pointer group/pt">
-                    <circle cx={pt.x} cy={pt.y} r="2.2" fill="#ffffff" stroke={currentTheme.fill} strokeWidth="1.5" className="hover:r-3 transition-all" />
+                    <circle cx={pt.x} cy={pt.y} r="2.2" fill="#ffffff" stroke={activeColor} strokeWidth="1.5" className="hover:r-3 transition-all" />
                     {showLabels && (
                       <text x={pt.x} y={pt.y - 4} fontSize="3.2" fill="#1e293b" textAnchor="middle" fontWeight="bold" className="dark:fill-zinc-200">
                         {pt.val}
@@ -681,25 +742,33 @@ export default function TemplateChartVisualizer({
           </div>
 
           {/* Card 2: Bar Breakdown */}
-          <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3.5 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between group relative">
+          <div
+            onMouseEnter={() => setHoveredCardId('card-bar')}
+            onMouseLeave={() => setHoveredCardId(null)}
+            className={`rounded-xl p-3.5 transition-all duration-200 flex flex-col justify-between group relative ${
+              enableGlassmorphism
+                ? 'backdrop-blur-md bg-white/70 dark:bg-zinc-900/70 border border-white/40 dark:border-zinc-700/50 shadow-lg'
+                : 'bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 shadow-2xs hover:shadow-md'
+            } ${hoveredCardId === 'card-bar' ? 'scale-[1.015] z-10 border-violet-500/40' : ''}`}
+          >
             <div className="flex items-center justify-between mb-2">
               <div>
                 <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{activeSeriesName} by Item</h4>
                 <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">(Column Comparison)</span>
               </div>
-              <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
                 <button
                   type="button"
                   onClick={() => setExpandedCard({ type: 'column', title: `${activeSeriesName} by Item`, points: chartPoints, max: seriesMax, min: seriesMin })}
-                  className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer"
-                  title="Maximize / Focus"
+                  className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
+                  title="Hover Zoom / Inspect"
                 >
                   <Maximize2 size={13} />
                 </button>
                 <button
                   type="button"
                   onClick={() => handleInsertNativeSheetChart('column', `${activeSeriesName} Breakdown`)}
-                  className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 cursor-pointer"
+                  className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
                   title="Insert to Sheet"
                 >
                   <Plus size={13} />
@@ -708,8 +777,8 @@ export default function TemplateChartVisualizer({
             </div>
 
             {/* Column Bar Chart SVG */}
-            <div className="w-full h-32 relative">
-              <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible">
+            <div className="w-full h-32 relative overflow-hidden group/zoom">
+              <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible transition-transform duration-300 group-hover/zoom:scale-[1.03]">
                 {showGridlines && (
                   <>
                     <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
@@ -738,7 +807,7 @@ export default function TemplateChartVisualizer({
                         y={55 - barH}
                         width={barWidth}
                         height={barH}
-                        fill={currentTheme.fill}
+                        fill={useGradient ? 'url(#customLinearGrad)' : activeColor}
                         rx="1.5"
                         className="hover:opacity-90 transition-opacity cursor-pointer"
                       />
@@ -758,7 +827,15 @@ export default function TemplateChartVisualizer({
           </div>
 
           {/* Card 3: Dynamic Donut Share */}
-          <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3.5 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between group relative">
+          <div
+            onMouseEnter={() => setHoveredCardId('card-donut')}
+            onMouseLeave={() => setHoveredCardId(null)}
+            className={`rounded-xl p-3.5 transition-all duration-200 flex flex-col justify-between group relative ${
+              enableGlassmorphism
+                ? 'backdrop-blur-md bg-white/70 dark:bg-zinc-900/70 border border-white/40 dark:border-zinc-700/50 shadow-lg'
+                : 'bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 shadow-2xs hover:shadow-md'
+            } ${hoveredCardId === 'card-donut' ? 'scale-[1.015] z-10 border-violet-500/40' : ''}`}
+          >
             <div className="flex items-center justify-between mb-2">
               <div>
                 <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{activeSeriesName} Share</h4>
@@ -768,7 +845,7 @@ export default function TemplateChartVisualizer({
                 <button
                   type="button"
                   onClick={() => handleInsertNativeSheetChart('donut', `${activeSeriesName} Distribution`)}
-                  className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 cursor-pointer"
+                  className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
                   title="Insert to Sheet"
                 >
                   <Plus size={13} />
@@ -780,7 +857,7 @@ export default function TemplateChartVisualizer({
             <div className="flex items-center gap-2 my-auto">
               <div className="w-24 h-24 relative shrink-0">
                 <svg viewBox="0 0 100 100" className="w-full h-full">
-                  <circle cx="50" cy="50" r="34" fill="none" stroke={currentTheme.fill} strokeWidth="16" strokeDasharray="150 214" strokeDashoffset="0" />
+                  <circle cx="50" cy="50" r="34" fill="none" stroke={activeColor} strokeWidth="16" strokeDasharray="150 214" strokeDashoffset="0" />
                   <circle cx="50" cy="50" r="34" fill="none" stroke={currentTheme.accent1} strokeWidth="16" strokeDasharray="64 214" strokeDashoffset="-150" />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
@@ -794,7 +871,7 @@ export default function TemplateChartVisualizer({
                   {donutItems.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between text-[10px]">
                       <div className="flex items-center gap-1.5 truncate max-w-[90px]">
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: idx === 0 ? activeColor : item.color }} />
                         <span className="text-slate-600 dark:text-zinc-400 font-medium truncate">{item.name}</span>
                       </div>
                       <span className="font-bold text-slate-800 dark:text-zinc-200 ml-1">{item.pct}%</span>
@@ -807,7 +884,16 @@ export default function TemplateChartVisualizer({
 
           {/* Secondary Column Trends */}
           {secondaryColsCards.map((scCard, scIdx) => (
-            <div key={scIdx} className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3.5 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between group relative">
+            <div
+              key={scIdx}
+              onMouseEnter={() => setHoveredCardId(`sec-${scIdx}`)}
+              onMouseLeave={() => setHoveredCardId(null)}
+              className={`rounded-xl p-3.5 transition-all duration-200 flex flex-col justify-between group relative ${
+                enableGlassmorphism
+                  ? 'backdrop-blur-md bg-white/70 dark:bg-zinc-900/70 border border-white/40 dark:border-zinc-700/50 shadow-lg'
+                  : 'bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 shadow-2xs hover:shadow-md'
+              } ${hoveredCardId === `sec-${scIdx}` ? 'scale-[1.015] z-10 border-violet-500/40' : ''}`}
+            >
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{scCard.name} Trend</h4>
@@ -816,15 +902,15 @@ export default function TemplateChartVisualizer({
                 <button
                   type="button"
                   onClick={() => handleInsertNativeSheetChart('line', `${scCard.name} Trend`)}
-                  className="p-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer"
+                  className="p-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
                   title="Insert to Sheet"
                 >
                   <Plus size={13} />
                 </button>
               </div>
 
-              <div className="w-full h-32 relative">
-                <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible">
+              <div className="w-full h-32 relative overflow-hidden group/zoom">
+                <svg viewBox="0 0 100 65" className="w-full h-full overflow-visible transition-transform duration-300 group-hover/zoom:scale-[1.03]">
                   {showGridlines && (
                     <>
                       <line x1="12" y1="10" x2="96" y2="10" stroke="#f1f5f9" strokeDasharray="2 2" className="dark:stroke-zinc-800" />
@@ -842,10 +928,11 @@ export default function TemplateChartVisualizer({
 
                   {scCard.points.length > 1 && (
                     <path
-                      d={`M ${scCard.points[0].x} ${scCard.points[0].y} ` + scCard.points.map(p => `L ${p.x} ${p.y}`).join(' ')}
+                      d={getPathD(scCard.points, false)}
                       fill="none"
                       stroke={currentTheme.accent1}
-                      strokeWidth="2"
+                      strokeWidth={strokeWidth}
+                      strokeDasharray={getDashArray()}
                       strokeLinecap="round"
                     />
                   )}
@@ -868,7 +955,11 @@ export default function TemplateChartVisualizer({
 
         {/* Dynamic KPI Summary Row */}
         {showKpiCards && (
-          <div className="bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-3 shadow-2xs">
+          <div className={`rounded-xl p-3 shadow-2xs transition-all ${
+            enableGlassmorphism
+              ? 'backdrop-blur-md bg-white/70 dark:bg-zinc-900/70 border border-white/40 dark:border-zinc-700/50'
+              : 'bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800'
+          }`}>
             <div className="grid grid-cols-4 gap-2 text-center divide-x divide-slate-100 dark:divide-zinc-800">
               <div className="pr-1 text-left">
                 <span className="text-[9px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-tight block">Total ({activeSeriesName})</span>
@@ -908,7 +999,7 @@ export default function TemplateChartVisualizer({
         <button
           type="button"
           onClick={() => setIsCustomizeModalOpen(true)}
-          className="flex items-center gap-1.5 text-slate-700 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-zinc-100 font-bold transition-colors bg-slate-100 hover:bg-slate-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-3 py-1 rounded-xl cursor-pointer"
+          className="flex items-center gap-1.5 text-slate-700 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-zinc-100 font-bold transition-colors bg-slate-100 hover:bg-slate-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-3 py-1.5 rounded-lg cursor-pointer"
         >
           <Settings size={13} className="text-violet-500" />
           <span>Customize Dashboard</span>
@@ -918,39 +1009,40 @@ export default function TemplateChartVisualizer({
       {/* Executive Customize Dashboard Configuration Modal */}
       {isCustomizeModalOpen && createPortal(
         <div className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 w-full max-w-lg p-6 space-y-5 animate-in zoom-in-95 duration-150">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 w-full max-w-lg p-6 space-y-5 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950/60 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-950/60 flex items-center justify-center">
                   <Sliders size={18} className="text-violet-600 dark:text-violet-400" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Customize Dashboard</h3>
-                  <p className="text-[11px] text-slate-400 dark:text-zinc-500">Configure visual themes, layout density, and layout presets</p>
+                  <p className="text-[11px] text-slate-400 dark:text-zinc-500">Configure visual themes, custom colors, gradients, line styles, and density</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCustomizeModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-lg cursor-pointer"
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-md cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            {/* Progressive Tab Bar */}
-            <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-zinc-800/60 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400">
+            {/* Progressive Tab Bar - Rule 3 Compliance (Slightly rounded rectangles) */}
+            <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-zinc-800/60 rounded-lg text-xs font-semibold text-slate-600 dark:text-zinc-400">
               {[
-                { id: 'theme', label: 'Theme & Palette' },
-                { id: 'layout', label: 'Layout & Density' },
-                { id: 'display', label: 'Display Elements' },
+                { id: 'theme', label: 'Theme & Color' },
+                { id: 'style', label: 'Line Style' },
+                { id: 'layout', label: 'Layout' },
+                { id: 'display', label: 'Elements' },
                 { id: 'presets', label: 'Presets' }
               ].map(tab => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                  className={`flex-1 py-1.5 rounded-md transition-all text-center cursor-pointer ${
                     activeTab === tab.id
                       ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 shadow-2xs font-bold'
                       : 'hover:text-slate-900 dark:hover:text-zinc-200'
@@ -961,49 +1053,207 @@ export default function TemplateChartVisualizer({
               ))}
             </div>
 
-            {/* Tab 1: Themes */}
+            {/* Tab 1: Themes & Custom HEX / Colors / Gradients / Glassmorphism */}
             {activeTab === 'theme' && (
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block">Color Palette</label>
-                <div className="grid grid-cols-3 gap-2.5">
-                  {[
-                    { id: 'default', name: 'Violet Glow', color: '#7c3aed' },
-                    { id: 'emerald', name: 'Emerald Finance', color: '#059669' },
-                    { id: 'indigo', name: 'Indigo Deep', color: '#4f46e5' },
-                    { id: 'obsidian', name: 'Gold Obsidian', color: '#d4af37' },
-                    { id: 'teal', name: 'Ocean Teal', color: '#0d9488' },
-                    { id: 'sunset', name: 'Sunset Rose', color: '#f43f5e' }
-                  ].map(pal => (
-                    <button
-                      key={pal.id}
-                      type="button"
-                      onClick={() => setVisualPalette(pal.id)}
-                      className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
-                        visualPalette === pal.id
-                          ? 'border-violet-600 ring-2 ring-violet-500/20 bg-violet-50/50 dark:bg-violet-950/30'
-                          : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700'
-                      }`}
-                    >
-                      <div className="w-5 h-5 rounded-full mb-2" style={{ backgroundColor: pal.color }} />
-                      <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 block">{pal.name}</span>
-                    </button>
-                  ))}
+              <div className="space-y-4 text-xs">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-2">Preset Palettes</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: 'default', name: 'Violet Glow', color: '#7c3aed' },
+                      { id: 'emerald', name: 'Emerald Finance', color: '#059669' },
+                      { id: 'indigo', name: 'Indigo Deep', color: '#4f46e5' },
+                      { id: 'obsidian', name: 'Gold Obsidian', color: '#d4af37' },
+                      { id: 'teal', name: 'Ocean Teal', color: '#0d9488' },
+                      { id: 'sunset', name: 'Sunset Rose', color: '#f43f5e' }
+                    ].map(pal => (
+                      <button
+                        key={pal.id}
+                        type="button"
+                        onClick={() => { setVisualPalette(pal.id); setUseCustomHex(false); }}
+                        className={`p-2.5 rounded-lg border text-left flex items-center gap-2 transition-all cursor-pointer ${
+                          visualPalette === pal.id && !useCustomHex
+                            ? 'border-violet-600 ring-2 ring-violet-500/20 bg-violet-50/50 dark:bg-violet-950/30'
+                            : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-md shrink-0" style={{ backgroundColor: pal.color }} />
+                        <span className="font-bold text-slate-800 dark:text-zinc-200 truncate">{pal.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom HEX Color Picker */}
+                <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-slate-700 dark:text-zinc-300">Custom HEX Color</label>
+                    <input
+                      type="checkbox"
+                      checked={useCustomHex}
+                      onChange={(e) => setUseCustomHex(e.target.checked)}
+                      className="w-4 h-4 rounded text-violet-600 accent-violet-600 cursor-pointer"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={customHexColor}
+                      onChange={(e) => { setCustomHexColor(e.target.value); setUseCustomHex(true); }}
+                      className="w-8 h-8 rounded-md border border-slate-200 dark:border-zinc-700 cursor-pointer bg-transparent p-0"
+                    />
+                    <input
+                      type="text"
+                      value={customHexColor}
+                      onChange={(e) => { setCustomHexColor(e.target.value); setUseCustomHex(true); }}
+                      placeholder="#7c3aed"
+                      className="flex-1 px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 font-mono text-xs focus:outline-none focus:border-violet-500 text-slate-900 dark:text-zinc-100"
+                    />
+                  </div>
+                </div>
+
+                {/* Multi-stop Gradient & Glassmorphism Controls */}
+                <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 space-y-2.5">
+                  <label className="flex items-center justify-between p-2 rounded-lg border border-slate-100 dark:border-zinc-800 cursor-pointer">
+                    <span className="font-bold text-slate-700 dark:text-zinc-200">Enable Linear Gradient Fill</span>
+                    <input
+                      type="checkbox"
+                      checked={useGradient}
+                      onChange={(e) => setUseGradient(e.target.checked)}
+                      className="w-4 h-4 rounded text-violet-600 accent-violet-600 cursor-pointer"
+                    />
+                  </label>
+
+                  {useGradient && (
+                    <div className="grid grid-cols-2 gap-2 pl-2">
+                      <div>
+                        <span className="text-[10px] text-slate-400 block mb-1">Gradient Start</span>
+                        <input
+                          type="color"
+                          value={gradientStart}
+                          onChange={(e) => setGradientStart(e.target.value)}
+                          className="w-full h-7 rounded-md border border-slate-200 dark:border-zinc-700 cursor-pointer bg-transparent p-0"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block mb-1">Gradient End</span>
+                        <input
+                          type="color"
+                          value={gradientEnd}
+                          onChange={(e) => setGradientEnd(e.target.value)}
+                          className="w-full h-7 rounded-md border border-slate-200 dark:border-zinc-700 cursor-pointer bg-transparent p-0"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <label className="flex items-center justify-between p-2 rounded-lg border border-slate-100 dark:border-zinc-800 cursor-pointer">
+                    <span className="font-bold text-slate-700 dark:text-zinc-200">Glassmorphism Frosted Backdrop</span>
+                    <input
+                      type="checkbox"
+                      checked={enableGlassmorphism}
+                      onChange={(e) => setEnableGlassmorphism(e.target.checked)}
+                      className="w-4 h-4 rounded text-violet-600 accent-violet-600 cursor-pointer"
+                    />
+                  </label>
                 </div>
               </div>
             )}
 
-            {/* Tab 2: Layout & Grid Density */}
-            {activeTab === 'layout' && (
-              <div className="space-y-4">
+            {/* Tab 2: Chart Line & SVG Style Controls */}
+            {activeTab === 'style' && (
+              <div className="space-y-4 text-xs">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-2">Grid Columns</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="font-bold text-slate-700 dark:text-zinc-300">Stroke Thinness ({strokeWidth}px)</label>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="0.5"
+                    value={strokeWidth}
+                    onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                    className="w-full accent-violet-600 cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-1.5">Dash Pattern</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: 'solid', label: 'Solid —' },
+                      { id: 'dashed', label: 'Dashed - -' },
+                      { id: 'dotted', label: 'Dotted · ·' }
+                    ].map(item => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setStrokeDashStyle(item.id)}
+                        className={`py-1.5 rounded-md border text-center font-bold transition-all cursor-pointer ${
+                          strokeDashStyle === item.id
+                            ? 'border-violet-600 bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
+                            : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-1.5">Line Curve Tension</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'smooth', label: 'Smooth Bezier Curve' },
+                      { id: 'straight', label: 'Straight Line Segments' }
+                    ].map(item => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setCurveType(item.id)}
+                        className={`py-1.5 rounded-md border text-center font-bold transition-all cursor-pointer ${
+                          curveType === item.id
+                            ? 'border-violet-600 bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
+                            : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="font-bold text-slate-700 dark:text-zinc-300">Fill Gradient Opacity ({Math.round(fillOpacity * 100)}%)</label>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="0.8"
+                    step="0.05"
+                    value={fillOpacity}
+                    onChange={(e) => setFillOpacity(Number(e.target.value))}
+                    className="w-full accent-violet-600 cursor-pointer"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Tab 3: Layout & Grid Density */}
+            {activeTab === 'layout' && (
+              <div className="space-y-4 text-xs">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-2">Grid Columns</label>
                   <div className="grid grid-cols-3 gap-2">
                     {[1, 2, 3].map(cols => (
                       <button
                         key={cols}
                         type="button"
                         onClick={() => setGridColsCount(cols)}
-                        className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                        className={`py-2 px-3 rounded-md border text-xs font-semibold transition-all cursor-pointer ${
                           gridColsCount === cols
                             ? 'border-violet-600 bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
                             : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'
@@ -1016,14 +1266,14 @@ export default function TemplateChartVisualizer({
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-2">Charts Per Page / View</label>
+                  <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-2">Charts Per Page / View</label>
                   <div className="grid grid-cols-5 gap-2 text-xs">
                     {['1', '2', '4', '6', 'auto'].map(val => (
                       <button
                         key={val}
                         type="button"
                         onClick={() => setChartsPerPage(val)}
-                        className={`py-1.5 rounded-lg border text-center capitalize font-semibold transition-all cursor-pointer ${
+                        className={`py-1.5 rounded-md border text-center capitalize font-semibold transition-all cursor-pointer ${
                           chartsPerPage === val
                             ? 'border-violet-600 bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
                             : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'
@@ -1037,7 +1287,7 @@ export default function TemplateChartVisualizer({
               </div>
             )}
 
-            {/* Tab 3: Display Toggles */}
+            {/* Tab 4: Display Toggles */}
             {activeTab === 'display' && (
               <div className="space-y-2.5 text-xs font-medium">
                 {[
@@ -1047,7 +1297,7 @@ export default function TemplateChartVisualizer({
                   { label: 'Show Value Labels & Badges', state: showLabels, setter: setShowLabels },
                   { label: 'Show Summary KPI Cards Row', state: showKpiCards, setter: setShowKpiCards }
                 ].map((item, idx) => (
-                  <label key={idx} className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 dark:border-zinc-800/80 hover:bg-slate-50 dark:hover:bg-zinc-800/40 cursor-pointer">
+                  <label key={idx} className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 dark:border-zinc-800/80 hover:bg-slate-50 dark:hover:bg-zinc-800/40 cursor-pointer">
                     <span className="text-slate-700 dark:text-zinc-200 font-semibold">{item.label}</span>
                     <input
                       type="checkbox"
@@ -1060,7 +1310,7 @@ export default function TemplateChartVisualizer({
               </div>
             )}
 
-            {/* Tab 4: Presets */}
+            {/* Tab 5: Presets */}
             {activeTab === 'presets' && (
               <div className="space-y-3 text-xs">
                 <div className="flex gap-2">
@@ -1069,12 +1319,12 @@ export default function TemplateChartVisualizer({
                     placeholder="New layout preset name..."
                     value={newPresetName}
                     onChange={(e) => setNewPresetName(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-slate-100 dark:bg-zinc-800 rounded-xl border border-slate-200/80 dark:border-zinc-700 text-slate-800 dark:text-zinc-100 text-xs focus:outline-none focus:border-violet-500"
+                    className="flex-1 px-3 py-2 bg-slate-100 dark:bg-zinc-800 rounded-lg border border-slate-200/80 dark:border-zinc-700 text-slate-800 dark:text-zinc-100 text-xs focus:outline-none focus:border-violet-500"
                   />
                   <button
                     type="button"
                     onClick={handleSavePreset}
-                    className="px-3.5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl cursor-pointer"
+                    className="px-3.5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-lg cursor-pointer"
                   >
                     Save Preset
                   </button>
@@ -1085,12 +1335,12 @@ export default function TemplateChartVisualizer({
                     <p className="text-slate-400 dark:text-zinc-500 text-[11px] text-center py-3">No saved custom presets yet.</p>
                   ) : (
                     customPresets.map(preset => (
-                      <div key={preset.id} className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-slate-200/60 dark:border-zinc-800">
+                      <div key={preset.id} className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-zinc-800/50 rounded-lg border border-slate-200/60 dark:border-zinc-800">
                         <span className="font-semibold text-slate-700 dark:text-zinc-200">{preset.name}</span>
                         <button
                           type="button"
                           onClick={() => handleApplyPreset(preset)}
-                          className="px-2.5 py-1 bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-lg text-[11px] font-bold text-violet-600 dark:text-violet-300 cursor-pointer"
+                          className="px-2.5 py-1 bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-md text-[11px] font-bold text-violet-600 dark:text-violet-300 cursor-pointer"
                         >
                           Apply
                         </button>
@@ -1113,7 +1363,7 @@ export default function TemplateChartVisualizer({
               <button
                 type="button"
                 onClick={() => setIsCustomizeModalOpen(false)}
-                className="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer"
+                className="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer"
               >
                 Done
               </button>
