@@ -1420,8 +1420,8 @@ export default function TemplateChartVisualizer({
       )}
 
       {/* Interactive & Editable Fullscreen Focus View Modal */}
-      {expandedCard && (
-        <div className="fixed inset-0 z-[100000] bg-black/75 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-150">
+      {expandedCard && createPortal(
+        <div className="fixed inset-0 z-[1000000] bg-black/85 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-150">
           <div className="bg-white/95 dark:bg-zinc-900/95 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 w-full max-w-4xl p-6 space-y-4 flex flex-col max-h-[90vh] overflow-hidden">
             {/* Header & Editable Title Bar */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3 shrink-0">
@@ -1568,7 +1568,8 @@ export default function TemplateChartVisualizer({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
