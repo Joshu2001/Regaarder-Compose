@@ -1978,6 +1978,32 @@ const ListGalleryPicker = ({ isOpen, initialTab, setOpen, anchorEl }) => {
 // --- END COMPOSE PICKERS ---
 
 
+const TemplateMiniChartPreview = ({ type = 'column', color = '#0284c7' }) => {
+  if (type === 'line' || type === 'area') {
+    return (
+      <svg viewBox="0 0 60 36" className="w-16 h-10 shrink-0 opacity-85 group-hover:opacity-100 transition-opacity">
+        <path d="M 5,30 L 15,22 L 25,25 L 35,12 L 45,16 L 55,6" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M 5,30 L 15,22 L 25,25 L 35,12 L 45,16 L 55,6 L 55,32 L 5,32 Z" fill={color} opacity="0.15" />
+      </svg>
+    );
+  } else if (type === 'pie' || type === 'donut') {
+    return (
+      <svg viewBox="0 0 40 40" className="w-10 h-10 shrink-0 opacity-85 group-hover:opacity-100 transition-opacity">
+        <circle cx="20" cy="20" r="16" fill="none" stroke={color} strokeWidth="6" strokeDasharray="60 40" strokeDashoffset="10" />
+        <circle cx="20" cy="20" r="16" fill="none" stroke="#6366f1" strokeWidth="6" strokeDasharray="35 65" strokeDashoffset="-50" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 60 36" className="w-16 h-10 shrink-0 opacity-85 group-hover:opacity-100 transition-opacity">
+      <rect x="6" y="16" width="8" height="16" rx="2" fill={color} opacity="0.6" />
+      <rect x="19" y="8" width="8" height="24" rx="2" fill={color} opacity="0.8" />
+      <rect x="32" y="12" width="8" height="20" rx="2" fill={color} opacity="0.7" />
+      <rect x="45" y="4" width="8" height="28" rx="2" fill={color} />
+    </svg>
+  );
+};
+
 const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
   if (!isOpen) return null;
 
@@ -1986,15 +2012,19 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
     { id: 'pitch', label: 'Pitch Decks' },
     { id: 'meeting', label: 'Meetings' },
     { id: 'report', label: 'Reports' },
+    { id: 'dashboards', label: 'Enterprise Dashboards' },
     { id: 'blank', label: 'Blank' }
   ];
 
   const templates = [
-    { id: 'blank', title: 'Blank Presentation', category: 'blank', icon: Layout, color: 'bg-gray-100 text-gray-500', desc: 'Start from scratch' },
-    { id: 'aurora', title: 'Aurora Pitch', category: 'pitch', icon: Sparkles, color: 'bg-purple-100 text-purple-600', desc: 'Modern gradient design' },
-    { id: 'corporate', title: 'Corporate Meeting', category: 'meeting', icon: LayoutGrid, color: 'bg-blue-100 text-blue-600', desc: 'Clean, professional' },
-    { id: 'data', title: 'Data Report', category: 'report', icon: PieChart, color: 'bg-green-100 text-green-600', desc: 'Charts and metrics focused' },
-    { id: 'strategy', title: 'Strategy Plan', category: 'meeting', icon: ListTree, color: 'bg-orange-100 text-orange-600', desc: 'Organizational alignment' }
+    { id: 'financial', title: 'Financial Revenue Model', category: 'dashboards', icon: TrendingUp, color: 'bg-sky-100 text-sky-600', chartType: 'line', chartColor: '#0284c7', desc: '3-5 Year growth, OpEx & EBITDA forecast visual chart' },
+    { id: 'saas', title: 'SaaS Metrics & Economics', category: 'dashboards', icon: BarChart2, color: 'bg-emerald-100 text-emerald-600', chartType: 'column', chartColor: '#059669', desc: 'MRR, ARR, NRR & LTV:CAC live chart analytics' },
+    { id: 'crm', title: 'Sales CRM & Pipeline', category: 'dashboards', icon: PieChart, color: 'bg-violet-100 text-violet-600', chartType: 'donut', chartColor: '#7c3aed', desc: 'Deal pipeline breakdown & win rate distribution visual' },
+    { id: 'cashflow', title: '12-Month Cash Flow', category: 'dashboards', icon: Sparkles, color: 'bg-amber-100 text-amber-600', chartType: 'area', chartColor: '#d97706', desc: 'Cash inflows vs outflows runway visual trajectory' },
+    { id: 'kpi', title: 'KPI Executive Dashboard', category: 'dashboards', icon: LayoutGrid, color: 'bg-indigo-100 text-indigo-600', chartType: 'column', chartColor: '#4f46e5', desc: 'Target vs Actual achievement live visual metrics' },
+    { id: 'project', title: 'Project Tracking Ops', category: 'dashboards', icon: ListTree, color: 'bg-rose-100 text-rose-600', chartType: 'bar', chartColor: '#e11d48', desc: 'Task completion rate & team velocity visual chart' },
+    { id: 'aurora', title: 'Aurora Pitch Deck', category: 'pitch', icon: Sparkles, color: 'bg-purple-100 text-purple-600', chartType: 'column', chartColor: '#9333ea', desc: 'Modern gradient design presentation' },
+    { id: 'blank', title: 'Blank Canvas', category: 'blank', icon: Layout, color: 'bg-gray-100 text-gray-500', chartType: 'column', chartColor: '#64748b', desc: 'Start from a clean slate' }
   ];
 
   return (
@@ -2004,8 +2034,8 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100">
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">Presentation Templates</h2>
-            <p className="text-gray-500 mt-1">Start with a professionally designed layout</p>
+            <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">Templates & Visual Dashboards</h2>
+            <p className="text-gray-500 mt-1">Start with a pre-configured template and interactive live chart visualizer</p>
           </div>
           <button onClick={onClose} className="p-2.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
             <X size={20} strokeWidth={2.5} />
@@ -2032,12 +2062,21 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
 
             <div className="grid grid-cols-2 gap-6">
               {templates.map(t => (
-                <div key={t.id} onClick={() => { onSelect(t.id); onClose(); }} className="group relative bg-white border border-gray-200 rounded-2xl p-6 cursor-pointer hover:border-purple-300 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 overflow-hidden">
-                  <div className={`w-12 h-12 rounded-xl ${t.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
-                    <t.icon size={24} strokeWidth={2} />
+                <div key={t.id} onClick={() => { onSelect(t.id); onClose(); }} className="group relative bg-white border border-gray-200 rounded-2xl p-5 cursor-pointer hover:border-purple-300 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 overflow-hidden flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`w-10 h-10 rounded-xl ${t.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-xs`}>
+                        <t.icon size={20} strokeWidth={2} />
+                      </div>
+                      <TemplateMiniChartPreview type={t.chartType} color={t.chartColor} />
+                    </div>
+                    <h3 className="text-base font-semibold text-gray-900 mb-1">{t.title}</h3>
+                    <p className="text-xs text-gray-500 leading-relaxed">{t.desc}</p>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{t.title}</h3>
-                  <p className="text-sm text-gray-500">{t.desc}</p>
+                  <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] font-semibold text-purple-600">
+                    <span>Includes Live Visual Chart</span>
+                    <span>Load Template →</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -3577,6 +3616,80 @@ const SPREADSHEET_FUNCTIONS = [
 
 
 export default function App() {
+  const [sheetGrids, setSheetGrids] = useState(() => {
+    const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
+    const result = {};
+    [
+      { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 },
+    ].forEach((item) => {
+      result[item.id] = { rows: 22, cols: 26, cells: makeCells(22, 26) };
+    });
+    return result;
+  });
+
+  const [notifications, setNotifications] = useState([]);
+
+  const pushNotification = useCallback(({ title, detail, category = 'system', unread = true, actionType = null }) => {
+    if (!title) return;
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setNotifications((prev) => {
+      if (prev.length > 0 && prev[0].title === title && (Date.now() - (prev[0].timeMs || 0)) < 3000) {
+        return prev;
+      }
+      const newItem = {
+        id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        title,
+        detail: detail || `System Event at ${timeStr}`,
+        category, // 'draft' | 'schedule' | 'collaboration' | 'ai' | 'system'
+        unread,
+        timestamp: timeStr,
+        timeMs: Date.now(),
+        actionType
+      };
+      return [newItem, ...prev].slice(0, 50);
+    });
+  }, []);
+
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastCallback, setToastCallback] = useState(null);
+  const toastTimerRef = useRef(null);
+
+  // Toast notifier helper
+  const showToast = (msg, callback = null, category = null, customDetail = null) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    setToastMessage(msg);
+    setToastCallback(() => callback);
+    if (msg) {
+      const lower = msg.toLowerCase();
+      let detectedCategory = category || 'system';
+      if (!category) {
+        if (lower.includes('draft') || lower.includes('saved') || lower.includes('unfinished') || lower.includes('pending') || lower.includes('persisted')) {
+          detectedCategory = 'draft';
+        } else if (lower.includes('schedule') || lower.includes('due') || lower.includes('timer') || lower.includes('calendar') || lower.includes('reminder') || lower.includes('task')) {
+          detectedCategory = 'schedule';
+        } else if (lower.includes('collaborat') || lower.includes('replay') || lower.includes('join') || lower.includes('share') || lower.includes('socket') || lower.includes('online') || lower.includes('room') || lower.includes('user')) {
+          detectedCategory = 'collaboration';
+        } else if (lower.includes('ai') || lower.includes('assistant') || lower.includes('generated') || lower.includes('prompt') || lower.includes('summary')) {
+          detectedCategory = 'ai';
+        }
+      }
+      pushNotification({
+        title: msg,
+        detail: customDetail || `System Event at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`,
+        category: detectedCategory,
+        unread: true
+      });
+    }
+    toastTimerRef.current = setTimeout(() => {
+      setToastMessage('');
+      setToastCallback(null);
+      toastTimerRef.current = null;
+    }, callback ? 4500 : 2800);
+  };
+
   const [guestUser] = useState(() => ({
     name: `User ${Math.floor(100 + Math.random() * 900)}`,
     color: randomColor({ luminosity: 'dark' }),
@@ -8171,8 +8284,6 @@ export default function App() {
     showToast(`Added ${createdMember.name} to team members!`);
   };
   const [speechSupported, setSpeechSupported] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastCallback, setToastCallback] = useState(null);
   const [isButtonPulsing, setIsButtonPulsing] = useState(false);
   const [pulseCycleActive, setPulseCycleActive] = useState(false);
   const pulseTimerRef = useRef(null);
@@ -8184,6 +8295,8 @@ export default function App() {
   const [editingWorkspaceId, setEditingWorkspaceId] = useState(null);
   const [openWorkspaceMenuId, setOpenWorkspaceMenuId] = useState(null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [showTemplateChart, setShowTemplateChart] = useState(true);
+  const [templateChartType, setTemplateChartType] = useState('column');
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTargetDocId, setShareTargetDocId] = useState(null);
   const [shareTargetDocTitle, setShareTargetDocTitle] = useState('');
@@ -8694,29 +8807,6 @@ export default function App() {
   const [relativeNow, setRelativeNow] = useState(Date.now());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationCategoryFilter, setNotificationCategoryFilter] = useState('all');
-  const [notifications, setNotifications] = useState([]);
-
-  const pushNotification = useCallback(({ title, detail, category = 'system', unread = true, actionType = null }) => {
-    if (!title) return;
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    setNotifications((prev) => {
-      if (prev.length > 0 && prev[0].title === title && (Date.now() - (prev[0].timeMs || 0)) < 3000) {
-        return prev;
-      }
-      const newItem = {
-        id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        title,
-        detail: detail || `System Event at ${timeStr}`,
-        category, // 'draft' | 'schedule' | 'collaboration' | 'ai' | 'system'
-        unread,
-        timestamp: timeStr,
-        timeMs: Date.now(),
-        actionType
-      };
-      return [newItem, ...prev].slice(0, 50);
-    });
-  }, []);
 
   const getNotificationColorClass = (item) => {
     const text = (item.title + ' ' + item.detail).toLowerCase();
@@ -9496,6 +9586,309 @@ export default function App() {
     return null;
   };
 
+  const extractTemplateChartData = useCallback((grid, selectedColIdxOverride = null) => {
+    if (!grid || !grid.cells || !Array.isArray(grid.cells) || grid.cells.length === 0) {
+      return null;
+    }
+    const cells = grid.cells;
+    const rowsCount = cells.length;
+    const colsCount = cells[0]?.length || 0;
+
+    const title = (cells[0]?.[0] || 'Template Data Visualizer').toString().trim();
+
+    let headerRowIdx = 2;
+    if (cells[2] && cells[2].some(c => c !== '')) {
+      headerRowIdx = 2;
+    } else if (cells[1] && cells[1].some(c => c !== '')) {
+      headerRowIdx = 1;
+    } else {
+      headerRowIdx = 0;
+    }
+
+    const headers = [];
+    for (let c = 0; c < colsCount; c++) {
+      headers.push(cells[headerRowIdx]?.[c] || `Col ${toColumnLabel(c)}`);
+    }
+
+    let labelColIdx = 0;
+    if (headerRowIdx === 2 && cells[3]?.[0] && String(cells[3][0]).startsWith('TASK-')) {
+      labelColIdx = 1;
+    } else if (cells[headerRowIdx + 1]?.[1] && typeof cells[headerRowIdx + 1][1] === 'string' && isNaN(Number(cells[headerRowIdx + 1][1]))) {
+      labelColIdx = 0;
+    }
+
+    const dataCols = [];
+    for (let c = 0; c < colsCount; c++) {
+      if (c === labelColIdx) continue;
+      let numericCount = 0;
+      let totalCount = 0;
+      for (let r = headerRowIdx + 1; r < rowsCount; r++) {
+        const rawVal = cells[r]?.[c];
+        if (rawVal !== undefined && rawVal !== null && rawVal !== '') {
+          totalCount++;
+          const num = Number(String(rawVal).replace(/[\$,%\sxa-zA-Z]/g, ''));
+          if (!isNaN(num)) numericCount++;
+        }
+      }
+      if (totalCount > 0 && numericCount / totalCount >= 0.4) {
+        dataCols.push(c);
+      }
+    }
+
+    const activeDataColIdx = (selectedColIdxOverride !== null && selectedColIdxOverride !== undefined)
+      ? selectedColIdxOverride
+      : (dataCols.length > 0 ? dataCols[0] : 2);
+
+    const labels = [];
+    const seriesData = [];
+    for (let r = headerRowIdx + 1; r < rowsCount; r++) {
+      const labelVal = cells[r]?.[labelColIdx];
+      const dataValRaw = cells[r]?.[activeDataColIdx];
+
+      if ((labelVal !== undefined && labelVal !== '') || (dataValRaw !== undefined && dataValRaw !== '')) {
+        const cleanLabel = String(labelVal || `Row ${r}`).trim();
+        const numVal = Number(String(dataValRaw || 0).replace(/[\$,%\sxa-zA-Z]/g, '')) || 0;
+        labels.push(cleanLabel);
+        seriesData.push(numVal);
+      }
+    }
+
+    const total = seriesData.reduce((a, b) => a + b, 0);
+    const avg = seriesData.length ? total / seriesData.length : 0;
+    const max = seriesData.length ? Math.max(...seriesData) : 0;
+    const min = seriesData.length ? Math.min(...seriesData) : 0;
+
+    return {
+      title,
+      headerRowIdx,
+      headers,
+      dataCols,
+      activeDataColIdx,
+      labelColIdx,
+      labels,
+      series: [{ name: headers[activeDataColIdx] || 'Value', data: seriesData }],
+      stats: { total, avg, max, min, count: seriesData.length }
+    };
+  }, []);
+
+  const TemplateChartVisualizer = ({
+    activeSheetGrid,
+    activeSheetId,
+    sheetsThemePalette = 'default',
+    onClose,
+    templateChartType = 'column',
+    setTemplateChartType,
+    showToast
+  }) => {
+    const [selectedDataColIdx, setSelectedDataColIdx] = useState(null);
+
+    const parsedData = useMemo(() => {
+      return extractTemplateChartData(activeSheetGrid, selectedDataColIdx);
+    }, [activeSheetGrid, selectedDataColIdx]);
+
+    if (!parsedData || !parsedData.labels || parsedData.labels.length === 0) {
+      return (
+        <div className="w-80 xl:w-96 border-l border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#121214] p-5 flex flex-col items-center justify-center text-center">
+          <BarChart2 className="w-10 h-10 text-slate-300 dark:text-zinc-600 mb-3 animate-pulse" />
+          <h4 className="text-sm font-semibold text-slate-700 dark:text-zinc-300">Live Visual Chart</h4>
+          <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 max-w-[220px]">
+            Select or load a template grid to generate a live updating chart view.
+          </p>
+        </div>
+      );
+    }
+
+    const { title, headers, dataCols, activeDataColIdx, labels, series, stats } = parsedData;
+
+    const chartTypes = [
+      { id: 'column', label: 'Column', icon: BarChart2 },
+      { id: 'line', label: 'Line', icon: TrendingUp },
+      { id: 'area', label: 'Area', icon: Sparkles },
+      { id: 'bar', label: 'Bar', icon: LayoutGrid },
+      { id: 'pie', label: 'Pie', icon: PieChart },
+      { id: 'donut', label: 'Donut', icon: PieChart },
+    ];
+
+    const paletteColors = {
+      default: { fill: '#0284c7', stroke: '#0369a1' },
+      emerald: { fill: '#059669', stroke: '#047857' },
+      obsidian: { fill: '#d4af37', stroke: '#b8860b' },
+      nordic: { fill: '#52525b', stroke: '#3f3f46' },
+      indigo: { fill: '#7c3aed', stroke: '#6d28d9' },
+    };
+
+    const currentTheme = paletteColors[sheetsThemePalette] || paletteColors.default;
+
+    return (
+      <div className="w-80 xl:w-[400px] shrink-0 border-l border-gray-200/80 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-[#121214] flex flex-col h-full overflow-hidden transition-all duration-200 z-20">
+        {/* Header Bar */}
+        <div className="p-3.5 border-b border-gray-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center shadow-xs">
+              <BarChart2 size={18} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-bold text-slate-800 dark:text-zinc-100 tracking-tight leading-none uppercase">Template Visual Chart</h3>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Live Sync
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5 font-medium truncate max-w-[200px]">
+                {title}
+              </p>
+            </div>
+          </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+              title="Close Visual Chart Panel"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Main Body */}
+        <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 thin-scrollbar">
+          {/* Quick KPI Stat Cards */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-white dark:bg-zinc-900 border border-gray-200/70 dark:border-zinc-800 rounded-xl p-2.5 shadow-2xs">
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Total Sum</span>
+              <div className="text-sm font-bold text-slate-800 dark:text-zinc-100 mt-0.5 font-mono">
+                {stats.total > 10000 ? `$${Math.round(stats.total).toLocaleString()}` : stats.total.toLocaleString()}
+              </div>
+            </div>
+            <div className="bg-white dark:bg-zinc-900 border border-gray-200/70 dark:border-zinc-800 rounded-xl p-2.5 shadow-2xs">
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Average</span>
+              <div className="text-sm font-bold text-slate-800 dark:text-zinc-100 mt-0.5 font-mono">
+                {stats.avg > 1000 ? `$${Math.round(stats.avg).toLocaleString()}` : stats.avg.toFixed(1)}
+              </div>
+            </div>
+          </div>
+
+          {/* Controls Bar: Column Selector & Chart Types */}
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200/70 dark:border-zinc-800 rounded-2xl p-3 space-y-2.5 shadow-2xs">
+            {/* Column selector */}
+            {dataCols.length > 1 && (
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Metric Column:</label>
+                <select
+                  value={activeDataColIdx}
+                  onChange={(e) => setSelectedDataColIdx(Number(e.target.value))}
+                  className="text-xs font-medium bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2 py-1 text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-violet-500 max-w-[170px] truncate"
+                >
+                  {dataCols.map(colIdx => (
+                    <option key={colIdx} value={colIdx}>
+                      {headers[colIdx] || `Col ${toColumnLabel(colIdx)}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Chart Type Navigation (Rounded Rectangles per Rule 3) */}
+            <div>
+              <div className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Chart Type</div>
+              <div className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-zinc-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-zinc-700">
+                {chartTypes.map(ct => {
+                  const IconComponent = ct.icon;
+                  const isActive = (templateChartType || 'column') === ct.id;
+                  return (
+                    <button
+                      key={ct.id}
+                      type="button"
+                      onClick={() => setTemplateChartType(ct.id)}
+                      className={`flex items-center justify-center gap-1 py-1 px-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                        isActive
+                          ? 'bg-white dark:bg-zinc-700 text-violet-600 dark:text-violet-300 shadow-xs border border-slate-200/80 dark:border-zinc-600 outline-none'
+                          : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-700/50'
+                      }`}
+                    >
+                      <IconComponent size={12} />
+                      <span>{ct.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Dynamic Interactive SVG Chart View */}
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200/70 dark:border-zinc-800 rounded-2xl p-3.5 shadow-2xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <h4 className="text-[11px] font-bold text-slate-700 dark:text-zinc-200 uppercase tracking-wider truncate max-w-[200px]">
+                {headers[activeDataColIdx] || 'Metric Value'}
+              </h4>
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 shrink-0">
+                {labels.length} Items
+              </span>
+            </div>
+
+            <div className="w-full h-48 bg-slate-50/50 dark:bg-zinc-950/40 rounded-xl p-2 border border-slate-100 dark:border-zinc-800/60 flex items-center justify-center relative overflow-hidden">
+              <svg viewBox="0 0 100 100" className="w-full h-full">
+                {renderDynamicChart(
+                  templateChartType || 'column',
+                  { labels, series },
+                  currentTheme.fill,
+                  currentTheme.stroke,
+                  true
+                )}
+              </svg>
+            </div>
+
+            {/* Breakdown List */}
+            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 space-y-1 max-h-32 overflow-y-auto thin-scrollbar">
+              {labels.slice(0, 8).map((label, idx) => {
+                const val = series[0]?.data?.[idx] || 0;
+                const pct = stats.total > 0 ? ((val / stats.total) * 100).toFixed(1) : 0;
+                return (
+                  <div key={idx} className="flex items-center justify-between text-[11px] py-0.5 px-1 rounded hover:bg-slate-50 dark:hover:bg-zinc-800/50">
+                    <span className="text-slate-600 dark:text-zinc-400 font-medium truncate max-w-[160px]">{label}</span>
+                    <div className="flex items-center gap-2 font-mono">
+                      <span className="font-semibold text-slate-800 dark:text-zinc-200">
+                        {val > 1000 ? `$${Math.round(val).toLocaleString()}` : val}
+                      </span>
+                      <span className="text-[10px] text-slate-400 dark:text-zinc-500 w-9 text-right">{pct}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    window.getTemplateChartData = (sheetId = activeSheetId) => {
+      const targetGrid = sheetGrids[sheetId || activeSheetId];
+      return extractTemplateChartData(targetGrid);
+    };
+
+    window.updateSheetChartConfig = (type, options = {}) => {
+      if (type) setTemplateChartType(type);
+      setShowTemplateChart(true);
+      if (typeof showToast === 'function') showToast(`Template Chart updated to ${type}`);
+    };
+
+    window.loadSheetTemplateWithChart = (templateKey, chartType = 'column') => {
+      if (templateKey === 'financial') loadFinancialModelTemplate();
+      else if (templateKey === 'saas') loadSaaSMetricsTemplate();
+      else if (templateKey === 'crm') loadSalesCRMPipelineTemplate();
+      else if (templateKey === 'cashflow') loadCashFlowForecastTemplate();
+      else if (templateKey === 'kpi') loadKPIDashboardTemplate();
+      else loadProjectTrackingTemplate();
+
+      setTemplateChartType(chartType);
+      setShowTemplateChart(true);
+    };
+  }, [activeSheetId, sheetGrids, templateChartType, extractTemplateChartData, showToast]);
+
   const [selectedSheetOverlayId, setSelectedSheetOverlayId] = useState(null);
   const [additionalSheetRanges, setAdditionalSheetRanges] = useState([]);
   
@@ -9543,16 +9936,6 @@ export default function App() {
   const [sheetDatePicker, setSheetDatePicker] = useState({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
   const [hoveredCellCoord, setHoveredCellCoord] = useState(null);
   const cellHoverTimeoutRef = useRef(null);
-  const [sheetGrids, setSheetGrids] = useState(() => {
-    const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
-    const result = {};
-    [
-      { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 },
-    ].forEach((item) => {
-      result[item.id] = { rows: 22, cols: 26, cells: makeCells(22, 26) };
-    });
-    return result;
-  });
 
   const [isDictationHiddenByGesture, setIsDictationHiddenByGesture] = useState(false);
   const [gestureNotification, setGestureNotification] = useState(null);
@@ -9841,7 +10224,6 @@ export default function App() {
   const mockIntervalRef = useRef(null);
   const interimTranscriptRef = useRef('');
   const lastDocumentTranscriptRef = useRef({ text: '', source: '', at: 0 });
-  const toastTimerRef = useRef(null);
   const promptRevealTimerRef = useRef(null);
   const deckCanvasPreviewRef = useRef(null);
   const deckFullscreenWrapperRef = useRef(null);
@@ -14999,41 +15381,6 @@ export default function App() {
       return item;
     }));
     showToast("Status updated");
-  };
-
-  // Toast notifier helper
-  const showToast = (msg, callback = null, category = null, customDetail = null) => {
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
-    }
-    setToastMessage(msg);
-    setToastCallback(() => callback);
-    if (msg) {
-      const lower = msg.toLowerCase();
-      let detectedCategory = category || 'system';
-      if (!category) {
-        if (lower.includes('draft') || lower.includes('saved') || lower.includes('unfinished') || lower.includes('pending') || lower.includes('persisted')) {
-          detectedCategory = 'draft';
-        } else if (lower.includes('schedule') || lower.includes('due') || lower.includes('timer') || lower.includes('calendar') || lower.includes('reminder') || lower.includes('task')) {
-          detectedCategory = 'schedule';
-        } else if (lower.includes('collaborat') || lower.includes('replay') || lower.includes('join') || lower.includes('share') || lower.includes('socket') || lower.includes('online') || lower.includes('room') || lower.includes('user')) {
-          detectedCategory = 'collaboration';
-        } else if (lower.includes('ai') || lower.includes('assistant') || lower.includes('generated') || lower.includes('prompt') || lower.includes('summary')) {
-          detectedCategory = 'ai';
-        }
-      }
-      pushNotification({
-        title: msg,
-        detail: customDetail || `System Event at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`,
-        category: detectedCategory,
-        unread: true
-      });
-    }
-    toastTimerRef.current = setTimeout(() => {
-      setToastMessage('');
-      setToastCallback(null);
-      toastTimerRef.current = null;
-    }, callback ? 4500 : 2800);
   };
 
   const handleOpenLinkPopover = (rangeParam = null) => {
@@ -27010,6 +27357,8 @@ Respond with a JSON array of slide objects matching the schema.`;
       }
     }, 50);
 
+    setShowTemplateChart(true);
+    setTemplateChartType('bar');
     showToast('Project Tracking template loaded!');
   };
 
@@ -27127,6 +27476,8 @@ Respond with a JSON array of slide objects matching the schema.`;
     });
 
     setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
+    setShowTemplateChart(true);
+    setTemplateChartType('line');
     showToast('Financial Model template loaded!');
   };
 
@@ -27186,6 +27537,8 @@ Respond with a JSON array of slide objects matching the schema.`;
     });
 
     setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
+    setShowTemplateChart(true);
+    setTemplateChartType('column');
     showToast('SaaS Metrics template loaded!');
   };
 
@@ -27250,6 +27603,8 @@ Respond with a JSON array of slide objects matching the schema.`;
     });
 
     setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
+    setShowTemplateChart(true);
+    setTemplateChartType('donut');
     showToast('Sales CRM Pipeline template loaded!');
   };
 
@@ -27309,6 +27664,8 @@ Respond with a JSON array of slide objects matching the schema.`;
     });
 
     setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
+    setShowTemplateChart(true);
+    setTemplateChartType('area');
     showToast('Cash Flow Forecast template loaded!');
   };
 
@@ -27372,6 +27729,8 @@ Respond with a JSON array of slide objects matching the schema.`;
     });
 
     setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
+    setShowTemplateChart(true);
+    setTemplateChartType('column');
     showToast('KPI Dashboard template loaded!');
   };
   const formatCellValue = (val, formatTypeArg, headerNameArg = '') => {
@@ -38038,6 +38397,29 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                               <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
 
+                              {/* Grid Visibility Toggle */}
+                              <button
+                                type="button"
+                                onClick={() => setShowGridLines(!showGridLines)}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 ${showGridLines ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600' : 'bg-transparent text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
+                              >
+                                <Grid size={13} />
+                                {showGridLines ? 'Gridlines: On' : 'Gridlines: Off'}
+                              </button>
+
+                              <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
+
+                              <button
+                                type="button"
+                                onClick={() => setShowTemplateChart(!showTemplateChart)}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 ${showTemplateChart ? 'bg-violet-100 dark:bg-violet-950/60 text-violet-900 dark:text-violet-200 border-violet-300 dark:border-violet-700 shadow-2xs' : 'bg-transparent text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
+                              >
+                                <BarChart2 size={13} className={showTemplateChart ? 'text-violet-600 dark:text-violet-400' : ''} />
+                                {showTemplateChart ? 'Chart Visualizer: On' : 'Chart Visualizer'}
+                              </button>
+
+                              <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
+
                               {/* Reusable Executive Theme Dropdown */}
                               <ThemeDropdown
                                 value={sheetsThemePalette}
@@ -38050,20 +38432,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 options={SHEETS_THEME_OPTIONS}
                                 label="Theme"
                               />
-
-                              <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
-
-                              {/* Grid Visibility Toggle */}
-                              <button
-                                type="button"
-                                onClick={() => setShowGridLines(!showGridLines)}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 ${showGridLines ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600' : 'bg-transparent text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
-                              >
-                                <Grid size={13} />
-                                {showGridLines ? 'Gridlines: On' : 'Gridlines: Off'}
-                              </button>
-                            </div>
-                          ) : null}
+                              </div>
+                            ) : null}
 
                           {/* Bottom Row: Cell Formatting Tools */}
                           {(sheetToolbarTab === 'Visualize' || (sheetToolbarTab !== 'Data' && hasImportedData)) && (
@@ -39036,8 +39406,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       />
                     </div>
                       )}
-                    <div
-                      ref={sheetHeaderWrapperRef}
+                    <div className="flex-1 flex flex-row overflow-hidden relative">
+                      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+                        <div
+                          ref={sheetHeaderWrapperRef}
                       className="overflow-hidden w-full bg-slate-50 border-b border-gray-200 shrink-0"
                     >
                       <div
@@ -41481,10 +41853,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <Minimize2 size={12} />
                               <span>Exit Zen Mode</span>
                             </button>
-                          </div>
-                        )}
                       </div>
                     )}
+                  </div>
+                )}
+              </div>
+
+                    {showTemplateChart && (
+                        <TemplateChartVisualizer
+                          activeSheetGrid={activeSheetGrid}
+                          activeSheetId={activeSheetId}
+                          sheetsThemePalette={sheetsThemePalette}
+                          onClose={() => setShowTemplateChart(false)}
+                          templateChartType={templateChartType}
+                          setTemplateChartType={setTemplateChartType}
+                          showToast={showToast}
+                        />
+                      )}
+                    </div>
+                    </div>)}
 
                     <div className={`h-10 px-4 border-t border-slate-200/70 dark:border-zinc-800/70 bg-white/85 dark:bg-zinc-900/85 backdrop-blur-sm flex items-center justify-between gap-4 shrink-0 transition-all duration-200 ${
                       isSheetZenMode 
@@ -41662,12 +42049,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <span className="text-[11px] font-medium hidden sm:inline">Present</span>
                           </button>
                         </div>
-                      </div>
-
                     </div>
-                    )}
                   </div>
-                ) : (
+            ) : (
               <div className="w-full h-full flex-1 flex overflow-hidden bg-[#F7F8FB] relative select-none">
                     {/* Workspace background vignette effect overlay */}
                     <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(240,242,247,0.8)_100%)] z-0" />
