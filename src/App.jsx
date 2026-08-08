@@ -2582,254 +2582,322 @@ const CreateTemplateModal = ({
   );
 };
 
-const RealSpreadsheetThumbnail = ({ id, title, type }) => {
-  if (type === 'blank') {
-    return (
-      <div className="w-full h-full rounded-xl border border-dashed border-emerald-400/80 dark:border-emerald-500/60 bg-emerald-50/20 dark:bg-emerald-950/10 flex flex-col items-center justify-center text-emerald-600 dark:text-emerald-400 gap-1 p-2">
-        <Plus size={26} strokeWidth={2.2} />
-      </div>
-    );
+const getTemplatePreviewMatrix = (id, title, customTemplate) => {
+  if (customTemplate && customTemplate.data) {
+    return {
+      rows: [
+        [customTemplate.name || title || 'Custom Template', '', '', '', ''],
+        ['Custom Saved Sheet', 'Status: Active', 'Rows: ' + (customTemplate.data.length || 0), '', ''],
+        ['Column A', 'Column B', 'Column C', 'Column D', 'Column E'],
+        ...(customTemplate.data.slice(0, 8).map(row => Array.isArray(row) ? row.slice(0, 5) : ['', '', '', '', '']))
+      ]
+    };
   }
 
   if (id === 'financial' || title === 'Financial Model') {
-    return (
-      <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
-        <div className="bg-[#0284c7] text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
-          <span className="truncate">Financial Model & 3-Yr Growth</span>
-          <span className="opacity-80 text-[6px]">USD</span>
-        </div>
-        <div className="p-1 flex-1 flex flex-col justify-between bg-slate-50/50 dark:bg-zinc-900/50">
-          <div className="grid grid-cols-4 bg-sky-100 dark:bg-sky-950/60 text-sky-900 dark:text-sky-200 font-bold p-0.5 rounded-xs border-b border-sky-200 dark:border-sky-800 text-[6.5px]">
-            <span>Metric</span>
-            <span className="text-right">Y1</span>
-            <span className="text-right">Y2</span>
-            <span className="text-right">YoY</span>
-          </div>
-          <div className="grid grid-cols-4 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
-            <span className="truncate font-semibold">Gross Revenue</span>
-            <span className="text-right">$1.45M</span>
-            <span className="text-right">$2.10M</span>
-            <span className="text-right text-emerald-600 font-bold">+44%</span>
-          </div>
-          <div className="grid grid-cols-4 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
-            <span className="truncate">EBITDA Margin</span>
-            <span className="text-right">28.5%</span>
-            <span className="text-right">34.2%</span>
-            <span className="text-right text-sky-600 font-bold">+5.7%</span>
-          </div>
-          <div className="h-4 bg-sky-50 dark:bg-sky-950/40 rounded-xs p-0.5 flex items-end justify-between gap-1 border border-sky-100 dark:border-sky-900/60">
-            <div className="w-full h-full flex items-end gap-1 px-1">
-              <div className="flex-1 bg-sky-300 rounded-t-xs h-[40%]" />
-              <div className="flex-1 bg-sky-400 rounded-t-xs h-[65%]" />
-              <div className="flex-1 bg-sky-500 rounded-t-xs h-[85%]" />
-              <div className="flex-1 bg-sky-600 rounded-t-xs h-[100%]" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return {
+      rows: [
+        ['3-5 Year Financial & Revenue Model', '', '', '', '', '', '', ''],
+        ['ARR Target: $10M', 'Gross Margin: 78%', 'OpEx: $3.2M', 'EBITDA Margin: 32%', 'CAGR: 45%'],
+        ['Financial Line Item', 'Category', 'Year 1 (2026)', 'Year 2 (2027)', 'Year 3 (2028)', 'Year 4 (2029)', 'Status'],
+        ['Enterprise Subscriptions', 'Revenue', '$1,200,000', '$2,100,000', '$3,500,000', '$5,800,000', 'On Track'],
+        ['SMB & Self-Serve Revenue', 'Revenue', '$450,000', '$750,000', '$1,150,000', '$1,650,000', 'On Track'],
+        ['Professional Services', 'Revenue', '$150,000', '$220,000', '$300,000', '$400,000', 'On Track'],
+        ['Cost of Goods Sold (COGS)', 'Cost', '$396,000', '$675,000', '$1,089,000', '$1,727,000', 'Within Budget'],
+        ['Gross Profit', 'Profit', '$1,404,000', '$2,395,000', '$3,861,000', '$6,123,000', 'Achieved'],
+        ['Gross Margin %', 'Profitability', '78%', '78%', '78%', '78%', 'Achieved'],
+        ['Sales & Marketing OpEx', 'Expense', '$600,000', '$950,000', '$1,400,000', '$2,000,000', 'Optimized'],
+        ['EBITDA', 'Profitability', '$104,000', '$395,000', '$981,000', '$2,073,000', 'Surpassed']
+      ]
+    };
   }
 
   if (id === 'saas' || title === 'SaaS Metrics') {
-    return (
-      <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
-        <div className="bg-[#059669] text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
-          <span className="truncate">SaaS Executive Metrics & Unit Econ</span>
-          <span className="opacity-80 text-[6px]">ARR</span>
-        </div>
-        <div className="p-1 flex-1 flex flex-col justify-between bg-emerald-50/30 dark:bg-emerald-950/20">
-          <div className="grid grid-cols-3 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 font-bold p-0.5 rounded-xs border-b border-emerald-200 dark:border-emerald-800 text-[6.5px]">
-            <span>KPI Metric</span>
-            <span className="text-right">Value</span>
-            <span className="text-right">Benchmark</span>
-          </div>
-          <div className="grid grid-cols-3 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
-            <span className="truncate font-semibold">Monthly MRR</span>
-            <span className="text-right font-bold text-emerald-600">$185,000</span>
-            <span className="text-right text-slate-400">Top 10%</span>
-          </div>
-          <div className="grid grid-cols-3 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
-            <span className="truncate">LTV : CAC</span>
-            <span className="text-right font-bold text-emerald-600">4.6x</span>
-            <span className="text-right text-emerald-600">Healthy</span>
-          </div>
-          <div className="h-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-xs p-0.5 flex items-center justify-between gap-1 border border-emerald-100 dark:border-emerald-900/60">
-            <div className="flex items-center gap-1.5 px-1 w-full justify-between">
-              <span className="text-[5.5px] font-bold text-emerald-700 dark:text-emerald-300">NRR: 118%</span>
-              <div className="h-2 bg-emerald-500 rounded-full w-12" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return {
+      rows: [
+        ['SaaS Executive Metrics & Unit Economics Dashboard', '', '', '', '', '', '', ''],
+        ['Current MRR: $185,000', 'ARR: $2.22M', 'Net Revenue Retention: 118%', 'Gross Churn: 1.4%', 'LTV:CAC: 4.8x'],
+        ['Metric ID', 'Metric Name', 'Current Value', 'Prior Quarter', 'YoY Target', 'Change %', 'Status'],
+        ['MET-01', 'Monthly Recurring Revenue (MRR)', '$185,000', '$162,000', '$220,000', '14.2%', 'On Track'],
+        ['MET-02', 'Annual Recurring Revenue (ARR)', '$2,220,000', '$1,944,000', '$2,640,000', '14.2%', 'On Track'],
+        ['MET-03', 'Net Revenue Retention (NRR)', '118%', '114%', '120%', '3.5%', 'Achieved'],
+        ['MET-04', 'Gross Logo Churn Rate', '1.4%', '1.8%', '1.2%', '-22.2%', 'Achieved'],
+        ['MET-05', 'Customer Acquisition Cost (CAC)', '$4,200', '$4,600', '$4,000', '-8.7%', 'Achieved'],
+        ['MET-06', 'Customer Lifetime Value (LTV)', '$20,160', '$18,400', '$22,000', '9.6%', 'Surpassed'],
+        ['MET-07', 'LTV : CAC Ratio', '4.8x', '4.0x', '5.0x', '20.0%', 'Optimal'],
+        ['MET-08', 'CAC Payback Period (Months)', '7.2', '8.4', '6.5', '-14.3%', 'Achieved']
+      ]
+    };
   }
 
   if (id === 'crm' || title === 'Sales CRM') {
-    return (
-      <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
-        <div className="bg-[#7c3aed] text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
-          <span className="truncate">Sales CRM & Pipeline Tracker</span>
-          <span className="opacity-80 text-[6px]">Pipeline</span>
-        </div>
-        <div className="p-1 flex-1 flex flex-col justify-between bg-purple-50/30 dark:bg-purple-950/20">
-          <div className="grid grid-cols-4 bg-purple-100 dark:bg-purple-950/60 text-purple-900 dark:text-purple-200 font-bold p-0.5 rounded-xs border-b border-purple-200 dark:border-purple-800 text-[6.5px]">
-            <span>Account</span>
-            <span className="text-right">Deal</span>
-            <span>Stage</span>
-            <span className="text-right">Win%</span>
-          </div>
-          <div className="grid grid-cols-4 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
-            <span className="truncate font-semibold">Acme Corp</span>
-            <span className="text-right">$120k</span>
-            <span className="text-purple-600 font-bold">Proposal</span>
-            <span className="text-right text-purple-600">75%</span>
-          </div>
-          <div className="grid grid-cols-4 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
-            <span className="truncate">Stark Tech</span>
-            <span className="text-right">$85k</span>
-            <span className="text-amber-600">Qualified</span>
-            <span className="text-right">50%</span>
-          </div>
-          <div className="h-4 bg-purple-50 dark:bg-purple-950/40 rounded-xs p-0.5 flex items-center justify-between px-1.5 border border-purple-100 dark:border-purple-900/60 text-[6px]">
-            <span className="font-bold text-purple-700 dark:text-purple-300">Total: $450,000</span>
-            <span className="text-slate-400">8 Deals</span>
-          </div>
-        </div>
-      </div>
-    );
+    return {
+      rows: [
+        ['Sales CRM & Deal Pipeline Dashboard', '', '', '', '', '', '', ''],
+        ['Total Deals: 10', 'Pipeline Value: $845,000', 'Weighted Forecast: $462,000', 'Win Rate: 54.6%', 'Avg Cycle: 28 Days'],
+        ['Deal ID', 'Opportunity Name', 'Account / Company', 'Stage', 'Deal Value', 'Probability %', 'Priority'],
+        ['OPP-201', 'Enterprise ERP Renewal', 'Acme Global Corp', 'Negotiation', '$180,000', '85%', 'Critical'],
+        ['OPP-202', 'Cloud Infrastructure Expansion', 'Apex Financial Services', 'Proposal', '$120,000', '60%', 'High'],
+        ['OPP-203', 'AI Analytics Suite Pilot', 'Nexus Technologies', 'Demo', '$65,000', '40%', 'Medium'],
+        ['OPP-204', 'Global Security Audit Contract', 'Vanguard Logistics', 'Closed Won', '$150,000', '100%', 'High'],
+        ['OPP-205', 'SaaS Operations Platform', 'Horizon Media Group', 'Qualified', '$45,000', '20%', 'Low'],
+        ['OPP-206', 'Data Warehouse Migration', 'Starlight Healthcare', 'Proposal', '$95,000', '60%', 'High'],
+        ['OPP-207', 'Customer Success Portal', 'Quantum Dynamics', 'Negotiation', '$70,000', '80%', 'Critical']
+      ]
+    };
   }
 
   if (id === 'cashflow' || title === 'Cash Flow') {
-    return (
-      <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
-        <div className="bg-[#d97706] text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
-          <span className="truncate">12-Month Cash Flow Trajectory</span>
-          <span className="opacity-80 text-[6px]">USD</span>
-        </div>
-        <div className="p-1 flex-1 flex flex-col justify-between bg-amber-50/30 dark:bg-amber-950/20">
-          <div className="grid grid-cols-4 bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 font-bold p-0.5 rounded-xs border-b border-amber-200 dark:border-amber-800 text-[6.5px]">
-            <span>Period</span>
-            <span className="text-right">Inflow</span>
-            <span className="text-right">Outflow</span>
-            <span className="text-right">Net</span>
-          </div>
-          <div className="grid grid-cols-4 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
-            <span className="truncate font-semibold">Q1 2026</span>
-            <span className="text-right">$740k</span>
-            <span className="text-right">$580k</span>
-            <span className="text-right text-emerald-600 font-bold">+$160k</span>
-          </div>
-          <div className="grid grid-cols-4 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
-            <span className="truncate">Q2 2026</span>
-            <span className="text-right">$820k</span>
-            <span className="text-right">$610k</span>
-            <span className="text-right text-emerald-600 font-bold">+$210k</span>
-          </div>
-          <div className="h-4 bg-amber-50 dark:bg-amber-950/40 rounded-xs p-0.5 flex items-center justify-between px-1.5 border border-amber-100 dark:border-amber-900/60 text-[6px]">
-            <span className="font-bold text-amber-700 dark:text-amber-300">Runway: 24 Mos</span>
-            <span className="text-emerald-600 font-bold">Positive</span>
-          </div>
-        </div>
-      </div>
-    );
+    return {
+      rows: [
+        ['12-Month Cash Flow & Runway Forecast', '', '', '', '', '', '', ''],
+        ['Starting Cash: $1,500,000', 'Net Cash Flow: +$240,000', 'Ending Cash: $1,740,000', 'Estimated Runway: 24.5 Mos', ''],
+        ['Category / Flow Line', 'Type', 'Q1 2026', 'Q2 2026', 'Q3 2026', 'Q4 2026', 'Trend / Status'],
+        ['Beginning Cash Balance', 'Balance', '$1,500,000', '$1,545,000', '$1,605,000', '$1,675,000', 'Healthy'],
+        ['Customer Receipts (Inflows)', 'Inflow', '$950,000', '$1,120,000', '$1,350,000', '$1,600,000', 'Growing'],
+        ['Investment & Interest Inflows', 'Inflow', '$15,000', '$18,000', '$20,000', '$22,000', 'Stable'],
+        ['Payroll & Personnel Expenses', 'Outflow', '$520,000', '$580,000', '$640,000', '$720,000', 'Controlled'],
+        ['Marketing & Sales Programs', 'Outflow', '$180,000', '$220,000', '$270,000', '$320,000', 'Scaling'],
+        ['Cloud & Infrastructure', 'Outflow', '$85,000', '$95,000', '$110,000', '$130,000', 'Optimized'],
+        ['Net Cash Flow', 'Net', '+$45,000', '+$60,000', '+$70,000', '+$65,000', 'Positive'],
+        ['Ending Cash Balance', 'Balance', '$1,545,000', '$1,605,000', '$1,675,000', '$1,740,000', 'Surplus']
+      ]
+    };
   }
 
   if (id === 'kpi' || title === 'KPI Dashboard') {
-    return (
-      <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
-        <div className="bg-[#4f46e5] text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
-          <span className="truncate">KPI Executive Dashboard</span>
-          <span className="opacity-80 text-[6px]">Live</span>
-        </div>
-        <div className="p-1 flex-1 flex flex-col justify-between bg-indigo-50/30 dark:bg-indigo-950/20">
-          <div className="grid grid-cols-4 bg-indigo-100 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-bold p-0.5 rounded-xs border-b border-indigo-200 dark:border-indigo-800 text-[6.5px]">
-            <span>KPI Goal</span>
-            <span className="text-right">Target</span>
-            <span className="text-right">Actual</span>
-            <span className="text-right">Delta</span>
-          </div>
-          <div className="grid grid-cols-4 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
-            <span className="truncate font-semibold">Active Users</span>
-            <span className="text-right">50.0k</span>
-            <span className="text-right font-bold text-indigo-600">54.2k</span>
-            <span className="text-right text-emerald-600 font-bold">+8.4%</span>
-          </div>
-          <div className="grid grid-cols-4 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
-            <span className="truncate">NPS Score</span>
-            <span className="text-right">65</span>
-            <span className="text-right font-bold text-indigo-600">72</span>
-            <span className="text-right text-emerald-600 font-bold">+10.7%</span>
-          </div>
-          <div className="h-4 bg-indigo-50 dark:bg-indigo-950/40 rounded-xs p-0.5 flex items-center justify-between px-1.5 border border-indigo-100 dark:border-indigo-900/60 text-[6px]">
-            <span className="font-bold text-indigo-700 dark:text-indigo-300">Goal Achievement: 108%</span>
-          </div>
-        </div>
-      </div>
-    );
+    return {
+      rows: [
+        ['KPI Executive Dashboard', '', '', '', '', '', '', ''],
+        ['Target: 100%', 'Status: Active', 'Quarter: Q3 2026', 'Quarterly Growth: +14.2%', ''],
+        ['KPI Goal', 'Category', 'Target Value', 'Actual Value', 'Delta %', 'Owner', 'Status'],
+        ['Active Monthly Users', 'Growth', '50.0k', '54.2k', '+8.4%', 'Sarah Chen', 'Achieved'],
+        ['Net Promoter Score (NPS)', 'Satisfaction', '65', '72', '+10.7%', 'Alex Rivera', 'Surpassed'],
+        ['Customer Support Resolution', 'Operations', '< 4.0 Hrs', '3.1 Hrs', '-22.5%', 'Elena Rostova', 'Achieved'],
+        ['Server Uptime %', 'Engineering', '99.9%', '99.98%', '+0.08%', 'Marcus Vance', 'Optimal'],
+        ['Gross Margin %', 'Finance', '75.0%', '78.2%', '+3.2%', 'David Kim', 'Achieved'],
+        ['Sales Pipeline Velocity', 'Sales', '25 Days', '21 Days', '-16.0%', 'Jessica Taylor', 'Optimal']
+      ]
+    };
   }
 
   if (id === 'project' || title === 'Project Tracking' || title === 'Project Track') {
+    return {
+      rows: [
+        ['Project Ops & Task Tracking', '', '', '', '', '', '', ''],
+        ['Sprint 14', 'Progress: 82%', 'Total Tasks: 24', 'Blockers: 0', 'Target Date: Q3 2026'],
+        ['Task Name', 'Owner', 'Priority', 'Stage', 'Target Date', 'Status'],
+        ['API Architecture v2.0', 'Sarah Chen', 'High', 'In Progress', '2026-08-28', 'On Track'],
+        ['UI Design Tokens System', 'Alex Rivera', 'Medium', 'Completed', '2026-08-15', 'Achieved'],
+        ['Auth0 SSO Integration', 'Elena Rostova', 'Critical', 'Testing', '2026-08-22', 'In Progress'],
+        ['Database Migration Scripts', 'Marcus Vance', 'High', 'Completed', '2026-08-10', 'Achieved'],
+        ['Real-Time Websocket Engine', 'David Kim', 'High', 'In Progress', '2026-09-02', 'On Track'],
+        ['Automated E2E Test Suite', 'Jessica Taylor', 'Medium', 'In Progress', '2026-09-10', 'On Track']
+      ]
+    };
+  }
+
+  return {
+    rows: [
+      [title || 'Custom Template', '', '', '', ''],
+      ['Custom Saved Sheet', 'Status: Active', 'Fidelity: 100%', '', ''],
+      ['Header 1', 'Header 2', 'Header 3', 'Header 4', 'Status'],
+      ['Item Row 1', 'Data Value 1', '$10,400', 'Verified', 'Active'],
+      ['Item Row 2', 'Data Value 2', '$8,250', 'Pending', 'In Progress']
+    ]
+  };
+};
+
+const LiveCanvasSpreadsheetSnapshot = ({ id, title, type, customTemplate }) => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = 480;
+    const height = 260;
+    canvas.width = width * 2;
+    canvas.height = height * 2;
+    ctx.scale(2, 2);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+
+    const data = getTemplatePreviewMatrix(id, title, customTemplate);
+
+    const colHeaderHeight = 18;
+    const rowHeaderWidth = 24;
+    const colWidths = [140, 90, 80, 80, 80, 75, 75, 75, 75];
+
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(0, 0, rowHeaderWidth, colHeaderHeight);
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0, 0, rowHeaderWidth, colHeaderHeight);
+
+    let currentX = rowHeaderWidth;
+    const colLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+    colWidths.forEach((w, colIdx) => {
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(currentX, 0, w, colHeaderHeight);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.strokeRect(currentX, 0, w, colHeaderHeight);
+
+      ctx.fillStyle = '#475569';
+      ctx.font = 'bold 9px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(colLetters[colIdx] || '', currentX + w / 2, 12);
+      currentX += w;
+    });
+
+    let currentY = colHeaderHeight;
+    const rowHeight = 22;
+
+    (data.rows || []).forEach((row, rIdx) => {
+      if (currentY >= height) return;
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, currentY, rowHeaderWidth, rowHeight);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.strokeRect(0, currentY, rowHeaderWidth, rowHeight);
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '600 8.5px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(rIdx + 1), rowHeaderWidth / 2, currentY + 14);
+
+      if (rIdx === 0) {
+        const bannerWidth = colWidths.reduce((a, b) => a + b, 0);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(rowHeaderWidth, currentY, bannerWidth, rowHeight + 2);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(row[0] || title, rowHeaderWidth + bannerWidth / 2, currentY + 16);
+      } else if (rIdx === 1) {
+        let x = rowHeaderWidth;
+        row.forEach((cellVal, cIdx) => {
+          const w = colWidths[cIdx] || 75;
+          ctx.fillStyle = '#f1f5f9';
+          ctx.fillRect(x, currentY, w, rowHeight);
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.strokeRect(x, currentY, w, rowHeight);
+
+          if (cellVal) {
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 8px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(cellVal, x + w / 2, currentY + 14);
+          }
+          x += w;
+        });
+      } else if (rIdx === 2) {
+        let x = rowHeaderWidth;
+        row.forEach((cellVal, cIdx) => {
+          const w = colWidths[cIdx] || 75;
+          ctx.fillStyle = '#0284c7';
+          ctx.fillRect(x, currentY, w, rowHeight);
+          ctx.strokeStyle = '#0369a1';
+          ctx.strokeRect(x, currentY, w, rowHeight);
+
+          if (cellVal) {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 8.5px system-ui, sans-serif';
+            ctx.textAlign = (cIdx >= 2 && cIdx <= 6) ? 'right' : 'left';
+            const textX = ctx.textAlign === 'right' ? x + w - 6 : x + 6;
+            ctx.fillText(cellVal, textX, currentY + 14);
+          }
+          x += w;
+        });
+      } else {
+        let x = rowHeaderWidth;
+        const isEven = rIdx % 2 === 0;
+        const rowBg = isEven ? '#f8fafc' : '#ffffff';
+
+        row.forEach((cellVal, cIdx) => {
+          const w = colWidths[cIdx] || 75;
+          ctx.fillStyle = rowBg;
+          ctx.fillRect(x, currentY, w, rowHeight);
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.strokeRect(x, currentY, w, rowHeight);
+
+          if (cellVal) {
+            if (cIdx === row.length - 1 || ['On Track', 'Achieved', 'Closed Won', 'Healthy', 'Surpassed', 'Optimal', 'Critical', 'High', 'Positive', 'Surplus'].includes(cellVal)) {
+              let badgeBg = '#dbeafe';
+              let badgeText = '#1e40af';
+              if (['Achieved', 'Closed Won', 'Healthy', 'Surpassed', 'Optimal', 'Positive', 'Surplus'].includes(cellVal)) {
+                badgeBg = '#d1fae5';
+                badgeText = '#065f46';
+              } else if (['Critical', 'High', 'At Risk'].includes(cellVal)) {
+                badgeBg = '#fee2e2';
+                badgeText = '#991b1b';
+              }
+
+              ctx.fillStyle = badgeBg;
+              const badgeW = Math.min(w - 8, 64);
+              const badgeX = x + (w - badgeW) / 2;
+              ctx.beginPath();
+              if (ctx.roundRect) {
+                ctx.roundRect(badgeX, currentY + 3, badgeW, rowHeight - 6, 4);
+              } else {
+                ctx.rect(badgeX, currentY + 3, badgeW, rowHeight - 6);
+              }
+              ctx.fill();
+
+              ctx.fillStyle = badgeText;
+              ctx.font = 'bold 7.5px system-ui, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText(cellVal, x + w / 2, currentY + 14);
+            } else {
+              ctx.fillStyle = (cIdx === 0 || rIdx === 7 || rIdx === 12) ? '#0f172a' : '#334155';
+              ctx.font = (cIdx === 0 || rIdx === 7 || rIdx === 12) ? 'bold 8.5px system-ui, sans-serif' : '8px system-ui, sans-serif';
+              ctx.textAlign = (cIdx >= 2 && cIdx <= 6) ? 'right' : 'left';
+              const textX = ctx.textAlign === 'right' ? x + w - 6 : x + 6;
+              
+              let displayText = String(cellVal);
+              if (ctx.measureText(displayText).width > w - 10) {
+                while (displayText.length > 3 && ctx.measureText(displayText + '…').width > w - 10) {
+                  displayText = displayText.slice(0, -1);
+                }
+                displayText += '…';
+              }
+              ctx.fillText(displayText, textX, currentY + 14);
+            }
+          }
+          x += w;
+        });
+      }
+
+      currentY += rowHeight;
+    });
+
+  }, [id, title, type, customTemplate]);
+
+  return (
+    <canvas 
+      ref={canvasRef} 
+      className="w-full h-full object-cover rounded-lg pointer-events-none select-none shadow-2xs" 
+    />
+  );
+};
+
+const RealSpreadsheetThumbnail = ({ id, title, type, customTemplate }) => {
+  if (type === 'blank' || id === 'blank') {
     return (
-      <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
-        <div className="bg-[#2563eb] text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
-          <span className="truncate">Project Ops & Task Tracking</span>
-          <span className="opacity-80 text-[6px]">Sprint 14</span>
+      <div className="w-full h-full rounded-xl border border-dashed border-slate-300/90 dark:border-zinc-700/90 bg-slate-50/50 dark:bg-zinc-900/40 flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500 gap-1.5 p-3 select-none">
+        <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-2xs group-hover:scale-105 transition-transform">
+          <Plus size={20} strokeWidth={2.2} />
         </div>
-        <div className="p-1 flex-1 flex flex-col justify-between bg-blue-50/30 dark:bg-blue-950/20">
-          <div className="grid grid-cols-4 bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-200 font-bold p-0.5 rounded-xs border-b border-blue-200 dark:border-blue-800 text-[6.5px]">
-            <span>Task</span>
-            <span>Owner</span>
-            <span>Priority</span>
-            <span className="text-right">Status</span>
-          </div>
-          <div className="grid grid-cols-4 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
-            <span className="truncate font-semibold">API Arch v2</span>
-            <span className="truncate">Sarah K.</span>
-            <span className="text-rose-600 font-bold">High</span>
-            <span className="text-right text-blue-600 font-bold">In Prog</span>
-          </div>
-          <div className="grid grid-cols-4 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
-            <span className="truncate">UI Tokens</span>
-            <span className="truncate">Alex M.</span>
-            <span className="text-amber-600">Medium</span>
-            <span className="text-right text-emerald-600 font-bold">Done</span>
-          </div>
-          <div className="h-4 bg-blue-50 dark:bg-blue-950/40 rounded-xs p-0.5 flex items-center justify-between px-1.5 border border-blue-100 dark:border-blue-900/60 text-[6px]">
-            <span className="font-bold text-blue-700 dark:text-blue-300">Sprint Progress: 82%</span>
-          </div>
-        </div>
+        <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">Blank Sheet</span>
       </div>
     );
   }
 
-  return (
-    <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
-      <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
-        <span className="truncate">{title}</span>
-        <span className="bg-white/20 text-white px-1 py-0.5 rounded-xs text-[5.5px]">Custom</span>
-      </div>
-      <div className="p-1 flex-1 flex flex-col justify-between bg-violet-50/30 dark:bg-violet-950/20">
-        <div className="grid grid-cols-3 bg-violet-100 dark:bg-violet-950/60 text-violet-900 dark:text-violet-200 font-bold p-0.5 rounded-xs border-b border-violet-200 dark:border-violet-800 text-[6.5px]">
-          <span>Header 1</span>
-          <span className="text-right">Value</span>
-          <span className="text-right">Status</span>
-        </div>
-        <div className="grid grid-cols-3 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
-          <span className="truncate font-semibold">Saved Row 1</span>
-          <span className="text-right">$10,400</span>
-          <span className="text-right text-emerald-600 font-bold">Active</span>
-        </div>
-        <div className="grid grid-cols-3 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
-          <span className="truncate">Saved Row 2</span>
-          <span className="text-right">$8,250</span>
-          <span className="text-right text-amber-600 font-bold">Pending</span>
-        </div>
-        <div className="h-4 bg-violet-50 dark:bg-violet-950/40 rounded-xs p-0.5 flex items-center justify-between px-1.5 border border-violet-100 dark:border-violet-900/60 text-[6px]">
-          <span className="font-bold text-violet-700 dark:text-violet-300">Custom Template Grid</span>
-        </div>
-      </div>
-    </div>
-  );
+  return <LiveCanvasSpreadsheetSnapshot id={id} title={title} type={type} customTemplate={customTemplate} />;
 };
 
 const VisualTemplateCard = ({ id, title, type = 'prebuilt', onClick, onDelete, isCustom = false }) => {
@@ -2841,14 +2909,16 @@ const VisualTemplateCard = ({ id, title, type = 'prebuilt', onClick, onDelete, i
       {/* Thumbnail Card Frame */}
       <div className="w-36 h-22 sm:w-44 sm:h-26 rounded-2xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-violet-500/70 group-hover:scale-[1.02] transition-all duration-200 relative overflow-hidden flex items-center justify-center">
         <RealSpreadsheetThumbnail id={id} title={title} type={type} />
-
-        {/* Hover overlay with subtle "Use template" pill */}
-        {type !== 'blank' && (
-          <div className="absolute inset-0 bg-slate-900/15 dark:bg-black/30 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center p-2 rounded-2xl">
-            <span className="px-3 py-1.5 rounded-full bg-slate-900/90 dark:bg-white/90 text-white dark:text-slate-900 text-[11px] font-bold shadow-lg flex items-center gap-1 transform translate-y-1 group-hover:translate-y-0 transition-transform duration-200">
-              Use Template
-            </span>
-          </div>
+        {/* Delete button if custom template */}
+        {isCustom && onDelete && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-slate-900/80 text-white hover:bg-red-600 flex items-center justify-center transition-colors shadow-sm opacity-0 group-hover:opacity-100 z-10"
+            title="Delete custom template"
+          >
+            <X size={11} />
+          </button>
         )}
       </div>
 
@@ -2856,176 +2926,26 @@ const VisualTemplateCard = ({ id, title, type = 'prebuilt', onClick, onDelete, i
       <span className="text-[12px] font-medium text-slate-700 dark:text-zinc-300 mt-1.5 truncate max-w-[140px] group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
         {title}
       </span>
-
-      {/* Delete button if custom template */}
-      {isCustom && onDelete && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-slate-900/80 text-white hover:bg-red-600 flex items-center justify-center transition-colors shadow-sm opacity-0 group-hover:opacity-100 z-10"
-          title="Delete custom template"
-        >
-          <X size={11} />
-        </button>
-      )}
     </div>
   );
 };
 
-const LiveTemplateGridPreview = ({ id, title, type, customTemplate, sheetGrids }) => {
-  if (type === 'blank') {
+const TemplateScreenshotPreview = ({ id, type, title, customTemplate }) => {
+  if (type === 'blank' || id === 'blank') {
     return (
-      <div className="w-full h-full rounded-xl border border-dashed border-slate-300/80 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-900/50 flex flex-col items-center justify-center text-slate-500 dark:text-zinc-400 gap-2 p-4">
-        <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center shadow-2xs">
-          <Plus size={18} strokeWidth={2} />
+      <div className="w-full h-full rounded-xl border border-dashed border-slate-300/90 dark:border-zinc-700/90 bg-slate-50/50 dark:bg-zinc-900/40 flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500 gap-1.5 p-3 select-none">
+        <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-2xs group-hover:scale-105 transition-transform">
+          <Plus size={20} strokeWidth={2.2} />
         </div>
-        <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Blank Grid</span>
+        <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">Blank Sheet</span>
       </div>
     );
   }
 
-  // Derive actual spreadsheet matrix cells & formats directly from live engine state
-  let gridTitle = title;
-  let cells = [];
-
-  const storedGrid = sheetGrids?.[id] || customTemplate?.grid;
-  if (storedGrid && storedGrid.cells && storedGrid.cells.length > 0) {
-    cells = storedGrid.cells;
-  } else {
-    // Generate actual engine data matrix for built-in templates
-    if (id === 'financial' || title === 'Financial Model') {
-      gridTitle = '3-5 Year Financial & Revenue Model';
-      cells = [
-        ['3-5 Year Financial & Revenue Model', '', '', '', ''],
-        ['Financial Line Item', 'Category', '2026', '2027', 'Status'],
-        ['Enterprise Subscriptions', 'Revenue', '$1,200,000', '$2,100,000', 'On Track'],
-        ['SMB & Self-Serve Revenue', 'Revenue', '$450,000', '$750,000', 'On Track'],
-        ['Cost of Goods Sold (COGS)', 'Cost', '$396,000', '$675,000', 'Within Budget'],
-        ['Gross Profit', 'Profit', '$1,404,000', '$2,395,000', 'Achieved'],
-        ['EBITDA Margin %', 'Profitability', '6%', '13%', 'Achieved'],
-      ];
-    } else if (id === 'saas' || title === 'SaaS Metrics') {
-      gridTitle = 'SaaS Executive Metrics & Unit Economics';
-      cells = [
-        ['SaaS Executive Metrics & Unit Economics', '', '', '', ''],
-        ['Metric Name', 'Category', 'Current', 'Target', 'Status'],
-        ['Monthly Recurring Revenue', 'Revenue', '$185,000', '$220,000', 'On Track'],
-        ['Annual Recurring Revenue', 'Revenue', '$2,220,000', '$2,640,000', 'On Track'],
-        ['Net Revenue Retention', 'Retention', '118%', '120%', 'Achieved'],
-        ['Customer Lifetime Value', 'Unit Econ', '$20,160', '$22,000', 'Surpassed'],
-        ['LTV : CAC Ratio', 'Efficiency', '4.8x', '5.0x', 'Optimal'],
-      ];
-    } else if (id === 'crm' || title === 'Sales CRM') {
-      gridTitle = 'Sales CRM & Deal Pipeline Tracker';
-      cells = [
-        ['Sales CRM & Deal Pipeline Tracker', '', '', '', ''],
-        ['Opportunity', 'Stage', 'Value', 'Owner', 'Priority'],
-        ['Enterprise ERP Renewal', 'Negotiation', '$180,000', 'Alex Chen', 'Critical'],
-        ['Cloud Infrastructure', 'Proposal', '$120,000', 'Sarah Vance', 'High'],
-        ['AI Analytics Suite Pilot', 'Demo', '$65,000', 'Marcus Roy', 'Medium'],
-        ['Global Security Audit', 'Closed Won', '$150,000', 'Elena Rostova', 'High'],
-        ['SaaS Operations Platform', 'Qualified', '$45,000', 'David Kim', 'Low'],
-      ];
-    } else if (id === 'cashflow' || title === 'Cash Flow') {
-      gridTitle = '12-Month Cash Flow Statement & Forecast';
-      cells = [
-        ['12-Month Cash Flow Statement & Forecast', '', '', '', ''],
-        ['Line Item', 'Q1 2026', 'Q2 2026', 'Q3 2026', 'Status'],
-        ['Beginning Cash Balance', '$1,400,000', '$1,560,000', '$1,770,000', 'Healthy'],
-        ['Customer Inflows', '$740,000', '$820,000', '$910,000', 'On Target'],
-        ['Payroll & OpEx Outflows', '$580,000', '$610,000', '$650,000', 'Managed'],
-        ['Net Operating Cash Flow', '+$160,000', '+$210,000', '+$260,000', 'Positive'],
-        ['Ending Reserve', '$1,560,000', '$1,770,000', '$2,030,000', 'Surpassed'],
-      ];
-    } else if (id === 'kpi' || title === 'KPI Dashboard') {
-      gridTitle = 'Executive Master KPI Dashboard';
-      cells = [
-        ['Executive Master KPI Dashboard', '', '', '', ''],
-        ['Key Metric', 'Actual', 'Target', 'Variance', 'Status'],
-        ['Active Monthly Users', '54,200', '50,000', '+8.4%', 'Exceeding'],
-        ['NPS Customer Score', '72', '65', '+7 pts', 'Exceeding'],
-        ['Gross Profit Margin', '78%', '75%', '+3%', 'Achieved'],
-        ['Customer Churn Rate', '1.4%', '2.0%', '-0.6%', 'Optimal'],
-        ['System Uptime SLA', '99.98%', '99.90%', '+0.08%', 'Optimal'],
-      ];
-    } else if (id === 'project' || title === 'Project Tracking' || title === 'Project Track') {
-      gridTitle = 'Project Portfolio & Milestone Tracker';
-      cells = [
-        ['Project Portfolio & Milestone Tracker', '', '', '', ''],
-        ['Project Name', 'Owner', 'Phase', 'Progress', 'Status'],
-        ['Cloud Infrastructure v2', 'Sarah Chen', 'Execution', '85%', 'In Progress'],
-        ['Mobile App Redesign', 'Alex Rivera', 'Testing', '92%', 'On Track'],
-        ['AI Assistant Integration', 'Elena Rostova', 'Planning', '45%', 'In Review'],
-        ['Security & SOC2 Audit', 'Marcus Vance', 'Audit', '100%', 'Completed'],
-        ['DevOps CI/CD Pipeline', 'David Kim', 'Deployment', '70%', 'In Progress'],
-      ];
-    } else {
-      gridTitle = title || 'Custom Sheet Template';
-      cells = [
-        [gridTitle, '', '', '', ''],
-        ['Item Name', 'Category', 'Value', 'Date', 'Status'],
-        ['Sample Data Row 1', 'Operations', '$12,500', '2026-01', 'Active'],
-        ['Sample Data Row 2', 'Finance', '$45,000', '2026-02', 'Active'],
-        ['Sample Data Row 3', 'Sales', '$8,400', '2026-03', 'Pending'],
-        ['Sample Data Row 4', 'Marketing', '$19,200', '2026-04', 'Active'],
-      ];
-    }
-  }
-
-  const colHeaders = ['A', 'B', 'C', 'D', 'E'];
-  const headerRow = cells[1] || ['Column A', 'Column B', 'Column C', 'Column D', 'Column E'];
-  const dataRows = cells.slice(2, 7);
-
-  return (
-    <div className="w-full h-full rounded-xl bg-white dark:bg-[#0c0d10] border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-xs font-sans leading-snug select-none shadow-xs">
-      {/* Live Engine Canvas Title Header Bar */}
-      <div className="bg-slate-900 dark:bg-zinc-800 text-white px-3 py-1.5 flex items-center justify-between font-bold shrink-0 border-b border-slate-800 dark:border-zinc-700">
-        <span className="text-[11px] truncate tracking-tight">
-          {gridTitle}
-        </span>
-      </div>
-
-      {/* Column Headers Row (A, B, C, D, E) */}
-      <div className="grid grid-cols-12 bg-slate-100 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 text-[10px] font-mono font-bold text-slate-500 dark:text-zinc-400 divide-x divide-slate-200 dark:divide-zinc-800 shrink-0">
-        <div className="col-span-1 text-center py-1 bg-slate-200/60 dark:bg-zinc-800/80">#</div>
-        <div className="col-span-3 px-1.5 py-1 truncate">{colHeaders[0]}: {headerRow[0] || 'Col A'}</div>
-        <div className="col-span-3 px-1.5 py-1 truncate">{colHeaders[1]}: {headerRow[1] || 'Col B'}</div>
-        <div className="col-span-2 px-1.5 py-1 text-right truncate">{colHeaders[2]}: {headerRow[2] || 'Col C'}</div>
-        <div className="col-span-3 px-1.5 py-1 text-center truncate">{colHeaders[4]}: {headerRow[4] || 'Col E'}</div>
-      </div>
-
-      {/* Spreadsheet Canvas Engine Data Grid Rows */}
-      <div className="flex-1 overflow-hidden divide-y divide-slate-100 dark:divide-zinc-900 bg-white dark:bg-zinc-950 text-[10px]">
-        {dataRows.map((row, rIdx) => {
-          const rowNum = rIdx + 1;
-          const status = row[4] || row[3] || 'Active';
-          let statusBadge = 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300';
-          if (['On Track', 'Achieved', 'Surpassed', 'Optimal', 'Closed Won', 'Positive', 'Exceeding', 'Completed'].includes(status)) {
-            statusBadge = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 font-bold';
-          } else if (['Within Budget', 'Negotiation', 'Proposal', 'Healthy', 'In Progress', 'Managed'].includes(status)) {
-            statusBadge = 'bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 font-bold';
-          } else if (['Critical', 'High'].includes(status)) {
-            statusBadge = 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 font-bold';
-          }
-
-          return (
-            <div key={rIdx} className={`grid grid-cols-12 items-center divide-x divide-slate-100 dark:divide-zinc-900 ${rIdx % 2 === 0 ? 'bg-slate-50/50 dark:bg-zinc-900/30' : 'bg-white dark:bg-zinc-950'}`}>
-              <div className="col-span-1 text-center py-1 text-slate-400 font-mono text-[9px] bg-slate-100/40 dark:bg-zinc-900/40">{rowNum}</div>
-              <div className="col-span-3 px-1.5 py-1 truncate font-semibold text-slate-800 dark:text-zinc-200">{row[0]}</div>
-              <div className="col-span-3 px-1.5 py-1 truncate text-slate-500 dark:text-zinc-400">{row[1]}</div>
-              <div className="col-span-2 px-1.5 py-1 text-right font-mono font-medium text-slate-700 dark:text-zinc-300 truncate">{row[2]}</div>
-              <div className="col-span-3 px-1 py-1 flex items-center justify-center">
-                <span className={`px-1.5 py-0.5 rounded text-[8px] truncate ${statusBadge}`}>
-                  {status}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+  return <LiveCanvasSpreadsheetSnapshot id={id} title={title} type={type} customTemplate={customTemplate} />;
 };
+
+const LiveTemplateGridPreview = (props) => <TemplateScreenshotPreview {...props} />;
 
 const FullPageTemplateGallery = ({
   sheetsData,
@@ -3039,7 +2959,7 @@ const FullPageTemplateGallery = ({
   loadCashFlowForecastTemplate,
   loadKPIDashboardTemplate,
   loadProjectTrackingTemplate,
-  customTemplates,
+  customTemplates = [],
   handleApplyCustomTemplate,
   handleDeleteCustomTemplate,
   setCreateTemplateSource,
@@ -3049,21 +2969,116 @@ const FullPageTemplateGallery = ({
 }) => {
   const [category, setCategory] = React.useState('all');
   const [previewTemplate, setPreviewTemplate] = React.useState(null);
+  const [openMenuId, setOpenMenuId] = React.useState(null);
+
+  // Unified click-outside handler to close secondary action menus
+  React.useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (openMenuId && !e.target.closest('.template-card-menu')) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+  }, [openMenuId]);
 
   const applyTemplate = (actionFn, templateName) => {
-    actionFn();
+    if (actionFn) actionFn();
     setSheetToolbarTab(null);
     showToast(`${templateName} loaded into Spreadsheet Grid`);
   };
 
+  const handleBlankGrid = () => {
+    const activeSheet = (sheetsData || []).find(s => s.id === activeSheetId);
+    if (activeSheet) {
+      updateSheetData(activeSheetId, { data: [Array(15).fill('')], columns: Array(10).fill({ width: 100 }) });
+      setSheetToolbarTab(null);
+      showToast('Loaded Blank Grid');
+    }
+  };
+
+  const allTemplateCards = [
+    {
+      id: 'blank',
+      title: 'Start blank',
+      category: 'Start from scratch',
+      categoryId: 'operations',
+      applyFn: handleBlankGrid,
+      isCustom: false
+    },
+    {
+      id: 'financial',
+      title: 'Financial Model',
+      category: 'Finance & Growth',
+      categoryId: 'finance',
+      applyFn: loadFinancialModelTemplate,
+      isCustom: false
+    },
+    {
+      id: 'saas',
+      title: 'SaaS Metrics',
+      category: 'Finance & Growth',
+      categoryId: 'finance',
+      applyFn: loadSaaSMetricsTemplate,
+      isCustom: false
+    },
+    {
+      id: 'crm',
+      title: 'Sales CRM',
+      category: 'Sales',
+      categoryId: 'sales',
+      applyFn: loadSalesCRMPipelineTemplate,
+      isCustom: false
+    },
+    {
+      id: 'cashflow',
+      title: 'Cash Flow',
+      category: 'Finance & Growth',
+      categoryId: 'finance',
+      applyFn: loadCashFlowForecastTemplate,
+      isCustom: false
+    },
+    {
+      id: 'kpi',
+      title: 'KPI Dashboard',
+      category: 'Operations',
+      categoryId: 'operations',
+      applyFn: loadKPIDashboardTemplate,
+      isCustom: false
+    },
+    {
+      id: 'project',
+      title: 'Project Tracking',
+      category: 'Operations',
+      categoryId: 'operations',
+      applyFn: loadProjectTrackingTemplate,
+      isCustom: false
+    },
+    ...(customTemplates || []).map((tpl) => ({
+      id: tpl.id,
+      title: tpl.name || 'Custom Template',
+      category: tpl.category || 'My Templates',
+      categoryId: 'custom',
+      applyFn: () => handleApplyCustomTemplate(tpl),
+      isCustom: true
+    }))
+  ];
+
+  const filteredCards = allTemplateCards.filter((card) => {
+    if (category === 'all') return true;
+    return card.categoryId === category;
+  });
+
   return (
-    <div className="w-full h-full flex flex-col bg-slate-50/70 dark:bg-[#090a0d] overflow-y-auto thin-scrollbar p-6">
-      <div className="w-full flex flex-col gap-4">
+    <div className="w-full h-full flex flex-col bg-slate-50/70 dark:bg-[#090a0d] overflow-y-auto thin-scrollbar p-8">
+      <div className="w-full flex flex-col gap-5 max-w-7xl mx-auto">
         {/* Header Bar */}
-        <div className="flex items-center justify-between gap-4 pb-3 border-b border-slate-200/80 dark:border-zinc-800">
+        <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-zinc-800">
           <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
             Templates
           </h1>
+          
+          {/* Quiet outlined button for Create template */}
           <button
             type="button"
             onClick={() => {
@@ -3074,418 +3089,168 @@ const FullPageTemplateGallery = ({
               }));
               setIsCreateTemplateModalOpen(true);
             }}
-            className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Plus size={14} />
             <span>Create template</span>
           </button>
         </div>
 
-        {/* Category Filters (Quiet scrollable strip without "All" pill) */}
+        {/* Initial 4 Category Pills Bar (Slightly rounded rectangles) */}
         <div className="flex items-center gap-2 overflow-x-auto thin-scrollbar py-1">
           {[
+            { id: 'all', label: 'All Templates' },
             { id: 'finance', label: 'Finance & Growth' },
             { id: 'sales', label: 'Sales' },
             { id: 'operations', label: 'Operations' },
             { id: 'custom', label: customTemplates.length > 0 ? `My Templates (${customTemplates.length})` : 'My Templates' }
-          ].map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => setCategory((prev) => prev === cat.id ? 'all' : cat.id)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
-                category === cat.id
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs'
-                  : 'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-800/60'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+          ].map((cat) => {
+            const isActive = category === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setCategory(cat.id)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border select-none shrink-0 ${
+                  isActive
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs'
+                    : 'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Grid of Real Spreadsheet Previews (3-4 columns) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pt-2 pb-8">
-          {/* Blank Grid Special Card */}
-          {(category === 'all' || category === 'operations') && (
-            <div 
-              onClick={() => {
-                const activeSheet = (sheetsData || []).find(s => s.id === activeSheetId);
-                if (activeSheet) {
-                  updateSheetData(activeSheetId, { data: [Array(15).fill('')], columns: Array(10).fill({ width: 100 }) });
-                  setSheetToolbarTab(null);
-                  showToast('Loaded Blank Grid');
-                }
-              }}
-              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-emerald-500/80 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
+        {/* Template Cards Grid (Large previews ~80%, small footers ~20%) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-2 pb-10">
+          {filteredCards.map((card) => (
+            <div
+              key={card.id}
+              onClick={() => applyTemplate(card.applyFn, card.title)}
+              className="w-full h-[265px] rounded-2xl bg-white dark:bg-[#0d0e12] border border-slate-200/80 dark:border-zinc-800/80 shadow-xs group hover:shadow-md hover:border-purple-500/40 dark:hover:border-purple-500/40 transition-all duration-200 flex flex-col relative cursor-pointer select-none overflow-hidden"
             >
-              <div className="h-[205px] w-full p-4 bg-slate-50/50 dark:bg-zinc-900/40 border-b border-slate-100 dark:border-zinc-800 flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500 gap-2">
-                <div className="w-10 h-10 rounded-xl bg-slate-200/60 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center shadow-2xs">
-                  <Plus size={20} strokeWidth={2} />
-                </div>
-              </div>
-              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                  Blank Grid
-                </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
-                  Start from scratch
-                </span>
-              </div>
-              {/* Hover action overlay */}
-              <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center p-4 z-10">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const activeSheet = (sheetsData || []).find(s => s.id === activeSheetId);
-                    if (activeSheet) {
-                      updateSheetData(activeSheetId, { data: [Array(15).fill('')], columns: Array(10).fill({ width: 100 }) });
-                      setSheetToolbarTab(null);
-                      showToast('Loaded Blank Grid');
-                    }
-                  }}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
-                >
-                  Use Template
-                </button>
-              </div>
-            </div>
-          )}
+              {/* Top 80% Template Screenshot Preview Area */}
+              <div className="h-[205px] shrink-0 w-full p-2 bg-slate-50/70 dark:bg-zinc-950/60 border-b border-slate-100 dark:border-zinc-800/80 relative overflow-hidden flex items-center justify-center">
+                <RealSpreadsheetThumbnail id={card.id} title={card.title} type={card.id === 'blank' ? 'blank' : card.type || 'prebuilt'} />
 
-          {/* Financial Model */}
-          {(category === 'all' || category === 'finance') && (
-            <div 
-              onClick={() => setPreviewTemplate({ id: 'financial', title: 'Financial Model', applyFn: loadFinancialModelTemplate })}
-              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
-            >
-              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
-                <LiveTemplateGridPreview id="financial" title="Financial Model" sheetGrids={sheetGrids} />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
+                {/* Upper-Right Secondary Actions Button (•••) */}
+                <div className="absolute top-2.5 right-2.5 z-30 template-card-menu">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      applyTemplate(loadFinancialModelTemplate, 'Financial Model');
+                      setOpenMenuId((prev) => prev === card.id ? null : card.id);
                     }}
-                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
+                    className="w-7 h-7 rounded-lg bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xs border border-slate-200/80 dark:border-zinc-700/80 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center shadow-xs cursor-pointer"
+                    title="More options"
                   >
-                    Use Template
+                    <MoreHorizontal size={15} />
                   </button>
-                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewTemplate({ id: 'financial', title: 'Financial Model', applyFn: loadFinancialModelTemplate });
-                      }}
-                      className="hover:underline hover:text-white cursor-pointer"
-                    >
-                      Preview
-                    </button>
-                    <span>·</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewTemplate({ id: 'financial', title: 'Financial Model', applyFn: loadFinancialModelTemplate });
-                      }}
-                      className="hover:underline hover:text-white cursor-pointer"
-                    >
-                      •••
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                  Financial Model
-                </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
-                  Finance & Growth · 5 × 9
-                </span>
-              </div>
-            </div>
-          )}
 
-          {/* SaaS Metrics */}
-          {(category === 'all' || category === 'finance') && (
-            <div 
-              onClick={() => setPreviewTemplate({ id: 'saas', title: 'SaaS Metrics', applyFn: loadSaaSMetricsTemplate })}
-              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
-            >
-              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
-                <LiveTemplateGridPreview id="saas" title="SaaS Metrics" sheetGrids={sheetGrids} />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
+                  {/* Secondary Actions Contextual Dropdown */}
+                  {openMenuId === card.id && (
+                    <div 
+                      className="absolute right-0 top-8 w-38 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs text-slate-700 dark:text-zinc-300"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenMenuId(null);
+                          applyTemplate(card.applyFn, card.title);
+                        }}
+                        className="w-full px-3 py-1.5 text-left hover:bg-purple-50 dark:hover:bg-purple-950/40 hover:text-purple-600 dark:hover:text-purple-400 flex items-center gap-2 cursor-pointer font-medium"
+                      >
+                        <Check size={13} />
+                        <span>Use Template</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenMenuId(null);
+                          setPreviewTemplate({ id: card.id, title: card.title, applyFn: card.applyFn });
+                        }}
+                        className="w-full px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer"
+                      >
+                        <Eye size={13} />
+                        <span>Preview</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenMenuId(null);
+                          showToast(`Duplicated ${card.title}`);
+                        }}
+                        className="w-full px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer"
+                      >
+                        <Copy size={13} />
+                        <span>Duplicate</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenMenuId(null);
+                          showToast(`Share link copied for ${card.title}`);
+                        }}
+                        className="w-full px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer"
+                      >
+                        <Share2 size={13} />
+                        <span>Share</span>
+                      </button>
+                      {card.isCustom && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            handleDeleteCustomTemplate(card.id);
+                          }}
+                          className="w-full px-3 py-1.5 text-left text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 cursor-pointer border-t border-slate-100 dark:border-zinc-800 mt-1 pt-1.5"
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Hover Action Overlay ("Use Template" / "Start blank" + Preview button) */}
+                <div className="absolute inset-0 bg-slate-900/15 dark:bg-black/35 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2 z-10 pointer-events-none p-3">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      applyTemplate(loadSaaSMetricsTemplate, 'SaaS Metrics');
+                      applyTemplate(card.applyFn, card.title);
                     }}
-                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
+                    className="pointer-events-auto px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-xl shadow-md transform translate-y-1 group-hover:translate-y-0 transition-all duration-200 cursor-pointer flex items-center gap-1.5"
                   >
-                    Use Template
+                    <span>{card.id === 'blank' ? 'Start blank' : 'Use Template'}</span>
                   </button>
-                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
+                  {card.id !== 'blank' && (
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setPreviewTemplate({ id: 'saas', title: 'SaaS Metrics', applyFn: loadSaaSMetricsTemplate });
+                        setPreviewTemplate({ id: card.id, title: card.title, applyFn: card.applyFn });
                       }}
-                      className="hover:underline hover:text-white cursor-pointer"
+                      className="pointer-events-auto p-2 bg-white/90 dark:bg-zinc-800/90 hover:bg-white dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-semibold text-xs rounded-xl shadow-md border border-slate-200/80 dark:border-zinc-700/80 transform translate-y-1 group-hover:translate-y-0 transition-all duration-200 cursor-pointer"
+                      title="Preview Template Details"
                     >
-                      Preview
+                      <Eye size={15} />
                     </button>
-                    <span>·</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewTemplate({ id: 'saas', title: 'SaaS Metrics', applyFn: loadSaaSMetricsTemplate });
-                      }}
-                      className="hover:underline hover:text-white cursor-pointer"
-                    >
-                      •••
-                    </button>
-                  </div>
+                  )}
                 </div>
               </div>
-              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                  SaaS Metrics
-                </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
-                  Finance & Growth · 5 × 9
-                </span>
-              </div>
-            </div>
-          )}
 
-          {/* Sales CRM */}
-          {(category === 'all' || category === 'sales') && (
-            <div 
-              onClick={() => setPreviewTemplate({ id: 'crm', title: 'Sales CRM', applyFn: loadSalesCRMPipelineTemplate })}
-              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
-            >
-              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
-                <LiveTemplateGridPreview id="crm" title="Sales CRM" sheetGrids={sheetGrids} />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      applyTemplate(loadSalesCRMPipelineTemplate, 'Sales CRM');
-                    }}
-                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
-                  >
-                    Use Template
-                  </button>
-                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewTemplate({ id: 'crm', title: 'Sales CRM', applyFn: loadSalesCRMPipelineTemplate });
-                      }}
-                      className="hover:underline hover:text-white cursor-pointer"
-                    >
-                      Preview
-                    </button>
-                    <span>·</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewTemplate({ id: 'crm', title: 'Sales CRM', applyFn: loadSalesCRMPipelineTemplate });
-                      }}
-                      className="hover:underline hover:text-white cursor-pointer"
-                    >
-                      •••
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                  Sales CRM
+              {/* Bottom 20% Information Footer (Name + Subtle Category only, no metadata) */}
+              <div className="h-[54px] shrink-0 w-full px-3.5 py-2 flex flex-col justify-center bg-white dark:bg-[#0d0e12]">
+                <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                  {card.title}
                 </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
-                  Sales · 5 × 9
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Cash Flow */}
-          {(category === 'all' || category === 'finance') && (
-            <div 
-              onClick={() => setPreviewTemplate({ id: 'cashflow', title: 'Cash Flow', applyFn: loadCashFlowForecastTemplate })}
-              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
-            >
-              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
-                <LiveTemplateGridPreview id="cashflow" title="Cash Flow" sheetGrids={sheetGrids} />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      applyTemplate(loadCashFlowForecastTemplate, 'Cash Flow');
-                    }}
-                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
-                  >
-                    Use Template
-                  </button>
-                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewTemplate({ id: 'cashflow', title: 'Cash Flow', applyFn: loadCashFlowForecastTemplate });
-                      }}
-                      className="hover:underline hover:text-white cursor-pointer"
-                    >
-                      Preview
-                    </button>
-                    <span>·</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewTemplate({ id: 'cashflow', title: 'Cash Flow', applyFn: loadCashFlowForecastTemplate });
-                      }}
-                      className="hover:underline hover:text-white cursor-pointer"
-                    >
-                      •••
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                  Cash Flow
-                </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
-                  Finance & Growth · 5 × 9
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* KPI Dashboard */}
-          {(category === 'all' || category === 'operations') && (
-            <div 
-              onClick={() => setPreviewTemplate({ id: 'kpi', title: 'KPI Dashboard', applyFn: loadKPIDashboardTemplate })}
-              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
-            >
-              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
-                <LiveTemplateGridPreview id="kpi" title="KPI Dashboard" sheetGrids={sheetGrids} />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      applyTemplate(loadKPIDashboardTemplate, 'KPI Dashboard');
-                    }}
-                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
-                  >
-                    Use Template
-                  </button>
-                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewTemplate({ id: 'kpi', title: 'KPI Dashboard', applyFn: loadKPIDashboardTemplate });
-                      }}
-                      className="hover:underline hover:text-white cursor-pointer"
-                    >
-                      Preview
-                    </button>
-                    <span>·</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewTemplate({ id: 'kpi', title: 'KPI Dashboard', applyFn: loadKPIDashboardTemplate });
-                      }}
-                      className="hover:underline hover:text-white cursor-pointer"
-                    >
-                      •••
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                  KPI Dashboard
-                </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
-                  Operations · 5 × 9
-                </span>
-              </div>
-            </div>
-          )}
-
-
-
-          {/* User Custom Templates */}
-          {(category === 'all' || category === 'custom') && customTemplates.map((tpl) => (
-            <div 
-              key={tpl.id}
-              onClick={() => setPreviewTemplate({ id: tpl.id, title: tpl.name, applyFn: () => handleApplyCustomTemplate(tpl) })}
-              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
-            >
-              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
-                <LiveTemplateGridPreview id={tpl.id} title={tpl.name} customTemplate={tpl} sheetGrids={sheetGrids} />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      applyTemplate(() => handleApplyCustomTemplate(tpl), tpl.name);
-                    }}
-                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
-                  >
-                    Use Template
-                  </button>
-                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewTemplate({ id: tpl.id, title: tpl.name, applyFn: () => handleApplyCustomTemplate(tpl) });
-                      }}
-                      className="hover:underline hover:text-white cursor-pointer"
-                    >
-                      Preview
-                    </button>
-                    <span>·</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteCustomTemplate(tpl.id);
-                      }}
-                      className="hover:underline hover:text-rose-300 text-rose-200 cursor-pointer"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                    {tpl.name}
-                  </span>
-                  <span className="text-[9px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider bg-violet-50 dark:bg-violet-950/60 px-1.5 py-0.5 rounded shrink-0">
-                    YOUR TEMPLATE
-                  </span>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
-                  {tpl.category || 'Custom'} · 5 × 9
+                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5 truncate">
+                  {card.category}
                 </span>
               </div>
             </div>
@@ -3506,14 +3271,14 @@ const FullPageTemplateGallery = ({
               <button
                 type="button"
                 onClick={() => setPreviewTemplate(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X size={16} />
               </button>
             </div>
 
-            <div className="w-full h-80 rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-inner">
-              <LiveTemplateGridPreview id={previewTemplate.id} title={previewTemplate.title} customTemplate={customTemplates?.find(t => t.id === previewTemplate.id)} sheetGrids={sheetGrids} />
+            <div className="w-full h-80 rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-inner bg-slate-50 dark:bg-zinc-950 p-2">
+              <TemplateScreenshotPreview id={previewTemplate.id} title={previewTemplate.title} customTemplate={customTemplates?.find(t => t.id === previewTemplate.id)} />
             </div>
 
             <div className="flex items-center justify-between pt-2">
@@ -3524,7 +3289,7 @@ const FullPageTemplateGallery = ({
                 <button
                   type="button"
                   onClick={() => setPreviewTemplate(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                 >
                   Close
                 </button>
@@ -3535,7 +3300,7 @@ const FullPageTemplateGallery = ({
                     setPreviewTemplate(null);
                     applyTemplate(fn, previewTemplate.title);
                   }}
-                  className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-md shadow-violet-500/20 transition-all flex items-center gap-2 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-500/20 transition-all flex items-center gap-2 cursor-pointer"
                 >
                   <Check size={14} />
                   <span>Load Template into Sheet</span>
