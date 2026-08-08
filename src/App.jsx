@@ -4553,6 +4553,130 @@ const SPREADSHEET_FUNCTIONS = [
   }
 ];
 
+function MoreViewOptionsDropdown({ 
+  sheetsThemePalette, 
+  setSheetsThemePalette, 
+  applyDashboardTheme, 
+  freezePanes = 'off',
+  setFreezePanes,
+  showRowHeaders = true,
+  setShowRowHeaders,
+  showToast 
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handlePointerDown = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('pointerdown', handlePointerDown);
+    }
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative inline-block text-left" ref={containerRef}>
+      <button
+        type="button"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          setIsOpen((prev) => !prev);
+        }}
+        aria-label="View options"
+        title="View options"
+        className={`group inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-medium border transition-all duration-150 shadow-2xs cursor-pointer ${
+          isOpen
+            ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-700'
+            : 'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200/80 dark:border-zinc-800 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-200'
+        }`}
+      >
+        <MoreHorizontal size={14} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 origin-top-right top-full mt-1.5 w-60 rounded-xl border border-slate-200/60 dark:border-zinc-800/60 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-xl shadow-md z-[400] overflow-hidden p-3.5 space-y-3.5 animate-in zoom-in-95 fade-in duration-150 select-none">
+          <div className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
+            View options
+          </div>
+
+          {/* Theme Configuration */}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-medium text-slate-700 dark:text-zinc-300">Theme</span>
+            <ThemeDropdown
+              value={sheetsThemePalette}
+              onChange={(newThemeId) => {
+                setSheetsThemePalette(newThemeId);
+                applyDashboardTheme(newThemeId);
+                const selectedTheme = SHEETS_THEME_OPTIONS.find(t => t.id === newThemeId);
+                showToast(`Theme: ${selectedTheme?.label || newThemeId}`);
+              }}
+              options={SHEETS_THEME_OPTIONS}
+              label="Theme"
+              align="right"
+            />
+          </div>
+
+          {/* Freeze Panes Setting */}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-medium text-slate-700 dark:text-zinc-300">Freeze panes</span>
+            <div className="inline-flex items-center p-0.5 bg-slate-100/80 dark:bg-zinc-800/70 rounded-md text-[11px] border border-slate-200/50 dark:border-zinc-700/50">
+              {[
+                { id: 'off', label: 'Off' },
+                { id: 'row', label: 'Top Row' },
+                { id: 'col', label: '1st Col' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    setFreezePanes?.(item.id);
+                    showToast?.(`Freeze panes: ${item.label}`);
+                  }}
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer ${
+                    freezePanes === item.id
+                      ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-2xs font-semibold'
+                      : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Row & Column Headers Toggle */}
+          <div className="flex items-center justify-between gap-2 pt-0.5">
+            <span className="text-xs font-medium text-slate-700 dark:text-zinc-300">Headers</span>
+            <button
+              type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                const nextState = !showRowHeaders;
+                setShowRowHeaders?.(nextState);
+                showToast?.(`Headers: ${nextState ? 'Shown' : 'Hidden'}`);
+              }}
+              className={`relative inline-flex h-3.5 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                showRowHeaders ? 'bg-violet-600 dark:bg-violet-500' : 'bg-slate-300 dark:bg-zinc-600'
+              }`}
+            >
+              <span className={`pointer-events-none inline-block h-2.5 w-2.5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                showRowHeaders ? 'translate-x-2.5' : 'translate-x-0'
+              }`} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, gridLineContrast, setGridLineContrast, showToast }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -4608,12 +4732,13 @@ function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, grid
         }}
         className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all duration-150 shadow-2xs cursor-pointer ${
           isOpen
-            ? 'bg-[#F5F5F7] dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-700'
-            : 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border-slate-200/80 dark:border-zinc-800 hover:bg-[#F5F5F7] dark:hover:bg-zinc-800/60'
+            ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-700'
+            : 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border-slate-200/80 dark:border-zinc-800 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60'
         }`}
       >
-        <span className="text-slate-500 dark:text-zinc-400 font-medium">Gridlines:</span>
-        <span className="font-semibold text-slate-800 dark:text-zinc-200">{currentOptionLabel}</span>
+        <span className="font-medium text-slate-700 dark:text-zinc-300">
+          Gridlines · <span className="font-semibold text-slate-900 dark:text-zinc-100">{currentOptionLabel}</span>
+        </span>
         <ChevronDown
           size={13}
           className={`text-slate-400 dark:text-zinc-400 transition-transform duration-200 ${
@@ -6605,6 +6730,8 @@ export default function App() {
   const [showGridLines, setShowGridLines] = useState(true);
   const [gridlinePaintColor, setGridlinePaintColor] = useState('#3b82f6');
   const [isGridlinePaintActive, setIsGridlinePaintActive] = useState(false);
+  const [freezePanes, setFreezePanes] = useState('off'); // 'off' | 'row' | 'col'
+  const [showRowHeaders, setShowRowHeaders] = useState(true);
 
   const themeAccentStyles = useMemo(() => {
     const map = {
@@ -39481,10 +39608,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   showToast(`${tab} tools ready`);
                                 }
                               }}
-                              className={`relative px-3.5 py-1 text-[12.5px] font-semibold rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.97] cursor-pointer ${
+                              className={`relative px-3.5 py-1 text-[12.5px] font-medium rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.97] cursor-pointer ${
                                 sheetToolbarTab === tab
-                                  ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] font-bold'
-                                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
+                                  ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs border border-slate-200/80 dark:border-zinc-700/80'
+                                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40'
                               }`}
                             >
                               {tab}
@@ -39518,42 +39645,42 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 showToast={showToast}
                               />
 
-                              <div className="h-4 w-px bg-slate-200/80 dark:bg-zinc-800" />
-
-                              {/* Chart Visualizer Toggle */}
+                              {/* Chart Panel Toggle */}
                               <button
                                 type="button"
-                                onClick={() => {
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
                                   const nextState = !showTemplateChart;
                                   setShowTemplateChart(nextState);
-                                  showToast?.(`Chart Visualizer: ${nextState ? 'On' : 'Off'}`);
+                                  showToast?.(`Chart panel: ${nextState ? 'On' : 'Off'}`);
                                 }}
-                                className="group inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-medium bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-200/80 dark:border-zinc-800 hover:bg-[#F5F5F7] dark:hover:bg-zinc-800/60 transition-all duration-150 shadow-2xs cursor-pointer select-none"
+                                className={`group inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all duration-150 shadow-2xs select-none cursor-pointer active:scale-[0.97] ${
+                                  showTemplateChart
+                                    ? 'bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-700 text-slate-900 dark:text-zinc-100 font-semibold'
+                                    : 'bg-white dark:bg-zinc-900 border-slate-200/80 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60'
+                                }`}
                               >
-                                <span>Chart Visualizer</span>
+                                <span>Chart panel</span>
                                 {/* Compact iOS-Style Switch */}
-                                <span className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                                  showTemplateChart ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'
+                                <span className={`relative inline-flex h-3.5 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                                  showTemplateChart ? 'bg-violet-600 dark:bg-violet-500' : 'bg-slate-300 dark:bg-zinc-600'
                                 }`}>
-                                  <span className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                                    showTemplateChart ? 'translate-x-3' : 'translate-x-0'
+                                  <span className={`pointer-events-none inline-block h-2.5 w-2.5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                                    showTemplateChart ? 'translate-x-2.5' : 'translate-x-0'
                                   }`} />
                                 </span>
                               </button>
 
-                              <div className="h-4 w-px bg-slate-200/80 dark:bg-zinc-800" />
-
-                              {/* Reusable Executive Theme Dropdown */}
-                              <ThemeDropdown
-                                value={sheetsThemePalette}
-                                onChange={(newThemeId) => {
-                                  setSheetsThemePalette(newThemeId);
-                                  applyDashboardTheme(newThemeId);
-                                  const selectedTheme = SHEETS_THEME_OPTIONS.find(t => t.id === newThemeId);
-                                  showToast(`Theme: ${selectedTheme?.label || newThemeId}`);
-                                }}
-                                options={SHEETS_THEME_OPTIONS}
-                                label="Theme"
+                              {/* More View Options & Secondary View Settings Menu */}
+                              <MoreViewOptionsDropdown
+                                sheetsThemePalette={sheetsThemePalette}
+                                setSheetsThemePalette={setSheetsThemePalette}
+                                applyDashboardTheme={applyDashboardTheme}
+                                freezePanes={freezePanes}
+                                setFreezePanes={setFreezePanes}
+                                showRowHeaders={showRowHeaders}
+                                setShowRowHeaders={setShowRowHeaders}
+                                showToast={showToast}
                               />
                             </div>
                           ) : null}
@@ -39666,11 +39793,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   {(() => {
                                     const fmt = getSelectedCellFormat();
                                     return (
-                                      <div className="flex items-center gap-1 mx-2 px-2 border-x border-gray-200">
-                                        <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 font-bold border ${fmt.bold ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)] font-bold' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>B</button>
-                                        <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 italic font-serif border ${fmt.italic ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>I</button>
-                                        <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 underline border ${fmt.underline ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>U</button>
-                                        <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-200 line-through border ${fmt.strikeThrough ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>S</button>
+                                      <div className="flex items-center gap-1.5 mx-1 px-1 border-x border-gray-200/80 dark:border-zinc-800/80">
+                                        <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner select-none">
+                                          <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold transition-all duration-150 active:scale-[0.97] cursor-pointer ${fmt.bold ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)]' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'}`}>B</button>
+                                          <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs italic font-serif transition-all duration-150 active:scale-[0.97] cursor-pointer ${fmt.italic ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)]' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'}`}>I</button>
+                                          <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs underline transition-all duration-150 active:scale-[0.97] cursor-pointer ${fmt.underline ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)]' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'}`}>U</button>
+                                          <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs line-through transition-all duration-150 active:scale-[0.97] cursor-pointer ${fmt.strikeThrough ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)]' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'}`}>S</button>
+                                        </div>
                                         <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-xl transition-all hover:bg-slate-50 text-slate-500 hover:text-slate-900" title="Insert Link">
                                           <LinkIcon size={14} />
                                         </button>
@@ -39819,10 +39948,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     );
                                   })()}
                                 </div>
-                                <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">+ Row</button>
-                                <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">- Row</button>
-                                <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">+ Col</button>
-                                <button type="button" onClick={removeSheetColumn} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">- Col</button>
+                                <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner select-none">
+                                  <button type="button" onClick={addSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-700/50 rounded-lg text-xs font-semibold transition-all active:scale-95 cursor-pointer">+ Row</button>
+                                  <button type="button" onClick={removeSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-700/50 rounded-lg text-xs font-semibold transition-all active:scale-95 cursor-pointer">- Row</button>
+                                  <div className="h-3 w-px bg-slate-300/70 dark:bg-zinc-700/70 my-0.5" />
+                                  <button type="button" onClick={addSheetColumn} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-700/50 rounded-lg text-xs font-semibold transition-all active:scale-95 cursor-pointer">+ Col</button>
+                                  <button type="button" onClick={removeSheetColumn} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-700/50 rounded-lg text-xs font-semibold transition-all active:scale-95 cursor-pointer">- Col</button>
+                                </div>
                                 <div className="ml-auto flex items-center gap-4">
                                   <div className="flex items-center gap-1.5 text-xs text-gray-400">
                                     <Cloud size={14} /> {savedStatusLabel}
@@ -39857,12 +39989,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                               {/* Title & Subtitle */}
                               <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-2">
-                                {hasActualUploadedFile ? 'Your document is ready to analyze' : 'What would you like to analyze?'}
+                                {hasActualUploadedFile ? 'Your document is ready' : 'Add your data'}
                               </h2>
                               <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-md mb-6 leading-relaxed">
                                 {hasActualUploadedFile
-                                  ? "We've processed your file and extracted the data. Review the preview below or start asking questions."
-                                  : 'Drop any file or paste content — Regaarder converts it into structured, intelligent data.'}
+                                  ? "We've processed your file and extracted the data. Review the preview below or start working with your sheet."
+                                  : 'Upload a file, paste data, or start with a blank sheet.'}
                               </p>
 
                               {/* Processed Document File Cards List (only shown when an actual file was uploaded) */}
@@ -40480,10 +40612,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     ) : (
                     <div className={`flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] overflow-hidden z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm'}`}>
                       {!isSheetsPresentationMode && !isSheetZenMode && (
-                        <div className="px-4 py-2 border-b border-slate-200/80 dark:border-zinc-800 bg-[#FAFAFC] dark:bg-[#161618] flex items-center gap-3 text-[13px] font-medium text-[#374151] dark:text-zinc-200 shrink-0">
+                        <div className="px-3.5 py-1.5 border-b border-slate-200/80 dark:border-zinc-800 bg-[#FAFAFC] dark:bg-[#161618] flex items-center gap-2.5 text-[13px] font-medium text-[#374151] dark:text-zinc-200 shrink-0">
                       <input
                         type="text"
-                        className="min-w-[72px] max-w-[120px] text-center border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 py-1.5 px-2 text-[11px] font-mono font-semibold tracking-tight text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600 transition-all shadow-2xs"
+                        className="min-w-[68px] max-w-[110px] text-center border border-slate-200/80 dark:border-zinc-700/80 rounded-lg bg-slate-100/90 dark:bg-zinc-800/80 py-1 px-2 text-[11px] font-mono font-bold tracking-tight text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 dark:focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-inner"
                         value={
                           addressTemp !== null
                             ? addressTemp
@@ -40527,8 +40659,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }
                         }}
                       />
-                      <span 
-                        className={`font-mono cursor-pointer hover:opacity-80 font-bold transition-colors select-none ${themeAccentStyles.text}`}
+                      <button 
+                        type="button"
+                        className="px-2 py-0.5 rounded-lg text-xs font-mono font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 cursor-pointer select-none transition-colors active:scale-95"
                         title="Tap to insert formula (=)"
                         onClick={() => {
                           const currentVal = activeSheetGridRaw.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || '';
@@ -40539,8 +40672,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         }}
                       >
                         fx
-                      </span>
-                                            <input
+                      </button>
+                      <input
                         type="text"
                         value={activeSheetGridRaw.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || ''}
                         onChange={(event) => updateSheetCell(activeSheetId, selectedSheetCell.row - 1, selectedSheetCell.col - 1, event.target.value)}
@@ -40557,7 +40690,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             });
                           }
                         }}
-                        className="flex-1 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 px-3 py-1.5 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600 text-slate-800 dark:text-zinc-200 font-normal transition-all shadow-2xs"
+                        className="flex-1 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 dark:focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-2xs placeholder:text-slate-400"
                         placeholder="Enter value or formula"
                       />
                     </div>
@@ -43088,139 +43221,147 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               return (
                                 <>
                                   <span>{total.toLocaleString()} cells selected</span>
-                                  {values.length > 0 && <><span className="w-1 h-1 rounded-full bg-gray-300" /><span>Sum: {sum.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className="w-1 h-1 rounded-full bg-gray-300" /><span>Avg: {avg.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className="w-1 h-1 rounded-full bg-gray-300" /><span>Count: {values.length}</span></> }
+                                  {values.length > 0 && <><span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-zinc-600" /><span>Sum: {sum.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-zinc-600" /><span>Avg: {avg.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-zinc-600" /><span>Count: {values.length}</span></> }
                                 </>
                               );
                             }
                             return null;
                           })()}
-                        </div>
-                        <div className="flex items-center gap-3 text-[13px] font-medium text-gray-500 shrink-0">
-                          <button 
-                            onClick={handleTtsToggle} 
-                            aria-label="Read sheet out loud (Text to speech)"
-                            className={`px-2 py-1 rounded-md transition-all duration-200 flex items-center gap-1.5 border ${
-                              isReadingAloud 
-                                ? 'text-violet-700 bg-violet-50 border-violet-200 outline outline-1 outline-violet-400/40 font-semibold shadow-xs' 
-                                : 'border-transparent hover:border-gray-200 hover:bg-gray-100/80 text-gray-600'
-                            }`} 
-                            title={isReadingAloud ? "Stop audio playback" : "Read sheet out loud (Text-to-speech)"}
-                          >
-                            {isReadingAloud ? (
-                              <div className="flex items-center gap-0.5 h-3.5 px-0.5">
-                                <span className="w-0.5 h-2 bg-violet-600 animate-[bounce_0.8s_infinite_100ms] rounded-full"></span>
-                                <span className="w-0.5 h-3 bg-violet-600 animate-[bounce_0.8s_infinite_200ms] rounded-full"></span>
-                                <span className="w-0.5 h-1.5 bg-violet-600 animate-[bounce_0.8s_infinite_300ms] rounded-full"></span>
-                              </div>
-                            ) : (
-                              <Volume2 size={15} />
-                            )}
-                            <span className="text-[11px] font-medium hidden sm:inline">{isReadingAloud ? 'Reading...' : 'Audio'}</span>
-                          </button>
+                      </div>
+                      <div className="flex items-center gap-2 text-[13px] font-medium text-slate-500 shrink-0">
+                          <div className="inline-flex items-center p-0.5 gap-1 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner select-none">
+                            <button 
+                              onClick={handleTtsToggle} 
+                              aria-label="Read sheet out loud (Text to speech)"
+                              className={`px-2.5 py-1 rounded-lg transition-all duration-150 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                                isReadingAloud 
+                                  ? 'text-violet-700 bg-white dark:bg-zinc-900 shadow-xs font-semibold' 
+                                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
+                              }`} 
+                              title={isReadingAloud ? "Stop audio playback" : "Read sheet out loud (Text-to-speech)"}
+                            >
+                              {isReadingAloud ? (
+                                <div className="flex items-center gap-0.5 h-3.5 px-0.5">
+                                  <span className="w-0.5 h-2 bg-violet-600 animate-[bounce_0.8s_infinite_100ms] rounded-full"></span>
+                                  <span className="w-0.5 h-3 bg-violet-600 animate-[bounce_0.8s_infinite_200ms] rounded-full"></span>
+                                  <span className="w-0.5 h-1.5 bg-violet-600 animate-[bounce_0.8s_infinite_300ms] rounded-full"></span>
+                                </div>
+                              ) : (
+                                <Volume2 size={14} />
+                              )}
+                              <span className="text-[11px] font-medium hidden sm:inline">{isReadingAloud ? 'Reading...' : 'Audio'}</span>
+                            </button>
 
-                          {/* Fullscreen Zen View Toggle */}
-                          <button
-                            type="button"
-                            onClick={() => setIsSheetZenMode(!isSheetZenMode)}
-                            aria-label={isSheetZenMode ? "Exit Zen Mode" : "Enter Zen Mode"}
-                            className="px-2 py-1 rounded-md transition-all duration-200 flex items-center gap-1.5 border border-transparent hover:border-gray-200 hover:bg-gray-100/80 text-gray-600 dark:text-zinc-400 dark:hover:bg-zinc-800 cursor-pointer"
-                            title="Enter Fullscreen Zen Mode (Hide toolbars & headers)"
-                          >
-                            <Maximize2 size={15} />
-                            <span className="text-[11px] font-medium hidden sm:inline">Zen View</span>
-                          </button>
+                            <div className="h-3.5 w-px bg-slate-300/70 dark:bg-zinc-700/70 my-0.5" />
 
-                          {/* Zoom Controls */}
-                          <div className="relative flex items-center gap-2" ref={sheetZoomControlRef}>
+                            {/* Fullscreen Zen View Toggle */}
+                            <button
+                              type="button"
+                              onClick={() => setIsSheetZenMode(!isSheetZenMode)}
+                              aria-label={isSheetZenMode ? "Exit Zen Mode" : "Enter Zen Mode"}
+                              className="px-2.5 py-1 rounded-lg transition-all duration-150 flex items-center gap-1.5 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40 active:scale-95 cursor-pointer"
+                              title="Enter Fullscreen Zen Mode (Hide toolbars & headers)"
+                            >
+                              <Maximize2 size={14} />
+                              <span className="text-[11px] font-medium hidden sm:inline">Zen View</span>
+                            </button>
+
+                            <div className="h-3.5 w-px bg-slate-300/70 dark:bg-zinc-700/70 my-0.5" />
+
+                            {/* Zoom Controls */}
+                            <div className="relative flex items-center gap-1 px-1" ref={sheetZoomControlRef}>
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setSheetZoomLevel(prev => Math.max(50, prev - 10));
+                                }}
+                                className="text-slate-500 hover:text-slate-900 dark:hover:text-white px-1 py-0.5 hover:bg-white/60 dark:hover:bg-zinc-700/50 rounded-md text-xs font-semibold cursor-pointer active:scale-95 transition-all"
+                                title="Zoom out"
+                              >
+                                -
+                              </button>
+                              <span
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setSheetZoomDropdownOpen(prev => !prev);
+                                }}
+                                className="w-9 text-center cursor-pointer select-none text-slate-800 dark:text-zinc-200 font-semibold text-[11px]"
+                                title="Zoom options"
+                              >
+                                {sheetZoomLevel}%
+                              </span>
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setSheetZoomLevel(prev => Math.min(200, prev + 10));
+                                }}
+                                className="text-slate-500 hover:text-slate-900 dark:hover:text-white px-1 py-0.5 hover:bg-white/60 dark:hover:bg-zinc-700/50 rounded-md text-xs font-semibold cursor-pointer active:scale-95 transition-all"
+                                title="Zoom in"
+                              >
+                                +
+                              </button>
+                              <ChevronDown
+                                size={12}
+                                className="cursor-pointer text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setSheetZoomDropdownOpen(prev => !prev);
+                                }}
+                              />
+                              {sheetZoomDropdownOpen && (
+                                <div className="absolute right-0 bottom-full mb-2 z-50 w-24 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-xl p-1 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-100 select-none">
+                                  {[50, 75, 90, 100, 125, 150, 200].map((level) => (
+                                    <button
+                                      key={level}
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        setSheetZoomLevel(level);
+                                        setSheetZoomDropdownOpen(false);
+                                      }}
+                                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${sheetZoomLevel === level ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 font-bold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
+                                    >
+                                      {level}%
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="h-3.5 w-px bg-slate-300/70 dark:bg-zinc-700/70 my-0.5" />
+
                             <button
                               type="button"
                               onPointerDown={(e) => {
                                 e.preventDefault();
-                                setSheetZoomLevel(prev => Math.max(50, prev - 10));
+                                e.stopPropagation();
+                                setIsSheetsPresentationMode(true);
+                                const docEl = document.documentElement;
+                                const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+                                if (requestFS && !document.fullscreenElement) {
+                                  requestFS.call(docEl).catch(() => {});
+                                }
                               }}
-                              className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded cursor-pointer"
-                              title="Zoom out"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsSheetsPresentationMode(true);
+                                const docEl = document.documentElement;
+                                const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+                                if (requestFS && !document.fullscreenElement) {
+                                  requestFS.call(docEl).catch(() => {});
+                                }
+                              }}
+                              aria-label="Enter presentation mode"
+                              className="px-2.5 py-1 rounded-lg transition-all duration-150 flex items-center gap-1.5 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40 active:scale-95 cursor-pointer"
+                              title="Enter presentation mode (Fullscreen)"
                             >
-                              -
+                              <MonitorPlay size={14} />
+                              <span className="text-[11px] font-medium hidden sm:inline">Present</span>
                             </button>
-                            <span
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                setSheetZoomDropdownOpen(prev => !prev);
-                              }}
-                              className="w-8 text-center cursor-pointer select-none text-slate-700 font-medium"
-                              title="Zoom options"
-                            >
-                              {sheetZoomLevel}%
-                            </span>
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                setSheetZoomLevel(prev => Math.min(200, prev + 10));
-                              }}
-                              className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded cursor-pointer"
-                              title="Zoom in"
-                            >
-                              +
-                            </button>
-                            <ChevronDown
-                              size={12}
-                              className="cursor-pointer text-gray-400 hover:text-gray-600"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                setSheetZoomDropdownOpen(prev => !prev);
-                              }}
-                            />
-                            {sheetZoomDropdownOpen && (
-                              <div className="absolute right-0 bottom-full mb-1.5 z-50 w-24 bg-white border border-slate-200 rounded-xl shadow-lg p-1 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-100">
-                                {[50, 75, 90, 100, 125, 150, 200].map((level) => (
-                                  <button
-                                    key={level}
-                                    type="button"
-                                    onPointerDown={(e) => {
-                                      e.preventDefault();
-                                      setSheetZoomLevel(level);
-                                      setSheetZoomDropdownOpen(false);
-                                    }}
-                                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${sheetZoomLevel === level ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'}`}
-                                  >
-                                    {level}%
-                                  </button>
-                                ))}
-                              </div>
-                            )}
                           </div>
-
-                          <button
-                            type="button"
-                            onPointerDown={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setIsSheetsPresentationMode(true);
-                              const docEl = document.documentElement;
-                              const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-                              if (requestFS && !document.fullscreenElement) {
-                                requestFS.call(docEl).catch(() => {});
-                              }
-                            }}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setIsSheetsPresentationMode(true);
-                              const docEl = document.documentElement;
-                              const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-                              if (requestFS && !documentfullscreenElement) {
-                                requestFS.call(docEl).catch(() => {});
-                              }
-                            }}
-                            aria-label="Enter presentation mode"
-                            className="px-2 py-1 rounded-md transition-all duration-200 flex items-center gap-1.5 border border-transparent hover:border-gray-200 hover:bg-gray-100/80 text-gray-600 dark:text-zinc-400 dark:hover:bg-zinc-800 cursor-pointer"
-                            title="Enter presentation mode (Fullscreen)"
-                          >
-                            <MonitorPlay size={15} />
-                            <span className="text-[11px] font-medium hidden sm:inline">Present</span>
-                          </button>
                         </div>
                     </div>
                   </div>
