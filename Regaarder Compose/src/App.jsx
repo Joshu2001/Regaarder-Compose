@@ -30864,49 +30864,54 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <LayoutGrid size={15} />
                 </button>
 
-                {/* Dropdown Menu */}
+                {/* Dropdown Menu & Screen Dimming Overlay */}
                 {workspaceSwitcherOpen && (
-                  <div className="absolute left-0 top-9 w-60 rounded-xl border border-slate-200/80 bg-white/95 dark:bg-[#1c1c1e]/95 dark:border-zinc-800 backdrop-blur-md shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 font-sans animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Workspace Apps
+                  <>
+                    <div 
+                      className="fixed inset-0 z-[190] bg-black/30 backdrop-blur-[2px] transition-opacity animate-in fade-in duration-150"
+                      onClick={() => setWorkspaceSwitcherOpen(false)}
+                    />
+                    <div className="absolute left-0 top-9 w-60 z-[200] rounded-xl border border-slate-200/80 bg-white/95 dark:bg-[#1c1c1e]/95 dark:border-zinc-800 backdrop-blur-md shadow-[0_10px_30px_-10px_rgba(0,0,0,0.15)] p-2 font-sans animate-in fade-in slide-in-from-top-2 duration-150">
+                      <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Workspace Apps
+                      </div>
+                      <div className="flex flex-col gap-0.5 mt-1">
+                        {[
+                          { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: FileText },
+                          { mode: 'sheets', label: 'Sheets', desc: 'Grid & Data Analysis', icon: Table },
+                          { mode: 'deck', label: 'Decks', desc: 'Slide & Presentation', icon: MonitorPlay },
+                          { mode: 'room', label: 'Room', desc: 'Team Video & Meetings', icon: Users }
+                        ].map((item) => {
+                          const IconComponent = item.icon;
+                          const isCurrent = productMode === item.mode;
+                          return (
+                            <button
+                              key={item.mode}
+                              type="button"
+                              onClick={() => {
+                                setProductMode(item.mode);
+                                setWorkspaceSwitcherOpen(false);
+                                showToast(`Switched to ${item.label}`);
+                              }}
+                              className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all ${
+                                isCurrent
+                                  ? 'outline outline-[1.5px] outline-violet-500 bg-violet-50/50 dark:bg-violet-950/20'
+                                  : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
+                              }`}
+                            >
+                              <div className={`p-1 rounded-md shrink-0 ${isCurrent ? 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                                <IconComponent size={14} />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 leading-tight">{item.label}</span>
+                                <span className="text-[10px] text-slate-500 dark:text-zinc-400 leading-tight mt-0.5">{item.desc}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-0.5 mt-1">
-                      {[
-                        { mode: 'landing', label: 'Workspace Home', desc: 'Dashboard & Templates', icon: Home },
-                        { mode: 'compose', label: 'Compose Docs', desc: 'Collaborative Document Editor', icon: FileText },
-                        { mode: 'sheets', label: 'Compose Sheets', desc: 'Data Analytics & Spreadsheets', icon: Table },
-                        { mode: 'deck', label: 'Compose Decks', desc: 'Interactive Slideshow Presentations', icon: MonitorPlay },
-                        { mode: 'room', label: 'Compose Room', desc: 'Video & Collaboration Room', icon: Users }
-                      ].map((item) => {
-                        const IconComponent = item.icon;
-                        const isCurrent = productMode === item.mode;
-                        return (
-                          <button
-                            key={item.mode}
-                            type="button"
-                            onClick={() => {
-                              setProductMode(item.mode);
-                              setWorkspaceSwitcherOpen(false);
-                              showToast(`Switched to ${item.label}`);
-                            }}
-                            className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all ${
-                              isCurrent
-                                ? 'outline outline-[1.5px] outline-violet-500 bg-violet-50/50 dark:bg-violet-950/20'
-                                : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
-                            }`}
-                          >
-                            <div className={`p-1 rounded-md shrink-0 ${isCurrent ? 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
-                              <IconComponent size={14} />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 leading-tight">{item.label}</span>
-                              <span className="text-[10px] text-slate-500 dark:text-zinc-400 leading-tight mt-0.5">{item.desc}</span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  </>
                 )}
               </div>
 
@@ -37965,49 +37970,54 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <LayoutGrid size={15} />
               </button>
 
-              {/* Dropdown Menu */}
+              {/* Dropdown Menu & Screen Dimming Overlay */}
               {workspaceSwitcherOpen && (
-                <div className="absolute left-0 top-9 w-60 rounded-xl border border-slate-200/80 bg-white/95 dark:bg-[#1c1c1e]/95 dark:border-zinc-800 backdrop-blur-md shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 font-sans animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Workspace Apps
+                <>
+                  <div 
+                    className="fixed inset-0 z-[190] bg-black/30 backdrop-blur-[2px] transition-opacity animate-in fade-in duration-150"
+                    onClick={() => setWorkspaceSwitcherOpen(false)}
+                  />
+                  <div className="absolute left-0 top-9 w-60 z-[200] rounded-xl border border-slate-200/80 bg-white/95 dark:bg-[#1c1c1e]/95 dark:border-zinc-800 backdrop-blur-md shadow-[0_10px_30px_-10px_rgba(0,0,0,0.15)] p-2 font-sans animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Workspace Apps
+                    </div>
+                    <div className="flex flex-col gap-0.5 mt-1">
+                      {[
+                        { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: FileText },
+                        { mode: 'sheets', label: 'Sheets', desc: 'Grid & Data Analysis', icon: Table },
+                        { mode: 'deck', label: 'Decks', desc: 'Slide & Presentation', icon: MonitorPlay },
+                        { mode: 'room', label: 'Room', desc: 'Team Video & Meetings', icon: Users }
+                      ].map((item) => {
+                        const IconComponent = item.icon;
+                        const isCurrent = productMode === item.mode;
+                        return (
+                          <button
+                            key={item.mode}
+                            type="button"
+                            onClick={() => {
+                              setProductMode(item.mode);
+                              setWorkspaceSwitcherOpen(false);
+                              showToast(`Switched to ${item.label}`);
+                            }}
+                            className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all ${
+                              isCurrent
+                                ? 'outline outline-[1.5px] outline-violet-500 bg-violet-50/50 dark:bg-violet-950/20'
+                                : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
+                            }`}
+                          >
+                            <div className={`p-1 rounded-md shrink-0 ${isCurrent ? 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                              <IconComponent size={14} />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 leading-tight">{item.label}</span>
+                              <span className="text-[10px] text-slate-500 dark:text-zinc-400 leading-tight mt-0.5">{item.desc}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-0.5 mt-1">
-                    {[
-                      { mode: 'landing', label: 'Workspace Home', desc: 'Dashboard & Templates', icon: Home },
-                      { mode: 'compose', label: 'Compose Docs', desc: 'Collaborative Document Editor', icon: FileText },
-                      { mode: 'sheets', label: 'Compose Sheets', desc: 'Data Analytics & Spreadsheets', icon: Table },
-                      { mode: 'deck', label: 'Compose Decks', desc: 'Interactive Slideshow Presentations', icon: MonitorPlay },
-                      { mode: 'room', label: 'Compose Room', desc: 'Video & Collaboration Room', icon: Users }
-                    ].map((item) => {
-                      const IconComponent = item.icon;
-                      const isCurrent = productMode === item.mode;
-                      return (
-                        <button
-                          key={item.mode}
-                          type="button"
-                          onClick={() => {
-                            setProductMode(item.mode);
-                            setWorkspaceSwitcherOpen(false);
-                            showToast(`Switched to ${item.label}`);
-                          }}
-                          className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all ${
-                            isCurrent
-                              ? 'outline outline-[1.5px] outline-violet-500 bg-violet-50/50 dark:bg-violet-950/20'
-                              : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
-                          }`}
-                        >
-                          <div className={`p-1 rounded-md shrink-0 ${isCurrent ? 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
-                            <IconComponent size={14} />
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 leading-tight">{item.label}</span>
-                            <span className="text-[10px] text-slate-500 dark:text-zinc-400 leading-tight mt-0.5">{item.desc}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                </>
               )}
             </div>
             {isUnsavedDraftVisible && (

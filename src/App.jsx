@@ -10102,9 +10102,9 @@ export default function App() {
   const renderWorkspaceSwitcherDropdownContent = () => {
     return (
       <>
-        {/* Subtle page dimming backdrop overlay */}
+        {/* Page dimming backdrop overlay */}
         <div
-          className="fixed inset-0 z-[100000] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+          className="fixed inset-0 z-[100000] bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-150 animate-in fade-in"
           onClick={() => setWorkspaceSwitcherOpen(false)}
         />
         <div className="absolute left-0 top-9 pt-1.5 z-[100001]">
