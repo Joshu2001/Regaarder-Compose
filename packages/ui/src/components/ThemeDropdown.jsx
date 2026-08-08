@@ -231,23 +231,25 @@ export default function ThemeDropdown({
           e.preventDefault();
           setIsOpen(prev => !prev);
         }}
-        className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 bg-slate-100/90 dark:bg-zinc-800/90 border border-slate-200/80 dark:border-zinc-700/80 hover:bg-slate-200/70 dark:hover:bg-zinc-700/70 hover:border-slate-300 dark:hover:border-zinc-600 transition-all duration-150 shadow-sm cursor-pointer"
+        className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all duration-150 shadow-2xs cursor-pointer ${
+          isOpen
+            ? 'bg-[#F5F5F7] dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-700'
+            : 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border-slate-200/80 dark:border-zinc-800 hover:bg-[#F5F5F7] dark:hover:bg-zinc-800/60'
+        }`}
       >
-        <Palette size={13} className="text-slate-500 dark:text-zinc-400 group-hover:text-slate-700 dark:group-hover:text-zinc-200 transition-colors" />
-        
-        <span className="text-slate-400 dark:text-zinc-500 font-medium">{label}:</span>
+        <span className="text-slate-500 dark:text-zinc-400 font-medium">{label}</span>
 
-        {/* Swatch indicator */}
+        {/* Theme Color Dot */}
         <span 
-          className="w-3.5 h-3.5 rounded-full border border-black/10 dark:border-white/20 shadow-xs inline-block shrink-0 transition-transform group-hover:scale-110" 
+          className="w-2.5 h-2.5 rounded-full border border-black/10 dark:border-white/20 shadow-2xs inline-block shrink-0 transition-transform group-hover:scale-110" 
           style={{ backgroundColor: activeOption.accent || activeOption.bg }} 
         />
 
-        <span className="font-bold text-slate-900 dark:text-zinc-100">{activeOption.label}</span>
+        <span className="font-semibold text-slate-800 dark:text-zinc-200">{activeOption.label}</span>
 
         <ChevronDown 
           size={13} 
-          className={`text-slate-400 dark:text-zinc-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-slate-700 dark:text-zinc-200' : ''}`} 
+          className={`text-slate-400 dark:text-zinc-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-slate-600 dark:text-zinc-300' : ''}`} 
         />
       </button>
 
