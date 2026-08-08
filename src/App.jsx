@@ -3171,8 +3171,8 @@ const FullPageTemplateGallery = ({
 
   const applyTemplate = (actionFn, templateName) => {
     actionFn();
-    setSheetToolbarTab('Data');
-    showToast(`${templateName} Template Loaded`);
+    setSheetToolbarTab(null);
+    showToast(`✨ ${templateName} loaded into Spreadsheet Grid`);
   };
 
   return (
