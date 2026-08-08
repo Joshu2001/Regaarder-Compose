@@ -2997,12 +2997,11 @@ const VisualTemplateCard = ({ id, title, type = 'prebuilt', onClick, onDelete, i
 const LiveTemplateGridPreview = ({ id, title, type }) => {
   if (type === 'blank') {
     return (
-      <div className="w-full h-full rounded-2xl border-2 border-dashed border-emerald-400/80 dark:border-emerald-500/60 bg-emerald-50/15 dark:bg-emerald-950/10 flex flex-col items-center justify-center text-emerald-600 dark:text-emerald-400 gap-2 p-6">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
-          <Plus size={28} strokeWidth={2.5} />
+      <div className="w-full h-full rounded-xl border border-dashed border-slate-300/80 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-900/50 flex flex-col items-center justify-center text-slate-500 dark:text-zinc-400 gap-2 p-4">
+        <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center shadow-2xs">
+          <Plus size={18} strokeWidth={2} />
         </div>
-        <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">Blank Spreadsheet</span>
-        <span className="text-xs text-slate-400 dark:text-zinc-500 text-center">Start from scratch with a clean, unformatted grid</span>
+        <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Blank Grid</span>
       </div>
     );
   }
@@ -3092,11 +3091,11 @@ const LiveTemplateGridPreview = ({ id, title, type }) => {
   }
 
   return (
-    <div className="w-full h-full rounded-2xl bg-white dark:bg-[#0c0d10] border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-xs font-sans leading-snug select-none shadow-md">
+    <div className="w-full h-full rounded-xl bg-white dark:bg-[#0c0d10] border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-xs font-sans leading-snug select-none shadow-xs">
       {/* Live Spreadsheet Title Bar */}
-      <div className={`${headerBg} px-3 py-2 flex items-center justify-between font-bold shrink-0`}>
+      <div className={`${headerBg} px-3 py-1.5 flex items-center justify-between font-bold shrink-0`}>
         <span className="text-[11px] truncate tracking-tight">{gridTitle}</span>
-        <span className="text-[9px] bg-white/20 text-white px-1.5 py-0.5 rounded font-mono">LIVE PREVIEW</span>
+        <span className="text-[8px] bg-white/20 text-white px-1.5 py-0.5 rounded font-mono">PREVIEW</span>
       </div>
 
       {/* Live Grid Header (A, B, C, D, E) */}
@@ -3196,23 +3195,22 @@ const FullPageTemplateGallery = ({
             className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Plus size={14} />
-            <span>+ Save as template</span>
+            <span>+ Create template</span>
           </button>
         </div>
 
-        {/* Category Filters (Slightly rounded rectangle tabs per UI rule) */}
+        {/* Category Filters (Quiet scrollable strip without "All" pill) */}
         <div className="flex items-center gap-2 overflow-x-auto thin-scrollbar py-1">
           {[
-            { id: 'all', label: 'All' },
             { id: 'finance', label: 'Finance & Growth' },
             { id: 'sales', label: 'Sales' },
             { id: 'operations', label: 'Operations' },
-            { id: 'custom', label: `My Templates (${customTemplates.length})` }
+            { id: 'custom', label: customTemplates.length > 0 ? `My Templates (${customTemplates.length})` : 'My Templates' }
           ].map((cat) => (
             <button
               key={cat.id}
               type="button"
-              onClick={() => setCategory(cat.id)}
+              onClick={() => setCategory((prev) => prev === cat.id ? 'all' : cat.id)}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
                 category === cat.id
                   ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs'
@@ -3228,19 +3226,36 @@ const FullPageTemplateGallery = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pt-2 pb-8">
           {/* Blank Card */}
           {(category === 'all' || category === 'operations') && (
-            <div 
-              onClick={() => {
-                const activeSheet = (sheetsData || []).find(s => s.id === activeSheetId);
-                if (activeSheet) {
-                  updateSheetData(activeSheetId, { data: [Array(15).fill('')], columns: Array(10).fill({ width: 100 }) });
-                  setSheetToolbarTab(null);
-                  showToast('Loaded Blank Grid');
-                }
-              }}
-              className="group relative flex flex-col gap-2 cursor-pointer select-none"
-            >
-              <div className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-emerald-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden">
+            <div className="group relative flex flex-col gap-2 select-none">
+              <div 
+                onClick={() => {
+                  const activeSheet = (sheetsData || []).find(s => s.id === activeSheetId);
+                  if (activeSheet) {
+                    updateSheetData(activeSheetId, { data: [Array(15).fill('')], columns: Array(10).fill({ width: 100 }) });
+                    setSheetToolbarTab(null);
+                    showToast('Loaded Blank Grid');
+                  }
+                }}
+                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-emerald-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
+              >
                 <LiveTemplateGridPreview type="blank" title="Blank" />
+                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center p-4 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const activeSheet = (sheetsData || []).find(s => s.id === activeSheetId);
+                      if (activeSheet) {
+                        updateSheetData(activeSheetId, { data: [Array(15).fill('')], columns: Array(10).fill({ width: 100 }) });
+                        setSheetToolbarTab(null);
+                        showToast('Loaded Blank Grid');
+                      }
+                    }}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
+                  >
+                    Use Template
+                  </button>
+                </div>
               </div>
               <div className="flex flex-col px-0.5">
                 <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
@@ -3254,22 +3269,31 @@ const FullPageTemplateGallery = ({
           {/* Financial Model */}
           {(category === 'all' || category === 'finance') && (
             <div className="group relative flex flex-col gap-2 select-none">
-              <div className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-sky-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden">
+              <div 
+                onClick={() => setPreviewTemplate({ id: 'financial', title: 'Financial Model', applyFn: loadFinancialModelTemplate })}
+                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-sky-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
+              >
                 <LiveTemplateGridPreview id="financial" title="Financial Model" />
                 <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
                   <button
                     type="button"
-                    onClick={() => applyTemplate(loadFinancialModelTemplate, 'Financial Model')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      applyTemplate(loadFinancialModelTemplate, 'Financial Model');
+                    }}
                     className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
                   >
                     Use Template
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPreviewTemplate({ id: 'financial', title: 'Financial Model', applyFn: loadFinancialModelTemplate })}
-                    className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-medium rounded-lg backdrop-blur-md transition-all cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewTemplate({ id: 'financial', title: 'Financial Model', applyFn: loadFinancialModelTemplate });
+                    }}
+                    className="px-3 py-1 text-white/90 hover:text-white text-[11px] font-medium rounded-md hover:bg-white/20 transition-all cursor-pointer"
                   >
-                    Full Preview
+                    Preview
                   </button>
                 </div>
               </div>
@@ -3285,22 +3309,31 @@ const FullPageTemplateGallery = ({
           {/* SaaS Metrics */}
           {(category === 'all' || category === 'finance') && (
             <div className="group relative flex flex-col gap-2 select-none">
-              <div className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-emerald-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden">
+              <div 
+                onClick={() => setPreviewTemplate({ id: 'saas', title: 'SaaS Metrics', applyFn: loadSaaSMetricsTemplate })}
+                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-emerald-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
+              >
                 <LiveTemplateGridPreview id="saas" title="SaaS Metrics" />
                 <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
                   <button
                     type="button"
-                    onClick={() => applyTemplate(loadSaaSMetricsTemplate, 'SaaS Metrics')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      applyTemplate(loadSaaSMetricsTemplate, 'SaaS Metrics');
+                    }}
                     className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
                   >
                     Use Template
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPreviewTemplate({ id: 'saas', title: 'SaaS Metrics', applyFn: loadSaaSMetricsTemplate })}
-                    className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-medium rounded-lg backdrop-blur-md transition-all cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewTemplate({ id: 'saas', title: 'SaaS Metrics', applyFn: loadSaaSMetricsTemplate });
+                    }}
+                    className="px-3 py-1 text-white/90 hover:text-white text-[11px] font-medium rounded-md hover:bg-white/20 transition-all cursor-pointer"
                   >
-                    Full Preview
+                    Preview
                   </button>
                 </div>
               </div>
@@ -3316,22 +3349,31 @@ const FullPageTemplateGallery = ({
           {/* Sales CRM */}
           {(category === 'all' || category === 'sales') && (
             <div className="group relative flex flex-col gap-2 select-none">
-              <div className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-purple-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden">
+              <div 
+                onClick={() => setPreviewTemplate({ id: 'crm', title: 'Sales CRM', applyFn: loadSalesCRMPipelineTemplate })}
+                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-purple-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
+              >
                 <LiveTemplateGridPreview id="crm" title="Sales CRM" />
                 <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
                   <button
                     type="button"
-                    onClick={() => applyTemplate(loadSalesCRMPipelineTemplate, 'Sales CRM')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      applyTemplate(loadSalesCRMPipelineTemplate, 'Sales CRM');
+                    }}
                     className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
                   >
                     Use Template
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPreviewTemplate({ id: 'crm', title: 'Sales CRM', applyFn: loadSalesCRMPipelineTemplate })}
-                    className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-medium rounded-lg backdrop-blur-md transition-all cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewTemplate({ id: 'crm', title: 'Sales CRM', applyFn: loadSalesCRMPipelineTemplate });
+                    }}
+                    className="px-3 py-1 text-white/90 hover:text-white text-[11px] font-medium rounded-md hover:bg-white/20 transition-all cursor-pointer"
                   >
-                    Full Preview
+                    Preview
                   </button>
                 </div>
               </div>
@@ -3347,22 +3389,31 @@ const FullPageTemplateGallery = ({
           {/* Cash Flow */}
           {(category === 'all' || category === 'finance') && (
             <div className="group relative flex flex-col gap-2 select-none">
-              <div className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-amber-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden">
+              <div 
+                onClick={() => setPreviewTemplate({ id: 'cashflow', title: 'Cash Flow', applyFn: loadCashFlowForecastTemplate })}
+                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-amber-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
+              >
                 <LiveTemplateGridPreview id="cashflow" title="Cash Flow" />
                 <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
                   <button
                     type="button"
-                    onClick={() => applyTemplate(loadCashFlowForecastTemplate, 'Cash Flow')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      applyTemplate(loadCashFlowForecastTemplate, 'Cash Flow');
+                    }}
                     className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
                   >
                     Use Template
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPreviewTemplate({ id: 'cashflow', title: 'Cash Flow', applyFn: loadCashFlowForecastTemplate })}
-                    className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-medium rounded-lg backdrop-blur-md transition-all cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewTemplate({ id: 'cashflow', title: 'Cash Flow', applyFn: loadCashFlowForecastTemplate });
+                    }}
+                    className="px-3 py-1 text-white/90 hover:text-white text-[11px] font-medium rounded-md hover:bg-white/20 transition-all cursor-pointer"
                   >
-                    Full Preview
+                    Preview
                   </button>
                 </div>
               </div>
@@ -3378,22 +3429,31 @@ const FullPageTemplateGallery = ({
           {/* KPI Dashboard */}
           {(category === 'all' || category === 'operations') && (
             <div className="group relative flex flex-col gap-2 select-none">
-              <div className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-indigo-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden">
+              <div 
+                onClick={() => setPreviewTemplate({ id: 'kpi', title: 'KPI Dashboard', applyFn: loadKPIDashboardTemplate })}
+                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-indigo-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
+              >
                 <LiveTemplateGridPreview id="kpi" title="KPI Dashboard" />
                 <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
                   <button
                     type="button"
-                    onClick={() => applyTemplate(loadKPIDashboardTemplate, 'KPI Dashboard')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      applyTemplate(loadKPIDashboardTemplate, 'KPI Dashboard');
+                    }}
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
                   >
                     Use Template
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPreviewTemplate({ id: 'kpi', title: 'KPI Dashboard', applyFn: loadKPIDashboardTemplate })}
-                    className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-medium rounded-lg backdrop-blur-md transition-all cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewTemplate({ id: 'kpi', title: 'KPI Dashboard', applyFn: loadKPIDashboardTemplate });
+                    }}
+                    className="px-3 py-1 text-white/90 hover:text-white text-[11px] font-medium rounded-md hover:bg-white/20 transition-all cursor-pointer"
                   >
-                    Full Preview
+                    Preview
                   </button>
                 </div>
               </div>
@@ -3409,22 +3469,31 @@ const FullPageTemplateGallery = ({
           {/* Project Tracking */}
           {(category === 'all' || category === 'operations') && (
             <div className="group relative flex flex-col gap-2 select-none">
-              <div className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-blue-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden">
+              <div 
+                onClick={() => setPreviewTemplate({ id: 'project', title: 'Project Tracking', applyFn: loadProjectTrackingTemplate })}
+                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-blue-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
+              >
                 <LiveTemplateGridPreview id="project" title="Project Tracking" />
                 <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
                   <button
                     type="button"
-                    onClick={() => applyTemplate(loadProjectTrackingTemplate, 'Project Tracking')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      applyTemplate(loadProjectTrackingTemplate, 'Project Tracking');
+                    }}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
                   >
                     Use Template
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPreviewTemplate({ id: 'project', title: 'Project Tracking', applyFn: loadProjectTrackingTemplate })}
-                    className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-medium rounded-lg backdrop-blur-md transition-all cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewTemplate({ id: 'project', title: 'Project Tracking', applyFn: loadProjectTrackingTemplate });
+                    }}
+                    className="px-3 py-1 text-white/90 hover:text-white text-[11px] font-medium rounded-md hover:bg-white/20 transition-all cursor-pointer"
                   >
-                    Full Preview
+                    Preview
                   </button>
                 </div>
               </div>
@@ -3440,20 +3509,29 @@ const FullPageTemplateGallery = ({
           {/* User Custom Templates */}
           {(category === 'all' || category === 'custom') && customTemplates.map((tpl) => (
             <div key={tpl.id} className="group relative flex flex-col gap-2 select-none">
-              <div className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-violet-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden">
+              <div 
+                onClick={() => setPreviewTemplate({ id: tpl.id, title: tpl.name, applyFn: () => handleApplyCustomTemplate(tpl) })}
+                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-violet-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
+              >
                 <LiveTemplateGridPreview id={tpl.id} title={tpl.name} />
                 <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
                   <button
                     type="button"
-                    onClick={() => applyTemplate(() => handleApplyCustomTemplate(tpl), tpl.name)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      applyTemplate(() => handleApplyCustomTemplate(tpl), tpl.name);
+                    }}
                     className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
                   >
                     Use Template
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDeleteCustomTemplate(tpl.id)}
-                    className="px-3 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white text-xs font-medium rounded-lg transition-all cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteCustomTemplate(tpl.id);
+                    }}
+                    className="px-3 py-1 bg-rose-600/80 hover:bg-rose-600 text-white text-[11px] font-medium rounded-md transition-all cursor-pointer"
                   >
                     Delete Template
                   </button>
