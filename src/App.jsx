@@ -2023,8 +2023,6 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
     { id: 'crm', title: 'Sales CRM & Pipeline', category: 'dashboards', icon: PieChart, color: 'bg-violet-100 text-violet-600', chartType: 'donut', chartColor: '#7c3aed', desc: 'Deal pipeline breakdown & win rate distribution visual' },
     { id: 'cashflow', title: '12-Month Cash Flow', category: 'dashboards', icon: Sparkles, color: 'bg-amber-100 text-amber-600', chartType: 'area', chartColor: '#d97706', desc: 'Cash inflows vs outflows runway visual trajectory' },
     { id: 'kpi', title: 'KPI Executive Dashboard', category: 'dashboards', icon: LayoutGrid, color: 'bg-indigo-100 text-indigo-600', chartType: 'column', chartColor: '#4f46e5', desc: 'Target vs Actual achievement live visual metrics' },
-    { id: 'project', title: 'Project Tracking Ops', category: 'dashboards', icon: ListTree, color: 'bg-rose-100 text-rose-600', chartType: 'bar', chartColor: '#e11d48', desc: 'Task completion rate & team velocity visual chart' },
-    { id: 'aurora', title: 'Aurora Pitch Deck', category: 'pitch', icon: Sparkles, color: 'bg-purple-100 text-purple-600', chartType: 'column', chartColor: '#9333ea', desc: 'Modern gradient design presentation' },
     { id: 'blank', title: 'Blank Canvas', category: 'blank', icon: Layout, color: 'bg-gray-100 text-gray-500', chartType: 'column', chartColor: '#64748b', desc: 'Start from a clean slate' }
   ];
 
@@ -2874,7 +2872,7 @@ const VisualTemplateCard = ({ id, title, type = 'prebuilt', onClick, onDelete, i
   );
 };
 
-const LiveTemplateGridPreview = ({ id, title, type }) => {
+const LiveTemplateGridPreview = ({ id, title, type, customTemplate, sheetGrids }) => {
   if (type === 'blank') {
     return (
       <div className="w-full h-full rounded-xl border border-dashed border-slate-300/80 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-900/50 flex flex-col items-center justify-center text-slate-500 dark:text-zinc-400 gap-2 p-4">
@@ -2886,124 +2884,133 @@ const LiveTemplateGridPreview = ({ id, title, type }) => {
     );
   }
 
-  // Define actual template grid rows for live rendering
+  // Derive actual spreadsheet matrix cells & formats directly from live engine state
   let gridTitle = title;
-  let cols = ['A', 'B', 'C', 'D', 'E'];
-  let rowsData = [];
-  let headerBg = 'bg-sky-600 text-white';
+  let cells = [];
 
-  if (id === 'financial' || title === 'Financial Model') {
-    gridTitle = '3-5 Year Financial & Revenue Model';
-    headerBg = 'bg-slate-900 text-white';
-    cols = ['A: Item', 'B: Category', 'C: 2026', 'D: 2027', 'E: Status'];
-    rowsData = [
-      ['Enterprise Subscriptions', 'Revenue', '$1,200,000', '$2,100,000', 'On Track'],
-      ['SMB & Self-Serve', 'Revenue', '$450,000', '$750,000', 'On Track'],
-      ['Cost of Goods Sold (COGS)', 'Cost', '$396,000', '$675,000', 'Within Budget'],
-      ['Gross Profit', 'Profit', '$1,404,000', '$2,395,000', 'Achieved'],
-      ['EBITDA Margin %', 'Profitability', '6%', '13%', 'Achieved'],
-    ];
-  } else if (id === 'saas' || title === 'SaaS Metrics') {
-    gridTitle = 'SaaS Executive Metrics & Unit Economics';
-    headerBg = 'bg-emerald-700 text-white';
-    cols = ['A: ID', 'B: Metric Name', 'C: Current', 'D: Target', 'E: Status'];
-    rowsData = [
-      ['MET-01', 'Monthly Recurring Revenue (MRR)', '$185,000', '$220,000', 'On Track'],
-      ['MET-02', 'Annual Recurring Revenue (ARR)', '$2,220,000', '$2,640,000', 'On Track'],
-      ['MET-03', 'Net Revenue Retention (NRR)', '118%', '120%', 'Achieved'],
-      ['MET-04', 'Customer Lifetime Value (LTV)', '$20,160', '$22,000', 'Surpassed'],
-      ['MET-05', 'LTV : CAC Ratio', '4.8x', '5.0x', 'Optimal'],
-    ];
-  } else if (id === 'crm' || title === 'Sales CRM') {
-    gridTitle = 'Sales CRM & Deal Pipeline Tracker';
-    headerBg = 'bg-purple-700 text-white';
-    cols = ['A: ID', 'B: Opportunity', 'C: Stage', 'D: Value', 'E: Priority'];
-    rowsData = [
-      ['OPP-201', 'Enterprise ERP Renewal', 'Negotiation', '$180,000', 'Critical'],
-      ['OPP-202', 'Cloud Infrastructure', 'Proposal', '$120,000', 'High'],
-      ['OPP-203', 'AI Analytics Suite Pilot', 'Demo', '$65,000', 'Medium'],
-      ['OPP-204', 'Global Security Audit', 'Closed Won', '$150,000', 'High'],
-      ['OPP-205', 'SaaS Operations Platform', 'Qualified', '$45,000', 'Low'],
-    ];
-  } else if (id === 'cashflow' || title === 'Cash Flow') {
-    gridTitle = '12-Month Cash Flow Statement & Forecast';
-    headerBg = 'bg-amber-600 text-white';
-    cols = ['A: Line Item', 'B: Q1 2026', 'C: Q2 2026', 'D: Q3 2026', 'E: Status'];
-    rowsData = [
-      ['Beginning Cash Balance', '$1,400,000', '$1,560,000', '$1,770,000', 'Healthy'],
-      ['Customer Inflows', '$740,000', '$820,000', '$910,000', 'On Target'],
-      ['Payroll & OpEx Outflows', '$580,000', '$610,000', '$650,000', 'Managed'],
-      ['Net Operating Cash Flow', '+$160,000', '+$210,000', '+$260,000', 'Positive'],
-      ['Ending Reserve', '$1,560,000', '$1,770,000', '$2,030,000', 'Surpassed'],
-    ];
-  } else if (id === 'kpi' || title === 'KPI Dashboard') {
-    gridTitle = 'Executive Master KPI Dashboard';
-    headerBg = 'bg-indigo-700 text-white';
-    cols = ['A: Code', 'B: Key Metric', 'C: Actual', 'D: Target', 'E: Status'];
-    rowsData = [
-      ['KPI-1', 'Active Monthly Users', '54,200', '50,000', 'Exceeding'],
-      ['KPI-2', 'NPS Customer Score', '72', '65', 'Exceeding'],
-      ['KPI-3', 'Gross Profit Margin', '78%', '75%', 'Achieved'],
-      ['KPI-4', 'Customer Churn Rate', '1.4%', '2.0%', 'Optimal'],
-      ['KPI-5', 'System Uptime SLA', '99.98%', '99.90%', 'Optimal'],
-    ];
-  } else if (id === 'project' || title === 'Project Tracking' || title === 'Project Track') {
-    gridTitle = 'Project Portfolio & Milestone Tracker';
-    headerBg = 'bg-blue-700 text-white';
-    cols = ['A: ID', 'B: Project Name', 'C: Owner', 'D: Phase', 'E: Status'];
-    rowsData = [
-      ['PRJ-101', 'Cloud Infrastructure v2', 'Sarah Chen', 'Execution', 'In Progress'],
-      ['PRJ-102', 'Mobile App Redesign', 'Alex Rivera', 'Testing', 'On Track'],
-      ['PRJ-103', 'AI Assistant Integration', 'Elena Rostova', 'Planning', 'In Review'],
-      ['PRJ-104', 'Security & SOC2 Audit', 'Marcus Vance', 'Audit', 'Completed'],
-      ['PRJ-105', 'DevOps CI/CD Pipeline', 'David Kim', 'Deployment', 'In Progress'],
-    ];
+  const storedGrid = sheetGrids?.[id] || customTemplate?.grid;
+  if (storedGrid && storedGrid.cells && storedGrid.cells.length > 0) {
+    cells = storedGrid.cells;
   } else {
-    gridTitle = title || 'Custom Sheet Template';
-    headerBg = 'bg-violet-700 text-white';
-    cols = ['A: ID', 'B: Item Name', 'C: Category', 'D: Value', 'E: Status'];
-    rowsData = [
-      ['ITEM-1', 'Sample Data Row 1', 'Operations', '$12,500', 'Active'],
-      ['ITEM-2', 'Sample Data Row 2', 'Finance', '$45,000', 'Active'],
-      ['ITEM-3', 'Sample Data Row 3', 'Sales', '$8,400', 'Pending'],
-      ['ITEM-4', 'Sample Data Row 4', 'Marketing', '$19,200', 'Active'],
-    ];
+    // Generate actual engine data matrix for built-in templates
+    if (id === 'financial' || title === 'Financial Model') {
+      gridTitle = '3-5 Year Financial & Revenue Model';
+      cells = [
+        ['3-5 Year Financial & Revenue Model', '', '', '', ''],
+        ['Financial Line Item', 'Category', '2026', '2027', 'Status'],
+        ['Enterprise Subscriptions', 'Revenue', '$1,200,000', '$2,100,000', 'On Track'],
+        ['SMB & Self-Serve Revenue', 'Revenue', '$450,000', '$750,000', 'On Track'],
+        ['Cost of Goods Sold (COGS)', 'Cost', '$396,000', '$675,000', 'Within Budget'],
+        ['Gross Profit', 'Profit', '$1,404,000', '$2,395,000', 'Achieved'],
+        ['EBITDA Margin %', 'Profitability', '6%', '13%', 'Achieved'],
+      ];
+    } else if (id === 'saas' || title === 'SaaS Metrics') {
+      gridTitle = 'SaaS Executive Metrics & Unit Economics';
+      cells = [
+        ['SaaS Executive Metrics & Unit Economics', '', '', '', ''],
+        ['Metric Name', 'Category', 'Current', 'Target', 'Status'],
+        ['Monthly Recurring Revenue', 'Revenue', '$185,000', '$220,000', 'On Track'],
+        ['Annual Recurring Revenue', 'Revenue', '$2,220,000', '$2,640,000', 'On Track'],
+        ['Net Revenue Retention', 'Retention', '118%', '120%', 'Achieved'],
+        ['Customer Lifetime Value', 'Unit Econ', '$20,160', '$22,000', 'Surpassed'],
+        ['LTV : CAC Ratio', 'Efficiency', '4.8x', '5.0x', 'Optimal'],
+      ];
+    } else if (id === 'crm' || title === 'Sales CRM') {
+      gridTitle = 'Sales CRM & Deal Pipeline Tracker';
+      cells = [
+        ['Sales CRM & Deal Pipeline Tracker', '', '', '', ''],
+        ['Opportunity', 'Stage', 'Value', 'Owner', 'Priority'],
+        ['Enterprise ERP Renewal', 'Negotiation', '$180,000', 'Alex Chen', 'Critical'],
+        ['Cloud Infrastructure', 'Proposal', '$120,000', 'Sarah Vance', 'High'],
+        ['AI Analytics Suite Pilot', 'Demo', '$65,000', 'Marcus Roy', 'Medium'],
+        ['Global Security Audit', 'Closed Won', '$150,000', 'Elena Rostova', 'High'],
+        ['SaaS Operations Platform', 'Qualified', '$45,000', 'David Kim', 'Low'],
+      ];
+    } else if (id === 'cashflow' || title === 'Cash Flow') {
+      gridTitle = '12-Month Cash Flow Statement & Forecast';
+      cells = [
+        ['12-Month Cash Flow Statement & Forecast', '', '', '', ''],
+        ['Line Item', 'Q1 2026', 'Q2 2026', 'Q3 2026', 'Status'],
+        ['Beginning Cash Balance', '$1,400,000', '$1,560,000', '$1,770,000', 'Healthy'],
+        ['Customer Inflows', '$740,000', '$820,000', '$910,000', 'On Target'],
+        ['Payroll & OpEx Outflows', '$580,000', '$610,000', '$650,000', 'Managed'],
+        ['Net Operating Cash Flow', '+$160,000', '+$210,000', '+$260,000', 'Positive'],
+        ['Ending Reserve', '$1,560,000', '$1,770,000', '$2,030,000', 'Surpassed'],
+      ];
+    } else if (id === 'kpi' || title === 'KPI Dashboard') {
+      gridTitle = 'Executive Master KPI Dashboard';
+      cells = [
+        ['Executive Master KPI Dashboard', '', '', '', ''],
+        ['Key Metric', 'Actual', 'Target', 'Variance', 'Status'],
+        ['Active Monthly Users', '54,200', '50,000', '+8.4%', 'Exceeding'],
+        ['NPS Customer Score', '72', '65', '+7 pts', 'Exceeding'],
+        ['Gross Profit Margin', '78%', '75%', '+3%', 'Achieved'],
+        ['Customer Churn Rate', '1.4%', '2.0%', '-0.6%', 'Optimal'],
+        ['System Uptime SLA', '99.98%', '99.90%', '+0.08%', 'Optimal'],
+      ];
+    } else if (id === 'project' || title === 'Project Tracking' || title === 'Project Track') {
+      gridTitle = 'Project Portfolio & Milestone Tracker';
+      cells = [
+        ['Project Portfolio & Milestone Tracker', '', '', '', ''],
+        ['Project Name', 'Owner', 'Phase', 'Progress', 'Status'],
+        ['Cloud Infrastructure v2', 'Sarah Chen', 'Execution', '85%', 'In Progress'],
+        ['Mobile App Redesign', 'Alex Rivera', 'Testing', '92%', 'On Track'],
+        ['AI Assistant Integration', 'Elena Rostova', 'Planning', '45%', 'In Review'],
+        ['Security & SOC2 Audit', 'Marcus Vance', 'Audit', '100%', 'Completed'],
+        ['DevOps CI/CD Pipeline', 'David Kim', 'Deployment', '70%', 'In Progress'],
+      ];
+    } else {
+      gridTitle = title || 'Custom Sheet Template';
+      cells = [
+        [gridTitle, '', '', '', ''],
+        ['Item Name', 'Category', 'Value', 'Date', 'Status'],
+        ['Sample Data Row 1', 'Operations', '$12,500', '2026-01', 'Active'],
+        ['Sample Data Row 2', 'Finance', '$45,000', '2026-02', 'Active'],
+        ['Sample Data Row 3', 'Sales', '$8,400', '2026-03', 'Pending'],
+        ['Sample Data Row 4', 'Marketing', '$19,200', '2026-04', 'Active'],
+      ];
+    }
   }
+
+  const colHeaders = ['A', 'B', 'C', 'D', 'E'];
+  const headerRow = cells[1] || ['Column A', 'Column B', 'Column C', 'Column D', 'Column E'];
+  const dataRows = cells.slice(2, 7);
 
   return (
     <div className="w-full h-full rounded-xl bg-white dark:bg-[#0c0d10] border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-xs font-sans leading-snug select-none shadow-xs">
-      {/* Live Spreadsheet Title Bar */}
-      <div className={`${headerBg} px-3 py-1.5 flex items-center justify-between font-bold shrink-0`}>
-        <span className="text-[11px] truncate tracking-tight">{gridTitle}</span>
-        <span className="text-[8px] bg-white/20 text-white px-1.5 py-0.5 rounded font-mono">PREVIEW</span>
+      {/* Live Engine Canvas Title Header Bar */}
+      <div className="bg-slate-900 dark:bg-zinc-800 text-white px-3 py-1.5 flex items-center justify-between font-bold shrink-0 border-b border-slate-800 dark:border-zinc-700">
+        <span className="text-[11px] truncate tracking-tight">
+          {gridTitle}
+        </span>
       </div>
 
-      {/* Live Grid Header (A, B, C, D, E) */}
-      <div className="grid grid-cols-12 bg-slate-100 dark:bg-zinc-900 border-b border-slate-200/80 dark:border-zinc-800 text-[10px] font-bold text-slate-500 dark:text-zinc-400 divide-x divide-slate-200/60 dark:divide-zinc-800 shrink-0">
-        <div className="col-span-1 text-center py-1 bg-slate-200/60 dark:bg-zinc-800/60">#</div>
-        <div className="col-span-3 px-1.5 py-1 truncate">{cols[0]}</div>
-        <div className="col-span-3 px-1.5 py-1 truncate">{cols[1]}</div>
-        <div className="col-span-2 px-1.5 py-1 text-right truncate">{cols[2]}</div>
-        <div className="col-span-3 px-1.5 py-1 text-center truncate">{cols[4]}</div>
+      {/* Column Headers Row (A, B, C, D, E) */}
+      <div className="grid grid-cols-12 bg-slate-100 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 text-[10px] font-mono font-bold text-slate-500 dark:text-zinc-400 divide-x divide-slate-200 dark:divide-zinc-800 shrink-0">
+        <div className="col-span-1 text-center py-1 bg-slate-200/60 dark:bg-zinc-800/80">#</div>
+        <div className="col-span-3 px-1.5 py-1 truncate">{colHeaders[0]}: {headerRow[0] || 'Col A'}</div>
+        <div className="col-span-3 px-1.5 py-1 truncate">{colHeaders[1]}: {headerRow[1] || 'Col B'}</div>
+        <div className="col-span-2 px-1.5 py-1 text-right truncate">{colHeaders[2]}: {headerRow[2] || 'Col C'}</div>
+        <div className="col-span-3 px-1.5 py-1 text-center truncate">{colHeaders[4]}: {headerRow[4] || 'Col E'}</div>
       </div>
 
-      {/* Real Grid Rows */}
-      <div className="flex-1 overflow-hidden divide-y divide-slate-100 dark:divide-zinc-900/60 bg-white dark:bg-zinc-950 text-[10px]">
-        {rowsData.map((row, rIdx) => {
-          const isEven = rIdx % 2 === 0;
-          const status = row[4];
+      {/* Spreadsheet Canvas Engine Data Grid Rows */}
+      <div className="flex-1 overflow-hidden divide-y divide-slate-100 dark:divide-zinc-900 bg-white dark:bg-zinc-950 text-[10px]">
+        {dataRows.map((row, rIdx) => {
+          const rowNum = rIdx + 1;
+          const status = row[4] || row[3] || 'Active';
           let statusBadge = 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300';
           if (['On Track', 'Achieved', 'Surpassed', 'Optimal', 'Closed Won', 'Positive', 'Exceeding', 'Completed'].includes(status)) {
             statusBadge = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 font-bold';
-          } else if (['Within Budget', 'Negotiation', 'Proposal', 'Healthy', 'In Progress'].includes(status)) {
+          } else if (['Within Budget', 'Negotiation', 'Proposal', 'Healthy', 'In Progress', 'Managed'].includes(status)) {
             statusBadge = 'bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 font-bold';
           } else if (['Critical', 'High'].includes(status)) {
             statusBadge = 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 font-bold';
           }
 
           return (
-            <div key={rIdx} className={`grid grid-cols-12 items-center divide-x divide-slate-100 dark:divide-zinc-900 ${isEven ? 'bg-slate-50/50 dark:bg-zinc-900/30' : 'bg-white dark:bg-zinc-950'}`}>
-              <div className="col-span-1 text-center py-1 text-slate-400 font-mono text-[9px] bg-slate-100/40 dark:bg-zinc-900/40">{rIdx + 1}</div>
+            <div key={rIdx} className={`grid grid-cols-12 items-center divide-x divide-slate-100 dark:divide-zinc-900 ${rIdx % 2 === 0 ? 'bg-slate-50/50 dark:bg-zinc-900/30' : 'bg-white dark:bg-zinc-950'}`}>
+              <div className="col-span-1 text-center py-1 text-slate-400 font-mono text-[9px] bg-slate-100/40 dark:bg-zinc-900/40">{rowNum}</div>
               <div className="col-span-3 px-1.5 py-1 truncate font-semibold text-slate-800 dark:text-zinc-200">{row[0]}</div>
               <div className="col-span-3 px-1.5 py-1 truncate text-slate-500 dark:text-zinc-400">{row[1]}</div>
               <div className="col-span-2 px-1.5 py-1 text-right font-mono font-medium text-slate-700 dark:text-zinc-300 truncate">{row[2]}</div>
@@ -3016,18 +3023,13 @@ const LiveTemplateGridPreview = ({ id, title, type }) => {
           );
         })}
       </div>
-
-      {/* Grid Status Footer */}
-      <div className="bg-slate-100/90 dark:bg-zinc-900/90 border-t border-slate-200 dark:border-zinc-800 px-2 py-1 flex items-center justify-between text-[9px] text-slate-500 dark:text-zinc-400 shrink-0 font-mono">
-        <span>Sheet: {gridTitle.split(' ')[0]}</span>
-        <span>5 Rows x 9 Cols</span>
-      </div>
     </div>
   );
 };
 
 const FullPageTemplateGallery = ({
   sheetsData,
+  sheetGrids,
   activeSheetId,
   updateSheetData,
   showToast,
@@ -3075,7 +3077,7 @@ const FullPageTemplateGallery = ({
             className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Plus size={14} />
-            <span>+ Create template</span>
+            <span>Create template</span>
           </button>
         </div>
 
@@ -3158,7 +3160,7 @@ const FullPageTemplateGallery = ({
               className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
             >
               <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
-                <LiveTemplateGridPreview id="financial" title="Financial Model" />
+                <LiveTemplateGridPreview id="financial" title="Financial Model" sheetGrids={sheetGrids} />
                 <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
                   <button
                     type="button"
@@ -3213,7 +3215,7 @@ const FullPageTemplateGallery = ({
               className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
             >
               <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
-                <LiveTemplateGridPreview id="saas" title="SaaS Metrics" />
+                <LiveTemplateGridPreview id="saas" title="SaaS Metrics" sheetGrids={sheetGrids} />
                 <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
                   <button
                     type="button"
@@ -3268,7 +3270,7 @@ const FullPageTemplateGallery = ({
               className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
             >
               <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
-                <LiveTemplateGridPreview id="crm" title="Sales CRM" />
+                <LiveTemplateGridPreview id="crm" title="Sales CRM" sheetGrids={sheetGrids} />
                 <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
                   <button
                     type="button"
@@ -3323,7 +3325,7 @@ const FullPageTemplateGallery = ({
               className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
             >
               <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
-                <LiveTemplateGridPreview id="cashflow" title="Cash Flow" />
+                <LiveTemplateGridPreview id="cashflow" title="Cash Flow" sheetGrids={sheetGrids} />
                 <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
                   <button
                     type="button"
@@ -3378,7 +3380,7 @@ const FullPageTemplateGallery = ({
               className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
             >
               <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
-                <LiveTemplateGridPreview id="kpi" title="KPI Dashboard" />
+                <LiveTemplateGridPreview id="kpi" title="KPI Dashboard" sheetGrids={sheetGrids} />
                 <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
                   <button
                     type="button"
@@ -3426,60 +3428,7 @@ const FullPageTemplateGallery = ({
             </div>
           )}
 
-          {/* Project Tracking */}
-          {(category === 'all' || category === 'operations') && (
-            <div 
-              onClick={() => setPreviewTemplate({ id: 'project', title: 'Project Tracking', applyFn: loadProjectTrackingTemplate })}
-              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
-            >
-              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
-                <LiveTemplateGridPreview id="project" title="Project Tracking" />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      applyTemplate(loadProjectTrackingTemplate, 'Project Tracking');
-                    }}
-                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
-                  >
-                    Use Template
-                  </button>
-                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewTemplate({ id: 'project', title: 'Project Tracking', applyFn: loadProjectTrackingTemplate });
-                      }}
-                      className="hover:underline hover:text-white cursor-pointer"
-                    >
-                      Preview
-                    </button>
-                    <span>·</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewTemplate({ id: 'project', title: 'Project Tracking', applyFn: loadProjectTrackingTemplate });
-                      }}
-                      className="hover:underline hover:text-white cursor-pointer"
-                    >
-                      •••
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                  Project Tracking
-                </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
-                  Operations · 5 × 9
-                </span>
-              </div>
-            </div>
-          )}
+
 
           {/* User Custom Templates */}
           {(category === 'all' || category === 'custom') && customTemplates.map((tpl) => (
@@ -3489,7 +3438,7 @@ const FullPageTemplateGallery = ({
               className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
             >
               <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
-                <LiveTemplateGridPreview id={tpl.id} title={tpl.name} />
+                <LiveTemplateGridPreview id={tpl.id} title={tpl.name} customTemplate={tpl} sheetGrids={sheetGrids} />
                 <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
                   <button
                     type="button"
@@ -3564,7 +3513,7 @@ const FullPageTemplateGallery = ({
             </div>
 
             <div className="w-full h-80 rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-inner">
-              <LiveTemplateGridPreview id={previewTemplate.id} title={previewTemplate.title} />
+              <LiveTemplateGridPreview id={previewTemplate.id} title={previewTemplate.title} customTemplate={customTemplates?.find(t => t.id === previewTemplate.id)} sheetGrids={sheetGrids} />
             </div>
 
             <div className="flex items-center justify-between pt-2">
@@ -40589,6 +40538,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div className={`flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] overflow-hidden z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm'}`}>
                         <FullPageTemplateGallery
                           sheetsData={sheetsData}
+                          sheetGrids={sheetGrids}
                           activeSheetId={activeSheetId}
                           updateSheetData={updateSheetData}
                           showToast={showToast}
