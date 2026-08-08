@@ -3120,8 +3120,8 @@ const FullPageTemplateGallery = ({
           </button>
         </div>
 
-        {/* Initial 4 Category Pills Bar (Slightly rounded rectangles) */}
-        <div className="flex items-center gap-2 overflow-x-auto thin-scrollbar py-1">
+        {/* Initial 4 Category Pills Bar (Apple Segmented Control Track) */}
+        <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner overflow-x-auto thin-scrollbar my-1">
           {[
             { id: 'all', label: 'All Templates' },
             { id: 'finance', label: 'Finance & Growth' },
@@ -3135,10 +3135,10 @@ const FullPageTemplateGallery = ({
                 key={cat.id}
                 type="button"
                 onClick={() => setCategory(cat.id)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border select-none shrink-0 ${
+                className={`relative px-3.5 py-1 text-xs font-semibold rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none cursor-pointer shrink-0 active:scale-[0.97] ${
                   isActive
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs'
-                    : 'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] font-bold'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
                 }`}
               >
                 {cat.label}
@@ -38692,45 +38692,45 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </>
               )}
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-0.5">
                 <button
                   onClick={undoDocumentChange}
                   disabled={!canUndo}
-                  className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                     canUndo
-                      ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
-                      : 'text-gray-400 dark:text-gray-600 opacity-40 cursor-not-allowed'
+                      ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                      : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
                   }`}
                   title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
                 >
-                  <Undo2 size={16} strokeWidth={1.5} />
+                  <Undo2 size={15} strokeWidth={1.5} />
                 </button>
                 <button
                   onClick={redoDocumentChange}
                   disabled={!canRedo}
-                  className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                     canRedo
-                      ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
-                      : 'text-gray-400 dark:text-gray-600 opacity-40 cursor-not-allowed'
+                      ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                      : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
                   }`}
                   title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
                 >
-                  <Redo2 size={16} strokeWidth={1.5} />
+                  <Redo2 size={15} strokeWidth={1.5} />
                 </button>
                 <button
                   onClick={openReplayPanel}
-                  className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`}
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
                   title="Open edit replay"
                 >
-                  <Clock size={16} strokeWidth={1.5} />
+                  <Clock size={15} strokeWidth={1.5} />
                 </button>
                 <button
                   onClick={saveDocumentLocally}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)]"
                   title="Save locally (Ctrl+S)"
                 >
-                  <Save size={16} strokeWidth={1.5} />
+                  <Save size={15} strokeWidth={1.5} />
                 </button>
 
                 {!isSheetsMode && (
@@ -38742,10 +38742,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setDocSearchPanelOpen((prev) => !prev);
                         setDocSearchAutoPlay(false);
                       }}
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${docSearchPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400 font-semibold shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`}
+                      className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${docSearchPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400 font-semibold shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
                       title="Find & Replace (Ctrl+F)"
                     >
-                      <Search size={16} strokeWidth={1.5} />
+                      <Search size={15} strokeWidth={1.5} />
                     </button>
                     {docSearchPanelOpen && renderDocSearchPanel()}
                   </div>
@@ -38763,12 +38763,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setDeckExportMenuOpen(!deckExportMenuOpen);
                     }
                   }}
-                  className={`text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all border ${(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? 'border-slate-300 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-sm' : 'text-slate-700 dark:text-zinc-200 hover:text-slate-900 hover:bg-slate-100/70 border-slate-200/80 bg-white dark:bg-zinc-800 dark:border-zinc-700'}`}
+                  className={`text-xs font-semibold px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] border cursor-pointer select-none ${(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? 'border-slate-300 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-xs' : 'text-slate-700 dark:text-zinc-200 hover:text-slate-900 hover:bg-slate-100/80 border-slate-200/90 bg-white/80 dark:bg-zinc-800/80 dark:border-zinc-700/80 shadow-2xs'}`}
                   title="Export"
                 >
-                  <Download size={14} strokeWidth={1.5} className="text-slate-500 dark:text-zinc-400" />
+                  <Download size={13} strokeWidth={1.5} className="text-slate-500 dark:text-zinc-400" />
                   <span>Export</span>
-                  {(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? <ChevronUp size={13} strokeWidth={1.5} className="text-slate-400" /> : <ChevronDown size={13} strokeWidth={1.5} className="text-slate-400" />}
+                  {(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? <ChevronUp size={12} strokeWidth={1.5} className="text-slate-400" /> : <ChevronDown size={12} strokeWidth={1.5} className="text-slate-400" />}
                 </button>
                 {isSheetsMode && sheetsExportMenuOpen && (
                   <>
@@ -38858,9 +38858,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setShareModalOpen(false);
                     }
                   }}
-                  className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+                  className="bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold px-3.5 py-1 rounded-lg flex items-center gap-1.5 shadow-2xs transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none"
                 >
-                  <Users size={14} strokeWidth={1.5} /> Share
+                  <Users size={13} strokeWidth={1.5} /> Share
                 </button>
                   {shareModalOpen && (
                     <ShareModal
@@ -39461,10 +39461,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }`} />
                         </div>
                       {!isSheetsPresentationMode && !isSheetZenMode && (
-                        <div className="mx-4 mt-3 mb-2 w-[calc(100%-2rem)] p-3.5 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.25)] flex flex-col gap-2.5 z-20 shrink-0">
+                        <div className="mx-4 mt-2 mb-1.5 w-[calc(100%-2rem)] p-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-2 z-20 shrink-0 transition-all duration-200">
                       {/* Top Row: Navigation Tabs & Collapse/Expand Button */}
                       <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
-                        <div className="flex items-center gap-4">
+                        {/* Apple Segmented Control Track */}
+                        <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner">
                           {['Data', 'Templates', 'Analyze', 'Visualize', 'View'].map((tab) => (
                             <button
                               key={tab}
@@ -39480,21 +39481,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   showToast(`${tab} tools ready`);
                                 }
                               }}
-                              className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 ease-out border ${sheetToolbarTab === tab ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600 shadow-sm' : 'border-transparent text-slate-600 hover:bg-slate-50/60 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800/60'}`}
+                              className={`relative px-3.5 py-1 text-[12.5px] font-semibold rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.97] cursor-pointer ${
+                                sheetToolbarTab === tab
+                                  ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] font-bold'
+                                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
+                              }`}
                             >
                               {tab}
                             </button>
                           ))}
                         </div>
-                        {/* Collapse / Expand Toggle Button replacing Export */}
+                        {/* Collapse / Expand Toggle Button */}
                         <button
                           type="button"
                           onClick={() => setIsSheetToolbarCollapsed((prev) => !prev)}
-                          className="text-[13px] font-semibold px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-all text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/60 shadow-sm"
+                          className="text-xs font-semibold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/60 shadow-2xs cursor-pointer"
                           title={isSheetToolbarCollapsed ? "Expand toolbar details" : "Collapse toolbar details"}
                         >
                           <span>{isSheetToolbarCollapsed ? 'Expand' : 'Collapse'}</span>
-                          <ChevronDown size={14} className={`transition-transform duration-200 ${isSheetToolbarCollapsed ? '' : 'rotate-180 text-violet-500'}`} />
+                          <ChevronDown size={13} className={`transition-transform duration-200 ease-out ${isSheetToolbarCollapsed ? '' : 'rotate-180 text-violet-600'}`} />
                         </button>
                       </div>
 
