@@ -2400,6 +2400,1143 @@ const NOTES_SLASH_OPTIONS = [
   { key: 'translate', label: 'Translate', desc: 'Translate text' }
 ];
 
+const CreateTemplateModal = ({
+  isOpen,
+  onClose,
+  source = 'blank',
+  setSource = () => {},
+  form = { name: '', description: '', category: 'Finance', tags: '' },
+  setForm = () => {},
+  uploadedFile = null,
+  setUploadedFile = () => {},
+  onSave = () => {},
+}) => {
+  const [preserveData, setPreserveData] = React.useState(true);
+  const [preserveColors, setPreserveColors] = React.useState(true);
+  const [preserveFormulas, setPreserveFormulas] = React.useState(true);
+  const [preserveStructure, setPreserveStructure] = React.useState(true);
+
+  if (!isOpen) return null;
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setUploadedFile(file);
+      if (!form.name) {
+        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+        setForm((prev) => ({ ...prev, name: nameWithoutExt }));
+      }
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!form.name || !form.name.trim()) return;
+    const newTemplate = {
+      id: `custom-tpl-${Date.now()}`,
+      name: form.name.trim(),
+      description: form.description ? form.description.trim() : 'Custom user created template',
+      category: form.category || 'Custom',
+      tags: form.tags ? form.tags.split(',').map((t) => t.trim()).filter(Boolean) : ['Custom'],
+      iconName: selectedIcon,
+      sourceType: source,
+      preservation: {
+        data: preserveData,
+        colors: preserveColors,
+        formulas: preserveFormulas,
+        structure: preserveStructure,
+      },
+      fileName: uploadedFile ? uploadedFile.name : null,
+      createdAt: new Date().toISOString(),
+    };
+    onSave(newTemplate);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] transition-all"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center shadow-xs">
+              <PlusCircle size={20} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+                Create Custom Template
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-400">
+                Save new spreadsheet configurations & presets
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-5 thin-scrollbar">
+          {/* Source Selector Tabs */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2">
+              Template Source
+            </label>
+            <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-zinc-800/60 rounded-2xl border border-slate-200/60 dark:border-zinc-700/50">
+              {[
+                { id: 'blank', label: 'Blank Grid', icon: Sparkles },
+                { id: 'current', label: 'Current Data', icon: Table },
+                { id: 'upload', label: 'Upload File', icon: Upload },
+              ].map((tab) => {
+                const IconComponent = tab.icon;
+                const isActive = source === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setSource(tab.id)}
+                    className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm border border-slate-200/80 dark:border-zinc-700/80'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                    }`}
+                  >
+                    <IconComponent size={14} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Upload Dropzone if upload selected */}
+          {source === 'upload' && (
+            <div
+              className="p-4 border-2 border-dashed border-slate-200 dark:border-zinc-700 rounded-2xl bg-slate-50/60 dark:bg-zinc-800/40 text-center hover:border-violet-400 transition-all cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".csv,.xlsx,.xls,.pdf,.json,.txt"
+                onChange={handleFileChange}
+              />
+              <Upload className="mx-auto text-violet-500 mb-2" size={24} />
+              <p className="text-xs font-semibold text-slate-700 dark:text-zinc-200">
+                {uploadedFile ? uploadedFile.name : 'Click or drop template file here'}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1">Supports CSV, Excel, PDF, JSON, TXT</p>
+            </div>
+          )}
+
+          {/* Template Title */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1.5">
+              Template Name
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g., Q4 Financial Dashboard"
+              value={form.name}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-violet-500 transition-all"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1.5">
+              Description
+            </label>
+            <textarea
+              rows={2}
+              placeholder="Brief summary of template structure & metrics..."
+              value={form.description}
+              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-violet-500 transition-all resize-none"
+            />
+          </div>
+
+          {/* Category Dropdown */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1.5">
+              Category
+            </label>
+            <select
+              value={form.category}
+              onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-violet-500 transition-all"
+            >
+              <option value="Finance">Finance</option>
+              <option value="Sales">Sales</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Operations">Operations</option>
+              <option value="Project Management">Project Management</option>
+              <option value="Human Resources">Human Resources</option>
+              <option value="Custom">Custom</option>
+            </select>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1.5">
+              Tags (comma separated)
+            </label>
+            <input
+              type="text"
+              placeholder="e.g., Budget, Q4, Revenue"
+              value={form.tags}
+              onChange={(e) => setForm((prev) => ({ ...prev, tags: e.target.value }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-violet-500 transition-all"
+            />
+          </div>
+
+          {/* Details to Preserve */}
+          <div className="p-3.5 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-700/60 rounded-2xl space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300">
+                Details to Preserve
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreserveData(true);
+                    setPreserveColors(true);
+                    setPreserveFormulas(true);
+                    setPreserveStructure(true);
+                  }}
+                  className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
+                >
+                  Select All
+                </button>
+                <span className="text-slate-300 dark:text-zinc-600 text-[10px]">|</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreserveData(false);
+                    setPreserveColors(false);
+                    setPreserveFormulas(false);
+                    setPreserveStructure(false);
+                  }}
+                  className="text-[10px] font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 cursor-pointer"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <label className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-700/60 cursor-pointer hover:border-violet-300 transition-all select-none">
+                <input
+                  type="checkbox"
+                  checked={preserveData}
+                  onChange={(e) => setPreserveData(e.target.checked)}
+                  className="rounded-md text-violet-600 focus:ring-violet-500 accent-violet-600 w-4 h-4 cursor-pointer"
+                />
+                <span className="font-medium text-slate-700 dark:text-zinc-200">Cell Values & Data</span>
+              </label>
+
+              <label className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-700/60 cursor-pointer hover:border-violet-300 transition-all select-none">
+                <input
+                  type="checkbox"
+                  checked={preserveColors}
+                  onChange={(e) => setPreserveColors(e.target.checked)}
+                  className="rounded-md text-violet-600 focus:ring-violet-500 accent-violet-600 w-4 h-4 cursor-pointer"
+                />
+                <span className="font-medium text-slate-700 dark:text-zinc-200">Colors & Formatting</span>
+              </label>
+
+              <label className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-700/60 cursor-pointer hover:border-violet-300 transition-all select-none">
+                <input
+                  type="checkbox"
+                  checked={preserveFormulas}
+                  onChange={(e) => setPreserveFormulas(e.target.checked)}
+                  className="rounded-md text-violet-600 focus:ring-violet-500 accent-violet-600 w-4 h-4 cursor-pointer"
+                />
+                <span className="font-medium text-slate-700 dark:text-zinc-200">Formulas & Math</span>
+              </label>
+
+              <label className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-700/60 cursor-pointer hover:border-violet-300 transition-all select-none">
+                <input
+                  type="checkbox"
+                  checked={preserveStructure}
+                  onChange={(e) => setPreserveStructure(e.target.checked)}
+                  className="rounded-md text-violet-600 focus:ring-violet-500 accent-violet-600 w-4 h-4 cursor-pointer"
+                />
+                <span className="font-medium text-slate-700 dark:text-zinc-200">Headers & Structure</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-zinc-800">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md shadow-violet-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <Check size={14} />
+              <span>Save Template</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const RealSpreadsheetThumbnail = ({ id, title, type }) => {
+  if (type === 'blank') {
+    return (
+      <div className="w-full h-full rounded-xl border border-dashed border-emerald-400/80 dark:border-emerald-500/60 bg-emerald-50/20 dark:bg-emerald-950/10 flex flex-col items-center justify-center text-emerald-600 dark:text-emerald-400 gap-1 p-2">
+        <Plus size={26} strokeWidth={2.2} />
+      </div>
+    );
+  }
+
+  if (id === 'financial' || title === 'Financial Model') {
+    return (
+      <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
+        <div className="bg-[#0284c7] text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
+          <span className="truncate">Financial Model & 3-Yr Growth</span>
+          <span className="opacity-80 text-[6px]">USD</span>
+        </div>
+        <div className="p-1 flex-1 flex flex-col justify-between bg-slate-50/50 dark:bg-zinc-900/50">
+          <div className="grid grid-cols-4 bg-sky-100 dark:bg-sky-950/60 text-sky-900 dark:text-sky-200 font-bold p-0.5 rounded-xs border-b border-sky-200 dark:border-sky-800 text-[6.5px]">
+            <span>Metric</span>
+            <span className="text-right">Y1</span>
+            <span className="text-right">Y2</span>
+            <span className="text-right">YoY</span>
+          </div>
+          <div className="grid grid-cols-4 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
+            <span className="truncate font-semibold">Gross Revenue</span>
+            <span className="text-right">$1.45M</span>
+            <span className="text-right">$2.10M</span>
+            <span className="text-right text-emerald-600 font-bold">+44%</span>
+          </div>
+          <div className="grid grid-cols-4 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
+            <span className="truncate">EBITDA Margin</span>
+            <span className="text-right">28.5%</span>
+            <span className="text-right">34.2%</span>
+            <span className="text-right text-sky-600 font-bold">+5.7%</span>
+          </div>
+          <div className="h-4 bg-sky-50 dark:bg-sky-950/40 rounded-xs p-0.5 flex items-end justify-between gap-1 border border-sky-100 dark:border-sky-900/60">
+            <div className="w-full h-full flex items-end gap-1 px-1">
+              <div className="flex-1 bg-sky-300 rounded-t-xs h-[40%]" />
+              <div className="flex-1 bg-sky-400 rounded-t-xs h-[65%]" />
+              <div className="flex-1 bg-sky-500 rounded-t-xs h-[85%]" />
+              <div className="flex-1 bg-sky-600 rounded-t-xs h-[100%]" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (id === 'saas' || title === 'SaaS Metrics') {
+    return (
+      <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
+        <div className="bg-[#059669] text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
+          <span className="truncate">SaaS Executive Metrics & Unit Econ</span>
+          <span className="opacity-80 text-[6px]">ARR</span>
+        </div>
+        <div className="p-1 flex-1 flex flex-col justify-between bg-emerald-50/30 dark:bg-emerald-950/20">
+          <div className="grid grid-cols-3 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 font-bold p-0.5 rounded-xs border-b border-emerald-200 dark:border-emerald-800 text-[6.5px]">
+            <span>KPI Metric</span>
+            <span className="text-right">Value</span>
+            <span className="text-right">Benchmark</span>
+          </div>
+          <div className="grid grid-cols-3 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
+            <span className="truncate font-semibold">Monthly MRR</span>
+            <span className="text-right font-bold text-emerald-600">$185,000</span>
+            <span className="text-right text-slate-400">Top 10%</span>
+          </div>
+          <div className="grid grid-cols-3 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
+            <span className="truncate">LTV : CAC</span>
+            <span className="text-right font-bold text-emerald-600">4.6x</span>
+            <span className="text-right text-emerald-600">Healthy</span>
+          </div>
+          <div className="h-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-xs p-0.5 flex items-center justify-between gap-1 border border-emerald-100 dark:border-emerald-900/60">
+            <div className="flex items-center gap-1.5 px-1 w-full justify-between">
+              <span className="text-[5.5px] font-bold text-emerald-700 dark:text-emerald-300">NRR: 118%</span>
+              <div className="h-2 bg-emerald-500 rounded-full w-12" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (id === 'crm' || title === 'Sales CRM') {
+    return (
+      <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
+        <div className="bg-[#7c3aed] text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
+          <span className="truncate">Sales CRM & Pipeline Tracker</span>
+          <span className="opacity-80 text-[6px]">Pipeline</span>
+        </div>
+        <div className="p-1 flex-1 flex flex-col justify-between bg-purple-50/30 dark:bg-purple-950/20">
+          <div className="grid grid-cols-4 bg-purple-100 dark:bg-purple-950/60 text-purple-900 dark:text-purple-200 font-bold p-0.5 rounded-xs border-b border-purple-200 dark:border-purple-800 text-[6.5px]">
+            <span>Account</span>
+            <span className="text-right">Deal</span>
+            <span>Stage</span>
+            <span className="text-right">Win%</span>
+          </div>
+          <div className="grid grid-cols-4 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
+            <span className="truncate font-semibold">Acme Corp</span>
+            <span className="text-right">$120k</span>
+            <span className="text-purple-600 font-bold">Proposal</span>
+            <span className="text-right text-purple-600">75%</span>
+          </div>
+          <div className="grid grid-cols-4 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
+            <span className="truncate">Stark Tech</span>
+            <span className="text-right">$85k</span>
+            <span className="text-amber-600">Qualified</span>
+            <span className="text-right">50%</span>
+          </div>
+          <div className="h-4 bg-purple-50 dark:bg-purple-950/40 rounded-xs p-0.5 flex items-center justify-between px-1.5 border border-purple-100 dark:border-purple-900/60 text-[6px]">
+            <span className="font-bold text-purple-700 dark:text-purple-300">Total: $450,000</span>
+            <span className="text-slate-400">8 Deals</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (id === 'cashflow' || title === 'Cash Flow') {
+    return (
+      <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
+        <div className="bg-[#d97706] text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
+          <span className="truncate">12-Month Cash Flow Trajectory</span>
+          <span className="opacity-80 text-[6px]">USD</span>
+        </div>
+        <div className="p-1 flex-1 flex flex-col justify-between bg-amber-50/30 dark:bg-amber-950/20">
+          <div className="grid grid-cols-4 bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 font-bold p-0.5 rounded-xs border-b border-amber-200 dark:border-amber-800 text-[6.5px]">
+            <span>Period</span>
+            <span className="text-right">Inflow</span>
+            <span className="text-right">Outflow</span>
+            <span className="text-right">Net</span>
+          </div>
+          <div className="grid grid-cols-4 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
+            <span className="truncate font-semibold">Q1 2026</span>
+            <span className="text-right">$740k</span>
+            <span className="text-right">$580k</span>
+            <span className="text-right text-emerald-600 font-bold">+$160k</span>
+          </div>
+          <div className="grid grid-cols-4 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
+            <span className="truncate">Q2 2026</span>
+            <span className="text-right">$820k</span>
+            <span className="text-right">$610k</span>
+            <span className="text-right text-emerald-600 font-bold">+$210k</span>
+          </div>
+          <div className="h-4 bg-amber-50 dark:bg-amber-950/40 rounded-xs p-0.5 flex items-center justify-between px-1.5 border border-amber-100 dark:border-amber-900/60 text-[6px]">
+            <span className="font-bold text-amber-700 dark:text-amber-300">Runway: 24 Mos</span>
+            <span className="text-emerald-600 font-bold">Positive</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (id === 'kpi' || title === 'KPI Dashboard') {
+    return (
+      <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
+        <div className="bg-[#4f46e5] text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
+          <span className="truncate">KPI Executive Dashboard</span>
+          <span className="opacity-80 text-[6px]">Live</span>
+        </div>
+        <div className="p-1 flex-1 flex flex-col justify-between bg-indigo-50/30 dark:bg-indigo-950/20">
+          <div className="grid grid-cols-4 bg-indigo-100 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-bold p-0.5 rounded-xs border-b border-indigo-200 dark:border-indigo-800 text-[6.5px]">
+            <span>KPI Goal</span>
+            <span className="text-right">Target</span>
+            <span className="text-right">Actual</span>
+            <span className="text-right">Delta</span>
+          </div>
+          <div className="grid grid-cols-4 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
+            <span className="truncate font-semibold">Active Users</span>
+            <span className="text-right">50.0k</span>
+            <span className="text-right font-bold text-indigo-600">54.2k</span>
+            <span className="text-right text-emerald-600 font-bold">+8.4%</span>
+          </div>
+          <div className="grid grid-cols-4 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
+            <span className="truncate">NPS Score</span>
+            <span className="text-right">65</span>
+            <span className="text-right font-bold text-indigo-600">72</span>
+            <span className="text-right text-emerald-600 font-bold">+10.7%</span>
+          </div>
+          <div className="h-4 bg-indigo-50 dark:bg-indigo-950/40 rounded-xs p-0.5 flex items-center justify-between px-1.5 border border-indigo-100 dark:border-indigo-900/60 text-[6px]">
+            <span className="font-bold text-indigo-700 dark:text-indigo-300">Goal Achievement: 108%</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (id === 'project' || title === 'Project Tracking' || title === 'Project Track') {
+    return (
+      <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
+        <div className="bg-[#2563eb] text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
+          <span className="truncate">Project Ops & Task Tracking</span>
+          <span className="opacity-80 text-[6px]">Sprint 14</span>
+        </div>
+        <div className="p-1 flex-1 flex flex-col justify-between bg-blue-50/30 dark:bg-blue-950/20">
+          <div className="grid grid-cols-4 bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-200 font-bold p-0.5 rounded-xs border-b border-blue-200 dark:border-blue-800 text-[6.5px]">
+            <span>Task</span>
+            <span>Owner</span>
+            <span>Priority</span>
+            <span className="text-right">Status</span>
+          </div>
+          <div className="grid grid-cols-4 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
+            <span className="truncate font-semibold">API Arch v2</span>
+            <span className="truncate">Sarah K.</span>
+            <span className="text-rose-600 font-bold">High</span>
+            <span className="text-right text-blue-600 font-bold">In Prog</span>
+          </div>
+          <div className="grid grid-cols-4 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
+            <span className="truncate">UI Tokens</span>
+            <span className="truncate">Alex M.</span>
+            <span className="text-amber-600">Medium</span>
+            <span className="text-right text-emerald-600 font-bold">Done</span>
+          </div>
+          <div className="h-4 bg-blue-50 dark:bg-blue-950/40 rounded-xs p-0.5 flex items-center justify-between px-1.5 border border-blue-100 dark:border-blue-900/60 text-[6px]">
+            <span className="font-bold text-blue-700 dark:text-blue-300">Sprint Progress: 82%</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full rounded-xl bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-[7px] font-sans leading-none select-none shadow-2xs">
+      <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white px-2 py-1 flex items-center justify-between font-bold tracking-tight">
+        <span className="truncate">{title}</span>
+        <span className="bg-white/20 text-white px-1 py-0.5 rounded-xs text-[5.5px]">Custom</span>
+      </div>
+      <div className="p-1 flex-1 flex flex-col justify-between bg-violet-50/30 dark:bg-violet-950/20">
+        <div className="grid grid-cols-3 bg-violet-100 dark:bg-violet-950/60 text-violet-900 dark:text-violet-200 font-bold p-0.5 rounded-xs border-b border-violet-200 dark:border-violet-800 text-[6.5px]">
+          <span>Header 1</span>
+          <span className="text-right">Value</span>
+          <span className="text-right">Status</span>
+        </div>
+        <div className="grid grid-cols-3 text-slate-700 dark:text-zinc-300 p-0.5 border-b border-slate-100 dark:border-zinc-800 text-[6px]">
+          <span className="truncate font-semibold">Saved Row 1</span>
+          <span className="text-right">$10,400</span>
+          <span className="text-right text-emerald-600 font-bold">Active</span>
+        </div>
+        <div className="grid grid-cols-3 text-slate-600 dark:text-zinc-400 p-0.5 text-[6px]">
+          <span className="truncate">Saved Row 2</span>
+          <span className="text-right">$8,250</span>
+          <span className="text-right text-amber-600 font-bold">Pending</span>
+        </div>
+        <div className="h-4 bg-violet-50 dark:bg-violet-950/40 rounded-xs p-0.5 flex items-center justify-between px-1.5 border border-violet-100 dark:border-violet-900/60 text-[6px]">
+          <span className="font-bold text-violet-700 dark:text-violet-300">Custom Template Grid</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const VisualTemplateCard = ({ id, title, type = 'prebuilt', onClick, onDelete, isCustom = false }) => {
+  return (
+    <div 
+      className="relative group flex flex-col items-center cursor-pointer select-none transition-all duration-200 shrink-0"
+      onClick={onClick}
+    >
+      {/* Thumbnail Card Frame */}
+      <div className="w-36 h-22 sm:w-44 sm:h-26 rounded-2xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-violet-500/70 group-hover:scale-[1.02] transition-all duration-200 relative overflow-hidden flex items-center justify-center">
+        <RealSpreadsheetThumbnail id={id} title={title} type={type} />
+
+        {/* Hover overlay with subtle "Use template" pill */}
+        {type !== 'blank' && (
+          <div className="absolute inset-0 bg-slate-900/15 dark:bg-black/30 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center p-2 rounded-2xl">
+            <span className="px-3 py-1.5 rounded-full bg-slate-900/90 dark:bg-white/90 text-white dark:text-slate-900 text-[11px] font-bold shadow-lg flex items-center gap-1 transform translate-y-1 group-hover:translate-y-0 transition-transform duration-200">
+              Use Template
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Template Name Below Card */}
+      <span className="text-[12px] font-medium text-slate-700 dark:text-zinc-300 mt-1.5 truncate max-w-[140px] group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+        {title}
+      </span>
+
+      {/* Delete button if custom template */}
+      {isCustom && onDelete && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-slate-900/80 text-white hover:bg-red-600 flex items-center justify-center transition-colors shadow-sm opacity-0 group-hover:opacity-100 z-10"
+          title="Delete custom template"
+        >
+          <X size={11} />
+        </button>
+      )}
+    </div>
+  );
+};
+
+const LiveTemplateGridPreview = ({ id, title, type }) => {
+  if (type === 'blank') {
+    return (
+      <div className="w-full h-full rounded-2xl border-2 border-dashed border-emerald-400/80 dark:border-emerald-500/60 bg-emerald-50/15 dark:bg-emerald-950/10 flex flex-col items-center justify-center text-emerald-600 dark:text-emerald-400 gap-2 p-6">
+        <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
+          <Plus size={28} strokeWidth={2.5} />
+        </div>
+        <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">Blank Spreadsheet</span>
+        <span className="text-xs text-slate-400 dark:text-zinc-500 text-center">Start from scratch with a clean, unformatted grid</span>
+      </div>
+    );
+  }
+
+  // Define actual template grid rows for live rendering
+  let gridTitle = title;
+  let cols = ['A', 'B', 'C', 'D', 'E'];
+  let rowsData = [];
+  let headerBg = 'bg-sky-600 text-white';
+
+  if (id === 'financial' || title === 'Financial Model') {
+    gridTitle = '3-5 Year Financial & Revenue Model';
+    headerBg = 'bg-slate-900 text-white';
+    cols = ['A: Item', 'B: Category', 'C: 2026', 'D: 2027', 'E: Status'];
+    rowsData = [
+      ['Enterprise Subscriptions', 'Revenue', '$1,200,000', '$2,100,000', 'On Track'],
+      ['SMB & Self-Serve', 'Revenue', '$450,000', '$750,000', 'On Track'],
+      ['Cost of Goods Sold (COGS)', 'Cost', '$396,000', '$675,000', 'Within Budget'],
+      ['Gross Profit', 'Profit', '$1,404,000', '$2,395,000', 'Achieved'],
+      ['EBITDA Margin %', 'Profitability', '6%', '13%', 'Achieved'],
+    ];
+  } else if (id === 'saas' || title === 'SaaS Metrics') {
+    gridTitle = 'SaaS Executive Metrics & Unit Economics';
+    headerBg = 'bg-emerald-700 text-white';
+    cols = ['A: ID', 'B: Metric Name', 'C: Current', 'D: Target', 'E: Status'];
+    rowsData = [
+      ['MET-01', 'Monthly Recurring Revenue (MRR)', '$185,000', '$220,000', 'On Track'],
+      ['MET-02', 'Annual Recurring Revenue (ARR)', '$2,220,000', '$2,640,000', 'On Track'],
+      ['MET-03', 'Net Revenue Retention (NRR)', '118%', '120%', 'Achieved'],
+      ['MET-04', 'Customer Lifetime Value (LTV)', '$20,160', '$22,000', 'Surpassed'],
+      ['MET-05', 'LTV : CAC Ratio', '4.8x', '5.0x', 'Optimal'],
+    ];
+  } else if (id === 'crm' || title === 'Sales CRM') {
+    gridTitle = 'Sales CRM & Deal Pipeline Tracker';
+    headerBg = 'bg-purple-700 text-white';
+    cols = ['A: ID', 'B: Opportunity', 'C: Stage', 'D: Value', 'E: Priority'];
+    rowsData = [
+      ['OPP-201', 'Enterprise ERP Renewal', 'Negotiation', '$180,000', 'Critical'],
+      ['OPP-202', 'Cloud Infrastructure', 'Proposal', '$120,000', 'High'],
+      ['OPP-203', 'AI Analytics Suite Pilot', 'Demo', '$65,000', 'Medium'],
+      ['OPP-204', 'Global Security Audit', 'Closed Won', '$150,000', 'High'],
+      ['OPP-205', 'SaaS Operations Platform', 'Qualified', '$45,000', 'Low'],
+    ];
+  } else if (id === 'cashflow' || title === 'Cash Flow') {
+    gridTitle = '12-Month Cash Flow Statement & Forecast';
+    headerBg = 'bg-amber-600 text-white';
+    cols = ['A: Line Item', 'B: Q1 2026', 'C: Q2 2026', 'D: Q3 2026', 'E: Status'];
+    rowsData = [
+      ['Beginning Cash Balance', '$1,400,000', '$1,560,000', '$1,770,000', 'Healthy'],
+      ['Customer Inflows', '$740,000', '$820,000', '$910,000', 'On Target'],
+      ['Payroll & OpEx Outflows', '$580,000', '$610,000', '$650,000', 'Managed'],
+      ['Net Operating Cash Flow', '+$160,000', '+$210,000', '+$260,000', 'Positive'],
+      ['Ending Reserve', '$1,560,000', '$1,770,000', '$2,030,000', 'Surpassed'],
+    ];
+  } else if (id === 'kpi' || title === 'KPI Dashboard') {
+    gridTitle = 'Executive Master KPI Dashboard';
+    headerBg = 'bg-indigo-700 text-white';
+    cols = ['A: Code', 'B: Key Metric', 'C: Actual', 'D: Target', 'E: Status'];
+    rowsData = [
+      ['KPI-1', 'Active Monthly Users', '54,200', '50,000', 'Exceeding'],
+      ['KPI-2', 'NPS Customer Score', '72', '65', 'Exceeding'],
+      ['KPI-3', 'Gross Profit Margin', '78%', '75%', 'Achieved'],
+      ['KPI-4', 'Customer Churn Rate', '1.4%', '2.0%', 'Optimal'],
+      ['KPI-5', 'System Uptime SLA', '99.98%', '99.90%', 'Optimal'],
+    ];
+  } else if (id === 'project' || title === 'Project Tracking' || title === 'Project Track') {
+    gridTitle = 'Project Portfolio & Milestone Tracker';
+    headerBg = 'bg-blue-700 text-white';
+    cols = ['A: ID', 'B: Project Name', 'C: Owner', 'D: Phase', 'E: Status'];
+    rowsData = [
+      ['PRJ-101', 'Cloud Infrastructure v2', 'Sarah Chen', 'Execution', 'In Progress'],
+      ['PRJ-102', 'Mobile App Redesign', 'Alex Rivera', 'Testing', 'On Track'],
+      ['PRJ-103', 'AI Assistant Integration', 'Elena Rostova', 'Planning', 'In Review'],
+      ['PRJ-104', 'Security & SOC2 Audit', 'Marcus Vance', 'Audit', 'Completed'],
+      ['PRJ-105', 'DevOps CI/CD Pipeline', 'David Kim', 'Deployment', 'In Progress'],
+    ];
+  } else {
+    gridTitle = title || 'Custom Sheet Template';
+    headerBg = 'bg-violet-700 text-white';
+    cols = ['A: ID', 'B: Item Name', 'C: Category', 'D: Value', 'E: Status'];
+    rowsData = [
+      ['ITEM-1', 'Sample Data Row 1', 'Operations', '$12,500', 'Active'],
+      ['ITEM-2', 'Sample Data Row 2', 'Finance', '$45,000', 'Active'],
+      ['ITEM-3', 'Sample Data Row 3', 'Sales', '$8,400', 'Pending'],
+      ['ITEM-4', 'Sample Data Row 4', 'Marketing', '$19,200', 'Active'],
+    ];
+  }
+
+  return (
+    <div className="w-full h-full rounded-2xl bg-white dark:bg-[#0c0d10] border border-slate-200/90 dark:border-zinc-800 flex flex-col overflow-hidden text-xs font-sans leading-snug select-none shadow-md">
+      {/* Live Spreadsheet Title Bar */}
+      <div className={`${headerBg} px-3 py-2 flex items-center justify-between font-bold shrink-0`}>
+        <span className="text-[11px] truncate tracking-tight">{gridTitle}</span>
+        <span className="text-[9px] bg-white/20 text-white px-1.5 py-0.5 rounded font-mono">LIVE PREVIEW</span>
+      </div>
+
+      {/* Live Grid Header (A, B, C, D, E) */}
+      <div className="grid grid-cols-12 bg-slate-100 dark:bg-zinc-900 border-b border-slate-200/80 dark:border-zinc-800 text-[10px] font-bold text-slate-500 dark:text-zinc-400 divide-x divide-slate-200/60 dark:divide-zinc-800 shrink-0">
+        <div className="col-span-1 text-center py-1 bg-slate-200/60 dark:bg-zinc-800/60">#</div>
+        <div className="col-span-3 px-1.5 py-1 truncate">{cols[0]}</div>
+        <div className="col-span-3 px-1.5 py-1 truncate">{cols[1]}</div>
+        <div className="col-span-2 px-1.5 py-1 text-right truncate">{cols[2]}</div>
+        <div className="col-span-3 px-1.5 py-1 text-center truncate">{cols[4]}</div>
+      </div>
+
+      {/* Real Grid Rows */}
+      <div className="flex-1 overflow-hidden divide-y divide-slate-100 dark:divide-zinc-900/60 bg-white dark:bg-zinc-950 text-[10px]">
+        {rowsData.map((row, rIdx) => {
+          const isEven = rIdx % 2 === 0;
+          const status = row[4];
+          let statusBadge = 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300';
+          if (['On Track', 'Achieved', 'Surpassed', 'Optimal', 'Closed Won', 'Positive', 'Exceeding', 'Completed'].includes(status)) {
+            statusBadge = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 font-bold';
+          } else if (['Within Budget', 'Negotiation', 'Proposal', 'Healthy', 'In Progress'].includes(status)) {
+            statusBadge = 'bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 font-bold';
+          } else if (['Critical', 'High'].includes(status)) {
+            statusBadge = 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 font-bold';
+          }
+
+          return (
+            <div key={rIdx} className={`grid grid-cols-12 items-center divide-x divide-slate-100 dark:divide-zinc-900 ${isEven ? 'bg-slate-50/50 dark:bg-zinc-900/30' : 'bg-white dark:bg-zinc-950'}`}>
+              <div className="col-span-1 text-center py-1 text-slate-400 font-mono text-[9px] bg-slate-100/40 dark:bg-zinc-900/40">{rIdx + 1}</div>
+              <div className="col-span-3 px-1.5 py-1 truncate font-semibold text-slate-800 dark:text-zinc-200">{row[0]}</div>
+              <div className="col-span-3 px-1.5 py-1 truncate text-slate-500 dark:text-zinc-400">{row[1]}</div>
+              <div className="col-span-2 px-1.5 py-1 text-right font-mono font-medium text-slate-700 dark:text-zinc-300 truncate">{row[2]}</div>
+              <div className="col-span-3 px-1 py-1 flex items-center justify-center">
+                <span className={`px-1.5 py-0.5 rounded text-[8px] truncate ${statusBadge}`}>
+                  {status}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Grid Status Footer */}
+      <div className="bg-slate-100/90 dark:bg-zinc-900/90 border-t border-slate-200 dark:border-zinc-800 px-2 py-1 flex items-center justify-between text-[9px] text-slate-500 dark:text-zinc-400 shrink-0 font-mono">
+        <span>Sheet: {gridTitle.split(' ')[0]}</span>
+        <span>5 Rows x 9 Cols</span>
+      </div>
+    </div>
+  );
+};
+
+const FullPageTemplateGallery = ({
+  sheetsData,
+  activeSheetId,
+  updateSheetData,
+  showToast,
+  loadFinancialModelTemplate,
+  loadSaaSMetricsTemplate,
+  loadSalesCRMPipelineTemplate,
+  loadCashFlowForecastTemplate,
+  loadKPIDashboardTemplate,
+  loadProjectTrackingTemplate,
+  customTemplates,
+  handleApplyCustomTemplate,
+  handleDeleteCustomTemplate,
+  setCreateTemplateSource,
+  setCreateTemplateForm,
+  setIsCreateTemplateModalOpen,
+  setSheetToolbarTab
+}) => {
+  const [category, setCategory] = React.useState('all');
+  const [previewTemplate, setPreviewTemplate] = React.useState(null);
+
+  const applyTemplate = (actionFn, templateName) => {
+    actionFn();
+    setSheetToolbarTab('Data');
+    showToast(`${templateName} Template Loaded`);
+  };
+
+  return (
+    <div className="w-full h-full flex flex-col bg-slate-50/70 dark:bg-[#090a0d] overflow-y-auto thin-scrollbar p-6">
+      {/* Top Hero Banner */}
+      <div className="max-w-6xl mx-auto w-full flex flex-col gap-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-zinc-800 pb-5">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              Template Gallery
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-zinc-400">
+              Select an executive-tier spreadsheet template to start analyzing, or save your current grid layout.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setCreateTemplateSource('current');
+                setCreateTemplateForm((prev) => ({
+                  ...prev,
+                  name: (sheetsData || []).find(s => s.id === activeSheetId)?.title || 'My Template',
+                }));
+                setIsCreateTemplateModalOpen(true);
+              }}
+              className="px-4 py-2 text-xs font-bold text-slate-800 dark:text-zinc-200 bg-white dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-xl border border-slate-200 dark:border-zinc-700 shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Plus size={15} />
+              <span>Save current sheet as template</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Category Pills Bar */}
+        <div className="flex items-center gap-2 overflow-x-auto thin-scrollbar pb-1">
+          {[
+            { id: 'all', label: 'All Templates' },
+            { id: 'finance', label: 'Finance & Growth' },
+            { id: 'sales', label: 'Sales CRM' },
+            { id: 'operations', label: 'Operations & KPI' },
+            { id: 'custom', label: `My Custom Templates (${customTemplates.length})` }
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setCategory(cat.id)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                category === cat.id
+                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm scale-105'
+                  : 'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border border-slate-200/80 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-800'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Grid of Large High-Resolution Spreadsheet Screenshots */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2 pb-12">
+          {/* Blank Card */}
+          {(category === 'all' || category === 'operations') && (
+            <div 
+              onClick={() => {
+                const activeSheet = (sheetsData || []).find(s => s.id === activeSheetId);
+                if (activeSheet) {
+                  updateSheetData(activeSheetId, { data: [Array(15).fill('')], columns: Array(10).fill({ width: 100 }) });
+                  setSheetToolbarTab('Data');
+                  showToast('Loaded Blank Grid');
+                }
+              }}
+              className="group relative flex flex-col gap-2.5 cursor-pointer select-none"
+            >
+              <div className="w-full h-56 rounded-2xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-sm group-hover:shadow-2xl group-hover:border-emerald-500/80 group-hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden">
+                <LiveTemplateGridPreview type="blank" title="Blank" />
+              </div>
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                  Blank Spreadsheet
+                </span>
+                <span className="text-xs font-semibold text-slate-400">Clean Grid</span>
+              </div>
+            </div>
+          )}
+
+          {/* Financial Model */}
+          {(category === 'all' || category === 'finance') && (
+            <div className="group relative flex flex-col gap-2.5 select-none">
+              <div className="w-full h-56 rounded-2xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-sm group-hover:shadow-2xl group-hover:border-sky-500/80 group-hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden">
+                <LiveTemplateGridPreview id="financial" title="Financial Model" />
+                <div className="absolute inset-0 bg-slate-900/30 dark:bg-black/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-2xl">
+                  <button
+                    type="button"
+                    onClick={() => applyTemplate(loadFinancialModelTemplate, 'Financial Model')}
+                    className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-lg transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Use Template
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTemplate({ id: 'financial', title: 'Financial Model', applyFn: loadFinancialModelTemplate })}
+                    className="w-full py-2 rounded-xl bg-white/90 dark:bg-zinc-800/90 hover:bg-white text-slate-900 dark:text-white text-xs font-semibold transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Quick Preview
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                  Financial Model & 3-Yr Growth
+                </span>
+                <span className="text-xs font-semibold text-slate-400">Finance</span>
+              </div>
+            </div>
+          )}
+
+          {/* SaaS Metrics */}
+          {(category === 'all' || category === 'finance') && (
+            <div className="group relative flex flex-col gap-2.5 select-none">
+              <div className="w-full h-56 rounded-2xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-sm group-hover:shadow-2xl group-hover:border-emerald-500/80 group-hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden">
+                <LiveTemplateGridPreview id="saas" title="SaaS Metrics" />
+                <div className="absolute inset-0 bg-slate-900/30 dark:bg-black/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-2xl">
+                  <button
+                    type="button"
+                    onClick={() => applyTemplate(loadSaaSMetricsTemplate, 'SaaS Metrics')}
+                    className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Use Template
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTemplate({ id: 'saas', title: 'SaaS Metrics', applyFn: loadSaaSMetricsTemplate })}
+                    className="w-full py-2 rounded-xl bg-white/90 dark:bg-zinc-800/90 hover:bg-white text-slate-900 dark:text-white text-xs font-semibold transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Quick Preview
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                  SaaS Executive Metrics
+                </span>
+                <span className="text-xs font-semibold text-slate-400">Finance</span>
+              </div>
+            </div>
+          )}
+
+          {/* Sales CRM */}
+          {(category === 'all' || category === 'sales') && (
+            <div className="group relative flex flex-col gap-2.5 select-none">
+              <div className="w-full h-56 rounded-2xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-sm group-hover:shadow-2xl group-hover:border-purple-500/80 group-hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden">
+                <LiveTemplateGridPreview id="crm" title="Sales CRM" />
+                <div className="absolute inset-0 bg-slate-900/30 dark:bg-black/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-2xl">
+                  <button
+                    type="button"
+                    onClick={() => applyTemplate(loadSalesCRMPipelineTemplate, 'Sales CRM')}
+                    className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Use Template
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTemplate({ id: 'crm', title: 'Sales CRM', applyFn: loadSalesCRMPipelineTemplate })}
+                    className="w-full py-2 rounded-xl bg-white/90 dark:bg-zinc-800/90 hover:bg-white text-slate-900 dark:text-white text-xs font-semibold transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Quick Preview
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                  Sales CRM & Pipeline Tracker
+                </span>
+                <span className="text-xs font-semibold text-slate-400">Sales</span>
+              </div>
+            </div>
+          )}
+
+          {/* Cash Flow */}
+          {(category === 'all' || category === 'finance') && (
+            <div className="group relative flex flex-col gap-2.5 select-none">
+              <div className="w-full h-56 rounded-2xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-sm group-hover:shadow-2xl group-hover:border-amber-500/80 group-hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden">
+                <LiveTemplateGridPreview id="cashflow" title="Cash Flow" />
+                <div className="absolute inset-0 bg-slate-900/30 dark:bg-black/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-2xl">
+                  <button
+                    type="button"
+                    onClick={() => applyTemplate(loadCashFlowForecastTemplate, 'Cash Flow')}
+                    className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-lg transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Use Template
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTemplate({ id: 'cashflow', title: 'Cash Flow', applyFn: loadCashFlowForecastTemplate })}
+                    className="w-full py-2 rounded-xl bg-white/90 dark:bg-zinc-800/90 hover:bg-white text-slate-900 dark:text-white text-xs font-semibold transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Quick Preview
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                  12-Month Cash Flow Trajectory
+                </span>
+                <span className="text-xs font-semibold text-slate-400">Finance</span>
+              </div>
+            </div>
+          )}
+
+          {/* KPI Dashboard */}
+          {(category === 'all' || category === 'operations') && (
+            <div className="group relative flex flex-col gap-2.5 select-none">
+              <div className="w-full h-56 rounded-2xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-sm group-hover:shadow-2xl group-hover:border-indigo-500/80 group-hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden">
+                <LiveTemplateGridPreview id="kpi" title="KPI Dashboard" />
+                <div className="absolute inset-0 bg-slate-900/30 dark:bg-black/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-2xl">
+                  <button
+                    type="button"
+                    onClick={() => applyTemplate(loadKPIDashboardTemplate, 'KPI Dashboard')}
+                    className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Use Template
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTemplate({ id: 'kpi', title: 'KPI Dashboard', applyFn: loadKPIDashboardTemplate })}
+                    className="w-full py-2 rounded-xl bg-white/90 dark:bg-zinc-800/90 hover:bg-white text-slate-900 dark:text-white text-xs font-semibold transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Quick Preview
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  Executive KPI Dashboard
+                </span>
+                <span className="text-xs font-semibold text-slate-400">Operations</span>
+              </div>
+            </div>
+          )}
+
+          {/* Project Tracking */}
+          {(category === 'all' || category === 'operations') && (
+            <div className="group relative flex flex-col gap-2.5 select-none">
+              <div className="w-full h-56 rounded-2xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-sm group-hover:shadow-2xl group-hover:border-blue-500/80 group-hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden">
+                <LiveTemplateGridPreview id="project" title="Project Tracking" />
+                <div className="absolute inset-0 bg-slate-900/30 dark:bg-black/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-2xl">
+                  <button
+                    type="button"
+                    onClick={() => applyTemplate(loadProjectTrackingTemplate, 'Project Tracking')}
+                    className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Use Template
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTemplate({ id: 'project', title: 'Project Tracking', applyFn: loadProjectTrackingTemplate })}
+                    className="w-full py-2 rounded-xl bg-white/90 dark:bg-zinc-800/90 hover:bg-white text-slate-900 dark:text-white text-xs font-semibold transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Quick Preview
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  Project Ops & Task Tracking
+                </span>
+                <span className="text-xs font-semibold text-slate-400">Operations</span>
+              </div>
+            </div>
+          )}
+
+          {/* My Templates */}
+          {(category === 'all' || category === 'custom') && customTemplates.map((tpl) => (
+            <div key={tpl.id} className="group relative flex flex-col gap-2.5 select-none">
+              <div className="w-full h-56 rounded-2xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-sm group-hover:shadow-2xl group-hover:border-violet-500/80 group-hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden">
+                <LiveTemplateGridPreview id={tpl.id} title={tpl.name} />
+                <div className="absolute inset-0 bg-slate-900/30 dark:bg-black/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-2xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleApplyCustomTemplate(tpl);
+                      setSheetToolbarTab('Data');
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-lg transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Use Template
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCustomTemplate(tpl.id)}
+                    className="w-full py-2 rounded-xl bg-red-600/90 hover:bg-red-600 text-white text-xs font-semibold transition-all transform translate-y-2 group-hover:translate-y-0 cursor-pointer"
+                  >
+                    Delete Custom Template
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                  {tpl.name}
+                </span>
+                <span className="text-xs font-semibold text-violet-600 dark:text-violet-400">Custom</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Preview High-Res Modal */}
+      {previewTemplate && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl max-w-3xl w-full p-6 shadow-2xl flex flex-col gap-5">
+            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-zinc-800 pb-3">
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  {previewTemplate.title} High-Resolution Preview
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewTemplate(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="w-full h-80 rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-inner">
+              <LiveTemplateGridPreview id={previewTemplate.id} title={previewTemplate.title} />
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-xs text-slate-400 dark:text-zinc-500">
+                Includes full grid structure, cell formatting, auto-calculations, and visual charts.
+              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPreviewTemplate(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fn = previewTemplate.applyFn;
+                    setPreviewTemplate(null);
+                    applyTemplate(fn, previewTemplate.title);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-md shadow-violet-500/20 transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <Check size={14} />
+                  <span>Load Template into Sheet</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
   const [pos, setPos] = React.useState({ x: 24, y: 80 });
   const [isDragging, setIsDragging] = React.useState(false);
@@ -8780,11 +9917,169 @@ export default function App() {
   const [sheetZoomLevel, setSheetZoomLevel] = useState(100);
 
   const [sheetToolbarTab, setSheetToolbarTab] = useState('Data');
+  const [templateCategory, setTemplateCategory] = useState('all');
   const [isSheetToolbarCollapsed, setIsSheetToolbarCollapsed] = useState(false);
   const [hasImportedData, setHasImportedData] = useState(false);
   const [importedFileInfo, setImportedFileInfo] = useState(null);
   const [importedFilesList, setImportedFilesList] = useState([]);
   const [isDataFilesDropdownOpen, setIsDataFilesDropdownOpen] = useState(true);
+
+  // Custom Templates State & Management Architecture
+  const [customTemplates, setCustomTemplates] = useState(() => {
+    try {
+      const saved = localStorage.getItem('regaarder_custom_templates');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isCreateTemplateModalOpen, setIsCreateTemplateModalOpen] = useState(false);
+  const [createTemplateSource, setCreateTemplateSource] = useState('current');
+  const [createTemplateForm, setCreateTemplateForm] = useState({
+    name: '',
+    description: '',
+    category: 'Custom',
+    removeSampleData: true,
+    includeStructure: true,
+    includeFormatting: true,
+    includeFormulas: true,
+    includeCharts: true,
+    includeDropdowns: true,
+  });
+  const [createTemplateUploadedFile, setCreateTemplateUploadedFile] = useState(null);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+
+  const handleSaveCustomTemplate = () => {
+    if (!createTemplateForm.name.trim()) {
+      showToast('Please enter a template name');
+      return;
+    }
+
+    let templateGridValues = [];
+    let templateGridFormatting = {};
+    let templateGridDropdowns = {};
+    let templateOverlays = [];
+    let templateTables = [];
+
+    if (createTemplateSource === 'current') {
+      const activeSheetGrid = sheetGrids[activeSheetId] || {};
+      const srcValues = activeSheetGrid.cells || activeSheetGrid.gridValues || activeSheetGrid.values || [];
+
+      if (createTemplateForm.removeSampleData) {
+        templateGridValues = srcValues.map((row, rIdx) => {
+          if (!row) return [];
+          return row.map((cell) => {
+            if (cell == null || cell === '') return cell;
+            const strVal = String(cell).trim();
+            if (strVal.startsWith('=')) return cell;
+            if (rIdx === 0) return cell;
+            return '';
+          });
+        });
+      } else {
+        templateGridValues = srcValues;
+      }
+
+      if (createTemplateForm.includeFormatting) {
+        templateGridFormatting = activeSheetGrid.formats || activeSheetGrid.gridFormatting || activeSheetGrid.formatting || {};
+      }
+      if (createTemplateForm.includeDropdowns) {
+        templateGridDropdowns = activeSheetGrid.dropdowns || activeSheetGrid.gridDropdowns || {};
+      }
+      if (createTemplateForm.includeCharts) {
+        templateOverlays = activeSheetGrid.overlays || [];
+      }
+      templateTables = activeSheetGrid.tables || [];
+    } else {
+      templateGridValues = Array(20).fill(null).map(() => Array(10).fill(''));
+    }
+
+    const newTemplate = {
+      id: 'custom-tpl-' + Date.now(),
+      name: createTemplateForm.name.trim(),
+      description: createTemplateForm.description.trim() || 'Custom user spreadsheet template',
+      category: createTemplateForm.category || 'Custom',
+      createdAt: new Date().toISOString(),
+      options: { ...createTemplateForm },
+      gridValues: templateGridValues,
+      gridFormatting: templateGridFormatting,
+      gridDropdowns: templateGridDropdowns,
+      overlays: templateOverlays,
+      tables: templateTables,
+    };
+
+    const updated = [newTemplate, ...customTemplates];
+    setCustomTemplates(updated);
+    try {
+      localStorage.setItem('regaarder_custom_templates', JSON.stringify(updated));
+    } catch (err) {
+      console.error('Failed to save custom template:', err);
+    }
+
+    showToast(`Template "${newTemplate.name}" saved to My Templates!`);
+    setIsCreateTemplateModalOpen(false);
+    setCreateTemplateForm({
+      name: '',
+      description: '',
+      category: 'Custom',
+      removeSampleData: true,
+      includeStructure: true,
+      includeFormatting: true,
+      includeFormulas: true,
+      includeCharts: true,
+      includeDropdowns: true,
+    });
+  };
+
+  const handleApplyCustomTemplate = (tpl) => {
+    if (!tpl) return;
+    if (editingTemplate) {
+      showToast('Cannot apply template while editing another template');
+      return;
+    }
+    if (activeSheetId && sheetGrids) {
+      setSheetGrids((prev) => ({
+        ...prev,
+        [activeSheetId]: {
+          ...(prev[activeSheetId] || {}),
+          cells: tpl.gridValues || [],
+          formats: tpl.gridFormatting || {},
+          dropdowns: tpl.gridDropdowns || {},
+          overlays: tpl.overlays || [],
+          tables: tpl.tables || [],
+        },
+      }));
+      showToast(`Applied template "${tpl.name}" to current sheet`);
+    }
+  };
+
+  const handleDuplicateCustomTemplate = (tpl) => {
+    const cloned = {
+      ...tpl,
+      id: 'custom-tpl-' + Date.now(),
+      name: `${tpl.name} (Copy)`,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [cloned, ...customTemplates];
+    setCustomTemplates(updated);
+    try {
+      localStorage.setItem('regaarder_custom_templates', JSON.stringify(updated));
+    } catch (err) {
+      console.error(err);
+    }
+    showToast(`Duplicated "${tpl.name}"`);
+  };
+
+  const handleDeleteCustomTemplate = (tplId) => {
+    const updated = customTemplates.filter(t => t.id !== tplId);
+    setCustomTemplates(updated);
+    try {
+      localStorage.setItem('regaarder_custom_templates', JSON.stringify(updated));
+    } catch (err) {
+      console.error(err);
+    }
+    showToast('Template deleted');
+  };
   const [mergeSheetModalOpen, setMergeSheetModalOpen] = useState(false);
   const [mergeSheetSourceDocId, setMergeSheetSourceDocId] = useState(null);
   const [selectedDatasets, setSelectedDatasets] = useState([]);
@@ -28311,6 +29606,14 @@ Respond with a JSON array of slide objects matching the schema.`;
     });
   };
 
+  const updateSheetData = (sheetId, updates) => {
+    if (updates && updates.data) {
+      updateSheetSettings(sheetId, { cells: updates.data, rows: updates.data.length, cols: updates.data[0]?.length || 10 });
+    } else if (updates) {
+      updateSheetSettings(sheetId, updates);
+    }
+  };
+
   const addSheetRow = () => {
     setSheetGrids((prev) => {
       const target = prev[activeSheetId];
@@ -37536,6 +38839,52 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <span>Export</span>
                   {(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? <ChevronUp size={13} strokeWidth={1.5} className="text-slate-400" /> : <ChevronDown size={13} strokeWidth={1.5} className="text-slate-400" />}
                 </button>
+                {isSheetsMode && sheetsExportMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-[360] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
+                      onClick={() => setSheetsExportMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-11 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-3 flex flex-col gap-1 font-sans animate-in fade-in zoom-in-95 duration-150">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-2 py-1">
+                        Export Spreadsheet
+                      </span>
+                      {[
+                        { fmt: 'XLSX', label: 'Excel Workbook (.xlsx)', action: exportActiveSheetToExcel },
+                        { fmt: 'CSV', label: 'CSV Document (.csv)', action: exportActiveSheetToCSV },
+                        { fmt: 'PDF', label: 'PDF Document (.pdf)', action: exportActiveSheetToPDF },
+                        { fmt: 'JSON', label: 'JSON Data (.json)', action: exportActiveSheetToJSON },
+                      ].map(item => (
+                        <button
+                          key={item.fmt}
+                          onClick={() => {
+                            item.action();
+                            setSheetsExportMenuOpen(false);
+                          }}
+                          className="w-full flex items-center justify-between text-xs py-2 px-3 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                      <div className="h-px bg-slate-200/80 dark:bg-zinc-800 my-1" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSheetsExportMenuOpen(false);
+                          setCreateTemplateSource('current');
+                          setCreateTemplateForm((prev) => ({
+                            ...prev,
+                            name: (sheetsData || []).find(s => s.id === activeSheetId)?.title || 'My Template',
+                          }));
+                          setIsCreateTemplateModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2 text-xs py-2 px-3 rounded-xl text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-950/60 font-semibold transition-colors text-left"
+                      >
+                        <Plus size={14} /> Save as Template...
+                      </button>
+                    </div>
+                  </>
+                )}
                 {!isSheetsMode && deckExportMenuOpen && (
                   <>
                     <div
@@ -38223,14 +39572,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <>
                           {/* Sub-tab actions */}
                           {sheetToolbarTab === 'Templates' ? (
-                            <div className="flex flex-wrap items-center gap-1.5 px-2 py-1 pt-1.5 border-t border-gray-200/60 dark:border-zinc-800">
-                              <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mr-1">Dashboards:</span>
-                              <button type="button" onClick={() => loadProjectTrackingTemplate()} className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200/60 dark:border-zinc-700 transition-colors">Project Tracking</button>
-                              <button type="button" onClick={() => loadFinancialModelTemplate()} className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200/60 dark:border-zinc-700 transition-colors">Financial Model</button>
-                              <button type="button" onClick={() => loadSaaSMetricsTemplate()} className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200/60 dark:border-zinc-700 transition-colors">SaaS Metrics</button>
-                              <button type="button" onClick={() => loadSalesCRMPipelineTemplate()} className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200/60 dark:border-zinc-700 transition-colors">Sales CRM</button>
-                              <button type="button" onClick={() => loadCashFlowForecastTemplate()} className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200/60 dark:border-zinc-700 transition-colors">Cash Flow</button>
-                              <button type="button" onClick={() => loadKPIDashboardTemplate()} className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200/60 dark:border-zinc-700 transition-colors">KPI Dashboard</button>
+                            <div className="flex items-center justify-between px-4 py-2 border-t border-slate-200/60 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-950/60 text-xs">
+                              <span className="font-semibold text-slate-600 dark:text-zinc-400 flex items-center gap-2">
+                                <Sparkles size={14} className="text-violet-500" /> Full-page Template Gallery is open. Select a template to preview or load into your sheet.
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setSheetToolbarTab('Data')}
+                                className="px-3 py-1 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-200/60 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer border border-slate-200 dark:border-zinc-700"
+                              >
+                                Return to Grid
+                              </button>
                             </div>
                           ) : sheetToolbarTab === 'View' ? (
                             <div className="flex flex-wrap items-center gap-4 px-2 py-1.5 pt-2 border-t border-gray-200/60 dark:border-zinc-800 text-xs font-medium">
@@ -38571,39 +39923,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     {!isSheetToolbarCollapsed && sheetToolbarTab === 'Data' ? (
                       <div className={`flex-1 min-h-0 flex items-center justify-center p-6 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)]'}`}>
-                        <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-3xl p-10 border border-slate-100 dark:border-zinc-800 shadow-xl shadow-indigo-500/5 flex flex-col items-center text-center my-auto">
-                          
-                          {/* Top Icon Badge */}
-                          <div className="relative mb-5 shrink-0 flex items-center justify-center">
-                            <div className="absolute inset-0 -m-3 rounded-full bg-gradient-to-tr from-violet-400/15 via-indigo-300/10 to-transparent blur-xl pointer-events-none" />
-                            <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-100 via-purple-50 to-indigo-100/80 dark:from-violet-950/60 dark:via-purple-900/30 dark:to-indigo-950/40 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(124,58,237,0.08)]">
-                              {importedFileInfo || hasImportedData ? (
-                                <FileText size={26} strokeWidth={2} />
-                              ) : (
-                                <Database size={28} strokeWidth={2} />
-                              )}
-                            </div>
-                          </div>
+                        {(() => {
+                          const hasActualUploadedFile = importedFilesList.length > 0 || (importedFileInfo && importedFileInfo.isUploadedFile);
+                          return (
+                            <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-3xl p-10 border border-slate-100 dark:border-zinc-800 shadow-xl shadow-indigo-500/5 flex flex-col items-center text-center my-auto">
+                              
+                              {/* Top Icon Badge */}
+                              <div className="relative mb-5 shrink-0 flex items-center justify-center">
+                                <div className="absolute inset-0 -m-3 rounded-full bg-gradient-to-tr from-violet-400/15 via-indigo-300/10 to-transparent blur-xl pointer-events-none" />
+                                <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-100 via-purple-50 to-indigo-100/80 dark:from-violet-950/60 dark:via-purple-900/30 dark:to-indigo-950/40 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(124,58,237,0.08)]">
+                                  {hasActualUploadedFile ? (
+                                    <FileText size={26} strokeWidth={2} />
+                                  ) : (
+                                    <Database size={28} strokeWidth={2} />
+                                  )}
+                                </div>
+                              </div>
 
-                          {/* Title & Subtitle */}
-                          <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-2">
-                            {importedFileInfo || hasImportedData ? 'Your document is ready to analyze' : 'What would you like to analyze?'}
-                          </h2>
-                          <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-md mb-6 leading-relaxed">
-                            {importedFileInfo || hasImportedData
-                              ? "We've processed your file and extracted the data. Review the preview below or start asking questions."
-                              : 'Drop any file or paste content — Regaarder converts it into structured, intelligent data.'}
-                          </p>
+                              {/* Title & Subtitle */}
+                              <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-2">
+                                {hasActualUploadedFile ? 'Your document is ready to analyze' : 'What would you like to analyze?'}
+                              </h2>
+                              <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-md mb-6 leading-relaxed">
+                                {hasActualUploadedFile
+                                  ? "We've processed your file and extracted the data. Review the preview below or start asking questions."
+                                  : 'Drop any file or paste content — Regaarder converts it into structured, intelligent data.'}
+                              </p>
 
-                          {/* Processed Document File Cards List */}
-                          {(importedFilesList.length > 0 || importedFileInfo || hasImportedData) && (() => {
-                            const activeFilesList = importedFilesList.length > 0 
-                              ? importedFilesList 
-                              : [importedFileInfo || { id: 'default', name: 'Untitled Document', size: '0 KB', sheets: 1, rows: 100 }];
-                            const hasMoreThan3Docs = activeFilesList.length >= 4;
-                            const filesToRender = (hasMoreThan3Docs && !isDataFilesDropdownOpen)
-                              ? activeFilesList.slice(0, 2)
-                              : activeFilesList;
+                              {/* Processed Document File Cards List (only shown when an actual file was uploaded) */}
+                              {hasActualUploadedFile && (() => {
+                                const activeFilesList = importedFilesList.length > 0 
+                                  ? importedFilesList 
+                                  : (importedFileInfo ? [importedFileInfo] : []);
+                                if (activeFilesList.length === 0) return null;
+                                const hasMoreThan3Docs = activeFilesList.length >= 4;
+                                const filesToRender = (hasMoreThan3Docs && !isDataFilesDropdownOpen)
+                                  ? activeFilesList.slice(0, 2)
+                                  : activeFilesList;
 
                             return (
                               <div className="w-full mb-6 text-left">
@@ -39043,7 +40399,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   size: fileSizeStr,
                                   sheets: validWorksheets.length || 1,
                                   rows: sheetGridsAcc[sheetsDataAcc[0]?.id]?.rows || 100,
-                                  docId: docId
+                                  docId: docId,
+                                  isUploadedFile: true
                                 };
 
                                 setHasImportedData(true);
@@ -39165,7 +40522,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </div>
                           );
                         })()}
-                        </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     ) : !isSheetToolbarCollapsed && sheetToolbarTab === 'Analyze' ? (
                       <div className={`flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] overflow-y-auto thin-scrollbar z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm'}`}>
@@ -39174,6 +40533,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           activeSheetId={activeSheetId} 
                           updateSheetCell={updateSheetCell} 
                           showToast={showToast} 
+                        />
+                      </div>
+                    ) : !isSheetToolbarCollapsed && sheetToolbarTab === 'Templates' ? (
+                      <div className={`flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] overflow-hidden z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm'}`}>
+                        <FullPageTemplateGallery
+                          sheetsData={sheetsData}
+                          activeSheetId={activeSheetId}
+                          updateSheetData={updateSheetData}
+                          showToast={showToast}
+                          loadFinancialModelTemplate={loadFinancialModelTemplate}
+                          loadSaaSMetricsTemplate={loadSaaSMetricsTemplate}
+                          loadSalesCRMPipelineTemplate={loadSalesCRMPipelineTemplate}
+                          loadCashFlowForecastTemplate={loadCashFlowForecastTemplate}
+                          loadKPIDashboardTemplate={loadKPIDashboardTemplate}
+                          loadProjectTrackingTemplate={loadProjectTrackingTemplate}
+                          customTemplates={customTemplates}
+                          handleApplyCustomTemplate={handleApplyCustomTemplate}
+                          handleDeleteCustomTemplate={handleDeleteCustomTemplate}
+                          setCreateTemplateSource={setCreateTemplateSource}
+                          setCreateTemplateForm={setCreateTemplateForm}
+                          setIsCreateTemplateModalOpen={setIsCreateTemplateModalOpen}
+                          setSheetToolbarTab={setSheetToolbarTab}
                         />
                       </div>
                     ) : (
@@ -56798,6 +58179,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </button>
         </div>
       )}
+
+      {/* Create Template Modal */}
+      <CreateTemplateModal
+        isOpen={isCreateTemplateModalOpen}
+        onClose={() => setIsCreateTemplateModalOpen(false)}
+        source={createTemplateSource}
+        setSource={setCreateTemplateSource}
+        form={createTemplateForm}
+        setForm={setCreateTemplateForm}
+        uploadedFile={createTemplateUploadedFile}
+        setUploadedFile={setCreateTemplateUploadedFile}
+        onSave={(newTpl) => {
+          setCustomTemplates((prev) => [...prev, newTpl]);
+          setIsCreateTemplateModalOpen(false);
+          showToast(`Saved template "${newTpl.name}" successfully!`);
+        }}
+      />
     </div>
   );
 }
