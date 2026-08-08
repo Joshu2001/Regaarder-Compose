@@ -4553,6 +4553,106 @@ const SPREADSHEET_FUNCTIONS = [
   }
 ];
 
+function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, gridLineContrast, setGridLineContrast, showToast }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handlePointerDown = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('pointerdown', handlePointerDown);
+    }
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [isOpen]);
+
+  const currentOptionLabel = !showGridLines 
+    ? 'Off' 
+    : gridLineContrast === 'subtle' 
+    ? 'Subtle' 
+    : gridLineContrast === 'high' 
+    ? 'High' 
+    : 'Medium';
+
+  const options = [
+    { id: 'off', label: 'Off', description: 'Hide all gridlines' },
+    { id: 'subtle', label: 'Subtle', description: 'Light grey borders' },
+    { id: 'medium', label: 'Medium', description: 'Standard gridlines' },
+    { id: 'high', label: 'High', description: 'High contrast borders' },
+  ];
+
+  const handleSelect = (optionId) => {
+    if (optionId === 'off') {
+      setShowGridLines(false);
+      showToast?.('Gridlines: Off');
+    } else {
+      setShowGridLines(true);
+      setGridLineContrast(optionId);
+      showToast?.(`Gridlines: ${optionId.charAt(0).toUpperCase() + optionId.slice(1)}`);
+    }
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative inline-block text-left" ref={containerRef}>
+      <button
+        type="button"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          setIsOpen((prev) => !prev);
+        }}
+        className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all duration-150 shadow-2xs cursor-pointer ${
+          isOpen
+            ? 'bg-[#F5F5F7] dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-700'
+            : 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border-slate-200/80 dark:border-zinc-800 hover:bg-[#F5F5F7] dark:hover:bg-zinc-800/60'
+        }`}
+      >
+        <span className="text-slate-500 dark:text-zinc-400 font-medium">Gridlines:</span>
+        <span className="font-semibold text-slate-800 dark:text-zinc-200">{currentOptionLabel}</span>
+        <ChevronDown
+          size={13}
+          className={`text-slate-400 dark:text-zinc-400 transition-transform duration-200 ${
+            isOpen ? 'rotate-180 text-slate-600 dark:text-zinc-300' : ''
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 origin-top-left top-full mt-1.5 w-48 rounded-xl border border-slate-200/90 dark:border-zinc-800/90 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-xl shadow-lg z-[400] overflow-hidden p-1 space-y-0.5 animate-in zoom-in-95 fade-in duration-150 select-none">
+          {options.map((opt) => {
+            const isSelected = opt.id === 'off' ? !showGridLines : (showGridLines && gridLineContrast === opt.id);
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  handleSelect(opt.id);
+                }}
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                  isSelected
+                    ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold'
+                    : 'text-slate-700 dark:text-zinc-300 hover:bg-[#F5F5F7] dark:hover:bg-zinc-800/60'
+                }`}
+              >
+                <div className="flex flex-col">
+                  <span>{opt.label}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{opt.description}</span>
+                </div>
+                {isSelected && <Check size={13} className="text-slate-800 dark:text-zinc-200 shrink-0 stroke-[2.5]" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function App() {
   const [sheetGrids, setSheetGrids] = useState(() => {
@@ -39403,48 +39503,40 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <>
                           {/* Sub-tab actions */}
                           {sheetToolbarTab === 'View' ? (
-                            <div className="flex flex-wrap items-center gap-4 px-2 py-1.5 pt-2 border-t border-gray-200/60 dark:border-zinc-800 text-xs font-medium">
-                              {/* Gridline Contrast */}
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-slate-500 dark:text-zinc-400 font-medium">Gridlines:</span>
-                                <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                                  {['subtle', 'medium', 'high'].map(c => (
-                                    <button
-                                      key={c}
-                                      type="button"
-                                      onClick={() => { setGridLineContrast(c); showToast(`Grid contrast set to ${c}`); }}
-                                      className={`px-2 py-1 rounded-md text-[11px] font-medium capitalize transition-colors ${gridLineContrast === c ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 shadow-sm border border-slate-200/60 dark:border-zinc-600' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'}`}
-                                    >
-                                      {c}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
+                            <div className="flex flex-wrap items-center gap-2 px-2 py-1.5 pt-2 border-t border-gray-200/60 dark:border-zinc-800 text-xs font-medium">
+                              {/* Gridlines Dropdown */}
+                              <GridlinesDropdownToolbarControl
+                                showGridLines={showGridLines}
+                                setShowGridLines={setShowGridLines}
+                                gridLineContrast={gridLineContrast}
+                                setGridLineContrast={setGridLineContrast}
+                                showToast={showToast}
+                              />
 
-                              <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
+                              <div className="h-4 w-px bg-slate-200/80 dark:bg-zinc-800" />
 
-                              {/* Grid Visibility Toggle */}
+                              {/* Chart Visualizer Toggle */}
                               <button
                                 type="button"
-                                onClick={() => setShowGridLines(!showGridLines)}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 ${showGridLines ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600' : 'bg-transparent text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
+                                onClick={() => {
+                                  const nextState = !showTemplateChart;
+                                  setShowTemplateChart(nextState);
+                                  showToast?.(`Chart Visualizer: ${nextState ? 'On' : 'Off'}`);
+                                }}
+                                className="group inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-medium bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-200/80 dark:border-zinc-800 hover:bg-[#F5F5F7] dark:hover:bg-zinc-800/60 transition-all duration-150 shadow-2xs cursor-pointer select-none"
                               >
-                                <Grid size={13} />
-                                {showGridLines ? 'Gridlines: On' : 'Gridlines: Off'}
+                                <span>Chart Visualizer</span>
+                                {/* Compact iOS-Style Switch */}
+                                <span className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                                  showTemplateChart ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'
+                                }`}>
+                                  <span className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                                    showTemplateChart ? 'translate-x-3' : 'translate-x-0'
+                                  }`} />
+                                </span>
                               </button>
 
-                              <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
-
-                              <button
-                                type="button"
-                                onClick={() => setShowTemplateChart(!showTemplateChart)}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 ${showTemplateChart ? 'bg-violet-100 dark:bg-violet-950/60 text-violet-900 dark:text-violet-200 border-violet-300 dark:border-violet-700 shadow-2xs' : 'bg-transparent text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
-                              >
-                                <BarChart2 size={13} className={showTemplateChart ? 'text-violet-600 dark:text-violet-400' : ''} />
-                                {showTemplateChart ? 'Chart Visualizer: On' : 'Chart Visualizer'}
-                              </button>
-
-                              <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
+                              <div className="h-4 w-px bg-slate-200/80 dark:bg-zinc-800" />
 
                               {/* Reusable Executive Theme Dropdown */}
                               <ThemeDropdown
@@ -39458,47 +39550,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 options={SHEETS_THEME_OPTIONS}
                                 label="Theme"
                               />
-
-                              <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
-
-                              {/* Create Template button in View Tab */}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const nextId = ((sheetsData || [])[(sheetsData || []).length - 1]?.id || 0) + 1;
-                                  const newSheetTitle = `Template Sheet ${nextId}`;
-                                  const newSheet = {
-                                    id: nextId,
-                                    title: newSheetTitle,
-                                    subtitle: 'Custom Template',
-                                  };
-                                  setSheetsData((prev) => [...(prev || []), newSheet]);
-                                  setSheetGrids((prev) => ({
-                                    ...prev,
-                                    [nextId]: {
-                                      rows: 22,
-                                      cols: 26,
-                                      cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')),
-                                    },
-                                  }));
-                                  setActiveSheetId(nextId);
-                                  setSheetsTitle(newSheetTitle);
-                                  setCreateTemplateSource('current');
-                                  setCreateTemplateForm((prev) => ({
-                                    ...prev,
-                                    name: newSheetTitle,
-                                  }));
-                                  setIsCreateTemplateModalOpen(true);
-                                  setSheetToolbarTab(null);
-                                  showToast(`Created and opened new page "${newSheetTitle}" in View tab!`);
-                                }}
-                                className="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                              >
-                                <Plus size={13} />
-                                <span>Create Template</span>
-                              </button>
-                              </div>
-                            ) : null}
+                            </div>
+                          ) : null}
 
                           {/* Bottom Row: Cell Formatting Tools */}
                           {sheetToolbarTab !== 'Data' && sheetToolbarTab !== 'Templates' && (
