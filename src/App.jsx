@@ -38292,7 +38292,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             ) : null}
 
                           {/* Bottom Row: Cell Formatting Tools */}
-                          {(sheetToolbarTab === 'Visualize' || (sheetToolbarTab !== 'Data' && hasImportedData)) && (
+                          {sheetToolbarTab !== 'Data' && (
                             <>
                               <div className="h-px bg-gray-200/60 dark:bg-zinc-800/60 w-full" />
                               <div className="flex items-center gap-3 text-[13px] font-medium text-[#374151]">
@@ -38555,8 +38555,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">+ Row</button>
                                 <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">- Row</button>
                                 <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">+ Col</button>
-                                <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Col</button>
-                                <button type="button" onClick={removeSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Col</button>
+                                <button type="button" onClick={removeSheetColumn} className="px-2.5 py-1.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition-all">- Col</button>
                                 <div className="ml-auto flex items-center gap-4">
                                   <div className="flex items-center gap-1.5 text-xs text-gray-400">
                                     <Cloud size={14} /> {savedStatusLabel}
