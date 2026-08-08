@@ -28220,6 +28220,30 @@ Respond with a JSON array of slide objects matching the schema.`;
     }
   }, [activeSheetId, activeSheetGrid]);
 
+  const exportActiveSheetFormat = async (fmt) => {
+    try {
+      showToast(`Exporting active sheet as ${fmt}...`);
+      const activeSheetObj = (sheetsData || []).find((s) => s.id === activeSheetId) || (sheetsData || [])[0];
+      const fileName = activeSheetObj?.title || sheetsTitle || 'Spreadsheet';
+      const rawCells = activeSheetGrid?.cells || sheetGrids[activeSheetId]?.cells || [];
+      const dataArray = rawCells.map((row) =>
+        (Array.isArray(row) ? row : []).map((cell) =>
+          cell && typeof cell === 'object' && 'value' in cell ? cell.value : (cell ?? '')
+        )
+      );
+      await exportSheets(fmt, dataArray, fileName);
+      showToast(`Exported active sheet as ${fmt}`);
+    } catch (e) {
+      console.error('Sheet export error:', e);
+      showToast(`Export failed: ${e.message}`);
+    }
+  };
+
+  const exportActiveSheetToExcel = () => exportActiveSheetFormat('XLSX');
+  const exportActiveSheetToCSV = () => exportActiveSheetFormat('CSV');
+  const exportActiveSheetToPDF = () => exportActiveSheetFormat('PDF');
+  const exportActiveSheetToJSON = () => exportActiveSheetFormat('JSON');
+
   const isSheetsMode = productMode === 'sheets';
   const updateDeckSlideField = (slideId, field, value) => {
     setDeckSlidesData((prev) => prev.map((slide) => {
@@ -38960,9 +38984,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       ].map(item => (
                         <button
                           key={item.fmt}
-                          onClick={() => {
+                          onClick={async () => {
                             showToast(`Exporting as ${item.fmt}...`);
-                            setDeckExportMenuOpen(false);
+                            try {
+                              await exportDeck(item.fmt, deckSlidesData || [], deckTitle || 'Presentation');
+                              showToast(`Exported presentation as ${item.fmt}`);
+                            } catch (e) {
+                              console.error('Deck export error:', e);
+                              showToast(`Export failed: ${e.message}`);
+                            } finally {
+                              setDeckExportMenuOpen(false);
+                            }
                           }}
                           className="w-full flex items-center justify-between text-xs py-2 px-3 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
                         >
