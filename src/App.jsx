@@ -2889,9 +2889,7 @@ const RealSpreadsheetThumbnail = ({ id, title, type, customTemplate }) => {
   if (type === 'blank' || id === 'blank') {
     return (
       <div className="w-full h-full rounded-xl border border-dashed border-slate-300/90 dark:border-zinc-700/90 bg-slate-50/50 dark:bg-zinc-900/40 flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500 gap-1.5 p-3 select-none">
-        <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-2xs group-hover:scale-105 transition-transform">
-          <Plus size={20} strokeWidth={2.2} />
-        </div>
+        <Plus size={24} strokeWidth={2} className="text-slate-400 dark:text-zinc-500 group-hover:scale-110 group-hover:text-slate-600 dark:group-hover:text-zinc-300 transition-all duration-200" />
         <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">Blank Sheet</span>
       </div>
     );
@@ -2934,10 +2932,8 @@ const TemplateScreenshotPreview = ({ id, type, title, customTemplate }) => {
   if (type === 'blank' || id === 'blank') {
     return (
       <div className="w-full h-full rounded-xl border border-dashed border-slate-300/90 dark:border-zinc-700/90 bg-slate-50/50 dark:bg-zinc-900/40 flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500 gap-1.5 p-3 select-none">
-        <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-2xs group-hover:scale-105 transition-transform">
-          <Plus size={20} strokeWidth={2.2} />
-        </div>
-        <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">Blank Sheet</span>
+        <Plus size={28} strokeWidth={2} className="text-slate-400 dark:text-zinc-500 group-hover:scale-110 group-hover:text-slate-600 dark:group-hover:text-zinc-300 transition-all duration-200" />
+        <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Blank Sheet</span>
       </div>
     );
   }
@@ -2965,7 +2961,11 @@ const FullPageTemplateGallery = ({
   setCreateTemplateSource,
   setCreateTemplateForm,
   setIsCreateTemplateModalOpen,
-  setSheetToolbarTab
+  setSheetToolbarTab,
+  setSheetsData,
+  setSheetGrids,
+  setActiveSheetId,
+  setSheetsTitle,
 }) => {
   const [category, setCategory] = React.useState('all');
   const [previewTemplate, setPreviewTemplate] = React.useState(null);
@@ -3078,16 +3078,40 @@ const FullPageTemplateGallery = ({
             Templates
           </h1>
           
-          {/* Quiet outlined button for Create template */}
           <button
             type="button"
             onClick={() => {
+              const nextId = ((sheetsData || [])[(sheetsData || []).length - 1]?.id || 0) + 1;
+              const newSheetTitle = `Template Sheet ${nextId}`;
+              const newSheet = {
+                id: nextId,
+                title: newSheetTitle,
+                subtitle: 'Custom Template',
+              };
+              if (setSheetsData) {
+                setSheetsData((prev) => [...(prev || []), newSheet]);
+              }
+              if (setSheetGrids) {
+                setSheetGrids((prev) => ({
+                  ...prev,
+                  [nextId]: {
+                    rows: 22,
+                    cols: 26,
+                    cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')),
+                  },
+                }));
+              }
+              if (setActiveSheetId) setActiveSheetId(nextId);
+              if (setSheetsTitle) setSheetsTitle(newSheetTitle);
+
               setCreateTemplateSource('current');
               setCreateTemplateForm((prev) => ({
                 ...prev,
-                name: (sheetsData || []).find(s => s.id === activeSheetId)?.title || 'My Template',
+                name: newSheetTitle,
               }));
               setIsCreateTemplateModalOpen(true);
+              if (setSheetToolbarTab) setSheetToolbarTab(null);
+              showToast(`Created and opened new page "${newSheetTitle}" in View tab!`);
             }}
             className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
@@ -5596,42 +5620,66 @@ export default function App() {
 
   const [pageOptionsMenuOpen, setPageOptionsMenuOpen] = useState(false);
   const [brandColor, setBrandColor] = useState('#7c3aed');
+  const [secondaryColor, setSecondaryColor] = useState('#6366f1');
+  const [accentGradient, setAccentGradient] = useState('linear-gradient(135deg, #7c3aed, #6366f1)');
 
   useEffect(() => {
     const root = document.documentElement;
-    const palettes = {
-      '#7c3aed': { // Violet
-        50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd', 400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95', 950: '#2e1065',
-        s50: '#eef2ff', s100: '#e0e7ff', s200: '#c7d2fe', s300: '#a5b4fc', s400: '#818cf8', s500: '#6366f1', s600: '#4f46e5', s700: '#4338ca', s800: '#3730a3', s900: '#312e81', s950: '#1e1b4b'
-      },
-      '#3b82f6': { // Blue
-        50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a', 950: '#172554',
-        s50: '#f0f9ff', s100: '#e0f2fe', s200: '#bae6fd', s300: '#7dd3fc', s400: '#38bdf8', s500: '#0ea5e9', s600: '#0284c7', s700: '#0369a1', s800: '#075985', s900: '#0c4a6e', s950: '#082f49'
-      },
-      '#10b981': { // Emerald
-        50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b', 950: '#022c22',
-        s50: '#f0fdf4', s100: '#dcfce7', s200: '#bbf7d0', s300: '#86efac', s400: '#4ade80', s500: '#22c55e', s600: '#16a34a', s700: '#15803d', s800: '#166534', s900: '#14532d', s950: '#052e16'
-      },
-      '#f59e0b': { // Amber
-        50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309', 800: '#92400e', 900: '#78350f', 950: '#451a03',
-        s50: '#fff7ed', s100: '#ffedd5', s200: '#fed7aa', s300: '#fdba74', s400: '#fb923c', s500: '#f97316', s600: '#ea580c', s700: '#c2410c', s800: '#9a3412', s900: '#7c2d12', s950: '#431407'
-      },
-      '#ef4444': { // Red
-        50: '#fef2f2', 100: '#fee2e2', 200: '#fecaca', 300: '#fca5a5', 400: '#f87171', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c', 800: '#991b1b', 900: '#7f1d1d', 950: '#450a0a',
-        s50: '#fff1f2', s100: '#ffe4e6', s200: '#fecdd3', s300: '#fda4af', s400: '#fb7185', s500: '#f43f5e', s600: '#e11d48', s700: '#be123c', s800: '#9f1239', s900: '#881337', s950: '#4c0519'
-      },
-      '#ec4899': { // Pink
-        50: '#fdf2f8', 100: '#fce7f3', 200: '#fbcfe8', 300: '#f9a8d4', 400: '#f472b6', 500: '#ec4899', 600: '#db2777', 700: '#be185d', 800: '#9d174d', 900: '#831843', 950: '#500724',
-        s50: '#faf5ff', s100: '#f3e8ff', s200: '#e9d5ff', s300: '#d8b4fe', s400: '#c084fc', s500: '#a855f7', s600: '#9333ea', s700: '#7e22ce', s800: '#6b21a8', s900: '#581c87', s950: '#3b0764'
-      }
-    };
-    
-    const p = palettes[brandColor] || palettes['#7c3aed'];
+    root.style.setProperty('--brand-color', brandColor);
+    root.style.setProperty('--secondary-color', secondaryColor);
+    root.style.setProperty('--accent-gradient', accentGradient || `linear-gradient(135deg, ${brandColor}, ${secondaryColor})`);
+
+    function hexToRgb(hex) {
+      if (!hex || typeof hex !== 'string') return { r: 124, g: 58, b: 237 };
+      let c = hex.replace('#', '').trim();
+      if (c.length === 3) c = c.split('').map(x => x + x).join('');
+      if (c.length !== 6) return { r: 124, g: 58, b: 237 };
+      const num = parseInt(c, 16);
+      if (isNaN(num)) return { r: 124, g: 58, b: 237 };
+      return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+    }
+
+    function rgbToHex(r, g, b) {
+      const toHex = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
+    function mixColor(rgb, targetRgb, factor) {
+      return rgbToHex(
+        rgb.r + (targetRgb.r - rgb.r) * factor,
+        rgb.g + (targetRgb.g - rgb.g) * factor,
+        rgb.b + (targetRgb.b - rgb.b) * factor
+      );
+    }
+
+    function generateColorShades(baseHex) {
+      const baseRgb = hexToRgb(baseHex);
+      const white = { r: 255, g: 255, b: 255 };
+      const dark = { r: 15, g: 23, b: 42 };
+
+      return {
+        50: mixColor(baseRgb, white, 0.92),
+        100: mixColor(baseRgb, white, 0.82),
+        200: mixColor(baseRgb, white, 0.65),
+        300: mixColor(baseRgb, white, 0.45),
+        400: mixColor(baseRgb, white, 0.25),
+        500: baseHex,
+        600: mixColor(baseRgb, dark, 0.15),
+        700: mixColor(baseRgb, dark, 0.30),
+        800: mixColor(baseRgb, dark, 0.45),
+        900: mixColor(baseRgb, dark, 0.60),
+        950: mixColor(baseRgb, dark, 0.75),
+      };
+    }
+
+    const primaryShades = generateColorShades(brandColor);
+    const secondaryShades = generateColorShades(secondaryColor);
+
     [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].forEach(weight => {
-      root.style.setProperty(`--accent-${weight}`, p[weight]);
-      root.style.setProperty(`--secondary-${weight}`, p[`s${weight}`]);
+      root.style.setProperty(`--accent-${weight}`, primaryShades[weight]);
+      root.style.setProperty(`--secondary-${weight}`, secondaryShades[weight]);
     });
-  }, [brandColor]);
+  }, [brandColor, secondaryColor, accentGradient]);
   const [brandColorPickerOpen, setBrandColorPickerOpen] = useState(false);
   const [brandKitModalOpen, setBrandKitModalOpen] = useState(false);
   const [uploadedBrandLogo, setUploadedBrandLogo] = useState(null);
@@ -9827,6 +9875,7 @@ export default function App() {
         },
       }));
       showToast(`Applied template "${tpl.name}" to current sheet`);
+      setSheetToolbarTab(null);
     }
   };
 
@@ -28287,6 +28336,7 @@ Respond with a JSON array of slide objects matching the schema.`;
 
     setShowTemplateChart(true);
     setTemplateChartType('bar');
+    setSheetToolbarTab(null);
     showToast('Project Tracking template loaded!');
   };
 
@@ -28406,6 +28456,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
     setShowTemplateChart(true);
     setTemplateChartType('line');
+    setSheetToolbarTab(null);
     showToast('Financial Model template loaded!');
   };
 
@@ -28533,6 +28584,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
     setShowTemplateChart(true);
     setTemplateChartType('donut');
+    setSheetToolbarTab(null);
     showToast('Sales CRM Pipeline template loaded!');
   };
 
@@ -28594,6 +28646,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
     setShowTemplateChart(true);
     setTemplateChartType('area');
+    setSheetToolbarTab(null);
     showToast('Cash Flow Forecast template loaded!');
   };
 
@@ -28659,6 +28712,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     setSheetGrids((prev) => ({ ...prev, [targetId]: { rows: rowsCount, cols: colsCount, cells: newCells, formats: newFormats } }));
     setShowTemplateChart(true);
     setTemplateChartType('column');
+    setSheetToolbarTab(null);
     showToast('KPI Dashboard template loaded!');
   };
   const formatCellValue = (val, formatTypeArg, headerNameArg = '') => {
@@ -39404,6 +39458,45 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 options={SHEETS_THEME_OPTIONS}
                                 label="Theme"
                               />
+
+                              <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
+
+                              {/* Create Template button in View Tab */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const nextId = ((sheetsData || [])[(sheetsData || []).length - 1]?.id || 0) + 1;
+                                  const newSheetTitle = `Template Sheet ${nextId}`;
+                                  const newSheet = {
+                                    id: nextId,
+                                    title: newSheetTitle,
+                                    subtitle: 'Custom Template',
+                                  };
+                                  setSheetsData((prev) => [...(prev || []), newSheet]);
+                                  setSheetGrids((prev) => ({
+                                    ...prev,
+                                    [nextId]: {
+                                      rows: 22,
+                                      cols: 26,
+                                      cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')),
+                                    },
+                                  }));
+                                  setActiveSheetId(nextId);
+                                  setSheetsTitle(newSheetTitle);
+                                  setCreateTemplateSource('current');
+                                  setCreateTemplateForm((prev) => ({
+                                    ...prev,
+                                    name: newSheetTitle,
+                                  }));
+                                  setIsCreateTemplateModalOpen(true);
+                                  setSheetToolbarTab(null);
+                                  showToast(`Created and opened new page "${newSheetTitle}" in View tab!`);
+                                }}
+                                className="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                              >
+                                <Plus size={13} />
+                                <span>Create Template</span>
+                              </button>
                               </div>
                             ) : null}
 
@@ -40320,6 +40413,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           setCreateTemplateForm={setCreateTemplateForm}
                           setIsCreateTemplateModalOpen={setIsCreateTemplateModalOpen}
                           setSheetToolbarTab={setSheetToolbarTab}
+                          setSheetsData={setSheetsData}
+                          setSheetGrids={setSheetGrids}
+                          setActiveSheetId={setActiveSheetId}
+                          setSheetsTitle={setSheetsTitle}
                         />
                       </div>
                     ) : (
@@ -46127,22 +46224,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {settingsModalOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
-          <div className="absolute inset-0 bg-black/5 backdrop-blur-md" onClick={() => setSettingsModalOpen(false)}></div>
-          <div className="relative bg-white/70 backdrop-blur-3xl shadow-[0_30px_100px_-20px_rgba(0,0,0,0.15)] rounded-3xl w-full max-w-[850px] min-h-[550px] flex overflow-hidden border border-white/40 transform transition-all">
-            <div className="w-[240px] bg-slate-50/50 border-r border-slate-200/50 p-6 flex flex-col shrink-0">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto p-4 sm:p-6">
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-md" onClick={() => setSettingsModalOpen(false)}></div>
+          <div className="relative bg-white/90 dark:bg-zinc-900/90 backdrop-blur-3xl shadow-2xl rounded-3xl w-full max-w-[880px] max-h-[85vh] h-[640px] flex overflow-hidden border border-white/40 dark:border-zinc-800 transform transition-all">
+            <div className="w-[220px] sm:w-[240px] bg-slate-50/70 dark:bg-zinc-950/70 border-r border-slate-200/60 dark:border-zinc-800 p-6 flex flex-col shrink-0">
               <div className="flex items-center gap-2 mb-8 px-2">
-                <Settings size={18} className="text-slate-700" />
-                <span className="font-bold text-slate-800 tracking-tight">Settings</span>
+                <Settings size={18} className="text-slate-700 dark:text-zinc-300" />
+                <span className="font-bold text-slate-800 dark:text-zinc-100 tracking-tight">Settings</span>
               </div>
               <div className="flex flex-col gap-1.5 flex-1">
-                <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-700'}`}>Account</button>
-                <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-700'}`}>Personalization</button>
-                <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-700'}`}>General</button>
+                <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Account</button>
+                <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Personalization</button>
+                <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>General</button>
               </div>
             </div>
-            <div className="flex-1 bg-white/40 p-10 overflow-y-auto relative">
-              <button onClick={() => setSettingsModalOpen(false)} className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-200/50 text-slate-400 hover:text-slate-600 transition-colors">
+            <div className="flex-1 bg-white/50 dark:bg-zinc-900/50 p-6 sm:p-8 overflow-y-auto relative">
+              <button onClick={() => setSettingsModalOpen(false)} className="absolute top-5 right-5 p-2 rounded-full hover:bg-slate-200/60 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors z-10">
                 <X size={18} strokeWidth={2.5} />
               </button>
               {settingsTab === 'account' && (
@@ -46247,12 +46344,160 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                       </div>
                     </div>
+                    {/* Primary Accent Color */}
                     <div>
-                      <h3 className="text-[13px] font-bold text-slate-800 mb-4">Accent Color</h3>
-                      <div className="flex items-center gap-3">
-                        {['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'].map(color => (
-                          <button key={color} onClick={() => { setBrandColor(color); showToast('Accent color updated'); }} className={`w-8 h-8 rounded-full shadow-sm border-2 ${brandColor === color ? 'border-slate-400 ring-2 ring-slate-200' : 'border-white'} focus:ring-violet-500 transition-all`} style={{ backgroundColor: color }} />
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Primary Accent Color</h3>
+                        <span className="text-[11px] font-mono font-medium text-slate-500 uppercase">{brandColor}</span>
+                      </div>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#06b6d4', '#8b5cf6'].map(color => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => { setBrandColor(color); showToast('Accent color updated'); }}
+                            className={`w-8 h-8 rounded-full shadow-xs border-2 transition-all cursor-pointer ${brandColor === color ? 'border-slate-800 dark:border-white ring-2 ring-slate-300 dark:ring-zinc-600 scale-110' : 'border-white dark:border-zinc-800 hover:scale-105'}`}
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
                         ))}
+
+                        {/* Color Picker & Custom Hex Input for Accent */}
+                        <div className="flex items-center gap-2 ml-1">
+                          <label className="w-8 h-8 rounded-full border border-slate-300 dark:border-zinc-700 flex items-center justify-center cursor-pointer hover:border-slate-500 relative overflow-hidden shrink-0 shadow-xs" title="Choose custom accent color">
+                            <input
+                              type="color"
+                              value={brandColor.startsWith('#') && brandColor.length === 7 ? brandColor : '#7c3aed'}
+                              onChange={(e) => { setBrandColor(e.target.value); showToast('Custom accent color set'); }}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            />
+                            <Palette size={14} className="text-slate-600 dark:text-zinc-300" />
+                          </label>
+                          <input
+                            type="text"
+                            value={brandColor}
+                            onChange={(e) => setBrandColor(e.target.value)}
+                            placeholder="#7C3AED"
+                            className="w-22 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono font-medium text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 uppercase shadow-2xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Secondary Color */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Secondary Accent Color</h3>
+                        <span className="text-[11px] font-mono font-medium text-slate-500 uppercase">{secondaryColor}</span>
+                      </div>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {['#6366f1', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#a855f7', '#06b6d4', '#f43f5e', '#64748b'].map(color => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => { setSecondaryColor(color); showToast('Secondary color updated'); }}
+                            className={`w-8 h-8 rounded-full shadow-xs border-2 transition-all cursor-pointer ${secondaryColor === color ? 'border-slate-800 dark:border-white ring-2 ring-slate-300 dark:ring-zinc-600 scale-110' : 'border-white dark:border-zinc-800 hover:scale-105'}`}
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                        ))}
+
+                        {/* Color Picker & Custom Hex Input for Secondary */}
+                        <div className="flex items-center gap-2 ml-1">
+                          <label className="w-8 h-8 rounded-full border border-slate-300 dark:border-zinc-700 flex items-center justify-center cursor-pointer hover:border-slate-500 relative overflow-hidden shrink-0 shadow-xs" title="Choose custom secondary color">
+                            <input
+                              type="color"
+                              value={secondaryColor.startsWith('#') && secondaryColor.length === 7 ? secondaryColor : '#6366f1'}
+                              onChange={(e) => { setSecondaryColor(e.target.value); showToast('Custom secondary color set'); }}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            />
+                            <Palette size={14} className="text-slate-600 dark:text-zinc-300" />
+                          </label>
+                          <input
+                            type="text"
+                            value={secondaryColor}
+                            onChange={(e) => setSecondaryColor(e.target.value)}
+                            placeholder="#6366F1"
+                            className="w-22 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono font-medium text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 uppercase shadow-2xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Gradient Themes */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Gradients</h3>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const autoGrad = `linear-gradient(135deg, ${brandColor}, ${secondaryColor})`;
+                            setAccentGradient(autoGrad);
+                            showToast('Generated dynamic gradient from Accent + Secondary');
+                          }}
+                          className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
+                        >
+                          Auto Gradient (Accent → Secondary)
+                        </button>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-2.5 mb-3">
+                        {[
+                          { label: 'Royal Violet', grad: 'linear-gradient(135deg, #7c3aed, #6366f1)' },
+                          { label: 'Ocean Cyan', grad: 'linear-gradient(135deg, #3b82f6, #06b6d4)' },
+                          { label: 'Emerald Mint', grad: 'linear-gradient(135deg, #10b981, #059669)' },
+                          { label: 'Sunset Coral', grad: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
+                          { label: 'Electric Pink', grad: 'linear-gradient(135deg, #ec4899, #8b5cf6)' },
+                          { label: 'Midnight Aura', grad: 'linear-gradient(135deg, #8b5cf6, #f59e0b)' },
+                        ].map((g) => (
+                          <button
+                            key={g.label}
+                            type="button"
+                            onClick={() => { setAccentGradient(g.grad); showToast(`Gradient: ${g.label}`); }}
+                            className={`h-10 rounded-xl p-2 flex items-center justify-center text-xs font-semibold text-white shadow-xs border transition-all cursor-pointer select-none ${accentGradient === g.grad ? 'border-slate-900 dark:border-white ring-2 ring-slate-300 dark:ring-zinc-600 scale-[1.02]' : 'border-transparent hover:opacity-90'}`}
+                            style={{ background: g.grad }}
+                          >
+                            <span className="drop-shadow-xs">{g.label}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Custom Gradient Code Input */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 shrink-0">CSS Gradient:</span>
+                        <input
+                          type="text"
+                          value={accentGradient}
+                          onChange={(e) => setAccentGradient(e.target.value)}
+                          placeholder="linear-gradient(135deg, #7c3aed, #6366f1)"
+                          className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 shadow-2xs"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Live Palette Visual Preview Card */}
+                    <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-950/50 flex flex-col gap-3">
+                      <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Live Personalization Preview</span>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <button
+                          type="button"
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-sm transition-all"
+                          style={{ backgroundColor: brandColor }}
+                        >
+                          Primary Action
+                        </button>
+                        <span
+                          className="px-3 py-1 rounded-lg text-xs font-bold text-white shadow-2xs"
+                          style={{ backgroundColor: secondaryColor }}
+                        >
+                          Secondary Tag
+                        </span>
+                        <div
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm flex items-center justify-center"
+                          style={{ background: accentGradient || `linear-gradient(135deg, ${brandColor}, ${secondaryColor})` }}
+                        >
+                          Gradient Accent Banner
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -57575,30 +57820,30 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {settingsModalOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
-          {/* Backdrop with a very subtle blur */}
-          <div className="absolute inset-0 bg-black/5 backdrop-blur-md" onClick={() => setSettingsModalOpen(false)}></div>
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto p-4 sm:p-6">
+          {/* Backdrop with subtle blur */}
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-md" onClick={() => setSettingsModalOpen(false)}></div>
           
           {/* Modal Container */}
-          <div className="relative bg-white/70 backdrop-blur-3xl shadow-[0_30px_100px_-20px_rgba(0,0,0,0.15)] rounded-3xl w-full max-w-[850px] min-h-[550px] flex overflow-hidden border border-white/40 transform transition-all">
+          <div className="relative bg-white/90 dark:bg-zinc-900/90 backdrop-blur-3xl shadow-2xl rounded-3xl w-full max-w-[880px] max-h-[85vh] h-[640px] flex overflow-hidden border border-white/40 dark:border-zinc-800 transform transition-all">
             
             {/* Sidebar Navigation */}
-            <div className="w-[240px] bg-slate-50/50 border-r border-slate-200/50 p-6 flex flex-col shrink-0">
+            <div className="w-[220px] sm:w-[240px] bg-slate-50/70 dark:bg-zinc-950/70 border-r border-slate-200/60 dark:border-zinc-800 p-6 flex flex-col shrink-0">
               <div className="flex items-center gap-2 mb-8 px-2">
-                <Settings size={18} className="text-slate-700" />
-                <span className="font-bold text-slate-800 tracking-tight">Settings</span>
+                <Settings size={18} className="text-slate-700 dark:text-zinc-300" />
+                <span className="font-bold text-slate-800 dark:text-zinc-100 tracking-tight">Settings</span>
               </div>
               
               <div className="flex flex-col gap-1.5 flex-1">
-                <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-700'}`}>Account</button>
-                <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-700'}`}>Personalization</button>
-                <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-700'}`}>General</button>
+                <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Account</button>
+                <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Personalization</button>
+                <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>General</button>
               </div>
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 bg-white/40 p-10 overflow-y-auto relative">
-              <button onClick={() => setSettingsModalOpen(false)} className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-200/50 text-slate-400 hover:text-slate-600 transition-colors">
+            <div className="flex-1 bg-white/50 dark:bg-zinc-900/50 p-6 sm:p-8 overflow-y-auto relative">
+              <button onClick={() => setSettingsModalOpen(false)} className="absolute top-5 right-5 p-2 rounded-full hover:bg-slate-200/60 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors z-10">
                 <X size={18} strokeWidth={2.5} />
               </button>
 
@@ -57711,12 +57956,160 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                       </div>
                     </div>
+                    {/* Primary Accent Color */}
                     <div>
-                      <h3 className="text-[13px] font-bold text-slate-800 mb-4">Accent Color</h3>
-                      <div className="flex items-center gap-3">
-                        {['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'].map(color => (
-                          <button key={color} onClick={() => { setBrandColor(color); showToast('Accent color updated'); }} className={`w-8 h-8 rounded-full shadow-sm border-2 ${brandColor === color ? 'border-slate-400 ring-2 ring-slate-200' : 'border-white'} focus:ring-violet-500 transition-all`} style={{ backgroundColor: color }} />
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Primary Accent Color</h3>
+                        <span className="text-[11px] font-mono font-medium text-slate-500 uppercase">{brandColor}</span>
+                      </div>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#06b6d4', '#8b5cf6'].map(color => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => { setBrandColor(color); showToast('Accent color updated'); }}
+                            className={`w-8 h-8 rounded-full shadow-xs border-2 transition-all cursor-pointer ${brandColor === color ? 'border-slate-800 dark:border-white ring-2 ring-slate-300 dark:ring-zinc-600 scale-110' : 'border-white dark:border-zinc-800 hover:scale-105'}`}
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
                         ))}
+
+                        {/* Color Picker & Custom Hex Input for Accent */}
+                        <div className="flex items-center gap-2 ml-1">
+                          <label className="w-8 h-8 rounded-full border border-slate-300 dark:border-zinc-700 flex items-center justify-center cursor-pointer hover:border-slate-500 relative overflow-hidden shrink-0 shadow-xs" title="Choose custom accent color">
+                            <input
+                              type="color"
+                              value={brandColor.startsWith('#') && brandColor.length === 7 ? brandColor : '#7c3aed'}
+                              onChange={(e) => { setBrandColor(e.target.value); showToast('Custom accent color set'); }}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            />
+                            <Palette size={14} className="text-slate-600 dark:text-zinc-300" />
+                          </label>
+                          <input
+                            type="text"
+                            value={brandColor}
+                            onChange={(e) => setBrandColor(e.target.value)}
+                            placeholder="#7C3AED"
+                            className="w-22 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono font-medium text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 uppercase shadow-2xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Secondary Color */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Secondary Accent Color</h3>
+                        <span className="text-[11px] font-mono font-medium text-slate-500 uppercase">{secondaryColor}</span>
+                      </div>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {['#6366f1', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#a855f7', '#06b6d4', '#f43f5e', '#64748b'].map(color => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => { setSecondaryColor(color); showToast('Secondary color updated'); }}
+                            className={`w-8 h-8 rounded-full shadow-xs border-2 transition-all cursor-pointer ${secondaryColor === color ? 'border-slate-800 dark:border-white ring-2 ring-slate-300 dark:ring-zinc-600 scale-110' : 'border-white dark:border-zinc-800 hover:scale-105'}`}
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                        ))}
+
+                        {/* Color Picker & Custom Hex Input for Secondary */}
+                        <div className="flex items-center gap-2 ml-1">
+                          <label className="w-8 h-8 rounded-full border border-slate-300 dark:border-zinc-700 flex items-center justify-center cursor-pointer hover:border-slate-500 relative overflow-hidden shrink-0 shadow-xs" title="Choose custom secondary color">
+                            <input
+                              type="color"
+                              value={secondaryColor.startsWith('#') && secondaryColor.length === 7 ? secondaryColor : '#6366f1'}
+                              onChange={(e) => { setSecondaryColor(e.target.value); showToast('Custom secondary color set'); }}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            />
+                            <Palette size={14} className="text-slate-600 dark:text-zinc-300" />
+                          </label>
+                          <input
+                            type="text"
+                            value={secondaryColor}
+                            onChange={(e) => setSecondaryColor(e.target.value)}
+                            placeholder="#6366F1"
+                            className="w-22 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono font-medium text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 uppercase shadow-2xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Gradient Themes */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Gradients</h3>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const autoGrad = `linear-gradient(135deg, ${brandColor}, ${secondaryColor})`;
+                            setAccentGradient(autoGrad);
+                            showToast('Generated dynamic gradient from Accent + Secondary');
+                          }}
+                          className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
+                        >
+                          Auto Gradient (Accent → Secondary)
+                        </button>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-2.5 mb-3">
+                        {[
+                          { label: 'Royal Violet', grad: 'linear-gradient(135deg, #7c3aed, #6366f1)' },
+                          { label: 'Ocean Cyan', grad: 'linear-gradient(135deg, #3b82f6, #06b6d4)' },
+                          { label: 'Emerald Mint', grad: 'linear-gradient(135deg, #10b981, #059669)' },
+                          { label: 'Sunset Coral', grad: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
+                          { label: 'Electric Pink', grad: 'linear-gradient(135deg, #ec4899, #8b5cf6)' },
+                          { label: 'Midnight Aura', grad: 'linear-gradient(135deg, #8b5cf6, #f59e0b)' },
+                        ].map((g) => (
+                          <button
+                            key={g.label}
+                            type="button"
+                            onClick={() => { setAccentGradient(g.grad); showToast(`Gradient: ${g.label}`); }}
+                            className={`h-10 rounded-xl p-2 flex items-center justify-center text-xs font-semibold text-white shadow-xs border transition-all cursor-pointer select-none ${accentGradient === g.grad ? 'border-slate-900 dark:border-white ring-2 ring-slate-300 dark:ring-zinc-600 scale-[1.02]' : 'border-transparent hover:opacity-90'}`}
+                            style={{ background: g.grad }}
+                          >
+                            <span className="drop-shadow-xs">{g.label}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Custom Gradient Code Input */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 shrink-0">CSS Gradient:</span>
+                        <input
+                          type="text"
+                          value={accentGradient}
+                          onChange={(e) => setAccentGradient(e.target.value)}
+                          placeholder="linear-gradient(135deg, #7c3aed, #6366f1)"
+                          className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 shadow-2xs"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Live Palette Visual Preview Card */}
+                    <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-950/50 flex flex-col gap-3">
+                      <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Live Personalization Preview</span>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <button
+                          type="button"
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-sm transition-all"
+                          style={{ backgroundColor: brandColor }}
+                        >
+                          Primary Action
+                        </button>
+                        <span
+                          className="px-3 py-1 rounded-lg text-xs font-bold text-white shadow-2xs"
+                          style={{ backgroundColor: secondaryColor }}
+                        >
+                          Secondary Tag
+                        </span>
+                        <div
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm flex items-center justify-center"
+                          style={{ background: accentGradient || `linear-gradient(135deg, ${brandColor}, ${secondaryColor})` }}
+                        >
+                          Gradient Accent Banner
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -57955,7 +58348,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onSave={(newTpl) => {
           setCustomTemplates((prev) => [...prev, newTpl]);
           setIsCreateTemplateModalOpen(false);
-          showToast(`Saved template "${newTpl.name}" successfully!`);
+          const newSheetId = ((sheetsData || [])[(sheetsData || []).length - 1]?.id || 0) + 1;
+          const newSheet = {
+            id: newSheetId,
+            title: newTpl.name || 'New Template Sheet',
+            subtitle: 'Custom Template'
+          };
+          setSheetsData((prev) => [...(prev || []), newSheet]);
+          setActiveSheetId(newSheetId);
+          setSheetToolbarTab(null);
+          showToast(`Created and opened new template page "${newTpl.name}" in View!`);
         }}
       />
     </div>
