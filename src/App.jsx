@@ -37371,7 +37371,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         <main className={`flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-zinc-950 ${isSheetsPresentationMode ? 'fixed inset-0 z-[9999] bg-white dark:bg-zinc-950' : ''}`}>
           {!isSheetsPresentationMode && (
-            <div className={`h-12 flex items-center justify-between px-5 border-b border-slate-200/80 dark:border-zinc-800/80 bg-[#f4f5f7]/88 dark:bg-zinc-900/88 backdrop-blur-[20px] shrink-0 select-none group/header relative z-[350] transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] ${
+            <div className={`h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shrink-0 select-none group/header relative z-[350] transition-all duration-200 ${
               isSheetZenMode ? 'fixed top-0 left-0 right-0 z-[9000] opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto shadow-md border-b' : ''
             }`}>
             <div className="flex items-center gap-3">
@@ -38181,7 +38181,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }`} />
                         </div>
                       {!isSheetsPresentationMode && !isSheetZenMode && (
-                        <div className="mx-4 mt-3 mb-2 w-[calc(100%-2rem)] p-3.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm flex flex-col gap-2.5 z-20 shrink-0">
+                        <div className="mx-4 mt-3 mb-2 w-[calc(100%-2rem)] p-3.5 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.25)] flex flex-col gap-2.5 z-20 shrink-0">
                       {/* Top Row: Navigation Tabs & Collapse/Expand Button */}
                       <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
                         <div className="flex items-center gap-4">
@@ -39180,10 +39180,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     ) : (
                     <div className={`flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] overflow-hidden z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm'}`}>
                       {!isSheetsPresentationMode && !isSheetZenMode && (
-                        <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151] shrink-0">
+                        <div className="px-4 py-2 border-b border-slate-200/80 dark:border-zinc-800 bg-[#FAFAFC] dark:bg-[#161618] flex items-center gap-3 text-[13px] font-medium text-[#374151] dark:text-zinc-200 shrink-0">
                       <input
                         type="text"
-                        className="min-w-[72px] max-w-[120px] text-center border border-gray-200 dark:border-zinc-800 rounded-lg bg-gray-50 dark:bg-zinc-900/60 py-1.5 px-2 text-[11px] font-mono font-semibold tracking-tight text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600 transition-all"
+                        className="min-w-[72px] max-w-[120px] text-center border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 py-1.5 px-2 text-[11px] font-mono font-semibold tracking-tight text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600 transition-all shadow-2xs"
                         value={
                           addressTemp !== null
                             ? addressTemp
@@ -39257,7 +39257,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             });
                           }
                         }}
-                        className="flex-1 border border-slate-200 dark:border-zinc-700 rounded-lg bg-slate-50 dark:bg-zinc-900/60 px-3 py-1.5 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600 text-slate-800 dark:text-zinc-200 font-normal transition-all"
+                        className="flex-1 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 px-3 py-1.5 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600 text-slate-800 dark:text-zinc-200 font-normal transition-all shadow-2xs"
                         placeholder="Enter value or formula"
                       />
                     </div>
