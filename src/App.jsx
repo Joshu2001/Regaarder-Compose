@@ -2403,31 +2403,16 @@ const NOTES_SLASH_OPTIONS = [
 const CreateTemplateModal = ({
   isOpen,
   onClose,
-  source = 'blank',
-  setSource = () => {},
-  form = { name: '', description: '', category: 'Finance', tags: '' },
+  form = { name: '', description: '', category: 'Finance & Growth' },
   setForm = () => {},
-  uploadedFile = null,
-  setUploadedFile = () => {},
+  activeSheetTitle = 'Current Sheet',
   onSave = () => {},
 }) => {
-  const [preserveData, setPreserveData] = React.useState(true);
-  const [preserveColors, setPreserveColors] = React.useState(true);
   const [preserveFormulas, setPreserveFormulas] = React.useState(true);
-  const [preserveStructure, setPreserveStructure] = React.useState(true);
+  const [preserveFormatting, setPreserveFormatting] = React.useState(true);
+  const [preserveSampleData, setPreserveSampleData] = React.useState(true);
 
   if (!isOpen) return null;
-
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setUploadedFile(file);
-      if (!form.name) {
-        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
-        setForm((prev) => ({ ...prev, name: nameWithoutExt }));
-      }
-    }
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -2435,18 +2420,14 @@ const CreateTemplateModal = ({
     const newTemplate = {
       id: `custom-tpl-${Date.now()}`,
       name: form.name.trim(),
-      description: form.description ? form.description.trim() : 'Custom user created template',
-      category: form.category || 'Custom',
-      tags: form.tags ? form.tags.split(',').map((t) => t.trim()).filter(Boolean) : ['Custom'],
-      iconName: selectedIcon,
-      sourceType: source,
+      description: form.description ? form.description.trim() : 'Custom reusable template',
+      category: form.category || 'Finance & Growth',
+      tags: ['Custom'],
       preservation: {
-        data: preserveData,
-        colors: preserveColors,
         formulas: preserveFormulas,
-        structure: preserveStructure,
+        formatting: preserveFormatting,
+        sampleData: preserveSampleData,
       },
-      fileName: uploadedFile ? uploadedFile.name : null,
       createdAt: new Date().toISOString(),
     };
     onSave(newTemplate);
@@ -2458,244 +2439,143 @@ const CreateTemplateModal = ({
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] transition-all"
+        className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center shadow-xs">
-              <PlusCircle size={20} />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
-                Create Custom Template
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">
-                Save new spreadsheet configurations & presets
-              </p>
-            </div>
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+              Create template
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+              Turn your current sheet into a reusable template.
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-5 thin-scrollbar">
-          {/* Source Selector Tabs */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2">
-              Template Source
-            </label>
-            <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-zinc-800/60 rounded-2xl border border-slate-200/60 dark:border-zinc-700/50">
-              {[
-                { id: 'blank', label: 'Blank Grid', icon: Sparkles },
-                { id: 'current', label: 'Current Data', icon: Table },
-                { id: 'upload', label: 'Upload File', icon: Upload },
-              ].map((tab) => {
-                const IconComponent = tab.icon;
-                const isActive = source === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setSource(tab.id)}
-                    className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                      isActive
-                        ? 'bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm border border-slate-200/80 dark:border-zinc-700/80'
-                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
-                    }`}
-                  >
-                    <IconComponent size={14} />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+        {/* Live Sheet Thumbnail Preview */}
+        <div className="mx-5 mt-4 p-3 bg-slate-50 dark:bg-zinc-950/60 border border-slate-200/80 dark:border-zinc-800 rounded-xl flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-950/80 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+            <Table size={20} />
           </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate">
+              {activeSheetTitle}
+            </span>
+            <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+              Live grid structure & data preview
+            </span>
+          </div>
+        </div>
 
-          {/* Upload Dropzone if upload selected */}
-          {source === 'upload' && (
-            <div
-              className="p-4 border-2 border-dashed border-slate-200 dark:border-zinc-700 rounded-2xl bg-slate-50/60 dark:bg-zinc-800/40 text-center hover:border-violet-400 transition-all cursor-pointer"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept=".csv,.xlsx,.xls,.pdf,.json,.txt"
-                onChange={handleFileChange}
-              />
-              <Upload className="mx-auto text-violet-500 mb-2" size={24} />
-              <p className="text-xs font-semibold text-slate-700 dark:text-zinc-200">
-                {uploadedFile ? uploadedFile.name : 'Click or drop template file here'}
-              </p>
-              <p className="text-[11px] text-slate-400 mt-1">Supports CSV, Excel, PDF, JSON, TXT</p>
-            </div>
-          )}
-
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Template Title */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1.5">
-              Template Name
+            <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+              Template name
             </label>
             <input
               type="text"
               required
-              placeholder="e.g., Q4 Financial Dashboard"
+              placeholder="e.g. Startup Financial Model"
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-violet-500 transition-all"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1.5">
-              Description
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Brief summary of template structure & metrics..."
-              value={form.description}
-              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-violet-500 transition-all resize-none"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-slate-900 dark:focus:border-white transition-all"
             />
           </div>
 
           {/* Category Dropdown */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
               Category
             </label>
             <select
               value={form.category}
               onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-violet-500 transition-all"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-slate-900 dark:focus:border-white transition-all"
             >
-              <option value="Finance">Finance</option>
+              <option value="Finance & Growth">Finance & Growth</option>
               <option value="Sales">Sales</option>
-              <option value="Marketing">Marketing</option>
               <option value="Operations">Operations</option>
-              <option value="Project Management">Project Management</option>
-              <option value="Human Resources">Human Resources</option>
-              <option value="Custom">Custom</option>
+              <option value="General">General</option>
             </select>
           </div>
 
-          {/* Tags */}
+          {/* Description */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1.5">
-              Tags (comma separated)
+            <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+              Description <span className="text-slate-400 font-normal">(optional)</span>
             </label>
-            <input
-              type="text"
-              placeholder="e.g., Budget, Q4, Revenue"
-              value={form.tags}
-              onChange={(e) => setForm((prev) => ({ ...prev, tags: e.target.value }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-violet-500 transition-all"
+            <textarea
+              rows={2}
+              placeholder="Short description..."
+              value={form.description}
+              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-slate-900 dark:focus:border-white transition-all resize-none"
             />
           </div>
 
-          {/* Details to Preserve */}
-          <div className="p-3.5 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-700/60 rounded-2xl space-y-2.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300">
-                Details to Preserve
-              </label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPreserveData(true);
-                    setPreserveColors(true);
-                    setPreserveFormulas(true);
-                    setPreserveStructure(true);
-                  }}
-                  className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
-                >
-                  Select All
-                </button>
-                <span className="text-slate-300 dark:text-zinc-600 text-[10px]">|</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPreserveData(false);
-                    setPreserveColors(false);
-                    setPreserveFormulas(false);
-                    setPreserveStructure(false);
-                  }}
-                  className="text-[10px] font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 cursor-pointer"
-                >
-                  Clear All
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <label className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-700/60 cursor-pointer hover:border-violet-300 transition-all select-none">
-                <input
-                  type="checkbox"
-                  checked={preserveData}
-                  onChange={(e) => setPreserveData(e.target.checked)}
-                  className="rounded-md text-violet-600 focus:ring-violet-500 accent-violet-600 w-4 h-4 cursor-pointer"
-                />
-                <span className="font-medium text-slate-700 dark:text-zinc-200">Cell Values & Data</span>
-              </label>
-
-              <label className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-700/60 cursor-pointer hover:border-violet-300 transition-all select-none">
-                <input
-                  type="checkbox"
-                  checked={preserveColors}
-                  onChange={(e) => setPreserveColors(e.target.checked)}
-                  className="rounded-md text-violet-600 focus:ring-violet-500 accent-violet-600 w-4 h-4 cursor-pointer"
-                />
-                <span className="font-medium text-slate-700 dark:text-zinc-200">Colors & Formatting</span>
-              </label>
-
-              <label className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-700/60 cursor-pointer hover:border-violet-300 transition-all select-none">
+          {/* Explicit Preservations */}
+          <div className="pt-1">
+            <span className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-2">
+              Create from current sheet:
+            </span>
+            <div className="space-y-2 text-xs">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={preserveFormulas}
                   onChange={(e) => setPreserveFormulas(e.target.checked)}
-                  className="rounded-md text-violet-600 focus:ring-violet-500 accent-violet-600 w-4 h-4 cursor-pointer"
+                  className="rounded text-slate-900 dark:text-white focus:ring-0 accent-slate-900 dark:accent-white w-3.5 h-3.5 cursor-pointer"
                 />
-                <span className="font-medium text-slate-700 dark:text-zinc-200">Formulas & Math</span>
+                <span className="text-slate-700 dark:text-zinc-300 font-medium">Preserve Formulas</span>
               </label>
 
-              <label className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-700/60 cursor-pointer hover:border-violet-300 transition-all select-none">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
-                  checked={preserveStructure}
-                  onChange={(e) => setPreserveStructure(e.target.checked)}
-                  className="rounded-md text-violet-600 focus:ring-violet-500 accent-violet-600 w-4 h-4 cursor-pointer"
+                  checked={preserveFormatting}
+                  onChange={(e) => setPreserveFormatting(e.target.checked)}
+                  className="rounded text-slate-900 dark:text-white focus:ring-0 accent-slate-900 dark:accent-white w-3.5 h-3.5 cursor-pointer"
                 />
-                <span className="font-medium text-slate-700 dark:text-zinc-200">Headers & Structure</span>
+                <span className="text-slate-700 dark:text-zinc-300 font-medium">Preserve Formatting</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={preserveSampleData}
+                  onChange={(e) => setPreserveSampleData(e.target.checked)}
+                  className="rounded text-slate-900 dark:text-white focus:ring-0 accent-slate-900 dark:accent-white w-3.5 h-3.5 cursor-pointer"
+                />
+                <span className="text-slate-700 dark:text-zinc-300 font-medium">Preserve Sample Data</span>
               </label>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-zinc-800">
+          <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-100 dark:border-zinc-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+              className="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md shadow-violet-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold shadow-xs hover:opacity-90 transition-all cursor-pointer"
             >
-              <Check size={14} />
-              <span>Save Template</span>
+              Save Template
             </button>
           </div>
         </form>
@@ -3224,324 +3104,440 @@ const FullPageTemplateGallery = ({
 
         {/* Grid of Real Spreadsheet Previews (3-4 columns) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pt-2 pb-8">
-          {/* Blank Card */}
+          {/* Blank Grid Special Card */}
           {(category === 'all' || category === 'operations') && (
-            <div className="group relative flex flex-col gap-2 select-none">
-              <div 
-                onClick={() => {
-                  const activeSheet = (sheetsData || []).find(s => s.id === activeSheetId);
-                  if (activeSheet) {
-                    updateSheetData(activeSheetId, { data: [Array(15).fill('')], columns: Array(10).fill({ width: 100 }) });
-                    setSheetToolbarTab(null);
-                    showToast('Loaded Blank Grid');
-                  }
-                }}
-                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-emerald-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
-              >
-                <LiveTemplateGridPreview type="blank" title="Blank" />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center p-4 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const activeSheet = (sheetsData || []).find(s => s.id === activeSheetId);
-                      if (activeSheet) {
-                        updateSheetData(activeSheetId, { data: [Array(15).fill('')], columns: Array(10).fill({ width: 100 }) });
-                        setSheetToolbarTab(null);
-                        showToast('Loaded Blank Grid');
-                      }
-                    }}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
-                  >
-                    Use Template
-                  </button>
+            <div 
+              onClick={() => {
+                const activeSheet = (sheetsData || []).find(s => s.id === activeSheetId);
+                if (activeSheet) {
+                  updateSheetData(activeSheetId, { data: [Array(15).fill('')], columns: Array(10).fill({ width: 100 }) });
+                  setSheetToolbarTab(null);
+                  showToast('Loaded Blank Grid');
+                }
+              }}
+              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-emerald-500/80 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
+            >
+              <div className="h-[205px] w-full p-4 bg-slate-50/50 dark:bg-zinc-900/40 border-b border-slate-100 dark:border-zinc-800 flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500 gap-2">
+                <div className="w-10 h-10 rounded-xl bg-slate-200/60 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center shadow-2xs">
+                  <Plus size={20} strokeWidth={2} />
                 </div>
               </div>
-              <div className="flex flex-col px-0.5">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                  Blank Spreadsheet
+              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
+                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                  Blank Grid
                 </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">Clean Grid</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
+                  Start from scratch
+                </span>
+              </div>
+              {/* Hover action overlay */}
+              <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center p-4 z-10">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const activeSheet = (sheetsData || []).find(s => s.id === activeSheetId);
+                    if (activeSheet) {
+                      updateSheetData(activeSheetId, { data: [Array(15).fill('')], columns: Array(10).fill({ width: 100 }) });
+                      setSheetToolbarTab(null);
+                      showToast('Loaded Blank Grid');
+                    }
+                  }}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
+                >
+                  Use Template
+                </button>
               </div>
             </div>
           )}
 
           {/* Financial Model */}
           {(category === 'all' || category === 'finance') && (
-            <div className="group relative flex flex-col gap-2 select-none">
-              <div 
-                onClick={() => setPreviewTemplate({ id: 'financial', title: 'Financial Model', applyFn: loadFinancialModelTemplate })}
-                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-sky-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
-              >
+            <div 
+              onClick={() => setPreviewTemplate({ id: 'financial', title: 'Financial Model', applyFn: loadFinancialModelTemplate })}
+              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
+            >
+              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
                 <LiveTemplateGridPreview id="financial" title="Financial Model" />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
+                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       applyTemplate(loadFinancialModelTemplate, 'Financial Model');
                     }}
-                    className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
+                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
                   >
                     Use Template
                   </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPreviewTemplate({ id: 'financial', title: 'Financial Model', applyFn: loadFinancialModelTemplate });
-                    }}
-                    className="px-3 py-1 text-white/90 hover:text-white text-[11px] font-medium rounded-md hover:bg-white/20 transition-all cursor-pointer"
-                  >
-                    Preview
-                  </button>
+                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate({ id: 'financial', title: 'Financial Model', applyFn: loadFinancialModelTemplate });
+                      }}
+                      className="hover:underline hover:text-white cursor-pointer"
+                    >
+                      Preview
+                    </button>
+                    <span>·</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate({ id: 'financial', title: 'Financial Model', applyFn: loadFinancialModelTemplate });
+                      }}
+                      className="hover:underline hover:text-white cursor-pointer"
+                    >
+                      •••
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col px-0.5">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
+                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                   Financial Model
                 </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">Finance</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
+                  Finance & Growth · 5 × 9
+                </span>
               </div>
             </div>
           )}
 
           {/* SaaS Metrics */}
           {(category === 'all' || category === 'finance') && (
-            <div className="group relative flex flex-col gap-2 select-none">
-              <div 
-                onClick={() => setPreviewTemplate({ id: 'saas', title: 'SaaS Metrics', applyFn: loadSaaSMetricsTemplate })}
-                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-emerald-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
-              >
+            <div 
+              onClick={() => setPreviewTemplate({ id: 'saas', title: 'SaaS Metrics', applyFn: loadSaaSMetricsTemplate })}
+              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
+            >
+              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
                 <LiveTemplateGridPreview id="saas" title="SaaS Metrics" />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
+                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       applyTemplate(loadSaaSMetricsTemplate, 'SaaS Metrics');
                     }}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
+                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
                   >
                     Use Template
                   </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPreviewTemplate({ id: 'saas', title: 'SaaS Metrics', applyFn: loadSaaSMetricsTemplate });
-                    }}
-                    className="px-3 py-1 text-white/90 hover:text-white text-[11px] font-medium rounded-md hover:bg-white/20 transition-all cursor-pointer"
-                  >
-                    Preview
-                  </button>
+                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate({ id: 'saas', title: 'SaaS Metrics', applyFn: loadSaaSMetricsTemplate });
+                      }}
+                      className="hover:underline hover:text-white cursor-pointer"
+                    >
+                      Preview
+                    </button>
+                    <span>·</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate({ id: 'saas', title: 'SaaS Metrics', applyFn: loadSaaSMetricsTemplate });
+                      }}
+                      className="hover:underline hover:text-white cursor-pointer"
+                    >
+                      •••
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col px-0.5">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
+                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                   SaaS Metrics
                 </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">Finance</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
+                  Finance & Growth · 5 × 9
+                </span>
               </div>
             </div>
           )}
 
           {/* Sales CRM */}
           {(category === 'all' || category === 'sales') && (
-            <div className="group relative flex flex-col gap-2 select-none">
-              <div 
-                onClick={() => setPreviewTemplate({ id: 'crm', title: 'Sales CRM', applyFn: loadSalesCRMPipelineTemplate })}
-                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-purple-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
-              >
+            <div 
+              onClick={() => setPreviewTemplate({ id: 'crm', title: 'Sales CRM', applyFn: loadSalesCRMPipelineTemplate })}
+              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
+            >
+              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
                 <LiveTemplateGridPreview id="crm" title="Sales CRM" />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
+                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       applyTemplate(loadSalesCRMPipelineTemplate, 'Sales CRM');
                     }}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
+                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
                   >
                     Use Template
                   </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPreviewTemplate({ id: 'crm', title: 'Sales CRM', applyFn: loadSalesCRMPipelineTemplate });
-                    }}
-                    className="px-3 py-1 text-white/90 hover:text-white text-[11px] font-medium rounded-md hover:bg-white/20 transition-all cursor-pointer"
-                  >
-                    Preview
-                  </button>
+                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate({ id: 'crm', title: 'Sales CRM', applyFn: loadSalesCRMPipelineTemplate });
+                      }}
+                      className="hover:underline hover:text-white cursor-pointer"
+                    >
+                      Preview
+                    </button>
+                    <span>·</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate({ id: 'crm', title: 'Sales CRM', applyFn: loadSalesCRMPipelineTemplate });
+                      }}
+                      className="hover:underline hover:text-white cursor-pointer"
+                    >
+                      •••
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col px-0.5">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
+                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                   Sales CRM
                 </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">Sales</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
+                  Sales · 5 × 9
+                </span>
               </div>
             </div>
           )}
 
           {/* Cash Flow */}
           {(category === 'all' || category === 'finance') && (
-            <div className="group relative flex flex-col gap-2 select-none">
-              <div 
-                onClick={() => setPreviewTemplate({ id: 'cashflow', title: 'Cash Flow', applyFn: loadCashFlowForecastTemplate })}
-                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-amber-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
-              >
+            <div 
+              onClick={() => setPreviewTemplate({ id: 'cashflow', title: 'Cash Flow', applyFn: loadCashFlowForecastTemplate })}
+              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
+            >
+              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
                 <LiveTemplateGridPreview id="cashflow" title="Cash Flow" />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
+                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       applyTemplate(loadCashFlowForecastTemplate, 'Cash Flow');
                     }}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
+                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
                   >
                     Use Template
                   </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPreviewTemplate({ id: 'cashflow', title: 'Cash Flow', applyFn: loadCashFlowForecastTemplate });
-                    }}
-                    className="px-3 py-1 text-white/90 hover:text-white text-[11px] font-medium rounded-md hover:bg-white/20 transition-all cursor-pointer"
-                  >
-                    Preview
-                  </button>
+                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate({ id: 'cashflow', title: 'Cash Flow', applyFn: loadCashFlowForecastTemplate });
+                      }}
+                      className="hover:underline hover:text-white cursor-pointer"
+                    >
+                      Preview
+                    </button>
+                    <span>·</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate({ id: 'cashflow', title: 'Cash Flow', applyFn: loadCashFlowForecastTemplate });
+                      }}
+                      className="hover:underline hover:text-white cursor-pointer"
+                    >
+                      •••
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col px-0.5">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
+                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                   Cash Flow
                 </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">Finance</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
+                  Finance & Growth · 5 × 9
+                </span>
               </div>
             </div>
           )}
 
           {/* KPI Dashboard */}
           {(category === 'all' || category === 'operations') && (
-            <div className="group relative flex flex-col gap-2 select-none">
-              <div 
-                onClick={() => setPreviewTemplate({ id: 'kpi', title: 'KPI Dashboard', applyFn: loadKPIDashboardTemplate })}
-                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-indigo-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
-              >
+            <div 
+              onClick={() => setPreviewTemplate({ id: 'kpi', title: 'KPI Dashboard', applyFn: loadKPIDashboardTemplate })}
+              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
+            >
+              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
                 <LiveTemplateGridPreview id="kpi" title="KPI Dashboard" />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
+                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       applyTemplate(loadKPIDashboardTemplate, 'KPI Dashboard');
                     }}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
+                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
                   >
                     Use Template
                   </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPreviewTemplate({ id: 'kpi', title: 'KPI Dashboard', applyFn: loadKPIDashboardTemplate });
-                    }}
-                    className="px-3 py-1 text-white/90 hover:text-white text-[11px] font-medium rounded-md hover:bg-white/20 transition-all cursor-pointer"
-                  >
-                    Preview
-                  </button>
+                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate({ id: 'kpi', title: 'KPI Dashboard', applyFn: loadKPIDashboardTemplate });
+                      }}
+                      className="hover:underline hover:text-white cursor-pointer"
+                    >
+                      Preview
+                    </button>
+                    <span>·</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate({ id: 'kpi', title: 'KPI Dashboard', applyFn: loadKPIDashboardTemplate });
+                      }}
+                      className="hover:underline hover:text-white cursor-pointer"
+                    >
+                      •••
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col px-0.5">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
+                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                   KPI Dashboard
                 </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">Operations</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
+                  Operations · 5 × 9
+                </span>
               </div>
             </div>
           )}
 
           {/* Project Tracking */}
           {(category === 'all' || category === 'operations') && (
-            <div className="group relative flex flex-col gap-2 select-none">
-              <div 
-                onClick={() => setPreviewTemplate({ id: 'project', title: 'Project Tracking', applyFn: loadProjectTrackingTemplate })}
-                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-blue-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
-              >
+            <div 
+              onClick={() => setPreviewTemplate({ id: 'project', title: 'Project Tracking', applyFn: loadProjectTrackingTemplate })}
+              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
+            >
+              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
                 <LiveTemplateGridPreview id="project" title="Project Tracking" />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
+                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       applyTemplate(loadProjectTrackingTemplate, 'Project Tracking');
                     }}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
+                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
                   >
                     Use Template
                   </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPreviewTemplate({ id: 'project', title: 'Project Tracking', applyFn: loadProjectTrackingTemplate });
-                    }}
-                    className="px-3 py-1 text-white/90 hover:text-white text-[11px] font-medium rounded-md hover:bg-white/20 transition-all cursor-pointer"
-                  >
-                    Preview
-                  </button>
+                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate({ id: 'project', title: 'Project Tracking', applyFn: loadProjectTrackingTemplate });
+                      }}
+                      className="hover:underline hover:text-white cursor-pointer"
+                    >
+                      Preview
+                    </button>
+                    <span>·</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate({ id: 'project', title: 'Project Tracking', applyFn: loadProjectTrackingTemplate });
+                      }}
+                      className="hover:underline hover:text-white cursor-pointer"
+                    >
+                      •••
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col px-0.5">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
+                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                   Project Tracking
                 </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">Operations</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
+                  Operations · 5 × 9
+                </span>
               </div>
             </div>
           )}
 
           {/* User Custom Templates */}
           {(category === 'all' || category === 'custom') && customTemplates.map((tpl) => (
-            <div key={tpl.id} className="group relative flex flex-col gap-2 select-none">
-              <div 
-                onClick={() => setPreviewTemplate({ id: tpl.id, title: tpl.name, applyFn: () => handleApplyCustomTemplate(tpl) })}
-                className="w-full h-60 rounded-xl p-1 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs group-hover:shadow-xl group-hover:border-violet-500/80 group-hover:-translate-y-1 transition-all duration-200 relative overflow-hidden cursor-pointer"
-              >
+            <div 
+              key={tpl.id}
+              onClick={() => setPreviewTemplate({ id: tpl.id, title: tpl.name, applyFn: () => handleApplyCustomTemplate(tpl) })}
+              className="w-full h-[280px] rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs group hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden select-none relative cursor-pointer"
+            >
+              <div className="h-[205px] w-full p-1 bg-slate-50/50 dark:bg-zinc-950/50 border-b border-slate-100 dark:border-zinc-800 relative overflow-hidden">
                 <LiveTemplateGridPreview id={tpl.id} title={tpl.name} />
-                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 rounded-xl">
+                <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2 p-4 z-10">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       applyTemplate(() => handleApplyCustomTemplate(tpl), tpl.name);
                     }}
-                    className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer"
+                    className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-lg shadow-md transition-all scale-95 group-hover:scale-100 cursor-pointer hover:opacity-90"
                   >
                     Use Template
                   </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteCustomTemplate(tpl.id);
-                    }}
-                    className="px-3 py-1 bg-rose-600/80 hover:bg-rose-600 text-white text-[11px] font-medium rounded-md transition-all cursor-pointer"
-                  >
-                    Delete Template
-                  </button>
+                  <div className="flex items-center gap-3 text-white/90 text-[11px] font-medium pt-0.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate({ id: tpl.id, title: tpl.name, applyFn: () => handleApplyCustomTemplate(tpl) });
+                      }}
+                      className="hover:underline hover:text-white cursor-pointer"
+                    >
+                      Preview
+                    </button>
+                    <span>·</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCustomTemplate(tpl.id);
+                      }}
+                      className="hover:underline hover:text-rose-300 text-rose-200 cursor-pointer"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col px-0.5">
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-                  {tpl.name}
+              <div className="p-3 flex flex-col justify-center bg-white dark:bg-zinc-900 shrink-0 h-[75px]">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                    {tpl.name}
+                  </span>
+                  <span className="text-[9px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider bg-violet-50 dark:bg-violet-950/60 px-1.5 py-0.5 rounded shrink-0">
+                    YOUR TEMPLATE
+                  </span>
+                </div>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5">
+                  {tpl.category || 'Custom'} · 5 × 9
                 </span>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">My Templates</span>
               </div>
             </div>
           ))}
@@ -58238,12 +58234,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <CreateTemplateModal
         isOpen={isCreateTemplateModalOpen}
         onClose={() => setIsCreateTemplateModalOpen(false)}
-        source={createTemplateSource}
-        setSource={setCreateTemplateSource}
         form={createTemplateForm}
         setForm={setCreateTemplateForm}
-        uploadedFile={createTemplateUploadedFile}
-        setUploadedFile={setCreateTemplateUploadedFile}
+        activeSheetTitle={(sheetsData || []).find(s => s.id === activeSheetId)?.title || 'Current Sheet'}
         onSave={(newTpl) => {
           setCustomTemplates((prev) => [...prev, newTpl]);
           setIsCreateTemplateModalOpen(false);
