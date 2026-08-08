@@ -3167,7 +3167,7 @@ const FullPageTemplateGallery = ({
                       e.stopPropagation();
                       setOpenMenuId((prev) => prev === card.id ? null : card.id);
                     }}
-                    className="w-7 h-7 rounded-lg bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xs border border-slate-200/80 dark:border-zinc-700/80 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center shadow-xs cursor-pointer"
+                    className="w-8 h-8 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-md border border-white/50 dark:border-white/10 text-slate-700 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-white opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
                     title="More options"
                   >
                     <MoreHorizontal size={15} />
@@ -3176,7 +3176,7 @@ const FullPageTemplateGallery = ({
                   {/* Secondary Actions Contextual Dropdown */}
                   {openMenuId === card.id && (
                     <div 
-                      className="absolute right-0 top-8 w-38 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs text-slate-700 dark:text-zinc-300"
+                      className="absolute right-0 top-9 w-40 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-700/70 rounded-2xl shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs font-sans"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
@@ -3185,7 +3185,7 @@ const FullPageTemplateGallery = ({
                           setOpenMenuId(null);
                           applyTemplate(card.applyFn, card.title);
                         }}
-                        className="w-full px-3 py-1.5 text-left hover:bg-purple-50 dark:hover:bg-purple-950/40 hover:text-purple-600 dark:hover:text-purple-400 flex items-center gap-2 cursor-pointer font-medium"
+                        className="w-full px-3 py-2 text-left hover:bg-violet-50 dark:hover:bg-violet-950/40 text-slate-700 dark:text-zinc-200 hover:text-violet-700 dark:hover:text-violet-300 rounded-xl transition-colors font-semibold flex items-center gap-2 cursor-pointer"
                       >
                         <Check size={13} />
                         <span>Use Template</span>
@@ -3196,7 +3196,7 @@ const FullPageTemplateGallery = ({
                           setOpenMenuId(null);
                           setPreviewTemplate({ id: card.id, title: card.title, applyFn: card.applyFn });
                         }}
-                        className="w-full px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer"
+                        className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl flex items-center gap-2 cursor-pointer font-medium"
                       >
                         <Eye size={13} />
                         <span>Preview</span>
@@ -3207,7 +3207,7 @@ const FullPageTemplateGallery = ({
                           setOpenMenuId(null);
                           showToast(`Duplicated ${card.title}`);
                         }}
-                        className="w-full px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer"
+                        className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl flex items-center gap-2 cursor-pointer font-medium"
                       >
                         <Copy size={13} />
                         <span>Duplicate</span>
@@ -3218,7 +3218,7 @@ const FullPageTemplateGallery = ({
                           setOpenMenuId(null);
                           showToast(`Share link copied for ${card.title}`);
                         }}
-                        className="w-full px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer"
+                        className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl flex items-center gap-2 cursor-pointer font-medium"
                       >
                         <Share2 size={13} />
                         <span>Share</span>
@@ -3230,7 +3230,7 @@ const FullPageTemplateGallery = ({
                             setOpenMenuId(null);
                             handleDeleteCustomTemplate(card.id);
                           }}
-                          className="w-full px-3 py-1.5 text-left text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 cursor-pointer border-t border-slate-100 dark:border-zinc-800 mt-1 pt-1.5"
+                          className="w-full px-3 py-2 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl flex items-center gap-2 cursor-pointer font-medium border-t border-slate-100 dark:border-zinc-800/80 mt-1 pt-1.5"
                         >
                           <Trash2 size={13} />
                           <span>Delete</span>
@@ -3241,14 +3241,14 @@ const FullPageTemplateGallery = ({
                 </div>
 
                 {/* Hover Action Overlay ("Use Template" / "Start blank" + Preview button) */}
-                <div className="absolute inset-0 bg-slate-900/15 dark:bg-black/35 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2 z-10 pointer-events-none p-3">
+                <div className="absolute inset-0 bg-slate-900/20 dark:bg-black/40 backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center gap-2 z-10 pointer-events-none p-3">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       applyTemplate(card.applyFn, card.title);
                     }}
-                    className="pointer-events-auto px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-xl shadow-md transform translate-y-1 group-hover:translate-y-0 transition-all duration-200 cursor-pointer flex items-center gap-1.5"
+                    className="pointer-events-auto px-4 py-2 bg-white/90 hover:bg-white dark:bg-zinc-900/90 dark:hover:bg-zinc-800 text-slate-900 dark:text-white font-bold text-xs rounded-xl shadow-xl border border-white/60 dark:border-white/10 transform translate-y-1 group-hover:translate-y-0 transition-all duration-150 active:scale-95 hover:scale-[1.03] cursor-pointer flex items-center gap-1.5 select-none"
                   >
                     <span>{card.id === 'blank' ? 'Start blank' : 'Use Template'}</span>
                   </button>
@@ -3259,7 +3259,7 @@ const FullPageTemplateGallery = ({
                         e.stopPropagation();
                         setPreviewTemplate({ id: card.id, title: card.title, applyFn: card.applyFn });
                       }}
-                      className="pointer-events-auto p-2 bg-white/90 dark:bg-zinc-800/90 hover:bg-white dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-semibold text-xs rounded-xl shadow-md border border-slate-200/80 dark:border-zinc-700/80 transform translate-y-1 group-hover:translate-y-0 transition-all duration-200 cursor-pointer"
+                      className="pointer-events-auto w-9 h-9 flex items-center justify-center bg-white/90 hover:bg-white dark:bg-zinc-900/90 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-100 rounded-full shadow-xl border border-white/60 dark:border-white/10 transform translate-y-1 group-hover:translate-y-0 transition-all duration-150 active:scale-95 hover:scale-[1.05] cursor-pointer select-none"
                       title="Preview Template Details"
                     >
                       <Eye size={15} />
@@ -43036,21 +43036,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         ? 'opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto fixed bottom-0 left-0 right-0 z-50 shadow-lg border-t bg-white/95 dark:bg-zinc-900/95' 
                         : ''
                     }`}>
-                      <div className="flex items-center gap-3 overflow-x-auto thin-scrollbar">
-                        {sheetsData.map((sheet) => (
-                          <button
-                            key={sheet.id}
-                            type="button"
-                            onClick={() => {
-                              setActiveSheetId(sheet.id);
-                              setSheetsTitle(sheet.title);
-                            }}
-                            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-[13px] font-medium tracking-wide transition-colors ${activeSheetId === sheet.id ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
-                          >
-                            {sheet.title.split(' ')[0]}
-                          </button>
-                        ))}
-                        <button type="button" onClick={addWorksheet} className="px-2 py-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">+</button>
+                      <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/80 dark:bg-zinc-800/60 rounded-xl border border-slate-200/50 dark:border-zinc-700/50 overflow-x-auto thin-scrollbar select-none">
+                        {sheetsData.map((sheet) => {
+                          const isActive = activeSheetId === sheet.id;
+                          return (
+                            <button
+                              key={sheet.id}
+                              type="button"
+                              onClick={() => {
+                                setActiveSheetId(sheet.id);
+                                setSheetsTitle(sheet.title);
+                              }}
+                              className={`relative inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-1 text-[12px] font-semibold rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer active:scale-[0.97] ${
+                                isActive
+                                  ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-bold'
+                                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
+                              }`}
+                            >
+                              {isActive && <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400 shrink-0" />}
+                              <span>{sheet.title.split(' ')[0]}</span>
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={addWorksheet}
+                          className="w-6 h-6 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-white/60 dark:hover:bg-zinc-700/50 transition-all duration-150 active:scale-95 text-xs font-bold cursor-pointer"
+                          title="Add new sheet"
+                        >
+                          +
+                        </button>
                       </div>
                         <div className="flex items-center gap-4 text-[12px] font-medium text-gray-500 shrink-0 mr-auto ml-8 hidden md:flex">
                           {(() => {
