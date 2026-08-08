@@ -38136,7 +38136,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         'bg-slate-50/30'
                       }`}>
                         {/* Ambient orb blobs — theme palette responsive */}
-                        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.28]">
+                        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.18]">
                           <div className={`absolute -top-[15%] -left-[15%] w-[70%] h-[70%] rounded-full mix-blend-multiply filter blur-[110px] ${
                             sheetsThemePalette === 'emerald' ? 'bg-emerald-400/40' :
                             sheetsThemePalette === 'nordic' ? 'bg-cyan-400/35' :
