@@ -46460,10 +46460,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>General</button>
               </div>
             </div>
-            <div className="flex-1 bg-white/50 dark:bg-zinc-900/50 p-6 sm:p-8 overflow-y-auto relative">
-              <button onClick={() => setSettingsModalOpen(false)} className="absolute top-5 right-5 p-2 rounded-full hover:bg-slate-200/60 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors z-10">
-                <X size={18} strokeWidth={2.5} />
-              </button>
+            <div className="flex-1 bg-white/50 dark:bg-zinc-900/50 p-6 sm:p-8 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden relative">
               {settingsTab === 'account' && (
                 <div className="max-w-[400px] mx-auto mt-6">
                   <div className="text-center mb-8">
@@ -46642,83 +46639,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             placeholder="#6366F1"
                             className="w-22 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono font-medium text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 uppercase shadow-2xs"
                           />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Gradient Themes */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Gradients</h3>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const autoGrad = `linear-gradient(135deg, ${brandColor}, ${secondaryColor})`;
-                            setAccentGradient(autoGrad);
-                            showToast('Generated dynamic gradient from Accent + Secondary');
-                          }}
-                          className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
-                        >
-                          Auto Gradient (Accent → Secondary)
-                        </button>
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-2.5 mb-3">
-                        {[
-                          { label: 'Royal Violet', grad: 'linear-gradient(135deg, #7c3aed, #6366f1)' },
-                          { label: 'Ocean Cyan', grad: 'linear-gradient(135deg, #3b82f6, #06b6d4)' },
-                          { label: 'Emerald Mint', grad: 'linear-gradient(135deg, #10b981, #059669)' },
-                          { label: 'Sunset Coral', grad: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
-                          { label: 'Electric Pink', grad: 'linear-gradient(135deg, #ec4899, #8b5cf6)' },
-                          { label: 'Midnight Aura', grad: 'linear-gradient(135deg, #8b5cf6, #f59e0b)' },
-                        ].map((g) => (
-                          <button
-                            key={g.label}
-                            type="button"
-                            onClick={() => { setAccentGradient(g.grad); showToast(`Gradient: ${g.label}`); }}
-                            className={`h-10 rounded-xl p-2 flex items-center justify-center text-xs font-semibold text-white shadow-xs border transition-all cursor-pointer select-none ${accentGradient === g.grad ? 'border-slate-900 dark:border-white ring-2 ring-slate-300 dark:ring-zinc-600 scale-[1.02]' : 'border-transparent hover:opacity-90'}`}
-                            style={{ background: g.grad }}
-                          >
-                            <span className="drop-shadow-xs">{g.label}</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Custom Gradient Code Input */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 shrink-0">CSS Gradient:</span>
-                        <input
-                          type="text"
-                          value={accentGradient}
-                          onChange={(e) => setAccentGradient(e.target.value)}
-                          placeholder="linear-gradient(135deg, #7c3aed, #6366f1)"
-                          className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 shadow-2xs"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Live Palette Visual Preview Card */}
-                    <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-950/50 flex flex-col gap-3">
-                      <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Live Personalization Preview</span>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <button
-                          type="button"
-                          className="px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-sm transition-all"
-                          style={{ backgroundColor: brandColor }}
-                        >
-                          Primary Action
-                        </button>
-                        <span
-                          className="px-3 py-1 rounded-lg text-xs font-bold text-white shadow-2xs"
-                          style={{ backgroundColor: secondaryColor }}
-                        >
-                          Secondary Tag
-                        </span>
-                        <div
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm flex items-center justify-center"
-                          style={{ background: accentGradient || `linear-gradient(135deg, ${brandColor}, ${secondaryColor})` }}
-                        >
-                          Gradient Accent Banner
                         </div>
                       </div>
                     </div>
@@ -58059,10 +57979,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 bg-white/50 dark:bg-zinc-900/50 p-6 sm:p-8 overflow-y-auto relative">
-              <button onClick={() => setSettingsModalOpen(false)} className="absolute top-5 right-5 p-2 rounded-full hover:bg-slate-200/60 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors z-10">
-                <X size={18} strokeWidth={2.5} />
-              </button>
+            <div className="flex-1 bg-white/50 dark:bg-zinc-900/50 p-6 sm:p-8 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden relative">
 
               {settingsTab === 'account' && (
                 <div className="max-w-[400px] mx-auto mt-6">
@@ -58249,83 +58166,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             placeholder="#6366F1"
                             className="w-22 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono font-medium text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 uppercase shadow-2xs"
                           />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Gradient Themes */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Gradients</h3>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const autoGrad = `linear-gradient(135deg, ${brandColor}, ${secondaryColor})`;
-                            setAccentGradient(autoGrad);
-                            showToast('Generated dynamic gradient from Accent + Secondary');
-                          }}
-                          className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
-                        >
-                          Auto Gradient (Accent → Secondary)
-                        </button>
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-2.5 mb-3">
-                        {[
-                          { label: 'Royal Violet', grad: 'linear-gradient(135deg, #7c3aed, #6366f1)' },
-                          { label: 'Ocean Cyan', grad: 'linear-gradient(135deg, #3b82f6, #06b6d4)' },
-                          { label: 'Emerald Mint', grad: 'linear-gradient(135deg, #10b981, #059669)' },
-                          { label: 'Sunset Coral', grad: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
-                          { label: 'Electric Pink', grad: 'linear-gradient(135deg, #ec4899, #8b5cf6)' },
-                          { label: 'Midnight Aura', grad: 'linear-gradient(135deg, #8b5cf6, #f59e0b)' },
-                        ].map((g) => (
-                          <button
-                            key={g.label}
-                            type="button"
-                            onClick={() => { setAccentGradient(g.grad); showToast(`Gradient: ${g.label}`); }}
-                            className={`h-10 rounded-xl p-2 flex items-center justify-center text-xs font-semibold text-white shadow-xs border transition-all cursor-pointer select-none ${accentGradient === g.grad ? 'border-slate-900 dark:border-white ring-2 ring-slate-300 dark:ring-zinc-600 scale-[1.02]' : 'border-transparent hover:opacity-90'}`}
-                            style={{ background: g.grad }}
-                          >
-                            <span className="drop-shadow-xs">{g.label}</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Custom Gradient Code Input */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 shrink-0">CSS Gradient:</span>
-                        <input
-                          type="text"
-                          value={accentGradient}
-                          onChange={(e) => setAccentGradient(e.target.value)}
-                          placeholder="linear-gradient(135deg, #7c3aed, #6366f1)"
-                          className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 shadow-2xs"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Live Palette Visual Preview Card */}
-                    <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-950/50 flex flex-col gap-3">
-                      <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Live Personalization Preview</span>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <button
-                          type="button"
-                          className="px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-sm transition-all"
-                          style={{ backgroundColor: brandColor }}
-                        >
-                          Primary Action
-                        </button>
-                        <span
-                          className="px-3 py-1 rounded-lg text-xs font-bold text-white shadow-2xs"
-                          style={{ backgroundColor: secondaryColor }}
-                        >
-                          Secondary Tag
-                        </span>
-                        <div
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm flex items-center justify-center"
-                          style={{ background: accentGradient || `linear-gradient(135deg, ${brandColor}, ${secondaryColor})` }}
-                        >
-                          Gradient Accent Banner
                         </div>
                       </div>
                     </div>
