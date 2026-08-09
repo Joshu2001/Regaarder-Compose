@@ -42341,47 +42341,38 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }
                                   }
                                 }
-                                let isTopEdge = false, isBottomEdge = false, isLeftEdge = false, isRightEdge = false, isBottomRightCorner = false;
+                                let isTopEdge = false, isBottomEdge = false, isLeftEdge = false, isRightEdge = false;
                                 const isExplicitAnchor = (selectedSheetCell && selectedSheetCell.row === num && selectedSheetCell.col === colIndex + 1) || (multiSelectedCells && multiSelectedCells.some(c => c.row === num && c.col === colIndex + 1));
-                                if ((selectedSheetCell && selectedSheetCell.row === num && selectedSheetCell.col === colIndex + 1 && !selectedSheetRange) || (multiSelectedCells && multiSelectedCells.some(c => c.row === num && c.col === colIndex + 1))) {
-                                  isTopEdge = true; isBottomEdge = true; isLeftEdge = true; isRightEdge = true; isBottomRightCorner = true;
-                                } else if (selectedSheetRange) {
+                                
+                                if (selectedSheetRange) {
                                   const rMinRow = Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow);
                                   const rMaxRow = Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow);
                                   const rMinCol = Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol);
                                   const rMaxCol = Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol);
                                   if (num >= rMinRow && num <= rMaxRow && colIndex + 1 >= rMinCol && colIndex + 1 <= rMaxCol) {
-                                    isInRange = true;
                                     if (num === rMinRow) isTopEdge = true;
                                     if (num === rMaxRow) isBottomEdge = true;
                                     if (colIndex + 1 === rMinCol) isLeftEdge = true;
                                     if (colIndex + 1 === rMaxCol) isRightEdge = true;
-                                    if (num === rMaxRow && colIndex + 1 === rMaxCol) isBottomRightCorner = true;
                                   }
                                 }
 
-                                const isSelected = !isShapeInteracting && (isExplicitAnchor || isInRange);
-
-                                const selectionBorderColor =
-                                  sheetsThemePalette === 'indigo' ? '#818cf8' :
-                                  sheetsThemePalette === 'sand' ? '#d97706' :
-                                  sheetsThemePalette === 'rose' ? '#f43f5e' :
-                                  sheetsThemePalette === 'emerald' ? '#10b981' :
-                                  sheetsThemePalette === 'nordic' ? '#0284c7' :
-                                  sheetsThemePalette === 'obsidian' ? '#a1a1aa' :
-                                  sheetsThemePalette === 'alabaster' ? '#525252' :
-                                  sheetsThemePalette === 'carbon' ? '#00f5d4' :
-                                  sheetsThemePalette === 'tokyo' ? '#bb9af7' :
-                                  sheetsThemePalette === 'amber' ? '#d97706' :
-                                  sheetsThemePalette === 'parchment' ? '#78350f' :
-                                  '#7c3aed';
+                                const selectionBorderColor = sheetsThemePalette === 'indigo' ? '#818cf8' : sheetsThemePalette === 'sand' ? '#d97706' : sheetsThemePalette === 'rose' ? '#f43f5e' : sheetsThemePalette === 'emerald' ? '#8b5cf6' : sheetsThemePalette === 'nordic' ? '#0284c7' : sheetsThemePalette === 'obsidian' ? '#a1a1aa' : sheetsThemePalette === 'alabaster' ? '#525252' : sheetsThemePalette === 'carbon' ? '#00f5d4' : sheetsThemePalette === 'tokyo' ? '#bb9af7' : sheetsThemePalette === 'amber' ? '#d97706' : sheetsThemePalette === 'parchment' ? '#78350f' : '#8b5cf6';
 
                                 let shadows = [];
-                                if (isTopEdge) shadows.push(`inset 0 1.5px 0 0 ${selectionBorderColor}`);
-                                if (isBottomEdge) shadows.push(`inset 0 -1.5px 0 0 ${selectionBorderColor}`);
-                                if (isLeftEdge) shadows.push(`inset 1.5px 0 0 0 ${selectionBorderColor}`);
-                                if (isRightEdge) shadows.push(`inset -1.5px 0 0 0 ${selectionBorderColor}`);
-                                const shadowStyle = shadows.length > 0 && !isShapeInteracting ? { boxShadow: shadows.join(', '), zIndex: 11 } : {};
+                                const isSingleCellSelected = isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange;
+                                if (isSingleCellSelected) {
+                                  shadows.push(`0 0 0 2px ${selectionBorderColor}`);
+                                } else if (selectedSheetRange) {
+                                  if (isTopEdge) shadows.push(`inset 0 2px 0 0 ${selectionBorderColor}`);
+                                  if (isBottomEdge) shadows.push(`inset 0 -2px 0 0 ${selectionBorderColor}`);
+                                  if (isLeftEdge) shadows.push(`inset 2px 0 0 0 ${selectionBorderColor}`);
+                                  if (isRightEdge) shadows.push(`inset -2px 0 0 0 ${selectionBorderColor}`);
+                                }
+                                const isCellSelectedAnchor = isExplicitAnchor && sheetSelectionMode === 'cell';
+                                const shadowStyle = (shadows.length > 0 || isCellSelectedAnchor) && !isShapeInteracting 
+                                  ? { boxShadow: shadows.length > 0 ? shadows.join(', ') : `0 0 0 2px ${selectionBorderColor}`, zIndex: isCellSelectedAnchor ? 35 : 25 } 
+                                  : {};
 
                                 const isInColBand = !isShapeInteracting && sheetSelectionMode === 'col' && selectedSheetRange &&
                                   colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) &&
@@ -42394,7 +42385,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 const cellFormat = activeSheetGridRaw.formats?.[rowIndex]?.[colIndex] || {};
                                 let computedFormat = { ...cellFormat };
                                 
-                                // Compute custom cell border style
                                 const customBorders = {};
                                 if (computedFormat.borders) {
                                   const bStyle = computedFormat.borderStyle || 'solid';
@@ -42405,7 +42395,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   if (computedFormat.borders.right) customBorders.borderRight = `1px ${bStyle} ${bColor}`;
                                 }
                                 let tableBorderStyles = {};
-                                let isTableBottomRight = false;
                                 const tableIntersections = (activeSheetGridRaw.tables || []).filter(t => 
                                   rowIndex + 1 >= t.startRow && rowIndex + 1 <= t.endRow && colIndex + 1 >= t.startCol && colIndex + 1 <= t.endCol
                                 );
@@ -42421,50 +42410,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    const isTableBottom = rowIndex + 1 === table.endRow;
                                    const isTableLeft = colIndex + 1 === table.startCol;
                                    const isTableRight = colIndex + 1 === table.endCol;
-                                   isTableBottomRight = isTableBottom && isTableRight;
-                                   tableBorderStyles = {
-                                     borderTop: isTableTop ? `2px solid ${preset.border}` : '',
-                                     borderBottom: isTableBottom ? `2px solid ${preset.border}` : `1px solid ${preset.border}`,
-                                     borderLeft: isTableLeft ? `2px solid ${preset.border}` : '',
-                                     borderRight: isTableRight ? `2px solid ${preset.border}` : `1px solid ${preset.border}`
-                                   };
+                                   if (isTableTop) tableBorderStyles.borderTop = `2px solid ${preset.border}`;
+                                   if (isTableBottom) tableBorderStyles.borderBottom = `2px solid ${preset.border}`;
+                                   if (isTableLeft) tableBorderStyles.borderLeft = `2px solid ${preset.border}`;
+                                   if (isTableRight) tableBorderStyles.borderRight = `2px solid ${preset.border}`;
                                  }
 
                                  const customBgStyle = computedFormat.fill ? { background: computedFormat.fill } : {};
-                                 const customTextStyle = computedFormat.color ? { color: computedFormat.color } : {};
+                                 const cellBg = (selectedSheetRange && num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) && num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) && colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) && colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol)) 
+                                  ? (isDarkMode ? 'bg-purple-950/30' : 'bg-[#ebf0fc]/50') 
+                                  : (isInColBand || isInRowBand || isAllSelected ? (isDarkMode ? 'bg-zinc-900/40' : 'bg-slate-50/50') : '');
+
                                  const cellKey = `${rowIndex}-${colIndex}`;
                                  const isEditingThisCell = editingCellKey === cellKey;
-                                 
-                                 const colHeaderName = activeSheetGridRaw?.cells?.[0]?.[colIndex] || '';
-                                 const rawGridVal = activeSheetGridRaw.cells?.[rowIndex]?.[colIndex];
-
-                                 let defaultAlign = 'left';
-                                 if (computedFormat.isHeader || rowIndex === 0) {
-                                   defaultAlign = 'center';
-                                 } else if (typeof rawGridVal === 'number' || (typeof rawGridVal === 'string' && (rawGridVal.includes('$') || rawGridVal.includes('%') || (!isNaN(Number(rawGridVal)) && rawGridVal.trim() !== '')))) {
-                                   defaultAlign = 'right';
-                                 } else if (typeof rawGridVal === 'string' && (rawGridVal.toLowerCase().includes('month') || rawGridVal.toLowerCase().includes('year'))) {
-                                   defaultAlign = 'center';
-                                 }
-
-                                 const resolvedCellAlign = computedFormat.align || cellFormat.textAlign || cellFormat.align || defaultAlign;
-
-                                const cellBg = isExplicitAnchor && sheetSelectionMode === 'cell' 
-                                  ? (isDarkMode ? 'bg-[#08080a]' : 'bg-white/50') 
-                                  : (isInRange ? (isDarkMode ? 'bg-purple-950/30' : 'bg-[#ebf0fc]/50') : (isInColBand || isInRowBand || isAllSelected ? (isDarkMode ? 'bg-zinc-900/40' : 'bg-slate-50/50') : ''));
-
-                                // Use local buffer while user is actively typing to avoid mid-keystroke re-render truncation.
-                                // Fall back to grid data when not editing.
-                                const cellValue = isEditingThisCell
-                                  ? editingCellValue
-                                  : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], { ...computedFormat, headerName: colHeaderName });
-
-                                const hasComment = comments.some(c => c.targetId === activeSheetId && c.metadata?.row === num && c.metadata?.col === colIndex + 1);
+                                 const cellValue = isEditingThisCell ? editingCellValue : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], { ...computedFormat, headerName: activeSheetGridRaw?.cells?.[0]?.[colIndex] || '' });
+                                 const hasComment = comments.some(c => c.targetId === activeSheetId && c.metadata?.row === num && c.metadata?.col === colIndex + 1);
 
                                 return (
                                   <div
                                     key={`${num}-${colIndex + 1}`}
-                                    className={`relative transition-colors ${cellBg} ${isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange ? 'z-10' : ''}`}
+                                    className={`relative transition-colors ${cellBg}`}
                                     style={{ 
                                       height: computedFormat.rowSpan ? '100%' : rowHeight, 
                                       display: computedFormat.hidden ? 'none' : 'flex',
@@ -42479,7 +42444,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       borderRightWidth: computedFormat.borderColor ? '1px' : (!showGridLines ? '0px' : (tableBorderStyles.borderRight ? '' : (computedFormat.fill ? '0px' : '1px'))),
                                       borderBottomWidth: computedFormat.borderColor ? '1px' : (!showGridLines ? '0px' : (tableBorderStyles.borderBottom ? '' : (computedFormat.fill ? '0px' : '1px'))),
                                       borderColor: computedFormat.borderColor ? computedFormat.borderColor : (tableIntersections.length > 0 ? (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1].presetStyle]?.border || TABLE_PRESETS.blue.border) : (gridLineContrast === 'high' ? (isDarkMode ? '#52525b' : '#cbd5e1') : gridLineContrast === 'subtle' ? (isDarkMode ? '#27272a' : '#f1f5f9') : (isDarkMode ? '#3f3f46' : '#e2e8f0'))),
-                                      zIndex: (tableIntersections.length > 0 && tableIntersections[tableIntersections.length - 1].id === hoveredTableId && rowIndex + 1 === tableIntersections[tableIntersections.length - 1].startRow && colIndex + 1 === tableIntersections[tableIntersections.length - 1].startCol) ? 40 : (computedFormat.rowSpan || computedFormat.colSpan ? 20 : undefined)
+                                      zIndex: shadowStyle.zIndex !== undefined ? shadowStyle.zIndex : ((tableIntersections.length > 0 && tableIntersections[tableIntersections.length - 1].id === hoveredTableId && rowIndex + 1 === tableIntersections[tableIntersections.length - 1].startRow && colIndex + 1 === tableIntersections[tableIntersections.length - 1].startCol) ? 40 : (computedFormat.rowSpan || computedFormat.colSpan ? 20 : undefined))
                                     }}
                                     onContextMenu={(e) => {
                                       e.preventDefault();
