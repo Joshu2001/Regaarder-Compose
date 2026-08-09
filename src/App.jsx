@@ -39884,13 +39884,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               e.preventDefault();
                                               setSheetToolbarMenuOpen((prev) => prev === 'cellFill' ? null : 'cellFill');
                                             }}
-                                            className={`h-8 px-2 flex items-center justify-center gap-1 rounded-xl transition-all border ${sheetToolbarMenuOpen === 'cellFill' ? 'bg-white border-slate-200 shadow-sm text-purple-600' : 'border-transparent text-slate-700 hover:bg-slate-50 hover:text-slate-900'}`}
+                                            className={`h-8 px-2 flex items-center justify-center gap-1 rounded-xl transition-all border ${sheetToolbarMenuOpen === 'cellFill' ? 'bg-white border-slate-200 shadow-sm text-purple-600' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
                                             title="Cell Fill & Highlight Color"
                                           >
-                                            <Palette size={15} className="text-purple-600" /> <ChevronDown size={11} className="text-slate-400" />
+                                            <Palette size={15} className={sheetToolbarMenuOpen === 'cellFill' ? 'text-purple-600' : 'text-slate-500'} /> <ChevronDown size={11} className="text-slate-400" />
                                           </button>
                                           {sheetToolbarMenuOpen === 'cellFill' && (
-                                            <div className="absolute top-9 left-0 z-[230] w-64 bg-white border border-slate-200/90 rounded-2xl shadow-2xl p-3 flex flex-col gap-3 backdrop-blur-xl select-none" onPointerDown={e => e.stopPropagation()}>
+                                            <div className="absolute top-9 left-0 z-[230] w-64 bg-white/95 dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] p-3 flex flex-col gap-3 backdrop-blur-xl select-none" onPointerDown={e => e.stopPropagation()}>
                                               <div className="flex flex-col gap-2">
                                                 <div className="flex items-center justify-between px-1">
                                                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cell Fill & Gradient</span>
@@ -39961,10 +39961,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               e.preventDefault();
                                               setSheetToolbarMenuOpen((prev) => prev === 'textStyle' ? null : 'textStyle');
                                             }}
-                                            className={`h-8 px-2 flex items-center justify-center gap-1.5 rounded-xl transition-all border ${sheetToolbarMenuOpen === 'textStyle' ? 'bg-white border-slate-200 shadow-sm text-purple-600' : 'border-transparent text-slate-700 hover:bg-slate-50 hover:text-slate-900'}`}
+                                            className={`h-8 px-2 flex items-center justify-center gap-1.5 rounded-xl transition-all border ${sheetToolbarMenuOpen === 'textStyle' ? 'bg-white border-slate-200 shadow-sm text-purple-600' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
                                             title="Text & Highlight Color Palette"
                                           >
-                                            <Type size={14} className={sheetToolbarMenuOpen === 'textStyle' ? 'text-purple-600' : ''} /> <ChevronDown size={12} className="text-slate-400" />
+                                            <Type size={14} className={sheetToolbarMenuOpen === 'textStyle' ? 'text-purple-600' : 'text-slate-500'} /> <ChevronDown size={12} className="text-slate-400" />
                                           </button>
                                           {sheetToolbarMenuOpen === 'textStyle' && (
                                             <div className="absolute top-9 left-0 z-[230] w-64 bg-white border border-slate-200/90 rounded-2xl shadow-2xl p-3 flex flex-col gap-3 backdrop-blur-xl select-none" onPointerDown={e => e.stopPropagation()}>
