@@ -4633,8 +4633,8 @@ function MoreViewOptionsDropdown({
         title="View options"
         className={`group inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-medium border transition-all duration-150 shadow-2xs cursor-pointer ${
           isOpen
-            ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-700'
-            : 'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200/80 dark:border-zinc-800 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-200'
+            ? 'bg-slate-200/80 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-700'
+            : 'bg-slate-100/90 dark:bg-[#18181b] text-slate-600 dark:text-zinc-400 border-slate-200/60 dark:border-zinc-800/80 hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 hover:text-slate-900 dark:hover:text-zinc-200'
         }`}
       >
         <MoreHorizontal size={14} />
@@ -6697,7 +6697,14 @@ export default function App() {
   const [isPromptMenuOpen, setIsPromptMenuOpen] = useState(false);
   const [isPromptAutoVisible, setIsPromptAutoVisible] = useState(false);
   const [isPromptDismissed, setIsPromptDismissed] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rc.darkMode');
+      return saved !== null ? saved === 'true' : true;
+    } catch (_e) {
+      return true;
+    }
+  });
   const [gridLineContrast, setGridLineContrast] = useState('medium'); // 'subtle' | 'medium' | 'high'
   const [sheetsThemePalette, setSheetsThemePalette] = useState('default'); // 'default' | 'obsidian' | 'nordic' | 'emerald'
   const [showGridLines, setShowGridLines] = useState(true);
@@ -9941,7 +9948,7 @@ export default function App() {
   const [sheetToolbarSize, setSheetToolbarSize] = useState(14);
   const [sheetZoomLevel, setSheetZoomLevel] = useState(100);
 
-  const [sheetToolbarTab, setSheetToolbarTab] = useState('Data');
+  const [sheetToolbarTab, setSheetToolbarTab] = useState(null);
   const [templateCategory, setTemplateCategory] = useState('all');
   const [isSheetToolbarCollapsed, setIsSheetToolbarCollapsed] = useState(false);
   const [hasImportedData, setHasImportedData] = useState(false);
@@ -13333,8 +13340,10 @@ export default function App() {
       if (storedGridContrast && ['subtle', 'medium', 'high'].includes(storedGridContrast)) {
         setGridLineContrast(storedGridContrast);
       }
-      if (storedThemePalette && ['default', 'obsidian', 'nordic', 'emerald'].includes(storedThemePalette)) {
+      if (storedThemePalette && storedThemePalette !== 'emerald' && ['default', 'obsidian', 'nordic', 'indigo', 'tokyo'].includes(storedThemePalette)) {
         setSheetsThemePalette(storedThemePalette);
+      } else {
+        setSheetsThemePalette('default');
       }
       if (storedShowGridLines === 'true' || storedShowGridLines === 'false') {
         setShowGridLines(storedShowGridLines === 'true');
@@ -13427,6 +13436,13 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('rc.darkMode', String(isDarkMode));
+    if (isDarkMode) {
+      document.documentElement.classList.add('app-dark', 'dark');
+      document.body.classList.add('app-dark', 'dark');
+    } else {
+      document.documentElement.classList.remove('app-dark', 'dark');
+      document.body.classList.remove('app-dark', 'dark');
+    }
   }, [isDarkMode]);
 
   useEffect(() => {
@@ -25725,7 +25741,7 @@ Rules:
     setDeckPromptChips(['Analyze this data', 'Create pivot table', 'Forecast next quarter', 'Find anomalies', 'Compare to last year']);
     setDeckSlidesPanelOpen(false);
     setRightSidebarOpen(false);
-    setSheetToolbarTab('Data');
+    setSheetToolbarTab(null);
     setHasImportedData(false);
     setSelectedDatasets([]);
     showToast('Sheets workspace ready');
@@ -34605,7 +34621,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                 <div
                   onMouseEnter={() => setMiniSidebarDismissed(false)}
                   onMouseLeave={() => setMiniSidebarDismissed(false)}
-                  className={`fixed right-0 top-0 h-full z-[361] w-[56px] hover:w-[165px] group/sidebar border-l border-slate-200/70 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl flex flex-col items-start px-2 py-4 gap-2.5 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] pointer-events-auto ${
+                  className={`fixed right-0 top-0 h-full z-[361] w-[56px] hover:w-[165px] group/sidebar border-l border-slate-200/70 dark:border-zinc-800/80 bg-white/95 dark:bg-[#121216]/95 backdrop-blur-xl flex flex-col items-start px-2 py-4 gap-2.5 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] pointer-events-auto ${
                     miniSidebarDismissed
                       ? 'translate-x-full opacity-0'
                       : 'translate-x-full group-hover/sidebar-rail:translate-x-0 opacity-0 group-hover/sidebar-rail:opacity-100'
@@ -38595,7 +38611,7 @@ const renderRoomTopHeader = () => (
 
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
-      <div ref={appShellRef} className={`flex flex-col h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} className={`flex flex-col h-screen ${isDarkMode ? 'app-dark dark bg-[#000000] text-[#FFFFFF]' : 'bg-[#f3f5fb] text-gray-800'} overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <div className="fixed inset-0 pointer-events-none z-[9999]">
           {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
             if (!userState.user || !userState.pointer) return null;
@@ -38735,9 +38751,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
 
-        <main className={`flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-zinc-950 ${isSheetsPresentationMode ? 'fixed inset-0 z-[9999] bg-white dark:bg-zinc-950' : ''}`}>
+        <main className={`flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-[#000000] ${isSheetsPresentationMode ? 'fixed inset-0 z-[9999] bg-white dark:bg-[#000000]' : ''}`}>
           {!isSheetsPresentationMode && (
-            <div className={`h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shrink-0 select-none group/header relative z-[350] transition-all duration-200 ${
+            <div data-sheets-toolbar="true" className={`h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/70 dark:bg-[#111111] backdrop-blur-xl shrink-0 select-none group/header relative z-[350] transition-all duration-200 ${
               isSheetZenMode ? 'fixed top-0 left-0 right-0 z-[9000] opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto shadow-md border-b' : ''
             }`}>
             <div className="flex items-center gap-3">
@@ -38895,12 +38911,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setDeckExportMenuOpen(!deckExportMenuOpen);
                     }
                   }}
-                  className={`text-xs font-semibold px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] border cursor-pointer select-none ${(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? 'border-slate-300 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-xs' : 'text-slate-700 dark:text-zinc-200 hover:text-slate-900 hover:bg-slate-100/80 border-slate-200/90 bg-white/80 dark:bg-zinc-800/80 dark:border-zinc-700/80 shadow-2xs'}`}
+                  className={`text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] border cursor-pointer select-none ${(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? 'border-violet-600 dark:border-violet-500 bg-violet-600 text-white shadow-xs' : 'text-slate-700 dark:text-white hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-violet-700 border-slate-200/80 dark:border-violet-500/80 bg-white dark:bg-violet-600 shadow-2xs'}`}
                   title="Export"
                 >
-                  <Download size={13} strokeWidth={1.5} className="text-slate-500 dark:text-zinc-400" />
+                  <Download size={13} strokeWidth={1.5} className="text-slate-500 dark:text-white" />
                   <span>Export</span>
-                  {(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? <ChevronUp size={12} strokeWidth={1.5} className="text-slate-400" /> : <ChevronDown size={12} strokeWidth={1.5} className="text-slate-400" />}
+                  {(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? <ChevronUp size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" /> : <ChevronDown size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" />}
                 </button>
                 {isSheetsMode && sheetsExportMenuOpen && (
                   <>
@@ -38998,7 +39014,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setShareModalOpen(false);
                     }
                   }}
-                  className="bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold px-3.5 py-1 rounded-lg flex items-center gap-1.5 shadow-2xs transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none"
+                  className="bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none"
                 >
                   <Users size={13} strokeWidth={1.5} /> Share
                 </button>
@@ -39176,7 +39192,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
           {/* Document Tab Strip - visible when not in presentation mode and not in Zen mode */}
           {!isSheetsPresentationMode && !isSheetZenMode && (
-            <div className="h-10 border-b border-slate-200/50 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0 shrink-0 select-none">
+            <div data-sheets-toolbar="true" className="h-10 border-b border-slate-200/50 dark:border-[#333333] px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-[#111111] relative z-[140] min-w-0 shrink-0 select-none">
               {orderedDocuments.map((doc, docIndex) => {
                 const defaultName = productMode === 'sheets' ? 'Untitled Sheet' : productMode === 'deck' ? 'Untitled Deck' : `Tab ${docIndex + 1}`;
                 const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
@@ -39188,7 +39204,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div
                     key={doc.id}
                     onClick={() => switchDocument(doc.id)}
-                    className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-slate-100 dark:bg-zinc-800 border-violet-200 text-violet-600 dark:text-violet-400 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:border-gray-200'}`}
+                    className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-slate-100 dark:bg-[#1e1e1e] border-violet-200 text-violet-600 dark:text-violet-400 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-[#1e1e1e]/60 hover:border-gray-200'}`}
                   >
                     {renamingDocId === doc.id ? (
                       <input
@@ -39535,23 +39551,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     {/* Right main area: floating island toolbar & sheet grid */}
                     {isSheetsMode ? (
-                      <div className={`flex-1 min-h-0 h-full flex flex-col min-w-0 relative backdrop-blur-[6px] transition-all ${isSheetZenMode ? 'fixed inset-0 z-40 bg-white dark:bg-zinc-950 p-0 m-0' : 'z-10'} ${
-                        sheetToolbarTab === 'Data' ? 'bg-[#f8f9fe] dark:bg-[#0b0d14]' :
-                        sheetsThemePalette === 'obsidian' ? 'bg-zinc-950/90' :
-                        sheetsThemePalette === 'indigo' ? 'bg-[#0b0f19]/95' :
-                        sheetsThemePalette === 'alabaster' ? 'bg-[#fbfbf9]' :
-                        sheetsThemePalette === 'sand' ? 'bg-[#f7f4ef]' :
-                        sheetsThemePalette === 'rose' ? 'bg-[#faf4f5]' :
-                        sheetsThemePalette === 'nordic' ? 'bg-slate-100/50' :
-                        sheetsThemePalette === 'emerald' ? 'bg-emerald-50/30' :
-                        sheetsThemePalette === 'carbon' ? 'bg-[#121619]' :
-                        sheetsThemePalette === 'tokyo' ? 'bg-[#1a1b26]' :
-                        sheetsThemePalette === 'amber' ? 'bg-[#fdf6e3]' :
-                        sheetsThemePalette === 'parchment' ? 'bg-[#fefcf3]' :
-                        'bg-slate-50/30'
+                      <div className={`flex-1 min-h-0 h-full flex flex-col min-w-0 relative backdrop-blur-[6px] transition-all ${isSheetZenMode ? 'fixed inset-0 z-40 bg-white dark:bg-black p-0 m-0' : 'z-10'} ${
+                        isDarkMode ? 'bg-[#08080a] dark:bg-[#08080a]' : (
+                          sheetToolbarTab === 'Data' ? 'bg-[#f8f9fe]' :
+                          sheetsThemePalette === 'obsidian' ? 'bg-zinc-950/90' :
+                          sheetsThemePalette === 'indigo' ? 'bg-[#0b0f19]/95' :
+                          sheetsThemePalette === 'alabaster' ? 'bg-[#fbfbf9]' :
+                          sheetsThemePalette === 'sand' ? 'bg-[#f7f4ef]' :
+                          sheetsThemePalette === 'rose' ? 'bg-[#faf4f5]' :
+                          sheetsThemePalette === 'nordic' ? 'bg-slate-100/50' :
+                          sheetsThemePalette === 'emerald' ? 'bg-emerald-50/30' :
+                          sheetsThemePalette === 'carbon' ? 'bg-[#121619]' :
+                          sheetsThemePalette === 'tokyo' ? 'bg-[#1a1b26]' :
+                          sheetsThemePalette === 'amber' ? 'bg-[#fdf6e3]' :
+                          sheetsThemePalette === 'parchment' ? 'bg-[#fefcf3]' :
+                          'bg-slate-50/30'
+                        )
                       }`}>
                         {/* Ambient orb blobs — theme palette responsive */}
-                        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.18]">
+                        <div className={`absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.18] ${isDarkMode ? 'hidden' : ''}`}>
                           <div className={`absolute -top-[15%] -left-[15%] w-[70%] h-[70%] rounded-full mix-blend-multiply filter blur-[110px] ${
                             sheetsThemePalette === 'emerald' ? 'bg-emerald-400/40' :
                             sheetsThemePalette === 'nordic' ? 'bg-cyan-400/35' :
@@ -39664,8 +39682,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 }}
                                 className={`group inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all duration-150 shadow-2xs select-none cursor-pointer active:scale-[0.97] ${
                                   showTemplateChart
-                                    ? 'bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-700 text-slate-900 dark:text-zinc-100 font-semibold'
-                                    : 'bg-white dark:bg-zinc-900 border-slate-200/80 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60'
+                                    ? 'bg-slate-100/90 dark:bg-[#18181b] border-slate-300 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold'
+                                    : 'bg-slate-100/90 dark:bg-[#18181b] border-slate-200/60 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300 hover:bg-slate-200/60 dark:hover:bg-zinc-800/70'
                                 }`}
                               >
                                 <span>Chart panel</span>
@@ -39802,11 +39820,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     const fmt = getSelectedCellFormat();
                                     return (
                                       <div className="flex items-center gap-1.5 mx-1 px-1 border-x border-gray-200/80 dark:border-zinc-800/80">
-                                        <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner select-none">
-                                          <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold transition-all duration-150 active:scale-[0.97] cursor-pointer ${fmt.bold ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)]' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'}`}>B</button>
-                                          <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs italic font-serif transition-all duration-150 active:scale-[0.97] cursor-pointer ${fmt.italic ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)]' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'}`}>I</button>
-                                          <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs underline transition-all duration-150 active:scale-[0.97] cursor-pointer ${fmt.underline ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)]' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'}`}>U</button>
-                                          <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs line-through transition-all duration-150 active:scale-[0.97] cursor-pointer ${fmt.strikeThrough ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)]' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'}`}>S</button>
+                                        <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/90 dark:bg-[#18181b] rounded-xl border border-slate-200/60 dark:border-zinc-800/80 select-none">
+                                          <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold transition-all duration-150 active:scale-[0.97] cursor-pointer ${fmt.bold ? 'bg-slate-200 dark:bg-zinc-700/80 text-slate-900 dark:text-white shadow-xs border border-slate-300/80 dark:border-zinc-600/80' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-200/50 dark:hover:bg-zinc-800/60'}`}>B</button>
+                                          <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs italic font-serif transition-all duration-150 active:scale-[0.97] cursor-pointer ${fmt.italic ? 'bg-slate-200 dark:bg-zinc-700/80 text-slate-900 dark:text-white shadow-xs border border-slate-300/80 dark:border-zinc-600/80' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-200/50 dark:hover:bg-zinc-800/60'}`}>I</button>
+                                          <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs underline transition-all duration-150 active:scale-[0.97] cursor-pointer ${fmt.underline ? 'bg-slate-200 dark:bg-zinc-700/80 text-slate-900 dark:text-white shadow-xs border border-slate-300/80 dark:border-zinc-600/80' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-200/50 dark:hover:bg-zinc-800/60'}`}>U</button>
+                                          <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs line-through transition-all duration-150 active:scale-[0.97] cursor-pointer ${fmt.strikeThrough ? 'bg-slate-200 dark:bg-zinc-700/80 text-slate-900 dark:text-white shadow-xs border border-slate-300/80 dark:border-zinc-600/80' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-200/50 dark:hover:bg-zinc-800/60'}`}>S</button>
                                         </div>
                                         <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-xl transition-all hover:bg-slate-50 text-slate-500 hover:text-slate-900" title="Insert Link">
                                           <LinkIcon size={14} />
@@ -39956,12 +39974,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     );
                                   })()}
                                 </div>
-                                <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner select-none">
-                                  <button type="button" onClick={addSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-700/50 rounded-lg text-xs font-semibold transition-all active:scale-95 cursor-pointer">+ Row</button>
-                                  <button type="button" onClick={removeSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-700/50 rounded-lg text-xs font-semibold transition-all active:scale-95 cursor-pointer">- Row</button>
-                                  <div className="h-3 w-px bg-slate-300/70 dark:bg-zinc-700/70 my-0.5" />
-                                  <button type="button" onClick={addSheetColumn} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-700/50 rounded-lg text-xs font-semibold transition-all active:scale-95 cursor-pointer">+ Col</button>
-                                  <button type="button" onClick={removeSheetColumn} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-700/50 rounded-lg text-xs font-semibold transition-all active:scale-95 cursor-pointer">- Col</button>
+                                <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/90 dark:bg-[#18181b] rounded-xl border border-slate-200/60 dark:border-zinc-800/80 shadow-xs select-none">
+                                  <button type="button" onClick={addSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">+ Row</button>
+                                  <button type="button" onClick={removeSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">- Row</button>
+                                  <div className="h-3 w-px bg-slate-300/70 dark:bg-zinc-800 my-0.5" />
+                                  <button type="button" onClick={addSheetColumn} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">+ Col</button>
+                                  <button type="button" onClick={removeSheetColumn} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">- Col</button>
                                 </div>
                                 <div className="ml-auto flex items-center gap-4">
                                   <div className="flex items-center gap-1.5 text-xs text-gray-400">
@@ -40715,7 +40733,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       >
                           {/* ── Corner Select-All Button ── */}
                           <div
-                            className="h-8 border-r border-gray-200 relative group flex items-center justify-center cursor-pointer hover:bg-violet-50 transition-colors"
+                            className="h-8 border-r border-b border-gray-200 dark:border-[#252333] bg-slate-100 dark:bg-[#181724] relative group flex items-center justify-center cursor-pointer hover:bg-violet-50 dark:hover:bg-[#1f1d2e] transition-colors"
                             onClick={() => {
                               setSheetSelectionMode('all');
                               setSelectedSheetRange({ startRow: 1, startCol: 1, endRow: activeSheetGrid.rows, endCol: activeSheetGrid.cols });
@@ -40724,7 +40742,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             }}
                             title="Select all"
                           >
-                            <div className={`w-3 h-3 rounded-sm border-2 transition-colors ${sheetSelectionMode === 'all' ? 'border-violet-600 bg-violet-200' : 'border-slate-300'}`} />
+                            <div className={`w-3 h-3 rounded-sm border-2 transition-colors ${sheetSelectionMode === 'all' ? 'border-violet-500 bg-violet-500/30' : 'border-slate-300 dark:border-zinc-600'}`} />
                           </div>
                         {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col, colIndex) => {
                             const isColSelected = !isShapeInteracting && selectedSheetRange && sheetSelectionMode === 'col'
@@ -40738,7 +40756,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <div
                                 key={col}
                                 className={`h-8 relative flex items-center justify-center select-none sheet-col-select-cursor text-[11px] font-semibold transition-colors
-                                  ${(isColSelected || isColActive) ? `${themeAccentStyles.bgSoft} ${themeAccentStyles.text} font-bold border-r border-r-transparent border-b-2 ${themeAccentStyles.border}` : 'border-r border-gray-200 dark:border-zinc-700 last:border-r-0 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700'}`}
+                                  ${(isColSelected || isColActive) 
+                                    ? (isDarkMode 
+                                        ? 'bg-[#252338] text-white font-bold border-r border-r-transparent border-b-2 border-violet-500' 
+                                        : `${themeAccentStyles.bgSoft} ${themeAccentStyles.text} font-bold border-r border-r-transparent border-b-2 ${themeAccentStyles.border}`) 
+                                    : 'border-r border-gray-200 dark:border-[#252333] last:border-r-0 bg-slate-100 dark:bg-[#181724] text-slate-700 dark:text-[#94a3b8] hover:bg-slate-200 dark:hover:bg-[#1f1d2e]'}`}
                                 style={{ overflow: 'hidden', userSelect: 'none' }}
                                 onMouseDown={(e) => {
                                   e.preventDefault();
@@ -40772,7 +40794,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
                     <div
-                      className="flex-1 min-h-0 min-w-0 flex-shrink flex-grow overflow-auto thin-scrollbar relative bg-white sheet-grid-container"
+                      className="flex-1 min-h-0 min-w-0 flex-shrink flex-grow overflow-auto thin-scrollbar relative bg-white dark:bg-[#121214] sheet-grid-container"
                       data-sheet-grid="true"
                       tabIndex={0}
                       onMouseUp={() => { sheetHeaderDragRef.current = { active: false, type: null, startIndex: null }; }}
@@ -42265,7 +42287,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <div
                                 key={`rh-${rowIndex}`}
                                 className={`relative text-[11px] font-semibold flex items-center justify-center select-none sheet-row-select-cursor transition-colors
-                                  ${(isRowSelected || isRowActive) ? `${themeAccentStyles.bgSoft} ${themeAccentStyles.text} font-bold border-b border-r border-b-transparent border-r-2 ${themeAccentStyles.border}` : 'border-b border-r border-gray-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700'}`}
+                                  ${(isRowSelected || isRowActive) 
+                                    ? (isDarkMode 
+                                        ? 'bg-[#252338] text-white font-bold border-b border-r border-b-transparent border-r-2 border-violet-500' 
+                                        : `${themeAccentStyles.bgSoft} ${themeAccentStyles.text} font-bold border-b border-r border-b-transparent border-r-2 ${themeAccentStyles.border}`) 
+                                    : 'border-b border-r border-gray-200 dark:border-[#252333] bg-slate-100 dark:bg-[#181724] text-slate-700 dark:text-[#94a3b8] hover:bg-slate-200 dark:hover:bg-[#1f1d2e]'}`}
                                 style={{ height: rowHeight, overflow: 'hidden', userSelect: 'none' }}
                                 onMouseDown={(e) => {
                                   e.preventDefault();
@@ -42424,8 +42450,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                  const resolvedCellAlign = computedFormat.align || cellFormat.textAlign || cellFormat.align || defaultAlign;
 
                                 const cellBg = isExplicitAnchor && sheetSelectionMode === 'cell' 
-                                  ? 'bg-white/50' 
-                                  : (isInRange ? 'bg-[#ebf0fc]/50' : (isInColBand || isInRowBand || isAllSelected ? 'bg-slate-50/50' : ''));
+                                  ? (isDarkMode ? 'bg-[#08080a]' : 'bg-white/50') 
+                                  : (isInRange ? (isDarkMode ? 'bg-purple-950/30' : 'bg-[#ebf0fc]/50') : (isInColBand || isInRowBand || isAllSelected ? (isDarkMode ? 'bg-zinc-900/40' : 'bg-slate-50/50') : ''));
 
                                 // Use local buffer while user is actively typing to avoid mid-keystroke re-render truncation.
                                 // Fall back to grid data when not editing.
@@ -43167,17 +43193,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           templateChartType={templateChartType}
                           setTemplateChartType={setTemplateChartType}
                           showToast={showToast}
+                          isDarkMode={isDarkMode}
                         />
                       )}
                     </div>
                     </div>)}
 
-                    <div className={`h-10 px-4 border-t border-slate-200/70 dark:border-zinc-800/70 bg-white/85 dark:bg-zinc-900/85 backdrop-blur-sm flex items-center justify-between gap-4 shrink-0 transition-all duration-200 ${
+                    <div data-sheets-toolbar="true" className={`h-10 px-4 border-t backdrop-blur-sm flex items-center justify-between gap-4 shrink-0 transition-all duration-200 ${
+                      isDarkMode ? 'border-zinc-800/80 bg-[#09090d]' : 'border-slate-200/80 bg-white/90'
+                    } ${
                       isSheetZenMode 
-                        ? 'opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto fixed bottom-0 left-0 right-0 z-50 shadow-lg border-t bg-white/95 dark:bg-zinc-900/95' 
+                        ? 'opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto fixed bottom-0 left-0 right-0 z-50 shadow-lg border-t' 
                         : 'relative z-[60]'
                     }`}>
-                      <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/80 dark:bg-zinc-800/60 rounded-xl border border-slate-200/50 dark:border-zinc-700/50 overflow-x-auto thin-scrollbar select-none">
+                      <div className={`inline-flex items-center p-1 gap-1 rounded-full border shadow-xs select-none ${
+                        isDarkMode ? 'bg-[#13131a] border-zinc-800/90' : 'bg-slate-100/90 border-slate-200/80'
+                      }`}>
                         {sheetsData.map((sheet) => {
                           const isActive = activeSheetId === sheet.id;
                           return (
@@ -43188,13 +43219,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 setActiveSheetId(sheet.id);
                                 setSheetsTitle(sheet.title);
                               }}
-                              className={`relative inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-1 text-[12px] font-semibold rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer active:scale-[0.97] ${
+                              className={`relative inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-1 text-[12px] font-semibold rounded-full transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer active:scale-[0.97] ${
                                 isActive
-                                  ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-bold'
-                                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
+                                  ? (isDarkMode ? 'bg-[#20202c] text-white shadow-xs font-bold border border-zinc-700/60' : 'bg-white text-slate-900 shadow-xs font-bold border border-slate-200/80')
+                                  : (isDarkMode ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60')
                               }`}
                             >
-                              {isActive && <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400 shrink-0" />}
+                              {isActive && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isDarkMode ? 'bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.8)]' : 'bg-purple-600 shadow-[0_0_8px_rgba(147,51,234,0.6)]'}`} />}
                               <span>{sheet.title.split(' ')[0]}</span>
                             </button>
                           );
@@ -43202,13 +43233,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button
                           type="button"
                           onClick={addWorksheet}
-                          className="w-6 h-6 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-white/60 dark:hover:bg-zinc-700/50 transition-all duration-150 active:scale-95 text-xs font-bold cursor-pointer"
+                          className={`w-6 h-6 flex items-center justify-center rounded-full transition-all duration-150 active:scale-95 text-xs font-bold cursor-pointer ${
+                            isDarkMode ? 'text-zinc-400 hover:text-white hover:bg-zinc-800/60' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/70'
+                          }`}
                           title="Add new sheet"
                         >
                           +
                         </button>
                       </div>
-                        <div className="flex items-center gap-4 text-[12px] font-medium text-gray-500 shrink-0 mr-auto ml-8 hidden md:flex">
+                        <div className={`flex items-center gap-4 text-[12px] font-medium shrink-0 mr-auto ml-8 hidden md:flex ${
+                          isDarkMode ? 'text-zinc-400' : 'text-slate-600'
+                        }`}>
                           {(() => {
                             if (!selectedSheetRange && sheetSelectionMode === 'cell') {
                               return <span>1 cell selected</span>;
@@ -43229,30 +43264,32 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               return (
                                 <>
                                   <span>{total.toLocaleString()} cells selected</span>
-                                  {values.length > 0 && <><span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-zinc-600" /><span>Sum: {sum.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-zinc-600" /><span>Avg: {avg.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-zinc-600" /><span>Count: {values.length}</span></> }
+                                  {values.length > 0 && <><span className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-zinc-600' : 'bg-slate-400'}`} /><span>Sum: {sum.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-zinc-600' : 'bg-slate-400'}`} /><span>Avg: {avg.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-zinc-600' : 'bg-slate-400'}`} /><span>Count: {values.length}</span></> }
                                 </>
                               );
                             }
                             return null;
                           })()}
                       </div>
-                      <div className="flex items-center gap-2 text-[13px] font-medium text-slate-500 shrink-0">
-                          <div className="inline-flex items-center p-0.5 gap-1 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner select-none">
+                      <div className={`flex items-center gap-2 text-[13px] font-medium shrink-0 ${isDarkMode ? 'text-zinc-400' : 'text-slate-600'}`}>
+                          <div className={`inline-flex items-center p-1 gap-1.5 rounded-full border shadow-xs select-none ${
+                            isDarkMode ? 'bg-[#13131a] border-zinc-800/90' : 'bg-slate-100/90 border-slate-200/80'
+                          }`}>
                             <button 
                               onClick={handleTtsToggle} 
                               aria-label="Read sheet out loud (Text to speech)"
-                              className={`px-2.5 py-1 rounded-lg transition-all duration-150 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                              className={`px-2.5 py-1 rounded-full transition-all duration-150 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
                                 isReadingAloud 
-                                  ? 'text-violet-700 bg-white dark:bg-zinc-900 shadow-xs font-semibold' 
-                                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
+                                  ? (isDarkMode ? 'text-purple-300 bg-[#20202c] shadow-xs font-semibold' : 'text-purple-700 bg-white shadow-xs font-semibold border border-purple-200')
+                                  : (isDarkMode ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60')
                               }`} 
                               title={isReadingAloud ? "Stop audio playback" : "Read sheet out loud (Text-to-speech)"}
                             >
                               {isReadingAloud ? (
                                 <div className="flex items-center gap-0.5 h-3.5 px-0.5">
-                                  <span className="w-0.5 h-2 bg-violet-600 animate-[bounce_0.8s_infinite_100ms] rounded-full"></span>
-                                  <span className="w-0.5 h-3 bg-violet-600 animate-[bounce_0.8s_infinite_200ms] rounded-full"></span>
-                                  <span className="w-0.5 h-1.5 bg-violet-600 animate-[bounce_0.8s_infinite_300ms] rounded-full"></span>
+                                  <span className="w-0.5 h-2 bg-purple-400 animate-[bounce_0.8s_infinite_100ms] rounded-full"></span>
+                                  <span className="w-0.5 h-3 bg-purple-400 animate-[bounce_0.8s_infinite_200ms] rounded-full"></span>
+                                  <span className="w-0.5 h-1.5 bg-purple-400 animate-[bounce_0.8s_infinite_300ms] rounded-full"></span>
                                 </div>
                               ) : (
                                 <Volume2 size={14} />
@@ -43260,21 +43297,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <span className="text-[11px] font-medium hidden sm:inline">{isReadingAloud ? 'Reading...' : 'Audio'}</span>
                             </button>
 
-                            <div className="h-3.5 w-px bg-slate-300/70 dark:bg-zinc-700/70 my-0.5" />
+                            <div className={`h-3.5 w-px my-0.5 ${isDarkMode ? 'bg-zinc-800' : 'bg-slate-300'}`} />
 
                             {/* Fullscreen Zen View Toggle */}
                             <button
                               type="button"
                               onClick={() => setIsSheetZenMode(!isSheetZenMode)}
                               aria-label={isSheetZenMode ? "Exit Zen Mode" : "Enter Zen Mode"}
-                              className="px-2.5 py-1 rounded-lg transition-all duration-150 flex items-center gap-1.5 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40 active:scale-95 cursor-pointer"
+                              className={`px-2 py-1 rounded-full transition-all duration-150 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                                isDarkMode ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                              }`}
                               title="Enter Fullscreen Zen Mode (Hide toolbars & headers)"
                             >
                               <Maximize2 size={14} />
                               <span className="text-[11px] font-medium hidden sm:inline">Zen View</span>
                             </button>
 
-                            <div className="h-3.5 w-px bg-slate-300/70 dark:bg-zinc-700/70 my-0.5" />
+                            <div className={`h-3.5 w-px my-0.5 ${isDarkMode ? 'bg-zinc-800' : 'bg-slate-300'}`} />
 
                             {/* Zoom Controls */}
                             <div className="relative flex items-center gap-1 px-1" ref={sheetZoomControlRef}>
@@ -43284,7 +43323,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   e.preventDefault();
                                   setSheetZoomLevel(prev => Math.max(50, prev - 10));
                                 }}
-                                className="text-slate-500 hover:text-slate-900 dark:hover:text-white px-1 py-0.5 hover:bg-white/60 dark:hover:bg-zinc-700/50 rounded-md text-xs font-semibold cursor-pointer active:scale-95 transition-all"
+                                className={`px-1 py-0.5 rounded-md text-xs font-semibold cursor-pointer active:scale-95 transition-all ${
+                                  isDarkMode ? 'text-zinc-400 hover:text-white hover:bg-zinc-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                                }`}
                                 title="Zoom out"
                               >
                                 -
@@ -43294,7 +43335,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   e.preventDefault();
                                   setSheetZoomDropdownOpen(prev => !prev);
                                 }}
-                                className="w-9 text-center cursor-pointer select-none text-slate-800 dark:text-zinc-200 font-semibold text-[11px]"
+                                className={`w-9 text-center cursor-pointer select-none font-semibold text-[11px] ${
+                                  isDarkMode ? 'text-zinc-200' : 'text-slate-800'
+                                }`}
                                 title="Zoom options"
                               >
                                 {sheetZoomLevel}%
@@ -43305,21 +43348,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   e.preventDefault();
                                   setSheetZoomLevel(prev => Math.min(200, prev + 10));
                                 }}
-                                className="text-slate-500 hover:text-slate-900 dark:hover:text-white px-1 py-0.5 hover:bg-white/60 dark:hover:bg-zinc-700/50 rounded-md text-xs font-semibold cursor-pointer active:scale-95 transition-all"
+                                className={`px-1 py-0.5 rounded-md text-xs font-semibold cursor-pointer active:scale-95 transition-all ${
+                                  isDarkMode ? 'text-zinc-400 hover:text-white hover:bg-zinc-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                                }`}
                                 title="Zoom in"
                               >
                                 +
                               </button>
                               <ChevronDown
                                 size={12}
-                                className="cursor-pointer text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                                className={`cursor-pointer ${isDarkMode ? 'text-zinc-400 hover:text-zinc-200' : 'text-slate-500 hover:text-slate-800'}`}
                                 onPointerDown={(e) => {
                                   e.preventDefault();
                                   setSheetZoomDropdownOpen(prev => !prev);
                                 }}
                               />
                               {sheetZoomDropdownOpen && (
-                                <div className="absolute right-0 bottom-full mb-2 z-[99999] w-28 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.18)] p-1 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-100 select-none">
+                                <div className={`absolute right-0 bottom-full mb-2 z-[99999] w-28 backdrop-blur-xl border rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.15)] p-1 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-100 select-none ${
+                                  isDarkMode ? 'bg-[#13131a]/95 border-zinc-800' : 'bg-white/95 border-slate-200'
+                                }`}>
                                   {[50, 75, 90, 100, 110, 125, 150, 200].map((level) => (
                                     <button
                                       key={level}
@@ -43329,7 +43376,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         setSheetZoomLevel(level);
                                         setSheetZoomDropdownOpen(false);
                                       }}
-                                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${sheetZoomLevel === level ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 font-bold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
+                                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${sheetZoomLevel === level ? (isDarkMode ? 'bg-violet-950/40 text-violet-400 font-bold' : 'bg-violet-50 text-violet-600 font-bold') : (isDarkMode ? 'text-zinc-400 hover:bg-zinc-800' : 'text-slate-600 hover:bg-slate-50')}`}
                                     >
                                       {level}%
                                     </button>
@@ -43338,7 +43385,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               )}
                             </div>
 
-                            <div className="h-3.5 w-px bg-slate-300/70 dark:bg-zinc-700/70 my-0.5" />
+                            <div className={`h-3.5 w-px my-0.5 ${isDarkMode ? 'bg-zinc-800' : 'bg-slate-300'}`} />
 
                             <button
                               type="button"
@@ -43363,7 +43410,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 }
                               }}
                               aria-label="Enter presentation mode"
-                              className="px-2.5 py-1 rounded-lg transition-all duration-150 flex items-center gap-1.5 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40 active:scale-95 cursor-pointer"
+                              className={`px-2.5 py-1 rounded-full transition-all duration-150 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                                isDarkMode ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                              }`}
                               title="Enter presentation mode (Fullscreen)"
                             >
                               <MonitorPlay size={14} />
@@ -44824,7 +44873,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         return (
           <div
             ref={sheetSlashMenuContainerRef}
-            className="slash-menu-container animate-in fade-in zoom-in-95 duration-100"
+            className="slash-menu-container sheet-slash-menu-popover animate-in fade-in zoom-in-95 duration-100"
             style={{
               position: 'fixed',
               zIndex: 99999,

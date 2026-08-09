@@ -52,119 +52,443 @@ body { margin: 0; background: #ffffff; }
 	height: 0;
 }
 
-.app-dark {
-	background-color: #121214 !important;
-	color: #f5f5f7;
+/* ═══════════════════════════════════════════════════════════════
+   LINEAR-STYLE DARK MODE — Precision Semantic Inversion
+   Philosophy: Lights turned off. Pure black canvas, dark charcoal
+   toolbars & cards, crisp high-contrast white text & icons,
+   vibrant purple brand accents.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Token Layer ─────────────────────────────────────────────── */
+:root.app-dark,
+:root.dark {
+	--bg-primary:          #000000;   /* #FFFFFF / pure white -> #000000 pitch black app shell */
+	--bg-workspace:        #0A0A0A;   /* Very light gray backgrounds -> Near-black #0A0A0A */
+	--bg-toolbar:          #111111;   /* Light gray workspace / headers / toolbars -> #111111 */
+	--bg-surface:          #181818;   /* Medium-light gray surfaces / sidebars -> #181818 */
+	--bg-surface-elevated: #1C1C1C;   /* White cards / panels / modals -> #1C1C1C */
+	--bg-hover:            #242424;   /* Light gray hover -> #242424 */
+	--bg-active:           #2C2C2C;   /* Active / pressed state */
+	--bg-input:            #141414;   /* Input backgrounds */
+
+	--border-primary:   #333333;      /* Light gray borders -> #333333 */
+	--border-secondary: #333333;      /* Input & button borders -> #333333 */
+	--border-grid:      #262626;      /* Spreadsheet grid lines */
+	--border-subtle:    #222222;      /* Barely-there dividers */
+
+	--text-primary:   #FFFFFF;        /* Dark/black primary text -> #FFFFFF */
+	--text-secondary: #B3B3B3;        /* Dark gray secondary text -> #B3B3B3 */
+	--text-muted:     #777777;        /* Muted gray text -> #777777 */
+	--text-disabled:  #555555;        /* Inactive / disabled text */
+
+	--accent-primary: #7c3aed;        /* Brand Purple - preserved */
+	--accent-dark:    #6d28d9;
+	--accent-hover:   #8b5cf6;
+	--accent-muted:   rgba(124, 58, 237, 0.15);
+
+	--data-neutral:  #94A3B8;
+	--data-positive: #10B981;
+	--data-warning:  #F59E0B;
+	--data-negative: #EF4444;
+	--data-accent:   #7c3aed;
 }
 
-/* Base Background Overrides */
-.app-dark .bg-white,
-.app-dark .bg-white\/95,
-.app-dark .bg-white\/90,
-.app-dark .bg-white\/80,
-.app-dark .bg-\[\#FAFAFC\],
-.app-dark .bg-\[\#FDFDFD\],
-.app-dark .bg-\[\#f5f7fc\],
-.app-dark .bg-\[\#f3f5fb\],
-.app-dark .bg-gray-50,
-.app-dark .bg-slate-50,
-.app-dark header.bg-white,
-.app-dark .sheets-toolbar-container {
-	background-color: #1c1c1e !important;
+/* ── Root & App Shell ────────────────────────────────────────── */
+.app-dark,
+.dark,
+.app-dark #root,
+.dark #root,
+.app-dark body,
+.dark body {
+	background-color: var(--bg-primary) !important;
+	color: var(--text-primary) !important;
+	filter: none !important;
 }
 
-.app-dark .bg-slate-100,
-.app-dark .bg-gray-100 {
-	background-color: #2c2c2e !important;
+/* ── Overrides for Tailwind Background Classes ────────────────── */
+.app-dark.bg-\[\#f3f5fb\], .dark.bg-\[\#f3f5fb\],
+.app-dark .bg-\[\#f3f5fb\], .dark .bg-\[\#f3f5fb\],
+.app-dark .bg-\[\#f5f7fc\], .dark .bg-\[\#f5f7fc\],
+.app-dark .bg-\[\#FAFAFC\], .dark .bg-\[\#FAFAFC\],
+.app-dark .bg-\[\#FDFDFD\], .dark .bg-\[\#FDFDFD\] {
+	background-color: var(--bg-primary) !important;
 }
 
-/* Secondary Surfaces and Panels */
-.app-dark .border-b.bg-white,
-.app-dark .border-t.bg-white,
-.app-dark .border-l.bg-white,
-.app-dark .border-r.bg-white {
-	background-color: #1c1c1e !important;
+/* Toolbars, Headers, Top Bar Containers, Footers */
+.app-dark header, .dark header,
+.app-dark footer, .dark footer,
+.app-dark .sheets-toolbar-container, .dark .sheets-toolbar-container,
+.app-dark [data-sheets-toolbar="true"],
+.app-dark [data-sheets-footer="true"],
+.app-dark .dark\:bg-zinc-900, .dark .dark\:bg-zinc-900,
+.app-dark .dark\:bg-zinc-950, .dark .dark\:bg-zinc-950 {
+	background-color: var(--bg-toolbar) !important;
+	border-color: var(--border-primary) !important;
 }
 
-/* Editor Surface & Enterprise Page in Dark Mode */
-.app-dark [data-enterprise-page="true"] {
-	background: #1c1c1e !important;
-	border-color: rgba(255, 255, 255, 0.08) !important;
-	box-shadow: 0 4px 24px -6px rgba(0, 0, 0, 0.5) !important;
+/* Tracks, Sub-bars, Segmented Controls, Workspaces */
+.app-dark .bg-slate-100, .dark .bg-slate-100,
+.app-dark .bg-slate-100\/90, .dark .bg-slate-100\/90,
+.app-dark .bg-slate-50, .dark .bg-slate-50,
+.app-dark .bg-gray-100, .dark .bg-gray-100,
+.app-dark .bg-gray-50, .dark .bg-gray-50 {
+	background-color: var(--bg-workspace) !important;
+	border-color: var(--border-secondary) !important;
+}
+
+/* Card Surfaces, Floating Windows & Modals (#1C1C1C) */
+.app-dark .bg-white, .dark .bg-white,
+.app-dark .bg-white\/95, .dark .bg-white\/95,
+.app-dark .bg-white\/90, .dark .bg-white\/90,
+.app-dark .bg-white\/80, .dark .bg-white\/80,
+.app-dark .bg-white.rounded-2xl, .dark .bg-white.rounded-2xl,
+.app-dark .bg-white.rounded-xl, .dark .bg-white.rounded-xl,
+.app-dark [data-analyze-card="true"], .dark [data-analyze-card="true"],
+.app-dark [data-template-card="true"], .dark [data-template-card="true"] {
+	background-color: var(--bg-surface-elevated) !important;
+	border-color: var(--border-primary) !important;
+}
+
+/* ── High-Contrast Text & Icon Inversion ─────────────────────── */
+/* Invert dark text (slate-900, 800, gray-900, 800) to Primary White (#FFFFFF) */
+.app-dark .text-slate-900, .app-dark .text-slate-800,
+.app-dark .text-gray-900, .app-dark .text-gray-800,
+.app-dark .text-zinc-900, .app-dark .text-zinc-800,
+.dark .text-slate-900, .dark .text-slate-800,
+.dark .text-gray-900, .dark .text-gray-800,
+.dark .text-zinc-900, .dark .text-zinc-800 {
+	color: var(--text-primary) !important;
+}
+
+/* Secondary text (slate-700, 600, gray-700, 600) to Secondary Gray (#B3B3B3) */
+.app-dark .text-slate-700, .app-dark .text-slate-600,
+.app-dark .text-gray-700, .app-dark .text-gray-600,
+.app-dark .text-zinc-700, .app-dark .text-zinc-600,
+.dark .text-slate-700, .dark .text-slate-600,
+.dark .text-gray-700, .dark .text-gray-600,
+.dark .text-zinc-700, .dark .text-zinc-600 {
+	color: var(--text-secondary) !important;
+}
+
+/* Muted text (slate-500, 400, gray-500, 400) to Muted Gray (#777777) */
+.app-dark .text-slate-500, .app-dark .text-slate-400,
+.app-dark .text-gray-500, .app-dark .text-gray-400,
+.app-dark .text-zinc-500, .app-dark .text-zinc-400,
+.dark .text-slate-500, .dark .text-slate-400,
+.dark .text-gray-500, .dark .text-gray-400,
+.dark .text-zinc-500, .dark .text-zinc-400 {
+	color: var(--text-muted) !important;
+}
+
+/* Icons / SVGs inherit color & stroke */
+.app-dark svg, .dark svg {
+	color: inherit;
+	stroke: currentColor;
+}
+
+/* Specific icon button bright light contrast */
+.app-dark button svg, .dark button svg,
+.app-dark header svg, .dark header svg,
+.app-dark .sheets-toolbar-container svg, .dark .sheets-toolbar-container svg {
+	color: inherit;
+}
+
+/* ── Hover & Active States (#242424) ─────────────────────────── */
+.app-dark .hover\:bg-slate-100:hover, .app-dark .hover\:bg-slate-200:hover,
+.app-dark .hover\:bg-slate-50:hover, .app-dark .hover\:bg-gray-100:hover,
+.app-dark .hover\:bg-gray-50:hover, .app-dark .hover\:bg-zinc-800:hover,
+.app-dark .dark\:hover\:bg-white\/10:hover, .app-dark .dark\:hover\:bg-zinc-800:hover,
+.dark .hover\:bg-slate-100:hover, .dark .hover\:bg-slate-200:hover,
+.dark .hover\:bg-slate-50:hover, .dark .hover\:bg-gray-100:hover,
+.dark .hover\:bg-zinc-800:hover, .dark .dark\:hover\:bg-white\/10:hover {
+	background-color: var(--bg-hover) !important;
+}
+
+.app-dark .hover\:text-slate-900:hover, .app-dark .hover\:text-slate-700:hover,
+.app-dark .hover\:text-gray-900:hover, .app-dark .hover\:text-zinc-200:hover,
+.app-dark .dark\:hover\:text-zinc-200:hover,
+.dark .hover\:text-slate-900:hover, .dark .hover\:text-zinc-200:hover {
+	color: var(--text-primary) !important;
+}
+
+/* ── Borders (#333333) ────────────────────────────────────────── */
+.app-dark .border-gray-100, .app-dark .border-gray-200, .app-dark .border-gray-300,
+.app-dark .border-slate-100, .app-dark .border-slate-200, .app-dark .border-slate-300,
+.app-dark .border-slate-200\/80, .app-dark .border-slate-200\/60,
+.app-dark .border-zinc-200, .app-dark .dark\:border-zinc-700, .app-dark .dark\:border-zinc-800,
+.app-dark .dark\:border-zinc-700\/80, .app-dark .dark\:border-zinc-700\/50, .app-dark .dark\:border-zinc-800\/80,
+.dark .border-gray-100, .dark .border-gray-200, .dark .border-slate-100, .dark .border-slate-200,
+.dark .border-zinc-200, .dark .dark\:border-zinc-700, .dark .dark\:border-zinc-800 {
+	border-color: var(--border-primary) !important;
+}
+
+/* ── Buttons & Segmented Tabs ────────────────────────────────── */
+/* Share button: Vibrant Purple preserved */
+.app-dark .btn-share-primary,
+.app-dark button.btn-share,
+.dark .btn-share-primary,
+.dark button.btn-share,
+.app-dark button.bg-purple-600,
+.app-dark button.bg-violet-600 {
+	background-color: var(--accent-dark) !important;
 	color: #ffffff !important;
+	border: none !important;
+	box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35) !important;
 }
 
-/* Text Colors */
-.app-dark .text-gray-900,
-.app-dark .text-gray-800,
-.app-dark .text-slate-900,
-.app-dark .text-slate-800,
-.app-dark .text-zinc-900,
-.app-dark .text-zinc-800 {
-	color: #ffffff !important;
+.app-dark .btn-share-primary:hover,
+.app-dark button.btn-share:hover,
+.dark .btn-share-primary:hover,
+.dark button.btn-share:hover {
+	background-color: var(--accent-primary) !important;
 }
 
-.app-dark .text-gray-750,
-.app-dark .text-gray-700,
-.app-dark .text-gray-600,
-.app-dark .text-slate-700,
-.app-dark .text-slate-600,
-.app-dark .text-[#374151] {
-	color: #e5e5e7 !important;
+/* Secondary Buttons */
+.app-dark button:not([class*="bg-violet"]):not([class*="bg-purple"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-blue"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="btn-share"]):not([class*="bg-zinc-"]):not([class*="bg-slate-"]) {
+	background-color: var(--bg-surface) !important;
+	border-color: var(--border-secondary) !important;
+	color: var(--text-primary) !important;
 }
 
-.app-dark .text-gray-500,
-.app-dark .text-gray-400,
-.app-dark .text-slate-500,
-.app-dark .text-slate-400,
-.app-dark .text-zinc-500,
-.app-dark .text-zinc-400 {
-	color: #8e8e93 !important;
+/* Active Segmented Control Pill (like 'Visualize' tab in screenshot) */
+.app-dark [class*="bg-white"][class*="text-slate-900"],
+.app-dark [class*="bg-white"][class*="dark:text-zinc-100"],
+.dark [class*="bg-white"][class*="text-slate-900"],
+.dark [class*="bg-white"][class*="dark:text-zinc-100"] {
+	background-color: #E4E4E7 !important;
+	color: #0D0D12 !important;
+	border-color: #E4E4E7 !important;
 }
 
-/* Subtle Premium Borders */
-.app-dark .border-gray-100,
-.app-dark .border-gray-200,
-.app-dark .border-slate-100,
-.app-dark .border-slate-200,
-.app-dark .border-violet-100,
-.app-dark .border-zinc-200,
-.app-dark .border-gray-300,
-.app-dark .border-slate-350 {
-	border-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-/* Button & Dropdown Hover States in Dark Mode */
-.app-dark .hover\:bg-gray-50:hover,
-.app-dark .hover\:bg-gray-100:hover,
-.app-dark .hover\:bg-slate-50:hover,
-.app-dark .hover\:bg-slate-100:hover,
-.app-dark .hover\:bg-slate-200:hover {
-	background-color: rgba(255, 255, 255, 0.06) !important;
-}
-
-/* Inputs and Forms in Dark Mode */
+/* ── Form Inputs & Selects ───────────────────────────────────── */
 .app-dark input,
 .app-dark textarea,
-.app-dark select {
-	background-color: #2c2c2e !important;
-	color: #ffffff !important;
-	border-color: rgba(255, 255, 255, 0.12) !important;
+.app-dark select,
+.dark input,
+.dark textarea,
+.dark select {
+	background-color: var(--bg-input) !important;
+	color: #FFFFFF !important;
+	border-color: var(--border-secondary) !important;
 }
 
 .app-dark input::placeholder,
-.app-dark textarea::placeholder {
-	color: #636366 !important;
+.app-dark textarea::placeholder,
+.dark input::placeholder,
+.dark textarea::placeholder {
+	color: var(--text-muted) !important;
 }
 
-/* Scrollbar customization in Dark Mode */
+.app-dark input:focus,
+.app-dark textarea:focus,
+.dark input:focus,
+.dark textarea:focus {
+	border-color: var(--accent-primary) !important;
+	box-shadow: 0 0 0 2px var(--accent-muted) !important;
+	outline: none !important;
+}
+
+/* ── Spreadsheet Grid, Headers & Canvas ──────────────────────── */
+.app-dark [data-sheets-container="true"],
+.dark [data-sheets-container="true"],
+.app-dark .sheets-wrapper,
+.dark .sheets-wrapper,
+.app-dark [data-sheets-canvas="true"],
+.dark [data-sheets-canvas="true"],
+.app-dark table.sheets-grid-table,
+.dark table.sheets-grid-table,
+.app-dark .sheets-grid-container,
+.dark .sheets-grid-container {
+	background-color: var(--bg-workspace) !important;
+	border-color: var(--border-primary) !important;
+	color: #FFFFFF !important;
+}
+
+/* Grid Cells: Pitch Black */
+.app-dark td.sheets-cell-td,
+.dark td.sheets-cell-td,
+.app-dark [data-sheet-cell="true"],
+.dark [data-sheet-cell="true"] {
+	background-color: var(--bg-primary) !important;
+	color: #FFFFFF !important;
+}
+
+/* Cell Grid lines: Subtle dark gridlines */
+.app-dark table.sheets-grid td,
+.dark table.sheets-grid td,
+.app-dark table.sheets-grid th,
+.dark table.sheets-grid th,
+.app-dark .sheets-cell-border,
+.dark .sheets-cell-border,
+.app-dark [data-sheet-cell="true"],
+.dark [data-sheet-cell="true"] {
+	border-color: var(--border-grid) !important;
+}
+
+/* Header Cells (A B C... 1 2 3...) */
+.app-dark .sheets-header-cell,
+.dark .sheets-header-cell,
+.app-dark th.sheets-col-header,
+.dark th.sheets-col-header,
+.app-dark td.sheets-row-header,
+.dark td.sheets-row-header,
+.app-dark [data-sheet-header="true"],
+.dark [data-sheet-header="true"] {
+	background-color: #16161c !important;
+	color: #E4E4E7 !important;
+	border-color: var(--border-primary) !important;
+	font-weight: 500;
+}
+
+/* Selected Active Cell Outline: Vibrant Purple */
+.app-dark .sheets-cell-active,
+.dark .sheets-cell-active,
+.app-dark [data-cell-selected="true"],
+.dark [data-cell-selected="true"],
+.app-dark .sheet-active-selection-outline,
+.dark .sheet-active-selection-outline {
+	border: 2px solid var(--accent-primary) !important;
+	box-shadow: 0 0 8px rgba(139, 92, 246, 0.4) !important;
+	z-index: 20;
+}
+
+/* ── Sheet Navigation Tabs ───────────────────────────────────── */
+.app-dark .sheet-tab-item,
+.dark .sheet-tab-item {
+	color: var(--text-secondary) !important;
+	background-color: transparent !important;
+	border-color: transparent !important;
+}
+
+.app-dark .sheet-tab-item:hover,
+.dark .sheet-tab-item:hover {
+	background-color: var(--bg-hover) !important;
+	color: #FFFFFF !important;
+}
+
+.app-dark .sheet-tab-item.outline,
+.dark .sheet-tab-item.outline,
+.app-dark .sheets-nav-tab-active,
+.dark .sheets-nav-tab-active,
+.app-dark [data-sheets-tab-active="true"],
+.dark [data-sheets-tab-active="true"] {
+	background-color: var(--bg-surface) !important;
+	border: 1px solid var(--border-primary) !important;
+	border-radius: 6px !important;
+	color: #FFFFFF !important;
+	font-weight: 600;
+}
+
+/* ── Enterprise Document / Compose Page ──────────────────────── */
+.app-dark [data-enterprise-page="true"],
+.dark [data-enterprise-page="true"] {
+	background: var(--bg-surface-elevated) !important;
+	border-color: var(--border-primary) !important;
+	box-shadow: 0 4px 24px -6px rgba(0, 0, 0, 0.5) !important;
+	color: #FFFFFF !important;
+}
+
+/* ── Visualizer & Right Panel ────────────────────────────────── */
+.app-dark [data-visualizer-panel="true"],
+.dark [data-visualizer-panel="true"] {
+	background: var(--bg-toolbar) !important;
+	border-color: var(--border-primary) !important;
+	color: #FFFFFF !important;
+}
+.app-dark .sheet-badge-amber {
+	background-color: rgba(120, 53, 15, 0.35) !important;
+	color: #fde68a !important;
+	border: 1px solid rgba(217, 119, 6, 0.45) !important;
+}
+
+.app-dark .sheet-badge-emerald {
+	background-color: rgba(6, 78, 59, 0.35) !important;
+	color: #a7f3d0 !important;
+	border: 1px solid rgba(16, 185, 129, 0.45) !important;
+}
+
+.app-dark .sheet-badge-rose {
+	background-color: rgba(136, 19, 55, 0.35) !important;
+	color: #fecdd3 !important;
+	border: 1px solid rgba(244, 63, 94, 0.45) !important;
+}
+
+.app-dark .sheet-badge-blue {
+	background-color: rgba(30, 58, 138, 0.35) !important;
+	color: #bfdbfe !important;
+	border: 1px solid rgba(59, 130, 246, 0.45) !important;
+}
+
+/* ── Analyze Suggestion Links ────────────────────────────────── */
+.app-dark .analyze-suggestion-link,
+.dark .analyze-suggestion-link {
+	background: transparent !important;
+	border: none !important;
+	color: var(--text-secondary) !important;
+	padding: 2px 4px !important;
+	font-size: 12px !important;
+	transition: color 0.15s ease !important;
+	cursor: pointer !important;
+}
+
+.app-dark .analyze-suggestion-link:hover,
+.dark .analyze-suggestion-link:hover {
+	color: var(--accent-hover) !important;
+	text-decoration: underline !important;
+}
+
+/* ── Scrollbars ──────────────────────────────────────────────── */
 .app-dark .thin-scrollbar::-webkit-scrollbar-thumb {
-	background-color: rgba(255, 255, 255, 0.15) !important;
+	background-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 .app-dark .thin-scrollbar::-webkit-scrollbar-track {
 	background: transparent !important;
 }
+
+.app-dark .slash-menu-container::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.12);
+}
+
+.app-dark .slash-menu-container:hover::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.20);
+}
+
+.app-dark .slash-menu-container::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.30);
+}
+
+.app-dark .slash-menu-container::-webkit-scrollbar-thumb:active {
+	background: rgba(255, 255, 255, 0.45);
+}
+
+/* ── Premium Slider ──────────────────────────────────────────── */
+.app-dark .premium-timeline-slider {
+	background: var(--bg-hover) !important;
+}
+
+/* ── Assist / Snake Border (doc AI) ──────────────────────────── */
+.app-dark .assist-option-snake {
+	background:
+		linear-gradient(var(--bg-surface), var(--bg-surface)) padding-box,
+		linear-gradient(90deg, #8b5cf6, #c4b5fd, #8b5cf6) border-box !important;
+}
+
+/* ── Cell Editing Legibility ─────────────────────────────────── */
+.app-dark td[contenteditable="true"]:focus,
+.app-dark div[contenteditable="true"]:focus {
+	color: var(--text-primary) !important;
+}
+
+/* ── AI Highlight Marks (reduced brightness in dark) ─────────── */
+.app-dark mark.ai-highlight--editor     { background: rgba(245, 158,  11, 0.14); }
+.app-dark mark.ai-highlight--logic      { background: rgba(239,  68,  68, 0.12); }
+.app-dark mark.ai-highlight--consistency{ background: rgba(249, 115,  22, 0.12); }
+.app-dark mark.ai-highlight--compliance { background: rgba(139,  92, 246, 0.12); }
+.app-dark mark.ai-highlight--gap        { background: rgba( 14, 165, 233, 0.12); }
+.app-dark mark.ai-highlight--research   { background: rgba( 16, 185, 129, 0.12); }
+.app-dark mark.ai-highlight--designer   { background: rgba( 20, 184, 166, 0.12); }
+.app-dark mark.ai-highlight--preview    { background: rgba(124,  58, 237, 0.20) !important; }
 
 .brand-select {
 	appearance: none;

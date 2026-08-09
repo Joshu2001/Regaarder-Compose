@@ -574,12 +574,16 @@ export default function TemplateChartVisualizer({
 
   if (!hasData) {
     return (
-      <div className="w-80 xl:w-96 border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] p-6 flex flex-col items-center justify-center text-center shrink-0">
-        <div className="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-zinc-800 flex items-center justify-center mb-3">
-          <BarChart2 className="w-7 h-7 text-violet-500 animate-pulse" />
+      <div className="w-80 xl:w-96 border-l border-slate-200/80 dark:border-[#1f1d2c] bg-slate-50 dark:bg-[#12111a] p-6 flex flex-col items-center justify-center text-center shrink-0 select-none">
+        <div className="w-20 h-20 rounded-2xl bg-purple-100 dark:bg-[#1c1a2b] border border-purple-200 dark:border-[#2e2a47] flex items-center justify-center mb-5 shadow-xl shadow-purple-950/40 text-purple-600 dark:text-purple-400">
+          <svg className="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="6" y1="20" x2="6" y2="14" />
+            <line x1="12" y1="20" x2="12" y2="10" />
+            <line x1="18" y1="20" x2="18" y2="6" />
+          </svg>
         </div>
-        <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-200">No Data to Display</h4>
-        <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 max-w-[220px]">
+        <h4 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">No Data to Display</h4>
+        <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed mt-2 max-w-[230px]">
           Upload or select a worksheet grid with numerical values to render your live interactive visual charts.
         </p>
       </div>
