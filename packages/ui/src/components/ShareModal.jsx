@@ -383,7 +383,7 @@ export default function ShareModal({
                   Set Password
                 </button>
                 {isPasswordConfirmed && (
-                  <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/60">
+                  <span className="flex items-center gap-1 text-[10px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 px-1.5 py-0.5 rounded border border-violet-200 dark:border-violet-800/60">
                     <Check size={10} className="stroke-[3]" />
                     Active Outline
                   </span>
