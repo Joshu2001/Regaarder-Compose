@@ -39694,7 +39694,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           ) : null}
 
                           {/* Bottom Row: Cell Formatting Tools */}
-                          {sheetToolbarTab !== 'Data' && sheetToolbarTab !== 'Templates' && (
+                          {sheetToolbarTab !== 'Data' && sheetToolbarTab !== 'Templates' && sheetToolbarTab !== 'Analyze' && (
                             <>
                               <div className="h-px bg-gray-200/60 dark:bg-zinc-800/60 w-full" />
                               <div className="flex items-center gap-3 text-[13px] font-medium text-[#374151]">
