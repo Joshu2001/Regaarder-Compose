@@ -137,6 +137,11 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   // Analysis calculation outcome state
   const [analysisResult, setAnalysisResult] = useState(null);
 
+  // Data Source & Input Mode State (Sheet search vs Manual Entry)
+  const [dataInputMode, setDataInputMode] = useState('sheet'); // 'sheet' | 'manual'
+  const [columnSearchQuery, setColumnSearchQuery] = useState('');
+  const [manualSeriesInput, setManualSeriesInput] = useState('12000, 13500, 14200, 15800, 17500, 18900, 21000, 22500, 24000');
+
   // Column Binding & Dynamic Parameter Control States
   const [primaryColIndex, setPrimaryColIndex] = useState(0);
   const [secondaryColIndex, setSecondaryColIndex] = useState(1);
@@ -162,6 +167,10 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
     { index: 1, name: 'Column B (Budget / Expenses)', values: [11000, 12500, 13000, 14500, 16000, 17000, 19500, 20500, 22000] },
     { index: 2, name: 'Column C (Volume / Units / Driver)', values: [100, 115, 120, 135, 150, 160, 180, 190, 210] }
   ];
+
+  const filteredColumns = availableColumns.filter(col => 
+    col.name.toLowerCase().includes(columnSearchQuery.toLowerCase().trim())
+  );
 
   const needsSecondaryColumn = [
     'variance_analysis', 'budget_vs_actual', 'regression', 'correlation',
@@ -290,10 +299,16 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   // ----------------------------------------------------
   const handleRunAnalysis = (targetId = null) => {
     const analysisToRun = targetId || selectedAnalysis;
-    const primaryCol = availableColumns.find(c => c.index === primaryColIndex) || availableColumns[0];
-    const secondaryCol = availableColumns.find(c => c.index === secondaryColIndex) || availableColumns[1] || availableColumns[0];
 
-    let col1Values = primaryCol.values && primaryCol.values.length > 0 ? primaryCol.values : [12000, 13500, 14200, 15800, 17500, 18900, 21000, 22500, 24000];
+    let col1Values = [];
+    if (dataInputMode === 'manual' && manualSeriesInput.trim()) {
+      col1Values = manualSeriesInput.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
+    }
+    if (col1Values.length === 0) {
+      const primaryCol = availableColumns.find(c => c.index === primaryColIndex) || availableColumns[0];
+      col1Values = primaryCol.values && primaryCol.values.length > 0 ? primaryCol.values : [12000, 13500, 14200, 15800, 17500, 18900, 21000, 22500, 24000];
+    }
+    const secondaryCol = availableColumns.find(c => c.index === secondaryColIndex) || availableColumns[1] || availableColumns[0];
     let col2Values = secondaryCol.values && secondaryCol.values.length > 0 ? secondaryCol.values : col1Values.map(v => Math.round(v * 0.92));
 
     const safeNum = (val, fallback = 0) => (typeof val === 'number' && !isNaN(val) ? val : fallback);
@@ -1379,57 +1394,119 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
           <span className="text-xs text-slate-500 font-medium">6-Step Executive Decision Intelligence</span>
         </div>
 
-        {/* STEP 1: DYNAMIC DATA CONTEXT & COLUMN BINDINGS */}
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 space-y-3">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-zinc-300">
+        {/* STEP 1: DYNAMIC DATA SOURCE, SEARCH & MANUAL INPUT MODE */}
+        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 space-y-3 shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold text-slate-700 dark:text-zinc-300">
             <span className="flex items-center gap-1.5">
               <Table size={14} className="text-violet-600" />
-              <span>Step 1: Data Context & Dynamic Column Binding</span>
+              <span>Step 1: Data Context & Input Method</span>
             </span>
-            <span className="text-[11px] text-slate-400 font-normal">Range: {selectedDataRange}</span>
+            
+            {/* Input Mode Selector: Sheet Grid vs Manual Custom Data */}
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-0.5 rounded-lg border border-slate-200/80 dark:border-zinc-700">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  setDataInputMode('sheet');
+                }}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                  dataInputMode === 'sheet'
+                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-2xs'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800'
+                }`}
+              >
+                Sheet Grid / Search
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  setDataInputMode('manual');
+                }}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                  dataInputMode === 'manual'
+                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-2xs'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800'
+                }`}
+              >
+                Manual Custom Entry
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-            <div>
-              <CustomSelect
-                label="Primary Metric Column (Y / Series A):"
-                value={primaryColIndex}
-                onChange={(val) => setPrimaryColIndex(Number(val))}
-                options={availableColumns.map(col => ({
-                  label: `${col.name} (${col.values.length} rows)`,
-                  value: col.index
-                }))}
-                allowCustom={false}
-              />
-            </div>
-
-            {needsSecondaryColumn && (
-              <div>
-                <CustomSelect
-                  label="Secondary Column (Budget / Predictor X / Series B):"
-                  value={secondaryColIndex}
-                  onChange={(val) => setSecondaryColIndex(Number(val))}
-                  options={availableColumns.map(col => ({
-                    label: `${col.name} (${col.values.length} rows)`,
-                    value: col.index
-                  }))}
-                  allowCustom={false}
+          {/* Mode 1: Search & Select Columns from Sheet Grid */}
+          {dataInputMode === 'sheet' ? (
+            <div className="space-y-3 pt-1">
+              {/* Search Sheet Data Columns */}
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search sheet data columns or uploaded datasets..."
+                  value={columnSearchQuery}
+                  onChange={(e) => setColumnSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-800 dark:text-zinc-200 placeholder-slate-400 focus:outline-none focus:border-violet-500"
                 />
               </div>
-            )}
-          </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <CustomSelect
+                    label="Primary Metric Column (Y / Series A):"
+                    value={primaryColIndex}
+                    onChange={(val) => setPrimaryColIndex(Number(val))}
+                    options={filteredColumns.map(col => ({
+                      label: `${col.name} (${col.values.length} data points loaded)`,
+                      value: col.index
+                    }))}
+                    allowCustom={false}
+                  />
+                </div>
+
+                {needsSecondaryColumn && (
+                  <div>
+                    <CustomSelect
+                      label="Secondary Column (Budget / Predictor X / Series B):"
+                      value={secondaryColIndex}
+                      onChange={(val) => setSecondaryColIndex(Number(val))}
+                      options={filteredColumns.map(col => ({
+                        label: `${col.name} (${col.values.length} data points loaded)`,
+                        value: col.index
+                      }))}
+                      allowCustom={false}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Mode 2: Manual Custom Entry Mode for Interactive Testing */
+            <div className="space-y-2 pt-1">
+              <label className="block text-[11px] font-medium text-slate-600 dark:text-zinc-400">
+                Type or paste comma-separated test values:
+              </label>
+              <textarea
+                rows={2}
+                value={manualSeriesInput}
+                onChange={(e) => setManualSeriesInput(e.target.value)}
+                placeholder="e.g. 12000, 13500, 14200, 15800, 17500, 18900..."
+                className="w-full p-2.5 bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-mono text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500"
+              />
+              <span className="text-[10px] text-slate-400">
+                Loaded {manualSeriesInput.split(',').filter(v => !isNaN(parseFloat(v.trim()))).length} numeric observations from custom input.
+              </span>
+            </div>
+          )}
         </div>
 
         {/* STEP 2: ANALYZE - DETERMINISTIC CALCULATION & MODULE PARAMETERS */}
         {analysisResult ? (
           <div className="space-y-6">
-            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 space-y-4">
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 space-y-4 shadow-2xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-zinc-800 pb-3">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white">Step 2: Deterministic Calculation Engine</h3>
-                  <span className="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 rounded-full text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
-                    {analysisResult.computationBadge}
-                  </span>
                 </div>
               </div>
 
@@ -1606,98 +1683,113 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               </div>
             </div>
 
-            {/* STEP 5: SIMULATE - LIVE INTERACTIVE WHAT-IF SLIDERS */}
-            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 space-y-4">
-              <div className="flex items-center justify-between">
+            {/* STEP 5: SIMULATE - REFINED APPLE-STYLE SCENARIO SLIDERS */}
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 space-y-4 shadow-2xs">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-2.5">
                 <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
                   <Sliders size={16} className="text-violet-600" />
                   <span>Step 5: Live Scenario & Risk Simulation</span>
                 </div>
-                <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400">Real-Time Math Engine</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">Real-Time Simulation</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <label className="flex justify-between text-xs font-semibold text-slate-700 dark:text-zinc-300">
-                    <span>Price Adjustment (%):</span>
-                    <span className="text-violet-600 font-bold">{simPriceDelta > 0 ? `+${simPriceDelta}` : simPriceDelta}%</span>
-                  </label>
+                <div className="p-3 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Price Adjustment (%):</label>
+                    <input
+                      type="number"
+                      value={simPriceDelta}
+                      onChange={(e) => setSimPriceDelta(parseInt(e.target.value) || 0)}
+                      className="w-14 px-1.5 py-0.5 text-right bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded text-xs font-bold text-slate-800 dark:text-zinc-200"
+                    />
+                  </div>
                   <input
                     type="range"
                     min="-30"
                     max="30"
                     value={simPriceDelta}
                     onChange={(e) => setSimPriceDelta(parseInt(e.target.value))}
-                    className="w-full accent-violet-600 cursor-pointer"
+                    className="w-full accent-slate-800 dark:accent-zinc-200 cursor-pointer"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="flex justify-between text-xs font-semibold text-slate-700 dark:text-zinc-300">
-                    <span>Volume Delta (%):</span>
-                    <span className="text-violet-600 font-bold">{simVolumeDelta > 0 ? `+${simVolumeDelta}` : simVolumeDelta}%</span>
-                  </label>
+                <div className="p-3 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Volume Delta (%):</label>
+                    <input
+                      type="number"
+                      value={simVolumeDelta}
+                      onChange={(e) => setSimVolumeDelta(parseInt(e.target.value) || 0)}
+                      className="w-14 px-1.5 py-0.5 text-right bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded text-xs font-bold text-slate-800 dark:text-zinc-200"
+                    />
+                  </div>
                   <input
                     type="range"
                     min="-30"
                     max="30"
                     value={simVolumeDelta}
                     onChange={(e) => setSimVolumeDelta(parseInt(e.target.value))}
-                    className="w-full accent-violet-600 cursor-pointer"
+                    className="w-full accent-slate-800 dark:accent-zinc-200 cursor-pointer"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="flex justify-between text-xs font-semibold text-slate-700 dark:text-zinc-300">
-                    <span>Cost Inflation (%):</span>
-                    <span className="text-violet-600 font-bold">{simCostDelta > 0 ? `+${simCostDelta}` : simCostDelta}%</span>
-                  </label>
+                <div className="p-3 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Cost Inflation (%):</label>
+                    <input
+                      type="number"
+                      value={simCostDelta}
+                      onChange={(e) => setSimCostDelta(parseInt(e.target.value) || 0)}
+                      className="w-14 px-1.5 py-0.5 text-right bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded text-xs font-bold text-slate-800 dark:text-zinc-200"
+                    />
+                  </div>
                   <input
                     type="range"
                     min="-30"
                     max="30"
                     value={simCostDelta}
                     onChange={(e) => setSimCostDelta(parseInt(e.target.value))}
-                    className="w-full accent-violet-600 cursor-pointer"
+                    className="w-full accent-slate-800 dark:accent-zinc-200 cursor-pointer"
                   />
                 </div>
               </div>
 
-              {/* Live Recalculated Outcome */}
-              <div className="p-3.5 bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-900 rounded-xl flex items-center justify-between text-xs font-semibold">
-                <span className="text-slate-700 dark:text-zinc-300">Recalculated Net Impact Outcome:</span>
-                <span className="text-sm font-extrabold text-violet-700 dark:text-violet-300">
+              {/* Live Recalculated Outcome Banner */}
+              <div className="p-3.5 bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-800 rounded-xl flex items-center justify-between text-xs font-medium">
+                <span className="text-slate-600 dark:text-zinc-400">Recalculated Net Impact Outcome:</span>
+                <span className="text-sm font-bold text-slate-900 dark:text-white">
                   {simPriceDelta + simVolumeDelta - simCostDelta >= 0 ? '+' : ''}
                   {(simPriceDelta + simVolumeDelta - simCostDelta).toFixed(1)}% Projected Variance
                 </span>
               </div>
             </div>
 
-            {/* STEP 6: DECIDE - EXECUTIVE RECOMMENDATIONS */}
-            <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-2xl p-5 space-y-4 shadow-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-bold">
-                  <CheckCircle2 size={18} className="text-emerald-400" />
+            {/* STEP 6: DECIDE - REFINED EXECUTIVE RECOMMENDATION CARD */}
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 border-l-4 border-l-emerald-600 dark:border-l-emerald-500 rounded-2xl p-5 space-y-4 shadow-2xs">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-2.5">
+                <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
+                  <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400" />
                   <span>Step 6: Strategic Decision Recommendation</span>
                 </div>
-                <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full text-[10px] font-bold border border-emerald-500/30">
+                <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md text-[11px] font-semibold border border-emerald-200/80 dark:border-emerald-800">
                   Decision Ready
                 </span>
               </div>
 
-              <div className="p-4 bg-white/10 rounded-xl border border-white/15 space-y-2">
-                <div className="text-xs font-bold text-violet-300">Recommended Executive Action:</div>
-                <p className="text-xs text-slate-100 leading-relaxed">
+              <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/70 dark:border-emerald-900/40 space-y-1.5">
+                <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300">Recommended Executive Action:</div>
+                <p className="text-xs text-slate-700 dark:text-zinc-200 leading-relaxed font-normal">
                   {analysisResult.recommendation}
                 </p>
               </div>
 
               {analysisResult.risks && (
-                <div className="flex items-start gap-2 text-xs text-amber-300 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
-                  <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200 bg-amber-50/70 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200/80 dark:border-amber-900/40">
+                  <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
                   <div>
                     <span className="font-bold">Risk Assessment: </span>
-                    <span>{analysisResult.risks.join('; ')}</span>
+                    <span className="font-normal">{analysisResult.risks.join('; ')}</span>
                   </div>
                 </div>
               )}
