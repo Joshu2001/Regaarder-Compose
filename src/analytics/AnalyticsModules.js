@@ -392,30 +392,60 @@ export function runChurnAnalysis(activeStart = 1000, newUsers = 150, activeEnd =
   return runRetentionChurnAnalysis(activeStart, newUsers, activeEnd);
 }
 
-export function runCLVAnalysis(arpu = 85, grossMarginPct = 75, churnRatePct = 4.5, discountRatePct = 10) {
-  const monthlyChurn = churnRatePct / 100;
-  const monthlyMargin = arpu * (grossMarginPct / 100);
+export function runCLVAnalysis(arpu = 85, grossMarginPct = 75, churnRatePct = 4.5, discountRatePct = 10, cac = 350) {
+  const monthlyChurn = (churnRatePct || 4.5) / 100;
+  const monthlyMargin = (arpu || 85) * ((grossMarginPct || 75) / 100);
   const avgLifespanMonths = monthlyChurn > 0 ? 1 / monthlyChurn : 60;
   const simpleCLV = monthlyMargin * avgLifespanMonths;
   
-  const r = (discountRatePct / 100) / 12;
+  const r = ((discountRatePct || 10) / 100) / 12;
   const discountedCLV = (monthlyChurn + r) > 0 ? monthlyMargin / (monthlyChurn + r) : simpleCLV;
-  const cacPaybackMonths = monthlyMargin > 0 ? 350 / monthlyMargin : 0; // standard benchmark CAC
+  const effectiveCac = cac > 0 ? cac : 350;
+  const cacPaybackMonths = monthlyMargin > 0 ? effectiveCac / monthlyMargin : 0;
+
+  // Generate 36-month Cumulative LTV Accumulation Curve data points
+  const clvCurve = [];
+  let cumulativeValue = 0;
+  let paybackMonthFound = null;
+
+  for (let m = 1; m <= 36; m++) {
+    const survivalRate = Math.pow(Math.max(0, 1 - monthlyChurn), m - 1);
+    const monthMargin = monthlyMargin * survivalRate;
+    const discountFactor = Math.pow(1 + r, m);
+    const discountedMonthValue = monthMargin / discountFactor;
+    cumulativeValue += discountedMonthValue;
+
+    if (paybackMonthFound === null && cumulativeValue >= effectiveCac) {
+      paybackMonthFound = m;
+    }
+
+    clvCurve.push({
+      month: m,
+      monthlyMargin: Math.round(monthMargin),
+      cumulativeLTV: Math.round(cumulativeValue),
+      netValue: Math.round(cumulativeValue - effectiveCac),
+      survivalRatePct: (survivalRate * 100).toFixed(1)
+    });
+  }
+
+  const ltvCacRatio = effectiveCac > 0 ? discountedCLV / effectiveCac : 0;
 
   return {
     arpu,
     grossMarginPct,
     churnRatePct,
-    avgLifespanMonths,
-    lifetimeMonths: avgLifespanMonths,
-    simpleCLV,
-    discountedCLV,
-    clv: discountedCLV,
-    cacBenchmark: 350,
-    cacPaybackMonths,
-    paybackMonths: cacPaybackMonths,
-    ltvCacRatio: discountedCLV / 350,
-    clvToCacRatio: discountedCLV / 350
+    cac: effectiveCac,
+    cacBenchmark: effectiveCac,
+    avgLifespanMonths: Math.round(avgLifespanMonths * 10) / 10,
+    lifetimeMonths: Math.round(avgLifespanMonths * 10) / 10,
+    simpleCLV: Math.round(simpleCLV),
+    discountedCLV: Math.round(discountedCLV),
+    clv: Math.round(discountedCLV),
+    cacPaybackMonths: Math.round((paybackMonthFound || cacPaybackMonths) * 10) / 10,
+    paybackMonths: Math.round((paybackMonthFound || cacPaybackMonths) * 10) / 10,
+    ltvCacRatio: Math.round(ltvCacRatio * 100) / 100,
+    clvToCacRatio: Math.round(ltvCacRatio * 100) / 100,
+    clvCurve
   };
 }
 
@@ -805,44 +835,104 @@ export function runTimeSeriesForecasting(series, periods = 4, method = 'exponent
 // 5. SIMULATION & SCENARIOS (MATH ENGINES)
 // ==========================================
 
-export function runMonteCarloSimulation(baseValue = 100000, stdDev = 0.15, runs = 500, steps = 12) {
-  const paths = [];
+export function runMonteCarloSimulation(baseValue = 100000, stdDev = 0.15, runs = 500, steps = 12, lineItemsInput = null) {
   const validRuns = Math.min(runs, 1000);
+  
+  // Establish default structured line items if none provided
+  const lineItems = (Array.isArray(lineItemsInput) && lineItemsInput.length > 0)
+    ? lineItemsInput
+    : [
+        { id: 'labor', name: 'Direct Labor & Operations', baseValue: Math.round(baseValue * 0.40), stdDev: 0.14 },
+        { id: 'materials', name: 'Materials & Equipment', baseValue: Math.round(baseValue * 0.30), stdDev: 0.18 },
+        { id: 'subcontract', name: 'Specialist Subcontractors', baseValue: Math.round(baseValue * 0.18), stdDev: 0.20 },
+        { id: 'overhead', name: 'Overhead & Contingency', baseValue: Math.round(baseValue * 0.12), stdDev: 0.08 }
+      ];
+
+  const totalBaseValue = lineItems.reduce((acc, item) => acc + (item.baseValue || 0), 0) || baseValue;
+  
+  const aggregateTrialTotals = [];
+  const lineItemTrialValues = lineItems.map(item => ({ ...item, simulatedEndValues: [] }));
+  const samplePaths = [];
 
   for (let r = 0; r < validRuns; r++) {
-    const path = [baseValue];
-    let current = baseValue;
-    for (let s = 1; s <= steps; s++) {
-      const u1 = Math.random() || 0.0001;
-      const u2 = Math.random() || 0.0001;
-      const z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
-      current = current * (1 + (z * stdDev));
-      path.push(current);
+    let trialSum = 0;
+    
+    // Perform multi-step random walk sampling for each line item concurrently per trial
+    for (let i = 0; i < lineItems.length; i++) {
+      const item = lineItems[i];
+      let itemVal = item.baseValue || 0;
+      
+      for (let s = 1; s <= steps; s++) {
+        const u1 = Math.random() || 0.0001;
+        const u2 = Math.random() || 0.0001;
+        const z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+        const stepDev = (item.stdDev || stdDev) / Math.sqrt(steps);
+        itemVal = itemVal * (1 + (z * stepDev));
+      }
+      
+      lineItemTrialValues[i].simulatedEndValues.push(itemVal);
+      trialSum += itemVal;
     }
-    paths.push(path);
+
+    aggregateTrialTotals.push(trialSum);
+    if (r < 10) {
+      samplePaths.push(trialSum);
+    }
   }
 
-  const endingValues = paths.map(p => p[p.length - 1]).sort((a, b) => a - b);
+  // Sort aggregate trial totals to extract true aggregated stochastic percentiles
+  aggregateTrialTotals.sort((a, b) => a - b);
 
-  const median = endingValues[Math.floor(validRuns * 0.50)];
-  const p10 = endingValues[Math.floor(validRuns * 0.10)];
-  const p90 = endingValues[Math.floor(validRuns * 0.90)];
-  const p95 = endingValues[Math.floor(validRuns * 0.95)];
+  const median = aggregateTrialTotals[Math.floor(validRuns * 0.50)];
+  const p10 = aggregateTrialTotals[Math.floor(validRuns * 0.10)];
+  const p90 = aggregateTrialTotals[Math.floor(validRuns * 0.90)];
+  const p95 = aggregateTrialTotals[Math.floor(validRuns * 0.95)];
 
-  const probExceedBase = (endingValues.filter(v => v >= baseValue).length / validRuns) * 100;
+  // Calculate individual line-item percentiles to demonstrate diversification benefit
+  let sumOfIndividualP90 = 0;
+  const lineItemBreakdown = lineItemTrialValues.map(item => {
+    const sorted = [...item.simulatedEndValues].sort((a, b) => a - b);
+    const itemP10 = sorted[Math.floor(validRuns * 0.10)];
+    const itemP50 = sorted[Math.floor(validRuns * 0.50)];
+    const itemP90 = sorted[Math.floor(validRuns * 0.90)];
+    sumOfIndividualP90 += itemP90;
+
+    return {
+      id: item.id,
+      name: item.name,
+      baseValue: item.baseValue,
+      stdDev: item.stdDev || stdDev,
+      p10: itemP10,
+      p50: itemP50,
+      p90: itemP90
+    };
+  });
+
+  // Statistical Diversification Benefit: Naive sum of P90s vs True Aggregated Total P90
+  const naiveSumP90 = sumOfIndividualP90;
+  const diversificationDelta = naiveSumP90 - p90;
+  const diversificationPct = totalBaseValue > 0 ? (diversificationDelta / totalBaseValue) * 100 : 0;
+
+  const probExceedBase = (aggregateTrialTotals.filter(v => v >= totalBaseValue).length / validRuns) * 100;
 
   return {
     runs: validRuns,
     steps,
-    samplePaths: paths.slice(0, 10),
+    baseValue: totalBaseValue,
+    aggregationMode: 'AGGREGATED_STOCHASTIC_PORTFOLIO',
+    samplePaths,
     endingValuesSummary: {
       median,
       p10,
       p90,
       p95,
-      min: endingValues[0],
-      max: endingValues[validRuns - 1]
+      min: aggregateTrialTotals[0],
+      max: aggregateTrialTotals[validRuns - 1]
     },
+    lineItemBreakdown,
+    naiveSumP90,
+    diversificationDelta,
+    diversificationPct,
     probExceedBase
   };
 }

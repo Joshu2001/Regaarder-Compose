@@ -359,8 +359,8 @@ class AnalyticsRegistry {
     this.registerModule('monte_carlo', {
       name: 'Monte Carlo Simulation',
       category: 'Simulation & Scenarios',
-      description: 'Generates multi-path stochastic simulations with P10/P50/P90 percentile limits.',
-      execute: (data, opts) => modules.runMonteCarloSimulation(opts?.baseValue || 100000, opts?.stdDev || 0.15, opts?.runs || 500, opts?.steps || 12)
+      description: 'Generates multi-path stochastic simulations with P10/P50/P90 aggregated portfolio percentile limits.',
+      execute: (data, opts) => modules.runMonteCarloSimulation(opts?.baseValue || 100000, opts?.stdDev || 0.15, opts?.runs || 500, opts?.steps || 12, opts?.lineItems || null)
     });
 
     this.registerModule('what_if_analysis', {

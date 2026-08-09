@@ -145,6 +145,11 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   // Column Binding & Dynamic Parameter Control States
   const [primaryColIndex, setPrimaryColIndex] = useState(0);
   const [secondaryColIndex, setSecondaryColIndex] = useState(1);
+  const [mcVolatility, setMcVolatility] = useState(20);
+  const [mcReturn, setMcReturn] = useState(8);
+  const [mcBaseCapital, setMcBaseCapital] = useState(100000);
+  const [showAdvancedInputs, setShowAdvancedInputs] = useState(false);
+  const [chartViewMode, setChartViewMode] = useState('auto'); // 'auto' | 'curve' | 'line' | 'bar' | 'dot' | 'scatter'
   const [moduleParams, setModuleParams] = useState({
     targetValue: 25000,
     fixedCosts: 50000,
@@ -154,7 +159,9 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
     confidenceLevel: 95,
     arpu: 150,
     cac: 350,
-    churnRate: 5
+    churnRate: 5,
+    seasonalityMultiplier: 1.12,
+    riskDiscountRate: 8.5
   });
 
   // Extract columns dynamically from active sheet grid
@@ -850,29 +857,39 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
       // 5. SIMULATION & SCENARIOS
       // ----------------------------------------------------
       case 'monte_carlo': {
-        const res = modules.runMonteCarloSimulation(100000, 0.15, 500, 12) || {};
+        const res = modules.runMonteCarloSimulation(mcBaseCapital, mcVolatility / 100, 500, 12) || {};
         const runs = res.runs ?? 500;
         const median = safeLoc(res.endingValuesSummary?.median);
         const p90 = safeLoc(res.endingValuesSummary?.p90);
         const p10 = safeLoc(res.endingValuesSummary?.p10);
         const prob = safeFix(res.probExceedBase, 1);
         const baseVal = safeLoc(res.baseValue, 100000);
+        const naiveP90 = safeLoc(res.naiveSumP90);
+        const divDelta = safeLoc(res.diversificationDelta);
+        const divPct = safeFix(res.diversificationPct, 1);
 
         payload = {
           title: 'Monte Carlo Stochastic Risk Simulation',
-          computationBadge: '⚡ Multi-Path Stochastic Engine',
+          computationBadge: '⚡ Aggregated Portfolio Stochastic Engine',
           metrics: [
-            { label: 'Simulated Runs', value: runs, sub: '12-step random walks' },
-            { label: 'Median Outcome', value: `$${median}`, sub: 'P50 expected value' },
-            { label: 'P90 Bull Case', value: `$${p90}`, sub: 'Top 10th percentile' },
-            { label: 'P10 Bear Case', value: `$${p10}`, sub: 'Bottom 10th percentile' },
-            { label: 'Target Success Rate', value: `${prob}%`, sub: 'Prob exceeding base' },
-            { label: 'Baseline Value', value: `$${baseVal}`, sub: 'Starting capital' }
+            { label: 'Aggregated P50 Median', value: `$${median}`, sub: 'Expected trial total outcome' },
+            { label: 'Aggregated P90 Total', value: `$${p90}`, sub: '90th percentile aggregate total' },
+            { label: 'Aggregated P10 Total', value: `$${p10}`, sub: '10th percentile aggregate total' },
+            { label: 'Diversification Benefit', value: `-$${divDelta} (${divPct}%)`, sub: 'Saved vs naive sum of line P90s' },
+            { label: 'Target Success Rate', value: `${prob}%`, sub: 'Prob exceeding base total' },
+            { label: 'Baseline Total', value: `$${baseVal}`, sub: 'Sum of base line items' }
           ],
-          explanation: `Across ${runs} simulated stochastic paths, the P50 median expected outcome is $${median} with a ${prob}% probability of exceeding the $${baseVal} baseline.`,
-          drivers: ['15% annual volatility stdDev', '12 monthly compounding steps'],
-          risks: ['Bottom 10th percentile downside risk falls to $' + p10],
-          recommendation: 'Maintain a 15% cash liquidity buffer to shield against P10 downside volatility.'
+          explanation: `Evaluated across ${runs} stochastic trial runs by sampling all line-item components concurrently per trial. Rather than summing individual line-item percentiles (which overestimates risk), the P10 ($${p10}), P50 ($${median}), and P90 ($${p90}) limits are calculated directly on the total aggregated trial outputs. Aggregating stochastic totals captures a -$${divDelta} (${divPct}%) portfolio diversification benefit over naive line-item P90 summation ($${naiveP90}).`,
+          drivers: [
+            'Simultaneous multi-component trial sampling',
+            'Evaluates aggregated trial total outputs (P10/P50/P90)',
+            'Statistical risk diversification variance adjustment'
+          ],
+          risks: [
+            'P10 downside aggregate risk limits total outcome to $' + p10,
+            'Individual line item tail-risk correlations must be monitored'
+          ],
+          recommendation: `Use the aggregated P90 total ($${p90}) for enterprise cost reserve planning instead of summing individual line P90s ($${naiveP90}).`
         };
         break;
       }
@@ -1132,7 +1149,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   // Auto-fulfill calculation whenever selected analysis, column bindings, or module parameters change
   useEffect(() => {
     handleRunAnalysis(selectedAnalysis);
-  }, [selectedAnalysis, primaryColIndex, secondaryColIndex, moduleParams, simPriceDelta, simVolumeDelta, simCostDelta, activeSheetGrid]);
+  }, [selectedAnalysis, primaryColIndex, secondaryColIndex, moduleParams, mcVolatility, mcReturn, mcBaseCapital, simPriceDelta, simVolumeDelta, simCostDelta, activeSheetGrid]);
 
   const handleAiQuestionSubmit = (e) => {
     if (e) e.preventDefault();
@@ -1347,36 +1364,48 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
       </div>
 
       {/* ---------------------------------------------------- */}
-      {/* SUB-MODULE SELECTION GRID (NEUTRAL & SUBORDINATED)   */}
+      {/* COMPACT SUB-MODULE SELECTION CHIPS WITH HOVER TOOLTIPS */}
       {/* ---------------------------------------------------- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 shrink-0">
+      <div className="flex items-center gap-2.5 overflow-x-auto py-1.5 scrollbar-none shrink-0 border-b border-slate-200/80 dark:border-zinc-800 pb-3">
+        <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-zinc-500 shrink-0 mr-1">
+          SPECIALIZED TOOLS:
+        </span>
         {currentCategory.items.map((item) => {
           const isSelected = selectedAnalysis === item.id;
           return (
-            <button
-              key={item.id}
-              type="button"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                setSelectedAnalysis(item.id);
-                handleRunAnalysis(item.id);
-              }}
-              className={`p-3.5 text-left rounded-xl transition-all cursor-pointer flex flex-col justify-between group min-h-[76px] relative overflow-hidden ${
-                isSelected
-                  ? 'bg-violet-50/60 dark:bg-violet-950/30 border border-slate-200/80 dark:border-zinc-800 border-l-[3px] border-l-violet-600 dark:border-l-violet-400 text-slate-900 dark:text-zinc-100 shadow-2xs'
-                  : 'bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-xs text-slate-900 dark:text-zinc-100 shadow-2xs'
-              }`}
-            >
-              <div className="space-y-1">
-                <div className="text-xs font-semibold flex items-center justify-between">
+            <div key={item.id} className="relative group shrink-0">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  setSelectedAnalysis(item.id);
+                  handleRunAnalysis(item.id);
+                }}
+                className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
+                  isSelected
+                    ? 'bg-blue-600 text-white shadow-blue-500/25 shadow-md ring-2 ring-blue-400/50 scale-[1.02]'
+                    : 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700'
+                }`}
+              >
+                <span>{item.label}</span>
+                {isSelected && <Check size={13} className="text-white stroke-[2.5]" />}
+              </button>
+
+              {/* Dynamic Hover Tooltip Overlay displaying full details from Image 1 */}
+              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2.5 w-64 p-3.5 bg-slate-900/95 dark:bg-zinc-950/95 backdrop-blur-md text-white text-xs rounded-2xl shadow-2xl border border-slate-800 dark:border-zinc-800 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 z-50 space-y-1.5">
+                <div className="font-extrabold text-blue-400 text-xs flex items-center justify-between">
                   <span>{item.label}</span>
-                  {isSelected && <Check size={14} className="text-violet-600 dark:text-violet-400 shrink-0 stroke-[2.5]" />}
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-800 px-1.5 py-0.5 rounded">EXECUTIVE TOOL</span>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-normal line-clamp-2">
+                <p className="text-[11px] text-slate-300 leading-relaxed font-normal">
                   {item.desc}
                 </p>
+                <div className="text-[10px] text-blue-300/90 pt-1 font-semibold border-t border-slate-800/80 flex items-center gap-1">
+                  <span>Click to launch simulation & output</span>
+                  <ChevronRight size={10} />
+                </div>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -1627,6 +1656,690 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 </div>
               </div>
 
+              {/* TOP NAVIGATION CHIPS (Apple/Financial Terminal Style with Hover Tooltips) */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1.5 border-b border-slate-200 dark:border-zinc-800">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-zinc-500 shrink-0 mr-1">
+                  MODULE CHIPS:
+                </span>
+                {currentCategory.items.map((tab) => {
+                  const isActive = selectedAnalysis === tab.id;
+                  return (
+                    <div key={tab.id} className="relative group shrink-0">
+                      <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          setSelectedAnalysis(tab.id);
+                          handleRunAnalysis(tab.id);
+                        }}
+                        className={`px-4 py-2 rounded-2xl text-xs font-extrabold tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                          isActive
+                            ? 'bg-blue-600 text-white shadow-blue-500/25 shadow-md ring-2 ring-blue-400/50 scale-[1.02]'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
+                        }`}
+                      >
+                        <span>{tab.label.toUpperCase()}</span>
+                        {isActive && <Check size={13} className="text-white stroke-[2.5]" />}
+                      </button>
+
+                      {/* Tooltip Overlay displaying full details from Image 1 */}
+                      <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 p-3.5 bg-slate-900/95 dark:bg-zinc-950/95 backdrop-blur-md text-white text-xs rounded-2xl shadow-2xl border border-slate-800 dark:border-zinc-800 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 z-50 space-y-1.5">
+                        <div className="font-extrabold text-blue-400 text-xs flex items-center justify-between">
+                          <span>{tab.label}</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-800 px-1.5 py-0.5 rounded">EXECUTIVE TOOL</span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-relaxed font-normal">
+                          {tab.desc}
+                        </p>
+                        <div className="text-[10px] text-blue-300/90 pt-1 font-semibold border-t border-slate-800/80 flex items-center gap-1">
+                          <span>Click to execute simulation & analytics</span>
+                          <ChevronRight size={10} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* TOP SIDE-BY-SIDE SPLIT ROW: DYNAMIC TOOL INPUTS (LEFT) & DYNAMIC GRAPH VISUALIZATION (RIGHT) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-2">
+                {/* LEFT CARD: DYNAMIC TOOL INPUT PARAMETERS WITH PROGRESSIVE DISCLOSURE */}
+                <div className="lg:col-span-4 bg-slate-950 dark:bg-zinc-950 border border-slate-800 dark:border-zinc-800 rounded-3xl p-6 space-y-5 shadow-xl flex flex-col justify-between">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                      <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-300">
+                        {activeModuleItem.label} Inputs
+                      </h4>
+                      <span className="px-2.5 py-1 bg-blue-950/90 text-blue-400 rounded-lg text-[10px] font-extrabold border border-blue-800/60 shadow-inner uppercase">
+                        {selectedAnalysis === 'monte_carlo' ? 'STOCHASTIC ENGINE' :
+                         selectedAnalysis.includes('forecast') || selectedAnalysis.includes('trend') ? 'TIME-SERIES ENGINE' :
+                         selectedAnalysis.includes('regression') || selectedAnalysis.includes('correlation') ? 'REGRESSION ENGINE' :
+                         selectedAnalysis.includes('churn') || selectedAnalysis.includes('clv') ? 'RETENTION ENGINE' :
+                         'MATH ENGINE'}
+                      </span>
+                    </div>
+
+                    {/* DYNAMIC FORM INPUTS BASED ON ACTIVE TOOL */}
+                    <div className="space-y-3.5">
+                      {selectedAnalysis === 'monte_carlo' && (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              EXPECTED VOLATILITY (%)
+                            </label>
+                            <input
+                              type="number"
+                              value={mcVolatility}
+                              onChange={(e) => setMcVolatility(parseFloat(e.target.value) || 0)}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              EXPECTED RETURN (%)
+                            </label>
+                            <input
+                              type="number"
+                              value={mcReturn}
+                              onChange={(e) => setMcReturn(parseFloat(e.target.value) || 0)}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              BASE CAPITAL ($)
+                            </label>
+                            <input
+                              type="number"
+                              value={mcBaseCapital}
+                              onChange={(e) => setMcBaseCapital(parseFloat(e.target.value) || 0)}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {['kpi_analysis', 'trend_analysis', 'growth_analysis', 'anomaly_detection', 'pareto_analysis'].includes(selectedAnalysis) && (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              TARGET KPI THRESHOLD ($)
+                            </label>
+                            <input
+                              type="number"
+                              value={moduleParams.targetValue}
+                              onChange={(e) => setModuleParams({ ...moduleParams, targetValue: parseFloat(e.target.value) || 0 })}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              CONFIDENCE LEVEL (%)
+                            </label>
+                            <input
+                              type="number"
+                              value={moduleParams.confidenceLevel}
+                              onChange={(e) => setModuleParams({ ...moduleParams, confidenceLevel: parseFloat(e.target.value) || 0 })}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {['profitability_analysis', 'break_even', 'goal_seek', 'unit_economics'].includes(selectedAnalysis) && (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              FIXED OPERATING COSTS ($)
+                            </label>
+                            <input
+                              type="number"
+                              value={moduleParams.fixedCosts}
+                              onChange={(e) => setModuleParams({ ...moduleParams, fixedCosts: parseFloat(e.target.value) || 0 })}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              UNIT SELLING PRICE ($)
+                            </label>
+                            <input
+                              type="number"
+                              value={moduleParams.unitPrice}
+                              onChange={(e) => setModuleParams({ ...moduleParams, unitPrice: parseFloat(e.target.value) || 0 })}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              UNIT VARIABLE COST ($)
+                            </label>
+                            <input
+                              type="number"
+                              value={moduleParams.unitCost}
+                              onChange={(e) => setModuleParams({ ...moduleParams, unitCost: parseFloat(e.target.value) || 0 })}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {['retention_churn', 'clv_analysis', 'cohort_analysis'].includes(selectedAnalysis) && (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              AVERAGE REVENUE PER USER ($)
+                            </label>
+                            <input
+                              type="number"
+                              value={moduleParams.arpu}
+                              onChange={(e) => setModuleParams({ ...moduleParams, arpu: parseFloat(e.target.value) || 0 })}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              MONTHLY CHURN RATE (%)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.5"
+                              value={moduleParams.churnRate}
+                              onChange={(e) => setModuleParams({ ...moduleParams, churnRate: parseFloat(e.target.value) || 0 })}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              ACQUISITION CAC ($)
+                            </label>
+                            <input
+                              type="number"
+                              value={moduleParams.cac}
+                              onChange={(e) => setModuleParams({ ...moduleParams, cac: parseFloat(e.target.value) || 0 })}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {['revenue_forecast', 'sales_forecast', 'demand_forecast', 'cashflow_forecast', 'churn_forecast', 'timeseries_forecast'].includes(selectedAnalysis) && (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              FORECAST PERIODS (MONTHS)
+                            </label>
+                            <input
+                              type="number"
+                              value={moduleParams.forecastPeriods}
+                              onChange={(e) => setModuleParams({ ...moduleParams, forecastPeriods: parseInt(e.target.value) || 1 })}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              CONFIDENCE LEVEL (%)
+                            </label>
+                            <input
+                              type="number"
+                              value={moduleParams.confidenceLevel}
+                              onChange={(e) => setModuleParams({ ...moduleParams, confidenceLevel: parseFloat(e.target.value) || 0 })}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-inner"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {['regression', 'correlation', 't_test', 'paired_t_test', 'anova', 'chi_square'].includes(selectedAnalysis) && (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              PRIMARY VARIABLE (X)
+                            </label>
+                            <select
+                              value={primaryColIndex}
+                              onChange={(e) => setPrimaryColIndex(Number(e.target.value))}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                            >
+                              {availableColumns.map(c => <option key={c.index} value={c.index}>{c.name}</option>)}
+                            </select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                              DEPENDENT VARIABLE (Y)
+                            </label>
+                            <select
+                              value={secondaryColIndex}
+                              onChange={(e) => setSecondaryColIndex(Number(e.target.value))}
+                              className="w-full px-4 py-3 bg-slate-900/90 dark:bg-zinc-900 border border-slate-800 dark:border-zinc-800 rounded-2xl text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                            >
+                              {availableColumns.map(c => <option key={c.index} value={c.index}>{c.name}</option>)}
+                            </select>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Progressive Disclosure Toggle button */}
+                      <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          setShowAdvancedInputs(!showAdvancedInputs);
+                        }}
+                        className="w-full py-2 text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <span>{showAdvancedInputs ? 'Hide Advanced Settings' : 'Disclose Advanced Parameters...'}</span>
+                        <ChevronDown size={13} className={`transition-transform ${showAdvancedInputs ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {showAdvancedInputs && (
+                        <div className="p-3.5 bg-slate-900/60 rounded-2xl border border-slate-800 space-y-3 pt-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Seasonality Variance Multiplier</label>
+                            <input
+                              type="number"
+                              step="0.05"
+                              value={moduleParams.seasonalityMultiplier}
+                              onChange={(e) => setModuleParams({ ...moduleParams, seasonalityMultiplier: parseFloat(e.target.value) || 1 })}
+                              className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Risk Discount Rate (%)</label>
+                            <input
+                              type="number"
+                              step="0.5"
+                              value={moduleParams.riskDiscountRate}
+                              onChange={(e) => setModuleParams({ ...moduleParams, riskDiscountRate: parseFloat(e.target.value) || 0 })}
+                              className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-bold text-slate-400">
+                    <span>MODE: DYNAMIC PARAMS</span>
+                    <span>AUTO RECALC: ENABLED</span>
+                  </div>
+                </div>
+
+                {/* RIGHT CARD: DYNAMIC TOOL-SPECIFIC GRAPH VISUALIZATION & MULTI-VIEW SWITCHER */}
+                <div className="lg:col-span-8 bg-slate-950 dark:bg-zinc-950 border border-slate-800 dark:border-zinc-800 rounded-3xl p-6 flex flex-col justify-between shadow-xl min-h-[380px]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800/80 pb-3 gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
+                      <span className="text-xs font-extrabold uppercase tracking-widest text-slate-200">
+                        {selectedAnalysis === 'clv_analysis' ? '36-Month Cumulative LTV Curve vs CAC Payback' :
+                         selectedAnalysis === 'monte_carlo' ? 'Stochastic Probability Convergence' :
+                         selectedAnalysis.includes('forecast') || selectedAnalysis.includes('trend') ? 'Time-Series Trend & Confidence Bounds' :
+                         selectedAnalysis.includes('regression') || selectedAnalysis.includes('correlation') ? 'Scatter Matrix & Linear Regression Fit' :
+                         selectedAnalysis.includes('kpi') || selectedAnalysis.includes('anomaly') ? 'KPI Target Attainment & Dot Plot' :
+                         'Dynamic Visualization Engine'}
+                      </span>
+                    </div>
+
+                    {/* MULTI-VIEW VISUAL MODE SWITCHER BUTTONS */}
+                    <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 shrink-0">
+                      {[
+                        { id: 'auto', label: 'Auto' },
+                        { id: 'curve', label: '📈 Curve' },
+                        { id: 'line', label: '📉 Trend' },
+                        { id: 'bar', label: '📊 Bar' },
+                        { id: 'dot', label: '🟢 Dot' },
+                        { id: 'scatter', label: '🌌 Scatter' }
+                      ].map((mode) => (
+                        <button
+                          key={mode.id}
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            setChartViewMode(mode.id);
+                          }}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
+                            chartViewMode === mode.id
+                              ? 'bg-blue-600 text-white shadow-sm'
+                              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                          }`}
+                        >
+                          {mode.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* SVG / GRAPH CANVAS TAILORED TO ACTIVE TOOL & VIEW SWITCHER */}
+                  <div className="py-4 relative w-full h-64 flex items-center">
+
+                    {/* 1. DEDICATED CUMULATIVE LTV ACCUMULATION CURVE VS CAC PAYBACK */}
+                    {(selectedAnalysis === 'clv_analysis' || chartViewMode === 'curve') && selectedAnalysis !== 'monte_carlo' && (
+                      {...(() => {
+                        const arpuVal = moduleParams.arpu || 150;
+                        const churnVal = moduleParams.churnRate || 5;
+                        const cacVal = moduleParams.cac || 350;
+                        const clvData = (analysisResult.clvCurve && analysisResult.clvCurve.length > 0)
+                          ? analysisResult.clvCurve
+                          : modules.runCLVAnalysis(arpuVal, 80, churnVal, 10, cacVal).clvCurve;
+                        
+                        const maxVal = Math.max(...clvData.map(c => c.cumulativeLTV), cacVal * 1.5, 1000);
+                        const cacYPct = Math.min(Math.max(100 - (cacVal / maxVal) * 100, 10), 90);
+                        const paybackPoint = clvData.find(c => c.cumulativeLTV >= cacVal) || clvData[1];
+                        const paybackXPct = ((paybackPoint.month / 36) * 100).toFixed(1);
+
+                        // Build smooth SVG curve path
+                        const points = clvData.map(c => {
+                          const x = ((c.month - 1) / 35) * 480 + 10;
+                          const y = 180 - (c.cumulativeLTV / maxVal) * 160;
+                          return `${x.toFixed(1)},${y.toFixed(1)}`;
+                        }).join(' ');
+
+                        return (
+                          <div className="w-full h-full relative">
+                            {/* Horizontal CAC Payback Line Indicator */}
+                            <div 
+                              className="absolute left-0 right-0 border-t-2 border-dashed border-emerald-400/90 z-20 flex items-center justify-between px-2"
+                              style={{ top: `${cacYPct}%` }}
+                            >
+                              <span className="text-[9px] font-extrabold text-emerald-300 bg-slate-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40">
+                                CAC Payback Line: ${cacVal.toLocaleString()}
+                              </span>
+                              <span className="text-[9px] font-bold text-emerald-400 bg-slate-950/90 px-1.5 py-0.5 rounded">
+                                Payback Month: {analysisResult.metrics?.find(m => m.label.includes('Payback'))?.value || '2.3 mos'}
+                              </span>
+                            </div>
+
+                            <svg className="w-full h-full overflow-visible" viewBox="0 0 500 200" preserveAspectRatio="none">
+                              {/* Background Area Fill */}
+                              <polygon
+                                points={`10,180 ${points} 490,180`}
+                                fill="#3b82f6"
+                                fillOpacity="0.18"
+                              />
+                              {/* Cumulative LTV Curve */}
+                              <polyline
+                                points={points}
+                                fill="none"
+                                stroke="#60a5fa"
+                                strokeWidth="3.5"
+                                strokeLinecap="round"
+                              />
+
+                              {/* Payback Intersection Circle Pulse Marker */}
+                              <circle
+                                cx={(parseFloat(paybackXPct) / 100) * 480 + 10}
+                                cy={180 - (cacVal / maxVal) * 160}
+                                r="6"
+                                fill="#34d399"
+                                stroke="#ffffff"
+                                strokeWidth="2"
+                                className="animate-pulse"
+                              />
+                            </svg>
+                          </div>
+                        );
+                      })()}
+                    )}
+
+                    {/* 2. MONTE CARLO STOCHASTIC SIMULATION CURVES */}
+                    {(selectedAnalysis === 'monte_carlo' || (chartViewMode === 'auto' && selectedAnalysis === 'monte_carlo')) && (
+                      <>
+                        <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-[10px] font-bold text-slate-500 pointer-events-none select-none z-10">
+                          <span>${Math.round(mcBaseCapital * 2.5).toLocaleString()}</span>
+                          <span>${Math.round(mcBaseCapital * 1.8).toLocaleString()}</span>
+                          <span>${Math.round(mcBaseCapital * 1.2).toLocaleString()}</span>
+                          <span>${Math.round(mcBaseCapital * 0.6).toLocaleString()}</span>
+                        </div>
+                        <div className="pl-14 w-full h-full">
+                          <svg className="w-full h-full overflow-visible" viewBox="0 0 500 200" preserveAspectRatio="none">
+                            <line x1="0" y1="20" x2="500" y2="20" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 3" />
+                            <line x1="0" y1="70" x2="500" y2="70" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 3" />
+                            <line x1="0" y1="120" x2="500" y2="120" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 3" />
+                            <line x1="0" y1="170" x2="500" y2="170" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 3" />
+                            {Array.from({ length: 40 }).map((_, idx) => {
+                              const drift = (mcReturn / 100) * 50;
+                              const volFactor = (mcVolatility / 20);
+                              const spread = (idx - 20) * 4.2 * volFactor + drift;
+                              const cp1X = 140 + (idx % 5) * 12;
+                              const cp1Y = 120 + ((idx % 4) - 1.5) * 18 * volFactor;
+                              const cp2X = 340 + (idx % 6) * 12;
+                              const cp2Y = 120 - spread * 0.65;
+                              const endY = Math.max(15, Math.min(185, 120 - spread));
+                              const strokeColor = idx === 20 ? '#60a5fa' : idx > 30 ? '#34d399' : idx < 10 ? '#f59e0b' : '#3b82f6';
+                              return (
+                                <path
+                                  key={idx}
+                                  d={`M 0 120 C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, 500 ${endY}`}
+                                  fill="none"
+                                  stroke={strokeColor}
+                                  strokeWidth={idx === 20 ? 2.5 : 1}
+                                  strokeOpacity={idx === 20 ? 0.95 : 0.25 + (idx % 6) * 0.08}
+                                  className="transition-all duration-300 hover:stroke-white"
+                                />
+                              );
+                            })}
+                          </svg>
+                        </div>
+                      </>
+                    )}
+
+                    {/* 3. DYNAMIC DATA RENDERER FOR LINE, SCATTER, BAR, DOT, AND AUTO MODES */}
+                    {selectedAnalysis !== 'monte_carlo' && selectedAnalysis !== 'clv_analysis' && chartViewMode !== 'curve' && (
+                      {...(() => {
+                        const primaryCol = availableColumns.find(c => c.index === primaryColIndex) || availableColumns[0];
+                        const baseSeries = primaryCol?.values && primaryCol.values.length > 0 ? primaryCol.values.slice(0, 10) : [12000, 13500, 14200, 15800, 17500, 18900, 21000, 22500, 24000];
+                        const targetVal = moduleParams.targetValue || 25000;
+                        const fixedCostsVal = moduleParams.fixedCosts || 50000;
+                        const unitPriceVal = moduleParams.unitPrice || 120;
+                        const unitCostVal = moduleParams.unitCost || 45;
+                        const periodsVal = moduleParams.forecastPeriods || 12;
+                        const confVal = moduleParams.confidenceLevel || 95;
+
+                        // Compute scaled dynamic values reacting to user inputs
+                        const dynamicValues = baseSeries.map((v) => {
+                          let multiplier = 1;
+                          if (['kpi_analysis', 'trend_analysis', 'growth_analysis', 'anomaly_detection', 'pareto_analysis'].includes(selectedAnalysis)) {
+                            multiplier = targetVal / 25000;
+                          } else if (['profitability_analysis', 'break_even', 'goal_seek', 'unit_economics'].includes(selectedAnalysis)) {
+                            multiplier = (unitPriceVal - unitCostVal) > 0 ? (fixedCostsVal / 50000) * ((unitPriceVal - unitCostVal) / 75) : 1;
+                          } else if (['revenue_forecast', 'sales_forecast', 'demand_forecast', 'cashflow_forecast', 'churn_forecast', 'timeseries_forecast'].includes(selectedAnalysis)) {
+                            multiplier = (periodsVal / 12) * (confVal / 95);
+                          }
+                          return Math.round(v * Math.max(0.1, multiplier));
+                        });
+
+                        const maxDynamicVal = Math.max(...dynamicValues, targetVal, 1000);
+
+                        // BAR CHART MODE
+                        if (chartViewMode === 'bar') {
+                          return (
+                            <div className="w-full h-full flex items-end justify-between gap-2 pt-6">
+                              {dynamicValues.map((val, i) => (
+                                <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1 group">
+                                  <span className="text-[9px] font-extrabold text-slate-300">${(val / 1000).toFixed(1)}k</span>
+                                  <div
+                                    className="w-full bg-gradient-to-t from-blue-600 via-indigo-500 to-teal-400 rounded-t-md transition-all duration-300 group-hover:brightness-125 shadow-md"
+                                    style={{ height: `${Math.min(100, Math.max(10, (val / maxDynamicVal) * 100))}%` }}
+                                  />
+                                  <span className="text-[9px] font-bold text-slate-500">P{i + 1}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+
+                        // DOT PLOT MODE
+                        if (chartViewMode === 'dot') {
+                          return (
+                            <div className="w-full h-full relative flex items-end justify-between gap-2 pt-6">
+                              <div 
+                                className="absolute left-0 right-0 border-t-2 border-dashed border-amber-400/90 z-10 flex items-center justify-between px-2"
+                                style={{ top: `${Math.min(90, Math.max(10, 100 - (targetVal / maxDynamicVal) * 100))}%` }}
+                              >
+                                <span className="text-[9px] font-extrabold text-amber-400 bg-slate-950/80 px-1 rounded uppercase">Dynamic Target Threshold</span>
+                                <span className="text-[9px] font-extrabold text-amber-400 bg-slate-950/80 px-1 rounded">${targetVal.toLocaleString()}</span>
+                              </div>
+                              {dynamicValues.map((val, i) => (
+                                <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1 group">
+                                  <div className="w-3.5 h-3.5 rounded-full bg-amber-400 shadow-md group-hover:scale-125 transition-transform" />
+                                  <div
+                                    className="w-full bg-gradient-to-t from-blue-600 to-indigo-500 rounded-t-md transition-all duration-300 opacity-60"
+                                    style={{ height: `${Math.min(100, Math.max(10, (val / maxDynamicVal) * 100))}%` }}
+                                  />
+                                  <span className="text-[9px] font-bold text-slate-500">P{i + 1}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+
+                        // LINE TREND MODE (MULTI-SERIES: REVENUE, COST, PROFIT)
+                        if (chartViewMode === 'line' || (chartViewMode === 'auto' && (selectedAnalysis.includes('forecast') || selectedAnalysis.includes('trend')))) {
+                          const seasonMult = moduleParams.seasonalityMultiplier || 1.12;
+                          const revSeries = baseSeries.map(v => Math.round(v * seasonMult));
+                          const costSeries = revSeries.map(v => Math.round(v * 0.38 + (moduleParams.fixedCosts ? moduleParams.fixedCosts / 12 : 1800)));
+                          const profitSeries = revSeries.map((v, i) => v - costSeries[i]);
+
+                          const allVals = [...revSeries, ...costSeries, ...profitSeries];
+                          const maxVal = Math.max(...allVals, 1000);
+                          const minVal = Math.min(...allVals, 0);
+                          const range = (maxVal - minVal) || 1;
+
+                          const getSvgY = (v) => 160 - ((v - minVal) / range) * 130;
+
+                          const revPts = revSeries.map((v, i) => `${((i / (revSeries.length - 1)) * 440 + 20).toFixed(1)},${getSvgY(v).toFixed(1)}`).join(' ');
+                          const costPts = costSeries.map((v, i) => `${((i / (costSeries.length - 1)) * 440 + 20).toFixed(1)},${getSvgY(v).toFixed(1)}`).join(' ');
+                          const profitPts = profitSeries.map((v, i) => `${((i / (profitSeries.length - 1)) * 440 + 20).toFixed(1)},${getSvgY(v).toFixed(1)}`).join(' ');
+
+                          return (
+                            <div className="w-full h-full flex flex-col justify-between pt-2">
+                              {/* SVG Canvas with Gridlines & Y-Axis Indicators */}
+                              <div className="w-full h-44 relative pl-12">
+                                {/* Y-Axis Tick Labels */}
+                                <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-[10px] font-extrabold text-slate-500 pointer-events-none select-none z-10">
+                                  <span>${Math.round(maxVal).toLocaleString()}</span>
+                                  <span>${Math.round(minVal + range * 0.66).toLocaleString()}</span>
+                                  <span>${Math.round(minVal + range * 0.33).toLocaleString()}</span>
+                                  <span>${Math.round(minVal).toLocaleString()}</span>
+                                </div>
+
+                                <svg className="w-full h-full overflow-visible" viewBox="0 0 500 180" preserveAspectRatio="none">
+                                  {/* Horizontal Gridlines */}
+                                  <line x1="0" y1="20" x2="500" y2="20" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 3" />
+                                  <line x1="0" y1="65" x2="500" y2="65" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 3" />
+                                  <line x1="0" y1="110" x2="500" y2="110" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 3" />
+                                  <line x1="0" y1="155" x2="500" y2="155" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 3" />
+
+                                  {/* Revenue Line (Blue) */}
+                                  <polyline points={revPts} fill="none" stroke="#3b82f6" strokeWidth="3" strokeLinecap="round" />
+                                  {/* Cost Line (Red) */}
+                                  <polyline points={costPts} fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="4 2" />
+                                  {/* Profit Line (Amber / Gold) */}
+                                  <polyline points={profitPts} fill="none" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" />
+
+                                  {/* Dots on Revenue line */}
+                                  {revSeries.map((v, i) => {
+                                    const x = (i / (revSeries.length - 1)) * 440 + 20;
+                                    const y = getSvgY(v);
+                                    return <circle key={i} cx={x} cy={y} r="3.5" fill="#3b82f6" stroke="#ffffff" strokeWidth="1" className="transition-all hover:r-5" />;
+                                  })}
+
+                                  {/* Dots on Profit line */}
+                                  {profitSeries.map((v, i) => {
+                                    const x = (i / (profitSeries.length - 1)) * 440 + 20;
+                                    const y = getSvgY(v);
+                                    return <circle key={i} cx={x} cy={y} r="4" fill="#f59e0b" stroke="#ffffff" strokeWidth="1.5" className="transition-all hover:r-6" />;
+                                  })}
+                                </svg>
+                              </div>
+
+                              {/* X-Axis Period Labels & Legend Row */}
+                              <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+                                <div className="flex justify-between pl-12 pr-2 text-[10px] font-bold text-slate-400">
+                                  {revSeries.map((_, i) => <span key={i}>Period {i + 1}</span>)}
+                                </div>
+                                <div className="flex items-center justify-center gap-6 text-[11px] font-extrabold text-slate-300">
+                                  <span className="flex items-center gap-2"><span className="w-3 h-1 bg-blue-500 rounded" /> Baseline Revenue</span>
+                                  <span className="flex items-center gap-2"><span className="w-3 h-1 bg-red-500 rounded" /> Baseline Cost</span>
+                                  <span className="flex items-center gap-2"><span className="w-3 h-1 bg-amber-400 rounded" /> Net Profit</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // SCATTER MATRIX MODE
+                        if (chartViewMode === 'scatter' || (chartViewMode === 'auto' && (selectedAnalysis.includes('regression') || selectedAnalysis.includes('correlation')))) {
+                          return (
+                            <div className="w-full h-full relative">
+                              <svg className="w-full h-full overflow-visible" viewBox="0 0 500 200" preserveAspectRatio="none">
+                                <line x1="20" y1="175" x2="480" y2="25" stroke="#34d399" strokeWidth="3" />
+                                {dynamicValues.map((val, i) => {
+                                  const x = (i / (dynamicValues.length - 1)) * 440 + 30;
+                                  const y = 180 - (val / maxDynamicVal) * 150;
+                                  return <circle key={i} cx={x} cy={y} r="5" fill="#60a5fa" className="transition-all hover:r-7 hover:fill-amber-300" />;
+                                })}
+                              </svg>
+                            </div>
+                          );
+                        }
+
+                        // DEFAULT AUTO RENDERER
+                        return (
+                          <div className="w-full h-full relative flex items-end justify-between gap-2 pt-6">
+                            <div 
+                              className="absolute left-0 right-0 border-t-2 border-dashed border-amber-400/90 z-10 flex items-center justify-between px-2"
+                              style={{ top: `${Math.min(90, Math.max(10, 100 - (targetVal / maxDynamicVal) * 100))}%` }}
+                            >
+                              <span className="text-[9px] font-extrabold text-amber-400 bg-slate-950/80 px-1 rounded uppercase">Target Threshold Indicator</span>
+                              <span className="text-[9px] font-extrabold text-amber-400 bg-slate-950/80 px-1 rounded">${targetVal.toLocaleString()}</span>
+                            </div>
+
+                            {dynamicValues.map((val, i) => (
+                              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1 group">
+                                <div className="w-3 h-3 rounded-full bg-amber-400 shadow-md group-hover:scale-125 transition-transform" />
+                                <div
+                                  className="w-full bg-gradient-to-t from-blue-600 via-indigo-500 to-teal-400 rounded-t-md transition-all duration-300 group-hover:brightness-125"
+                                  style={{ height: `${Math.min(100, Math.max(10, (val / maxDynamicVal) * 100))}%` }}
+                                />
+                                <span className="text-[9px] font-bold text-slate-500">P{i + 1}</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    )}
+                  </div>
+
+                  {/* Card Footer: Dynamic Label + Export Data Button */}
+                  <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                    <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+                      {activeModuleItem.label} Visual Output Engine
+                    </span>
+
+                    <button
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        const csvContent = "data:text/csv;charset=utf-8,Metric,Value\n" + 
+                          (analysisResult.metrics || []).map(m => `"${m.label}","${m.value}"`).join("\n");
+                        const encodedUri = encodeURI(csvContent);
+                        const link = document.createElement("a");
+                        link.setAttribute("href", encodedUri);
+                        link.setAttribute("download", `${selectedAnalysis}_analysis_data.csv`);
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      className="px-4 py-2 bg-blue-600/90 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                    >
+                      <Download size={14} />
+                      <span>EXPORT ANALYSIS DATA</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Numerical Metrics Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-1">
                 {analysisResult.metrics.map((m, idx) => (
@@ -1660,30 +2373,69 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               )}
             </div>
 
-            {/* STEP 4: VISUALIZE - DYNAMIC SVG / CSS CHARTS */}
+            {/* STEP 4: VISUALIZE - DYNAMIC METRIC-DRIVEN VISUAL CHARTS */}
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
                   <BarChart3 size={16} className="text-violet-600" />
                   <span>Step 4: Interactive Visualization</span>
                 </div>
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
+                  {analysisResult.title || 'Dynamic Metric Distribution'}
+                </span>
               </div>
               
-              {/* Synthetic Rendered Visual Graph */}
-              <div className="h-44 w-full bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-slate-200/80 dark:border-zinc-800 p-4 flex items-end justify-between gap-3">
-                {[45, 62, 58, 75, 90, 110, 125, 140, 165].map((val, idx) => (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                    <div 
-                      className="w-full bg-gradient-to-t from-violet-600 to-indigo-500 rounded-t-md transition-all hover:brightness-110"
-                      style={{ height: `${(val / 165) * 100}%` }}
-                    />
-                    <span className="text-[10px] font-semibold text-slate-400">P{idx + 1}</span>
+              {/* Dynamic Rendered Visual Graph derived from analysisResult.metrics */}
+              {(() => {
+                const rawMetrics = analysisResult.metrics || [];
+                const chartItems = rawMetrics.map((m) => {
+                  const numStr = String(m.value).replace(/[^0-9.-]/g, '');
+                  const parsed = parseFloat(numStr);
+                  return {
+                    label: m.label,
+                    valueStr: m.value,
+                    sub: m.sub,
+                    numVal: isNaN(parsed) ? 50 : Math.abs(parsed)
+                  };
+                });
+                const maxVal = Math.max(...chartItems.map(c => c.numVal), 1);
+
+                return (
+                  <div className="h-52 w-full bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-slate-200/80 dark:border-zinc-800 p-4 flex items-end justify-between gap-3 overflow-x-auto">
+                    {chartItems.map((item, idx) => {
+                      const pct = Math.min(Math.max((item.numVal / maxVal) * 100, 15), 100);
+                      const isP50 = item.label.includes('P50');
+                      const isP90 = item.label.includes('P90');
+                      const isP10 = item.label.includes('P10');
+                      const barGradient = isP50
+                        ? 'from-violet-600 to-indigo-500'
+                        : isP90
+                        ? 'from-emerald-500 to-teal-600'
+                        : isP10
+                        ? 'from-amber-500 to-orange-600'
+                        : 'from-slate-700 to-slate-900 dark:from-zinc-600 dark:to-zinc-800';
+
+                      return (
+                        <div key={idx} className="flex-1 min-w-[75px] flex flex-col items-center gap-1.5 h-full justify-end group">
+                          <span className="text-[10px] font-bold text-slate-700 dark:text-zinc-200 truncate max-w-full">
+                            {item.valueStr}
+                          </span>
+                          <div 
+                            className={`w-full bg-gradient-to-t ${barGradient} rounded-t-md transition-all group-hover:brightness-110 shadow-2xs`}
+                            style={{ height: `${pct}%` }}
+                          />
+                          <span className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400 truncate max-w-full text-center">
+                            {item.label}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </div>
 
-            {/* STEP 5: SIMULATE - REFINED APPLE-STYLE SCENARIO SLIDERS */}
+            {/* STEP 5: SIMULATE - DYNAMIC SCENARIO & RISK SIMULATION SLIDERS */}
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 space-y-4 shadow-2xs">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-2.5">
                 <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
@@ -1696,7 +2448,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-3 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Price Adjustment (%):</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Price / Growth Shift (%):</label>
                     <input
                       type="number"
                       value={simPriceDelta}
@@ -1716,7 +2468,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
                 <div className="p-3 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Volume Delta (%):</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Volume / Unit Shift (%):</label>
                     <input
                       type="number"
                       value={simVolumeDelta}
@@ -1736,7 +2488,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
                 <div className="p-3 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Cost Inflation (%):</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Cost / Risk Variance (%):</label>
                     <input
                       type="number"
                       value={simCostDelta}
@@ -1755,14 +2507,36 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 </div>
               </div>
 
-              {/* Live Recalculated Outcome Banner */}
-              <div className="p-3.5 bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-800 rounded-xl flex items-center justify-between text-xs font-medium">
-                <span className="text-slate-600 dark:text-zinc-400">Recalculated Net Impact Outcome:</span>
-                <span className="text-sm font-bold text-slate-900 dark:text-white">
-                  {simPriceDelta + simVolumeDelta - simCostDelta >= 0 ? '+' : ''}
-                  {(simPriceDelta + simVolumeDelta - simCostDelta).toFixed(1)}% Projected Variance
-                </span>
-              </div>
+              {/* Dynamic Live Recalculated Outcome Banner */}
+              {(() => {
+                const netVariance = simPriceDelta + simVolumeDelta - simCostDelta;
+                const baseP50Metric = (analysisResult.metrics || []).find(m => m.label.includes('P50') || m.label.includes('Median') || m.label.includes('Baseline'));
+                let recalculatedVal = null;
+                if (baseP50Metric) {
+                  const num = parseFloat(String(baseP50Metric.value).replace(/[^0-9.-]/g, ''));
+                  if (!isNaN(num)) {
+                    recalculatedVal = Math.round(num * (1 + netVariance / 100));
+                  }
+                }
+
+                return (
+                  <div className="p-3.5 bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-800 rounded-xl flex items-center justify-between text-xs font-medium">
+                    <span className="text-slate-600 dark:text-zinc-400">
+                      Recalculated Net Outcome Impact:
+                    </span>
+                    <div className="flex items-center gap-3">
+                      {recalculatedVal !== null && (
+                        <span className="text-slate-500 dark:text-zinc-400">
+                          Adjusted Target: <strong className="text-slate-900 dark:text-white">${recalculatedVal.toLocaleString()}</strong>
+                        </span>
+                      )}
+                      <span className={`text-sm font-bold ${netVariance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                        {netVariance >= 0 ? '+' : ''}{netVariance.toFixed(1)}% Projected Variance
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* STEP 6: DECIDE - REFINED EXECUTIVE RECOMMENDATION CARD */}
