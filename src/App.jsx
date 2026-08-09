@@ -2708,7 +2708,7 @@ const getTemplatePreviewMatrix = (id, title, customTemplate) => {
   };
 };
 
-const LiveCanvasSpreadsheetSnapshot = ({ id, title, type, customTemplate }) => {
+const LiveCanvasSpreadsheetSnapshot = ({ id, title, type, customTemplate, isHighRes = false }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -2717,8 +2717,8 @@ const LiveCanvasSpreadsheetSnapshot = ({ id, title, type, customTemplate }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const width = 480;
-    const height = 260;
+    const width = isHighRes ? 780 : 480;
+    const height = isHighRes ? 370 : 260;
     canvas.width = width * 2;
     canvas.height = height * 2;
     ctx.scale(2, 2);
@@ -2728,9 +2728,11 @@ const LiveCanvasSpreadsheetSnapshot = ({ id, title, type, customTemplate }) => {
 
     const data = getTemplatePreviewMatrix(id, title, customTemplate);
 
-    const colHeaderHeight = 18;
-    const rowHeaderWidth = 24;
-    const colWidths = [140, 90, 80, 80, 80, 75, 75, 75, 75];
+    const colHeaderHeight = isHighRes ? 22 : 18;
+    const rowHeaderWidth = isHighRes ? 32 : 24;
+    const colWidths = isHighRes 
+      ? [220, 130, 110, 110, 110, 100, 100] 
+      : [140, 90, 80, 80, 80, 75, 75, 75, 75];
 
     ctx.fillStyle = '#f1f5f9';
     ctx.fillRect(0, 0, rowHeaderWidth, colHeaderHeight);
@@ -2747,14 +2749,14 @@ const LiveCanvasSpreadsheetSnapshot = ({ id, title, type, customTemplate }) => {
       ctx.strokeRect(currentX, 0, w, colHeaderHeight);
 
       ctx.fillStyle = '#475569';
-      ctx.font = 'bold 9px system-ui, sans-serif';
+      ctx.font = isHighRes ? 'bold 10px system-ui, -apple-system, sans-serif' : 'bold 9px system-ui, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(colLetters[colIdx] || '', currentX + w / 2, 12);
+      ctx.fillText(colLetters[colIdx] || '', currentX + w / 2, isHighRes ? 15 : 12);
       currentX += w;
     });
 
     let currentY = colHeaderHeight;
-    const rowHeight = 22;
+    const rowHeight = isHighRes ? 28 : 22;
 
     (data.rows || []).forEach((row, rIdx) => {
       if (currentY >= height) return;
@@ -2765,9 +2767,9 @@ const LiveCanvasSpreadsheetSnapshot = ({ id, title, type, customTemplate }) => {
       ctx.strokeRect(0, currentY, rowHeaderWidth, rowHeight);
 
       ctx.fillStyle = '#64748b';
-      ctx.font = '600 8.5px system-ui, sans-serif';
+      ctx.font = isHighRes ? '600 10px system-ui, -apple-system, sans-serif' : '600 8.5px system-ui, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(String(rIdx + 1), rowHeaderWidth / 2, currentY + 14);
+      ctx.fillText(String(rIdx + 1), rowHeaderWidth / 2, currentY + (isHighRes ? 18 : 14));
 
       if (rIdx === 0) {
         const bannerWidth = colWidths.reduce((a, b) => a + b, 0);
@@ -2775,9 +2777,9 @@ const LiveCanvasSpreadsheetSnapshot = ({ id, title, type, customTemplate }) => {
         ctx.fillRect(rowHeaderWidth, currentY, bannerWidth, rowHeight + 2);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 11px system-ui, sans-serif';
+        ctx.font = isHighRes ? 'bold 12px system-ui, -apple-system, sans-serif' : 'bold 11px system-ui, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(row[0] || title, rowHeaderWidth + bannerWidth / 2, currentY + 16);
+        ctx.fillText(row[0] || title, rowHeaderWidth + bannerWidth / 2, currentY + (isHighRes ? 19 : 16));
       } else if (rIdx === 1) {
         let x = rowHeaderWidth;
         row.forEach((cellVal, cIdx) => {
@@ -2789,9 +2791,9 @@ const LiveCanvasSpreadsheetSnapshot = ({ id, title, type, customTemplate }) => {
 
           if (cellVal) {
             ctx.fillStyle = '#1e293b';
-            ctx.font = 'bold 8px system-ui, sans-serif';
+            ctx.font = isHighRes ? 'bold 10px system-ui, -apple-system, sans-serif' : 'bold 8px system-ui, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(cellVal, x + w / 2, currentY + 14);
+            ctx.fillText(cellVal, x + w / 2, currentY + (isHighRes ? 18 : 14));
           }
           x += w;
         });
@@ -2806,10 +2808,10 @@ const LiveCanvasSpreadsheetSnapshot = ({ id, title, type, customTemplate }) => {
 
           if (cellVal) {
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 8.5px system-ui, sans-serif';
+            ctx.font = isHighRes ? 'bold 10.5px system-ui, -apple-system, sans-serif' : 'bold 8.5px system-ui, sans-serif';
             ctx.textAlign = (cIdx >= 2 && cIdx <= 6) ? 'right' : 'left';
-            const textX = ctx.textAlign === 'right' ? x + w - 6 : x + 6;
-            ctx.fillText(cellVal, textX, currentY + 14);
+            const textX = ctx.textAlign === 'right' ? x + w - (isHighRes ? 10 : 6) : x + (isHighRes ? 10 : 6);
+            ctx.fillText(cellVal, textX, currentY + (isHighRes ? 18 : 14));
           }
           x += w;
         });
@@ -2838,34 +2840,39 @@ const LiveCanvasSpreadsheetSnapshot = ({ id, title, type, customTemplate }) => {
               }
 
               ctx.fillStyle = badgeBg;
-              const badgeW = Math.min(w - 8, 64);
+              const badgeW = isHighRes ? Math.min(w - 12, 85) : Math.min(w - 8, 64);
               const badgeX = x + (w - badgeW) / 2;
+              const badgeH = isHighRes ? rowHeight - 8 : rowHeight - 6;
+              const badgeY = isHighRes ? currentY + 4 : currentY + 3;
               ctx.beginPath();
               if (ctx.roundRect) {
-                ctx.roundRect(badgeX, currentY + 3, badgeW, rowHeight - 6, 4);
+                ctx.roundRect(badgeX, badgeY, badgeW, badgeH, isHighRes ? 6 : 4);
               } else {
-                ctx.rect(badgeX, currentY + 3, badgeW, rowHeight - 6);
+                ctx.rect(badgeX, badgeY, badgeW, badgeH);
               }
               ctx.fill();
 
               ctx.fillStyle = badgeText;
-              ctx.font = 'bold 7.5px system-ui, sans-serif';
+              ctx.font = isHighRes ? 'bold 9.5px system-ui, -apple-system, sans-serif' : 'bold 7.5px system-ui, sans-serif';
               ctx.textAlign = 'center';
-              ctx.fillText(cellVal, x + w / 2, currentY + 14);
+              ctx.fillText(cellVal, x + w / 2, currentY + (isHighRes ? 18 : 14));
             } else {
               ctx.fillStyle = (cIdx === 0 || rIdx === 7 || rIdx === 12) ? '#0f172a' : '#334155';
-              ctx.font = (cIdx === 0 || rIdx === 7 || rIdx === 12) ? 'bold 8.5px system-ui, sans-serif' : '8px system-ui, sans-serif';
+              ctx.font = (cIdx === 0 || rIdx === 7 || rIdx === 12) 
+                ? (isHighRes ? 'bold 10.5px system-ui, -apple-system, sans-serif' : 'bold 8.5px system-ui, sans-serif')
+                : (isHighRes ? '10px system-ui, -apple-system, sans-serif' : '8px system-ui, sans-serif');
               ctx.textAlign = (cIdx >= 2 && cIdx <= 6) ? 'right' : 'left';
-              const textX = ctx.textAlign === 'right' ? x + w - 6 : x + 6;
+              const textX = ctx.textAlign === 'right' ? x + w - (isHighRes ? 10 : 6) : x + (isHighRes ? 10 : 6);
               
               let displayText = String(cellVal);
-              if (ctx.measureText(displayText).width > w - 10) {
-                while (displayText.length > 3 && ctx.measureText(displayText + '…').width > w - 10) {
+              const maxPad = isHighRes ? 14 : 10;
+              if (ctx.measureText(displayText).width > w - maxPad) {
+                while (displayText.length > 3 && ctx.measureText(displayText + '…').width > w - maxPad) {
                   displayText = displayText.slice(0, -1);
                 }
                 displayText += '…';
               }
-              ctx.fillText(displayText, textX, currentY + 14);
+              ctx.fillText(displayText, textX, currentY + (isHighRes ? 18 : 14));
             }
           }
           x += w;
@@ -2875,12 +2882,12 @@ const LiveCanvasSpreadsheetSnapshot = ({ id, title, type, customTemplate }) => {
       currentY += rowHeight;
     });
 
-  }, [id, title, type, customTemplate]);
+  }, [id, title, type, customTemplate, isHighRes]);
 
   return (
     <canvas 
       ref={canvasRef} 
-      className="w-full h-full object-cover rounded-lg pointer-events-none select-none shadow-2xs" 
+      className="w-full h-full object-contain rounded-xl pointer-events-none select-none" 
     />
   );
 };
@@ -2928,7 +2935,7 @@ const VisualTemplateCard = ({ id, title, type = 'prebuilt', onClick, onDelete, i
   );
 };
 
-const TemplateScreenshotPreview = ({ id, type, title, customTemplate }) => {
+const TemplateScreenshotPreview = ({ id, type, title, customTemplate, isHighRes = false }) => {
   if (type === 'blank' || id === 'blank') {
     return (
       <div className="w-full h-full rounded-xl border border-dashed border-slate-300/90 dark:border-zinc-700/90 bg-slate-50/50 dark:bg-zinc-900/40 flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500 gap-1.5 p-3 select-none">
@@ -2938,7 +2945,7 @@ const TemplateScreenshotPreview = ({ id, type, title, customTemplate }) => {
     );
   }
 
-  return <LiveCanvasSpreadsheetSnapshot id={id} title={title} type={type} customTemplate={customTemplate} />;
+  return <LiveCanvasSpreadsheetSnapshot id={id} title={title} type={type} customTemplate={customTemplate} isHighRes={isHighRes} />;
 };
 
 const LiveTemplateGridPreview = (props) => <TemplateScreenshotPreview {...props} />;
@@ -2981,6 +2988,18 @@ const FullPageTemplateGallery = ({
     document.addEventListener('pointerdown', handleOutsideClick);
     return () => document.removeEventListener('pointerdown', handleOutsideClick);
   }, [openMenuId]);
+
+  // Close preview modal on Escape key press
+  React.useEffect(() => {
+    if (!previewTemplate) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setPreviewTemplate(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [previewTemplate]);
 
   const applyTemplate = (actionFn, templateName) => {
     if (actionFn) actionFn();
@@ -3153,7 +3172,7 @@ const FullPageTemplateGallery = ({
             <div
               key={card.id}
               onClick={() => applyTemplate(card.applyFn, card.title)}
-              className="w-full h-[265px] rounded-2xl bg-white dark:bg-[#0d0e12] border border-slate-200/80 dark:border-zinc-800/80 shadow-xs group hover:shadow-md hover:border-purple-500/40 dark:hover:border-purple-500/40 transition-all duration-200 flex flex-col relative cursor-pointer select-none overflow-hidden"
+              className="w-full h-[265px] rounded-2xl bg-white dark:bg-[#0d0e12] border border-slate-200/80 dark:border-zinc-800/80 shadow-xs group hover:shadow-md hover:border-slate-400/60 dark:hover:border-zinc-600/60 transition-all duration-200 flex flex-col relative cursor-pointer select-none overflow-hidden"
             >
               {/* Top 80% Template Screenshot Preview Area */}
               <div className="h-[205px] shrink-0 w-full p-2 bg-slate-50/70 dark:bg-zinc-950/60 border-b border-slate-100 dark:border-zinc-800/80 relative overflow-hidden flex items-center justify-center">
@@ -3176,23 +3195,25 @@ const FullPageTemplateGallery = ({
                   {/* Secondary Actions Contextual Dropdown */}
                   {openMenuId === card.id && (
                     <div 
-                      className="absolute right-0 top-9 w-40 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-700/70 rounded-2xl shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs font-sans"
+                      className="absolute right-0 top-9 w-40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-700/70 rounded-2xl shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs font-sans"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
                         type="button"
-                        onClick={() => {
+                        onPointerDown={(e) => {
+                          e.preventDefault();
                           setOpenMenuId(null);
                           applyTemplate(card.applyFn, card.title);
                         }}
-                        className="w-full px-3 py-2 text-left hover:bg-violet-50 dark:hover:bg-violet-950/40 text-slate-700 dark:text-zinc-200 hover:text-violet-700 dark:hover:text-violet-300 rounded-xl transition-colors font-semibold flex items-center gap-2 cursor-pointer"
+                        className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-900 dark:text-zinc-100 rounded-xl transition-colors font-semibold flex items-center gap-2 cursor-pointer"
                       >
                         <Check size={13} />
                         <span>Use Template</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
+                        onPointerDown={(e) => {
+                          e.preventDefault();
                           setOpenMenuId(null);
                           setPreviewTemplate({ id: card.id, title: card.title, applyFn: card.applyFn });
                         }}
@@ -3203,7 +3224,8 @@ const FullPageTemplateGallery = ({
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
+                        onPointerDown={(e) => {
+                          e.preventDefault();
                           setOpenMenuId(null);
                           showToast(`Duplicated ${card.title}`);
                         }}
@@ -3214,7 +3236,8 @@ const FullPageTemplateGallery = ({
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
+                        onPointerDown={(e) => {
+                          e.preventDefault();
                           setOpenMenuId(null);
                           showToast(`Share link copied for ${card.title}`);
                         }}
@@ -3226,7 +3249,8 @@ const FullPageTemplateGallery = ({
                       {card.isCustom && (
                         <button
                           type="button"
-                          onClick={() => {
+                          onPointerDown={(e) => {
+                            e.preventDefault();
                             setOpenMenuId(null);
                             handleDeleteCustomTemplate(card.id);
                           }}
@@ -3270,7 +3294,7 @@ const FullPageTemplateGallery = ({
 
               {/* Bottom 20% Information Footer (Name + Subtle Category only, no metadata) */}
               <div className="h-[54px] shrink-0 w-full px-3.5 py-2 flex flex-col justify-center bg-white dark:bg-[#0d0e12]">
-                <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                   {card.title}
                 </span>
                 <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5 truncate">
@@ -3282,57 +3306,74 @@ const FullPageTemplateGallery = ({
         </div>
       </div>
 
-      {/* Quick Preview High-Res Modal */}
-      {previewTemplate && (
-        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl max-w-3xl w-full p-6 shadow-2xl flex flex-col gap-5">
-            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-zinc-800 pb-3">
-              <div className="flex items-center gap-3">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  {previewTemplate.title} High-Resolution Preview
-                </h3>
+      {/* Quick Preview High-Res Modal - Portaled to document.body to prevent toolbar z-index clipping */}
+      {previewTemplate && createPortal(
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPreviewTemplate(null);
+          }}
+          className="fixed inset-0 z-[99999] bg-slate-950/60 dark:bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200 ease-out select-none"
+        >
+          <div className="relative bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl max-w-4xl w-full p-5 md:p-6 max-h-[90vh] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.35)] dark:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.85)] ring-1 ring-black/5 dark:ring-white/10 flex flex-col gap-3.5 animate-in zoom-in-95 duration-200 ease-out overflow-hidden">
+            
+            {/* Clean Apple Quick Look Header */}
+            <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-zinc-800/80 pb-2.5 shrink-0">
+              <div className="text-slate-700 dark:text-zinc-300 shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect width="18" height="18" x="3" y="3" rx="3" />
+                  <path d="M3 9h18" />
+                  <path d="M3 15h18" />
+                  <path d="M9 3v18" />
+                  <path d="M15 3v18" />
+                </svg>
               </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                {previewTemplate.title}
+              </h3>
+            </div>
+
+            {/* Canvas Container Frame */}
+            <div className="relative w-full h-[350px] max-h-[52vh] rounded-xl overflow-hidden border border-slate-200/80 dark:border-zinc-800/80 shadow-inner bg-slate-50/70 dark:bg-zinc-950/70 p-2 flex items-center justify-center group flex-1">
+              <TemplateScreenshotPreview 
+                id={previewTemplate.id} 
+                title={previewTemplate.title} 
+                customTemplate={customTemplates?.find(t => t.id === previewTemplate.id)} 
+                isHighRes={true}
+              />
+              
+              {/* Apple-style floating live status badge */}
+              <div className="absolute bottom-3 right-3 backdrop-blur-md bg-white/90 dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800/80 rounded-lg px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-zinc-300 shadow-sm flex items-center gap-2 pointer-events-none">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Live Grid Preview • 100%</span>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-zinc-800/80 shrink-0">
               <button
                 type="button"
                 onClick={() => setPreviewTemplate(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all duration-150 active:scale-95 cursor-pointer shrink-0"
               >
-                <X size={16} />
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const fn = previewTemplate.applyFn;
+                  setPreviewTemplate(null);
+                  applyTemplate(fn, previewTemplate.title);
+                }}
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-bold shadow-sm transition-all duration-150 active:scale-97 flex items-center gap-2 cursor-pointer shrink-0"
+              >
+                <Check size={14} strokeWidth={2.5} />
+                <span>Load Template into Sheet</span>
               </button>
             </div>
 
-            <div className="w-full h-80 rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-inner bg-slate-50 dark:bg-zinc-950 p-2">
-              <TemplateScreenshotPreview id={previewTemplate.id} title={previewTemplate.title} customTemplate={customTemplates?.find(t => t.id === previewTemplate.id)} />
-            </div>
-
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-slate-400 dark:text-zinc-500">
-                Includes full grid structure, cell formatting, auto-calculations, and visual charts.
-              </span>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPreviewTemplate(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const fn = previewTemplate.applyFn;
-                    setPreviewTemplate(null);
-                    applyTemplate(fn, previewTemplate.title);
-                  }}
-                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-500/20 transition-all flex items-center gap-2 cursor-pointer"
-                >
-                  <Check size={14} />
-                  <span>Load Template into Sheet</span>
-                </button>
-              </div>
-            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -186,6 +186,7 @@ export default function TemplateChartVisualizer({
   // Zoom, Height & Interactive Dragging
   const [zoomLevel, setZoomLevel] = useState(70);
   const [chartHeight, setChartHeight] = useState(360);
+  const [expandedHeight, setExpandedHeight] = useState(360);
   const [isResizingChart, setIsResizingChart] = useState(false);
   const [showInspector, setShowInspector] = useState(true);
   const [labelOffsets, setLabelOffsets] = useState({});
@@ -297,7 +298,15 @@ export default function TemplateChartVisualizer({
   const activeSeriesData = parsedData?.series?.[0]?.data || [];
   const allSeries = parsedData?.allSeries || [];
 
-  const formatValue = (num) => {
+  const formatValue = (input) => {
+    if (input === null || input === undefined) return '0';
+    if (typeof input === 'string') {
+      if (input.includes('$') || input.includes('%') || input.includes('K') || input.includes('M') || isNaN(Number(input))) {
+        return input;
+      }
+    }
+    const num = Number(input);
+    if (isNaN(num)) return String(input);
     if (Math.abs(num) >= 1e6) return `$${(num / 1e6).toFixed(1)}M`;
     if (Math.abs(num) >= 1e3) return `$${(num / 1e3).toFixed(1)}K`;
     return Number.isInteger(num) ? `${num}` : `${num.toFixed(1)}`;
@@ -346,6 +355,7 @@ export default function TemplateChartVisualizer({
       min: sMin
     };
   });
+  const subSeriesCards = secondaryColsCards;
 
   const availableCharts = useMemo(() => {
     if (!parsedData) return [];
@@ -1057,6 +1067,116 @@ export default function TemplateChartVisualizer({
           ))}
         </div>
 
+        {/* Secondary Column & Line Breakdown Grid (2 Columns) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Column Bar Breakdown */}
+            <div className={`rounded-xl border p-4 transition-all ${
+              enableGlassmorphism
+                ? 'backdrop-blur-md bg-white/60 dark:bg-zinc-900/60 border-white/40 dark:border-zinc-700/50 shadow-inner'
+                : 'bg-white dark:bg-zinc-900/80 border-slate-200/80 dark:border-zinc-800 shadow-xs'
+            }`}>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{activeSeriesName} Breakdown</h4>
+                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">By Item Distribution</span>
+                </div>
+                <div className="flex items-center gap-1.5 opacity-100 shrink-0 z-10">
+                  <button
+                    type="button"
+                    onClick={() => { setExpandedCard({ type: 'column', title: `${activeSeriesName} by Item`, points: chartPoints, max: seriesMax, min: seriesMin }); setExpandedTitle(`${activeSeriesName} by Item`); }}
+                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
+                    title="Hover Zoom / Inspect"
+                  >
+                    <Maximize2 size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertNativeSheetChart('column', `${activeSeriesName} Breakdown`)}
+                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
+                    title="Insert to Sheet"
+                  >
+                    <Plus size={13} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="w-full h-36 relative pt-2">
+                <div className="h-full w-full flex items-end justify-between gap-1.5 px-1">
+                  {chartPoints.map((pt, idx) => {
+                    const heightPercent = Math.max(8, (pt.val / (seriesMax || 1)) * 100);
+                    return (
+                      <div key={pt.id || idx} className="flex-1 flex flex-col items-center gap-1 group/bar relative">
+                        {/* Hover Tooltip */}
+                        <div className="absolute -top-7 opacity-0 group-hover/bar:opacity-100 transition-opacity bg-slate-900 text-white text-[9px] font-mono px-1.5 py-0.5 rounded shadow-lg pointer-events-none z-20 whitespace-nowrap">
+                          {pt.label}: {formatValue(pt.val)}
+                        </div>
+                        <div
+                          className="w-full rounded-t-md transition-all duration-300 group-hover/bar:brightness-110"
+                          style={{
+                            height: `${heightPercent}%`,
+                            backgroundColor: useCustomHex ? customHexColor : (paletteColors.accent || '#334155')
+                          }}
+                        />
+                        <span className="text-[8px] font-semibold text-slate-400 dark:text-zinc-500 truncate w-full text-center">
+                          {pt.label ? pt.label.substring(0, 5) : `#${idx+1}`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-series Comparison Lines */}
+            <div className={`rounded-xl border p-4 transition-all ${
+              enableGlassmorphism
+                ? 'backdrop-blur-md bg-white/60 dark:bg-zinc-900/60 border-white/40 dark:border-zinc-700/50 shadow-inner'
+                : 'bg-white dark:bg-zinc-900/80 border-slate-200/80 dark:border-zinc-800 shadow-xs'
+            }`}>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Sub-Metric Trends</h4>
+                  <span className="text-[9px] font-semibold text-slate-400 dark:text-zinc-500">Secondary Metric Rows</span>
+                </div>
+              </div>
+
+              <div className="space-y-2.5 max-h-36 overflow-y-auto thin-scrollbar pr-1">
+                {subSeriesCards.length === 0 ? (
+                  <p className="text-[11px] text-slate-400 dark:text-zinc-500 italic text-center py-4">No additional numeric columns found.</p>
+                ) : (
+                  subSeriesCards.map((scCard, scIdx) => (
+                    <div key={scIdx} className="p-2.5 rounded-lg bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/60 dark:border-zinc-800 flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-200 truncate">{scCard.name}</span>
+                          <span className="text-[10px] font-mono font-extrabold text-slate-700 dark:text-zinc-300">{formatValue(scCard.points[scCard.points.length - 1]?.val || 0)}</span>
+                        </div>
+                        <div className="w-full h-6 mt-1">
+                          <svg width="100%" height="100%" viewBox="0 0 200 24" preserveAspectRatio="none">
+                            <path
+                              d={`M 0 ${20 - ((scCard.points[0]?.val || 0) / (scCard.max || 1)) * 16} ${scCard.points.map((pt, idx) => `L ${(idx / (scCard.points.length - 1 || 1)) * 200} ${20 - (pt.val / (scCard.max || 1)) * 16}`).join(' ')}`}
+                              fill="none"
+                              stroke={useCustomHex ? customHexColor : (paletteColors.primary || '#0f172a')}
+                              strokeWidth="1.5"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setExpandedCard({ type: 'line', title: `${scCard.name} Trend`, points: scCard.points, max: scCard.max, min: scCard.min }); setExpandedTitle(`${scCard.name} Trend`); }}
+                        className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 rounded-md hover:bg-slate-200/60 dark:hover:bg-zinc-700 cursor-pointer shrink-0"
+                        title="Expand chart"
+                      >
+                        <Maximize2 size={13} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
         {/* Dynamic KPI Summary Row */}
         {showKpiCards && (
           <div className={`rounded-xl p-3 shadow-2xs transition-all ${
@@ -1096,17 +1216,16 @@ export default function TemplateChartVisualizer({
       {/* Panel Footer Bar */}
       <div className="px-4 py-2.5 border-t border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 flex items-center justify-between text-[11px] shadow-2xs shrink-0">
         <div className="flex items-center gap-1.5 text-slate-500 dark:text-zinc-400 font-medium">
-          <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>Charts update automatically as you edit</span>
         </div>
 
         <button
           type="button"
-          onPointerDown={(e) => { e.preventDefault(); setIsCustomizeModalOpen(true); }}
           onClick={() => setIsCustomizeModalOpen(true)}
           className="flex items-center gap-1.5 text-slate-700 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-zinc-100 font-bold transition-colors bg-slate-100 hover:bg-slate-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-3 py-1.5 rounded-lg cursor-pointer"
         >
-          <Settings size={13} className="text-violet-500" />
+          <Settings size={13} className="text-slate-500 dark:text-zinc-400" />
           <span>Customize Chart</span>
         </button>
       </div>
@@ -1119,16 +1238,16 @@ export default function TemplateChartVisualizer({
               setIsCustomizeModalOpen(false);
             }
           }}
-          className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
+          className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
         >
           <div
             onPointerDown={(e) => e.stopPropagation()}
-            className="bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 dark:border-zinc-700/50 w-full max-w-lg p-6 space-y-5 animate-in zoom-in-95 duration-150 cursor-default"
+            className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 w-full max-w-lg p-6 space-y-5 animate-in zoom-in-95 duration-150 cursor-default"
           >
             <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-800/80 pb-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-violet-100/80 dark:bg-violet-950/60 flex items-center justify-center">
-                  <Sliders size={18} className="text-violet-600 dark:text-violet-400" />
+                <div className="text-slate-700 dark:text-zinc-300">
+                  <Sliders size={18} />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Customize Chart</h3>
@@ -1181,7 +1300,7 @@ export default function TemplateChartVisualizer({
                         onClick={() => { setVisualPalette(pal.id); setUseCustomHex(false); }}
                         className={`p-2.5 rounded-lg border text-left flex items-center gap-2 transition-all cursor-pointer ${
                           visualPalette === pal.id && !useCustomHex
-                            ? 'border-violet-600 ring-2 ring-violet-500/20 bg-violet-50/50 dark:bg-violet-950/30'
+                            ? 'border-slate-400 dark:border-zinc-500 bg-slate-100/60 dark:bg-zinc-800 shadow-2xs'
                             : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700'
                         }`}
                       >
@@ -1200,7 +1319,7 @@ export default function TemplateChartVisualizer({
                       type="checkbox"
                       checked={useCustomHex}
                       onChange={(e) => setUseCustomHex(e.target.checked)}
-                      className="w-4 h-4 rounded text-violet-600 accent-violet-600 cursor-pointer"
+                      className="w-4 h-4 rounded text-slate-900 dark:text-zinc-100 accent-slate-900 dark:accent-zinc-100 cursor-pointer"
                     />
                   </div>
                   <div className="flex items-center gap-2">
@@ -1215,7 +1334,7 @@ export default function TemplateChartVisualizer({
                       value={customHexColor}
                       onChange={(e) => { setCustomHexColor(e.target.value); setUseCustomHex(true); }}
                       placeholder="#7c3aed"
-                      className="flex-1 px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 font-mono text-xs focus:outline-none focus:border-violet-500 text-slate-900 dark:text-zinc-100"
+                      className="flex-1 px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 font-mono text-xs focus:outline-none focus:border-slate-400 text-slate-900 dark:text-zinc-100"
                     />
                   </div>
                 </div>
@@ -1228,7 +1347,7 @@ export default function TemplateChartVisualizer({
                       type="checkbox"
                       checked={useGradient}
                       onChange={(e) => setUseGradient(e.target.checked)}
-                      className="w-4 h-4 rounded text-violet-600 accent-violet-600 cursor-pointer"
+                      className="w-4 h-4 rounded text-slate-900 dark:text-zinc-100 accent-slate-900 dark:accent-zinc-100 cursor-pointer"
                     />
                   </label>
 
@@ -1261,20 +1380,18 @@ export default function TemplateChartVisualizer({
                       type="checkbox"
                       checked={enableGlassmorphism}
                       onChange={(e) => setEnableGlassmorphism(e.target.checked)}
-                      className="w-4 h-4 rounded text-violet-600 accent-violet-600 cursor-pointer"
+                      className="w-4 h-4 rounded text-slate-900 dark:text-zinc-100 accent-slate-900 dark:accent-zinc-100 cursor-pointer"
                     />
                   </label>
                 </div>
               </div>
             )}
 
-            {/* Tab 2: Chart Line & SVG Style Controls */}
+            {/* Tab 2: Line Style & Curve Tuning */}
             {activeTab === 'style' && (
               <div className="space-y-4 text-xs">
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="font-bold text-slate-700 dark:text-zinc-300">Stroke Thinness ({strokeWidth}px)</label>
-                  </div>
+                  <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-2">Stroke Weight ({strokeWidth}px)</label>
                   <input
                     type="range"
                     min="1"
@@ -1282,157 +1399,115 @@ export default function TemplateChartVisualizer({
                     step="0.5"
                     value={strokeWidth}
                     onChange={(e) => setStrokeWidth(Number(e.target.value))}
-                    className="w-full accent-violet-600 cursor-pointer"
+                    className="w-full accent-slate-900 dark:accent-zinc-100 cursor-pointer h-2 bg-slate-200 dark:bg-zinc-700 rounded-lg"
                   />
                 </div>
 
-                <div>
-                  <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-1.5">Dash Pattern</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { id: 'solid', label: 'Solid —' },
-                      { id: 'dashed', label: 'Dashed - -' },
-                      { id: 'dotted', label: 'Dotted · ·' }
-                    ].map(item => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setStrokeDashStyle(item.id)}
-                        className={`py-1.5 rounded-md border text-center font-bold transition-all cursor-pointer ${
-                          strokeDashStyle === item.id
-                            ? 'border-violet-600 bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
-                            : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 space-y-2">
+                  <label className="flex items-center justify-between p-2 rounded-lg border border-slate-100 dark:border-zinc-800 cursor-pointer">
+                    <span className="font-bold text-slate-700 dark:text-zinc-200">Dashed Stroke Pattern</span>
+                    <input
+                      type="checkbox"
+                      checked={strokeDashed}
+                      onChange={(e) => setStrokeDashed(e.target.checked)}
+                      className="w-4 h-4 rounded text-slate-900 dark:text-zinc-100 accent-slate-900 dark:accent-zinc-100 cursor-pointer"
+                    />
+                  </label>
 
-                <div>
-                  <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-1.5">Line Curve Tension</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { id: 'smooth', label: 'Smooth Bezier Curve' },
-                      { id: 'straight', label: 'Straight Line Segments' }
-                    ].map(item => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setCurveType(item.id)}
-                        className={`py-1.5 rounded-md border text-center font-bold transition-all cursor-pointer ${
-                          curveType === item.id
-                            ? 'border-violet-600 bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
-                            : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="font-bold text-slate-700 dark:text-zinc-300">Fill Gradient Opacity ({Math.round(fillOpacity * 100)}%)</label>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="0.8"
-                    step="0.05"
-                    value={fillOpacity}
-                    onChange={(e) => setFillOpacity(Number(e.target.value))}
-                    className="w-full accent-violet-600 cursor-pointer"
-                  />
+                  <label className="flex items-center justify-between p-2 rounded-lg border border-slate-100 dark:border-zinc-800 cursor-pointer">
+                    <span className="font-bold text-slate-700 dark:text-zinc-200">Highlight Maximum Peak Dots</span>
+                    <input
+                      type="checkbox"
+                      checked={highlightPeak}
+                      onChange={(e) => setHighlightPeak(e.target.checked)}
+                      className="w-4 h-4 rounded text-slate-900 dark:text-zinc-100 accent-slate-900 dark:accent-zinc-100 cursor-pointer"
+                    />
+                  </label>
                 </div>
               </div>
             )}
 
-            {/* Tab 3: Layout & Grid Density */}
+            {/* Tab 3: Layout & Density Settings */}
             {activeTab === 'layout' && (
               <div className="space-y-4 text-xs">
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-2">Grid Columns</label>
+                  <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-2">Canvas Fixed Height</label>
                   <div className="grid grid-cols-3 gap-2">
-                    {[1, 2, 3].map(cols => (
+                    {[
+                      { height: 180, label: 'Compact' },
+                      { height: 260, label: 'Standard' },
+                      { height: 360, label: 'Expanded' }
+                    ].map(opt => (
                       <button
-                        key={cols}
+                        key={opt.height}
                         type="button"
-                        onClick={() => setGridColsCount(cols)}
-                        className={`py-2 px-3 rounded-md border text-xs font-semibold transition-all cursor-pointer ${
-                          gridColsCount === cols
-                            ? 'border-violet-600 bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
-                            : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'
+                        onClick={() => setChartHeight(opt.height)}
+                        className={`p-2.5 rounded-lg border text-center font-bold cursor-pointer transition-all ${
+                          chartHeight === opt.height
+                            ? 'border-slate-900 dark:border-zinc-100 bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
+                            : 'border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:border-slate-300'
                         }`}
                       >
-                        {cols} {cols === 1 ? 'Column' : 'Columns'}
+                        {opt.label} ({opt.height}px)
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div>
-                  <label className="font-bold text-slate-700 dark:text-zinc-300 block mb-2">Charts Per Page / View</label>
-                  <div className="grid grid-cols-5 gap-2 text-xs">
-                    {['1', '2', '4', '6', 'auto'].map(val => (
-                      <button
-                        key={val}
-                        type="button"
-                        onClick={() => setChartsPerPage(val)}
-                        className={`py-1.5 rounded-md border text-center capitalize font-semibold transition-all cursor-pointer ${
-                          chartsPerPage === val
-                            ? 'border-violet-600 bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
-                            : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'
-                        }`}
-                      >
-                        {val}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Tab 4: Display Toggles */}
-            {activeTab === 'display' && (
-              <div className="space-y-2.5 text-xs font-medium">
-                {[
-                  { label: 'Show Legends', state: showLegend, setter: setShowLegend },
-                  { label: 'Show Y-Axis Gridlines', state: showGridlines, setter: setShowGridlines },
-                  { label: 'Show Chart Axes & Values', state: showAxes, setter: setShowAxes },
-                  { label: 'Show Value Labels & Badges', state: showLabels, setter: setShowLabels },
-                  { label: 'Show Summary KPI Cards Row', state: showKpiCards, setter: setShowKpiCards }
-                ].map((item, idx) => (
-                  <label key={idx} className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 dark:border-zinc-800/80 hover:bg-slate-50 dark:hover:bg-zinc-800/40 cursor-pointer">
-                    <span className="text-slate-700 dark:text-zinc-200 font-semibold">{item.label}</span>
+                <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 space-y-2">
+                  <label className="flex items-center justify-between p-2 rounded-lg border border-slate-100 dark:border-zinc-800 cursor-pointer">
+                    <span className="font-bold text-slate-700 dark:text-zinc-200">Show Background Grid Lines</span>
                     <input
                       type="checkbox"
-                      checked={item.state}
-                      onChange={(e) => item.setter(e.target.checked)}
-                      className="w-4 h-4 rounded text-violet-600 focus:ring-violet-500 accent-violet-600 cursor-pointer"
+                      checked={showGridLines}
+                      onChange={(e) => setShowGridLines(e.target.checked)}
+                      className="w-4 h-4 rounded text-slate-900 dark:text-zinc-100 accent-slate-900 dark:accent-zinc-100 cursor-pointer"
                     />
                   </label>
-                ))}
+
+                  <label className="flex items-center justify-between p-2 rounded-lg border border-slate-100 dark:border-zinc-800 cursor-pointer">
+                    <span className="font-bold text-slate-700 dark:text-zinc-200">Show Numeric Data Labels</span>
+                    <input
+                      type="checkbox"
+                      checked={showDataLabels}
+                      onChange={(e) => setShowDataLabels(e.target.checked)}
+                      className="w-4 h-4 rounded text-slate-900 dark:text-zinc-100 accent-slate-900 dark:accent-zinc-100 cursor-pointer"
+                    />
+                  </label>
+                </div>
               </div>
             )}
 
-            {/* Tab 5: Presets */}
-            {activeTab === 'presets' && (
+            {/* Tab 4: Display Elements */}
+            {activeTab === 'display' && (
               <div className="space-y-3 text-xs">
-                <div className="flex gap-2">
+                <label className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 dark:border-zinc-800 cursor-pointer">
+                  <span className="font-bold text-slate-700 dark:text-zinc-200">Show KPI Summary Stat Cards</span>
+                  <input
+                    type="checkbox"
+                    checked={showKpiCards}
+                    onChange={(e) => setShowKpiCards(e.target.checked)}
+                    className="w-4 h-4 rounded text-slate-900 dark:text-zinc-100 accent-slate-900 dark:accent-zinc-100 cursor-pointer"
+                  />
+                </label>
+              </div>
+            )}
+
+            {/* Tab 5: Custom Presets Manager */}
+            {activeTab === 'presets' && (
+              <div className="space-y-4 text-xs">
+                <div className="flex items-center gap-2">
                   <input
                     type="text"
-                    placeholder="New layout preset name..."
-                    value={newPresetName}
-                    onChange={(e) => setNewPresetName(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-slate-100 dark:bg-zinc-800 rounded-lg border border-slate-200/80 dark:border-zinc-700 text-slate-800 dark:text-zinc-100 text-xs focus:outline-none focus:border-violet-500"
+                    placeholder="Preset Name (e.g. Executive Dark)..."
+                    value={presetNameInput}
+                    onChange={(e) => setPresetNameInput(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-slate-100 dark:bg-zinc-800 rounded-lg border border-slate-200/80 dark:border-zinc-700 text-slate-800 dark:text-zinc-100 text-xs focus:outline-none focus:border-slate-400"
                   />
                   <button
                     type="button"
                     onClick={handleSavePreset}
-                    className="px-3.5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-lg cursor-pointer"
+                    className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold rounded-lg cursor-pointer"
                   >
                     Save Preset
                   </button>
@@ -1448,7 +1523,7 @@ export default function TemplateChartVisualizer({
                         <button
                           type="button"
                           onClick={() => handleApplyPreset(preset)}
-                          className="px-2.5 py-1 bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-md text-[11px] font-bold text-violet-600 dark:text-violet-300 cursor-pointer"
+                          className="px-2.5 py-1 bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-md text-[11px] font-bold text-slate-800 dark:text-zinc-200 cursor-pointer"
                         >
                           Apply
                         </button>
@@ -1471,7 +1546,7 @@ export default function TemplateChartVisualizer({
               <button
                 type="button"
                 onClick={() => setIsCustomizeModalOpen(false)}
-                className="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer"
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer"
               >
                 Done
               </button>
@@ -1489,11 +1564,11 @@ export default function TemplateChartVisualizer({
               setExpandedCard(null);
             }
           }}
-          className="fixed inset-0 z-[1000000] bg-black/85 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-150 cursor-pointer"
+          className="fixed inset-0 z-[999999] bg-black/85 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-150 cursor-pointer"
         >
           <div
             onPointerDown={(e) => e.stopPropagation()}
-            className="bg-white/95 dark:bg-zinc-900/95 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 w-full max-w-4xl p-6 space-y-4 flex flex-col max-h-[90vh] overflow-hidden cursor-default relative"
+            className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 w-full max-w-4xl p-6 space-y-4 flex flex-col max-h-[90vh] overflow-hidden cursor-default relative"
           >
             {/* Header & Editable Title Bar with Carousel Navigation (< / >) */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3 shrink-0">
@@ -1503,9 +1578,9 @@ export default function TemplateChartVisualizer({
                   value={expandedTitle || expandedCard.title}
                   onChange={(e) => setExpandedTitle(e.target.value)}
                   placeholder="Chart Title..."
-                  className="text-base font-bold text-slate-900 dark:text-zinc-100 bg-transparent border-b border-transparent hover:border-slate-300 dark:hover:border-zinc-700 focus:border-violet-500 focus:outline-none transition-colors px-1 py-0.5 w-full max-w-sm"
+                  className="text-base font-bold text-slate-900 dark:text-zinc-100 bg-transparent border-b border-transparent hover:border-slate-300 dark:hover:border-zinc-700 focus:border-slate-400 focus:outline-none transition-colors px-1 py-0.5 w-full max-w-sm"
                 />
-                <span className="text-xs px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-bold shrink-0">
+                <span className="text-xs px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/80 dark:border-zinc-700/80 font-bold shrink-0">
                   {expandedCard.type ? `${expandedCard.type.toUpperCase()} View` : 'Focus View'}
                 </span>
               </div>
@@ -1515,7 +1590,7 @@ export default function TemplateChartVisualizer({
                 <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-lg border border-slate-200/60 dark:border-zinc-700/80">
                   <button
                     type="button"
-                    onPointerDown={(e) => { e.preventDefault(); handleNavigateChart(-1); }}
+                    onClick={() => handleNavigateChart(-1)}
                     className="p-1 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer"
                     title="Previous Chart (<)"
                   >
@@ -1526,7 +1601,7 @@ export default function TemplateChartVisualizer({
                   </span>
                   <button
                     type="button"
-                    onPointerDown={(e) => { e.preventDefault(); handleNavigateChart(1); }}
+                    onClick={() => handleNavigateChart(1)}
                     className="p-1 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer"
                     title="Next Chart (>)"
                   >
@@ -1536,7 +1611,7 @@ export default function TemplateChartVisualizer({
 
                 <button
                   type="button"
-                  onPointerDown={(e) => { e.preventDefault(); handleExportPngChart(); }}
+                  onClick={() => handleExportPngChart()}
                   className="px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-zinc-200 flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Download size={14} />
@@ -1549,7 +1624,7 @@ export default function TemplateChartVisualizer({
             <div className="flex items-center justify-between gap-4 p-2.5 bg-slate-50 dark:bg-zinc-800/50 rounded-lg text-xs shrink-0 flex-wrap">
               <div className="flex items-center gap-3">
                 <span className="font-bold text-slate-600 dark:text-zinc-300 flex items-center gap-1.5">
-                  <Sliders size={13} className="text-violet-500" />
+                  <Sliders size={13} className="text-slate-500 dark:text-zinc-400" />
                   Stroke Thinness:
                 </span>
                 <div className="flex items-center gap-1 bg-white dark:bg-zinc-800 p-0.5 rounded-lg border border-slate-200/80 dark:border-zinc-700">
@@ -1565,7 +1640,7 @@ export default function TemplateChartVisualizer({
                       onClick={() => setStrokeWidth(p.val)}
                       className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
                         strokeWidth === p.val
-                          ? 'bg-violet-600 text-white shadow-2xs'
+                          ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-2xs'
                           : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100'
                       }`}
                     >
@@ -1580,9 +1655,9 @@ export default function TemplateChartVisualizer({
                   step="0.5"
                   value={strokeWidth}
                   onChange={(e) => setStrokeWidth(Number(e.target.value))}
-                  className="w-24 accent-violet-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-lg"
+                  className="w-24 accent-slate-900 dark:accent-zinc-100 cursor-pointer h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-lg"
                 />
-                <span className="font-mono text-xs font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/60 px-1.5 py-0.5 rounded-md border border-violet-200 dark:border-violet-800/60">
+                <span className="font-mono text-xs font-bold text-slate-800 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-zinc-700">
                   {strokeWidth}px
                 </span>
               </div>
@@ -1600,10 +1675,10 @@ export default function TemplateChartVisualizer({
                     <button
                       key={h.val}
                       type="button"
-                      onClick={() => setChartHeight(h.val)}
+                      onClick={() => setExpandedHeight(h.val)}
                       className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                        chartHeight === h.val
-                          ? 'bg-violet-600 text-white shadow-2xs'
+                        expandedHeight === h.val
+                          ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-2xs'
                           : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100'
                       }`}
                     >
