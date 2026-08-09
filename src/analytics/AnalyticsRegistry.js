@@ -4,9 +4,9 @@ class AnalyticsRegistry {
   constructor() {
     this.plugins = new Map();
     this.auditLogs = [];
-    this.permissions = new Map(); // agentId -> Set of allowed tool IDs
-    this.rateLimits = new Map(); // agentId -> array of timestamps
-    this.pendingConfirmations = []; // queue of sensitive tasks needing user click
+    this.permissions = new Map();
+    this.rateLimits = new Map();
+    this.pendingConfirmations = [];
 
     // Auto-register standard analytical modules
     this.initDefaultModules();
@@ -17,7 +17,6 @@ class AnalyticsRegistry {
     if (this.plugins.has(id)) {
       console.warn(`Plugin with id ${id} is already registered. Overwriting.`);
     }
-    // Validation of config
     if (!pluginConfig.name || !pluginConfig.category || typeof pluginConfig.execute !== 'function') {
       throw new Error(`Invalid plugin configuration for ${id}`);
     }
@@ -39,11 +38,11 @@ class AnalyticsRegistry {
     return categories;
   }
 
-  // Checks rate limits for a given agent (e.g. max 15 requests per minute)
+  // Checks rate limits for a given agent
   checkRateLimit(agentId) {
     const now = Date.now();
-    const timeframe = 60000; // 1 minute
-    const limit = 15;
+    const timeframe = 60000;
+    const limit = 30;
 
     if (!this.rateLimits.has(agentId)) {
       this.rateLimits.set(agentId, []);
@@ -56,12 +55,9 @@ class AnalyticsRegistry {
     return timestamps.length <= limit;
   }
 
-  // Check if agent is permitted to call a tool
+  // Check permissions
   checkPermission(agentId, toolId) {
-    if (!this.permissions.has(agentId)) {
-      // Default: Allow all agents to run basic calculations, but restrict writes
-      return true;
-    }
+    if (!this.permissions.has(agentId)) return true;
     return this.permissions.get(agentId).has(toolId);
   }
 
@@ -75,7 +71,7 @@ class AnalyticsRegistry {
       status: success ? 'SUCCESS' : 'FAILED',
       details: outcomeMessage
     };
-    this.auditLogs.unshift(logEntry); // new items first
+    this.auditLogs.unshift(logEntry);
     if (this.auditLogs.length > 200) {
       this.auditLogs.pop();
     }
@@ -93,12 +89,12 @@ class AnalyticsRegistry {
       timestamp: Date.now(),
       confirm: () => {
         confItem.status = 'APPROVED';
-        this.logAudit(agentId, toolId, { confirmed: true }, true, 'User approved sensitive action: ' + description);
+        this.logAudit(agentId, toolId, { confirmed: true }, true, 'Approved sensitive action: ' + description);
         onConfirm();
       },
       cancel: () => {
         confItem.status = 'REJECTED';
-        this.logAudit(agentId, toolId, { confirmed: false }, false, 'User rejected sensitive action: ' + description);
+        this.logAudit(agentId, toolId, { confirmed: false }, false, 'Rejected sensitive action: ' + description);
         onCancel();
       }
     };
@@ -106,28 +102,24 @@ class AnalyticsRegistry {
     return confirmationId;
   }
 
-  // Expose callable tools for AI agents
+  // Expose callable tools for agents
   async callAgentTool(agentId, toolId, params = {}) {
-    // 1. Rate Limiting Check
     if (!this.checkRateLimit(agentId)) {
-      this.logAudit(agentId, toolId, params, false, 'Rate limit exceeded (Max 15/min)');
-      throw new Error(`Rate limit exceeded for agent ${agentId}. Limit is 15 requests per minute.`);
+      this.logAudit(agentId, toolId, params, false, 'Rate limit exceeded');
+      throw new Error(`Rate limit exceeded for agent ${agentId}.`);
     }
 
-    // 2. Permission Check
     if (!this.checkPermission(agentId, toolId)) {
       this.logAudit(agentId, toolId, params, false, 'Permission denied');
-      throw new Error(`Agent ${agentId} does not have permission to execute tool ${toolId}.`);
+      throw new Error(`Agent ${agentId} does not have permission for tool ${toolId}.`);
     }
 
-    // 3. Find Plugin
     const plugin = this.plugins.get(toolId);
     if (!plugin) {
       this.logAudit(agentId, toolId, params, false, 'Tool not found');
       throw new Error(`Tool ${toolId} not registered in Analytics Workspace.`);
     }
 
-    // 4. Input Validation
     if (plugin.validate) {
       const validationError = plugin.validate(params);
       if (validationError) {
@@ -136,13 +128,12 @@ class AnalyticsRegistry {
       }
     }
 
-    // 5. Handle Sensitive Writes
     if (plugin.isSensitive || params.writeBackToSheet) {
       return new Promise((resolve, reject) => {
         this.queueConfirmation(
           agentId,
           toolId,
-          `Agent wants to run "${plugin.name}" and write results back to the sheet.`,
+          `Agent wants to execute "${plugin.name}" and write back results.`,
           () => {
             try {
               const res = plugin.execute(params.data, params.options);
@@ -151,14 +142,11 @@ class AnalyticsRegistry {
               reject(err);
             }
           },
-          () => {
-            reject(new Error('Sensitive action rejected by user.'));
-          }
+          () => reject(new Error('Sensitive action rejected by user.'))
         );
       });
     }
 
-    // 6. Regular Execution
     try {
       const result = plugin.execute(params.data, params.options);
       this.logAudit(agentId, toolId, params, true, 'Tool executed successfully');
@@ -169,181 +157,335 @@ class AnalyticsRegistry {
     }
   }
 
-  // Populate default analytical plugins
+  // Register all analytical plugins across the 6 categories
   initDefaultModules() {
-    // 1. Descriptive Stats
+    // ----------------------------------------------------
+    // 1. BUSINESS ANALYSIS (DETERMINISTIC)
+    // ----------------------------------------------------
+    this.registerModule('kpi_analysis', {
+      name: 'KPI Analysis',
+      category: 'Business Analysis',
+      description: 'Calculates core business metrics, target attainment, CAGR, and alert thresholds.',
+      execute: (data, opts) => modules.runKPIAnalysis(data, opts?.target)
+    });
+
+    this.registerModule('trend_analysis', {
+      name: 'Trend Analysis',
+      category: 'Business Analysis',
+      description: 'Determines growth direction, slope, acceleration, and 3-period moving average.',
+      execute: (data) => modules.runTrendAnalysis(data)
+    });
+
+    this.registerModule('variance_analysis', {
+      name: 'Variance Analysis',
+      category: 'Business Analysis',
+      description: 'Compares actual performance vs budget targets to isolate favorable/unfavorable deltas.',
+      execute: (data, opts) => modules.runVarianceAnalysis(data, opts?.budgets)
+    });
+
+    this.registerModule('growth_analysis', {
+      name: 'Growth Analysis',
+      category: 'Business Analysis',
+      description: 'Computes period-over-period growth rates, absolute expansion, and CAGR.',
+      execute: (data) => modules.runGrowthAnalysis(data)
+    });
+
+    this.registerModule('profitability_analysis', {
+      name: 'Profitability Analysis',
+      category: 'Business Analysis',
+      description: 'Evaluates Gross Profit, EBITDA, Operating Margin %, and Net Profit Margins.',
+      execute: (data, opts) => modules.runProfitabilityAnalysis(opts?.revenue || data, opts?.cogs, opts?.opex)
+    });
+
+    this.registerModule('pareto_analysis', {
+      name: 'Pareto Analysis (80/20 Rule)',
+      category: 'Business Analysis',
+      description: 'Identifies the top 20% of drivers generating 80% of total output.',
+      execute: (data, opts) => modules.runParetoAnalysis(opts?.items, data)
+    });
+
+    this.registerModule('anomaly_detection', {
+      name: 'Anomaly Detection',
+      category: 'Business Analysis',
+      description: 'Scans matrix series for statistical Z-score spikes and severe dips.',
+      execute: (data, opts) => modules.runAnomalyDetection(data, opts?.threshold)
+    });
+
+    // ----------------------------------------------------
+    // 2. CUSTOMER & SALES ANALYSIS (DETERMINISTIC)
+    // ----------------------------------------------------
+    this.registerModule('cohort_analysis', {
+      name: 'Cohort Analysis',
+      category: 'Customer & Sales Analysis',
+      description: 'Calculates period-by-period customer retention matrices and cohort decay rates.',
+      execute: (data) => modules.runCohortAnalysis(data)
+    });
+
+    this.registerModule('retention_churn', {
+      name: 'Retention & Churn Analysis',
+      category: 'Customer & Sales Analysis',
+      description: 'Tracks net user additions, retention rate %, and monthly churn rate %.',
+      execute: (data, opts) => modules.runRetentionChurnAnalysis(opts?.start, opts?.newUsers, opts?.end)
+    });
+
+    this.registerModule('clv_analysis', {
+      name: 'Customer Lifetime Value (CLV)',
+      category: 'Customer & Sales Analysis',
+      description: 'Computes Simple & Discounted CLV, CAC Payback period, and LTV:CAC ratios.',
+      execute: (data, opts) => modules.runCLVAnalysis(opts?.arpu, opts?.grossMarginPct, opts?.churnRatePct)
+    });
+
+    this.registerModule('sales_funnel', {
+      name: 'Sales Funnel Analysis',
+      category: 'Customer & Sales Analysis',
+      description: 'Analyzes stage-to-stage pipeline conversion rates and isolates conversion bottlenecks.',
+      execute: (data) => modules.runSalesFunnelAnalysis(data)
+    });
+
+    this.registerModule('conversion_analysis', {
+      name: 'Conversion Analysis',
+      category: 'Customer & Sales Analysis',
+      description: 'Measures acquisition efficiency from raw visitors down to closed sales wins.',
+      execute: (data, opts) => modules.runConversionAnalysis(opts?.visitors, opts?.leads, opts?.opps, opts?.wins)
+    });
+
+    this.registerModule('customer_segmentation', {
+      name: 'Customer Segmentation',
+      category: 'Customer & Sales Analysis',
+      description: 'Categorizes customers into Champions, Loyal, At-Risk, and Inactive RFM tiers.',
+      execute: (data) => modules.runCustomerSegmentation(data)
+    });
+
+    // ----------------------------------------------------
+    // 3. FINANCIAL ANALYSIS (DETERMINISTIC)
+    // ----------------------------------------------------
+    this.registerModule('revenue_analysis', {
+      name: 'Revenue Analysis',
+      category: 'Financial Analysis',
+      description: 'Audits total top-line revenue, run-rate, CAGR, and next-period projection.',
+      execute: (data) => modules.runRevenueAnalysis(data)
+    });
+
+    this.registerModule('margin_analysis', {
+      name: 'Margin Analysis',
+      category: 'Financial Analysis',
+      description: 'Decomposes Gross, Contribution, Operating, and Net Profit Margin ratios.',
+      execute: (data, opts) => modules.runMarginAnalysis(opts?.revenue, opts?.cogs, opts?.opex)
+    });
+
+    this.registerModule('breakeven_analysis', {
+      name: 'Break-Even Analysis',
+      category: 'Financial Analysis',
+      description: 'Calculates break-even unit volume, revenue threshold, and degree of operating leverage.',
+      execute: (data, opts) => modules.runBreakEvenAnalysis(opts?.fixedCosts, opts?.variableCost, opts?.price)
+    });
+
+    this.registerModule('unit_economics', {
+      name: 'Unit Economics',
+      category: 'Financial Analysis',
+      description: 'Evaluates LTV, CAC, payback period, and contribution margin per customer.',
+      execute: (data, opts) => modules.runUnitEconomics(opts?.cac, opts?.arpu, opts?.marginPct, opts?.churnPct)
+    });
+
+    this.registerModule('cash_flow_analysis', {
+      name: 'Cash Flow Analysis',
+      category: 'Financial Analysis',
+      description: 'Calculates Operating, Investing, Financing Cash Flows, Free Cash Flow, and Runway.',
+      execute: (data, opts) => modules.runCashFlowAnalysis(opts?.operating, opts?.investing, opts?.financing, opts?.startCash)
+    });
+
+    this.registerModule('budget_vs_actual', {
+      name: 'Budget vs Actual Analysis',
+      category: 'Financial Analysis',
+      description: 'Measures financial variance against budgeted line items.',
+      execute: (data, opts) => modules.runBudgetVsActualAnalysis(data, opts?.budgets)
+    });
+
+    this.registerModule('financial_ratios', {
+      name: 'Financial Ratio Analysis',
+      category: 'Financial Analysis',
+      description: 'Computes Current Ratio, Quick Ratio, Debt-to-Equity, ROE, ROA, and Asset Turnover.',
+      execute: (data) => modules.runFinancialRatioAnalysis(data)
+    });
+
+    // ----------------------------------------------------
+    // 4. FORECASTING (COMPUTATIONAL TIME-SERIES)
+    // ----------------------------------------------------
+    this.registerModule('revenue_forecast', {
+      name: 'Revenue Forecast',
+      category: 'Forecasting',
+      description: 'Time-series revenue projection using exponential smoothing.',
+      execute: (data, opts) => modules.runRevenueForecast(data, opts?.periods)
+    });
+
+    this.registerModule('sales_forecast', {
+      name: 'Sales Forecast',
+      category: 'Forecasting',
+      description: 'Linear trend sales projection with upper/lower confidence bounds.',
+      execute: (data, opts) => modules.runSalesForecast(data, opts?.periods)
+    });
+
+    this.registerModule('demand_forecast', {
+      name: 'Demand Forecast',
+      category: 'Forecasting',
+      description: '3-period moving average demand forecasting model.',
+      execute: (data, opts) => modules.runDemandForecast(data, opts?.periods)
+    });
+
+    this.registerModule('cashflow_forecast', {
+      name: 'Cash Flow Forecast',
+      category: 'Forecasting',
+      description: 'Projects future cash inflows, outflows, and net cash balances over N periods.',
+      execute: (data, opts) => modules.runCashFlowForecast(opts?.inflows, opts?.outflows, opts?.startCash, opts?.periods)
+    });
+
+    this.registerModule('churn_forecast', {
+      name: 'Churn Forecast',
+      category: 'Forecasting',
+      description: 'Projects customer attrition and retained customer base over future periods.',
+      execute: (data, opts) => modules.runChurnForecast(opts?.currentCustomers, opts?.churnRatePct, opts?.periods)
+    });
+
+    this.registerModule('timeseries_forecast', {
+      name: 'Time-Series Forecasting Engine',
+      category: 'Forecasting',
+      description: 'Generates fitted values, future forecasts, and 95% confidence bounds.',
+      execute: (data, opts) => modules.runTimeSeriesForecasting(data, opts?.periods, opts?.method)
+    });
+
+    // ----------------------------------------------------
+    // 5. SIMULATION & SCENARIOS (MATH ENGINES)
+    // ----------------------------------------------------
+    this.registerModule('monte_carlo', {
+      name: 'Monte Carlo Simulation',
+      category: 'Simulation & Scenarios',
+      description: 'Generates multi-path stochastic simulations with P10/P50/P90 percentile limits.',
+      execute: (data, opts) => modules.runMonteCarloSimulation(opts?.baseValue || 100000, opts?.stdDev || 0.15, opts?.runs || 500, opts?.steps || 12)
+    });
+
+    this.registerModule('what_if_analysis', {
+      name: 'What-If Analysis',
+      category: 'Simulation & Scenarios',
+      description: 'Evaluates outcome changes resulting from price, volume, or cost adjustments.',
+      execute: (data, opts) => modules.runWhatIfAnalysis(opts?.baseValue || 100000, opts?.priceDeltaPct, opts?.volumeDeltaPct, opts?.cogsDeltaPct)
+    });
+
+    this.registerModule('scenario_analysis', {
+      name: 'Scenario Analysis',
+      category: 'Simulation & Scenarios',
+      description: 'Generates Bull, Base, and Bear case financial scenarios.',
+      execute: (data, opts) => modules.runScenarioAnalysis(opts?.baseValue || 100000)
+    });
+
+    this.registerModule('sensitivity_analysis', {
+      name: 'Sensitivity Analysis',
+      category: 'Simulation & Scenarios',
+      description: '2D matrix evaluation testing outcome sensitivity across price and volume steps.',
+      execute: (data, opts) => modules.runSensitivityAnalysis(opts?.baseValue || 100000)
+    });
+
+    this.registerModule('risk_analysis', {
+      name: 'Risk Analysis (VaR)',
+      category: 'Simulation & Scenarios',
+      description: 'Calculates Sharpe Ratio, Value at Risk (VaR), and historical return distributions.',
+      execute: (data, opts) => modules.runRiskAnalysis(data, opts?.confidenceLevel, opts?.riskFreeRate)
+    });
+
+    this.registerModule('goal_seek', {
+      name: 'Goal Seek Solver',
+      category: 'Simulation & Scenarios',
+      description: 'Solves for exact required unit sales or price to achieve target profit.',
+      execute: (data, opts) => modules.runGoalSeek(opts?.targetNetProfit, opts?.initialUnits, opts?.price, opts?.cost, opts?.fixedCosts)
+    });
+
+    this.registerModule('optimization_engine', {
+      name: 'Optimization Engine',
+      category: 'Simulation & Scenarios',
+      description: 'Allocates limited budgets across channels to maximize return on investment.',
+      execute: (data, opts) => modules.runOptimizationEngine(opts?.budget, opts?.costs, opts?.roas)
+    });
+
+    // ----------------------------------------------------
+    // 6. ADVANCED STATISTICS (STATISTICAL ENGINES)
+    // ----------------------------------------------------
     this.registerModule('descriptive_stats', {
       name: 'Descriptive Statistics',
-      category: 'Statistical Analysis',
-      description: 'Calculates mean, median, standard deviation, variance, and standard error.',
-      validate: (params) => (!params.data || !Array.isArray(params.data)) ? 'Requires array parameter [data]' : null,
+      category: 'Advanced Statistics',
+      description: 'Calculates mean, median, std dev, variance, min, max, and standard error.',
       execute: (data) => modules.runDescriptiveStatistics(data)
     });
 
-    // 2. T-Test
     this.registerModule('t_test', {
       name: 'Independent T-Test',
-      category: 'Hypothesis Testing',
+      category: 'Advanced Statistics',
       description: 'Performs independent two-sample t-test between group A and group B columns.',
-      validate: (params) => {
-        if (!params.data || !params.data.groupA || !params.data.groupB) {
-          return 'Requires { groupA: number[], groupB: number[] } in parameters';
-        }
-        return null;
-      },
-      execute: (data) => modules.runTTest(data.groupA, data.groupB)
+      execute: (data, opts) => modules.runTTest(opts?.groupA || data.groupA, opts?.groupB || data.groupB)
     });
 
-    // 3. ANOVA
+    this.registerModule('paired_t_test', {
+      name: 'Paired T-Test',
+      category: 'Advanced Statistics',
+      description: 'Compares before/after measurements on paired observations.',
+      execute: (data, opts) => modules.runPairedTTest(opts?.groupA || data.groupA, opts?.groupB || data.groupB)
+    });
+
     this.registerModule('anova', {
       name: 'One-Way ANOVA',
-      category: 'Hypothesis Testing',
-      description: 'Calculates One-Way Analysis of Variance across multiple numeric groupings.',
-      validate: (params) => (!params.data || !Array.isArray(params.data)) ? 'Requires a 2D array of data arrays' : null,
+      category: 'Advanced Statistics',
+      description: 'Calculates Analysis of Variance across multiple categorical groupings.',
       execute: (data) => modules.runANOVA(data)
     });
 
-    // 4. Chi-Square Test
     this.registerModule('chi_square', {
       name: 'Chi-Square Test',
-      category: 'Hypothesis Testing',
-      description: 'Calculates Chi-Square test of independence on an observed grid/matrix of counts.',
-      validate: (params) => (!params.data || !Array.isArray(params.data) || !Array.isArray(params.data[0])) ? 'Requires a 2D matrix of observed counts' : null,
+      category: 'Advanced Statistics',
+      description: 'Tests independence between categorical variables in an observed matrix.',
       execute: (data) => modules.runChiSquare(data)
     });
 
-    // 5. Pearson Correlation
     this.registerModule('correlation', {
       name: 'Pearson Correlation',
-      category: 'Statistical Analysis',
-      description: 'Measures linear correlation coefficient r and coefficient of determination r2.',
-      validate: (params) => {
-        if (!params.data || !params.data.x || !params.data.y) return 'Requires parameters { x: number[], y: number[] }';
-        return null;
-      },
-      execute: (data) => modules.runCorrelation(data.x, data.y)
+      category: 'Advanced Statistics',
+      description: 'Measures correlation coefficient r and determination r2 between variables.',
+      execute: (data, opts) => modules.runCorrelation(opts?.x || data.x, opts?.y || data.y)
     });
 
-    // 6. Linear Regression
     this.registerModule('regression', {
       name: 'Linear Regression',
-      category: 'Statistical Analysis',
-      description: 'Computes regression line slope, intercept, residuals, and predictions.',
-      validate: (params) => {
-        if (!params.data || !params.data.x || !params.data.y) return 'Requires parameters { x: number[], y: number[] }';
-        return null;
-      },
-      execute: (data) => modules.runRegression(data.x, data.y)
+      category: 'Advanced Statistics',
+      description: 'Models linear relationship y = mx + b, slope, intercept, and r-squared.',
+      execute: (data, opts) => modules.runRegression(opts?.x || data.x, opts?.y || data.y)
     });
 
-    // 7. Time Series Forecasting
-    this.registerModule('forecasting', {
-      name: 'Forecasting',
-      category: 'Modeling & Forecasting',
-      description: 'Performs single exponential smoothing time-series forecasting.',
-      validate: (params) => (!params.data || !Array.isArray(params.data)) ? 'Requires numeric series array [data]' : null,
-      execute: (data, options) => modules.runForecasting(data, options?.periods || 3, options?.alpha || 0.3)
+    this.registerModule('confidence_intervals', {
+      name: 'Confidence Intervals',
+      category: 'Advanced Statistics',
+      description: 'Calculates upper and lower margin of error bounds at 90%, 95%, or 99% levels.',
+      execute: (data, opts) => modules.runConfidenceIntervals(data, opts?.confidenceLevel)
     });
 
-    // 8. Scenario & Sensitivity Analysis
-    this.registerModule('sensitivity_analysis', {
-      name: 'Scenario & Sensitivity Analysis',
-      category: 'Modeling & Forecasting',
-      description: 'Computes outcomes under positive, neutral, and negative sensitivity steps.',
-      validate: (params) => {
-        const baseVal = params.options?.base !== undefined ? params.options.base : params.base;
-        const vars = params.options?.variables || params.variables;
-        if (baseVal === undefined || !vars) return 'Requires base outcome and variables structure';
-        return null;
-      },
-      execute: (data, options) => modules.runScenarioAnalysis(options?.base || 100, options?.variables || [])
-    });
-
-    // 9. Financial Modeling
-    this.registerModule('financial_modeling', {
-      name: 'Financial Modeling',
-      category: 'Financial Analysis',
-      description: 'Calculates Net Present Value (NPV), Internal Rate of Return (IRR), and Payback Period.',
-      validate: (params) => {
-        const rate = params.options?.discountRate !== undefined ? params.options.discountRate : params.discountRate;
-        if (!params.data || !Array.isArray(params.data) || rate === undefined) {
-          return 'Requires parameters cashflows array [data] and discountRate';
-        }
-        return null;
-      },
-      execute: (data, options) => modules.runFinancialModeling(data, options?.discountRate || 0.08)
-    });
-
-    // 10. Monte Carlo Simulations
-    this.registerModule('monte_carlo', {
-      name: 'Monte Carlo Simulation',
-      category: 'Simulation & Risk',
-      description: 'Generates random normal walk paths to simulate asset prices or business outcomes.',
-      validate: (params) => {
-        const base = params.options?.baseValue !== undefined ? params.options.baseValue : params.baseValue;
-        const sd = params.options?.stdDev !== undefined ? params.options.stdDev : params.stdDev;
-        if (base === undefined || sd === undefined) {
-          return 'Requires parameter options { baseValue, stdDev }';
-        }
-        return null;
-      },
-      execute: (data, options) => modules.runMonteCarlo(options?.baseValue || 100, options?.stdDev || 0.15, options?.runs || 250, options?.steps || 12)
-    });
-
-    // 11. Probability Distributions
     this.registerModule('probability_distributions', {
       name: 'Probability Distributions',
-      category: 'Simulation & Risk',
-      description: 'Computes probability density and mass functions for Normal, Binomial, or Poisson distributions.',
-      validate: (params) => {
-        const type = params.options?.distType || params.distType;
-        const dParams = params.options?.distParams || params.distParams;
-        if (!type || !dParams) return 'Requires distribution type and params';
-        return null;
-      },
-      execute: (data, options) => modules.runProbabilityDistribution(options?.distType, options?.distParams)
+      category: 'Advanced Statistics',
+      description: 'Computes Normal probability density functions.',
+      execute: (data, opts) => modules.runProbabilityDistribution(opts?.type, opts?.params)
     });
 
-    // 12. Risk Analysis
-    this.registerModule('risk_analysis', {
-      name: 'Risk Analysis (VaR)',
-      category: 'Simulation & Risk',
-      description: 'Calculates Sharpe Ratio and Historical Value at Risk (VaR) on portfolio returns.',
-      validate: (params) => (!params.data || !Array.isArray(params.data)) ? 'Requires numeric returns array' : null,
-      execute: (data, options) => modules.runRiskAnalysis(data, options?.confidenceLevel || 0.95, options?.riskFreeRate || 0.02)
-    });
-
-    // 13. Portfolio Analysis
-    this.registerModule('portfolio_analysis', {
-      name: 'Portfolio Analysis',
-      category: 'Financial Analysis',
-      description: 'Analyzes expected return and total variance of an asset portfolio.',
-      validate: (params) => {
-        if (!params.data || !params.data.weights || !params.data.covariance) {
-          return 'Requires portfolio asset weights and covariance matrix';
-        }
-        return null;
-      },
-      execute: (data) => modules.runPortfolioAnalysis(data.weights, data.covariance)
-    });
-
-    // 14. Data Sampling
     this.registerModule('data_sampling', {
       name: 'Data Sampling',
-      category: 'Statistical Analysis',
-      description: 'Samples subsets from grids using random, systematic, or stratified techniques.',
-      validate: (params) => (!params.data || !Array.isArray(params.data)) ? 'Requires array data' : null,
-      execute: (data, options) => modules.runDataSampling(data, options?.method || 'random', options?.count || 5)
+      category: 'Advanced Statistics',
+      description: 'Extracts representative subsets using random or systematic sampling.',
+      execute: (data, opts) => modules.runDataSampling(data, opts?.method, opts?.count)
     });
 
-    // 15. AI Powered Tools (Future modules bridge)
-    this.registerModule('ai_analytical_insights', {
-      name: 'AI Analytical Insights',
-      category: 'AI Analysis',
-      description: 'Leverages large analytical patterns to highlight spreadsheet risk factors, anomalous distributions, and recommended actions.',
-      isSensitive: true,
-      validate: (params) => null,
-      execute: (data, options) => modules.runFutureAIAnalysis(data, options?.summary || '')
+    // ----------------------------------------------------
+    // 7. AI INTENT ROUTER
+    // ----------------------------------------------------
+    this.registerModule('ai_business_router', {
+      name: 'AI Business Question Router',
+      category: 'AI Intent Routing',
+      description: 'Maps natural language questions directly to deterministic computational engines.',
+      execute: (data, opts) => modules.routeBusinessQuestion(opts?.question, data)
     });
   }
 }
