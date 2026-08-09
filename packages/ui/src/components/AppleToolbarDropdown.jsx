@@ -1,0 +1,189 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { ChevronDown, Check, Search } from 'lucide-react';
+
+/**
+ * AppleToolbarDropdown
+ * Reusable Apple HIG-compliant dropdown component for toolbars, menus, and controls.
+ */
+export default function AppleToolbarDropdown({
+  label,
+  value,
+  options = [], // [{ id, label, description, category, style, icon }]
+  onChange,
+  searchable = false,
+  searchPlaceholder = 'Search...',
+  width = 'w-48',
+  align = 'left', // 'left' | 'right'
+  dropUp = false,
+  triggerClassName = '',
+  className = '',
+  icon: IconComponent,
+  showCheckmark = true
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const containerRef = useRef(null);
+
+  // Auto-dismiss on outside click
+  useEffect(() => {
+    const handlePointerDown = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('pointerdown', handlePointerDown);
+    }
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [isOpen]);
+
+  // Dismiss on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const activeOption = options.find((o) => (o.id !== undefined ? o.id === value : o.label === value)) || null;
+  const displayLabel = activeOption ? activeOption.label : (value || label || 'Select');
+
+  const filteredOptions = searchable
+    ? options.filter((o) =>
+        String(o.label || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(o.description || '').toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : options;
+
+  const categories = Array.from(new Set(filteredOptions.map((o) => o.category).filter(Boolean)));
+
+  return (
+    <div className={`relative inline-block text-left ${className}`} ref={containerRef}>
+      {/* Trigger Button */}
+      <button
+        type="button"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          setIsOpen((prev) => !prev);
+          if (!isOpen) setSearchQuery('');
+        }}
+        className={`group inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[13px] font-medium border transition-all duration-150 shadow-2xs cursor-pointer select-none ${
+          isOpen
+            ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-700 shadow-sm'
+            : 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border-slate-200/80 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-100'
+        } ${triggerClassName}`}
+      >
+        {IconComponent && <IconComponent size={14} className="text-slate-500 dark:text-zinc-400 shrink-0" />}
+        {label && <span className="text-slate-500 dark:text-zinc-400 font-normal pr-0.5">{label}</span>}
+        <span className="font-semibold text-slate-800 dark:text-zinc-200 truncate">{displayLabel}</span>
+        <ChevronDown
+          size={13}
+          className={`text-slate-400 dark:text-zinc-400 transition-transform duration-200 shrink-0 ${
+            isOpen ? 'rotate-180 text-slate-600 dark:text-zinc-300' : ''
+          }`}
+        />
+      </button>
+
+      {/* Floating Dropdown Panel */}
+      {isOpen && (
+        <div
+          className={`absolute ${
+            align === 'right' ? 'right-0' : 'left-0'
+          } ${
+            dropUp ? 'bottom-full mb-1.5 origin-bottom-left' : 'top-full mt-1.5 origin-top-left'
+          } ${width} max-h-[320px] flex flex-col rounded-2xl border border-slate-200/90 dark:border-zinc-800/90 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.18)] z-[99999] overflow-hidden animate-in zoom-in-95 fade-in duration-150 select-none`}
+        >
+          {/* Optional Search Bar */}
+          {searchable && (
+            <div className="p-2 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0">
+              <div className="relative flex items-center">
+                <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500" />
+                <input
+                  type="text"
+                  placeholder={searchPlaceholder}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1 text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-slate-400 dark:focus:ring-zinc-500 transition-all font-sans"
+                  autoFocus
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Options List */}
+          <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5 thin-scrollbar">
+            {categories.length > 0 ? (
+              categories.map((cat) => {
+                const catOpts = filteredOptions.filter((o) => o.category === cat);
+                if (catOpts.length === 0) return null;
+                return (
+                  <div key={cat} className="space-y-0.5">
+                    <div className="px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                      {cat}
+                    </div>
+                    {catOpts.map((opt) => renderOptionItem(opt))}
+                  </div>
+                );
+              })
+            ) : (
+              filteredOptions.map((opt) => renderOptionItem(opt))
+            )}
+
+            {filteredOptions.length === 0 && (
+              <div className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500 font-medium">
+                No matching options
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  function renderOptionItem(opt) {
+    const itemKey = opt.id !== undefined ? opt.id : opt.label;
+    const isSelected = value !== undefined && (opt.id !== undefined ? opt.id === value : opt.label === value);
+
+    return (
+      <button
+        key={itemKey}
+        type="button"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          onChange?.(opt.id !== undefined ? opt.id : opt.label, opt);
+          setIsOpen(false);
+        }}
+        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${
+          isSelected
+            ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold'
+            : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-100'
+        }`}
+        style={opt.style || {}}
+      >
+        <div className="flex items-center gap-2 min-w-0 pr-1">
+          {opt.icon && <opt.icon size={13} className="text-slate-400 dark:text-zinc-400 shrink-0" />}
+          <div className="flex flex-col min-w-0">
+            <span className="truncate leading-tight">{opt.label}</span>
+            {opt.description && (
+              <span className="text-[10px] text-slate-400 dark:text-zinc-500 truncate font-normal leading-tight mt-0.5">
+                {opt.description}
+              </span>
+            )}
+          </div>
+        </div>
+        {showCheckmark && isSelected && (
+          <Check size={13} className="text-slate-900 dark:text-zinc-100 shrink-0 ml-1.5 stroke-[2.5]" />
+        )}
+      </button>
+    );
+  }
+}

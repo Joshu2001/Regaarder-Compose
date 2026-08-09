@@ -190,6 +190,7 @@ export default function ThemeDropdown({
   options = SHEETS_THEME_OPTIONS,
   label = 'Theme',
   align = 'left',
+  dropUp = false,
   className = ''
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -256,7 +257,9 @@ export default function ThemeDropdown({
       {/* Floating Executive Dropdown Menu */}
       {isOpen && (
         <div 
-          className={`absolute ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'} top-full mt-2 w-72 max-h-[380px] flex flex-col rounded-2xl border border-slate-200/90 dark:border-zinc-800/90 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] z-[400] overflow-hidden animate-in zoom-in-95 fade-in duration-150 select-none`}
+          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} ${
+            dropUp ? 'bottom-full mb-2 origin-bottom-left' : 'top-full mt-2 origin-top-left'
+          } w-72 max-h-[380px] flex flex-col rounded-2xl border border-slate-200/90 dark:border-zinc-800/90 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] z-[99999] overflow-hidden animate-in zoom-in-95 fade-in duration-150 select-none`}
         >
           {/* Header Search Bar */}
           <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50">

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * DropdownModalShell
@@ -14,8 +15,8 @@ export default function DropdownModalShell({
   children,
   footer,
   width = 'w-[400px]',
-  topOffset = 'top-12',
-  rightOffset = 'right-4',
+  topOffset = 'top-14',
+  rightOffset = 'right-5',
   maxHeight = 'max-h-[calc(100vh-180px)]',
   zIndexBackdrop = 'z-[100000]',
   zIndexModal = 'z-[100001]',
@@ -32,13 +33,13 @@ export default function DropdownModalShell({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <>
-      {/* Backdrop overlay with toolbar blur */}
+      {/* Backdrop overlay with full-screen blur and dim */}
       <div 
-        className={`fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm ${zIndexBackdrop} transition-opacity duration-200 cursor-default animate-in fade-in`}
+        className={`fixed inset-0 bg-slate-950/45 dark:bg-black/65 backdrop-blur-md ${zIndexBackdrop} transition-all duration-200 cursor-default animate-in fade-in`}
         onPointerDown={(e) => {
           e.preventDefault();
           onClose?.();
@@ -47,7 +48,7 @@ export default function DropdownModalShell({
 
       {/* Main Glassmorphism Popover Container */}
       <div 
-        className={`absolute ${rightOffset} ${topOffset} ${zIndexModal} ${width} max-w-[calc(100vw-32px)] flex flex-col rounded-[24px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-3xl shadow-2xl font-sans text-left cursor-default origin-top-right ${allowOverflowVisible ? 'overflow-visible' : 'overflow-hidden'} animate-in zoom-in-95 fade-in duration-150 ${className}`}
+        className={`fixed ${rightOffset} ${topOffset} ${zIndexModal} ${width} max-w-[calc(100vw-32px)] flex flex-col rounded-[24px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/85 dark:bg-[#1c1c1e]/85 backdrop-blur-3xl shadow-2xl font-sans text-left cursor-default origin-top-right ${allowOverflowVisible ? 'overflow-visible' : 'overflow-hidden'} animate-in zoom-in-95 fade-in duration-150 ${className}`}
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Hero Header */}
@@ -95,6 +96,8 @@ export default function DropdownModalShell({
           </div>
         )}
       </div>
-    </>
+    </>,
+    document.body
   );
 }
+
