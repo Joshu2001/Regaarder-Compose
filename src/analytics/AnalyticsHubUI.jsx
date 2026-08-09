@@ -137,6 +137,37 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   // Analysis calculation outcome state
   const [analysisResult, setAnalysisResult] = useState(null);
 
+  // Column Binding & Dynamic Parameter Control States
+  const [primaryColIndex, setPrimaryColIndex] = useState(0);
+  const [secondaryColIndex, setSecondaryColIndex] = useState(1);
+  const [moduleParams, setModuleParams] = useState({
+    targetValue: 25000,
+    fixedCosts: 50000,
+    unitPrice: 100,
+    unitCost: 60,
+    forecastPeriods: 3,
+    confidenceLevel: 95,
+    arpu: 150,
+    cac: 350,
+    churnRate: 5
+  });
+
+  // Extract columns dynamically from active sheet grid
+  const rawCells = activeSheetGrid?.cells || [];
+  const parsedData = modules.parseGridData(rawCells);
+  const gridColumns = modules.getGridColumns(parsedData);
+
+  const availableColumns = gridColumns.length > 0 ? gridColumns : [
+    { index: 0, name: 'Column A (Revenue / Primary)', values: [12000, 13500, 14200, 15800, 17500, 18900, 21000, 22500, 24000] },
+    { index: 1, name: 'Column B (Budget / Expenses)', values: [11000, 12500, 13000, 14500, 16000, 17000, 19500, 20500, 22000] },
+    { index: 2, name: 'Column C (Volume / Units / Driver)', values: [100, 115, 120, 135, 150, 160, 180, 190, 210] }
+  ];
+
+  const needsSecondaryColumn = [
+    'variance_analysis', 'budget_vs_actual', 'regression', 'correlation',
+    't_test', 'paired_t_test', 'margin_analysis', 'profitability_analysis'
+  ].includes(selectedAnalysis);
+
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (selectDataRef.current && !selectDataRef.current.contains(e.target)) {
@@ -259,13 +290,11 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
   // ----------------------------------------------------
   const handleRunAnalysis = (targetId = null) => {
     const analysisToRun = targetId || selectedAnalysis;
-    const rawCells = activeSheetGrid?.cells || [];
-    const parsedData = modules.parseGridData(rawCells);
-    let col1Values = modules.getNumericalColumn(parsedData, 0, true);
+    const primaryCol = availableColumns.find(c => c.index === primaryColIndex) || availableColumns[0];
+    const secondaryCol = availableColumns.find(c => c.index === secondaryColIndex) || availableColumns[1] || availableColumns[0];
 
-    if (col1Values.length === 0) {
-      col1Values = [12000, 13500, 14200, 15800, 17500, 18900, 21000, 22500, 24000];
-    }
+    let col1Values = primaryCol.values && primaryCol.values.length > 0 ? primaryCol.values : [12000, 13500, 14200, 15800, 17500, 18900, 21000, 22500, 24000];
+    let col2Values = secondaryCol.values && secondaryCol.values.length > 0 ? secondaryCol.values : col1Values.map(v => Math.round(v * 0.92));
 
     const safeNum = (val, fallback = 0) => (typeof val === 'number' && !isNaN(val) ? val : fallback);
     const safeLoc = (val, fallback = 0) => safeNum(val, fallback).toLocaleString();
@@ -1085,10 +1114,10 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
     setAnalysisResult(payload);
   };
 
-  // Auto-fulfill calculation whenever selected analysis changes or active grid updates
+  // Auto-fulfill calculation whenever selected analysis, column bindings, or module parameters change
   useEffect(() => {
     handleRunAnalysis(selectedAnalysis);
-  }, [selectedAnalysis, activeSheetGrid]);
+  }, [selectedAnalysis, primaryColIndex, secondaryColIndex, moduleParams, simPriceDelta, simVolumeDelta, simCostDelta, activeSheetGrid]);
 
   const handleAiQuestionSubmit = (e) => {
     if (e) e.preventDefault();
@@ -1350,34 +1379,179 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
           <span className="text-xs text-slate-500 font-medium">6-Step Executive Decision Intelligence</span>
         </div>
 
-        {/* STEP 1: DATA PREVIEW */}
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 space-y-2">
+        {/* STEP 1: DYNAMIC DATA CONTEXT & COLUMN BINDINGS */}
+        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 space-y-3">
           <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-zinc-300">
             <span className="flex items-center gap-1.5">
               <Table size={14} className="text-violet-600" />
-              <span>Step 1: Data Context & Audit Range</span>
+              <span>Step 1: Data Context & Dynamic Column Binding</span>
             </span>
-            <span className="text-[11px] text-slate-400 font-normal">Grid status: Active</span>
+            <span className="text-[11px] text-slate-400 font-normal">Range: {selectedDataRange}</span>
           </div>
-          <p className="text-xs text-slate-600 dark:text-zinc-400">
-            Auditing dataset from <strong>{selectedDataRange}</strong>. Intersection cell (0,0) is isolated to prevent axis fallacies.
-          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            <div>
+              <CustomSelect
+                label="Primary Metric Column (Y / Series A):"
+                value={primaryColIndex}
+                onChange={(val) => setPrimaryColIndex(Number(val))}
+                options={availableColumns.map(col => ({
+                  label: `${col.name} (${col.values.length} rows)`,
+                  value: col.index
+                }))}
+                allowCustom={false}
+              />
+            </div>
+
+            {needsSecondaryColumn && (
+              <div>
+                <CustomSelect
+                  label="Secondary Column (Budget / Predictor X / Series B):"
+                  value={secondaryColIndex}
+                  onChange={(val) => setSecondaryColIndex(Number(val))}
+                  options={availableColumns.map(col => ({
+                    label: `${col.name} (${col.values.length} rows)`,
+                    value: col.index
+                  }))}
+                  allowCustom={false}
+                />
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* STEP 2: ANALYZE - LIVE NUMERICAL METRICS */}
+        {/* STEP 2: ANALYZE - DETERMINISTIC CALCULATION & MODULE PARAMETERS */}
         {analysisResult ? (
           <div className="space-y-6">
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-zinc-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Step 2: Deterministic Calculation</h3>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Step 2: Deterministic Calculation Engine</h3>
                   <span className="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 rounded-full text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
                     {analysisResult.computationBadge}
                   </span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {/* Dynamic Module Input Parameters Bar */}
+              <div className="p-3.5 bg-slate-50 dark:bg-zinc-800/40 rounded-xl border border-slate-200/70 dark:border-zinc-800 space-y-2">
+                <div className="text-[11px] font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
+                  Module Input Parameters ({activeModuleItem.label}):
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {selectedAnalysis === 'kpi_analysis' && (
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-600 dark:text-zinc-400 mb-1">Target Value ($):</label>
+                      <input
+                        type="number"
+                        value={moduleParams.targetValue}
+                        onChange={(e) => setModuleParams({ ...moduleParams, targetValue: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  )}
+
+                  {selectedAnalysis === 'breakeven_analysis' && (
+                    <>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-zinc-400 mb-1">Fixed Costs ($):</label>
+                        <input
+                          type="number"
+                          value={moduleParams.fixedCosts}
+                          onChange={(e) => setModuleParams({ ...moduleParams, fixedCosts: parseFloat(e.target.value) || 0 })}
+                          className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-zinc-400 mb-1">Unit Price ($):</label>
+                        <input
+                          type="number"
+                          value={moduleParams.unitPrice}
+                          onChange={(e) => setModuleParams({ ...moduleParams, unitPrice: parseFloat(e.target.value) || 0 })}
+                          className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-zinc-400 mb-1">Unit Cost ($):</label>
+                        <input
+                          type="number"
+                          value={moduleParams.unitCost}
+                          onChange={(e) => setModuleParams({ ...moduleParams, unitCost: parseFloat(e.target.value) || 0 })}
+                          className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {['revenue_forecast', 'sales_forecast', 'demand_forecast', 'cashflow_forecast', 'timeseries_forecast'].includes(selectedAnalysis) && (
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-600 dark:text-zinc-400 mb-1">Forecast Horizon:</label>
+                      <CustomSelect
+                        value={moduleParams.forecastPeriods}
+                        onChange={(val) => setModuleParams({ ...moduleParams, forecastPeriods: Number(val) })}
+                        options={[
+                          { label: '3 Periods Forward', value: 3 },
+                          { label: '6 Periods Forward', value: 6 },
+                          { label: '12 Periods Forward', value: 12 }
+                        ]}
+                        allowCustom={false}
+                      />
+                    </div>
+                  )}
+
+                  {['clv_analysis', 'retention_churn', 'unit_economics', 'churn_forecast'].includes(selectedAnalysis) && (
+                    <>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-zinc-400 mb-1">Monthly ARPU ($):</label>
+                        <input
+                          type="number"
+                          value={moduleParams.arpu}
+                          onChange={(e) => setModuleParams({ ...moduleParams, arpu: parseFloat(e.target.value) || 0 })}
+                          className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-zinc-400 mb-1">Monthly Churn Rate (%):</label>
+                        <input
+                          type="number"
+                          step="0.5"
+                          value={moduleParams.churnRate}
+                          onChange={(e) => setModuleParams({ ...moduleParams, churnRate: parseFloat(e.target.value) || 0 })}
+                          className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-zinc-400 mb-1">Acquisition CAC ($):</label>
+                        <input
+                          type="number"
+                          value={moduleParams.cac}
+                          onChange={(e) => setModuleParams({ ...moduleParams, cac: parseFloat(e.target.value) || 0 })}
+                          className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {['descriptive_stats', 'confidence_intervals', 't_test', 'paired_t_test', 'anova', 'regression'].includes(selectedAnalysis) && (
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-600 dark:text-zinc-400 mb-1">Confidence Level:</label>
+                      <CustomSelect
+                        value={moduleParams.confidenceLevel}
+                        onChange={(val) => setModuleParams({ ...moduleParams, confidenceLevel: Number(val) })}
+                        options={[
+                          { label: '90% Confidence Interval', value: 90 },
+                          { label: '95% Confidence Interval', value: 95 },
+                          { label: '99% Confidence Interval', value: 99 }
+                        ]}
+                        allowCustom={false}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Numerical Metrics Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-1">
                 {analysisResult.metrics.map((m, idx) => (
                   <div key={idx} className="p-3.5 bg-slate-50 dark:bg-zinc-800/60 rounded-xl border border-slate-100 dark:border-zinc-800 space-y-1">
                     <div className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">{m.label}</div>
