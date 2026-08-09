@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { io } from 'socket.io-client';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import { ShareModal, DropdownModalShell, ThemeDropdown, SHEETS_THEME_OPTIONS } from '@regaarder/ui';
+import { ShareModal, DropdownModalShell, ThemeDropdown, SHEETS_THEME_OPTIONS, AppleToolbarDropdown } from '@regaarder/ui';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { Parser } from 'hot-formula-parser';
@@ -4719,30 +4719,9 @@ function MoreViewOptionsDropdown({
 }
 
 function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, gridLineContrast, setGridLineContrast, showToast }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    const handlePointerDown = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('pointerdown', handlePointerDown);
-    }
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-    };
-  }, [isOpen]);
-
-  const currentOptionLabel = !showGridLines 
-    ? 'Off' 
-    : gridLineContrast === 'subtle' 
-    ? 'Subtle' 
-    : gridLineContrast === 'high' 
-    ? 'High' 
-    : 'Medium';
+  const currentValue = !showGridLines 
+    ? 'off' 
+    : (gridLineContrast || 'medium');
 
   const options = [
     { id: 'off', label: 'Off', description: 'Hide all gridlines' },
@@ -4760,63 +4739,16 @@ function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, grid
       setGridLineContrast(optionId);
       showToast?.(`Gridlines: ${optionId.charAt(0).toUpperCase() + optionId.slice(1)}`);
     }
-    setIsOpen(false);
   };
 
   return (
-    <div className="relative inline-block text-left" ref={containerRef}>
-      <button
-        type="button"
-        onPointerDown={(e) => {
-          e.preventDefault();
-          setIsOpen((prev) => !prev);
-        }}
-        className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all duration-150 shadow-2xs cursor-pointer ${
-          isOpen
-            ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-700'
-            : 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border-slate-200/80 dark:border-zinc-800 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60'
-        }`}
-      >
-        <span className="font-medium text-slate-700 dark:text-zinc-300">
-          Gridlines · <span className="font-semibold text-slate-900 dark:text-zinc-100">{currentOptionLabel}</span>
-        </span>
-        <ChevronDown
-          size={13}
-          className={`text-slate-400 dark:text-zinc-400 transition-transform duration-200 ${
-            isOpen ? 'rotate-180 text-slate-600 dark:text-zinc-300' : ''
-          }`}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="absolute left-0 origin-top-left top-full mt-1.5 w-48 rounded-xl border border-slate-200/90 dark:border-zinc-800/90 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-xl shadow-lg z-[400] overflow-hidden p-1 space-y-0.5 animate-in zoom-in-95 fade-in duration-150 select-none">
-          {options.map((opt) => {
-            const isSelected = opt.id === 'off' ? !showGridLines : (showGridLines && gridLineContrast === opt.id);
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  handleSelect(opt.id);
-                }}
-                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${
-                  isSelected
-                    ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold'
-                    : 'text-slate-700 dark:text-zinc-300 hover:bg-[#F5F5F7] dark:hover:bg-zinc-800/60'
-                }`}
-              >
-                <div className="flex flex-col">
-                  <span>{opt.label}</span>
-                  <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{opt.description}</span>
-                </div>
-                {isSelected && <Check size={13} className="text-slate-800 dark:text-zinc-200 shrink-0 stroke-[2.5]" />}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <AppleToolbarDropdown
+      label="Gridlines ·"
+      value={currentValue}
+      options={options}
+      onChange={handleSelect}
+      width="w-48"
+    />
   );
 }
 
@@ -10368,15 +10300,22 @@ export default function App() {
   };
 
   const renderWorkspaceSwitcherDropdownContent = () => {
-    return (
+    if (typeof document === 'undefined') return null;
+    return createPortal(
       <>
         {/* Page dimming backdrop overlay */}
         <div
-          className="fixed inset-0 z-[100000] bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-150 animate-in fade-in"
-          onClick={() => setWorkspaceSwitcherOpen(false)}
+          className="fixed inset-0 z-[100000] bg-slate-950/45 dark:bg-black/65 backdrop-blur-md transition-all duration-200 animate-in fade-in cursor-default"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            setWorkspaceSwitcherOpen(false);
+          }}
         />
-        <div className="absolute left-0 top-9 pt-1.5 z-[100001]">
-          <div className="w-[210px] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl p-2 font-sans origin-top-left overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div 
+          className="fixed left-12 top-14 z-[100001] cursor-default"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="w-[220px] rounded-[22px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/85 dark:bg-[#1c1c1e]/85 backdrop-blur-3xl shadow-2xl p-2 font-sans origin-top-left overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="flex flex-col gap-1">
               {[
                 { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: FileText },
@@ -10396,13 +10335,13 @@ export default function App() {
                       showToast(`Switched to ${item.label}`);
                     }}
                     onPointerDown={(e) => e.preventDefault()}
-                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-left select-none transition-all duration-150 w-full ${
+                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-left select-none transition-all duration-150 w-full cursor-pointer ${
                       isCurrent
                         ? 'bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 font-semibold shadow-xs'
                         : 'bg-transparent text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-zinc-100 font-medium'
                     }`}
                   >
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                    <div className={`w-7.5 h-7.5 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                       isCurrent 
                         ? 'bg-violet-600 text-white shadow-xs' 
                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 group-hover:text-slate-800 dark:group-hover:text-zinc-200'
@@ -10423,7 +10362,8 @@ export default function App() {
             </div>
           </div>
         </div>
-      </>
+      </>,
+      document.body
     );
   };
 
@@ -39133,10 +39073,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {profileMenuOpen && (
                       <>
                         <div
-                          className="fixed inset-0 z-[490] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+                          className="fixed inset-0 z-[490] bg-slate-950/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-150 animate-in fade-in"
                           onClick={() => setProfileMenuOpen(false)}
                         />
-                        <div className="absolute right-0 top-9 z-[500] w-[236px] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl p-3.5 font-sans animate-in fade-in zoom-in-95 duration-150">
+                        <div className="absolute right-0 top-9 z-[500] w-[240px] rounded-2xl border border-black/[0.08] dark:border-white/[0.12] ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_16px_40px_rgba(0,0,0,0.12)] p-4 font-sans animate-in fade-in zoom-in-95 duration-150">
                           {currentUser ? (
                             // Logged In State
                             <div className="flex flex-col gap-3">
@@ -39174,21 +39114,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </button>
                             </div>
                           ) : (
-                            // Guest State
-                            <div className="flex flex-col items-center text-center py-0.5 px-0.5 gap-2">
-                              {/* Branded Glass Avatar with Glowing Ring & Micro Sparkle */}
+                            // Guest State (Apple Refined - No Sparkle Icon)
+                            <div className="flex flex-col items-center text-center py-1 px-1 gap-2.5">
                               <div className="relative my-0.5 group cursor-default">
-                                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-violet-500/25 via-indigo-500/20 to-violet-500/25 blur-[6px] animate-pulse opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
-                                <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-slate-50 via-violet-50/90 to-indigo-100/70 dark:from-zinc-800 dark:via-violet-950/50 dark:to-zinc-900 border border-violet-200/70 dark:border-violet-800/40 text-violet-700 dark:text-violet-300 flex items-center justify-center font-bold shadow-[inset_0_1px_2px_rgba(255,255,255,0.9),0_2px_8px_-2px_rgba(124,58,237,0.15)] transition-transform duration-300 group-hover:scale-105">
-                                  <span className="text-[15px] font-bold tracking-tight bg-gradient-to-br from-violet-700 to-indigo-600 dark:from-violet-300 dark:to-indigo-300 bg-clip-text text-transparent">G</span>
-                                </div>
-                                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white dark:bg-zinc-800 border border-violet-200 dark:border-violet-700/60 shadow-sm flex items-center justify-center">
-                                  <Sparkles size={8.5} className="text-violet-500 fill-violet-500/20 animate-pulse" />
+                                <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/80 dark:border-zinc-700/80 shadow-xs flex items-center justify-center font-semibold text-[15px] transition-transform duration-200 group-hover:scale-105">
+                                  G
                                 </div>
                               </div>
                               <div className="flex flex-col items-center">
-                                <span className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">Guest Mode</span>
-                                <p className="text-[10.5px] text-slate-600 dark:text-zinc-300 mt-0.5 max-w-[190px] mx-auto leading-snug opacity-95">
+                                <span className="text-[13.5px] font-semibold text-slate-900 dark:text-white tracking-tight">Guest Mode</span>
+                                <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug max-w-[200px] text-center">
                                   Sign in to sync your work, collaborate, and access premium AI tools.
                                 </p>
                               </div>
@@ -39198,7 +39133,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   setProfileMenuOpen(false);
                                   setAuthModalOpen(true);
                                 }}
-                                className="w-full mt-1 py-1.5 px-3 text-[11.5px] font-semibold text-white bg-gradient-to-r from-violet-600/90 via-purple-600/90 to-indigo-600/90 hover:from-violet-600 hover:to-indigo-600 dark:from-violet-600 dark:to-indigo-600 dark:hover:from-violet-500 dark:hover:to-indigo-500 rounded-lg shadow-[0_2px_8px_-2px_rgba(124,58,237,0.25)] hover:shadow-[0_4px_12px_-2px_rgba(124,58,237,0.35)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
+                                className="w-full mt-1 py-2 px-3 text-[12px] font-medium text-white bg-slate-900 hover:bg-black dark:bg-white dark:text-slate-950 dark:hover:bg-zinc-100 rounded-xl shadow-xs transition-all duration-150 active:scale-[0.98]"
                               >
                                 Sign In
                               </button>
@@ -40683,7 +40618,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         />
                       </div>
                     ) : (
-                    <div className={`flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] overflow-hidden z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm'}`}>
+                    <div className={`flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] relative z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm'}`}>
                       {!isSheetsPresentationMode && !isSheetZenMode && (
                         <div className="px-3.5 py-1.5 border-b border-slate-200/80 dark:border-zinc-800 bg-[#FAFAFC] dark:bg-[#161618] flex items-center gap-2.5 text-[13px] font-medium text-[#374151] dark:text-zinc-200 shrink-0">
                       <input
@@ -43096,16 +43031,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     {/* Floating Zen Mode Overlay Pill */}
                     {isSheetZenMode && (
-                      <div className="fixed top-12 right-6 z-[90000] group/zenpill select-none animate-in fade-in zoom-in-95 duration-200">
+                      <div className="fixed top-6 right-6 z-[90000] group/zenpill select-none animate-in fade-in zoom-in-95 duration-200">
                         {editingCellKey ? (
                           <>
                             {/* Hover expansion target showing full toolbar when user hovers over pulsing dot area */}
-                            <div className="hidden group-hover/zenpill:flex bg-[#ffffffeb] dark:bg-[#18181beb] backdrop-blur-md border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_8px_24px_rgba(0,0,0,0.08)] rounded-[14px] px-2.5 py-1 items-center gap-2.5 transition-all">
+                            <div className="hidden group-hover/zenpill:flex bg-white/80 dark:bg-zinc-900/85 backdrop-blur-2xl backdrop-saturate-150 border border-black/[0.08] dark:border-white/[0.12] shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] rounded-full px-3 py-1.5 items-center gap-3 transition-all">
                               <div className="flex items-center gap-1.5 border-r border-slate-200/80 dark:border-zinc-700/80 pr-2.5">
                                 <button 
                                   type="button" 
                                   onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}
-                                  className="p-1 text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
+                                  className="p-1 text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-full hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 transition-all"
                                   title="Zoom Out (-10%)"
                                 >
                                   <ZoomOut size={13} />
@@ -43117,12 +43052,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   step="5"
                                   value={sheetZoomLevel}
                                   onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
-                                  className="w-16 h-1 bg-slate-200/80 dark:bg-zinc-700/80 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                                  className="w-20 h-1 bg-slate-200/90 dark:bg-zinc-700/90 rounded-full appearance-none cursor-pointer accent-slate-800 dark:accent-white"
                                 />
                                 <button 
                                   type="button" 
                                   onClick={() => setSheetZoomLevel(prev => Math.min(200, prev + 10))}
-                                  className="p-1 text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
+                                  className="p-1 text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-full hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 transition-all"
                                   title="Zoom In (+10%)"
                                 >
                                   <ZoomIn size={13} />
@@ -43144,12 +43079,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   label="Zoom"
                                 />
                               </div>
-                             <button
-                              type="button"
-                              onClick={() => setIsSheetZenMode(false)}
-                              className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 rounded-lg text-[11px] font-medium shadow-2xs transition-all"
-                            >
-                                <Minimize2 size={12} />
+                              <button
+                                type="button"
+                                onClick={() => setIsSheetZenMode(false)}
+                                className="flex items-center gap-1.5 px-3 py-1 bg-slate-900 text-white hover:bg-black dark:bg-white dark:text-slate-950 dark:hover:bg-zinc-100 rounded-full text-[11px] font-semibold tracking-tight shadow-xs transition-all active:scale-95 cursor-pointer"
+                              >
+                                <Minimize2 size={12} className="stroke-[2.5]" />
                                 <span>Exit Zen Mode</span>
                               </button>
                             </div>
@@ -43157,18 +43092,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             {/* Pulsing indicator dot shown while user is typing in a cell */}
                             <div className="flex group-hover/zenpill:hidden items-center justify-center p-2 cursor-pointer" title="Hover to view Zen Mode Toolbar">
                               <span className="relative flex h-5 w-5 items-center justify-center">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-violet-600 shadow-md border border-white"></span>
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400/60 dark:bg-zinc-400/60 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-slate-900 dark:bg-white shadow-md border border-white/80 dark:border-zinc-900"></span>
                               </span>
                             </div>
                           </>
                         ) : (
-                          <div className="bg-[#ffffffeb] dark:bg-[#18181beb] backdrop-blur-md border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_8px_24px_rgba(0,0,0,0.08)] rounded-[14px] px-2.5 py-1 flex items-center gap-2.5 transition-all animate-in fade-in zoom-in-95 duration-200">
+                          <div className="bg-white/80 dark:bg-zinc-900/85 backdrop-blur-2xl backdrop-saturate-150 border border-black/[0.08] dark:border-white/[0.12] shadow-[0_12px_36px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] rounded-full px-3 py-1.5 flex items-center gap-3 transition-all duration-200 animate-in fade-in zoom-in-95">
                             <div className="flex items-center gap-1.5 border-r border-slate-200/80 dark:border-zinc-700/80 pr-2.5">
                               <button 
                                 type="button" 
                                 onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}
-                                className="p-1 text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
+                                className="p-1 text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-full hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 transition-all"
                                 title="Zoom Out (-10%)"
                               >
                                 <ZoomOut size={13} />
@@ -43180,12 +43115,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 step="5"
                                 value={sheetZoomLevel}
                                 onChange={(e) => setSheetZoomLevel(Number(e.target.value))}
-                                className="w-16 h-1 bg-slate-200/80 dark:bg-zinc-700/80 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                                className="w-20 h-1 bg-slate-200/90 dark:bg-zinc-700/90 rounded-full appearance-none cursor-pointer accent-slate-800 dark:accent-white"
                               />
                               <button 
                                 type="button" 
                                 onClick={() => setSheetZoomLevel(prev => Math.min(200, prev + 10))}
-                                className="p-1 text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-colors"
+                                className="p-1 text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-full hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 transition-all"
                                 title="Zoom In (+10%)"
                               >
                                 <ZoomIn size={13} />
@@ -43210,9 +43145,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <button
                               type="button"
                               onClick={() => setIsSheetZenMode(false)}
-                              className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 rounded-lg text-[11px] font-medium shadow-2xs transition-all"
+                              className="flex items-center gap-1.5 px-3 py-1 bg-slate-900 text-white hover:bg-black dark:bg-white dark:text-slate-950 dark:hover:bg-zinc-100 rounded-full text-[11px] font-semibold tracking-tight shadow-xs transition-all active:scale-95 cursor-pointer"
                             >
-                              <Minimize2 size={12} />
+                              <Minimize2 size={12} className="stroke-[2.5]" />
                               <span>Exit Zen Mode</span>
                             </button>
                       </div>
@@ -43240,7 +43175,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <div className={`h-10 px-4 border-t border-slate-200/70 dark:border-zinc-800/70 bg-white/85 dark:bg-zinc-900/85 backdrop-blur-sm flex items-center justify-between gap-4 shrink-0 transition-all duration-200 ${
                       isSheetZenMode 
                         ? 'opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto fixed bottom-0 left-0 right-0 z-50 shadow-lg border-t bg-white/95 dark:bg-zinc-900/95' 
-                        : ''
+                        : 'relative z-[60]'
                     }`}>
                       <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/80 dark:bg-zinc-800/60 rounded-xl border border-slate-200/50 dark:border-zinc-700/50 overflow-x-auto thin-scrollbar select-none">
                         {sheetsData.map((sheet) => {
@@ -43384,8 +43319,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 }}
                               />
                               {sheetZoomDropdownOpen && (
-                                <div className="absolute right-0 bottom-full mb-2 z-50 w-24 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-xl p-1 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-100 select-none">
-                                  {[50, 75, 90, 100, 125, 150, 200].map((level) => (
+                                <div className="absolute right-0 bottom-full mb-2 z-[99999] w-28 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.18)] p-1 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-100 select-none">
+                                  {[50, 75, 90, 100, 110, 125, 150, 200].map((level) => (
                                     <button
                                       key={level}
                                       type="button"
@@ -48476,10 +48411,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
               {composeProfileMenuOpen && (
                 <>
                   <div
-                    className="fixed inset-0 z-[490] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
+                    className="fixed inset-0 z-[490] bg-slate-950/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-150 animate-in fade-in"
                     onClick={() => setComposeProfileMenuOpen(false)}
                   />
-                  <div className="absolute right-0 top-9 z-[500] w-[236px] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl p-3.5 font-sans animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute right-0 top-9 z-[500] w-[240px] rounded-2xl border border-black/[0.08] dark:border-white/[0.12] ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_16px_40px_rgba(0,0,0,0.12)] p-4 font-sans animate-in fade-in zoom-in-95 duration-150">
                   {currentUser ? (
                     // Logged In State
                     <div className="flex flex-col gap-3">
@@ -48517,21 +48452,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </button>
                     </div>
                   ) : (
-                    // Guest State
-                    <div className="flex flex-col items-center text-center py-0.5 px-0.5 gap-2">
-                      {/* Branded Glass Avatar with Glowing Ring & Micro Sparkle */}
+                    // Guest State (Apple Refined - No Sparkle Icon)
+                    <div className="flex flex-col items-center text-center py-1 px-1 gap-2.5">
                       <div className="relative my-0.5 group cursor-default">
-                        <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-violet-500/25 via-indigo-500/20 to-violet-500/25 blur-[6px] animate-pulse opacity-75 group-hover:opacity-100 transition-opacity duration-300" />
-                        <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-slate-50 via-violet-50/90 to-indigo-100/70 dark:from-zinc-800 dark:via-violet-950/50 dark:to-zinc-900 border border-violet-200/70 dark:border-violet-800/40 text-violet-700 dark:text-violet-300 flex items-center justify-center font-bold shadow-[inset_0_1px_2px_rgba(255,255,255,0.9),0_2px_8px_-2px_rgba(124,58,237,0.15)] transition-transform duration-300 group-hover:scale-105">
-                          <span className="text-[15px] font-bold tracking-tight bg-gradient-to-br from-violet-700 to-indigo-600 dark:from-violet-300 dark:to-indigo-300 bg-clip-text text-transparent">G</span>
-                        </div>
-                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white dark:bg-zinc-800 border border-violet-200 dark:border-violet-700/60 shadow-sm flex items-center justify-center">
-                          <Sparkles size={8.5} className="text-violet-500 fill-violet-500/20 animate-pulse" />
+                        <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/80 dark:border-zinc-700/80 shadow-xs flex items-center justify-center font-semibold text-[15px] transition-transform duration-200 group-hover:scale-105">
+                          G
                         </div>
                       </div>
                       <div className="flex flex-col items-center">
-                        <span className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">Guest Mode</span>
-                        <p className="text-[10.5px] text-slate-600 dark:text-zinc-300 mt-0.5 max-w-[190px] mx-auto leading-snug opacity-95">
+                        <span className="text-[13.5px] font-semibold text-slate-900 dark:text-white tracking-tight">Guest Mode</span>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug max-w-[200px] text-center">
                           Sign in to sync your work, collaborate, and access premium AI tools.
                         </p>
                       </div>
@@ -48541,7 +48471,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           setComposeProfileMenuOpen(false);
                           setAuthModalOpen(true);
                         }}
-                        className="w-full mt-1 py-1.5 px-3 text-[11.5px] font-semibold text-white bg-gradient-to-r from-violet-600/90 via-purple-600/90 to-indigo-600/90 hover:from-violet-600 hover:to-indigo-600 dark:from-violet-600 dark:to-indigo-600 dark:hover:from-violet-500 dark:hover:to-indigo-500 rounded-lg shadow-[0_2px_8px_-2px_rgba(124,58,237,0.25)] hover:shadow-[0_4px_12px_-2px_rgba(124,58,237,0.35)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
+                        className="w-full mt-1 py-2 px-3 text-[12px] font-medium text-white bg-slate-900 hover:bg-black dark:bg-white dark:text-slate-950 dark:hover:bg-zinc-100 rounded-xl shadow-xs transition-all duration-150 active:scale-[0.98]"
                       >
                         Sign In
                       </button>
