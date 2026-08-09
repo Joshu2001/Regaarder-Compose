@@ -78,8 +78,8 @@ export default function AppleToolbarDropdown({
         }}
         className={`group inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[13px] font-medium border transition-all duration-150 shadow-2xs cursor-pointer select-none ${
           isOpen
-            ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-700 shadow-sm'
-            : 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border-slate-200/80 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-100'
+            ? 'bg-slate-200/80 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-700 shadow-sm'
+            : 'bg-slate-100/90 dark:bg-[#18181b] text-slate-700 dark:text-zinc-300 border-slate-200/60 dark:border-zinc-800/80 hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 hover:text-slate-900 dark:hover:text-zinc-100'
         } ${triggerClassName}`}
       >
         {IconComponent && <IconComponent size={14} className="text-slate-500 dark:text-zinc-400 shrink-0" />}
