@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Search } from 'lucide-react';
 
 /**
  * AppleToolbarDropdown
  * Reusable Apple HIG-compliant dropdown component for toolbars, menus, and controls.
+ * Uses createPortal to ensure absolute menus never get clipped by overflow containers.
  */
 export default function AppleToolbarDropdown({
   label,
@@ -22,12 +24,48 @@ export default function AppleToolbarDropdown({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [coords, setCoords] = useState(null);
   const containerRef = useRef(null);
+  const triggerRef = useRef(null);
 
-  // Auto-dismiss on outside click
+  const updateCoords = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      let top = dropUp ? rect.top - 6 : rect.bottom + 6;
+      let left = align === 'right' ? rect.right : rect.left;
+
+      setCoords({
+        top,
+        bottom: vh - rect.top + 6,
+        left,
+        right: vw - rect.right,
+        rectWidth: rect.width
+      });
+    }
+  };
+
+  // Toggle open state and calculate trigger bounds
+  const toggleOpen = () => {
+    if (!isOpen) {
+      updateCoords();
+      setSearchQuery('');
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  // Auto-dismiss on outside pointer click
   useEffect(() => {
     const handlePointerDown = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target) &&
+        !e.target.closest('.apple-toolbar-dropdown-menu-portal')
+      ) {
         setIsOpen(false);
       }
     };
@@ -36,6 +74,19 @@ export default function AppleToolbarDropdown({
     }
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [isOpen]);
+
+  // Recalculate coordinates on open, scroll, or resize
+  useEffect(() => {
+    if (isOpen) {
+      updateCoords();
+      window.addEventListener('scroll', updateCoords, true);
+      window.addEventListener('resize', updateCoords);
+    }
+    return () => {
+      window.removeEventListener('scroll', updateCoords, true);
+      window.removeEventListener('resize', updateCoords);
     };
   }, [isOpen]);
 
@@ -66,15 +117,37 @@ export default function AppleToolbarDropdown({
 
   const categories = Array.from(new Set(filteredOptions.map((o) => o.category).filter(Boolean)));
 
+  // Calculate positioning styles for the portal element
+  const portalStyle = {
+    position: 'fixed',
+    zIndex: 100000,
+  };
+
+  if (coords) {
+    if (dropUp) {
+      portalStyle.bottom = `${coords.bottom}px`;
+    } else {
+      portalStyle.top = `${coords.top}px`;
+    }
+
+    if (align === 'right') {
+      portalStyle.right = `${coords.right}px`;
+    } else {
+      portalStyle.left = `${coords.left}px`;
+    }
+  }
+
+  const mountNode = typeof document !== 'undefined' ? (document.fullscreenElement ?? document.body) : null;
+
   return (
     <div className={`relative inline-block text-left ${className}`} ref={containerRef}>
       {/* Trigger Button */}
       <button
+        ref={triggerRef}
         type="button"
         onPointerDown={(e) => {
           e.preventDefault();
-          setIsOpen((prev) => !prev);
-          if (!isOpen) setSearchQuery('');
+          toggleOpen();
         }}
         className={`group inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[13px] font-medium border transition-all duration-150 shadow-2xs cursor-pointer select-none ${
           isOpen
@@ -93,14 +166,13 @@ export default function AppleToolbarDropdown({
         />
       </button>
 
-      {/* Floating Dropdown Panel */}
-      {isOpen && (
+      {/* Floating Dropdown Panel (Portal) */}
+      {isOpen && mountNode && coords && createPortal(
         <div
-          className={`absolute ${
-            align === 'right' ? 'right-0' : 'left-0'
-          } ${
-            dropUp ? 'bottom-full mb-1.5 origin-bottom-left' : 'top-full mt-1.5 origin-top-left'
-          } ${width} max-h-[320px] flex flex-col rounded-2xl border border-slate-200/90 dark:border-zinc-800/90 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.18)] z-[99999] overflow-hidden animate-in zoom-in-95 fade-in duration-150 select-none`}
+          style={portalStyle}
+          className={`apple-toolbar-dropdown-menu-portal ${
+            dropUp ? 'origin-bottom-left' : 'origin-top-left'
+          } ${width} max-h-[320px] flex flex-col rounded-2xl border border-slate-200/90 dark:border-zinc-800/90 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.18)] overflow-hidden animate-in zoom-in-95 fade-in duration-150 select-none`}
         >
           {/* Optional Search Bar */}
           {searchable && (
@@ -144,7 +216,8 @@ export default function AppleToolbarDropdown({
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        mountNode
       )}
     </div>
   );
