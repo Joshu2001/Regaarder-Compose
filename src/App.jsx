@@ -10316,11 +10316,7 @@ export default function App() {
 
   const [sheetToolbarTab, setSheetToolbarTab] = useState(null);
   const [docToolbarTab, setDocToolbarTab] = useState('Write');
-  const [docContextMaterials, setDocContextMaterials] = useState([
-    { id: '1', name: 'Project_Requirements.docx', type: 'word', size: '1.2 MB' },
-    { id: '2', name: 'Q3_Financial_Summary.xlsx', type: 'excel', size: '450 KB' },
-    { id: '3', name: 'Market_Research_Notes.pdf', type: 'pdf', size: '28 KB' }
-  ]);
+  const [docContextMaterials, setDocContextMaterials] = useState([]);
   const [activeSourcePreviewIndex, setActiveSourcePreviewIndex] = useState(null);
   const [isAddSourceMenuOpen, setIsAddSourceMenuOpen] = useState(false);
   const [isChooseRegaarderOpen, setIsChooseRegaarderOpen] = useState(false);
@@ -50538,7 +50534,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                 {/* Progressive Overflow Model Chips List ([File 1] [File 2] [File 3] [+N more ▾]) */}
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0">
-                  {docContextMaterials.slice(0, 3).map((mat, matIdx) => {
+                  {docContextMaterials.length === 0 ? (
+                    <span className="text-xs text-slate-400 dark:text-zinc-500 font-normal italic select-none">
+                      No context source files attached yet
+                    </span>
+                  ) : (
+                    docContextMaterials.slice(0, 3).map((mat, matIdx) => {
                     const badge = getFileSemanticBadge(mat);
 
                     return (
@@ -50571,7 +50572,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                       </div>
                     );
-                  })}
+                  })
+                )}
 
                   {/* Progressive Overflow Button: +N more ▾ */}
                   {docContextMaterials.length > 3 && (
