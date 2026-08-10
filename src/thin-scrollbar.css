@@ -165,4 +165,15 @@
   scrollbar-color: rgba(51, 65, 85, 0.85) transparent !important;
 }
 
+/* Utility to hide visible scrollbars while preserving full 2-finger touchpad/touchscreen scrolling */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important; /* Safari, Chrome, Opera */
+}
+
+
 
