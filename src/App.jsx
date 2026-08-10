@@ -2940,6 +2940,1272 @@ const CreateTemplateModal = ({
   );
 };
 
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Custom 16px Monoline SVG Icons for Regaarder AI Workflows
+ * Original, geometric, minimal, monoline, 16px icons adhering to Apple design rules.
+ * ────────────────────────────────────────────────────────────────────────── */
+const WorkflowIconMeetingNotes = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3.5 2.5h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z" />
+    <path d="M6 5.5h4" />
+    <path d="M6 8h4" />
+    <path d="M6 10.5h2.5" />
+  </svg>
+);
+
+const WorkflowIconProjectPlan = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2.5 3.5h11" />
+    <path d="M2.5 12.5h11" />
+    <path d="M4.5 6.5h4" strokeWidth="1.5" />
+    <path d="M7.5 9.5h4" strokeWidth="1.5" />
+  </svg>
+);
+
+const WorkflowIconFinancialModel = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" />
+    <path d="M2.5 6.5h11" />
+    <path d="M6.5 2.5v11" />
+    <path d="M4.5 11l2.5-2.5 2 1.5 2.5-3" />
+  </svg>
+);
+
+const WorkflowIconBudget = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="4" width="12" height="8" rx="1.5" />
+    <path d="M2 7h12" />
+    <circle cx="11" cy="9.5" r="0.75" fill="currentColor" />
+  </svg>
+);
+
+const WorkflowIconRunwayBurn = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 12a6 6 0 1 1 10 0" />
+    <path d="M8 8l3-3" />
+    <circle cx="8" cy="8" r="1" fill="currentColor" />
+  </svg>
+);
+
+const WorkflowIconBusinessPlan = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="8" cy="8" r="5.5" />
+    <polygon points="9.5,6.5 7.5,7.5 6.5,9.5 8.5,8.5" fill="currentColor" />
+  </svg>
+);
+
+const WorkflowIconGTMPlan = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 13L13 3" />
+    <path d="M8 3h5v5" />
+    <path d="M5 8l3 3" />
+  </svg>
+);
+
+const WorkflowIconPRD = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="8" cy="8" r="5.5" />
+    <circle cx="8" cy="8" r="2" />
+    <path d="M8 1.5v1M8 13.5v1M1.5 8h1M13.5 8h1" />
+  </svg>
+);
+
+const WorkflowIconPitchDeck = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="3" width="12" height="8.5" rx="1" />
+    <path d="M5.5 14.5l2.5-3 2.5 3" />
+    <path d="M5 7.5l2-2 2 1.5 2-2" />
+  </svg>
+);
+
+const WorkflowIconInvestorUpdate = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2.5 4h11a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z" />
+    <path d="M2.5 5.5l5.5 4 5.5-4" />
+  </svg>
+);
+
+const WorkflowIconSOP = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4.5 2.5h7a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z" />
+    <path d="M6 2v2h4V2" />
+    <path d="M5.5 6.5l1.5 1.5 3-3" />
+  </svg>
+);
+
+const WorkflowIconWBR = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 13.5h10" />
+    <rect x="4" y="8" width="2" height="4.5" rx="0.5" />
+    <rect x="7" y="5" width="2" height="7.5" rx="0.5" />
+    <rect x="10" y="3" width="2" height="9.5" rx="0.5" />
+  </svg>
+);
+
+const WorkflowIconBoardUpdate = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2.5 13.5h11" />
+    <path d="M8 2.5L3 5.5v2h10v-2L8 2.5z" />
+    <path d="M4.5 7.5v5M7.5 7.5v5M10.5 7.5v5" />
+  </svg>
+);
+
+const WorkflowIconCashFlow = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2.5 8c1.5-2 3.5-2 5 0s3.5 2 5 0" />
+    <path d="M2.5 11c1.5-2 3.5-2 5 0s3.5 2 5 0" />
+    <path d="M8 3v4M6.5 4.5l1.5-1.5 1.5 1.5" />
+  </svg>
+);
+
+const WorkflowIconScenario = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="4" cy="8" r="1.5" />
+    <path d="M5.5 8h3" />
+    <path d="M8.5 8l3-3M8.5 8l3 3" />
+    <circle cx="12.5" cy="5" r="1.5" />
+    <circle cx="12.5" cy="11" r="1.5" />
+  </svg>
+);
+
+const WorkflowIconMarketAnalysis = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="8" cy="8" r="5.5" />
+    <path d="M2.5 8h11" />
+    <path d="M8 2.5c2 2 2 9 0 11" />
+  </svg>
+);
+
+const WorkflowIconCompetitive = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
+    <path d="M3.5 6.5v-3h3M12.5 6.5v-3h-3" />
+  </svg>
+);
+
+const WorkflowIconSWOT = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2.5" y="2.5" width="11" height="11" rx="1" />
+    <path d="M8 2.5v11M2.5 8h11" />
+  </svg>
+);
+
+const WorkflowIconRoadmap = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2.5 4h11" />
+    <path d="M2.5 8h11" />
+    <path d="M2.5 12h11" />
+    <circle cx="5" cy="4" r="1" fill="currentColor" />
+    <circle cx="9" cy="8" r="1" fill="currentColor" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" />
+  </svg>
+);
+
+const WorkflowIconFeatureSpec = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 4.5L2.5 8 5 11.5" />
+    <path d="M11 4.5l2.5 3.5-2.5 3.5" />
+    <path d="M9.5 3.5l-3 9" />
+  </svg>
+);
+
+const WorkflowIconUserResearch = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="7" cy="7" r="4.5" />
+    <path d="M10.5 10.5L14 14" />
+    <circle cx="7" cy="6" r="1.5" />
+  </svg>
+);
+
+const WorkflowIconLaunchPlan = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 14V2.5l8 3.5-8 3.5" />
+  </svg>
+);
+
+const WorkflowIconFundraising = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 12.5l3.5-3.5 2.5 2.5 4.5-5.5" />
+    <path d="M10 6h3.5v3.5" />
+  </svg>
+);
+
+const WorkflowIconSalesProposal = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 2.5h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z" />
+    <path d="M6 6h4M6 9h4" />
+  </svg>
+);
+
+const WorkflowIconMarketingPlan = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 6.5l7-3v7.5l-7-3v-1.5z" />
+    <path d="M5.5 10.5v3" />
+    <path d="M10 5.5h2.5v3.5H10" />
+  </svg>
+);
+
+const WorkflowIconGeneric = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="10" height="10" rx="1.5" />
+    <path d="M6 6h4M6 9h4" />
+  </svg>
+);
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * AI-Native Business Workflow Library & Taxonomy
+ * High-value business outcomes orchestrating Compose, Sheets, Tasks, and Deck.
+ * ────────────────────────────────────────────────────────────────────────── */
+const AI_WORKFLOW_LIBRARY = [
+  // ── 1. OPERATE ─────────────────────────────────────────────────────────────
+  {
+    id: 'wf-meeting-notes',
+    title: 'Meeting Notes',
+    category: 'Operate',
+    priority: true,
+    apps: ['compose', 'tasks'],
+    appBadges: ['Compose', 'Tasks'],
+    iconComponent: WorkflowIconMeetingNotes,
+    desc: 'Turn your meeting into structured executive notes and actionable tasks.',
+    defaultParams: {
+      topic: 'Weekly Leadership Sync & Product Alignment',
+      attendees: 'Alex (PM), Priya (Eng), Joshua (Design), Maya (Marketing)',
+      outcomes: 'Approved Q3 roadmap priorities; agreed on hiring plan for senior backend engineer.'
+    },
+    generateContent: (params) => {
+      const title = params.topic || 'Meeting Notes & Executive Action Plan';
+      const attendees = params.attendees || 'Team Leadership';
+      const outcomes = params.outcomes || 'Key strategic alignments and operational next steps.';
+      
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #7c3aed; background: #f3e8ff; padding: 3px 8px; border-radius: 6px;">AI Workflow · Operate</span>
+              <span style="font-size: 12px; color: #64748b; font-weight: 500;">📅 ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            </div>
+            <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 6px 0;">${title}</h1>
+            <p style="font-size: 13px; color: #475569; margin: 0;"><strong>Attendees:</strong> ${attendees}</p>
+          </div>
+
+          <h2 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 18px 0 8px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Executive Summary & Key Outcomes</h2>
+          <p style="font-size: 14px; line-height: 1.6; color: #334155;">${outcomes}</p>
+
+          <h2 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 20px 0 10px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Discussion & Decision Log</h2>
+          <table style="width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px;">
+            <thead>
+              <tr style="background: #f8fafc;">
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; color: #334155; font-weight: 600;">Agenda Topic</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; color: #334155; font-weight: 600;">Key Insights / Discussion</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; color: #334155; font-weight: 600;">Decision Reached</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600; color: #0f172a;">Q3 Product Priorities</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #334155;">Reviewed user feedback on search latency and workspace navigation.</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #166534; font-weight: 600;">Approved sprint focus on performance optimization.</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600; color: #0f172a;">Headcount & Hiring</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #334155;">Evaluated engineering capacity for upcoming enterprise tier.</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #166534; font-weight: 600;">Opened senior backend engineer requisition.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 14px; margin: 18px 0;">
+            <div style="font-weight: 700; color: #6b21a8; font-size: 13px; margin-bottom: 6px;">⚡ Auto-Extracted Action Items (Synced to Tasks)</div>
+            <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #581c87;">
+              <li>Finalize Q3 engineering roadmap & sprint breakdown (Assigned: Alex)</li>
+              <li>Publish Senior Backend Engineer job description (Assigned: Priya)</li>
+            </ul>
+          </div>
+        </div>
+        <p><br></p>
+      `;
+
+      const tasksToAdd = [
+        { title: `[${title}] Finalize Q3 engineering roadmap`, tag: 'Product', assignee: 'Alex', priority: 'High', status: 'Ready', description: `Action item auto-extracted from meeting notes: ${title}` },
+        { title: `[${title}] Publish Senior Backend Requisition`, tag: 'Hiring', assignee: 'Priya', priority: 'Medium', status: 'Ideas', description: `Action item auto-extracted from meeting notes: ${title}` }
+      ];
+
+      return { html, tasksToAdd };
+    }
+  },
+  {
+    id: 'wf-project-plan',
+    title: 'Project Plan',
+    category: 'Operate',
+    priority: true,
+    apps: ['compose', 'sheets', 'tasks'],
+    appBadges: ['Compose', 'Sheets', 'Tasks'],
+    iconComponent: WorkflowIconProjectPlan,
+    desc: 'Establish project scope, milestone timeline table, resource allocation, and sprint tasks.',
+    defaultParams: {
+      projectName: 'Enterprise Security Compliance & SOC2',
+      owner: 'Engineering Delivery Team',
+      deadline: 'Q4 2026'
+    },
+    generateContent: (params) => {
+      const name = params.projectName || 'Strategic Initiative Project Plan';
+      const owner = params.owner || 'Cross-functional Team';
+      const deadline = params.deadline || 'Q4';
+
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #7c3aed; background: #f3e8ff; padding: 3px 8px; border-radius: 6px;">AI Workflow · Operate</span>
+            <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 8px 0 4px 0;">${name}</h1>
+            <p style="font-size: 13px; color: #475569; margin: 0;"><strong>Project Lead:</strong> ${owner} &nbsp;|&nbsp; <strong>Target Completion:</strong> ${deadline}</p>
+          </div>
+
+          <h2 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 18px 0 8px 0;">Phased Execution Timeline & Deliverables</h2>
+          <table style="width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px;">
+            <thead>
+              <tr style="background: #f8fafc;">
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Phase</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Key Deliverables</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Target Date</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Phase 1: Discovery & Audit</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Gap analysis, policy baseline draft</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Month 1</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #d97706; font-weight: 600;">In Progress</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Phase 2: Remediation & Controls</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Infrastructure logging, access controls</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Month 2</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #64748b; font-weight: 600;">Upcoming</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Phase 3: Formal Audit & Certification</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Third-party audit review & final report</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Month 3</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #64748b; font-weight: 600;">Upcoming</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p><br></p>
+      `;
+
+      const tasksToAdd = [
+        { title: `[${name}] Complete Phase 1 Audit & Gap Analysis`, tag: 'Project', assignee: owner, priority: 'High', status: 'Working', description: `Project execution task for ${name}` },
+        { title: `[${name}] Setup infrastructure audit logging`, tag: 'Security', assignee: owner, priority: 'Medium', status: 'Ready', description: `Phase 2 milestone task` }
+      ];
+
+      return { html, tasksToAdd };
+    }
+  },
+  {
+    id: 'wf-sop',
+    title: 'SOP',
+    category: 'Operate',
+    priority: false,
+    apps: ['compose', 'tasks'],
+    appBadges: ['Compose', 'Tasks'],
+    iconComponent: WorkflowIconSOP,
+    desc: 'Define repeatable operational standards, step-by-step procedures, and compliance checklists.',
+    defaultParams: { title: 'Incident Response & Escalation SOP', department: 'DevOps & Reliability' },
+    generateContent: (params) => {
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0;">
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">${params.title || 'Standard Operating Procedure'}</h1>
+          <p style="font-size: 13px; color: #64748b;">Department: ${params.department || 'Operations'}</p>
+          <hr style="margin: 16px 0; border: none; border-top: 1px solid #e2e8f0;" />
+          <h2 style="font-size: 16px; font-weight: 700;">1. Purpose & Scope</h2>
+          <p style="font-size: 14px; color: #334155;">Establishes standard protocol for response, triaging, and escalation during service disruptions.</p>
+          <h2 style="font-size: 16px; font-weight: 700;">2. Step-by-Step Execution Protocol</h2>
+          <ol style="font-size: 14px; color: #334155; line-height: 1.6;">
+            <li>Acknowledge incident alert within 15 minutes on PagerDuty.</li>
+            <li>Open Incident War Room channel and declare severity status (P1/P2/P3).</li>
+            <li>Execute mitigation steps per playbook and update status page every 30 minutes.</li>
+          </ol>
+        </div>
+        <p><br></p>
+      `;
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-wbr',
+    title: 'Weekly Business Review',
+    category: 'Operate',
+    priority: false,
+    apps: ['compose', 'sheets'],
+    appBadges: ['Compose', 'Sheets'],
+    iconComponent: WorkflowIconWBR,
+    desc: 'Track weekly operational metrics, variance analysis, key wins, and red flags.',
+    defaultParams: { week: 'Week 32, 2026', owner: 'Executive Operations' },
+    generateContent: (params) => {
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0;">
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">Weekly Business Review — ${params.week || 'Current Week'}</h1>
+          <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">Weekly Metrics Scorecard</h2>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0;">
+            <thead>
+              <tr style="background: #f8fafc;">
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">KPI Metric</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Weekly Target</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Actual Result</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Variance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Net New ARR</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">$25,000</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">$31,200</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #166534; font-weight: 700;">+24.8%</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Customer Churn Rate</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">&lt; 1.0%</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">0.6%</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #166534; font-weight: 700;">On Target</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p><br></p>
+      `;
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-board-update',
+    title: 'Board Update',
+    category: 'Operate',
+    priority: false,
+    apps: ['compose', 'deck'],
+    appBadges: ['Compose', 'Deck'],
+    iconComponent: WorkflowIconBoardUpdate,
+    desc: 'Synthesize executive performance, board deck outline, key strategic decisions, and financial summary.',
+    defaultParams: { quarter: 'Q2 2026 Board Briefing', company: 'Regaarder Technologies Inc.' },
+    generateContent: (params) => {
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0;">
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">${params.company || 'Company'} — ${params.quarter || 'Board Update'}</h1>
+          <p style="font-size: 13px; color: #64748b;">Confidential · For Board of Directors</p>
+          <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">Executive Narrative & Highlights</h2>
+          <p style="font-size: 14px; color: #334155; line-height: 1.6;">Q2 represented strong operational execution with ARR scaling to $4.2M (+32% QoQ) and cash runway extended to 22 months.</p>
+        </div>
+        <p><br></p>
+      `;
+      return { html, tasksToAdd: [] };
+    }
+  },
+
+  // ── 2. FINANCE ─────────────────────────────────────────────────────────────
+  {
+    id: 'wf-financial-model',
+    title: 'Financial Model',
+    category: 'Finance',
+    priority: true,
+    apps: ['sheets', 'compose'],
+    appBadges: ['Sheets', 'Compose'],
+    iconComponent: WorkflowIconFinancialModel,
+    desc: 'Generate a 3-Statement Financial Model, revenue assumptions matrix, and runway forecast.',
+    defaultParams: {
+      companyName: 'Acme AI Technologies',
+      businessModel: 'B2B SaaS Subscription',
+      arr: '$1,200,000',
+      grossMargin: '84%'
+    },
+    generateContent: (params) => {
+      const name = params.companyName || 'Startup Financial Model';
+      const modelType = params.businessModel || 'SaaS Subscription';
+      const arr = params.arr || '$1.2M';
+
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); border-radius: 12px; padding: 22px; color: white; margin-bottom: 20px;">
+            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #a7f3d0; background: rgba(255,255,255,0.15); padding: 3px 8px; border-radius: 6px;">AI Workflow · Finance</span>
+            <h1 style="font-size: 22px; font-weight: 700; margin: 8px 0 4px 0; color: #ffffff;">${name} — 3-Statement Financial Model</h1>
+            <p style="font-size: 13px; color: #cbd5e1; margin: 0;"><strong>Model Architecture:</strong> ${modelType} &nbsp;|&nbsp; <strong>Current ARR:</strong> ${arr}</p>
+          </div>
+
+          <h2 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 18px 0 8px 0;">1. Key Financial Summary & Projections</h2>
+          <table style="width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px;">
+            <thead>
+              <tr style="background: #f8fafc;">
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Financial Metric</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: right;">Year 1 (2026)</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: right;">Year 2 (2027)</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: right;">Year 3 (2028)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Annual Recurring Revenue (ARR)</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right;">$1,200,000</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right;">$3,400,000</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right;">$8,500,000</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Gross Margin %</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right; color: #166534; font-weight: 600;">84%</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right; color: #166534; font-weight: 600;">86%</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right; color: #166534; font-weight: 600;">88%</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Operating Expenses (OpEx)</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right; color: #b91c1c;">$1,850,000</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right; color: #b91c1c;">$3,800,000</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right; color: #b91c1c;">$7,200,000</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 700; background: #f8fafc;">Net Operating Profit / (Burn)</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right; color: #b91c1c; font-weight: 700; background: #f8fafc;">($842,000)</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right; color: #b91c1c; font-weight: 700; background: #f8fafc;">($876,000)</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right; color: #166534; font-weight: 700; background: #f8fafc;">+$280,000</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px; margin: 16px 0;">
+            <div style="font-weight: 700; color: #166534; font-size: 13px;">📊 Embedded Sheets Model Generated</div>
+            <p style="font-size: 13px; color: #15803d; margin: 4px 0 0 0;">Financial Model spreadsheet tab initialized with dynamic formulas for Revenue Drivers, Headcount OpEx, and Cash Flow zero-date projections.</p>
+          </div>
+        </div>
+        <p><br></p>
+      `;
+
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-budget',
+    title: 'Budget',
+    category: 'Finance',
+    priority: true,
+    apps: ['sheets', 'compose', 'tasks'],
+    appBadges: ['Sheets', 'Compose', 'Tasks'],
+    iconComponent: WorkflowIconBudget,
+    desc: 'Build departmental budget allocations, spending thresholds, and expense controls.',
+    defaultParams: { department: 'Engineering & Product', totalBudget: '$450,000 / Quarter' },
+    generateContent: (params) => {
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0;">
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">Departmental Budget Allocation Plan</h1>
+          <p style="font-size: 13px; color: #64748b;">Department: ${params.department || 'All Departments'} &nbsp;|&nbsp; Target: ${params.totalBudget || '$500k'}</p>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0;">
+            <thead>
+              <tr style="background: #f8fafc;">
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Category</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Allocation</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Owner</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Payroll & Headcount</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">$310,000 (68%)</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Engineering VP</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Cloud Infrastructure & AI API</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">$85,000 (19%)</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">DevOps Lead</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p><br></p>
+      `;
+      const tasksToAdd = [
+        { title: `Review departmental budget variance with Finance Lead`, tag: 'Finance', assignee: 'Priya', priority: 'Medium', status: 'Ready', description: 'Quarterly budget compliance check.' }
+      ];
+      return { html, tasksToAdd };
+    }
+  },
+  {
+    id: 'wf-runway-burn',
+    title: 'Runway & Burn',
+    category: 'Finance',
+    priority: true,
+    apps: ['sheets', 'compose'],
+    appBadges: ['Sheets', 'Compose'],
+    iconComponent: WorkflowIconRunwayBurn,
+    desc: 'Calculate net monthly burn rate, zero-cash date, and model cost scenarios.',
+    defaultParams: { cashBalance: '$3,200,000', monthlyNetBurn: '$140,000', expectedHires: '3 Engineers' },
+    generateContent: (params) => {
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0;">
+          <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 10px; padding: 18px; margin-bottom: 16px;">
+            <span style="font-size: 11px; font-weight: 700; color: #be123c; text-transform: uppercase;">Runway & Burn Analysis</span>
+            <h1 style="font-size: 22px; font-weight: 700; color: #881337; margin: 6px 0;">Current Runway: 22.8 Months</h1>
+            <p style="font-size: 13px; color: #9f1239; margin: 0;">Cash Balance: ${params.cashBalance || '$3.2M'} &nbsp;|&nbsp; Net Monthly Burn: ${params.monthlyNetBurn || '$140k'}</p>
+          </div>
+          <h2 style="font-size: 16px; font-weight: 700;">Zero-Cash Date & Sensitivity Scenarios</h2>
+          <ul style="font-size: 14px; color: #334155; line-height: 1.6;">
+            <li><strong>Base Case (Current Burn):</strong> Zero cash date in July 2028.</li>
+            <li><strong>Accelerated Hiring Case (+3 Engineers):</strong> Zero cash date in January 2028 (17.5 months).</li>
+          </ul>
+        </div>
+        <p><br></p>
+      `;
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-cash-flow',
+    title: 'Cash Flow Analysis',
+    category: 'Finance',
+    priority: false,
+    apps: ['sheets', 'compose'],
+    appBadges: ['Sheets', 'Compose'],
+    iconComponent: WorkflowIconCashFlow,
+    desc: 'Forecast cash inflows, working capital requirements, and operating liquidity.',
+    defaultParams: { cashReserve: '$1,500,000' },
+    generateContent: (params) => {
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Cash Flow Statement & Forecast</h1><p style="font-size: 14px; color: #334155;">Net Operating Cash Flow analysis with 12-month trailing visibility.</p></div><p><br></p>`;
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-scenario-analysis',
+    title: 'Scenario Analysis',
+    category: 'Finance',
+    priority: false,
+    apps: ['sheets', 'compose'],
+    appBadges: ['Sheets', 'Compose'],
+    iconComponent: WorkflowIconScenario,
+    desc: 'Evaluate strategic trade-offs across Bull, Base, and Bear market financial models.',
+    defaultParams: { focus: 'Market Downturn vs High Growth' },
+    generateContent: (params) => {
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Scenario Sensitivity Analysis (Base / Bull / Bear)</h1></div><p><br></p>`;
+      return { html, tasksToAdd: [] };
+    }
+  },
+
+  // ── 3. STRATEGY ────────────────────────────────────────────────────────────
+  {
+    id: 'wf-business-plan',
+    title: 'Business Plan',
+    category: 'Strategy',
+    priority: true,
+    apps: ['compose', 'sheets'],
+    appBadges: ['Compose', 'Sheets'],
+    iconComponent: WorkflowIconBusinessPlan,
+    desc: 'Draft a comprehensive master strategy, market positioning, and 3-year plan.',
+    defaultParams: { companyName: 'Regaarder Workspace AI', market: 'B2B Enterprise Productivity' },
+    generateContent: (params) => {
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0;">
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">${params.companyName || 'Business Strategy Plan'}</h1>
+          <p style="font-size: 13px; color: #64748b;">Target Market: ${params.market || 'Enterprise Software'}</p>
+          <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">1. Executive Summary & Value Proposition</h2>
+          <p style="font-size: 14px; color: #334155; line-height: 1.6;">Regaarder provides an AI-native unified workspace orchestrating documents, spreadsheets, slides, and tasks into seamless executive workflows.</p>
+        </div>
+        <p><br></p>
+      `;
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-gtm-plan',
+    title: 'GTM Plan',
+    category: 'Strategy',
+    priority: true,
+    apps: ['compose', 'sheets', 'tasks'],
+    appBadges: ['Compose', 'Sheets', 'Tasks'],
+    iconComponent: WorkflowIconGTMPlan,
+    desc: 'Outline Ideal Customer Profiles (ICP), acquisition channels, and launch tasks.',
+    defaultParams: { targetICP: 'Mid-Market & Startup Founders ($1M-$20M ARR)', primaryChannel: 'Product-Led Growth (PLG) + Inbound Content' },
+    generateContent: (params) => {
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0;">
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">Go-to-Market Strategy Blueprint</h1>
+          <p style="font-size: 13px; color: #64748b;">ICP: ${params.targetICP || 'Startups'} &nbsp;|&nbsp; Core Channel: ${params.primaryChannel || 'PLG'}</p>
+          <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">Launch Execution Checklist</h2>
+          <ul style="font-size: 14px; color: #334155; line-height: 1.6;">
+            <li>Deploy self-serve onboarding experience & free tier trial limits.</li>
+            <li>Launch targeted developer & founder community campaign.</li>
+          </ul>
+        </div>
+        <p><br></p>
+      `;
+      const tasksToAdd = [
+        { title: `Setup GTM launch campaign landing page`, tag: 'Marketing', assignee: 'Maya', priority: 'High', status: 'Working', description: 'GTM execution task.' }
+      ];
+      return { html, tasksToAdd };
+    }
+  },
+  {
+    id: 'wf-market-analysis',
+    title: 'Market Analysis',
+    category: 'Strategy',
+    priority: true,
+    apps: ['compose', 'sheets'],
+    appBadges: ['Compose', 'Sheets'],
+    iconComponent: WorkflowIconMarketAnalysis,
+    desc: 'Quantify TAM / SAM / SOM market size, key industry tailwinds, and macro trends.',
+    defaultParams: { industry: 'AI Productivity Software', tam: '$48 Billion' },
+    generateContent: (params) => {
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0;">
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">Market Analysis — ${params.industry || 'Target Sector'}</h1>
+          <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">Market Opportunity Breakdown</h2>
+          <ul style="font-size: 14px; color: #334155; line-height: 1.6;">
+            <li><strong>Total Addressable Market (TAM):</strong> ${params.tam || '$48B'} global enterprise productivity tooling.</li>
+            <li><strong>Serviceable Addressable Market (SAM):</strong> $9.2B startup & high-growth tech business tools.</li>
+            <li><strong>Serviceable Obtainable Market (SOM):</strong> $350M initial 3-year capture.</li>
+          </ul>
+        </div>
+        <p><br></p>
+      `;
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-competitive-analysis',
+    title: 'Competitive Analysis',
+    category: 'Strategy',
+    priority: true,
+    apps: ['compose', 'sheets'],
+    appBadges: ['Compose', 'Sheets'],
+    iconComponent: WorkflowIconCompetitive,
+    desc: 'Compare feature capabilities, pricing tiers, and competitive moats against rivals.',
+    defaultParams: { competitors: 'Notion, Coda, Google Workspace' },
+    generateContent: (params) => {
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0;">
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">Competitive Landscape & Moat Analysis</h1>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0;">
+            <thead>
+              <tr style="background: #f8fafc;">
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Feature Matrix</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; color: #7c3aed;">Our Product</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Competitor A</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Competitor B</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Multi-App Orchestration</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #166534; font-weight: 700;">✅ Native AI</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #b91c1c;">❌ Manual</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #b91c1c;">❌ Manual</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p><br></p>
+      `;
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-swot-analysis',
+    title: 'SWOT Analysis',
+    category: 'Strategy',
+    priority: false,
+    apps: ['compose', 'tasks'],
+    appBadges: ['Compose', 'Tasks'],
+    iconComponent: WorkflowIconSWOT,
+    desc: 'Map Strengths, Weaknesses, Opportunities, and Threats into strategic initiatives.',
+    defaultParams: { focus: 'Q3 Enterprise Market Entry' },
+    generateContent: (params) => {
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Strategic SWOT Analysis Matrix</h1></div><p><br></p>`;
+      return { html, tasksToAdd: [] };
+    }
+  },
+
+  // ── 4. PRODUCT ─────────────────────────────────────────────────────────────
+  {
+    id: 'wf-prd',
+    title: 'PRD',
+    category: 'Product',
+    priority: true,
+    apps: ['compose', 'tasks'],
+    appBadges: ['Compose', 'Tasks'],
+    iconComponent: WorkflowIconPRD,
+    desc: 'Draft product specs, user stories, acceptance criteria, and sprint tasks.',
+    defaultParams: { featureName: 'AI Workflow Engine & Presets', targetRelease: 'v2.4' },
+    generateContent: (params) => {
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0;">
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">PRD: ${params.featureName || 'New Product Feature'}</h1>
+          <p style="font-size: 13px; color: #64748b;">Target Milestone: ${params.targetRelease || 'Next Release'}</p>
+          <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">User Stories & Acceptance Criteria</h2>
+          <ul style="font-size: 14px; color: #334155; line-height: 1.6;">
+            <li><strong>As a user:</strong> I can select high-value startup workflows and instantly generate multi-app content.</li>
+            <li><strong>Acceptance Criterion:</strong> All presets must trigger parameter modals with apple-style design standards.</li>
+          </ul>
+        </div>
+        <p><br></p>
+      `;
+      const tasksToAdd = [
+        { title: `[PRD] Implement ${params.featureName || 'Feature'} frontend integration`, tag: 'Feature', assignee: 'Alex', priority: 'High', status: 'Working', description: 'PRD engineering task' }
+      ];
+      return { html, tasksToAdd };
+    }
+  },
+  {
+    id: 'wf-product-roadmap',
+    title: 'Product Roadmap',
+    category: 'Product',
+    priority: false,
+    apps: ['compose', 'sheets', 'tasks'],
+    appBadges: ['Compose', 'Sheets', 'Tasks'],
+    iconComponent: WorkflowIconRoadmap,
+    desc: 'Align quarterly product themes, epic release milestones, and development dependencies.',
+    defaultParams: { timeframe: 'H2 2026 Roadmap' },
+    generateContent: (params) => {
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Multi-Quarter Product Roadmap & Vision</h1></div><p><br></p>`;
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-feature-spec',
+    title: 'Feature Specification',
+    category: 'Product',
+    priority: false,
+    apps: ['compose', 'tasks'],
+    appBadges: ['Compose', 'Tasks'],
+    iconComponent: WorkflowIconFeatureSpec,
+    desc: 'Define technical architecture, API signatures, edge cases, and engineering contracts.',
+    defaultParams: { feature: 'Multi-App State Sync Protocol' },
+    generateContent: (params) => {
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Technical Feature Specification</h1></div><p><br></p>`;
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-user-research',
+    title: 'User Research',
+    category: 'Product',
+    priority: false,
+    apps: ['compose', 'sheets'],
+    appBadges: ['Compose', 'Sheets'],
+    iconComponent: WorkflowIconUserResearch,
+    desc: 'Synthesize customer interviews, feedback themes, and feature urgency scores.',
+    defaultParams: { cohort: 'Startup Founders (N=24)' },
+    generateContent: (params) => {
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">User Research & Interview Insights</h1></div><p><br></p>`;
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-launch-plan',
+    title: 'Launch Plan',
+    category: 'Product',
+    priority: false,
+    apps: ['compose', 'tasks'],
+    appBadges: ['Compose', 'Tasks'],
+    iconComponent: WorkflowIconLaunchPlan,
+    desc: 'Coordinate go-live checklists, marketing announcements, and support readiness.',
+    defaultParams: { releaseVersion: 'v3.0 Major Release' },
+    generateContent: (params) => {
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Product Launch Checklist & Communications</h1></div><p><br></p>`;
+      return { html, tasksToAdd: [] };
+    }
+  },
+
+  // ── 5. GROWTH & FUNDRAISING ────────────────────────────────────────────────
+  {
+    id: 'wf-pitch-deck',
+    title: 'Pitch Deck',
+    category: 'Growth & Fundraising',
+    priority: true,
+    apps: ['deck', 'compose', 'tasks'],
+    appBadges: ['Deck', 'Compose', 'Tasks'],
+    iconComponent: WorkflowIconPitchDeck,
+    desc: 'Build a 10-Slide Investor Deck structure, founder pitch script, and fundraising checklist.',
+    defaultParams: { company: 'Regaarder AI', round: 'Seed Round ($3M Target)' },
+    generateContent: (params) => {
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0;">
+          <div style="background: linear-gradient(135deg, #4c1d95 0%, #1e1b4b 100%); color: white; padding: 22px; border-radius: 12px;">
+            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #ddd6fe;">AI Workflow · Pitch Deck</span>
+            <h1 style="font-size: 22px; font-weight: 700; margin: 8px 0; color: white;">${params.company || 'Company'} Investor Pitch Deck Structure</h1>
+            <p style="font-size: 13px; color: #c4b5fd; margin: 0;">Target Raise: ${params.round || 'Seed Round'}</p>
+          </div>
+          <h2 style="font-size: 16px; font-weight: 700; margin-top: 18px;">10-Slide Deck Outline</h2>
+          <ol style="font-size: 14px; color: #334155; line-height: 1.7;">
+            <li><strong>Slide 1: Vision & One-Liner</strong> — Re-imagining startup workflows with multi-app AI.</li>
+            <li><strong>Slide 2: Problem</strong> — Context switching across isolated docs, sheets, and task tools kills momentum.</li>
+            <li><strong>Slide 3: Solution</strong> — Unified AI workflow orchestration in a single executive surface.</li>
+            <li><strong>Slide 4: Market Size</strong> — $48B Productivity & AI Workflow market.</li>
+            <li><strong>Slide 5: Business Model & Traction</strong> — B2B SaaS $1.2M ARR growing 25% MoM.</li>
+          </ol>
+        </div>
+        <p><br></p>
+      `;
+      const tasksToAdd = [
+        { title: `Prepare investor data room & financial deck appendices`, tag: 'Fundraising', assignee: 'Joshua', priority: 'High', status: 'Working', description: 'Pitch deck task' }
+      ];
+      return { html, tasksToAdd };
+    }
+  },
+  {
+    id: 'wf-investor-update',
+    title: 'Investor Update',
+    category: 'Growth & Fundraising',
+    priority: true,
+    apps: ['compose', 'sheets'],
+    appBadges: ['Compose', 'Sheets'],
+    iconComponent: WorkflowIconInvestorUpdate,
+    desc: 'Craft monthly founder update memos, KPI scorecards (ARR, burn, runway), and key asks.',
+    defaultParams: { month: 'July 2026', arr: '$1.42M ARR (+21% MoM)', runway: '20 Months' },
+    generateContent: (params) => {
+      const html = `
+        <div class="wf-document-wrapper" style="margin: 16px 0;">
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">Investor Update — ${params.month || 'Current Month'}</h1>
+          <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">Key Metrics at a Glance</h2>
+          <ul style="font-size: 14px; color: #334155; line-height: 1.6;">
+            <li><strong>ARR:</strong> ${params.arr || '$1.4M'}</li>
+            <li><strong>Cash Runway:</strong> ${params.runway || '20 Months'}</li>
+            <li><strong>Team Headcount:</strong> 14 FTEs</li>
+          </ul>
+          <h2 style="font-size: 16px; font-weight: 700;">Highlights & Major Wins</h2>
+          <p style="font-size: 14px; color: #334155;">Closed top 3 enterprise pilot accounts; launched AI workflow engine.</p>
+        </div>
+        <p><br></p>
+      `;
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-fundraising-plan',
+    title: 'Fundraising Plan',
+    category: 'Growth & Fundraising',
+    priority: false,
+    apps: ['sheets', 'compose', 'tasks'],
+    appBadges: ['Sheets', 'Compose', 'Tasks'],
+    iconComponent: WorkflowIconFundraising,
+    desc: 'Build investor pipeline tracker CRM, outreach scripts, and meeting schedule.',
+    defaultParams: { targetRaise: '$4,000,000 Series A' },
+    generateContent: (params) => {
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Fundraising Strategy & CRM Pipeline</h1></div><p><br></p>`;
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-sales-proposal',
+    title: 'Sales Proposal',
+    category: 'Growth & Fundraising',
+    priority: false,
+    apps: ['compose', 'sheets'],
+    appBadges: ['Compose', 'Sheets'],
+    iconComponent: WorkflowIconSalesProposal,
+    desc: 'Generate client pitch proposals, deliverables breakdown, and commercial pricing models.',
+    defaultParams: { clientName: 'Enterprise Partner' },
+    generateContent: (params) => {
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Commercial Sales & Engagement Proposal</h1></div><p><br></p>`;
+      return { html, tasksToAdd: [] };
+    }
+  },
+  {
+    id: 'wf-marketing-plan',
+    title: 'Marketing Plan',
+    category: 'Growth & Fundraising',
+    priority: false,
+    apps: ['compose', 'sheets'],
+    appBadges: ['Compose', 'Sheets'],
+    iconComponent: WorkflowIconMarketingPlan,
+    desc: 'Design acquisition campaign blueprints, content calendar, and channel CAC budgets.',
+    defaultParams: { focus: 'Q3 Acquisition' },
+    generateContent: (params) => {
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Integrated Marketing Strategy & Campaign Plan</h1></div><p><br></p>`;
+      return { html, tasksToAdd: [] };
+    }
+  }
+];
+
+const AIWorkflowLauncherModal = ({
+  isOpen,
+  onClose,
+  workflow,
+  onExecute
+}) => {
+  const [contextInput, setContextInput] = React.useState('');
+  const [isExecuting, setIsExecuting] = React.useState(false);
+
+  React.useEffect(() => {
+    if (workflow) {
+      if (workflow.id === 'wf-meeting-notes') {
+        setContextInput('Discussed Q3 product priorities with Alex, Priya & Joshua. Agreed to focus sprint on performance optimization and open senior backend engineer role.');
+      } else if (workflow.id === 'wf-financial-model') {
+        setContextInput('B2B SaaS model with $1.2M ARR, 84% gross margin, 14 FTE team.');
+      } else if (workflow.id === 'wf-project-plan') {
+        setContextInput('SOC2 Compliance & Infrastructure Security audit for Q4 2026.');
+      } else if (workflow.id === 'wf-pitch-deck') {
+        setContextInput('Regaarder AI Seed Round ($3M Target raise).');
+      } else {
+        setContextInput('');
+      }
+    }
+    setIsExecuting(false);
+  }, [workflow]);
+
+  if (!isOpen || !workflow) return null;
+
+  const getActionLabel = () => {
+    if (workflow.id === 'wf-meeting-notes') return 'Create Meeting Notes';
+    if (workflow.id === 'wf-financial-model') return 'Generate Financial Model';
+    if (workflow.id === 'wf-project-plan') return 'Build Project Plan';
+    if (workflow.id === 'wf-budget') return 'Build Budget Plan';
+    if (workflow.id === 'wf-runway-burn') return 'Calculate Runway & Burn';
+    if (workflow.id === 'wf-business-plan') return 'Draft Business Plan';
+    if (workflow.id === 'wf-gtm-plan') return 'Generate GTM Plan';
+    if (workflow.id === 'wf-prd') return 'Create PRD';
+    if (workflow.id === 'wf-pitch-deck') return 'Build Pitch Deck';
+    if (workflow.id === 'wf-investor-update') return 'Create Investor Update';
+    return `Generate ${workflow.title}`;
+  };
+
+  const handleRun = () => {
+    setIsExecuting(true);
+    setTimeout(() => {
+      onExecute(workflow, { topic: contextInput, outcomes: contextInput, projectName: contextInput, companyName: contextInput });
+      setIsExecuting(false);
+      onClose();
+    }, 350);
+  };
+
+  const IconComp = workflow.iconComponent || WorkflowIconGeneric;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/30 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-zinc-800 overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="p-6 pb-3 flex items-start justify-between">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-center shrink-0 mt-0.5">
+              <IconComp className="w-5 h-5 stroke-purple-600 dark:stroke-purple-400" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100">{workflow.title}</h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                {workflow.desc}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onPointerDown={(e) => { e.preventDefault(); onClose(); }}
+            className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-2 space-y-4">
+          {/* Secondary App Indicator */}
+          <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+            <span>Orchestrates:</span>
+            <div className="flex items-center gap-1.5">
+              {workflow.appBadges.map((badge, idx) => (
+                <span key={idx} className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-semibold border border-slate-200/60 dark:border-zinc-700/60">
+                  {badge}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Context Prompt Input */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">
+              Context or Notes <span className="text-slate-400 font-normal">(Optional)</span>
+            </label>
+            <textarea
+              rows={3}
+              value={contextInput}
+              onChange={(e) => setContextInput(e.target.value)}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800/50 text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-purple-500 focus:bg-white dark:focus:bg-zinc-800 transition-all resize-none"
+              placeholder="Paste raw notes, key points, or files context..."
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 pt-4 flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            onPointerDown={(e) => { e.preventDefault(); onClose(); }}
+            className="px-3.5 py-1.5 text-xs font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={isExecuting}
+            onPointerDown={(e) => { e.preventDefault(); handleRun(); }}
+            className="px-4 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 active:bg-purple-800 rounded-lg shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+          >
+            {isExecuting ? (
+              <>
+                <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Generating...</span>
+              </>
+            ) : (
+              <span>{getActionLabel()}</span>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AIWorkflowLibraryModal = ({
+  isOpen,
+  onClose,
+  onSelectWorkflow
+}) => {
+  const [selectedCategory, setSelectedCategory] = React.useState('All');
+  const [searchQuery, setSearchQuery] = React.useState('');
+
+  if (!isOpen) return null;
+
+  const categories = ['All', 'Operate', 'Finance', 'Strategy', 'Product', 'Growth & Fundraising'];
+
+  const filteredWorkflows = AI_WORKFLOW_LIBRARY.filter((wf) => {
+    const matchesCat = selectedCategory === 'All' || wf.category === selectedCategory;
+    if (!searchQuery.trim()) return matchesCat;
+
+    const query = searchQuery.toLowerCase().trim();
+    const titleMatch = wf.title.toLowerCase().includes(query);
+    const descMatch = wf.desc.toLowerCase().includes(query);
+    const catMatch = wf.category.toLowerCase().includes(query);
+
+    // Natural Language / Intent Matching
+    let intentMatch = false;
+    if (query.includes('investor') || query.includes('pitch') || query.includes('raise') || query.includes('fund')) {
+      intentMatch = ['wf-pitch-deck', 'wf-investor-update', 'wf-financial-model', 'wf-fundraising-plan', 'wf-board-update'].includes(wf.id);
+    } else if (query.includes('meeting') || query.includes('sync') || query.includes('note')) {
+      intentMatch = ['wf-meeting-notes', 'wf-wbr'].includes(wf.id);
+    } else if (query.includes('money') || query.includes('burn') || query.includes('cost') || query.includes('cash') || query.includes('budget')) {
+      intentMatch = ['wf-financial-model', 'wf-budget', 'wf-runway-burn', 'wf-cash-flow', 'wf-scenario-analysis'].includes(wf.id);
+    } else if (query.includes('hire') || query.includes('hiring') || query.includes('people') || query.includes('team')) {
+      intentMatch = ['wf-meeting-notes', 'wf-prd', 'wf-budget', 'wf-sop'].includes(wf.id);
+    } else if (query.includes('launch') || query.includes('market') || query.includes('customer') || query.includes('sale') || query.includes('gtm')) {
+      intentMatch = ['wf-gtm-plan', 'wf-launch-plan', 'wf-sales-proposal', 'wf-marketing-plan', 'wf-market-analysis'].includes(wf.id);
+    }
+
+    return matchesCat && (titleMatch || descMatch || catMatch || intentMatch);
+  });
+
+  return (
+    <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div className="w-full max-w-4xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 overflow-hidden flex flex-col max-h-[85vh]">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-900/50">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100">AI Business Workflow Library</h2>
+              <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
+                25 Strategic Workflows
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5 font-medium">
+              Start with an outcome. Regaarder handles the rest.
+            </p>
+          </div>
+          <button
+            type="button"
+            onPointerDown={(e) => { e.preventDefault(); onClose(); }}
+            className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Filter Toolbar & Search */}
+        <div className="px-6 py-3 border-b border-slate-100 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 flex items-center justify-between gap-3 flex-wrap">
+          {/* Category Tabs */}
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onPointerDown={(e) => { e.preventDefault(); setSelectedCategory(cat); }}
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer shrink-0 ${
+                  selectedCategory === cat
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'bg-slate-100/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200/70 dark:hover:bg-zinc-700/70'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Box */}
+          <div className="relative shrink-0 w-64">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search or ask (e.g. investor)..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/60 text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-purple-500"
+            />
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+          </div>
+        </div>
+
+        {/* Grid */}
+        <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {filteredWorkflows.map((wf) => {
+            const Icon = wf.iconComponent || WorkflowIconGeneric;
+            return (
+              <div
+                key={wf.id}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  onSelectWorkflow(wf);
+                  onClose();
+                }}
+                className="group p-4 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-800/40 hover:border-purple-400/80 dark:hover:border-purple-500/80 hover:shadow-xs transition-all flex flex-col justify-between cursor-pointer"
+              >
+                <div>
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-zinc-700/80 text-slate-600 dark:text-zinc-300 flex items-center justify-center shrink-0 group-hover:bg-purple-50 dark:group-hover:bg-purple-950 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                      <Icon className="w-3.5 h-3.5 stroke-slate-600 dark:stroke-zinc-300 group-hover:stroke-purple-600 dark:group-hover:stroke-purple-400" />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                      {wf.title}
+                    </h3>
+                  </div>
+
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                    {wf.desc}
+                  </p>
+                </div>
+
+                <div className="mt-4 pt-2.5 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    {wf.appBadges.map((badge, idx) => (
+                      <span key={idx} className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/80 px-1.5 py-0.5 rounded border border-slate-200/60 dark:border-zinc-700/60">
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                  <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                    Start →
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const getTemplatePreviewMatrix = (id, title, customTemplate) => {
   if (customTemplate && customTemplate.data) {
     return {
@@ -10351,6 +11617,56 @@ export default function App() {
     }
   });
   const [isCreateTemplateModalOpen, setIsCreateTemplateModalOpen] = useState(false);
+  const [isAIWorkflowLibraryOpen, setIsAIWorkflowLibraryOpen] = useState(false);
+  const [isAIWorkflowLauncherOpen, setIsAIWorkflowLauncherOpen] = useState(false);
+  const [selectedAIWorkflow, setSelectedAIWorkflow] = useState(null);
+
+  const handleExecuteAIWorkflow = (workflow, params) => {
+    if (!workflow) return;
+
+    const result = workflow.generateContent ? workflow.generateContent(params) : null;
+    if (result && result.html) {
+      if (window.__composeInsertHTML) {
+        window.__composeInsertHTML(result.html);
+      } else {
+        const ed = document.querySelector('[contenteditable="true"]');
+        if (ed) ed.focus();
+        document.execCommand('insertHTML', false, result.html);
+      }
+    }
+
+    if (result && result.tasksToAdd && result.tasksToAdd.length > 0) {
+      setManageenBoardColumns((prevCols) => {
+        if (!prevCols || prevCols.length === 0) return prevCols;
+        const targetColId = prevCols.find(c => c.id === 'ready') ? 'ready' : prevCols[0].id;
+        return prevCols.map((col) => {
+          if (col.id === targetColId) {
+            const newTasks = result.tasksToAdd.map((t, idx) => ({
+              id: `mg-task-wf-${Date.now()}-${idx}`,
+              title: t.title,
+              tag: t.tag || workflow.category,
+              project: workflow.title,
+              due: 'Next Week',
+              comments: 0,
+              assignee: t.assignee || 'User',
+              priority: t.priority || 'Medium',
+              status: t.status || 'Ready',
+              progress: 0,
+              description: t.description || `Auto-generated by ${workflow.title} AI Workflow.`
+            }));
+            return {
+              ...col,
+              tasks: [...col.tasks, ...newTasks]
+            };
+          }
+          return col;
+        });
+      });
+    }
+
+    showToast(`Executed ${workflow.title} workflow across ${workflow.appBadges.join(', ')}!`);
+  };
+
   const [createTemplateSource, setCreateTemplateSource] = useState('current');
   const [createTemplateForm, setCreateTemplateForm] = useState({
     name: '',
@@ -50767,36 +52083,61 @@ if (productMode === 'deck' || productMode === 'sheets') {
           )}
 
           {docToolbarTab === 'Templates' && (
-            /* Templates Sub-toolbar: Preset Document Layouts */
-            <div className="w-full flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 shrink-0 mr-1">Presets:</span>
-                {[
-                  { name: 'Executive Report', desc: 'Formal executive summary layout' },
-                  { name: 'Business Proposal', desc: 'Client proposal structure' },
-                  { name: 'Meeting Notes', desc: 'Agenda, action items, decisions' },
-                  { name: 'Technical Spec', desc: 'Engineering design doc' },
-                  { name: 'Project Charter', desc: 'Project goals & milestones' },
-                  { name: 'Creative Brief', desc: 'Brand campaign brief' }
-                ].map((tpl) => (
-                  <button
-                    key={tpl.name}
-                    type="button"
-                    onClick={() => showToast(`Applied ${tpl.name} template`)}
-                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
-                    title={tpl.desc}
-                  >
-                    {tpl.name}
-                  </button>
-                ))}
+            /* Templates Sub-toolbar: AI-Native Business Workflows */
+            <div className="w-full flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0 flex-1">
+                {/* Restrained Section Identity Label */}
+                <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider shrink-0 mr-1.5 select-none">
+                  AI WORKFLOWS
+                </span>
+
+                {/* Curated High-Priority Startup Preset Chips with Custom Monoline 16px SVG Icons */}
+                {AI_WORKFLOW_LIBRARY.filter(wf => wf.priority).slice(0, 7).map((wf) => {
+                  const Icon = wf.iconComponent || WorkflowIconGeneric;
+                  return (
+                    <button
+                      key={wf.id}
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        setSelectedAIWorkflow(wf);
+                        setIsAIWorkflowLauncherOpen(true);
+                      }}
+                      className="group px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/80 hover:bg-slate-200/60 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/60 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-all cursor-pointer flex items-center gap-1.5"
+                      title={wf.desc}
+                    >
+                      <Icon className="w-4 h-4 stroke-slate-500 dark:stroke-zinc-400 group-hover:stroke-purple-600 dark:group-hover:stroke-purple-400 transition-colors" />
+                      <span className="font-semibold">{wf.title}</span>
+                    </button>
+                  );
+                })}
               </div>
-              <button
-                type="button"
-                onClick={() => setIsCreateTemplateModalOpen(true)}
-                className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
-              >
-                + Save as Template
-              </button>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    setIsAIWorkflowLibraryOpen(true);
+                  }}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60 transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                >
+                  <span>+ Workflow Library</span>
+                  <span className="text-[10px] bg-purple-200/60 dark:bg-purple-900/80 px-1.5 py-0.2 rounded-md font-bold">25</span>
+                </button>
+
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    setIsCreateTemplateModalOpen(true);
+                  }}
+                  className="px-2 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
+                  title="Save current workspace as a custom template"
+                >
+                  + Save Custom
+                </button>
+              </div>
             </div>
           )}
 
@@ -60155,6 +61496,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
           setActiveSheetId(newSheetId);
           setSheetToolbarTab(null);
           showToast(`Created and opened new template page "${newTpl.name}" in View!`);
+        }}
+      />
+
+      {/* AI Business Workflow Launcher Modal */}
+      <AIWorkflowLauncherModal
+        isOpen={isAIWorkflowLauncherOpen}
+        onClose={() => setIsAIWorkflowLauncherOpen(false)}
+        workflow={selectedAIWorkflow}
+        onExecute={handleExecuteAIWorkflow}
+      />
+
+      {/* AI Business Workflow Library Catalog Modal */}
+      <AIWorkflowLibraryModal
+        isOpen={isAIWorkflowLibraryOpen}
+        onClose={() => setIsAIWorkflowLibraryOpen(false)}
+        onSelectWorkflow={(wf) => {
+          setSelectedAIWorkflow(wf);
+          setIsAIWorkflowLauncherOpen(true);
         }}
       />
 
