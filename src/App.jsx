@@ -1632,7 +1632,7 @@ const UnifiedMediaModal = ({ isOpen, setOpen, mediaInsertionModal, setMediaInser
 };
 
 const TableGridPicker = ({ setInsertDropdownOpen }) => {
-  const ROWS = 6, COLS = 8;
+  const ROWS = 8, COLS = 10;
   const [hovered, setHovered] = React.useState({ r: 0, c: 0 });
   const buildTable = (rows, cols) => {
     const ths = Array.from({ length: cols }, (_, i) =>
@@ -1645,17 +1645,17 @@ const TableGridPicker = ({ setInsertDropdownOpen }) => {
     return `<div class="table-block" data-block-type="table" contenteditable="false" style="margin:12px 0; position:relative; border-radius:8px;"><table style="border-collapse:collapse;width:100%;"><thead><tr>${ths}</tr></thead><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
   };
   return (
-    <div className="px-2.5 py-2">
-      <div className="flex items-center justify-between mb-1.5">
+    <div className="px-3 py-2.5">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <LayoutGrid size={14} className="text-slate-500" />
           <span className="text-[13px] font-medium text-slate-800">Table</span>
         </div>
         <span className="text-[11px] text-slate-400">{hovered.r > 0 ? `${hovered.r} × ${hovered.c}` : 'Hover to pick size'}</span>
       </div>
-      <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: `repeat(${COLS}, 18px)` }} onPointerLeave={() => setHovered({ r: 0, c: 0 })}>
+      <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: `repeat(${COLS}, 22px)` }} onPointerLeave={() => setHovered({ r: 0, c: 0 })}>
         {Array.from({ length: ROWS }, (_, r) => Array.from({ length: COLS }, (_, c) => (
-          <div key={`${r}-${c}`} onPointerEnter={() => setHovered({ r: r + 1, c: c + 1 })} onPointerDown={(e) => { e.preventDefault(); if (window.__composeInsertHTML) window.__composeInsertHTML(buildTable(r + 1, c + 1)); else { const ed = document.querySelector('[contenteditable="true"]'); if (ed) ed.focus(); document.execCommand('insertHTML', false, buildTable(r + 1, c + 1)); } setInsertDropdownOpen(false); }} className={`w-[18px] h-[18px] rounded-sm border cursor-pointer transition-colors ${r < hovered.r && c < hovered.c ? 'bg-violet-200 border-violet-400' : 'bg-slate-100 border-slate-200 hover:border-slate-300'}`} />
+          <div key={`${r}-${c}`} onPointerEnter={() => setHovered({ r: r + 1, c: c + 1 })} onPointerDown={(e) => { e.preventDefault(); if (window.__composeInsertHTML) window.__composeInsertHTML(buildTable(r + 1, c + 1)); else { const ed = document.querySelector('[contenteditable="true"]'); if (ed) ed.focus(); document.execCommand('insertHTML', false, buildTable(r + 1, c + 1)); } setInsertDropdownOpen(false); }} className={`w-[22px] h-[22px] rounded-sm border cursor-pointer transition-colors ${r < hovered.r && c < hovered.c ? 'bg-violet-200 border-violet-400' : 'bg-slate-100 border-slate-200 hover:border-slate-300'}`} />
         )))}
       </div>
     </div>
@@ -6795,7 +6795,9 @@ export default function App() {
         setSheetSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, anchorCell: null });
       }
       if (watermarkMenuRef.current && !watermarkMenuRef.current.contains(e.target)) {
-        setShowWatermarkMenu(false);
+        if (!e.target.closest || !e.target.closest('[data-watermark-trigger="true"]')) {
+          setShowWatermarkMenu(false);
+        }
       }
       if (linkPopoverRef.current && !linkPopoverRef.current.contains(e.target)) {
         setLinkPopover(prev => ({ ...prev, open: false }));
@@ -21223,7 +21225,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         top = slashMenu.top;
       }
       setWatermarkMenuPos({ left, top });
-      setShowWatermarkMenu(true);
+      setTimeout(() => setShowWatermarkMenu(true), 20);
     } else if (key === 'comment') {
       // Save the selection BEFORE slash menu closes/clears it
       const sel = window.getSelection();
@@ -48455,7 +48457,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
       {/* Left Sidebar Invisible Hover Trigger */}
-      {!leftSidebarOpen && productMode !== 'landing' && activeRightTab !== 'whiteboard' && (
+      {!leftSidebarOpen && productMode !== 'landing' && activeRightTab !== 'whiteboard' && docOutlineEnabled && (
         <div 
           className="absolute left-0 top-0 h-full w-[6px] z-[900]"
           onMouseEnter={() => setLeftSidebarOpen(true)}
@@ -50976,7 +50978,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="flex items-center gap-2 shrink-0 border-l border-slate-200/60 dark:border-zinc-800 pl-3">
                 <button
                   type="button"
-                  onClick={() => setIsWatermarkModalOpen(true)}
+                  data-watermark-trigger="true"
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setWatermarkMenuPos({ left: Math.max(16, rect.left - 120), top: rect.bottom + 8 });
+                    setShowWatermarkMenu((prev) => !prev);
+                  }}
                   className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 shrink-0 transition-colors cursor-pointer"
                 >
                   Watermark
