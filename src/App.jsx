@@ -49860,7 +49860,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <>
                       <div
                         className="fixed inset-0 z-[9998]"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsAddSourceMenuOpen(false);
+                          setIsChooseRegaarderOpen(false);
+                        }}
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           setIsAddSourceMenuOpen(false);
                           setIsChooseRegaarderOpen(false);
@@ -49870,7 +49877,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         className="fixed z-[9999] w-64 rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 shadow-[0_12px_40px_rgb(0,0,0,0.14)] backdrop-blur-xl p-1.5 text-xs font-medium select-none animate-in fade-in zoom-in-95 duration-100"
                         style={{
                           top: addSourceAnchorRect.bottom + 8,
-                          left: Math.max(8, Math.min(addSourceAnchorRect.left, window.innerWidth - 270))
+                          left: 12
                         }}
                       >
                         <div className="px-2.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
@@ -50103,7 +50110,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <>
                           <div
                             className="fixed inset-0 z-[9998]"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setIsMoreMaterialsOpen(false);
+                            }}
                             onClick={(e) => {
+                              e.preventDefault();
                               e.stopPropagation();
                               setIsMoreMaterialsOpen(false);
                             }}
