@@ -49184,12 +49184,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="w-px h-4 bg-gray-200/60 mx-1"></div>
           <button onPointerDown={(e) => { 
             e.preventDefault(); 
-            setAssistantQuickPrompt("Explain this text"); 
-            setChatInput("Explain this text");
-            setRightSidebarOpen(true); 
-            setActiveRightTab("assistant");
+            const selText = selectedEditorTextRef.current || selectedEditorText || (typeof window !== 'undefined' ? window.getSelection()?.toString()?.trim() : '') || (savedSelectionRef.current ? savedSelectionRef.current.toString().trim() : '');
+            if (selText) {
+              const truncated = truncateText(selText, 180);
+              setSelectedEditorText(truncated);
+              selectedEditorTextRef.current = selText;
+            }
             setSelectionActionMenu({ open: false, top: 0, left: 0 });
-          }} className="flex items-center gap-1.5 p-1.5 px-2 hover:bg-violet-50/80 text-violet-600 rounded text-xs font-medium transition-colors"><Sparkles size={14}/> Ask AI</button>
+            setIsPromptMinimized(false);
+            setIsPromptDismissed(false);
+            setIsPromptExpanded(true);
+            setIsPromptAutoVisible(true);
+            setTimeout(() => {
+              floatingPromptRef.current?.focus();
+            }, 50);
+          }} className="flex items-center gap-1.5 px-2.5 py-1 hover:bg-violet-100/90 dark:hover:bg-violet-900/60 text-violet-700 dark:text-violet-300 bg-violet-50/80 dark:bg-violet-950/40 border border-violet-200/70 dark:border-violet-800/50 rounded-md text-xs font-medium transition-colors duration-150 ease-out active:scale-[0.98]" title="Ask AI about this selection"><RegaarderAiIcon size={14} className="shrink-0 text-violet-600 dark:text-violet-400" /><span>Ask AI</span></button>
         </div>
       )}
       {imageToolbar.open && (
@@ -55969,6 +55978,94 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       ))}
                     </div>
                   )}
+                  {Boolean((selectedEditorText || selectedEditorTextRef.current)?.trim()) && (
+                    <div className="w-full bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-violet-200/80 dark:border-violet-800/50 shadow-sm rounded-xl p-2.5 flex flex-col gap-2 transition-all duration-200 ease-out animate-in fade-in slide-in-from-bottom-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                          <span className="font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                            What would you like me to do with this selection?
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedEditorText('');
+                            selectedEditorTextRef.current = '';
+                          }}
+                          className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
+                          title="Clear selection context"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                      
+                      <div className="text-[11px] text-slate-500 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-800 rounded-md px-2 py-1 italic truncate">
+                        "{truncateText(selectedEditorText || selectedEditorTextRef.current, 100)}"
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sel = selectedEditorTextRef.current || selectedEditorText;
+                            setFloatingPrompt(`Improve writing and tone for this selection: "${sel}"`);
+                            floatingPromptRef.current?.focus();
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors"
+                        >
+                          <Wand2 size={11} className="shrink-0" />
+                          <span>Improve</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sel = selectedEditorTextRef.current || selectedEditorText;
+                            setFloatingPrompt(`Explain this selection in detail: "${sel}"`);
+                            floatingPromptRef.current?.focus();
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors"
+                        >
+                          <HelpCircle size={11} className="shrink-0" />
+                          <span>Explain</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sel = selectedEditorTextRef.current || selectedEditorText;
+                            setFloatingPrompt(`Summarize key points of this selection: "${sel}"`);
+                            floatingPromptRef.current?.focus();
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors"
+                        >
+                          <AlignLeft size={11} className="shrink-0" />
+                          <span>Summarize</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sel = selectedEditorTextRef.current || selectedEditorText;
+                            setFloatingPrompt(`Rewrite this selection clearly: "${sel}"`);
+                            floatingPromptRef.current?.focus();
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors"
+                        >
+                          <RefreshCw size={11} className="shrink-0" />
+                          <span>Rewrite</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            floatingPromptRef.current?.focus();
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/70 transition-colors"
+                        >
+                          <MessageSquare size={11} className="shrink-0" />
+                          <span>Ask anything</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className={`relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 hover:border-violet-200 hover:shadow-[0_12px_45px_-12px_rgba(139,92,246,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] focus-within:border-violet-300 focus-within:ring-2 focus-within:ring-violet-500/10 ${isPromptSlashMenuOpen ? 'ring-1 ring-violet-500/30 dark:ring-violet-400/40 shadow-[0_16px_40px_rgba(0,0,0,0.18)]' : 'shadow-[0_4px_24px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.8)]'} rounded-2xl px-3 py-2 flex items-center gap-2 w-full transition-all duration-300`}>
                     <button
                       type="button"
@@ -55979,7 +56076,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       className="p-1.5 rounded-lg bg-violet-50/80 dark:bg-violet-950/60 text-violet-600 dark:text-violet-300 hover:bg-violet-100 hover:text-violet-700 shrink-0 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center border border-violet-200/50 dark:border-violet-800/50 shadow-2xs"
                       title="Minimize to floating icon"
                     >
-                      <CustomAIIcon size={17} />
+                      <RegaarderAiIcon size={17} />
                     </button>
                     <div className="relative">
                       <button
@@ -56074,11 +56171,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     )}
                     <textarea
+                      ref={floatingPromptRef}
                       value={floatingPrompt}
                       onChange={handleFloatingPromptChange}
                       onKeyDown={handleFloatingPromptKeyDown}
                       onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
-                      placeholder="Describe what you'd like to write..."
+                      placeholder={Boolean((selectedEditorText || selectedEditorTextRef.current)?.trim()) ? "Ask anything about this selection..." : "Describe what you'd like to write..."}
                       rows={1}
                       style={{ textAlign: 'left' }}
                       className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-800 dark:text-zinc-100 placeholder:text-slate-400 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1 font-normal tracking-normal text-left"
