@@ -36,10 +36,10 @@ import TemplateChartVisualizer, { extractTemplateChartData } from './components/
 import CitationPopover from './components/CitationPopover';
 import ContextSourcePreviewModal from './components/ContextSourcePreviewModal';
 import { registerDocumentEditorBinding } from './services/docsCommandApi';
-import { executeTool, executeSequence, undoTransaction, getExecutionLogs, getTransactionHistory } from './services/docsToolExecutor';
+import { executeTool, undoTransaction, getExecutionLogs, getTransactionHistory } from './services/docsToolExecutor';
 import { CANONICAL_DOCS_TOOLS } from './services/docsToolRegistry';
 import { toOpenAITools, toGeminiTools, toAnthropicTools, getDocsToolSystemPrompt, getCanonicalToolSchemas } from './services/docsLlmAdapters';
-import { getAvailableTools } from './services/docsAgentOrchestrator';
+import { getAvailableTools, executeSequence } from './services/docsAgentOrchestrator';
 import { DocsToolDevConsoleModal } from './components/dev/DocsToolDevConsoleModal';
 
 import * as Y from 'yjs';
@@ -3185,19 +3185,15 @@ const AI_WORKFLOW_LIBRARY = [
       
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-          <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #7c3aed; background: #f3e8ff; padding: 3px 8px; border-radius: 6px;">AI Workflow · Operate</span>
-              <span style="font-size: 12px; color: #64748b; font-weight: 500;">📅 ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-            </div>
-            <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 6px 0;">${title}</h1>
-            <p style="font-size: 13px; color: #475569; margin: 0;"><strong>Attendees:</strong> ${attendees}</p>
-          </div>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">${title}</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+            <strong>Attendees:</strong> ${attendees} &nbsp;·&nbsp; <strong>Date:</strong> ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </p>
 
-          <h2 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 18px 0 8px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Executive Summary & Key Outcomes</h2>
+          <h2 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 18px 0 8px 0;">Executive Summary & Key Outcomes</h2>
           <p style="font-size: 14px; line-height: 1.6; color: #334155;">${outcomes}</p>
 
-          <h2 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 20px 0 10px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Discussion & Decision Log</h2>
+          <h2 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 20px 0 10px 0;">Discussion & Decision Log</h2>
           <table style="width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px;">
             <thead>
               <tr style="background: #f8fafc;">
@@ -3220,7 +3216,7 @@ const AI_WORKFLOW_LIBRARY = [
             </tbody>
           </table>
 
-          <div style="background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 14px; margin: 18px 0;">
+          <div class="callout-block" style="border-left: 3px solid #7c3aed; padding: 12px 16px; background: #faf5ff; border-radius: 0 6px 6px 0; margin: 18px 0;">
             <div style="font-weight: 700; color: #6b21a8; font-size: 13px; margin-bottom: 6px;">⚡ Auto-Extracted Action Items (Synced to Tasks)</div>
             <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #581c87;">
               <li>Finalize Q3 engineering roadmap & sprint breakdown (Assigned: Alex)</li>
@@ -3260,11 +3256,10 @@ const AI_WORKFLOW_LIBRARY = [
 
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-          <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #7c3aed; background: #f3e8ff; padding: 3px 8px; border-radius: 6px;">AI Workflow · Operate</span>
-            <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 8px 0 4px 0;">${name}</h1>
-            <p style="font-size: 13px; color: #475569; margin: 0;"><strong>Project Lead:</strong> ${owner} &nbsp;|&nbsp; <strong>Target Completion:</strong> ${deadline}</p>
-          </div>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">${name}</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+            <strong>Project Lead:</strong> ${owner} &nbsp;·&nbsp; <strong>Target Completion:</strong> ${deadline}
+          </p>
 
           <h2 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 18px 0 8px 0;">Phased Execution Timeline & Deliverables</h2>
           <table style="width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px;">
@@ -3322,10 +3317,9 @@ const AI_WORKFLOW_LIBRARY = [
     generateContent: (params) => {
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0;">
-          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">${params.title || 'Standard Operating Procedure'}</h1>
-          <p style="font-size: 13px; color: #64748b;">Department: ${params.department || 'Operations'}</p>
-          <hr style="margin: 16px 0; border: none; border-top: 1px solid #e2e8f0;" />
-          <h2 style="font-size: 16px; font-weight: 700;">1. Purpose & Scope</h2>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">${params.title || 'Standard Operating Procedure'}</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;"><strong>Department:</strong> ${params.department || 'Operations'}</p>
+          <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">1. Purpose & Scope</h2>
           <p style="font-size: 14px; color: #334155;">Establishes standard protocol for response, triaging, and escalation during service disruptions.</p>
           <h2 style="font-size: 16px; font-weight: 700;">2. Step-by-Step Execution Protocol</h2>
           <ol style="font-size: 14px; color: #334155; line-height: 1.6;">
@@ -3352,29 +3346,30 @@ const AI_WORKFLOW_LIBRARY = [
     generateContent: (params) => {
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0;">
-          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">Weekly Business Review — ${params.week || 'Current Week'}</h1>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Weekly Business Review — ${params.week || 'Current Week'}</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;"><strong>Owner:</strong> ${params.owner || 'Executive Team'}</p>
           <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">Weekly Metrics Scorecard</h2>
           <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0;">
             <thead>
               <tr style="background: #f8fafc;">
-                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">KPI Metric</th>
-                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Weekly Target</th>
-                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Actual Result</th>
-                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Variance</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">KPI Metric</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: right;">Weekly Target</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: right;">Actual Result</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: right;">Variance</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Net New ARR</td>
-                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">$25,000</td>
-                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">$31,200</td>
-                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #166534; font-weight: 700;">+24.8%</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right;">$25,000</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right;">$31,200</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right; color: #166534; font-weight: 700;">+24.8%</td>
               </tr>
               <tr>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Customer Churn Rate</td>
-                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">&lt; 1.0%</td>
-                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">0.6%</td>
-                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #166534; font-weight: 700;">On Target</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right;">&lt; 1.0%</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right;">0.6%</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right; color: #166534; font-weight: 700;">On Target</td>
               </tr>
             </tbody>
           </table>
@@ -3397,8 +3392,8 @@ const AI_WORKFLOW_LIBRARY = [
     generateContent: (params) => {
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0;">
-          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">${params.company || 'Company'} — ${params.quarter || 'Board Update'}</h1>
-          <p style="font-size: 13px; color: #64748b;">Confidential · For Board of Directors</p>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">${params.company || 'Company'} — ${params.quarter || 'Board Update'}</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Confidential · For Board of Directors</p>
           <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">Executive Narrative & Highlights</h2>
           <p style="font-size: 14px; color: #334155; line-height: 1.6;">Q2 represented strong operational execution with ARR scaling to $4.2M (+32% QoQ) and cash runway extended to 22 months.</p>
         </div>
@@ -3431,11 +3426,10 @@ const AI_WORKFLOW_LIBRARY = [
 
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-          <div style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); border-radius: 12px; padding: 22px; color: white; margin-bottom: 20px;">
-            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #a7f3d0; background: rgba(255,255,255,0.15); padding: 3px 8px; border-radius: 6px;">AI Workflow · Finance</span>
-            <h1 style="font-size: 22px; font-weight: 700; margin: 8px 0 4px 0; color: #ffffff;">${name} — 3-Statement Financial Model</h1>
-            <p style="font-size: 13px; color: #cbd5e1; margin: 0;"><strong>Model Architecture:</strong> ${modelType} &nbsp;|&nbsp; <strong>Current ARR:</strong> ${arr}</p>
-          </div>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">${name} — 3-Statement Financial Model</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+            <strong>Model Architecture:</strong> ${modelType} &nbsp;·&nbsp; <strong>Current ARR:</strong> ${arr}
+          </p>
 
           <h2 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 18px 0 8px 0;">1. Key Financial Summary & Projections</h2>
           <table style="width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px;">
@@ -3475,7 +3469,7 @@ const AI_WORKFLOW_LIBRARY = [
             </tbody>
           </table>
 
-          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px; margin: 16px 0;">
+          <div class="callout-block" style="border-left: 3px solid #166534; padding: 12px 16px; background: #f0fdf4; border-radius: 0 6px 6px 0; margin: 18px 0;">
             <div style="font-weight: 700; color: #166534; font-size: 13px;">📊 Embedded Sheets Model Generated</div>
             <p style="font-size: 13px; color: #15803d; margin: 4px 0 0 0;">Financial Model spreadsheet tab initialized with dynamic formulas for Revenue Drivers, Headcount OpEx, and Cash Flow zero-date projections.</p>
           </div>
@@ -3499,25 +3493,25 @@ const AI_WORKFLOW_LIBRARY = [
     generateContent: (params) => {
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0;">
-          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">Departmental Budget Allocation Plan</h1>
-          <p style="font-size: 13px; color: #64748b;">Department: ${params.department || 'All Departments'} &nbsp;|&nbsp; Target: ${params.totalBudget || '$500k'}</p>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Departmental Budget Allocation Plan</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;"><strong>Department:</strong> ${params.department || 'All Departments'} &nbsp;·&nbsp; <strong>Target:</strong> ${params.totalBudget || '$500k'}</p>
           <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0;">
             <thead>
               <tr style="background: #f8fafc;">
-                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Category</th>
-                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Allocation</th>
-                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Owner</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Category</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: right;">Allocation</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Owner</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Payroll & Headcount</td>
-                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">$310,000 (68%)</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right;">$310,000 (68%)</td>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Engineering VP</td>
               </tr>
               <tr>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Cloud Infrastructure & AI API</td>
-                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">$85,000 (19%)</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; text-align: right;">$85,000 (19%)</td>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">DevOps Lead</td>
               </tr>
             </tbody>
@@ -3544,12 +3538,11 @@ const AI_WORKFLOW_LIBRARY = [
     generateContent: (params) => {
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0;">
-          <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 10px; padding: 18px; margin-bottom: 16px;">
-            <span style="font-size: 11px; font-weight: 700; color: #be123c; text-transform: uppercase;">Runway & Burn Analysis</span>
-            <h1 style="font-size: 22px; font-weight: 700; color: #881337; margin: 6px 0;">Current Runway: 22.8 Months</h1>
-            <p style="font-size: 13px; color: #9f1239; margin: 0;">Cash Balance: ${params.cashBalance || '$3.2M'} &nbsp;|&nbsp; Net Monthly Burn: ${params.monthlyNetBurn || '$140k'}</p>
-          </div>
-          <h2 style="font-size: 16px; font-weight: 700;">Zero-Cash Date & Sensitivity Scenarios</h2>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Runway & Burn Analysis</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+            <strong>Current Runway:</strong> 22.8 Months &nbsp;·&nbsp; <strong>Cash Balance:</strong> ${params.cashBalance || '$3.2M'} &nbsp;·&nbsp; <strong>Net Monthly Burn:</strong> ${params.monthlyNetBurn || '$140k'}
+          </p>
+          <h2 style="font-size: 16px; font-weight: 700; color: #1e293b; margin: 18px 0 8px 0;">Zero-Cash Date & Sensitivity Scenarios</h2>
           <ul style="font-size: 14px; color: #334155; line-height: 1.6;">
             <li><strong>Base Case (Current Burn):</strong> Zero cash date in July 2028.</li>
             <li><strong>Accelerated Hiring Case (+3 Engineers):</strong> Zero cash date in January 2028 (17.5 months).</li>
@@ -3571,7 +3564,7 @@ const AI_WORKFLOW_LIBRARY = [
     desc: 'Forecast cash inflows, working capital requirements, and operating liquidity.',
     defaultParams: { cashReserve: '$1,500,000' },
     generateContent: (params) => {
-      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Cash Flow Statement & Forecast</h1><p style="font-size: 14px; color: #334155;">Net Operating Cash Flow analysis with 12-month trailing visibility.</p></div><p><br></p>`;
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Cash Flow Statement & Forecast</h1><p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Net Operating Cash Flow analysis with 12-month trailing visibility.</p></div><p><br></p>`;
       return { html, tasksToAdd: [] };
     }
   },
@@ -3586,7 +3579,7 @@ const AI_WORKFLOW_LIBRARY = [
     desc: 'Evaluate strategic trade-offs across Bull, Base, and Bear market financial models.',
     defaultParams: { focus: 'Market Downturn vs High Growth' },
     generateContent: (params) => {
-      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Scenario Sensitivity Analysis (Base / Bull / Bear)</h1></div><p><br></p>`;
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Scenario Sensitivity Analysis (Base / Bull / Bear)</h1><p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Strategic financial trade-offs model.</p></div><p><br></p>`;
       return { html, tasksToAdd: [] };
     }
   },
@@ -3605,8 +3598,8 @@ const AI_WORKFLOW_LIBRARY = [
     generateContent: (params) => {
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0;">
-          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">${params.companyName || 'Business Strategy Plan'}</h1>
-          <p style="font-size: 13px; color: #64748b;">Target Market: ${params.market || 'Enterprise Software'}</p>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">${params.companyName || 'Business Strategy Plan'}</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Target Market: ${params.market || 'Enterprise Software'}</p>
           <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">1. Executive Summary & Value Proposition</h2>
           <p style="font-size: 14px; color: #334155; line-height: 1.6;">Regaarder provides an AI-native unified workspace orchestrating documents, spreadsheets, slides, and tasks into seamless executive workflows.</p>
         </div>
@@ -3628,8 +3621,8 @@ const AI_WORKFLOW_LIBRARY = [
     generateContent: (params) => {
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0;">
-          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">Go-to-Market Strategy Blueprint</h1>
-          <p style="font-size: 13px; color: #64748b;">ICP: ${params.targetICP || 'Startups'} &nbsp;|&nbsp; Core Channel: ${params.primaryChannel || 'PLG'}</p>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Go-to-Market Strategy Blueprint</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">ICP: ${params.targetICP || 'Startups'} &nbsp;·&nbsp; Core Channel: ${params.primaryChannel || 'PLG'}</p>
           <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">Launch Execution Checklist</h2>
           <ul style="font-size: 14px; color: #334155; line-height: 1.6;">
             <li>Deploy self-serve onboarding experience & free tier trial limits.</li>
@@ -3657,7 +3650,8 @@ const AI_WORKFLOW_LIBRARY = [
     generateContent: (params) => {
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0;">
-          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">Market Analysis — ${params.industry || 'Target Sector'}</h1>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Market Analysis — ${params.industry || 'Target Sector'}</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Industry: ${params.industry || 'Productivity Software'}</p>
           <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">Market Opportunity Breakdown</h2>
           <ul style="font-size: 14px; color: #334155; line-height: 1.6;">
             <li><strong>Total Addressable Market (TAM):</strong> ${params.tam || '$48B'} global enterprise productivity tooling.</li>
@@ -3683,14 +3677,15 @@ const AI_WORKFLOW_LIBRARY = [
     generateContent: (params) => {
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0;">
-          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">Competitive Landscape & Moat Analysis</h1>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Competitive Landscape & Moat Analysis</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Competitor Scope: ${params.competitors || 'Market Alternatives'}</p>
           <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0;">
             <thead>
               <tr style="background: #f8fafc;">
-                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Feature Matrix</th>
-                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; color: #7c3aed;">Our Product</th>
-                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Competitor A</th>
-                <th style="border: 1px solid #cbd5e1; padding: 8px 12px;">Competitor B</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Feature Matrix</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; color: #7c3aed; text-align: left;">Our Product</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Competitor A</th>
+                <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Competitor B</th>
               </tr>
             </thead>
             <tbody>
@@ -3719,7 +3714,7 @@ const AI_WORKFLOW_LIBRARY = [
     desc: 'Map Strengths, Weaknesses, Opportunities, and Threats into strategic initiatives.',
     defaultParams: { focus: 'Q3 Enterprise Market Entry' },
     generateContent: (params) => {
-      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Strategic SWOT Analysis Matrix</h1></div><p><br></p>`;
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Strategic SWOT Analysis Matrix</h1><p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Focus: ${params.focus || 'Strategic Overview'}</p></div><p><br></p>`;
       return { html, tasksToAdd: [] };
     }
   },
@@ -3738,8 +3733,8 @@ const AI_WORKFLOW_LIBRARY = [
     generateContent: (params) => {
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0;">
-          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">PRD: ${params.featureName || 'New Product Feature'}</h1>
-          <p style="font-size: 13px; color: #64748b;">Target Milestone: ${params.targetRelease || 'Next Release'}</p>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">PRD: ${params.featureName || 'New Product Feature'}</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Target Milestone: ${params.targetRelease || 'Next Release'}</p>
           <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">User Stories & Acceptance Criteria</h2>
           <ul style="font-size: 14px; color: #334155; line-height: 1.6;">
             <li><strong>As a user:</strong> I can select high-value startup workflows and instantly generate multi-app content.</li>
@@ -3765,7 +3760,7 @@ const AI_WORKFLOW_LIBRARY = [
     desc: 'Align quarterly product themes, epic release milestones, and development dependencies.',
     defaultParams: { timeframe: 'H2 2026 Roadmap' },
     generateContent: (params) => {
-      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Multi-Quarter Product Roadmap & Vision</h1></div><p><br></p>`;
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Multi-Quarter Product Roadmap & Vision</h1><p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Timeframe: ${params.timeframe || 'H2 2026'}</p></div><p><br></p>`;
       return { html, tasksToAdd: [] };
     }
   },
@@ -3780,7 +3775,7 @@ const AI_WORKFLOW_LIBRARY = [
     desc: 'Define technical architecture, API signatures, edge cases, and engineering contracts.',
     defaultParams: { feature: 'Multi-App State Sync Protocol' },
     generateContent: (params) => {
-      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Technical Feature Specification</h1></div><p><br></p>`;
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Technical Feature Specification</h1><p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Feature: ${params.feature || 'Technical Spec'}</p></div><p><br></p>`;
       return { html, tasksToAdd: [] };
     }
   },
@@ -3795,7 +3790,7 @@ const AI_WORKFLOW_LIBRARY = [
     desc: 'Synthesize customer interviews, feedback themes, and feature urgency scores.',
     defaultParams: { cohort: 'Startup Founders (N=24)' },
     generateContent: (params) => {
-      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">User Research & Interview Insights</h1></div><p><br></p>`;
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">User Research & Interview Insights</h1><p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Cohort: ${params.cohort || 'User Sample'}</p></div><p><br></p>`;
       return { html, tasksToAdd: [] };
     }
   },
@@ -3810,7 +3805,7 @@ const AI_WORKFLOW_LIBRARY = [
     desc: 'Coordinate go-live checklists, marketing announcements, and support readiness.',
     defaultParams: { releaseVersion: 'v3.0 Major Release' },
     generateContent: (params) => {
-      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Product Launch Checklist & Communications</h1></div><p><br></p>`;
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Product Launch Checklist & Communications</h1><p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Release: ${params.releaseVersion || 'Major Release'}</p></div><p><br></p>`;
       return { html, tasksToAdd: [] };
     }
   },
@@ -3829,11 +3824,8 @@ const AI_WORKFLOW_LIBRARY = [
     generateContent: (params) => {
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0;">
-          <div style="background: linear-gradient(135deg, #4c1d95 0%, #1e1b4b 100%); color: white; padding: 22px; border-radius: 12px;">
-            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #ddd6fe;">AI Workflow · Pitch Deck</span>
-            <h1 style="font-size: 22px; font-weight: 700; margin: 8px 0; color: white;">${params.company || 'Company'} Investor Pitch Deck Structure</h1>
-            <p style="font-size: 13px; color: #c4b5fd; margin: 0;">Target Raise: ${params.round || 'Seed Round'}</p>
-          </div>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">${params.company || 'Company'} Investor Pitch Deck Structure</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Target Raise: ${params.round || 'Seed Round'}</p>
           <h2 style="font-size: 16px; font-weight: 700; margin-top: 18px;">10-Slide Deck Outline</h2>
           <ol style="font-size: 14px; color: #334155; line-height: 1.7;">
             <li><strong>Slide 1: Vision & One-Liner</strong> — Re-imagining startup workflows with multi-app AI.</li>
@@ -3864,7 +3856,8 @@ const AI_WORKFLOW_LIBRARY = [
     generateContent: (params) => {
       const html = `
         <div class="wf-document-wrapper" style="margin: 16px 0;">
-          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a;">Investor Update — ${params.month || 'Current Month'}</h1>
+          <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Investor Update — ${params.month || 'Current Month'}</h1>
+          <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">ARR: ${params.arr || '$1.4M'} &nbsp;·&nbsp; Cash Runway: ${params.runway || '20 Months'}</p>
           <h2 style="font-size: 16px; font-weight: 700; margin-top: 16px;">Key Metrics at a Glance</h2>
           <ul style="font-size: 14px; color: #334155; line-height: 1.6;">
             <li><strong>ARR:</strong> ${params.arr || '$1.4M'}</li>
@@ -3890,7 +3883,7 @@ const AI_WORKFLOW_LIBRARY = [
     desc: 'Build investor pipeline tracker CRM, outreach scripts, and meeting schedule.',
     defaultParams: { targetRaise: '$4,000,000 Series A' },
     generateContent: (params) => {
-      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Fundraising Strategy & CRM Pipeline</h1></div><p><br></p>`;
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Fundraising Strategy & CRM Pipeline</h1><p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Target Raise: ${params.targetRaise || '$4M Series A'}</p></div><p><br></p>`;
       return { html, tasksToAdd: [] };
     }
   },
@@ -3905,7 +3898,7 @@ const AI_WORKFLOW_LIBRARY = [
     desc: 'Generate client pitch proposals, deliverables breakdown, and commercial pricing models.',
     defaultParams: { clientName: 'Enterprise Partner' },
     generateContent: (params) => {
-      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Commercial Sales & Engagement Proposal</h1></div><p><br></p>`;
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Commercial Sales & Engagement Proposal</h1><p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Client: ${params.clientName || 'Partner'}</p></div><p><br></p>`;
       return { html, tasksToAdd: [] };
     }
   },
@@ -3920,7 +3913,7 @@ const AI_WORKFLOW_LIBRARY = [
     desc: 'Design acquisition campaign blueprints, content calendar, and channel CAC budgets.',
     defaultParams: { focus: 'Q3 Acquisition' },
     generateContent: (params) => {
-      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700;">Integrated Marketing Strategy & Campaign Plan</h1></div><p><br></p>`;
+      const html = `<div class="wf-document-wrapper" style="margin: 16px 0;"><h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Integrated Marketing Strategy & Campaign Plan</h1><p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Focus: ${params.focus || 'Acquisition'}</p></div><p><br></p>`;
       return { html, tasksToAdd: [] };
     }
   }
@@ -35585,7 +35578,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         } else if (template.id === 'writer') {
                           coverHtml = `<div contenteditable="true" style="width: 100%; min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; text-align: left; font-family: Georgia, serif; padding: 60px; background-color: #fdfbf7; margin-bottom: 40px; page-break-after: always; border-left: 8px solid #d4a373; flex: 1;"><h1 contenteditable="true" style="font-size: 48px; margin-bottom: 16px; color: #283618; letter-spacing: -1px; font-weight: 700; outline: none;">${title}</h1><div style="width: 60px; height: 4px; background-color: #dda15e; margin-bottom: 30px;"></div><h3 contenteditable="true" style="font-size: 20px; color: #606c38; font-weight: normal; font-style: italic; outline: none;">A Novel Approach</h3></div>`;
                         } else if (template.id === 'enterprise') {
-                          coverHtml = `<div contenteditable="true" style="width: 100%; min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; text-align: left; font-family: 'Inter', sans-serif; padding: 60px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; margin-bottom: 40px; page-break-after: always; border-radius: 16px; flex: 1;"><div contenteditable="true" style="font-size: 24px; font-weight: bold; color: #38bdf8; outline: none;">Enterprise Inc.</div><div style="margin-top: auto; margin-bottom: auto;"><h1 contenteditable="true" style="font-size: 52px; margin-bottom: 20px; font-weight: 800; line-height: 1.1; outline: none;">${title}</h1><h3 contenteditable="true" style="font-size: 24px; color: #94a3b8; font-weight: 400; outline: none;">Q3 Executive Summary</h3></div><div style="width: 100%; border-top: 1px solid #334155; padding-top: 20px; display: flex; justify-content: space-between; color: #94a3b8; font-size: 14px;"><span contenteditable="true" style="outline: none;">CONFIDENTIAL</span><span contenteditable="true" style="outline: none;">${new Date().toLocaleDateString()}</span></div></div>`;
+                          coverHtml = `<div contenteditable="true" style="width: 100%; min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; text-align: left; font-family: 'Inter', -apple-system, sans-serif; padding: 60px; background-color: #ffffff; border: 1px solid #e2e8f0; border-top: 6px solid #0f172a; margin-bottom: 40px; page-break-after: always; flex: 1;"><div contenteditable="true" style="font-size: 20px; font-weight: 700; color: #0f172a; outline: none; letter-spacing: 0.05em; text-transform: uppercase;">Enterprise Inc.</div><div style="margin-top: auto; margin-bottom: auto;"><h1 contenteditable="true" style="font-size: 44px; margin-bottom: 16px; font-weight: 800; line-height: 1.15; color: #0f172a; outline: none;">${title}</h1><h3 contenteditable="true" style="font-size: 20px; color: #64748b; font-weight: 400; outline: none;">Q3 Executive Summary</h3></div><div style="width: 100%; border-top: 1px solid #e2e8f0; padding-top: 20px; display: flex; justify-content: space-between; color: #64748b; font-size: 13px; font-weight: 500;"><span contenteditable="true" style="outline: none;">CONFIDENTIAL</span><span contenteditable="true" style="outline: none;">${new Date().toLocaleDateString()}</span></div></div>`;
                         }
                         
                         // Insert at top
