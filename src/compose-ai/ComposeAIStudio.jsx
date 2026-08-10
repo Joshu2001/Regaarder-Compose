@@ -396,8 +396,8 @@ ${text}
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b] relative">
       {/* Executive Agent Dropdown Selector Header */}
-      <div className="shrink-0 px-3.5 py-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/50 relative z-20">
-        <div className="relative" ref={dropdownRef}>
+      <div className="shrink-0 px-3.5 py-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/50 relative z-20 flex items-center gap-2">
+        <div className="relative flex-1" ref={dropdownRef}>
           <button
             type="button"
             onClick={() => setIsDropdownOpen(prev => !prev)}
@@ -514,6 +514,20 @@ ${text}
             </div>
           )}
         </div>
+
+        <button
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            const evt = new KeyboardEvent('keydown', { key: 'D', ctrlKey: true, shiftKey: true, bubbles: true });
+            window.dispatchEvent(evt);
+          }}
+          title="AI Tool Inspector & Harness API (Ctrl+Shift+D)"
+          className="px-2.5 py-2 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-800 text-[10px] font-bold text-violet-600 dark:text-violet-400 hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-zinc-700 transition-all flex items-center gap-1 shrink-0 shadow-2xs"
+        >
+          <Bot size={13} />
+          <span>API</span>
+        </button>
       </div>
 
       {/* Active agent panel */}

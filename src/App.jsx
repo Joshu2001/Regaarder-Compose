@@ -35,6 +35,12 @@ import HelpSupportPanel from './components/HelpSupportPanel';
 import TemplateChartVisualizer, { extractTemplateChartData } from './components/TemplateChartVisualizer';
 import CitationPopover from './components/CitationPopover';
 import ContextSourcePreviewModal from './components/ContextSourcePreviewModal';
+import { registerDocumentEditorBinding } from './services/docsCommandApi';
+import { executeTool, executeSequence, undoTransaction, getExecutionLogs, getTransactionHistory } from './services/docsToolExecutor';
+import { CANONICAL_DOCS_TOOLS } from './services/docsToolRegistry';
+import { toOpenAITools, toGeminiTools, toAnthropicTools, getDocsToolSystemPrompt, getCanonicalToolSchemas } from './services/docsLlmAdapters';
+import { getAvailableTools } from './services/docsAgentOrchestrator';
+import { DocsToolDevConsoleModal } from './components/dev/DocsToolDevConsoleModal';
 
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
@@ -6379,6 +6385,7 @@ function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, grid
 }
 
 export default function App() {
+  const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
   const [sheetGrids, setSheetGrids] = useState(() => {
     const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
     const result = {};
@@ -17307,6 +17314,37 @@ export default function App() {
     window.RegaarderAPI = window.RegaarderAPI || {};
     window.RegaarderAPI.setCellFillColor = handleSetCellFillColor;
 
+    // Layer 1: Register Document Command API binding
+    registerDocumentEditorBinding({
+      getEditable: () => blankBodyRef.current || document.querySelector('[contenteditable="true"]'),
+      insertHTML: (html) => window.__composeInsertHTML ? window.__composeInsertHTML(html) : document.execCommand('insertHTML', false, html),
+      insertText: (text) => window.__composeInsertText ? window.__composeInsertText(text) : document.execCommand('insertText', false, text)
+    });
+
+    // Layer 4 & 6: Expose Docs Tool Harness runtime on window
+    window.__DOCS_TOOL_HARNESS__ = {
+      execute: (toolName, params, options) => executeTool(toolName, params, { documentId: 'current' }, options),
+      executeSequence: (toolCalls, options) => executeSequence(toolCalls, { documentId: 'current' }, options),
+      undo: (transactionId) => undoTransaction(transactionId),
+      getSchemas: () => getCanonicalToolSchemas(),
+      getOpenAISchemas: () => toOpenAITools(),
+      getGeminiSchemas: () => toGeminiTools(),
+      getAnthropicSchemas: () => toAnthropicTools(),
+      getSystemPrompt: () => getDocsToolSystemPrompt(),
+      listTools: () => CANONICAL_DOCS_TOOLS.map(t => ({ name: t.name, label: t.label, category: t.category })),
+      getAvailableTools: (filterOptions) => getAvailableTools(filterOptions),
+      getLogs: () => getExecutionLogs(),
+      getTransactions: () => getTransactionHistory()
+    };
+
+    const handleDevConsoleShortcut = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+        e.preventDefault();
+        setIsDevConsoleOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleDevConsoleShortcut);
+
     return () => {
       delete window.__composeInsertHTML;
       delete window.__composeInsertText;
@@ -17314,6 +17352,8 @@ export default function App() {
       delete window.__composeApplyListStyle;
       delete window.setCellFillColor;
       delete window.__composeSetCellFillColor;
+      delete window.__DOCS_TOOL_HARNESS__;
+      window.removeEventListener('keydown', handleDevConsoleShortcut);
       if (window.RegaarderAPI) delete window.RegaarderAPI.setCellFillColor;
     };
   }, []);
@@ -61555,6 +61595,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }}
         />
       )}
+
+      {/* ── Layer 6: Developer Tool Inspection Console Modal ──────────────── */}
+      <DocsToolDevConsoleModal
+        isOpen={isDevConsoleOpen}
+        onClose={() => setIsDevConsoleOpen(false)}
+      />
     </div>
   );
 }
