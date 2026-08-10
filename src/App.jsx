@@ -25,7 +25,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -957,29 +957,29 @@ export const SHAPE_SECTIONS = [
 ];
 
 const SHEET_SLASH_OPTIONS = [
-  { key: 'special_characters', label: 'Special Formatting', desc: 'Currencies, math symbols & number formats' },
-  { key: 'insert_date', label: 'Insert Date', desc: 'Insert today\'s date or select from calendar' },
-  { key: 'insert_table', label: 'Insert Table', desc: 'Format selection as table' },
-  { key: 'insert_chart', label: 'Insert Chart', desc: 'Add a beautiful chart or graph' },
-  { key: 'insert_shape', label: 'Insert Shape', desc: 'Add a floating shape' },
-  { key: 'insert_textbox', label: 'Insert Text Box', desc: 'Add a floating text box' },
-  { key: 'insert_comment', label: 'Insert Comment', desc: 'Add a comment' },
-  { key: 'format_cell', label: 'Format Cell', desc: 'Open cell formatting options' },
-  { key: 'copy_style', label: 'Copy Style', desc: 'Copy cell formatting' },
-  { key: 'paste_style', label: 'Paste Style', desc: 'Apply copied cell formatting' },
-  { key: 'merge_cells', label: 'Merge Cells', desc: 'Merge selected cells' },
-  { key: 'clear_format', label: 'Clear Formatting', desc: 'Reset all cell styles' },
-  { key: 'add_row', label: 'Add Row', desc: 'Insert a new row below' },
-  { key: 'add_column', label: 'Add Column', desc: 'Insert a new column right' },
-  { key: 'sort_asc', label: 'Sort A-Z', desc: 'Sort selection alphabetically' },
-  { key: 'filter', label: 'Filter', desc: 'Enable filtering on selection' },
-  { key: 'remove_dupes', label: 'Remove Duplicates', desc: 'Keep only unique rows' },
-  { key: 'schedule', label: 'Schedule', desc: 'Add a scheduled event' },
-  { key: 'translate', label: 'Translate', desc: 'Translate selected content' },
-  { key: 'bookmark', label: 'Bookmark', desc: 'Add a bookmark' },
-  { key: 'media', label: 'Media', desc: 'Insert an image, video or file' },
-  { key: 'hyperlink', label: 'Hyperlink', desc: 'Add a link to selected text' },
-  { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block' },
+  { key: 'special_characters', label: 'Special Formatting', desc: 'Currencies, math symbols & number formats', category: 'Format', icon: Hash, tag: '/format' },
+  { key: 'insert_date', label: 'Insert Date', desc: 'Insert today\'s date or select from calendar', category: 'Insert', icon: Calendar, tag: '/date' },
+  { key: 'insert_table', label: 'Insert Table', desc: 'Format selection as table', category: 'Insert', icon: Table, tag: '/table' },
+  { key: 'insert_chart', label: 'Insert Chart', desc: 'Add a beautiful chart or graph', category: 'Insert', icon: BarChart2, tag: '/chart' },
+  { key: 'insert_shape', label: 'Insert Shape', desc: 'Add a floating shape', category: 'Insert', icon: Shapes, tag: '/shape' },
+  { key: 'insert_textbox', label: 'Insert Text Box', desc: 'Add a floating text box', category: 'Insert', icon: Type, tag: '/textbox' },
+  { key: 'insert_comment', label: 'Insert Comment', desc: 'Add a comment', category: 'Insert', icon: MessageSquare, tag: '/comment' },
+  { key: 'format_cell', label: 'Format Cell', desc: 'Open cell formatting options', category: 'Format', icon: Sliders, tag: '/format_cell' },
+  { key: 'copy_style', label: 'Copy Style', desc: 'Copy cell formatting', category: 'Format', icon: Copy, tag: '/copy_style' },
+  { key: 'paste_style', label: 'Paste Style', desc: 'Apply copied cell formatting', category: 'Format', icon: Clipboard, tag: '/paste_style' },
+  { key: 'merge_cells', label: 'Merge Cells', desc: 'Merge selected cells', category: 'Format', icon: Grid, tag: '/merge' },
+  { key: 'clear_format', label: 'Clear Formatting', desc: 'Reset all cell styles', category: 'Format', icon: RotateCcw, tag: '/clear' },
+  { key: 'add_row', label: 'Add Row', desc: 'Insert a new row below', category: 'Data', icon: Plus, tag: '/add_row' },
+  { key: 'add_column', label: 'Add Column', desc: 'Insert a new column right', category: 'Data', icon: Plus, tag: '/add_col' },
+  { key: 'sort_asc', label: 'Sort A-Z', desc: 'Sort selection alphabetically', category: 'Data', icon: ArrowUpDown, tag: '/sort' },
+  { key: 'filter', label: 'Filter', desc: 'Enable filtering on selection', category: 'Data', icon: Filter, tag: '/filter' },
+  { key: 'remove_dupes', label: 'Remove Duplicates', desc: 'Keep only unique rows', category: 'Data', icon: Trash2, tag: '/dedupe' },
+  { key: 'schedule', label: 'Schedule', desc: 'Add a scheduled event', category: 'AI', icon: Calendar, tag: '/schedule' },
+  { key: 'translate', label: 'Translate', desc: 'Translate selected content', category: 'AI', icon: Globe, tag: '/translate' },
+  { key: 'bookmark', label: 'Bookmark', desc: 'Add a bookmark', category: 'Insert', icon: Bookmark, tag: '/bookmark' },
+  { key: 'media', label: 'Media', desc: 'Insert an image, video or file', category: 'Insert', icon: ImageIcon, tag: '/media' },
+  { key: 'hyperlink', label: 'Hyperlink', desc: 'Add a link to selected text', category: 'Insert', icon: Link, tag: '/link' },
+  { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block', category: 'Security', icon: Shield, tag: '/redact' },
 ];
 
 const getFilteredSheetSlashOptions = (filterText = '', copiedStyle = null) => {
@@ -996,49 +996,54 @@ const getFilteredSheetSlashOptions = (filterText = '', copiedStyle = null) => {
 };
 
 const SLASH_OPTIONS = [
-  { key: 'table', label: 'Table (AI)', desc: 'Generate an AI table' },
-  { key: 'insert_table', label: 'Table (Manual)', desc: 'Pick table size and insert' },
-  { key: 'bullets', label: 'Bullet points', desc: 'Insert bullet list' },
-  { key: 'graph', label: 'Chart / Graph', desc: 'Insert an interactive SVG chart & grid' },
-  { key: 'media', label: 'Media', desc: 'Insert media, files, or AI generation' },
-  { key: 'proofread', label: 'Proofread', desc: 'Improve spelling & style' },
-  { key: 'translate', label: 'Translate', desc: 'Translate text' },
-  { key: 'schedule', label: 'Schedule', desc: 'Create timeline or checklist' },
-  { key: 'hyperlink', label: 'Hyperlink', desc: 'Add a link to selected text' },
-  { key: 'bookmark', label: 'Bookmark', desc: 'Add a bookmark/anchor' },
-  { key: 'shapes', label: 'Shapes', desc: 'Insert interactive shapes' },
-  { key: 'icon', label: 'Icon', desc: 'Insert an emoji or icon' },
-  { key: 'watermark', label: 'Watermark', desc: 'Add text or image watermark' },
-  { key: 'comment', label: 'Comment', desc: 'Insert inline comment box' },
-  { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block' },
-  { key: 'import_equation', label: 'Import Equation', desc: 'AI Generate or Upload Math' },
-  { key: 'emoji', label: 'Emoji', desc: 'Browse and insert emoji' },
-  { key: 'symbols', label: 'Symbols', desc: 'Insert special characters & symbols' },
-  { key: 'equations', label: 'Equation', desc: 'Insert a math equation' },
-  { key: 'divider', label: 'Divider', desc: 'Insert a horizontal rule' },
-  { key: 'callout', label: 'Callout', desc: 'Insert a styled quote block' },
-  { key: 'code_block', label: 'Code Block', desc: 'Insert a code container' }
+  // AI
+  { key: 'table', label: 'Table (AI)', desc: 'Generate an AI table from context', category: 'AI', icon: Table, tag: '/table' },
+  { key: 'proofread', label: 'Proofread', desc: 'Improve spelling & style', category: 'AI', icon: CheckCircle2, tag: '/proofread' },
+  { key: 'translate', label: 'Translate', desc: 'Translate text to target language', category: 'AI', icon: Globe, tag: '/translate' },
+  { key: 'schedule', label: 'Schedule', desc: 'Create AI timeline or checklist', category: 'AI', icon: Calendar, tag: '/schedule' },
+  { key: 'import_equation', label: 'Import Equation', desc: 'AI Generate or Upload Math', category: 'AI', icon: Sigma, tag: '/equation_ai' },
+
+  // Insert
+  { key: 'insert_table', label: 'Table (Manual)', desc: 'Pick table size and insert grid', category: 'Insert', icon: Grid, tag: '/insert_table' },
+  { key: 'bullets', label: 'Bullet points', desc: 'Insert bulleted list', category: 'Insert', icon: List, tag: '/bullets' },
+  { key: 'graph', label: 'Chart / Graph', desc: 'Insert interactive SVG chart & grid', category: 'Insert', icon: BarChart2, tag: '/graph' },
+  { key: 'media', label: 'Media', desc: 'Insert media, files, or images', category: 'Insert', icon: ImageIcon, tag: '/media' },
+  { key: 'shapes', label: 'Shapes', desc: 'Insert interactive geometric shapes', category: 'Insert', icon: Shapes, tag: '/shapes' },
+  { key: 'icon', label: 'Icon', desc: 'Insert an icon or symbol', category: 'Insert', icon: Smile, tag: '/icon' },
+  { key: 'emoji', label: 'Emoji', desc: 'Browse and insert emoji', category: 'Insert', icon: SmilePlus, tag: '/emoji' },
+  { key: 'symbols', label: 'Symbols', desc: 'Insert special characters & symbols', category: 'Insert', icon: AtSign, tag: '/symbols' },
+  { key: 'equations', label: 'Equation', desc: 'Insert a LaTeX math equation', category: 'Insert', icon: Calculator, tag: '/equation' },
+  { key: 'divider', label: 'Divider', desc: 'Insert a horizontal rule', category: 'Insert', icon: Minus, tag: '/divider' },
+  { key: 'callout', label: 'Callout', desc: 'Insert a styled quote block', category: 'Insert', icon: FileText, tag: '/callout' },
+  { key: 'code_block', label: 'Code Block', desc: 'Insert a code container', category: 'Insert', icon: Cpu, tag: '/code' },
+
+  // Format
+  { key: 'hyperlink', label: 'Hyperlink', desc: 'Add a link to selected text', category: 'Format', icon: Link, tag: '/link' },
+  { key: 'bookmark', label: 'Bookmark', desc: 'Add a bookmark or anchor', category: 'Format', icon: Pin, tag: '/bookmark' },
+  { key: 'watermark', label: 'Watermark', desc: 'Add text or image watermark', category: 'Format', icon: FileText, tag: '/watermark' },
+
+  // Analyze & Protect
+  { key: 'comment', label: 'Comment', desc: 'Insert inline comment box', category: 'Analyze', icon: MessageSquare, tag: '/comment' },
+  { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block', category: 'Analyze', icon: EyeOff, tag: '/redact' }
 ];
 
-
-
 const PROMPT_SLASH_OPTIONS = [
-  { key: 'ask', label: 'Ask', desc: 'Ask a quick question without interrupting context', icon: MessageSquare, agentKey: 'ask' },
-  { key: 'goal', label: 'Goal', desc: 'Run until the specified goal is completed', icon: Target, agentKey: 'goal' },
-  { key: 'schedule', label: 'Schedule', desc: 'Run an instruction on a recurring schedule', icon: Clock, agentKey: 'schedule' },
-  { key: 'browser', label: 'Browser', desc: 'Invoke a browser agent for web tasks', icon: Globe, agentKey: 'browser' },
-  { key: 'health', label: 'Document Health', desc: 'Run 6 parallel quality checks (grammar, logic, evidence...)', icon: Activity, agentKey: 'health' },
-  { key: 'writing', label: 'Writing', desc: 'Transform tone, expand, shorten, brainstorm & summarize', icon: PenTool, agentKey: 'writing' },
-  { key: 'editor', label: 'Editor', desc: 'Grammar, clarity, passive voice & style polish', icon: FileEdit, agentKey: 'editor' },
-  { key: 'designer', label: 'Designer', desc: 'Document type detection & formatting structure', icon: LayoutTemplate, agentKey: 'designer' },
-  { key: 'logic', label: 'Logic', desc: 'Analyze reasoning quality, fallacies & contradictions', icon: Cpu, agentKey: 'logic' },
-  { key: 'research', label: 'Research', desc: 'Find citations, empirical evidence & counter-arguments', icon: BookOpen, agentKey: 'research' },
-  { key: 'reviewer', label: 'Reviewer', desc: 'Editorial score ring, summary quote & actionable feedback', icon: FileText, agentKey: 'reviewer' },
-  { key: 'audience', label: 'Audience', desc: 'Simulate 12 reader personas & comprehension level', icon: Users, agentKey: 'audience' },
-  { key: 'consistency', label: 'Consistency', desc: 'Terminology, casing, tone & formatting audit', icon: CheckSquare, agentKey: 'consistency' },
-  { key: 'compliance', label: 'Compliance', desc: 'Policy, sensitivity, privacy & legal risk check', icon: Shield, agentKey: 'compliance' },
-  { key: 'gap', label: 'Knowledge Gap', desc: 'Identify missing explanations, context or undefined terms', icon: FileQuestion, agentKey: 'gap' },
-  { key: 'dna', label: 'Writing DNA', desc: 'Personal voice vector, style match & 12-month evolution', icon: Wand2, agentKey: 'dna' }
+  { key: 'ask', label: 'Ask', desc: 'Ask a quick question without interrupting context', category: 'AI', icon: MessageSquare, agentKey: 'ask', tag: '/ask' },
+  { key: 'goal', label: 'Goal', desc: 'Run until the specified goal is completed', category: 'AI', icon: Target, agentKey: 'goal', tag: '/goal' },
+  { key: 'schedule', label: 'Schedule', desc: 'Run an instruction on a recurring schedule', category: 'AI', icon: Clock, agentKey: 'schedule', tag: '/schedule' },
+  { key: 'browser', label: 'Browser', desc: 'Invoke a browser agent for web tasks', category: 'AI', icon: Globe, agentKey: 'browser', tag: '/browser' },
+  { key: 'health', label: 'Document Health', desc: 'Run 6 parallel quality checks', category: 'Analyze', icon: Activity, agentKey: 'health', tag: '/health' },
+  { key: 'writing', label: 'Writing', desc: 'Transform tone, expand, shorten & summarize', category: 'Transform', icon: PenTool, agentKey: 'writing', tag: '/writing' },
+  { key: 'editor', label: 'Editor', desc: 'Grammar, clarity & style polish', category: 'Transform', icon: FileEdit, agentKey: 'editor', tag: '/editor' },
+  { key: 'designer', label: 'Designer', desc: 'Document type detection & formatting', category: 'Format', icon: LayoutTemplate, agentKey: 'designer', tag: '/designer' },
+  { key: 'logic', label: 'Logic', desc: 'Analyze reasoning quality & fallacies', category: 'Analyze', icon: Cpu, agentKey: 'logic', tag: '/logic' },
+  { key: 'research', label: 'Research', desc: 'Find citations & empirical evidence', category: 'Analyze', icon: BookOpen, agentKey: 'research', tag: '/research' },
+  { key: 'reviewer', label: 'Reviewer', desc: 'Editorial score ring & actionable feedback', category: 'Analyze', icon: FileText, agentKey: 'reviewer', tag: '/reviewer' },
+  { key: 'audience', label: 'Audience', desc: 'Simulate 12 reader personas', category: 'Analyze', icon: Users, agentKey: 'audience', tag: '/audience' },
+  { key: 'consistency', label: 'Consistency', desc: 'Terminology & tone audit', category: 'Analyze', icon: CheckSquare, agentKey: 'consistency', tag: '/consistency' },
+  { key: 'compliance', label: 'Compliance', desc: 'Policy & legal risk check', category: 'Analyze', icon: Shield, agentKey: 'compliance', tag: '/compliance' },
+  { key: 'gap', label: 'Knowledge Gap', desc: 'Identify missing explanations or terms', category: 'Analyze', icon: FileQuestion, agentKey: 'gap', tag: '/gap' },
+  { key: 'dna', label: 'Writing DNA', desc: 'Personal voice vector & style match', category: 'Analyze', icon: Wand2, agentKey: 'dna', tag: '/dna' }
 ];
 
 const SlashMenuPopover = React.forwardRef(({
@@ -1052,132 +1057,225 @@ const SlashMenuPopover = React.forwardRef(({
   source = 'default',
   position = 'above'
 }, ref) => {
-  const [hoveredIndex, setHoveredIndex] = useState(null);
-  const displayBadgeText = badgeText !== null ? badgeText : `${options.length} AGENTS`;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [internalSelectedIndex, setInternalSelectedIndex] = useState(selectedIndex);
+  const searchInputRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+
+  // Sync internal selectedIndex when prop changes
+  useEffect(() => {
+    setInternalSelectedIndex(selectedIndex);
+  }, [selectedIndex]);
+
+  // Auto focus search input when popover mounts
+  useEffect(() => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus({ preventScroll: true });
+    }
+  }, []);
+
+  // Filter options instantly based on search query
+  const filteredOptions = useMemo(() => {
+    if (!searchQuery.trim()) return options;
+    const q = searchQuery.toLowerCase().trim();
+    return options.filter((opt) => {
+      const label = (opt.label || '').toLowerCase();
+      const desc = (opt.desc || opt.description || '').toLowerCase();
+      const key = (opt.key || '').toLowerCase();
+      const category = (opt.category || '').toLowerCase();
+      const tag = (opt.tag || '').toLowerCase();
+      return label.includes(q) || desc.includes(q) || key.includes(q) || category.includes(q) || tag.includes(q);
+    });
+  }, [options, searchQuery]);
+
+  // Group filtered options by category
+  const groupedOptions = useMemo(() => {
+    const groups = {};
+    filteredOptions.forEach((opt, idx) => {
+      const cat = opt.category || 'Commands';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push({ ...opt, globalIndex: idx });
+    });
+    return groups;
+  }, [filteredOptions]);
+
+  // Effective selected index clamped to filtered length
+  const activeIdx = Math.min(internalSelectedIndex, Math.max(0, filteredOptions.length - 1));
+
+  // Handle keyboard navigation directly from search input
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setInternalSelectedIndex((prev) => (filteredOptions.length > 0 ? (prev + 1) % filteredOptions.length : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setInternalSelectedIndex((prev) => (filteredOptions.length > 0 ? (prev - 1 + filteredOptions.length) % filteredOptions.length : 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredOptions[activeIdx]) {
+        onSelectOption && onSelectOption(filteredOptions[activeIdx]);
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      if (searchQuery) {
+        setSearchQuery('');
+      }
+    }
+  };
+
+  // Scroll active item into view
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const activeEl = scrollContainerRef.current.querySelector('[data-selected="true"]');
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [activeIdx]);
+
+  const displayBadgeText = badgeText !== null ? badgeText : `${filteredOptions.length} COMMANDS`;
   const isBelow = position ? position === 'below' : (source === 'chat' && position !== 'above');
   const posClasses = isBelow 
-    ? 'top-full left-0 mt-2 slide-in-from-top-2' 
-    : 'bottom-full left-0 mb-2 slide-in-from-bottom-2';
+    ? 'top-full left-0 mt-1.5 slide-in-from-top-2' 
+    : 'bottom-full left-0 mb-1.5 slide-in-from-bottom-2';
 
   return (
     <div 
       ref={ref}
-      className={`absolute ${posClasses} w-80 max-h-84 flex flex-col bg-white dark:bg-[#1c1c1e] border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.22)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7)] z-[250020] overflow-hidden transition-all duration-200 animate-in fade-in p-2 ${className}`}
+      className={`absolute ${posClasses} w-80 max-h-[360px] flex flex-col bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.16)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] z-[250020] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-xl ${className}`}
       style={style}
     >
-      {(title || displayBadgeText) && (
-        <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-zinc-800/80 flex items-center justify-between shrink-0 mb-1.5 select-none font-sans">
+      {/* Search Bar Header */}
+      <div className="px-2 pt-2 pb-2 shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50">
+        <div className="relative flex items-center">
+          <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setInternalSelectedIndex(0);
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Search commands…"
+            className="w-full h-8 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500 focus:ring-1 focus:ring-violet-400/30 transition-all font-sans shadow-2xs"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setInternalSelectedIndex(0);
+                searchInputRef.current?.focus();
+              }}
+              className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded cursor-pointer transition-colors"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Header Info Tag if no search query */}
+      {!searchQuery && (title || displayBadgeText) && (
+        <div className="px-3 py-1.5 border-b border-slate-100 dark:border-zinc-800/60 flex items-center justify-between shrink-0 select-none font-sans bg-white/40 dark:bg-zinc-900/40">
           {title && (
             <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-zinc-500 uppercase">
               {title}
             </span>
           )}
           {displayBadgeText && (
-            <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 font-mono tracking-tight opacity-80">
+            <span className="text-[9.5px] font-semibold text-slate-400 dark:text-zinc-500 font-mono tracking-tight opacity-75">
               {displayBadgeText}
             </span>
           )}
         </div>
       )}
 
-      <div className="space-y-1 overflow-y-auto thin-scrollbar slash-menu-scrollbar max-h-72 px-1 pr-1.5">
-        {options.length === 0 ? (
-          <div className="p-3 text-center text-xs text-slate-400 dark:text-zinc-500 font-medium">
-            No matching options
+      {/* Scrollable Command List */}
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto thin-scrollbar slash-menu-scrollbar p-1.5 space-y-2 max-h-[280px]"
+      >
+        {filteredOptions.length === 0 ? (
+          <div className="py-8 px-3 text-center flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500">
+            <Search size={18} className="mb-1.5 text-slate-300 dark:text-zinc-600 stroke-[1.5]" />
+            <div className="text-xs font-medium">No commands found</div>
+            <div className="text-[11px] opacity-70 mt-0.5">Try a different search term</div>
           </div>
         ) : (
-          options.map((opt, idx) => {
-            const isSelected = idx === selectedIndex;
-            const isHovered = idx === hoveredIndex;
-            const isExpanded = source === 'chat' ? isHovered : (isSelected || isHovered);
-            const isHighlighted = source === 'chat' ? isHovered : (isSelected || isHovered);
-            const IconComp = opt.icon;
-            const tagText = opt.tag || (opt.key ? `/${opt.key}` : null);
-            const description = opt.desc || opt.description;
+          Object.entries(groupedOptions).map(([category, items]) => (
+            <div key={category} className="space-y-0.5">
+              {/* Category Header */}
+              {Object.keys(groupedOptions).length > 1 && (
+                <div className="px-2.5 pt-1.5 pb-1 text-[10px] font-bold tracking-wider text-slate-400 dark:text-zinc-500 uppercase select-none font-sans">
+                  {category}
+                </div>
+              )}
+              {items.map((opt) => {
+                const globalIdx = opt.globalIndex;
+                const isSelected = globalIdx === activeIdx;
+                const IconComp = opt.icon || FileText;
+                const tagText = opt.tag || (opt.key ? `/${opt.key}` : null);
+                const description = opt.desc || opt.description;
 
-            return (
-              <button
-                key={opt.key || idx}
-                type="button"
-                onPointerEnter={() => setHoveredIndex(idx)}
-                onPointerLeave={() => setHoveredIndex(null)}
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  onSelectOption && onSelectOption(opt);
-                }}
-                className={`w-full text-left px-3 py-2.5 rounded-xl transition-all duration-200 ease-out cursor-pointer flex flex-col justify-center border ${
-                  isExpanded
-                    ? 'bg-[#f4f0fe] dark:bg-violet-950/70 border-violet-200/80 dark:border-violet-700/60 shadow-md scale-[1.015] z-10 relative'
-                    : isHighlighted
-                    ? 'bg-[#f4f0fe]/60 dark:bg-violet-950/40 border-violet-200/40 dark:border-violet-800/40 text-slate-800 dark:text-zinc-200'
-                    : 'bg-transparent border-transparent text-slate-700 dark:text-zinc-300 hover:bg-slate-50/80 dark:hover:bg-zinc-800/40'
-                }`}
-              >
-                {IconComp ? (
-                  <div className="flex items-start gap-2.5 w-full">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-                      isHighlighted
-                        ? 'bg-violet-100/90 text-[#8b5cf6] dark:bg-violet-900/80 dark:text-violet-300 shadow-2xs'
+                return (
+                  <button
+                    key={opt.key || globalIdx}
+                    type="button"
+                    data-selected={isSelected ? "true" : "false"}
+                    onPointerEnter={() => setInternalSelectedIndex(globalIdx)}
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      onSelectOption && onSelectOption(opt);
+                    }}
+                    className={`w-full text-left px-2.5 py-2 rounded-lg transition-all duration-150 ease-out cursor-pointer flex items-center gap-2.5 border ${
+                      isSelected
+                        ? 'bg-violet-50/80 dark:bg-violet-950/50 border-violet-200/80 dark:border-violet-800/60 shadow-2xs'
+                        : 'bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-zinc-800/40 text-slate-700 dark:text-zinc-300'
+                    }`}
+                  >
+                    {/* Small & Understated Semantic Icon Badge */}
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+                      isSelected
+                        ? 'bg-violet-100 dark:bg-violet-900/60 text-violet-600 dark:text-violet-300'
                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400'
                     }`}>
-                      <IconComp size={14} strokeWidth={1.75} />
+                      <IconComp size={13} strokeWidth={1.6} />
                     </div>
+
+                    {/* Command Content */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1.5 w-full">
-                        <span className={`text-[13px] font-semibold tracking-tight ${
-                          isHighlighted ? 'text-[#8b5cf6] dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
+                        <span className={`text-[12.5px] font-semibold tracking-tight leading-tight ${
+                          isSelected ? 'text-violet-700 dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
                         }`}>
                           {opt.label}
                         </span>
                         {tagText && (
                           <span className={`text-[10px] font-mono shrink-0 ${
-                            isHighlighted ? 'text-[#a78bfa] dark:text-violet-400 font-bold' : 'text-slate-400 dark:text-zinc-500 opacity-60'
+                            isSelected ? 'text-violet-600 dark:text-violet-400 font-semibold' : 'text-slate-400 dark:text-zinc-500 opacity-60'
                           }`}>
                             {tagText}
                           </span>
                         )}
                       </div>
                       {description && (
-                        <p className={`text-[11px] mt-0.5 font-normal transition-all duration-200 ${
-                          isExpanded
-                            ? 'text-slate-600 dark:text-zinc-300 whitespace-normal line-clamp-none leading-relaxed'
-                            : 'text-slate-400 dark:text-zinc-500 truncate line-clamp-1'
+                        <p className={`text-[11px] mt-0.5 leading-snug truncate ${
+                          isSelected
+                            ? 'text-slate-600 dark:text-zinc-300'
+                            : 'text-slate-400 dark:text-zinc-500'
                         }`}>
                           {description}
                         </p>
                       )}
                     </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between gap-1.5 w-full">
-                      <span className={`text-[13px] font-semibold tracking-tight ${
-                        isHighlighted ? 'text-[#8b5cf6] dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
-                      }`}>
-                        {opt.label}
-                      </span>
-                      {tagText && (
-                        <span className={`text-[10px] font-mono ${
-                          isHighlighted ? 'text-[#a78bfa] dark:text-violet-400 font-bold' : 'text-slate-400 dark:text-zinc-500 opacity-60'
-                        }`}>
-                          {tagText}
-                        </span>
-                      )}
-                    </div>
-                    {description && (
-                      <p className={`text-[11px] mt-0.5 font-normal transition-all duration-200 ${
-                        isExpanded
-                          ? 'text-slate-600 dark:text-zinc-300 whitespace-normal line-clamp-none leading-relaxed'
-                          : 'text-slate-400 dark:text-zinc-500 truncate line-clamp-1'
-                      }`}>
-                        {description}
-                      </p>
-                    )}
-                  </>
-                )}
-              </button>
-            );
-          })
+                  </button>
+                );
+              })}
+            </div>
+          ))
         )}
       </div>
     </div>
@@ -20322,10 +20420,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const DECK_SLASH_OPTIONS = [
-    { key: 'new_slide', icon: Plus, label: 'New Slide', description: 'Add a new slide' },
-    { key: 'change_layout', icon: LayoutGrid, label: 'Change Layout', description: 'Select a different layout' },
-    { key: 'change_theme', icon: Sparkles, label: 'Change Theme', description: 'Apply a new design preset' },
-    { key: 'ai_generate', icon: Wand2, label: 'AI Generate', description: 'Generate content with AI' }
+    { key: 'new_slide', icon: Plus, label: 'New Slide', desc: 'Add a new slide', category: 'Insert', tag: '/new_slide' },
+    { key: 'change_layout', icon: LayoutGrid, label: 'Change Layout', desc: 'Select a different layout', category: 'Format', tag: '/layout' },
+    { key: 'change_theme', icon: Palette, label: 'Change Theme', desc: 'Apply a new design preset', category: 'Format', tag: '/theme' },
+    { key: 'ai_generate', icon: Wand2, label: 'AI Generate', desc: 'Generate slide content with AI', category: 'AI', tag: '/ai_generate' }
   ];
 
   const executeDeckSlashCommand = (key) => {
@@ -45450,58 +45548,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
 
-      {/* ── Sheet Slash Menu ── */}
-      {productMode === 'sheets' && sheetSlashMenu.open && (() => {
-        const filtered = getFilteredSheetSlashOptions(sheetSlashMenu.filterText || '', copiedCellStyle);
-        return (
-          <div
-            ref={sheetSlashMenuContainerRef}
-            className="slash-menu-container sheet-slash-menu-popover animate-in fade-in zoom-in-95 duration-100"
-            style={{
-              position: 'fixed',
-              zIndex: 99999,
-              left: `${sheetSlashMenu.left}px`,
-              top: sheetSlashMenu.top,
-              bottom: sheetSlashMenu.bottom,
-              minWidth: '260px',
-              maxHeight: '360px',
-              overflowY: 'auto',
-            }}
-            onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
-          >
-            {sheetSlashMenu.filterText && (
-              <div className="px-3 py-2 border-b border-gray-100 text-[11px] text-gray-500 bg-gray-50">
-                Search: <span className="font-semibold text-gray-700">"{sheetSlashMenu.filterText}"</span>
-              </div>
-            )}
-            {filtered.length === 0 ? (
-              <div className="px-3 py-4 text-center text-xs text-gray-400">No matching actions</div>
-            ) : (
-              filtered.map((opt, idx) => {
-                const isActive = idx === sheetSlashMenu.activeIndex;
-                return (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onPointerDown={e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      executeSheetSlashCommand(opt.key);
-                      setSheetSlashMenu(prev => ({ ...prev, open: false }));
-                    }}
-                    onMouseEnter={() => setSheetSlashMenu(prev => ({ ...prev, activeIndex: idx }))}
-                    className={`slash-menu-option ${isActive ? 'active' : ''}`}
-                  >
-                    <span className="slash-menu-option-label">{opt.label}</span>
-                    <span className="slash-menu-option-desc">{opt.desc}</span>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        );
-      })()}
-
       {/* ── Table Presets ── */}
       {productMode === 'sheets' && sheetTablePresetMenu.open && (
         <div
@@ -56890,76 +56936,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {/* ── Sheet Slash Menu ────────────────────────────────────── */}
-      {productMode === 'sheets' && sheetSlashMenu.open && (() => {
-        const filtered = getFilteredSheetSlashOptions(sheetSlashMenu.filterText || '', copiedCellStyle);
-        return (
-          <>
-            <div
-              ref={sheetSlashMenuContainerRef}
-              className="slash-menu-container animate-in fade-in zoom-in-95 duration-100"
-              style={{
-                position: 'fixed',
-                zIndex: 99999,
-                left: `${sheetSlashMenu.left}px`,
-                top: sheetSlashMenu.top,
-                bottom: sheetSlashMenu.bottom,
-                minWidth: '260px',
-                maxHeight: '360px',
-                overflowY: 'auto',
-              }}
-              onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
-            >
-              {sheetSlashMenu.filterText && (
-                <div className="px-3 py-2 border-b border-gray-100 text-[11px] text-gray-500 bg-gray-50">
-                  Search: <span className="font-semibold text-gray-700">"{sheetSlashMenu.filterText}"</span>
-                </div>
-              )}
-              {filtered.length === 0 ? (
-                <div className="px-3 py-4 text-center text-xs text-gray-400">No matching actions</div>
-              ) : (
-                filtered.map((opt, idx) => {
-                  if (opt.type === 'divider') {
-                    if (sheetSlashMenu.filterText) return null; // hide dividers when filtering
-                    return (
-                      <div key={`div-${idx}`} className="px-3 py-1.5 mt-1 text-[10px] font-bold tracking-wider text-gray-400 uppercase bg-gray-50/50">
-                        {opt.label}
-                      </div>
-                    );
-                  }
-                  
-                  // recalculate active index ignoring dividers
-                  const filteredOptionsOnly = filtered.filter(o => o.type !== 'divider');
-                  const activeOption = filteredOptionsOnly[sheetSlashMenu.activeIndex] || filteredOptionsOnly[0];
-                  const isActive = opt.key === activeOption?.key;
-                  
-                  return (
-                    <button
-                      key={opt.key}
-                      type="button"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        executeSheetSlashCommand(opt.key);
-                        setSheetSlashMenu(prev => ({ ...prev, open: false }));
-                      }}
-                      onMouseEnter={() => {
-                         const newIndex = filteredOptionsOnly.findIndex(o => o.key === opt.key);
-                         if (newIndex >= 0) {
-                           setSheetSlashMenu(prev => ({ ...prev, activeIndex: newIndex }));
-                         }
-                      }}
-                      className={`slash-menu-option ${isActive ? 'active' : ''}`}
-                    >
-                      <span className="slash-menu-option-label">{opt.label}</span>
-                      <span className="slash-menu-option-desc">{opt.desc}</span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </>
-        );
-      })()}
+      {productMode === 'sheets' && sheetSlashMenu.open && (
+        <SlashMenuPopover
+          ref={sheetSlashMenuContainerRef}
+          options={getFilteredSheetSlashOptions(sheetSlashMenu.filterText || '', copiedCellStyle)}
+          selectedIndex={sheetSlashMenu.activeIndex}
+          onSelectOption={(opt) => {
+            executeSheetSlashCommand(opt.key);
+            setSheetSlashMenu(prev => ({ ...prev, open: false }));
+          }}
+          style={{
+            left: `${sheetSlashMenu.left}px`,
+            top: sheetSlashMenu.top,
+            bottom: sheetSlashMenu.bottom,
+          }}
+          className="fixed"
+        />
+      )}
 
       {/* ── Cell Format Modal ────────────────────────────────────── */}
       {specialCharactersModal.open && (
