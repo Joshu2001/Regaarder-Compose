@@ -30277,7 +30277,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     const updateDictationAnchor = () => {
       const card = documentCardRef.current;
       if (!card) {
-        setDictationAnchor({ left: window.innerWidth - 150, top: 220 });
+        setDictationAnchor({ left: window.innerWidth - 150, top: 195 });
         return;
       }
 
@@ -30291,8 +30291,8 @@ Respond with a JSON array of slide objects matching the schema.`;
         rightX = maxAllowedX;
       }
       
-      const targetY = rect.top + 75;
-      const topY = Math.max(180, Math.min(window.innerHeight - 80, targetY));
+      const targetY = rect.top + 50;
+      const topY = Math.max(155, Math.min(window.innerHeight - 80, targetY));
 
       setDictationAnchor({ left: rightX, top: topY });
     };
