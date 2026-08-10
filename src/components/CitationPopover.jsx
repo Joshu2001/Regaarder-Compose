@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { X, BookOpen, Link, Sparkles, ChevronRight, AlertCircle, Loader2, Check } from "lucide-react";
 
@@ -102,15 +102,51 @@ export default function CitationPopover({
     return () => document.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
-  // Compute position anchored below the trigger button
+  // Re-calculate position on window resize / fullscreen toggle
+  const [, setResizeTick] = useState(0);
+  useEffect(() => {
+    if (!isOpen) return;
+    const onResize = () => setResizeTick((t) => t + 1);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [isOpen]);
+
+  // Compute position anchored below the trigger button with strict viewport bounds
   const style = (() => {
-    if (!anchorRect) return { top: 120, left: 24 };
-    const W = 420, H = 500, vw = window.innerWidth, vh = window.innerHeight;
-    let left = anchorRect.left, top = anchorRect.bottom + 8;
+    const W = 420;
+    const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
+    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+
+    // Fallback if anchorRect is missing or invalid (0,0)
+    if (!anchorRect || (anchorRect.top === 0 && anchorRect.bottom === 0)) {
+      const left = Math.max(16, Math.min(vw - W - 16, (vw - W) / 2));
+      const top = Math.max(16, 120);
+      const maxHeight = Math.max(200, vh - top - 24);
+      return { top, left, width: W, maxHeight };
+    }
+
+    let left = anchorRect.left;
     if (left + W > vw - 16) left = vw - W - 16;
-    if (top  + H > vh - 16) top  = anchorRect.top - H - 8;
-    return { top, left, width: W };
+    if (left < 16) left = 16;
+
+    // Default: position below the trigger button
+    let top = anchorRect.bottom + 8;
+    let maxHeight = vh - top - 16;
+
+    // If space below is extremely tight (< 220px) AND there is significantly more space above, flip above
+    const spaceAbove = anchorRect.top - 16;
+    if (maxHeight < 220 && spaceAbove > maxHeight) {
+      top = Math.max(16, anchorRect.top - 480 - 8);
+      maxHeight = anchorRect.top - top - 8;
+    }
+
+    // Strict boundary enforcement: NEVER position off-screen top or bottom
+    top = Math.max(16, Math.min(vh - 200, top));
+    maxHeight = Math.max(220, Math.min(vh - top - 16, maxHeight));
+
+    return { top, left, width: W, maxHeight };
   })();
+
 
   const setField = useCallback((field, value) => {
     setForm((p) => ({ ...p, [field]: value }));
@@ -216,7 +252,13 @@ export default function CitationPopover({
 
       <div
         className="citation-popover"
-        style={{ position: "fixed", top: style.top, left: style.left, width: style.width }}
+        style={{
+          position: "fixed",
+          top: style.top,
+          left: style.left,
+          width: style.width,
+          maxHeight: style.maxHeight,
+        }}
         role="dialog"
         aria-modal="true"
         aria-label="Insert Citation"
