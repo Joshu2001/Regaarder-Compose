@@ -528,6 +528,9 @@ export default function CitationPopover({
         </div>
       </div>
     </>,
-    document.body
+    // When native fullscreen is active, the browser compositor layers the
+    // fullscreenElement above document.body — no CSS z-index can override this.
+    // We must portal INTO the fullscreen element so the popover is visible.
+    document.fullscreenElement ?? document.body
   );
 }

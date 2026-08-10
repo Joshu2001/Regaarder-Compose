@@ -11551,6 +11551,22 @@ export default function App() {
   const [citationPopover, setCitationPopover] = useState({
     open: false, anchorRect: null, savedRange: null, selectedText: '',
   });
+  // Incremented on every open so CitationPopover always fully re-mounts,
+  // ensuring fresh form state and entry animation even when already open.
+  const citationPopoverKeyRef = useRef(0);
+  const [citationPopoverKey, setCitationPopoverKey] = useState(0);
+
+  /** Closes the citation popover. Safe to call from any context. */
+  const closeCitationPopover = useCallback(() => {
+    setCitationPopover({ open: false, anchorRect: null, savedRange: null, selectedText: '' });
+  }, []);
+
+  /** Opens the citation popover with a fresh key to force a clean re-mount. */
+  const openCitationPopover = useCallback((anchorRect, savedRange, selectedText) => {
+    citationPopoverKeyRef.current += 1;
+    setCitationPopoverKey(citationPopoverKeyRef.current);
+    setCitationPopover({ open: true, anchorRect, savedRange, selectedText });
+  }, []);
 
   /**
    * Restore a saved selection range then insert HTML at the cursor.
@@ -15002,9 +15018,11 @@ export default function App() {
             setIsFocusMode(false);
             setPulseCycleActive(true);
             showToast('Fullscreen mode disabled.');
+            // Always close the citation popover on immersive exit — its anchor
+            // rect is stale once the layout collapses back to windowed mode.
+            closeCitationPopover();
           }
         }
-        // CitationPopover repositions itself via its own fullscreenchange listener — no reset needed.
       }
     };
 
@@ -25377,6 +25395,8 @@ Rules:
       setIsFocusMode(false);
       setPulseCycleActive(true);
       showToast('Fullscreen mode disabled.');
+      // Close any open citation popover — its anchor rect is invalid after layout change.
+      closeCitationPopover();
     }
   };
 
@@ -50228,7 +50248,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             }
                             const rect = e.currentTarget?.getBoundingClientRect();
                             const anchorRect = rect && rect.width > 0 && rect.height > 0 ? rect : null;
-                            setCitationPopover({ open: true, anchorRect, savedRange, selectedText });
+                            openCitationPopover(anchorRect, savedRange, selectedText);
                           }}
                           className="w-full text-left px-2 py-1 text-xs rounded hover:bg-violet-50 hover:text-violet-700 flex items-center gap-1.5 font-medium text-slate-700 dark:text-zinc-200"
                         >
@@ -50509,7 +50529,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     }
                     const rect = e.currentTarget?.getBoundingClientRect();
                     const anchorRect = rect && rect.width > 0 && rect.height > 0 ? rect : null;
-                    setCitationPopover({ open: true, anchorRect, savedRange, selectedText });
+                    // Use openCitationPopover to force a fresh re-mount every time,
+                    // so the popover always opens cleanly even in immersive mode.
+                    openCitationPopover(anchorRect, savedRange, selectedText);
                   }}
                   className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
                 >
@@ -59535,12 +59557,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Citation Popover ────────────────────────────────────────────── */}
       <CitationPopover
+        key={citationPopoverKey}
         isOpen={citationPopover.open}
         anchorRect={citationPopover.anchorRect}
         selectedText={citationPopover.selectedText}
         existingSources={docSources}
         onInsert={(sourceData) => insertCitation(sourceData)}
-        onClose={() => setCitationPopover({ open: false, anchorRect: null, savedRange: null, selectedText: "" })}
+        onClose={closeCitationPopover}
       />
     </div>
   );
