@@ -34,6 +34,7 @@ import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 import HelpSupportPanel from './components/HelpSupportPanel';
 import TemplateChartVisualizer, { extractTemplateChartData } from './components/TemplateChartVisualizer';
 import CitationPopover from './components/CitationPopover';
+import ContextSourcePreviewModal from './components/ContextSourcePreviewModal';
 
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
@@ -10320,6 +10321,7 @@ export default function App() {
     { id: '2', name: 'Q3_Financial_Summary.xlsx', type: 'excel', size: '450 KB' },
     { id: '3', name: 'Market_Research_Notes.pdf', type: 'pdf', size: '28 KB' }
   ]);
+  const [activeSourcePreviewIndex, setActiveSourcePreviewIndex] = useState(null);
   const [isAddSourceMenuOpen, setIsAddSourceMenuOpen] = useState(false);
   const [isChooseRegaarderOpen, setIsChooseRegaarderOpen] = useState(false);
   const [addSourceAnchorRect, setAddSourceAnchorRect] = useState(null);
@@ -50536,11 +50538,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                 {/* Progressive Overflow Model Chips List ([File 1] [File 2] [File 3] [+N more ▾]) */}
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0">
-                  {docContextMaterials.slice(0, 3).map((mat) => {
+                  {docContextMaterials.slice(0, 3).map((mat, matIdx) => {
                     const badge = getFileSemanticBadge(mat);
 
                     return (
-                      <div key={mat.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 select-none">
+                      <div
+                        key={mat.id}
+                        onClick={() => setActiveSourcePreviewIndex(matIdx)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 hover:bg-slate-200/90 dark:hover:bg-zinc-700/90 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 select-none cursor-pointer transition-colors"
+                        title={`Inspect ${mat.name} context source`}
+                      >
                         <span
                           className="w-[18px] h-[20px] rounded-[4px] flex flex-col items-center justify-center shrink-0 leading-none select-none text-white shadow-2xs"
                           style={{ backgroundColor: badge.bgHex }}
@@ -50552,8 +50559,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">({mat.size})</span>
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setDocContextMaterials((prev) => prev.filter((m) => m.id !== mat.id));
+                            if (activeSourcePreviewIndex === matIdx) setActiveSourcePreviewIndex(null);
                             showToast(`Removed ${mat.name}`);
                           }}
                           className="ml-0.5 text-slate-400 hover:text-rose-500 rounded p-0.5 transition-colors cursor-pointer"
@@ -50625,10 +50634,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </button>
                             </div>
                             <div className="space-y-1">
-                              {docContextMaterials.map((mat) => {
+                              {docContextMaterials.map((mat, matIdx) => {
                                 const badge = getFileSemanticBadge(mat);
                                 return (
-                                  <div key={mat.id} className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors">
+                                  <div
+                                    key={mat.id}
+                                    onClick={() => {
+                                      setActiveSourcePreviewIndex(matIdx);
+                                      setIsMoreMaterialsOpen(false);
+                                    }}
+                                    className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+                                  >
                                     <div className="flex items-center gap-2 min-w-0">
                                       <FileText size={13} className={`${badge.iconColor} shrink-0`} />
                                       <span className="truncate text-slate-700 dark:text-zinc-200 font-medium">{mat.name}</span>
@@ -50639,6 +50655,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setDocContextMaterials((prev) => prev.filter((m) => m.id !== mat.id));
+                                        if (activeSourcePreviewIndex === matIdx) setActiveSourcePreviewIndex(null);
                                         showToast(`Removed ${mat.name}`);
                                       }}
                                       className="p-1 text-slate-400 hover:text-rose-500 transition-colors rounded cursor-pointer"
@@ -60073,6 +60090,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onInsert={(sourceData) => insertCitation(sourceData)}
         onClose={closeCitationPopover}
       />
+
+      {/* ── Context Source Read-Only Preview Overlay ───────────────────── */}
+      {activeSourcePreviewIndex !== null && docContextMaterials[activeSourcePreviewIndex] && (
+        <ContextSourcePreviewModal
+          materials={docContextMaterials}
+          currentIndex={activeSourcePreviewIndex}
+          onNavigate={(newIdx) => setActiveSourcePreviewIndex(newIdx)}
+          onClose={() => setActiveSourcePreviewIndex(null)}
+          onOpenInApp={(category, file) => {
+            setActiveSourcePreviewIndex(null);
+            if (category === 'sheets') {
+              setSheetToolbarTab(null);
+              showToast(`Opened "${file.name}" in Regaarder Sheets`);
+            } else if (category === 'deck') {
+              showToast(`Opened "${file.name}" in Regaarder Deck`);
+            } else {
+              setDocToolbarTab('Write');
+              showToast(`Opened "${file.name}" in Regaarder Compose`);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
