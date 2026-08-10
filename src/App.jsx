@@ -10171,6 +10171,9 @@ export default function App() {
   const [isMoreMaterialsOpen, setIsMoreMaterialsOpen] = useState(false);
   const [moreMaterialsAnchorRect, setMoreMaterialsAnchorRect] = useState(null);
   const [docReadabilityScore, setDocReadabilityScore] = useState(94);
+  // Readability popover — anchor is the button's DOMRect
+  const [readabilityPopover, setReadabilityPopover] = useState({ open: false, anchorRect: null });
+  const readabilityPopoverRef = useRef(null);
   const [docWordCount, setDocWordCount] = useState(1420);
   const [docCharCount, setDocCharCount] = useState(8950);
   const [templateCategory, setTemplateCategory] = useState('all');
@@ -50493,19 +50496,143 @@ if (productMode === 'deck' || productMode === 'sheets') {
           )}
 
           {docToolbarTab === 'Review' && (
-            /* Review Sub-toolbar: Proofreading, Metrics & Security */
+            /* Review Sub-toolbar: Proofreading, Metrics & Security — Apple-style editorial hierarchy */
             <div className="w-full flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+
+                {/* ── PRIMARY: Proofread ───────────────────────────────── */}
                 <button
                   type="button"
-                  onClick={() => showToast('AI Proofread: 0 spelling errors, 2 style suggestions')}
-                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 border border-violet-200/60 dark:border-violet-800/40 flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
+                  onClick={() => showToast('Proofread: 0 spelling errors, 2 style suggestions')}
+                  className="review-btn review-btn--primary"
+                  title="Proofread document"
                 >
-                  <Sparkles size={13} /> AI Proofread
+                  {/* Custom quill + checkmark glyph — semantic, not decorative */}
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                    {/* Quill body */}
+                    <path d="M9.5 1C7.5 1 5.5 3 4.5 5.5L3 10l4.5-1.5C10 7.5 12 5.5 12 3.5c0-1.4-1.1-2.5-2.5-2.5Z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" fill="none"/>
+                    {/* Quill tip line */}
+                    <path d="M4.5 5.5C3.5 6.5 3 8 3 10" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+                    {/* Checkmark tick */}
+                    <path d="M1.5 7.5L3 9l2.5-3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Proofread
                 </button>
-                <div className="px-2.5 py-1 text-xs font-medium rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 shrink-0 select-none">
-                  ✓ Readability: {docReadabilityScore}% (Grade 8)
+
+                {/* ── SECONDARY: Readability ────────────────────────────── */}
+                <div className="relative" ref={readabilityPopoverRef}>
+                  <button
+                    type="button"
+                    id="review-readability-btn"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setReadabilityPopover((prev) =>
+                        prev.open
+                          ? { open: false, anchorRect: null }
+                          : { open: true, anchorRect: rect }
+                      );
+                    }}
+                    className={`review-btn review-btn--secondary${readabilityPopover.open ? ' review-btn--secondary-active' : ''}`}
+                    title="View readability analysis"
+                    aria-expanded={readabilityPopover.open}
+                  >
+                    {/* Document-eye icon: analytical, not decorative */}
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                      <rect x="1.5" y="1.5" width="7" height="9" rx="1" stroke="currentColor" strokeWidth="1"/>
+                      <path d="M3.5 4.5h4M3.5 6.5h3" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+                      <circle cx="9.5" cy="9.5" r="2" stroke="currentColor" strokeWidth="1"/>
+                      <path d="M11 11l1 1" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+                    </svg>
+                    Readability
+                  </button>
+
+                  {/* ── Readability Popover ─────────────────────────────── */}
+                  {readabilityPopover.open && (() => {
+                    const vw = window.innerWidth;
+                    const rect = readabilityPopover.anchorRect;
+                    const W = 268;
+                    let left = rect ? rect.left : (vw - W) / 2;
+                    if (left + W > vw - 12) left = vw - W - 12;
+                    if (left < 12) left = 12;
+                    const top = rect ? rect.bottom + 6 : 80;
+                    return createPortal(
+                      <>
+                        {/* Scrim — click outside closes */}
+                        <div
+                          className="readability-popover-scrim"
+                          onPointerDown={() => setReadabilityPopover({ open: false, anchorRect: null })}
+                          aria-hidden="true"
+                        />
+                        <div
+                          className="readability-popover"
+                          style={{ position: 'fixed', top, left, width: W }}
+                          role="dialog"
+                          aria-label="Readability analysis"
+                          onPointerDown={(e) => e.stopPropagation()}
+                        >
+                          {/* Score row */}
+                          <div className="readability-popover__score-row">
+                            <div className="readability-popover__score-ring">
+                              <svg width="52" height="52" viewBox="0 0 52 52">
+                                <circle cx="26" cy="26" r="22" fill="none" stroke="#ede9fe" strokeWidth="4"/>
+                                <circle
+                                  cx="26" cy="26" r="22"
+                                  fill="none"
+                                  stroke="#7c3aed"
+                                  strokeWidth="4"
+                                  strokeLinecap="round"
+                                  strokeDasharray={`${2 * Math.PI * 22 * docReadabilityScore / 100} ${2 * Math.PI * 22}`}
+                                  strokeDashoffset={2 * Math.PI * 22 * 0.25}
+                                  style={{ transition: 'stroke-dasharray 0.5s ease' }}
+                                />
+                                <text x="26" y="30" textAnchor="middle" fontSize="13" fontWeight="700" fill="#5b21b6" fontFamily="Inter, system-ui">{docReadabilityScore}</text>
+                              </svg>
+                            </div>
+                            <div className="readability-popover__score-meta">
+                              <div className="readability-popover__score-label">Flesch Reading Ease</div>
+                              <div className="readability-popover__score-status">Excellent</div>
+                              <div className="readability-popover__score-grade">Reading level: Grade 8</div>
+                            </div>
+                          </div>
+
+                          {/* Divider */}
+                          <div className="readability-popover__divider" />
+
+                          {/* Suggestions */}
+                          <div className="readability-popover__suggestions">
+                            <div className="readability-popover__suggestions-title">Suggestions</div>
+                            <ul className="readability-popover__suggestions-list">
+                              <li>Shorten sentences in paragraph 3 for clarity</li>
+                              <li>Replace passive voice in the introduction</li>
+                            </ul>
+                          </div>
+
+                          {/* Footer CTA */}
+                          <button
+                            type="button"
+                            className="readability-popover__cta"
+                            onClick={() => {
+                              setReadabilityPopover({ open: false, anchorRect: null });
+                              showToast('Readability suggestions: coming soon');
+                            }}
+                          >
+                            View suggestions
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                              <path d="M2 5.5h7M6 3l3 2.5L6 8" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </>,
+                      document.fullscreenElement ?? document.body
+                    );
+                  })()}
                 </div>
+
+                {/* ── DIVIDER ──────────────────────────────────────────── */}
+                <div className="review-toolbar-divider" aria-hidden="true" />
+
+                {/* ── UTILITY: Insert Citation ──────────────────────────── */}
                 <button
                   type="button"
                   id="review-toolbar-insert-citation-btn"
@@ -50533,10 +50660,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     // so the popover always opens cleanly even in immersive mode.
                     openCitationPopover(anchorRect, savedRange, selectedText);
                   }}
-                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
+                  className="review-btn review-btn--utility"
+                  title="Insert citation"
                 >
-                  + Insert Citation
+                  {/* Reference marker icon */}
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                    <rect x="1.5" y="2" width="8" height="9.5" rx="1" stroke="currentColor" strokeWidth="1"/>
+                    <path d="M3.5 5h4M3.5 7h2.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+                    <circle cx="10" cy="3.5" r="2" fill="currentColor" opacity="0.85"/>
+                    <text x="10" y="4.4" textAnchor="middle" fontSize="2.8" fontWeight="700" fill="white" fontFamily="Inter, system-ui">1</text>
+                  </svg>
+                  Insert Citation
                 </button>
+
+                {/* ── UTILITY: Redact Selection ─────────────────────────── */}
                 <button
                   type="button"
                   onPointerDown={(e) => {
@@ -50556,19 +50693,30 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setDocBodyHtml(blankBodyRef.current.innerHTML);
                     }
                   }}
-                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
+                  className="review-btn review-btn--utility"
+                  title="Redact selected text"
                 >
-                  ⬛ Redact Selection
+                  {/* Redaction bar icon */}
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                    <rect x="1.5" y="5" width="10" height="3" rx="0.75" fill="currentColor" opacity="0.8"/>
+                    <path d="M2 2.5h6M2 10h4" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
+                  </svg>
+                  Redact Selection
                 </button>
+
+                {/* ── UTILITY: Version History ──────────────────────────── */}
                 <button
                   type="button"
                   onClick={openReplayPanel}
-                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
+                  className="review-btn review-btn--utility"
+                  title="View version history"
                 >
-                  <Clock size={13} /> Version History
+                  <Clock size={13} />
+                  Version History
                 </button>
+
               </div>
-              <div className="text-xs font-semibold text-slate-500 dark:text-zinc-400 shrink-0 border-l border-slate-200/60 dark:border-zinc-800 pl-3">
+              <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 shrink-0 border-l border-slate-200/50 dark:border-zinc-800 pl-3 tabular-nums">
                 {docWordCount} words · {docCharCount} chars
               </div>
             </div>

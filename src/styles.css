@@ -10,6 +10,235 @@ body { margin: 0; background: #ffffff; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Review Toolbar — Apple-style editorial hierarchy
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Base button shared across all tiers */
+.review-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  font-size: 11.5px;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.review-btn svg { flex-shrink: 0; }
+
+/* PRIMARY — Proofread: purple accent, Regaarder brand colour */
+.review-btn--primary {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+  color: #6d28d9;
+  font-weight: 600;
+}
+.review-btn--primary:hover {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+  box-shadow: 0 1px 3px 0 rgba(109, 40, 217, 0.10);
+}
+.review-btn--primary:active { background: #ddd6fe; }
+
+/* Dark mode — primary */
+.dark .review-btn--primary { background: rgba(109,40,217,0.14); border-color: rgba(167,139,250,0.22); color: #a78bfa; }
+.dark .review-btn--primary:hover { background: rgba(109,40,217,0.22); border-color: rgba(167,139,250,0.38); }
+
+/* SECONDARY — Readability: neutral with subtle outline, becomes outlined-purple when active */
+.review-btn--secondary {
+  background: transparent;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+.review-btn--secondary:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+.review-btn--secondary-active,
+.review-btn--secondary[aria-expanded="true"] {
+  background: #f5f3ff !important;
+  border-color: #c4b5fd !important;
+  color: #6d28d9 !important;
+}
+.dark .review-btn--secondary { border-color: rgba(255,255,255,0.10); color: #94a3b8; }
+.dark .review-btn--secondary:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.16); color: #cbd5e1; }
+.dark .review-btn--secondary-active,
+.dark .review-btn--secondary[aria-expanded="true"] { background: rgba(109,40,217,0.14) !important; border-color: rgba(167,139,250,0.30) !important; color: #a78bfa !important; }
+
+/* UTILITY — Citation, Redact, History: recessive, no visual weight */
+.review-btn--utility {
+  background: transparent;
+  border-color: transparent;
+  color: #64748b;
+}
+.review-btn--utility:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+.review-btn--utility:active { background: #e2e8f0; }
+.dark .review-btn--utility { color: #71717a; }
+.dark .review-btn--utility:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.10); color: #d4d4d8; }
+
+/* Thin vertical rule between secondary and utility groups */
+.review-toolbar-divider {
+  width: 1px;
+  height: 16px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  margin: 0 2px;
+  border-radius: 1px;
+}
+.dark .review-toolbar-divider { background: rgba(255,255,255,0.10); }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Readability Popover — Apple-style floating panel
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Full-screen scrim: transparent, intercepts outside clicks */
+.readability-popover-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 199990;
+}
+
+/* Popover card */
+.readability-popover {
+  z-index: 199999;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.09);
+  border-radius: 12px;
+  box-shadow:
+    0 4px 6px -1px rgba(0,0,0,0.06),
+    0 10px 32px -4px rgba(0,0,0,0.12),
+    0 0 0 0.5px rgba(0,0,0,0.04);
+  padding: 16px;
+  animation: readability-popover-in 160ms cubic-bezier(0.34,1.1,0.64,1) both;
+  transform-origin: top left;
+}
+
+@keyframes readability-popover-in {
+  from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0);     }
+}
+
+/* Dark mode card */
+.dark .readability-popover {
+  background: #18181b;
+  border-color: rgba(255,255,255,0.09);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3), 0 10px 32px -4px rgba(0,0,0,0.5);
+}
+
+/* Score row: ring + meta side by side */
+.readability-popover__score-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Rotate so the arc starts from 12-o'clock */
+.readability-popover__score-ring {
+  flex-shrink: 0;
+  transform: rotate(-90deg);
+}
+
+.readability-popover__score-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.readability-popover__score-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.dark .readability-popover__score-label { color: #52525b; }
+
+.readability-popover__score-status {
+  font-size: 15px;
+  font-weight: 700;
+  color: #5b21b6;
+  letter-spacing: -0.02em;
+}
+.dark .readability-popover__score-status { color: #a78bfa; }
+
+.readability-popover__score-grade {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 1px;
+}
+.dark .readability-popover__score-grade { color: #71717a; }
+
+/* Thin horizontal rule */
+.readability-popover__divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 12px 0;
+  border-radius: 1px;
+}
+.dark .readability-popover__divider { background: rgba(255,255,255,0.07); }
+
+/* Suggestions section */
+.readability-popover__suggestions-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.055em;
+  margin-bottom: 6px;
+}
+.dark .readability-popover__suggestions-title { color: #52525b; }
+
+.readability-popover__suggestions-list {
+  margin: 0;
+  padding: 0 0 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.readability-popover__suggestions-list li {
+  font-size: 11.5px;
+  color: #475569;
+  line-height: 1.45;
+}
+.dark .readability-popover__suggestions-list li { color: #a1a1aa; }
+
+/* Footer CTA */
+.readability-popover__cta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #6d28d9;
+  transition: color 120ms ease, gap 120ms ease;
+  letter-spacing: -0.01em;
+}
+.readability-popover__cta:hover { color: #5b21b6; gap: 7px; }
+.dark .readability-popover__cta { color: #a78bfa; }
+.dark .readability-popover__cta:hover { color: #c4b5fd; }
+
+
 @keyframes assistSnake {
 	0% { background-position: 0% 50%; }
 	100% { background-position: 200% 50%; }
