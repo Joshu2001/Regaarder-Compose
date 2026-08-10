@@ -10201,6 +10201,7 @@ export default function App() {
     };
   }, [isPromptMinimized, hasSeenAiOnboarding]);
   const [selectedEditorText, setSelectedEditorText] = useState('');
+  const [showSelectionPromptCard, setShowSelectionPromptCard] = useState(false);
   const [selectionActionMenu, setSelectionActionMenu] = useState({ open: false, left: 0, top: 0 });
   const selectionActionMenuEnabled = true;
   const [documentOutlineItems, setDocumentOutlineItems] = useState([]);
@@ -12030,6 +12031,7 @@ export default function App() {
   const selectedEditorTextRef = useRef('');
   const pointerDownInPromptRef = useRef(false);
   const pointerDownInDocumentRef = useRef(false);
+  const isSelectingRef = useRef(false);
   const calendarMenuRef = useRef(null);
   const formattingDropdownCloseTimerRef = useRef(null);
   const textStyleMenuCloseTimerRef = useRef(null);
@@ -15500,11 +15502,33 @@ export default function App() {
     const docCard = documentCardRef.current;
     const notesCard = notesCardRef.current;
 
-    return Boolean(
-      (bodyRoot && bodyRoot.contains(targetNode)) ||
+    const isAncestorInside = Boolean(
+      (bodyRoot && (bodyRoot.contains(targetNode) || targetNode.contains(bodyRoot))) ||
       (docCard && docCard.contains(targetNode)) ||
       (notesCard && notesCard.contains(targetNode)) ||
       (targetNode.closest && targetNode.closest('[contenteditable="true"]'))
+    );
+
+    if (isAncestorInside) return true;
+
+    const anchorNode = range.anchorNode;
+    const focusNode = range.focusNode;
+    const anchorTarget = anchorNode ? (anchorNode.nodeType === Node.TEXT_NODE ? anchorNode.parentNode : anchorNode) : null;
+    const focusTarget = focusNode ? (focusNode.nodeType === Node.TEXT_NODE ? focusNode.parentNode : focusNode) : null;
+
+    return Boolean(
+      (anchorTarget && (
+        (bodyRoot && bodyRoot.contains(anchorTarget)) ||
+        (docCard && docCard.contains(anchorTarget)) ||
+        (notesCard && notesCard.contains(anchorTarget)) ||
+        (anchorTarget.closest && anchorTarget.closest('[contenteditable="true"]'))
+      )) ||
+      (focusTarget && (
+        (bodyRoot && bodyRoot.contains(focusTarget)) ||
+        (docCard && docCard.contains(focusTarget)) ||
+        (notesCard && notesCard.contains(focusTarget)) ||
+        (focusTarget.closest && focusTarget.closest('[contenteditable="true"]'))
+      ))
     );
   };
   const stripMarkdownArtifacts = (value) => String(value || '')
@@ -15720,7 +15744,13 @@ export default function App() {
       return;
     }
 
-    const rangeRect = range.getBoundingClientRect();
+    let rangeRect = range.getBoundingClientRect();
+    if (!rangeRect || (rangeRect.width === 0 && rangeRect.height === 0)) {
+      const clientRects = Array.from(range.getClientRects()).filter(r => r.width > 0 || r.height > 0);
+      if (clientRects.length > 0) {
+        rangeRect = clientRects[0];
+      }
+    }
     if (!rangeRect || (rangeRect.width === 0 && rangeRect.height === 0 && rangeRect.top === 0)) {
       setSelectionActionMenu({ open: false, left: 0, top: 0 });
       return;
@@ -16785,6 +16815,7 @@ export default function App() {
 
       setSelectedEditorText('');
       selectedEditorTextRef.current = '';
+      setShowSelectionPromptCard(false);
       setIsBoldActive(false);
       setIsItalicActive(false);
       setIsUnderlineActive(false);
@@ -49195,6 +49226,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             setIsPromptDismissed(false);
             setIsPromptExpanded(true);
             setIsPromptAutoVisible(true);
+            setShowSelectionPromptCard(true);
             setTimeout(() => {
               floatingPromptRef.current?.focus();
             }, 50);
@@ -55845,6 +55877,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       value={floatingPrompt}
                       onChange={handleFloatingPromptChange}
                       onPaste={handleFloatingPaste}
+                      onFocus={() => {
+                        if ((selectedEditorText || selectedEditorTextRef.current)?.trim()) {
+                          setShowSelectionPromptCard(true);
+                        }
+                      }}
                       onInput={(e) => autoResizeTextarea(e.currentTarget, 180)}
                       onKeyDown={handleFloatingPromptKeyDown}
                       placeholder="Or type your goal here..."
@@ -55978,7 +56015,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       ))}
                     </div>
                   )}
-                  {Boolean((selectedEditorText || selectedEditorTextRef.current)?.trim()) && (
+                  {Boolean(showSelectionPromptCard && (selectedEditorText || selectedEditorTextRef.current)?.trim()) && (
                     <div className="w-full bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-violet-200/80 dark:border-violet-800/50 shadow-sm rounded-xl p-2.5 flex flex-col gap-2 transition-all duration-200 ease-out animate-in fade-in slide-in-from-bottom-2">
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-1.5 min-w-0">
@@ -55992,6 +56029,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onClick={() => {
                             setSelectedEditorText('');
                             selectedEditorTextRef.current = '';
+                            setShowSelectionPromptCard(false);
                           }}
                           className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
                           title="Clear selection context"
@@ -56010,6 +56048,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onClick={() => {
                             const sel = selectedEditorTextRef.current || selectedEditorText;
                             setFloatingPrompt(`Improve writing and tone for this selection: "${sel}"`);
+                            setShowSelectionPromptCard(false);
                             floatingPromptRef.current?.focus();
                           }}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors"
@@ -56022,6 +56061,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onClick={() => {
                             const sel = selectedEditorTextRef.current || selectedEditorText;
                             setFloatingPrompt(`Explain this selection in detail: "${sel}"`);
+                            setShowSelectionPromptCard(false);
                             floatingPromptRef.current?.focus();
                           }}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors"
@@ -56034,6 +56074,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onClick={() => {
                             const sel = selectedEditorTextRef.current || selectedEditorText;
                             setFloatingPrompt(`Summarize key points of this selection: "${sel}"`);
+                            setShowSelectionPromptCard(false);
                             floatingPromptRef.current?.focus();
                           }}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors"
@@ -56046,6 +56087,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onClick={() => {
                             const sel = selectedEditorTextRef.current || selectedEditorText;
                             setFloatingPrompt(`Rewrite this selection clearly: "${sel}"`);
+                            setShowSelectionPromptCard(false);
                             floatingPromptRef.current?.focus();
                           }}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors"
@@ -56056,6 +56098,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button
                           type="button"
                           onClick={() => {
+                            setShowSelectionPromptCard(false);
                             floatingPromptRef.current?.focus();
                           }}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/70 transition-colors"
