@@ -7059,7 +7059,10 @@ export default function App() {
   }, []);
   const [hasVoiceInteraction, setHasVoiceInteraction] = useState(false);
   const [miniPromptOffset, setMiniPromptOffset] = useState({ x: 0, y: 0 });
-  const [dictationOffset, setDictationOffset] = useState({ x: 0, y: 0 });
+  const [dictationOffset, setDictationOffset] = useState(() => {
+    try { localStorage.removeItem('regaarderDictationOffset'); } catch {}
+    return { x: 0, y: 0 };
+  });
   
   useEffect(() => {
     if (dictationOffset.x === 0 && dictationOffset.y === 0) {
@@ -30277,7 +30280,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     const updateDictationAnchor = () => {
       const card = documentCardRef.current;
       if (!card) {
-        setDictationAnchor({ left: window.innerWidth - 150, top: 195 });
+        setDictationAnchor({ left: window.innerWidth - 150, top: 150 });
         return;
       }
 
@@ -30291,8 +30294,8 @@ Respond with a JSON array of slide objects matching the schema.`;
         rightX = maxAllowedX;
       }
       
-      const targetY = rect.top + 50;
-      const topY = Math.max(155, Math.min(window.innerHeight - 80, targetY));
+      const targetY = rect.top + 15;
+      const topY = Math.max(100, Math.min(window.innerHeight - 80, targetY));
 
       setDictationAnchor({ left: rightX, top: topY });
     };
