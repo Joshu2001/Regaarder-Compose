@@ -49854,147 +49854,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   >
                     <Plus size={13} /> Add Source File <ChevronDown size={11} className={`transition-transform duration-150 ${isAddSourceMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
-
-                  {/* Fixed Anchored Popover Modal matching TableGridPickerModal in Image 2 */}
-                  {isAddSourceMenuOpen && addSourceAnchorRect && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-[9998]"
-                        onPointerDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsAddSourceMenuOpen(false);
-                          setIsChooseRegaarderOpen(false);
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsAddSourceMenuOpen(false);
-                          setIsChooseRegaarderOpen(false);
-                        }}
-                      />
-                      <div
-                        className="fixed z-[9999] w-64 rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 shadow-[0_12px_40px_rgb(0,0,0,0.14)] backdrop-blur-xl p-1.5 text-xs font-medium select-none animate-in fade-in zoom-in-95 duration-100"
-                        style={{
-                          top: addSourceAnchorRect.bottom + 8,
-                          left: 12
-                        }}
-                      >
-                        <div className="px-2.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-                          Add source
-                        </div>
-                        
-                        {/* Option 1: Upload file (Supports Batch Multi-File Upload) */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const input = document.createElement('input');
-                            input.type = 'file';
-                            input.multiple = true;
-                            input.onchange = (ev) => {
-                              const files = Array.from(ev.target.files || []);
-                              if (files.length > 0) {
-                                const newMaterials = files.map((file, idx) => {
-                                  const ext = file.name.split('.').pop().toLowerCase();
-                                  let type = 'document';
-                                  if (['xlsx', 'xls', 'csv', 'ods'].includes(ext)) type = 'spreadsheet';
-                                  else if (['pptx', 'ppt', 'key'].includes(ext)) type = 'presentation';
-                                  else if (['pdf'].includes(ext)) type = 'pdf';
-                                  else if (['txt', 'md', 'doc', 'docx'].includes(ext)) type = 'document';
-
-                                  return {
-                                    id: String(Date.now() + idx),
-                                    name: file.name,
-                                    type,
-                                    size: `${Math.round(file.size / 1024)} KB`
-                                  };
-                                });
-
-                                setDocContextMaterials((prev) => [...prev, ...newMaterials]);
-                                showToast(files.length === 1 ? `Added ${files[0].name} to AI Context` : `Added ${files.length} files to AI Context`);
-                              }
-                            };
-                            input.click();
-                            setIsAddSourceMenuOpen(false);
-                            setIsChooseRegaarderOpen(false);
-                          }}
-                          className="group w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Upload size={14} className="text-slate-500 dark:text-zinc-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" />
-                            <span>Upload file</span>
-                          </div>
-                          <span className="text-[10px] text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300 font-sans transition-colors">↑</span>
-                        </button>
-
-                        {/* Option 2: Choose from Regaarder */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsChooseRegaarderOpen((prev) => !prev);
-                          }}
-                          className={`group w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                            isChooseRegaarderOpen
-                              ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-semibold'
-                              : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-200'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <FolderOpen size={14} className={`transition-colors ${isChooseRegaarderOpen ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-zinc-400 group-hover:text-violet-600 dark:group-hover:text-violet-400'}`} />
-                            <span>Choose from Regaarder</span>
-                          </div>
-                          <ChevronRight size={12} className={`transition-transform duration-150 ${isChooseRegaarderOpen ? 'rotate-90 text-violet-600 dark:text-violet-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300'}`} />
-                        </button>
-
-                        {/* Inline Workspace File Picker */}
-                        {isChooseRegaarderOpen && (
-                          <div className="mt-1 pt-1.5 border-t border-slate-100 dark:border-zinc-800 space-y-0.5 max-h-48 overflow-y-auto thin-scrollbar">
-                            <div className="px-2.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-                              Regaarder Workspace Files
-                            </div>
-                            {REGAARDER_WORKSPACE_FILES.map((rwFile) => {
-                              const isAdded = docContextMaterials.some((m) => m.name === rwFile.name);
-                              return (
-                                <button
-                                  key={rwFile.id}
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (isAdded) {
-                                      showToast(`"${rwFile.name}" is already in Context`);
-                                    } else {
-                                      setDocContextMaterials((prev) => [...prev, { id: String(Date.now()), name: rwFile.name, type: rwFile.type, size: rwFile.size }]);
-                                      showToast(`Added ${rwFile.name} to AI Context`);
-                                    }
-                                  }}
-                                  className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between text-xs transition-colors cursor-pointer ${
-                                    isAdded
-                                      ? 'bg-slate-50 dark:bg-zinc-800/40 text-slate-400 dark:text-zinc-500'
-                                      : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 font-medium'
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-2 truncate">
-                                    <FileText size={13} className={isAdded ? 'text-slate-400' : 'text-violet-500'} />
-                                    <span className="truncate">{rwFile.name}</span>
-                                  </div>
-                                  {isAdded ? (
-                                    <Check size={12} className="text-emerald-500 shrink-0" />
-                                  ) : (
-                                    <span className="text-[10px] text-slate-400 shrink-0">{rwFile.size}</span>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        {/* Divider line partitioning local/workspace sources from future integrations */}
-                        <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
-                      </div>
-                    </>
-                  )}
                 </div>
 
                 {/* Progressive Overflow Model Chips List ([File 1] [File 2] [File 3] [+N more ▾]) */}
@@ -58964,6 +58823,147 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <EquationGalleryPicker isOpen={equationsPickerOpen} setOpen={setEquationsPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
       <BlockHoverMenu menu={hoveredBlockMenu} setMenu={setHoveredBlockMenu} focusedTableCell={focusedTableCell} setFocusedTableCell={setFocusedTableCell} isTableLocked={isTableLocked} setIsTableLocked={setIsTableLocked} />
       <TableGridPickerModal isOpen={tableGridModalOpen} setOpen={setTableGridModalOpen} rect={tableGridAnchor} />
+      
+      {/* Root-level Add Source File Popover matching TableGridPickerModal */}
+      {isAddSourceMenuOpen && addSourceAnchorRect && (
+        <>
+          <div
+            className="fixed inset-0 z-[9998]"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsAddSourceMenuOpen(false);
+              setIsChooseRegaarderOpen(false);
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsAddSourceMenuOpen(false);
+              setIsChooseRegaarderOpen(false);
+            }}
+          />
+          <div
+            className="fixed z-[9999] w-64 rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 shadow-[0_12px_40px_rgb(0,0,0,0.14)] backdrop-blur-xl p-1.5 text-xs font-medium select-none animate-in fade-in zoom-in-95 duration-100"
+            style={{
+              top: 12,
+              left: 12
+            }}
+          >
+            <div className="px-2.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+              Add source
+            </div>
+            
+            {/* Option 1: Upload file (Supports Batch Multi-File Upload) */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.multiple = true;
+                input.onchange = (ev) => {
+                  const files = Array.from(ev.target.files || []);
+                  if (files.length > 0) {
+                    const newMaterials = files.map((file, idx) => {
+                      const ext = file.name.split('.').pop().toLowerCase();
+                      let type = 'document';
+                      if (['xlsx', 'xls', 'csv', 'ods'].includes(ext)) type = 'spreadsheet';
+                      else if (['pptx', 'ppt', 'key'].includes(ext)) type = 'presentation';
+                      else if (['pdf'].includes(ext)) type = 'pdf';
+                      else if (['txt', 'md', 'doc', 'docx'].includes(ext)) type = 'document';
+
+                      return {
+                        id: String(Date.now() + idx),
+                        name: file.name,
+                        type,
+                        size: `${Math.round(file.size / 1024)} KB`
+                      };
+                    });
+
+                    setDocContextMaterials((prev) => [...prev, ...newMaterials]);
+                    showToast(files.length === 1 ? `Added ${files[0].name} to AI Context` : `Added ${files.length} files to AI Context`);
+                  }
+                };
+                input.click();
+                setIsAddSourceMenuOpen(false);
+                setIsChooseRegaarderOpen(false);
+              }}
+              className="group w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Upload size={14} className="text-slate-500 dark:text-zinc-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" />
+                <span>Upload file</span>
+              </div>
+              <span className="text-[10px] text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300 font-sans transition-colors">↑</span>
+            </button>
+
+            {/* Option 2: Choose from Regaarder */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsChooseRegaarderOpen((prev) => !prev);
+              }}
+              className={`group w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                isChooseRegaarderOpen
+                  ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-semibold'
+                  : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-200'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <FolderOpen size={14} className={`transition-colors ${isChooseRegaarderOpen ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-zinc-400 group-hover:text-violet-600 dark:group-hover:text-violet-400'}`} />
+                <span>Choose from Regaarder</span>
+              </div>
+              <ChevronRight size={12} className={`transition-transform duration-150 ${isChooseRegaarderOpen ? 'rotate-90 text-violet-600 dark:text-violet-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300'}`} />
+            </button>
+
+            {/* Inline Workspace File Picker */}
+            {isChooseRegaarderOpen && (
+              <div className="mt-1 pt-1.5 border-t border-slate-100 dark:border-zinc-800 space-y-0.5 max-h-48 overflow-y-auto thin-scrollbar">
+                <div className="px-2.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                  Regaarder Workspace Files
+                </div>
+                {REGAARDER_WORKSPACE_FILES.map((rwFile) => {
+                  const isAdded = docContextMaterials.some((m) => m.name === rwFile.name);
+                  return (
+                    <button
+                      key={rwFile.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isAdded) {
+                          showToast(`"${rwFile.name}" is already in Context`);
+                        } else {
+                          setDocContextMaterials((prev) => [...prev, { id: String(Date.now()), name: rwFile.name, type: rwFile.type, size: rwFile.size }]);
+                          showToast(`Added ${rwFile.name} to AI Context`);
+                        }
+                      }}
+                      className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                        isAdded
+                          ? 'bg-slate-50 dark:bg-zinc-800/40 text-slate-400 dark:text-zinc-500'
+                          : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 font-medium'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <FileText size={13} className={isAdded ? 'text-slate-400' : 'text-violet-500'} />
+                        <span className="truncate">{rwFile.name}</span>
+                      </div>
+                      {isAdded ? (
+                        <Check size={12} className="text-emerald-500 shrink-0" />
+                      ) : (
+                        <span className="text-[10px] text-slate-400 shrink-0">{rwFile.size}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Divider line partitioning local/workspace sources from future integrations */}
+            <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
+          </div>
+        </>
+      )}
       <ListGalleryPicker isOpen={!!listGalleryOpen} initialTab={typeof listGalleryOpen === 'string' ? listGalleryOpen : 'bullet'} setOpen={setListGalleryOpen} anchorEl={document.getElementById('compose-list-btn')} />
 
       {/* Shared Chart and Shape Pickers */}
