@@ -6854,6 +6854,82 @@ export default function App() {
   const [shapeBorderMenu, setShapeBorderMenu] = useState({ open: false, top: 0, left: 0, containerId: null });
   const tableToolbarRef = useRef(null);
 
+  /**
+   * Computes a safe { top, left } for a floating toolbar anchored above a rect.
+   * Falls back to below the element when there is no room above.
+   * Left is clamped so the toolbar never bleeds off either screen edge.
+   *
+   * @param {DOMRect} rect          - getBoundingClientRect() of the target element
+   * @param {number}  toolbarH      - estimated toolbar height (default 44px)
+   * @param {number}  toolbarW      - estimated toolbar width (default 520px)
+   * @param {number}  gap           - gap between element edge and toolbar (default 8px)
+   */
+  const resolveToolbarPosition = (rect, toolbarH = 44, toolbarW = 520, gap = 8) => {
+    const margin = 8; // minimum distance from viewport edges
+    // Prefer above the element
+    let top = rect.top + window.scrollY - toolbarH - gap;
+    if (rect.top - toolbarH - gap < margin) {
+      // No room above — place below
+      top = rect.bottom + window.scrollY + gap;
+    }
+    // Clamp left so toolbar never bleeds off right edge
+    let left = Math.max(margin, Math.min(rect.left + window.scrollX, window.innerWidth - toolbarW - margin));
+    return { top, left };
+  };
+
+  /** Close every floating block-level toolbar except the one being opened. */
+  const closeOtherBlockToolbars = (except) => {
+    if (except !== 'image')  setImageToolbar({ open: false, node: null, top: 0, left: 0 });
+    if (except !== 'shape')  setShapeToolbar({ open: false, top: 0, left: 0, containerId: null });
+    if (except !== 'table')  setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
+  };
+
+  /**
+   * Returns a onPointerDown handler that makes any floating toolbar freely draggable.
+   * `setter` is the React state setter for the toolbar (setImageToolbar / setTableToolbar / setShapeToolbar).
+   * `resolvedRef` (optional) is a ref to the DOM node so we can read its current rendered position
+   * when the toolbar uses CSS transform offsets (table toolbar uses translate(-50%,-100%)).
+   */
+  const makeDragHandler = (setter, resolvedRef = null) => (e) => {
+    // Only drag on the grip handle itself (data-drag-handle), not child buttons
+    if (!e.currentTarget.hasAttribute('data-drag-handle')) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Determine starting position — if the toolbar uses a CSS transform we must
+    // read the computed rendered top/left from getBoundingClientRect.
+    let startTop, startLeft;
+    if (resolvedRef && resolvedRef.current) {
+      const r = resolvedRef.current.getBoundingClientRect();
+      startTop  = r.top  + window.scrollY;
+      startLeft = r.left + window.scrollX;
+    } else {
+      // Toolbar already stores absolute top/left in state; read from setter closure
+      // by reading the DOM node attached to the event target's parent
+      const r = e.currentTarget.parentElement.getBoundingClientRect();
+      startTop  = r.top  + window.scrollY;
+      startLeft = r.left + window.scrollX;
+    }
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    const onMove = (me) => {
+      const dx = me.clientX - startX;
+      const dy = me.clientY - startY;
+      setter(prev => ({ ...prev, top: startTop + dy, left: startLeft + dx, _dragged: true }));
+    };
+
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup',   onUp);
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup',   onUp);
+  };
+
+
   const syncEditorHtml = () => {
     if (blankBodyRef.current) {
       setDocBodyHtml(blankBodyRef.current.innerHTML);
@@ -6947,18 +7023,12 @@ export default function App() {
 
   const updateTableToolbarPosition = () => {
     if (isTableLocked) {
-      setTableToolbar(prev => {
-        if (prev.open) return { ...prev, open: false };
-        return prev;
-      });
+      setTableToolbar(prev => (prev.open ? { ...prev, open: false } : prev));
       return;
     }
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount) {
-      setTableToolbar(prev => {
-        if (prev.open) return { ...prev, open: false };
-        return prev;
-      });
+      setTableToolbar(prev => (prev.open ? { ...prev, open: false } : prev));
       return;
     }
     const range = selection.getRangeAt(0);
@@ -6971,31 +7041,41 @@ export default function App() {
     const insideChartBlock = table && table.closest('.interactive-chart-block');
     
     if (cell && table && insideEditor && !insideChartBlock) {
-      const rect = cell.getBoundingClientRect();
-      const hoverMenuEl = document.getElementById('block-hover-menu');
-      if (hoverMenuEl) {
-        const hoverMenuRect = hoverMenuEl.getBoundingClientRect();
-        setTableToolbar({
-          open: true,
-          left: hoverMenuRect.left + hoverMenuRect.width / 2,
-          top: hoverMenuRect.top - 6,
-          tableEl: table,
-          cellEl: cell
-        });
-      } else {
-        setTableToolbar({
-          open: true,
-          left: rect.left + rect.width / 2,
-          top: rect.top,
-          tableEl: table,
-          cellEl: cell
-        });
+      const cellRect = cell.getBoundingClientRect();
+      const tableRect = table.getBoundingClientRect();
+      
+      const toolbarWidth = 460;
+      const toolbarHeight = 38;
+      
+      const cellCenterX = cellRect.left + (cellRect.width / 2);
+      let left = cellCenterX;
+      
+      const minLeft = 16 + (toolbarWidth / 2);
+      const maxLeft = Math.max(minLeft, window.innerWidth - 16 - (toolbarWidth / 2));
+      left = Math.max(minLeft, Math.min(left, maxLeft));
+
+      let top = cellRect.top - 8;
+      
+      if (cellRect.top - toolbarHeight - 8 < 8) {
+        if (tableRect.top - toolbarHeight - 8 >= 8) {
+          top = tableRect.top - 8;
+        } else {
+          top = cellRect.bottom + toolbarHeight + 8;
+        }
       }
-    } else {
-      setTableToolbar(prev => {
-        if (prev.open) return { ...prev, open: false };
-        return prev;
+      
+      // Dismiss image / shape toolbars so they don't overlap the table toolbar
+      setImageToolbar({ open: false, node: null, top: 0, left: 0 });
+      setShapeToolbar({ open: false, top: 0, left: 0, containerId: null });
+      setTableToolbar({
+        open: true,
+        left,
+        top,
+        tableEl: table,
+        cellEl: cell
       });
+    } else {
+      setTableToolbar(prev => (prev.open ? { ...prev, open: false } : prev));
     }
   };
 
@@ -18013,29 +18093,27 @@ export default function App() {
     const handleScrollResize = () => {
       if (imageToolbar.open && imageToolbar.node) {
         const rect = imageToolbar.node.getBoundingClientRect();
-        setImageToolbar(prev => ({
-          ...prev,
-          top: rect.top + window.scrollY - 50,
-          left: rect.left + window.scrollX
-        }));
+        const pos = resolveToolbarPosition(rect, 44, 640);
+        setImageToolbar(prev => ({ ...prev, ...pos }));
       }
       if (tableToolbar.open && tableToolbar.cellEl) {
         const rect = tableToolbar.cellEl.getBoundingClientRect();
-        setTableToolbar(prev => ({
-          ...prev,
-          left: rect.left + rect.width / 2,
-          top: rect.top
-        }));
+        const toolbarWidth = 460;
+        const toolbarHeight = 38;
+        const cellCenterX = rect.left + rect.width / 2;
+        const minLeft = 16 + toolbarWidth / 2;
+        const maxLeft = Math.max(minLeft, window.innerWidth - 16 - toolbarWidth / 2);
+        const safeLeft = Math.max(minLeft, Math.min(cellCenterX, maxLeft));
+        let safeTop = rect.top - 8;
+        if (rect.top - toolbarHeight - 8 < 8) safeTop = rect.bottom + toolbarHeight + 8;
+        setTableToolbar(prev => ({ ...prev, left: safeLeft, top: safeTop }));
       }
       if (shapeToolbar.open && shapeToolbar.containerId) {
         const el = document.getElementById(shapeToolbar.containerId);
         if (el) {
           const rect = el.getBoundingClientRect();
-          setShapeToolbar(prev => ({
-            ...prev,
-            top: rect.top + window.scrollY - 50,
-            left: rect.left + rect.width / 2 + window.scrollX
-          }));
+          const pos = resolveToolbarPosition(rect, 44, 360);
+          setShapeToolbar(prev => ({ ...prev, ...pos }));
         }
       }
       const activeSlashMenu = slashMenuRef.current;
@@ -23371,12 +23449,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
     window.selectImageBlock = (node) => {
       if (!node) return;
       const rect = node.getBoundingClientRect();
-      setImageToolbar({
-        open: true,
-        top: rect.top + window.scrollY - 55,
-        left: rect.left + window.scrollX,
-        node: node
-      });
+      const pos = resolveToolbarPosition(rect, 44, 640);
+      closeOtherBlockToolbars('image');
+      setImageToolbar({ open: true, ...pos, node });
     };
     
     
@@ -23412,7 +23487,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const imgBlock = e.target.closest('.interactive-image-block');
       if (imgBlock) {
         const rect = imgBlock.getBoundingClientRect();
-        setImageToolbar({ open: true, top: rect.top + window.scrollY - 50, left: rect.left + window.scrollX, node: imgBlock });
+        const pos = resolveToolbarPosition(rect, 44, 640);
+        closeOtherBlockToolbars('image');
+        setImageToolbar({ open: true, ...pos, node: imgBlock });
       } else if (!e.target.closest('.image-toolbar-container') && !e.target.closest('.interactive-image-block')) {
         setImageToolbar({ open: false, node: null, top: 0, left: 0 });
       }
@@ -23440,12 +23517,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
         
         if (isOuterClick) {
           const rect = shapeBlock.getBoundingClientRect();
-          setShapeToolbar({
-            open: true,
-            top: rect.top + window.scrollY - 50,
-            left: rect.left + rect.width / 2 + window.scrollX,
-            containerId
-          });
+          const pos = resolveToolbarPosition(rect, 44, 360);
+          closeOtherBlockToolbars('shape');
+          setShapeToolbar({ open: true, ...pos, containerId });
           
           if (!shapeBlock.classList.contains('editing')) {
             document.querySelectorAll('.interactive-shape-block.editing, .ai-preview-block.editing').forEach(s => {
@@ -50653,27 +50727,65 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
       {imageToolbar.open && (
-        <div className="image-toolbar-container absolute z-[250] bg-white border border-gray-200 rounded-lg shadow-xl p-2 flex gap-2 items-center" style={{ top: imageToolbar.top, left: imageToolbar.left }}>
-          <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'sm')} className="p-1 hover:bg-slate-100 rounded" title="Small Width (30%)"><ImageIcon size={14}/></button>
-          <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'md')} className="p-1 hover:bg-slate-100 rounded" title="Medium Width (60%)"><ImageIcon size={18}/></button>
-          <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'lg')} className="p-1 hover:bg-slate-100 rounded" title="Full Width (100%)"><ImageIcon size={22}/></button>
-          <div className="w-px h-4 bg-gray-200 mx-1"></div>
-          <button onClick={() => window.addImageTextLayer(imageToolbar.node)} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Add floating text"><Type size={16}/> Text</button>
-          <button onClick={() => window.sendImageTextLayerToBack(imageToolbar.node)} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Send texts to back"><Layers size={16}/> To Back</button>
-          <div className="w-px h-4 bg-gray-200 mx-1"></div>
-          <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'center')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Center Image"><AlignCenter size={14}/> Center</button>
-          <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'wrap-left')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Float Left / Wrap Right"><AlignLeft size={14}/> Wrap Left</button>
-          <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'wrap-right')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Float Right / Wrap Left"><AlignRight size={14}/> Wrap Right</button>
-          <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'behind')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Send Behind Document Text"><Layers size={14} className="text-gray-400"/> Behind</button>
-          <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'front')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Bring in Front of Document Text"><Layers size={14} className="text-violet-600"/> In Front</button>
-          <button onClick={() => { protectCurrentElement('block'); setImageToolbar({ open: false, node: null, top: 0, left: 0 }); }} className="p-1 hover:bg-red-50 text-red-600 hover:text-red-700 rounded flex items-center gap-1 text-xs font-semibold" title="Redact/Protect Image"><EyeOff size={14}/> Redact</button>
-          <div className="w-px h-4 bg-gray-200 mx-1"></div>
+        <div className="image-toolbar-container absolute z-[250] bg-white/95 dark:bg-zinc-900/95 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-[0_4px_20px_-4px_rgba(15,23,42,0.08)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] p-1 flex gap-1 items-center backdrop-blur-md select-none" style={{ top: imageToolbar.top, left: imageToolbar.left }}>
+          {/* Drag grip */}
+          <div
+            data-drag-handle
+            onPointerDown={makeDragHandler(setImageToolbar)}
+            className="flex items-center justify-center w-5 h-full cursor-grab active:cursor-grabbing text-slate-300 dark:text-zinc-600 hover:text-slate-400 dark:hover:text-zinc-400 transition-colors shrink-0 touch-none"
+            title="Drag to move"
+          >
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="pointer-events-none">
+              <circle cx="2" cy="2"  r="1.2"/><circle cx="6" cy="2"  r="1.2"/>
+              <circle cx="2" cy="7"  r="1.2"/><circle cx="6" cy="7"  r="1.2"/>
+              <circle cx="2" cy="12" r="1.2"/><circle cx="6" cy="12" r="1.2"/>
+            </svg>
+          </div>
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800" />
+          <div className="flex items-center gap-0.5">
+            <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'sm')} className="group relative p-1.5 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 rounded-lg transition-all active:scale-[0.95]" title="Small Width (30%)">
+              <ImageIcon size={14}/>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">Small (30%)</span>
+            </button>
+            <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'md')} className="group relative p-1.5 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 rounded-lg transition-all active:scale-[0.95]" title="Medium Width (60%)">
+              <ImageIcon size={16}/>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">Medium (60%)</span>
+            </button>
+            <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'lg')} className="group relative p-1.5 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 rounded-lg transition-all active:scale-[0.95]" title="Full Width (100%)">
+              <ImageIcon size={18}/>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">Full Width (100%)</span>
+            </button>
+          </div>
+
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+
+          <div className="flex items-center gap-0.5">
+            <button onClick={() => window.addImageTextLayer(imageToolbar.node)} className="px-2 py-1 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 text-slate-600 dark:text-zinc-300 rounded-lg transition-all active:scale-[0.95] flex items-center gap-1 text-xs font-medium" title="Add floating text"><Type size={14}/> Text</button>
+            <button onClick={() => window.sendImageTextLayerToBack(imageToolbar.node)} className="px-2 py-1 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 text-slate-600 dark:text-zinc-300 rounded-lg transition-all active:scale-[0.95] flex items-center gap-1 text-xs font-medium" title="Send texts to back"><Layers size={14}/> To Back</button>
+          </div>
+
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+
+          <div className="flex items-center gap-0.5">
+            <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'center')} className="px-1.5 py-1 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 text-slate-600 dark:text-zinc-300 rounded-lg transition-all active:scale-[0.95] flex items-center gap-1 text-xs font-medium" title="Center Image"><AlignCenter size={14}/> Center</button>
+            <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'wrap-left')} className="px-1.5 py-1 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 text-slate-600 dark:text-zinc-300 rounded-lg transition-all active:scale-[0.95] flex items-center gap-1 text-xs font-medium" title="Float Left / Wrap Right"><AlignLeft size={14}/> Wrap Left</button>
+            <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'wrap-right')} className="px-1.5 py-1 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 text-slate-600 dark:text-zinc-300 rounded-lg transition-all active:scale-[0.95] flex items-center gap-1 text-xs font-medium" title="Float Right / Wrap Left"><AlignRight size={14}/> Wrap Right</button>
+            <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'behind')} className="px-1.5 py-1 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 text-slate-500 dark:text-zinc-400 rounded-lg transition-all active:scale-[0.95] flex items-center gap-1 text-xs font-medium" title="Send Behind Document Text"><Layers size={14} className="text-slate-400 dark:text-zinc-500"/> Behind</button>
+            <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'front')} className="px-1.5 py-1 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 text-violet-600 dark:text-violet-400 rounded-lg transition-all active:scale-[0.95] flex items-center gap-1 text-xs font-medium" title="Bring in Front of Document Text"><Layers size={14} className="text-violet-600 dark:text-violet-400"/> In Front</button>
+          </div>
+
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+
+          <button onClick={() => { protectCurrentElement('block'); setImageToolbar({ open: false, node: null, top: 0, left: 0 }); }} className="px-2 py-1 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 rounded-lg transition-all active:scale-[0.95] flex items-center gap-1 text-xs font-semibold" title="Redact/Protect Image"><EyeOff size={14}/> Redact</button>
+
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+
           <div className="flex items-center gap-1.5 px-1">
-            <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Prefix:</span>
+            <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-wider">Prefix:</span>
             <select
               value={imageToolbar.node ? (imageToolbar.node.getAttribute('data-caption-prefix') || 'none') : 'none'}
               onChange={(e) => window.updateImageCaptionPrefix(imageToolbar.node, e.target.value)}
-              className="text-xs border border-slate-200 rounded-md bg-slate-50 hover:bg-slate-100 px-1.5 py-0.5 outline-none focus:border-violet-400 focus:bg-white cursor-pointer font-medium text-slate-700 transition-colors"
+              className="text-xs border border-slate-200 dark:border-zinc-700 rounded-lg bg-slate-50 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700 px-1.5 py-0.5 outline-none focus:border-violet-500 font-medium transition-colors"
             >
               <option value="none">None</option>
               <option value="figure">Figure X</option>
@@ -50681,286 +50793,336 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <option value="fig">Fig. X</option>
             </select>
           </div>
-          <div className="w-px h-4 bg-gray-200 mx-1"></div>
+
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+
           <div className="relative flex items-center">
-            <Sparkles size={14} className="absolute left-2 text-violet-500" />
-            <input type="text" placeholder="AI Command (e.g. resize, wrap left)" onKeyDown={(e) => { if(e.key === 'Enter') { window.applyAIImageCommand(imageToolbar.node, e.target.value); e.target.value = ''; } }} className="text-xs pl-7 pr-2 py-1 border border-violet-200 rounded-full w-48 focus:outline-none focus:ring-2 focus:ring-violet-400 bg-violet-50/50" />
+            <Sparkles size={14} className="absolute left-2.5 text-violet-500 pointer-events-none" />
+            <input type="text" placeholder="AI Command..." onKeyDown={(e) => { if(e.key === 'Enter') { window.applyAIImageCommand(imageToolbar.node, e.target.value); e.target.value = ''; } }} className="text-xs pl-7 pr-2 py-1 border border-violet-200 dark:border-violet-800/60 rounded-xl w-36 focus:w-48 focus:outline-none focus:ring-2 focus:ring-violet-500 bg-violet-50/50 dark:bg-violet-950/30 text-slate-800 dark:text-zinc-200 transition-all placeholder:text-slate-400 dark:placeholder:text-zinc-500" />
           </div>
         </div>
       )}
 
       {tableToolbar.open && (
-          <div
-            ref={tableToolbarRef}
-            className="fixed z-[290] flex items-center gap-1.5 p-1.5 bg-white/95 border border-[#e6e3fb] rounded-[14px] shadow-[0_12px_30px_-6px_rgba(76,29,149,0.15)] backdrop-blur-sm"
-            style={{
-              left: `${tableToolbar.left}px`,
-              top: `${tableToolbar.top}px`,
-              transform: 'translate(-50%, -100%)',
-              marginTop: '-8px'
-            }}
-            onMouseDown={(e) => {
+        <div
+          ref={tableToolbarRef}
+          className="fixed z-[290] flex items-center gap-1 p-1 bg-white/95 dark:bg-zinc-900/95 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-[0_4px_20px_-4px_rgba(15,23,42,0.08)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] backdrop-blur-md select-none"
+          style={{
+            left: `${tableToolbar.left}px`,
+            top:  `${tableToolbar.top}px`,
+            transform: tableToolbar._dragged ? 'none' : 'translate(-50%, -100%)'
+          }}
+          onMouseDown={(e) => {
+            if (!e.target.hasAttribute('data-drag-handle')) {
               e.preventDefault();
               e.stopPropagation();
-            }}
+            }
+          }}
+        >
+          {/* Drag grip */}
+          <div
+            data-drag-handle
+            onPointerDown={makeDragHandler(setTableToolbar, tableToolbarRef)}
+            className="flex items-center justify-center w-5 h-full cursor-grab active:cursor-grabbing text-slate-300 dark:text-zinc-600 hover:text-slate-400 dark:hover:text-zinc-400 transition-colors shrink-0 touch-none"
+            title="Drag to move"
           >
-            {/* Rows Group */}
-            <div className="flex items-center gap-0.5 border-r border-[#f0eefc] pr-1.5">
-              <button
-                type="button"
-                onClick={() => addRowAbove(tableToolbar.tableEl, tableToolbar.cellEl)}
-                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="10" rx="2"/>
-                  <line x1="3" y1="16" x2="21" y2="16"/>
-                  <path d="M12 2v6M9 5l3-3 3 3"/>
-                </svg>
-                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
-                  Insert Row Above
-                </span>
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => addRowBelow(tableToolbar.tableEl, tableToolbar.cellEl)}
-                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="10" rx="2"/>
-                  <line x1="3" y1="8" x2="21" y2="8"/>
-                  <path d="M12 21v-6M9 18l3 3 3-3"/>
-                </svg>
-                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
-                  Insert Row Below
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => deleteRow(tableToolbar.tableEl, tableToolbar.cellEl)}
-                className="group relative p-1.5 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-md transition-all duration-150 active:scale-90"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/>
-                  <line x1="3" y1="12" x2="21" y2="12"/>
-                  <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
-                  Delete Row
-                </span>
-              </button>
-            </div>
-
-            {/* Columns Group */}
-            <div className="flex items-center gap-0.5 border-r border-[#f0eefc] pr-1.5">
-              <button
-                type="button"
-                onClick={() => addColLeft(tableToolbar.tableEl, tableToolbar.cellEl)}
-                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="11" y="3" width="10" height="18" rx="2"/>
-                  <line x1="16" y1="3" x2="16" y2="21"/>
-                  <path d="M2 12h6M5 9l-3 3 3 3"/>
-                </svg>
-                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
-                  Insert Column Left
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => addColRight(tableToolbar.tableEl, tableToolbar.cellEl)}
-                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="10" height="18" rx="2"/>
-                  <line x1="8" y1="3" x2="8" y2="21"/>
-                  <path d="M22 12h-6M19 9l3 3-3 3"/>
-                </svg>
-                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
-                  Insert Column Right
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => deleteCol(tableToolbar.tableEl, tableToolbar.cellEl)}
-                className="group relative p-1.5 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-md transition-all duration-150 active:scale-90"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/>
-                  <line x1="12" y1="3" x2="12" y2="21"/>
-                  <line x1="12" y1="8" x2="12" y2="16" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
-                  Delete Column
-                </span>
-              </button>
-            </div>
-
-            {/* Sizing Group */}
-            <div className="flex items-center gap-0.5 border-r border-[#f0eefc] pr-1.5">
-              <button
-                type="button"
-                onClick={() => adjustColWidth(tableToolbar.tableEl, tableToolbar.cellEl, 20)}
-                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14M5 12l3-3M5 12l3 3M19 12l-3-3M19 12l-3 3"/>
-                </svg>
-                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
-                  Increase Width
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => adjustColWidth(tableToolbar.tableEl, tableToolbar.cellEl, -20)}
-                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 12H5M12 5l-3 3 3 3M12 19l-3-3 3-3"/>
-                </svg>
-                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
-                  Decrease Width
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => adjustRowHeight(tableToolbar.tableEl, tableToolbar.cellEl, 10)}
-                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 5v14M12 5l-3 3 3-3M12 19l-3-3 3 3"/>
-                </svg>
-                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
-                  Increase Height
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => adjustRowHeight(tableToolbar.tableEl, tableToolbar.cellEl, -10)}
-                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 19V5M5 12l3-3 3 3M19 12l-3-3 3 3"/>
-                </svg>
-                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
-                  Decrease Height
-                </span>
-              </button>
-            </div>
-
-            {/* Colors Picker */}
-            <div className="relative table-color-picker-container flex items-center border-r border-[#f0eefc] pr-1.5">
-              <button
-                type="button"
-                onClick={() => setTableColorPickerOpen(!tableColorPickerOpen)}
-                className={`p-1.5 hover:bg-violet-50 rounded-md transition-all duration-150 active:scale-90 ${tableColorPickerOpen ? 'bg-violet-100 text-violet-600' : 'text-slate-500 hover:text-violet-600'}`}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 14.7255 3.09032 17.1962 4.85857 19C5.36424 19.5108 5.61707 19.7662 5.61707 20C5.61707 20.4853 5.21443 21 4.71707 21C4.46747 21 4.22557 20.89 3.99307 20.76C3.01323 20.2114 2 19 2 12C2 5 7 2 12 2C17 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22Z"/>
-                  <circle cx="7.5" cy="10.5" r="1.5" fill="currentColor"/>
-                  <circle cx="11.5" cy="7.5" r="1.5" fill="currentColor"/>
-                  <circle cx="16.5" cy="9.5" r="1.5" fill="currentColor"/>
-                  <circle cx="15.5" cy="14.5" r="1.5" fill="currentColor"/>
-                </svg>
-              </button>
-              {tableColorPickerOpen && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-2.5 bg-white border border-[#e6e3fb] rounded-xl shadow-xl z-[300] min-w-[200px]">
-                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 px-1 text-left">Solid Colors</div>
-                  <div className="grid grid-cols-4 gap-1.5 mb-3">
-                    {['#ffffff', '#f8fafc', '#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#ccfbf1', '#dbeafe', '#e0e7ff', '#f3e8ff', '#fae8ff'].map(color => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => { changeCellColor(tableToolbar.cellEl, color); setTableColorPickerOpen(false); }}
-                        style={{ backgroundColor: color }}
-                        className="w-6 h-6 rounded border border-gray-200 hover:scale-110 hover:border-violet-400 transition-all active:scale-95 cursor-pointer"
-                        title={color}
-                      />
-                    ))}
-                  </div>
-                  
-                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 px-1 text-left">Gradients</div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {[
-                      'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
-                      'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-                      'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
-                      'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
-                      'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)',
-                      'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
-                    ].map(grad => (
-                      <button
-                        key={grad}
-                        type="button"
-                        onClick={() => { changeCellColor(tableToolbar.cellEl, grad); setTableColorPickerOpen(false); }}
-                        style={{ background: grad }}
-                        className="h-6 rounded border border-gray-200 hover:scale-110 hover:border-violet-400 transition-all active:scale-95 cursor-pointer"
-                        title="Gradient background"
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Redact Table Action */}
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="pointer-events-none">
+              <circle cx="2" cy="2"  r="1.2"/><circle cx="6" cy="2"  r="1.2"/>
+              <circle cx="2" cy="7"  r="1.2"/><circle cx="6" cy="7"  r="1.2"/>
+              <circle cx="2" cy="12" r="1.2"/><circle cx="6" cy="12" r="1.2"/>
+            </svg>
+          </div>
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+          {/* Rows Group */}
+          <div className="flex items-center gap-0.5">
             <button
               type="button"
-              onClick={() => {
-                protectCurrentElement('block');
-                setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
-              }}
-              className="group relative p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-md transition-all duration-150 active:scale-90"
+              onClick={() => addRowAbove(tableToolbar.tableEl, tableToolbar.cellEl)}
+              className="group relative w-7 h-7 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 rounded-lg transition-all active:scale-[0.95]"
             >
-              <EyeOff size={14} />
-              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
-                Redact Table
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="7" width="12" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M8 1V5M5.5 3.5L8 1L10.5 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Insert Row Above
               </span>
             </button>
 
-            {/* Trash Action */}
             <button
               type="button"
-              onClick={() => {
-                tableToolbar.tableEl.remove();
-                setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
-                syncEditorHtml();
-              }}
-              className="group relative p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-md transition-all duration-150 active:scale-90"
+              onClick={() => addRowBelow(tableToolbar.tableEl, tableToolbar.cellEl)}
+              className="group relative w-7 h-7 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 rounded-lg transition-all active:scale-[0.95]"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="3" width="12" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M8 15V11M5.5 12.5L8 15L10.5 12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
-                Delete Table
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Insert Row Below
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => deleteRow(tableToolbar.tableEl, tableToolbar.cellEl)}
+              className="group relative w-7 h-7 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 rounded-lg transition-all active:scale-[0.95]"
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="4" width="12" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M5 8H11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Delete Row
               </span>
             </button>
           </div>
-        )}
+
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+
+          {/* Columns Group */}
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => addColLeft(tableToolbar.tableEl, tableToolbar.cellEl)}
+              className="group relative w-7 h-7 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 rounded-lg transition-all active:scale-[0.95]"
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="7" y="2" width="6" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M1 8H5M3.5 5.5L1 8L3.5 10.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Insert Column Left
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => addColRight(tableToolbar.tableEl, tableToolbar.cellEl)}
+              className="group relative w-7 h-7 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 rounded-lg transition-all active:scale-[0.95]"
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="2" width="6" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M15 8H11M12.5 5.5L15 8L12.5 10.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Insert Column Right
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => deleteCol(tableToolbar.tableEl, tableToolbar.cellEl)}
+              className="group relative w-7 h-7 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 rounded-lg transition-all active:scale-[0.95]"
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="2" width="8" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M8 5V11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Delete Column
+              </span>
+            </button>
+          </div>
+
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+
+          {/* Sizing Group */}
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => adjustColWidth(tableToolbar.tableEl, tableToolbar.cellEl, 20)}
+              className="group relative w-7 h-7 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 rounded-lg transition-all active:scale-[0.95]"
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 3V13M14 3V13" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                <path d="M4 8H12M6 6L4 8L6 10M10 6L12 8L10 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Increase Column Width
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => adjustColWidth(tableToolbar.tableEl, tableToolbar.cellEl, -20)}
+              className="group relative w-7 h-7 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 rounded-lg transition-all active:scale-[0.95]"
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 3V13M14 3V13" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                <path d="M4 8H12M6 6L8 8L6 10M10 6L8 8L10 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Decrease Column Width
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => adjustRowHeight(tableToolbar.tableEl, tableToolbar.cellEl, 10)}
+              className="group relative w-7 h-7 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 rounded-lg transition-all active:scale-[0.95]"
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 2H13M3 14H13" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                <path d="M8 4V12M6 6L8 4L10 6M6 10L8 12L10 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Increase Row Height
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => adjustRowHeight(tableToolbar.tableEl, tableToolbar.cellEl, -10)}
+              className="group relative w-7 h-7 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 rounded-lg transition-all active:scale-[0.95]"
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 2H13M3 14H13" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                <path d="M8 4V12M6 6L8 8L10 6M6 10L8 8L10 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Decrease Row Height
+              </span>
+            </button>
+          </div>
+
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+
+          {/* Cell Fill Color Picker */}
+          <div className="relative table-color-picker-container flex items-center">
+            <button
+              type="button"
+              onClick={() => setTableColorPickerOpen(!tableColorPickerOpen)}
+              className={`group relative w-7 h-7 flex items-center justify-center rounded-lg transition-all active:scale-[0.95] ${
+                tableColorPickerOpen 
+                  ? 'bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300' 
+                  : 'text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40'
+              }`}
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2.5" y="2.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M2.5 9.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+                <circle cx="10" cy="6" r="1.25" fill="#8b5cf6" />
+              </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Cell Fill Color
+              </span>
+            </button>
+
+            {tableColorPickerOpen && (
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-2.5 bg-white/95 dark:bg-zinc-900/95 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-xl backdrop-blur-md z-[300] min-w-[200px]">
+                <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5 px-1 text-left">Solid Colors</div>
+                <div className="grid grid-cols-4 gap-1.5 mb-3">
+                  {['#ffffff', '#f8fafc', '#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#ccfbf1', '#dbeafe', '#e0e7ff', '#f3e8ff', '#fae8ff'].map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => { changeCellColor(tableToolbar.cellEl, color); setTableColorPickerOpen(false); }}
+                      style={{ backgroundColor: color }}
+                      className="w-6 h-6 rounded border border-slate-200 dark:border-zinc-700 hover:scale-110 hover:border-violet-500 transition-all active:scale-95 cursor-pointer"
+                      title={color}
+                    />
+                  ))}
+                </div>
+                
+                <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5 px-1 text-left">Gradients</div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
+                    'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                    'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+                    'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+                    'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)',
+                    'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
+                  ].map(grad => (
+                    <button
+                      key={grad}
+                      type="button"
+                      onClick={() => { changeCellColor(tableToolbar.cellEl, grad); setTableColorPickerOpen(false); }}
+                      style={{ background: grad }}
+                      className="h-6 rounded border border-slate-200 dark:border-zinc-700 hover:scale-110 hover:border-violet-500 transition-all active:scale-95 cursor-pointer"
+                      title="Gradient background"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+
+          {/* Redact Action */}
+          <button
+            type="button"
+            onClick={() => {
+              protectCurrentElement('block');
+              setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
+            }}
+            className="group relative w-7 h-7 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 rounded-lg transition-all active:scale-[0.95]"
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1.5 8C2.8 4.8 5.2 3 8 3C10.8 3 13.2 4.8 14.5 8C13.2 11.2 10.8 13 8 13C5.2 13 2.8 11.2 1.5 8Z" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M2 2L14 14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+            </svg>
+            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+              Redact Table
+            </span>
+          </button>
+
+          {/* Trash Action */}
+          <button
+            type="button"
+            onClick={() => {
+              tableToolbar.tableEl.remove();
+              setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
+              syncEditorHtml();
+            }}
+            className="group relative w-7 h-7 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 rounded-lg transition-all active:scale-[0.95]"
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2.5 4H13.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <path d="M5.5 4V2.5C5.5 2.22 5.72 2 6 2H10C10.28 2 10.5 2.22 10.5 2.5V4" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M4 4V13.5C4 13.78 4.22 14 4.5 14H11.5C11.78 14 12 13.78 12 13.5V4" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M6.5 7V11M9.5 7V11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+              Delete Table
+            </span>
+          </button>
+        </div>
+      )}
 
       {shapeToolbar.open && (
         <div
-          className="shape-toolbar-container absolute z-[250] bg-white/95 border border-[#e6e3fb] rounded-xl shadow-xl p-1.5 flex gap-1.5 items-center backdrop-blur-sm"
+          className="shape-toolbar-container fixed z-[290] bg-white/95 dark:bg-zinc-900/95 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-[0_4px_20px_-4px_rgba(15,23,42,0.08)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] p-1 flex gap-1 items-center backdrop-blur-md select-none"
           style={{
-            top: shapeToolbar.top,
+            top:  shapeToolbar.top,
             left: shapeToolbar.left,
-            transform: 'translate(-50%, -20%)'
+            transform: shapeToolbar._dragged ? 'none' : 'translate(-50%, -100%)'
           }}
           onMouseDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
+            if (!e.target.hasAttribute('data-drag-handle')) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
           }}
         >
+          {/* Drag grip */}
+          <div
+            data-drag-handle
+            onPointerDown={makeDragHandler(setShapeToolbar)}
+            className="flex items-center justify-center w-5 h-full cursor-grab active:cursor-grabbing text-slate-300 dark:text-zinc-600 hover:text-slate-400 dark:hover:text-zinc-400 transition-colors shrink-0 touch-none"
+            title="Drag to move"
+          >
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="pointer-events-none">
+              <circle cx="2" cy="2"  r="1.2"/><circle cx="6" cy="2"  r="1.2"/>
+              <circle cx="2" cy="7"  r="1.2"/><circle cx="6" cy="7"  r="1.2"/>
+              <circle cx="2" cy="12" r="1.2"/><circle cx="6" cy="12" r="1.2"/>
+            </svg>
+          </div>
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
           {/* Shape type selector group */}
-          <div className="flex items-center gap-0.5 border-r border-[#f0eefc] pr-1.5">
+          <div className="flex items-center gap-0.5">
             {['rectangle', 'circle', 'triangle', 'diamond'].map(type => {
               const active = shapeToolbar.containerId && (() => {
                 const el = document.getElementById(shapeToolbar.containerId);
@@ -50973,16 +51135,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   key={type}
                   type="button"
                   onClick={() => window.changeShapeType(shapeToolbar.containerId, type)}
-                  className={`px-2 py-1 text-xs font-semibold rounded-md transition-all active:scale-95 ${active ? 'bg-violet-600 text-white shadow-[0_8px_30px_rgba(124,58,237,0.06)]' : 'text-slate-600 hover:bg-slate-50'}`}
+                  className={`px-2 py-1 text-xs font-medium rounded-lg transition-all active:scale-[0.95] capitalize ${
+                    active 
+                      ? 'bg-violet-600 text-white shadow-sm font-semibold' 
+                      : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60'
+                  }`}
                 >
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                  {type}
                 </button>
               );
             })}
           </div>
 
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+
           {/* Background color picker */}
-          <div className="relative shape-color-menu-container flex items-center border-r border-[#f0eefc] pr-1.5">
+          <div className="relative shape-color-menu-container flex items-center">
             <button
               type="button"
               onClick={() => {
@@ -50992,19 +51160,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   containerId: shapeToolbar.containerId
                 }));
               }}
-              className={`p-1.5 hover:bg-violet-50 rounded-md transition-all duration-150 active:scale-90 ${shapeColorMenu.open ? 'bg-violet-100 text-violet-600' : 'text-slate-500 hover:text-violet-600'}`}
-              title="Shape Color"
+              className={`group relative w-7 h-7 flex items-center justify-center rounded-lg transition-all active:scale-[0.95] ${
+                shapeColorMenu.open 
+                  ? 'bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300' 
+                  : 'text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40'
+              }`}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 14.7255 3.09032 17.1962 4.85857 19C5.36424 19.5108 5.61707 19.7662 5.61707 20C5.61707 20.4853 5.21443 21 4.71707 21C4.46747 21 4.22557 20.89 3.99307 20.76C3.01323 20.2114 2 19 2 12C2 5 7 2 12 2C17 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22Z"/>
-                <circle cx="7.5" cy="10.5" r="1.5" fill="currentColor"/>
-                <circle cx="11.5" cy="7.5" r="1.5" fill="currentColor"/>
-                <circle cx="16.5" cy="9.5" r="1.5" fill="currentColor"/>
-                <circle cx="15.5" cy="14.5" r="1.5" fill="currentColor"/>
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 9.6353 2.65357 11.118 3.71514 12.2C4.01855 12.5065 4.17025 12.6597 4.17025 12.8C4.17025 13.0912 3.92866 13.4 3.63025 13.4C3.48049 13.4 3.33535 13.334 3.19584 13.256" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                <circle cx="5" cy="6" r="1" fill="#8b5cf6" />
+                <circle cx="8" cy="4.5" r="1" fill="#3b82f6" />
+                <circle cx="11" cy="6" r="1" fill="#10b981" />
+                <circle cx="10.5" cy="9.5" r="1" fill="#f59e0b" />
               </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Shape Color
+              </span>
             </button>
             {shapeColorMenu.open && (
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-2 bg-white border border-[#e6e3fb] rounded-xl shadow-xl z-[300] flex gap-1.5 items-center">
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-2 bg-white/95 dark:bg-zinc-900/95 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-xl backdrop-blur-md z-[300] flex gap-1.5 items-center">
                 {['lavender', 'red', 'yellow', 'green', 'blue', 'purple'].map(color => {
                   const colorsHex = {
                     lavender: '#e0e7ff',
@@ -51023,7 +51197,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setShapeColorMenu({ open: false, top: 0, left: 0, containerId: null });
                       }}
                       style={{ backgroundColor: colorsHex[color] }}
-                      className="w-5 h-5 rounded-full border border-gray-200 hover:scale-110 hover:border-violet-500 transition-all active:scale-90 cursor-pointer"
+                      className="w-5 h-5 rounded-full border border-slate-200 dark:border-zinc-700 hover:scale-110 hover:border-violet-500 transition-all active:scale-90 cursor-pointer"
                       title={color}
                     />
                   );
@@ -51033,7 +51207,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
 
           {/* Border Settings dropdown */}
-          <div className="relative shape-border-menu-container flex items-center border-r border-[#f0eefc] pr-1.5">
+          <div className="relative shape-border-menu-container flex items-center">
             <button
               type="button"
               onClick={() => {
@@ -51043,27 +51217,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   containerId: shapeToolbar.containerId
                 }));
               }}
-              className={`p-1.5 hover:bg-violet-50 rounded-md transition-all duration-150 active:scale-90 ${shapeBorderMenu.open ? 'bg-violet-100 text-violet-600' : 'text-slate-500 hover:text-violet-600'}`}
-              title="Shape Border"
+              className={`group relative w-7 h-7 flex items-center justify-center rounded-lg transition-all active:scale-[0.95] ${
+                shapeBorderMenu.open 
+                  ? 'bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300' 
+                  : 'text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40'
+              }`}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" strokeDasharray="4 2"/>
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2.5" y="2.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.2" strokeDasharray="3 2" />
               </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Shape Border
+              </span>
             </button>
             {shapeBorderMenu.open && (() => {
               const el = document.getElementById(shapeToolbar.containerId);
               const state = el ? JSON.parse(el.getAttribute('data-shape-data') || '{}') : {};
               return (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-2.5 bg-white border border-[#e6e3fb] rounded-xl shadow-xl z-[300] min-w-[150px] flex flex-col gap-2">
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-2.5 bg-white/95 dark:bg-zinc-900/95 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-xl backdrop-blur-md z-[300] min-w-[150px] flex flex-col gap-2">
                   <div>
-                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 text-left">Weight</div>
+                    <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1 text-left">Weight</div>
                     <select
                       value={state.weight || 3}
                       onChange={(e) => {
                         window.changeShapeWeight(shapeToolbar.containerId, e.target.value);
                         setShapeBorderMenu({ open: false, top: 0, left: 0, containerId: null });
                       }}
-                      className="w-full text-xs border border-slate-200 rounded p-1 outline-none bg-slate-50"
+                      className="w-full text-xs border border-slate-200 dark:border-zinc-700 rounded-lg p-1 outline-none bg-slate-50 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200"
                     >
                       <option value="1">1px</option>
                       <option value="2">2px</option>
@@ -51073,14 +51253,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </select>
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 text-left">Style</div>
+                    <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1 text-left">Style</div>
                     <select
                       value={state.dash || 'none'}
                       onChange={(e) => {
                         window.changeShapeDash(shapeToolbar.containerId, e.target.value);
                         setShapeBorderMenu({ open: false, top: 0, left: 0, containerId: null });
                       }}
-                      className="w-full text-xs border border-slate-200 rounded p-1 outline-none bg-slate-50"
+                      className="w-full text-xs border border-slate-200 dark:border-zinc-700 rounded-lg p-1 outline-none bg-slate-50 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200"
                     >
                       <option value="none">Solid</option>
                       <option value="5,5">Dashed</option>
@@ -51092,8 +51272,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
             })()}
           </div>
 
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+
           {/* Effects Buttons */}
-          <div className="flex items-center gap-0.5 border-r border-[#f0eefc] pr-1.5">
+          <div className="flex items-center gap-0.5">
             {['shadow', 'softEdges', 'reflection'].map(effect => {
               const el = document.getElementById(shapeToolbar.containerId);
               const state = el ? JSON.parse(el.getAttribute('data-shape-data') || '{}') : {};
@@ -51104,7 +51286,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   key={effect}
                   type="button"
                   onClick={() => window.toggleShapeEffect(shapeToolbar.containerId, effect)}
-                  className={`px-1.5 py-1 text-[11px] font-semibold rounded-md transition-all active:scale-95 whitespace-nowrap ${active ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:bg-slate-50'}`}
+                  className={`px-2 py-1 text-[11px] font-medium rounded-lg transition-all active:scale-[0.95] whitespace-nowrap ${
+                    active 
+                      ? 'bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 font-semibold' 
+                      : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/70 dark:hover:bg-zinc-800/60'
+                  }`}
                 >
                   {labels[effect]}
                 </button>
@@ -51112,8 +51298,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
             })}
           </div>
 
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+
           {/* Text wrapping (Layout) */}
-          <div className="flex items-center gap-0.5 border-r border-[#f0eefc] pr-1.5">
+          <div className="flex items-center gap-0.5">
             <select
               value={(() => {
                 const el = document.getElementById(shapeToolbar.containerId);
@@ -51122,7 +51310,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 return state.wrapText || 'inline';
               })()}
               onChange={(e) => window.changeShapeWrap(shapeToolbar.containerId, e.target.value)}
-              className="text-[11px] border border-slate-200 rounded bg-slate-50 px-1 py-0.5 outline-none font-medium cursor-pointer"
+              className="text-[11px] border border-slate-200 dark:border-zinc-700 rounded-lg bg-slate-50 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 px-1.5 py-0.5 outline-none font-medium cursor-pointer"
             >
               <option value="inline">Inline</option>
               <option value="wrap-left">Wrap Left</option>
@@ -51131,6 +51319,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <option value="front">In Front</option>
             </select>
           </div>
+
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
 
           {/* Delete Button */}
           <button
@@ -51143,13 +51333,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 setDocBodyHtml(blankBodyRef.current.innerHTML);
               }
             }}
-            className="p-1 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-md transition-all duration-150 active:scale-90"
-            title="Delete Shape"
+            className="group relative w-7 h-7 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 rounded-lg transition-all active:scale-[0.95]"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2.5 4H13.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <path d="M5.5 4V2.5C5.5 2.22 5.72 2 6 2H10C10.28 2 10.5 2.22 10.5 2.5V4" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M4 4V13.5C4 13.78 4.22 14 4.5 14H11.5C11.78 14 12 13.78 12 13.5V4" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M6.5 7V11M9.5 7V11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
+            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+              Delete Shape
+            </span>
           </button>
         </div>
       )}
