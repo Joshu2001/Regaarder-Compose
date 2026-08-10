@@ -144,6 +144,14 @@ const ensureHtmlList = (rawOutput, type) => {
 const AI_NATIVE_PLACEHOLDER = 'Create at the speed of thought.';
 const UNTITLED_WHITEBOARD_LABEL = 'Untitled whiteboard';
 const SAVED_DRAFT_LABEL = 'Saved Drafts';
+const REGAARDER_WORKSPACE_FILES = [
+  { id: 'rw-1', name: 'Annual_Strategy_2026.pdf', type: 'pdf', size: '2.4 MB' },
+  { id: 'rw-2', name: 'Q2_Performance_Report.docx', type: 'document', size: '890 KB' },
+  { id: 'rw-3', name: 'Financial_Forecast_2026.xlsx', type: 'spreadsheet', size: '1.5 MB' },
+  { id: 'rw-4', name: 'Brand_Guidelines.pdf', type: 'pdf', size: '3.1 MB' },
+  { id: 'rw-5', name: 'Product_Roadmap_Q3.pptx', type: 'presentation', size: '4.2 MB' },
+  { id: 'rw-6', name: 'Customer_Feedback_Log.csv', type: 'spreadsheet', size: '320 KB' }
+];
 const ENTERPRISE_PAGE_WIDTH_PX = 794;
 const ENTERPRISE_PAGE_HEIGHT_PX = 1123;
 const MANAGEEN_BOARD_DEFAULT_COLUMNS = [
@@ -9997,6 +10005,12 @@ export default function App() {
     { id: '2', name: 'Q3_Financial_Summary.xlsx', type: 'spreadsheet', size: '450 KB' },
     { id: '3', name: 'Market_Research_Notes.txt', type: 'text', size: '28 KB' }
   ]);
+  const [isAddSourceMenuOpen, setIsAddSourceMenuOpen] = useState(false);
+  const [isChooseRegaarderOpen, setIsChooseRegaarderOpen] = useState(false);
+  const [addSourceAnchorRect, setAddSourceAnchorRect] = useState(null);
+
+  const [isMoreMaterialsOpen, setIsMoreMaterialsOpen] = useState(false);
+  const [moreMaterialsAnchorRect, setMoreMaterialsAnchorRect] = useState(null);
   const [docReadabilityScore, setDocReadabilityScore] = useState(94);
   const [docWordCount, setDocWordCount] = useState(1420);
   const [docCharCount, setDocCharCount] = useState(8950);
@@ -49820,120 +49834,332 @@ if (productMode === 'deck' || productMode === 'sheets') {
           {docToolbarTab === 'Context' && (
             /* Context Sub-toolbar: Source Material Management for AI */
             <div className="w-full flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-                <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 shrink-0">Context Sources:</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.onchange = (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const ext = file.name.split('.').pop().toLowerCase();
-                        let type = 'document';
-                        if (['xlsx', 'xls', 'csv', 'ods'].includes(ext)) type = 'spreadsheet';
-                        else if (['pptx', 'ppt', 'key'].includes(ext)) type = 'presentation';
-                        else if (['pdf'].includes(ext)) type = 'pdf';
-                        else if (['txt', 'md', 'doc', 'docx'].includes(ext)) type = 'document';
+              <div className="flex items-center gap-2 min-w-0 py-1">
+                <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 shrink-0 select-none">Context Sources:</span>
+                <div className="shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setAddSourceAnchorRect(rect);
+                      setIsAddSourceMenuOpen((prev) => !prev);
+                      setIsChooseRegaarderOpen(false);
+                    }}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer select-none ${
+                      isAddSourceMenuOpen
+                        ? 'bg-violet-100 dark:bg-violet-900/60 text-violet-800 dark:text-violet-200 border border-violet-300 dark:border-violet-700'
+                        : 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 border border-violet-200/60 dark:border-violet-800/40'
+                    }`}
+                  >
+                    <Plus size={13} /> Add Source File <ChevronDown size={11} className={`transition-transform duration-150 ${isAddSourceMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
 
-                        setDocContextMaterials((prev) => [...prev, { id: String(Date.now()), name: file.name, type, size: `${Math.round(file.size/1024)} KB` }]);
-                        showToast(`Added ${file.name} to AI Context`);
+                  {/* Fixed Anchored Popover Modal matching TableGridPickerModal in Image 2 */}
+                  {isAddSourceMenuOpen && addSourceAnchorRect && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-[9998]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsAddSourceMenuOpen(false);
+                          setIsChooseRegaarderOpen(false);
+                        }}
+                      />
+                      <div
+                        className="fixed z-[9999] w-64 rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 shadow-[0_12px_40px_rgb(0,0,0,0.14)] backdrop-blur-xl p-1.5 text-xs font-medium select-none animate-in fade-in zoom-in-95 duration-100"
+                        style={{
+                          top: addSourceAnchorRect.bottom + 8,
+                          left: Math.max(8, Math.min(addSourceAnchorRect.left, window.innerWidth - 270))
+                        }}
+                      >
+                        <div className="px-2.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                          Add source
+                        </div>
+                        
+                        {/* Option 1: Upload file (Supports Batch Multi-File Upload) */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.multiple = true;
+                            input.onchange = (ev) => {
+                              const files = Array.from(ev.target.files || []);
+                              if (files.length > 0) {
+                                const newMaterials = files.map((file, idx) => {
+                                  const ext = file.name.split('.').pop().toLowerCase();
+                                  let type = 'document';
+                                  if (['xlsx', 'xls', 'csv', 'ods'].includes(ext)) type = 'spreadsheet';
+                                  else if (['pptx', 'ppt', 'key'].includes(ext)) type = 'presentation';
+                                  else if (['pdf'].includes(ext)) type = 'pdf';
+                                  else if (['txt', 'md', 'doc', 'docx'].includes(ext)) type = 'document';
+
+                                  return {
+                                    id: String(Date.now() + idx),
+                                    name: file.name,
+                                    type,
+                                    size: `${Math.round(file.size / 1024)} KB`
+                                  };
+                                });
+
+                                setDocContextMaterials((prev) => [...prev, ...newMaterials]);
+                                showToast(files.length === 1 ? `Added ${files[0].name} to AI Context` : `Added ${files.length} files to AI Context`);
+                              }
+                            };
+                            input.click();
+                            setIsAddSourceMenuOpen(false);
+                            setIsChooseRegaarderOpen(false);
+                          }}
+                          className="group w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Upload size={14} className="text-slate-500 dark:text-zinc-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" />
+                            <span>Upload file</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300 font-sans transition-colors">↑</span>
+                        </button>
+
+                        {/* Option 2: Choose from Regaarder */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsChooseRegaarderOpen((prev) => !prev);
+                          }}
+                          className={`group w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+                            isChooseRegaarderOpen
+                              ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-semibold'
+                              : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <FolderOpen size={14} className={`transition-colors ${isChooseRegaarderOpen ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-zinc-400 group-hover:text-violet-600 dark:group-hover:text-violet-400'}`} />
+                            <span>Choose from Regaarder</span>
+                          </div>
+                          <ChevronRight size={12} className={`transition-transform duration-150 ${isChooseRegaarderOpen ? 'rotate-90 text-violet-600 dark:text-violet-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300'}`} />
+                        </button>
+
+                        {/* Inline Workspace File Picker */}
+                        {isChooseRegaarderOpen && (
+                          <div className="mt-1 pt-1.5 border-t border-slate-100 dark:border-zinc-800 space-y-0.5 max-h-48 overflow-y-auto thin-scrollbar">
+                            <div className="px-2.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                              Regaarder Workspace Files
+                            </div>
+                            {REGAARDER_WORKSPACE_FILES.map((rwFile) => {
+                              const isAdded = docContextMaterials.some((m) => m.name === rwFile.name);
+                              return (
+                                <button
+                                  key={rwFile.id}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isAdded) {
+                                      showToast(`"${rwFile.name}" is already in Context`);
+                                    } else {
+                                      setDocContextMaterials((prev) => [...prev, { id: String(Date.now()), name: rwFile.name, type: rwFile.type, size: rwFile.size }]);
+                                      showToast(`Added ${rwFile.name} to AI Context`);
+                                    }
+                                  }}
+                                  className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                                    isAdded
+                                      ? 'bg-slate-50 dark:bg-zinc-800/40 text-slate-400 dark:text-zinc-500'
+                                      : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 font-medium'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 truncate">
+                                    <FileText size={13} className={isAdded ? 'text-slate-400' : 'text-violet-500'} />
+                                    <span className="truncate">{rwFile.name}</span>
+                                  </div>
+                                  {isAdded ? (
+                                    <Check size={12} className="text-emerald-500 shrink-0" />
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400 shrink-0">{rwFile.size}</span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Divider line partitioning local/workspace sources from future integrations */}
+                        <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Progressive Overflow Model Chips List ([File 1] [File 2] [File 3] [+N more ▾]) */}
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0">
+                  {docContextMaterials.slice(0, 3).map((mat) => {
+                    const nameLower = (mat.name || '').toLowerCase();
+                    const typeLower = (mat.type || '').toLowerCase();
+
+                    let category = 'document';
+                    if (typeLower === 'spreadsheet' || nameLower.endsWith('.xlsx') || nameLower.endsWith('.xls') || nameLower.endsWith('.csv') || nameLower.endsWith('.ods')) {
+                      category = 'spreadsheet';
+                    } else if (typeLower === 'presentation' || nameLower.endsWith('.pptx') || nameLower.endsWith('.ppt') || nameLower.endsWith('.key')) {
+                      category = 'presentation';
+                    } else if (typeLower === 'pdf' || nameLower.endsWith('.pdf')) {
+                      category = 'pdf';
+                    }
+
+                    let extLabel = (mat.name.split('.').pop() || mat.type || 'FILE').toUpperCase();
+                    if (extLabel.length > 4) {
+                      extLabel = category === 'spreadsheet' ? 'XLS' : category === 'presentation' ? 'PPT' : category === 'pdf' ? 'PDF' : 'DOC';
+                    }
+
+                    const fileBadges = {
+                      spreadsheet: {
+                        bgHex: '#059669', // Emerald Green for Sheets
+                        svg: (
+                          <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                            <path d="M2.5 6.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+                            <path d="M2.5 10.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+                            <path d="M6.5 6.5V13.5" stroke="currentColor" strokeWidth="1.2" />
+                          </svg>
+                        )
+                      },
+                      presentation: {
+                        bgHex: '#D97706', // Amber Orange for Decks
+                        svg: (
+                          <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="2" y="2.5" width="12" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                            <path d="M5.5 14L8 11L10.5 14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )
+                      },
+                      pdf: {
+                        bgHex: '#DC2626', // Rose Red for PDF
+                        svg: (
+                          <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3.5 2H10L13.5 5.5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+                            <path d="M9.5 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+                          </svg>
+                        )
+                      },
+                      document: {
+                        bgHex: '#7C3AED', // Violet Purple for Docs/Text
+                        svg: (
+                          <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3.5 2H10.5L13.5 5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+                            <path d="M10 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+                          </svg>
+                        )
                       }
                     };
-                    input.click();
-                  }}
-                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 border border-violet-200/60 dark:border-violet-800/40 flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
-                >
-                  <Plus size={13} /> Add Source File
-                </button>
 
-                {docContextMaterials.map((mat) => {
-                  const nameLower = (mat.name || '').toLowerCase();
-                  const typeLower = (mat.type || '').toLowerCase();
+                    const badge = fileBadges[category];
 
-                  let category = 'document';
-                  if (typeLower === 'spreadsheet' || nameLower.endsWith('.xlsx') || nameLower.endsWith('.xls') || nameLower.endsWith('.csv') || nameLower.endsWith('.ods')) {
-                    category = 'spreadsheet';
-                  } else if (typeLower === 'presentation' || nameLower.endsWith('.pptx') || nameLower.endsWith('.ppt') || nameLower.endsWith('.key')) {
-                    category = 'presentation';
-                  } else if (typeLower === 'pdf' || nameLower.endsWith('.pdf')) {
-                    category = 'pdf';
-                  }
+                    return (
+                      <div key={mat.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 select-none">
+                        <span
+                          className="w-[18px] h-[20px] rounded-[4px] flex flex-col items-center justify-center shrink-0 leading-none select-none text-white shadow-2xs"
+                          style={{ backgroundColor: badge.bgHex }}
+                        >
+                          <span className="text-[6px] font-black tracking-tighter uppercase mb-[1px] text-white leading-none">{extLabel}</span>
+                          {badge.svg}
+                        </span>
+                        <span className="max-w-[130px] truncate">{mat.name}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">({mat.size})</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDocContextMaterials((prev) => prev.filter((m) => m.id !== mat.id));
+                            showToast(`Removed ${mat.name}`);
+                          }}
+                          className="ml-0.5 text-slate-400 hover:text-rose-500 rounded p-0.5 transition-colors cursor-pointer"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    );
+                  })}
 
-                  let extLabel = (mat.name.split('.').pop() || mat.type || 'FILE').toUpperCase();
-                  if (extLabel.length > 4) {
-                    extLabel = category === 'spreadsheet' ? 'XLS' : category === 'presentation' ? 'PPT' : category === 'pdf' ? 'PDF' : 'DOC';
-                  }
-
-                  const fileBadges = {
-                    spreadsheet: {
-                      bgHex: '#059669', // Emerald Green for Sheets
-                      svg: (
-                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-                          <path d="M2.5 6.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-                          <path d="M2.5 10.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-                          <path d="M6.5 6.5V13.5" stroke="currentColor" strokeWidth="1.2" />
-                        </svg>
-                      )
-                    },
-                    presentation: {
-                      bgHex: '#D97706', // Amber Orange for Decks
-                      svg: (
-                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <rect x="2" y="2.5" width="12" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-                          <path d="M5.5 14L8 11L10.5 14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )
-                    },
-                    pdf: {
-                      bgHex: '#DC2626', // Rose Red for PDF
-                      svg: (
-                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M3.5 2H10L13.5 5.5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
-                          <path d="M9.5 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-                        </svg>
-                      )
-                    },
-                    document: {
-                      bgHex: '#7C3AED', // Violet Purple for Docs/Text
-                      svg: (
-                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M3.5 2H10.5L13.5 5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
-                          <path d="M10 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-                        </svg>
-                      )
-                    }
-                  };
-
-                  const badge = fileBadges[category];
-
-                  return (
-                    <div key={mat.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 select-none">
-                      {/* Miniature SVG Icon Badge replacing the emoji (same size as emoji) */}
-                      <span
-                        className="w-[18px] h-[20px] rounded-[4px] flex flex-col items-center justify-center shrink-0 leading-none select-none text-white shadow-2xs"
-                        style={{ backgroundColor: badge.bgHex }}
-                      >
-                        <span className="text-[6px] font-black tracking-tighter uppercase mb-[1px] text-white leading-none">{extLabel}</span>
-                        {badge.svg}
-                      </span>
-                      <span className="max-w-[140px] truncate">{mat.name}</span>
-                      <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">({mat.size})</span>
+                  {/* Progressive Overflow Button: +N more ▾ */}
+                  {docContextMaterials.length > 3 && (
+                    <div className="shrink-0">
                       <button
                         type="button"
-                        onClick={() => {
-                          setDocContextMaterials((prev) => prev.filter((m) => m.id !== mat.id));
-                          showToast(`Removed ${mat.name}`);
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setMoreMaterialsAnchorRect(rect);
+                          setIsMoreMaterialsOpen((prev) => !prev);
                         }}
-                        className="ml-0.5 text-slate-400 hover:text-rose-500 rounded p-0.5 transition-colors cursor-pointer"
+                        className={`px-2.5 py-1 text-xs font-semibold rounded-lg flex items-center gap-1 shrink-0 transition-colors cursor-pointer select-none ${
+                          isMoreMaterialsOpen
+                            ? 'bg-violet-100 dark:bg-violet-900/60 text-violet-800 dark:text-violet-200 border border-violet-300 dark:border-violet-700'
+                            : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/80 dark:border-zinc-700/80'
+                        }`}
                       >
-                        <X size={12} />
+                        <span>+{docContextMaterials.length - 3} more</span>
+                        <ChevronDown size={11} className={`transition-transform duration-150 ${isMoreMaterialsOpen ? 'rotate-180' : ''}`} />
                       </button>
+
+                      {isMoreMaterialsOpen && moreMaterialsAnchorRect && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-[9998]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsMoreMaterialsOpen(false);
+                            }}
+                          />
+                          <div
+                            className="fixed z-[9999] w-72 max-h-64 overflow-y-auto thin-scrollbar rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 shadow-[0_12px_40px_rgb(0,0,0,0.14)] backdrop-blur-xl p-2 text-xs font-medium select-none animate-in fade-in zoom-in-95 duration-100"
+                            style={{
+                              top: moreMaterialsAnchorRect.bottom + 8,
+                              left: Math.max(8, Math.min(moreMaterialsAnchorRect.left, window.innerWidth - 300))
+                            }}
+                          >
+                            <div className="flex items-center justify-between px-1.5 pb-1.5 mb-1.5 border-b border-slate-100 dark:border-zinc-800">
+                              <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                                All Context Sources ({docContextMaterials.length})
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDocContextMaterials([]);
+                                  setIsMoreMaterialsOpen(false);
+                                  showToast('Cleared all AI context sources');
+                                }}
+                                className="text-[10px] font-semibold text-rose-500 hover:text-rose-600 transition-colors cursor-pointer"
+                              >
+                                Clear All
+                              </button>
+                            </div>
+                            <div className="space-y-1">
+                              {docContextMaterials.map((mat) => (
+                                <div key={mat.id} className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <FileText size={13} className="text-violet-500 shrink-0" />
+                                    <span className="truncate text-slate-700 dark:text-zinc-200 font-medium">{mat.name}</span>
+                                    <span className="text-[10px] text-slate-400 shrink-0">({mat.size})</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDocContextMaterials((prev) => prev.filter((m) => m.id !== mat.id));
+                                      showToast(`Removed ${mat.name}`);
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-rose-500 transition-colors rounded cursor-pointer"
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
-                  );
-                })}
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2 shrink-0 border-l border-slate-200/60 dark:border-zinc-800 pl-3">
                 <button
