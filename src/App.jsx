@@ -6048,6 +6048,7 @@ export default function App() {
   const [headerTextEditing, setHeaderTextEditing] = useState(false);
   const [docState, setDocState] = useState('draft');
   const [docStateDropdownOpen, setDocStateDropdownOpen] = useState(false);
+  const [docStateAnchorRect, setDocStateAnchorRect] = useState(null);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [insertDropdownOpen, setInsertDropdownOpen] = useState(false);
   const [listDropdownOpen, setListDropdownOpen] = useState(false);
@@ -54386,13 +54387,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </span>
                 )}
                 
-                {/* State Badge with Dropdown */}
+                {/* State Badge with Dropdown — triggers root-level portal */}
                 <div className="relative print-hide">
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={(e) => {
                       if (currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter') {
-                        setDocStateDropdownOpen(!docStateDropdownOpen);
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setDocStateAnchorRect(rect);
+                        setDocStateDropdownOpen((prev) => !prev);
                       }
                     }}
                     className={`text-xs font-semibold rounded-lg px-2.5 py-1 cursor-pointer select-none transition-all duration-200 capitalize flex items-center gap-1.5 bg-slate-100/90 dark:bg-zinc-800/90 hover:bg-slate-200/80 dark:hover:bg-zinc-700/80 text-slate-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'pointer-events-none opacity-80 cursor-default' : ''}`}
@@ -54403,38 +54406,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {docState === 'archived' && <Archive size={13} className="stroke-[2] text-slate-500 dark:text-zinc-400" />}
                     <span>{docState.charAt(0).toUpperCase() + docState.slice(1)}</span>
                   </button>
-
-                  {docStateDropdownOpen && (
-                    <>
-                      <div className="fixed inset-0 z-[290]" onClick={() => setDocStateDropdownOpen(false)} />
-                      <div className="absolute right-0 top-full mt-1.5 z-[300] bg-white/85 backdrop-blur-md border border-slate-200/50 rounded-2xl p-2 shadow-2xl w-56 text-left normal-case tracking-normal">
-                        <div className="px-3 py-2 text-[12px] font-semibold uppercase tracking-widest text-slate-500 font-[system-ui]">Document State</div>
-                      {[
-                        { key: 'draft', label: 'Draft', desc: 'Actively being written', color: 'hover:bg-slate-100/80 text-slate-900 font-medium text-sm tracking-tight', icon: <FileEdit size={12} className="stroke-[2]" /> },
-                        { key: 'ready', label: 'Ready', desc: 'Completed and ready for use', color: 'hover:bg-slate-100/80 text-slate-900 font-medium text-sm tracking-tight', icon: <CheckCircle2 size={12} className="stroke-[2]" /> },
-                        { key: 'review', label: 'In Review', desc: 'Awaiting feedback', color: 'hover:bg-slate-100/80 text-slate-900 font-medium text-sm tracking-tight', icon: <Users2 size={12} className="stroke-[2]" /> },
-                        { key: 'archived', label: 'Archived', desc: 'Stored and inactive', color: 'hover:bg-slate-100/80 text-slate-500 font-medium text-sm tracking-tight', icon: <Archive size={12} className="stroke-[2]" /> }
-                      ].map((item) => (
-                        <button
-                          key={item.key}
-                          type="button"
-                          onClick={() => {
-                            setDocState(item.key);
-                            setDocStateDropdownOpen(false);
-                            showToast(`Document marked as ${item.key.toUpperCase()}`);
-                          }}
-                          className={`w-full text-left px-2.5 py-2 rounded-xl transition-all duration-150 flex items-start gap-2 ${item.color} ${docState === item.key ? 'bg-slate-50/80' : ''}`}
-                        >
-                          <div className="mt-0.5 shrink-0">{item.icon}</div>
-                          <div>
-                            <div className="text-[11px] font-bold">{item.label}</div>
-                            <div className="text-[9px] text-slate-405 font-semibold">{item.desc}</div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                    </>
-                  )}
                 </div>
               </div>
             )}
@@ -59183,6 +59154,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
               Exit Presentation
             </span>
           </button>
+        </div>
+      )}
+
+      {/* Document State Dropdown Portal — anchored via getBoundingClientRect */}
+      {docStateDropdownOpen && docStateAnchorRect && (
+        <div
+          className="doc-state-dropdown-container fixed z-[9000] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-slate-200/50 dark:border-zinc-700/50 rounded-2xl p-2 shadow-2xl w-56 text-left normal-case tracking-normal"
+          style={{
+            top: docStateAnchorRect.bottom + 6,
+            left: docStateAnchorRect.left,
+          }}
+        >
+          <div className="px-3 py-2 text-[12px] font-semibold uppercase tracking-widest text-slate-500 dark:text-zinc-400 font-[system-ui]">Document State</div>
+          {[
+            { key: 'draft',    label: 'Draft',     desc: 'Actively being written',       icon: <FileEdit    size={12} className="stroke-[2] text-violet-500"  /> },
+            { key: 'ready',    label: 'Ready',     desc: 'Completed and ready for use',  icon: <CheckCircle2 size={12} className="stroke-[2] text-emerald-500" /> },
+            { key: 'review',   label: 'In Review', desc: 'Awaiting feedback',             icon: <Users2      size={12} className="stroke-[2] text-blue-500"    /> },
+            { key: 'archived', label: 'Archived',  desc: 'Stored and inactive',          icon: <Archive     size={12} className="stroke-[2] text-slate-400"   /> },
+          ].map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                setDocState(item.key);
+                setDocStateDropdownOpen(false);
+                showToast(`Document marked as ${item.key.toUpperCase()}`);
+              }}
+              className={`w-full text-left px-2.5 py-2 rounded-xl transition-all duration-150 flex items-start gap-2 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 ${docState === item.key ? 'bg-slate-50/80 dark:bg-zinc-800/60' : ''}`}
+            >
+              <div className="mt-0.5 shrink-0 text-slate-600 dark:text-zinc-300">{item.icon}</div>
+              <div>
+                <div className="text-[11px] font-bold text-slate-900 dark:text-zinc-100">{item.label}</div>
+                <div className="text-[9px] text-slate-400 dark:text-zinc-500 font-semibold">{item.desc}</div>
+              </div>
+            </button>
+          ))}
         </div>
       )}
 
