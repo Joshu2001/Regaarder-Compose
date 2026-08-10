@@ -9928,8 +9928,10 @@ export default function App() {
   // Track mouse movement to show/hide right sidebar expand handle
   useEffect(() => {
     const handleMouseMove = (e) => {
-      const rightThreshold = window.innerWidth - 300;
-      if (e.clientX >= rightThreshold) {
+      // Exclude native scrollbar area (far right 18px) and narrow trigger zone to 60px
+      const isOverScrollbar = e.clientX >= window.innerWidth - 18;
+      const rightThreshold = window.innerWidth - 60;
+      if (e.clientX >= rightThreshold && !isOverScrollbar) {
         setIsRightSideHovered(true);
       } else {
         setIsRightSideHovered(false);
@@ -36687,7 +36689,7 @@ Respond with a JSON array of slide objects matching the schema.`;
 
         return (
           <>
-            {/* ── Auto-Hiding 2-Stage Expandable Sidebar Shell & Cohabitating Floating Rail ──────────── */}
+            {/* ── Auto-Hiding Right-Edge Sensor & Hover-Activated Cue Pill ──────────── */}
             {productMode !== 'landing' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
               <div
                 onMouseEnter={() => {
@@ -36695,9 +36697,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                   setMiniSidebarDismissed(false);
                 }}
                 onMouseLeave={() => setIsRightSideHovered(false)}
-                className="fixed right-0 top-0 h-full w-3 hover:w-auto z-[360] group/sidebar-rail pointer-events-auto flex justify-end"
+                className="fixed right-0 top-16 h-16 w-8 z-[360] group/sidebar-rail pointer-events-auto flex items-center justify-end"
               >
-                {/* Floating Dock Handle */}
+                {/* Visual Cue Pill (Hidden by default, fades in when hovering right edge sensor zone) */}
                 <div
                   onClick={() => {
                     if (activeRightTab) {
@@ -36707,10 +36709,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                       setRightSidebarOpen(true);
                     }
                   }}
-                  className="absolute right-0 top-24 pointer-events-auto flex items-center justify-center w-6 h-12 rounded-l-xl bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md border border-r-0 border-slate-200/80 dark:border-zinc-700/80 shadow-md cursor-pointer text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all duration-300 ease-out opacity-0 group-hover/sidebar-rail:opacity-100 group-hover/sidebar-rail:translate-x-0 translate-x-2"
-                  title="Expand right sidebar"
+                  className="fixed right-3 top-[72px] z-[360] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 dark:bg-zinc-800/95 backdrop-blur-md border border-slate-200/90 dark:border-zinc-700/90 shadow-md cursor-pointer text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:border-violet-300 dark:hover:border-violet-600/60 transition-all duration-300 ease-out group/cue select-none opacity-0 translate-x-2 pointer-events-none group-hover/sidebar-rail:opacity-100 group-hover/sidebar-rail:translate-x-0 group-hover/sidebar-rail:pointer-events-auto"
+                  title="Click to open sidebar"
                 >
-                  <ChevronLeft size={16} />
+                  <Sidebar size={14} className="text-slate-400 dark:text-zinc-400 group-hover/cue:text-violet-500 transition-colors" />
+                  <span className="text-xs font-medium text-slate-600 dark:text-zinc-300 group-hover/cue:text-violet-600 dark:group-hover/cue:text-violet-400">
+                    Sidebar
+                  </span>
+                  <ChevronLeft size={13} className="text-slate-400 dark:text-zinc-500 group-hover/cue:-translate-x-0.5 transition-transform" />
                 </div>
 
                 {/* Sidebar Shell */}
