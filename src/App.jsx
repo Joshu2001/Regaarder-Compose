@@ -59799,24 +59799,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 input.onchange = (ev) => {
                   const files = Array.from(ev.target.files || []);
                   if (files.length > 0) {
-                    const newMaterials = files.map((file, idx) => {
+                    files.forEach((file, idx) => {
                       const ext = file.name.split('.').pop().toLowerCase();
                       let type = 'text';
                       if (['xlsx', 'xls', 'csv', 'ods'].includes(ext)) type = 'excel';
                       else if (['pptx', 'ppt', 'key'].includes(ext)) type = 'powerpoint';
                       else if (['pdf'].includes(ext)) type = 'pdf';
                       else if (['doc', 'docx'].includes(ext)) type = 'word';
-                      else if (['txt', 'md'].includes(ext)) type = 'text';
+                      else if (['txt', 'md', 'json', 'js', 'jsx', 'ts', 'tsx', 'html', 'css', 'csv'].includes(ext)) type = 'text';
 
-                      return {
+                      const isImage = file.type.startsWith('image/') || ['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp'].includes(ext);
+                      const fileObj = {
                         id: String(Date.now() + idx),
                         name: file.name,
                         type,
-                        size: `${Math.round(file.size / 1024)} KB`
+                        size: `${Math.round(file.size / 1024)} KB`,
+                        url: isImage ? URL.createObjectURL(file) : null
                       };
+
+                      if (['txt', 'md', 'json', 'csv', 'js', 'jsx', 'ts', 'tsx', 'html', 'css'].includes(ext)) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                          fileObj.content = e.target.result;
+                          setDocContextMaterials((prev) => [...prev, fileObj]);
+                        };
+                        reader.readAsText(file);
+                      } else {
+                        setDocContextMaterials((prev) => [...prev, fileObj]);
+                      }
                     });
 
-                    setDocContextMaterials((prev) => [...prev, ...newMaterials]);
                     showToast(files.length === 1 ? `Added ${files[0].name} to AI Context` : `Added ${files.length} files to AI Context`);
                   }
                 };

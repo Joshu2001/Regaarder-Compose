@@ -60,6 +60,24 @@ const getSourceFileContentData = (file) => {
   const info = getSourceFileTypeInfo(file);
   const name = file.name || 'Untitled Source';
 
+  // If real uploaded text content exists, prefer authentic raw file content
+  if (file.content && info.category !== 'image') {
+    if (info.category === 'compose' || info.category === 'generic') {
+      return {
+        type: info.category,
+        title: name.replace(/\.[^/.]+$/, "").replace(/_/g, " "),
+        subtitle: `Authentic uploaded source content • ${file.size || 'Source'}`,
+        text: file.content,
+        sections: [
+          {
+            heading: "Source File Content",
+            content: file.content
+          }
+        ]
+      };
+    }
+  }
+
   // 1. PDF Content Representation
   if (info.category === 'pdf') {
     return {
@@ -167,7 +185,7 @@ const getSourceFileContentData = (file) => {
     return {
       type: 'image',
       src: file.url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
-      dimensions: '1920 × 1080 px',
+      dimensions: file.dimensions || '1920 × 1080 px',
       aspectRatio: '16:9'
     };
   }
@@ -175,7 +193,7 @@ const getSourceFileContentData = (file) => {
   // 6. Generic File Content Representation
   return {
     type: 'generic',
-    text: file.content || `[Source File Content Preview for ${name}]\n\nFile Name: ${name}\nFile Size: ${file.size || 'Unknown'}\nType: ${info.label}\nStatus: Verified Source\n\n1. Initialized context reader.\n2. Extracted raw metadata headers.\n3. Source file ready for reference.`
+    text: file.content || `Source File: ${name}\nSize: ${file.size || 'Unknown'}\nType: ${info.label}\nStatus: Verified Source\n\nFile contents uploaded successfully.`
   };
 };
 
