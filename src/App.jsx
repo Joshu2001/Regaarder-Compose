@@ -4870,6 +4870,7 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState('');
   const [toastCallback, setToastCallback] = useState(null);
   const toastTimerRef = useRef(null);
+  const [isDocumentSubToolbarCollapsed, setIsDocumentSubToolbarCollapsed] = useState(false);
 
   // Toast notifier helper
   const showToast = (msg, callback = null, category = null, customDetail = null) => {
@@ -9990,6 +9991,15 @@ export default function App() {
   const [sheetZoomLevel, setSheetZoomLevel] = useState(100);
 
   const [sheetToolbarTab, setSheetToolbarTab] = useState(null);
+  const [docToolbarTab, setDocToolbarTab] = useState('Write');
+  const [docContextMaterials, setDocContextMaterials] = useState([
+    { id: '1', name: 'Project_Requirements.pdf', type: 'pdf', size: '1.2 MB' },
+    { id: '2', name: 'Q3_Financial_Summary.xlsx', type: 'spreadsheet', size: '450 KB' },
+    { id: '3', name: 'Market_Research_Notes.txt', type: 'text', size: '28 KB' }
+  ]);
+  const [docReadabilityScore, setDocReadabilityScore] = useState(94);
+  const [docWordCount, setDocWordCount] = useState(1420);
+  const [docCharCount, setDocCharCount] = useState(8950);
   const [templateCategory, setTemplateCategory] = useState('all');
   const [isSheetToolbarCollapsed, setIsSheetToolbarCollapsed] = useState(false);
   const [hasImportedData, setHasImportedData] = useState(false);
@@ -30100,14 +30110,12 @@ Respond with a JSON array of slide objects matching the schema.`;
     const updateDictationAnchor = () => {
       const card = documentCardRef.current;
       if (!card) {
-        setDictationAnchor({ left: window.innerWidth - 150, top: window.innerHeight / 2 - 125 });
+        setDictationAnchor({ left: window.innerWidth - 150, top: 220 });
         return;
       }
 
       const rect = card.getBoundingClientRect();
       const visibleRight = rect.right;
-      const visibleTop = Math.max(0, rect.top);
-      const visibleBottom = Math.min(window.innerHeight, rect.bottom);
 
       const rightSidebarEdge = window.innerWidth - (rightSidebarOpen ? rightSidebarWidth : 0);
       let rightX = (visibleRight + rightSidebarEdge) / 2 - 10;
@@ -30116,9 +30124,10 @@ Respond with a JSON array of slide objects matching the schema.`;
         rightX = maxAllowedX;
       }
       
-      const centerY = (visibleTop + visibleBottom) / 2 - 125;
+      const targetY = rect.top + 75;
+      const topY = Math.max(180, Math.min(window.innerHeight - 80, targetY));
 
-      setDictationAnchor({ left: rightX, top: centerY });
+      setDictationAnchor({ left: rightX, top: topY });
     };
 
     updateDictationAnchor();
@@ -48096,7 +48105,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           />
         </div>
       ) : (
-      <div className="flex-1 min-h-0 flex flex-col min-w-0 overflow-hidden bg-slate-50/30 dark:bg-zinc-950/20 backdrop-blur-[8px] relative z-10">
+      <div className="flex-1 min-h-0 flex flex-col min-w-0 overflow-hidden bg-[#f5f7fc] dark:bg-[#000000] relative z-10">
         {!isSheetsMode && (
           <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.35]">
             <div className="absolute -top-[15%] -left-[15%] w-[70%] h-[70%] rounded-full bg-blue-400/35 dark:bg-blue-900/20 mix-blend-multiply dark:mix-blend-screen filter blur-[110px]" />
@@ -48106,7 +48115,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
         
         {/* Top Header */}
-        <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200/80 dark:border-zinc-800/80 bg-[#f4f5f7]/88 dark:bg-zinc-900/88 backdrop-blur-[20px] shrink-0 select-none group/header relative z-[350] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/70 dark:bg-[#111111] backdrop-blur-xl shrink-0 select-none group/header relative z-[350] transition-all duration-200">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -48116,7 +48125,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   setLeftSidebarOpen((prev) => !prev);
                 }
               }}
-              className="text-gray-400 hover:text-gray-600 shrink-0"
+              className="text-gray-400 hover:text-gray-600 dark:text-zinc-400 dark:hover:text-zinc-200 shrink-0 transition-colors"
               title={activeRightTab === 'whiteboard' ? (isHoverNavVisible ? "Hide navigation" : "Show navigation") : (leftSidebarOpen ? "Hide sidebar" : "Show sidebar")}
             >
               {activeRightTab === 'whiteboard'
@@ -48164,7 +48173,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setUnsavedDraftNameInput('');
                       }
                     }}
-                    className="text-sm text-slate-800 dark:text-zinc-100 font-medium bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600"
+                    className="text-sm font-semibold text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600"
                     placeholder="Rename draft"
                   />
                 ) : (
@@ -48172,7 +48181,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     type="button"
                     onClick={() => setIsTopDraftTitleExpanded((prev) => !prev)}
                     onDoubleClick={beginUnsavedDraftRename}
-                    className="text-sm text-slate-600 font-medium hover:text-slate-900 px-1 py-0.5 rounded min-w-[110px] text-left transition-colors"
+                    className="text-sm font-semibold text-slate-800 dark:text-zinc-100 hover:text-slate-600 dark:hover:text-zinc-300 px-1 py-0.5 rounded text-left truncate transition-colors"
                     title={activeDraftDisplayTitle}
                   >
                     {(() => {
@@ -48183,52 +48192,52 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     })()}
                   </button>
                 )}
-                <div className="flex items-center gap-1.5 text-xs text-gray-400 ml-2">
+                <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 ml-2 hidden sm:flex">
                   <Cloud size={14} /> {savedStatusLabel}
                 </div>
               </>
             )}
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-0.5">
               <button
                 onClick={undoDocumentChange}
                 disabled={!canUndo}
-                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                   canUndo
-                    ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
-                    : 'text-gray-400 dark:text-gray-600 opacity-40 cursor-not-allowed'
+                    ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                    : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
                 }`}
                 title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
               >
-                <Undo2 size={16} strokeWidth={1.5} />
+                <Undo2 size={15} strokeWidth={1.5} />
               </button>
               <button
                 onClick={redoDocumentChange}
                 disabled={!canRedo}
-                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                   canRedo
-                    ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
-                    : 'text-gray-400 dark:text-gray-600 opacity-40 cursor-not-allowed'
+                    ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                    : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
                 }`}
                 title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
               >
-                <Redo2 size={16} strokeWidth={1.5} />
+                <Redo2 size={15} strokeWidth={1.5} />
               </button>
               <button
                 onClick={openReplayPanel}
-                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`}
+                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
                 title="Open edit replay"
               >
-                <Clock size={16} strokeWidth={1.5} />
+                <Clock size={15} strokeWidth={1.5} />
               </button>
               <button
                 onClick={saveDocumentLocally}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)]"
                 title="Save locally (Ctrl+S)"
               >
-                <Save size={16} strokeWidth={1.5} />
+                <Save size={15} strokeWidth={1.5} />
               </button>
 
               <div className="relative" ref={docSearchPanelRef}>
@@ -48239,10 +48248,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     setDocSearchPanelOpen((prev) => !prev);
                     setDocSearchAutoPlay(false);
                   }}
-                  className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${docSearchPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400 font-semibold shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`}
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${docSearchPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400 font-semibold shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
                   title="Find & Replace (Ctrl+F)"
                 >
-                  <Search size={16} strokeWidth={1.5} />
+                  <Search size={15} strokeWidth={1.5} />
                 </button>
                 {docSearchPanelOpen && renderDocSearchPanel()}
               </div>
@@ -48256,12 +48265,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     closeTransientMenus();
                     setComposeExportMenuOpen(!composeExportMenuOpen);
                   }}
-                  className={`text-xs font-semibold px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all border ${composeExportMenuOpen ? 'border-slate-300 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 border-slate-200/80 bg-white dark:bg-zinc-800 dark:border-zinc-700'}`}
+                  className={`text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] border cursor-pointer select-none ${composeExportMenuOpen ? 'border-violet-600 dark:border-violet-500 bg-violet-600 text-white shadow-xs' : 'text-slate-700 dark:text-white hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-violet-700 border-slate-200/80 dark:border-violet-500/80 bg-white dark:bg-violet-600 shadow-2xs'}`}
                   title="Export Document"
                 >
-                  <Download size={14} strokeWidth={1.5} className="text-slate-500" />
+                  <Download size={13} strokeWidth={1.5} className="text-slate-500 dark:text-white" />
                   <span>Export</span>
-                  {composeExportMenuOpen ? <ChevronUp size={13} strokeWidth={1.5} className="text-slate-400" /> : <ChevronDown size={13} strokeWidth={1.5} className="text-slate-400" />}
+                  {composeExportMenuOpen ? <ChevronUp size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" /> : <ChevronDown size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" />}
                 </button>
                 {composeExportMenuOpen && (
                   <>
@@ -48318,10 +48327,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   }
                 }}
                 data-share="true"
-                className="btn-share btn-share-primary bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+                className="btn-share btn-share-primary bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none"
                 style={{ backgroundColor: '#7c3aed', color: '#ffffff' }}
               >
-                <Users size={14} strokeWidth={1.5} /> Share
+                <Users size={13} strokeWidth={1.5} /> Share
               </button>
               {shareModalOpen && (
                 <ShareModal
@@ -48501,11 +48510,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </button>
               {notificationsOpen && renderNotificationsDropdownContent()}
             </div>
-            <button 
-              onClick={() => handleMiniSidebarClick('assistant')}
-              className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-all ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-slate-100 border-slate-200 text-slate-900 shadow-sm dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100' : 'bg-slate-50 text-slate-505 hover:bg-slate-100 hover:text-slate-850 border-transparent dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
+            {/* Settings Button */}
+            <button
+              type="button"
+              onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
+              title="Settings"
             >
-              <Sparkles size={16} />
+              <Settings size={16} />
             </button>
           </div>
         </div>
@@ -49233,7 +49245,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </button>
         </div>
 
-        {/* Formatting Ribbon - matches editor paper length and position */}
+        {/* Full-width Sub-Header Toolbar (Matches Sheets Toolbar system) */}
         <div
           ref={formattingMenuRef}
           onMouseDown={(event) => {
@@ -49241,16 +49253,54 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`absolute top-[106px] left-1/2 -translate-x-1/2 flex items-center justify-between text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] ${
+          className={`mx-4 mt-1 mb-1 w-[calc(100%-2rem)] p-2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-1.5 z-20 shrink-0 transition-all duration-200 ${
             activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''
           } ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
-          style={{
-            width: '100%',
-            maxWidth: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`,
-          }}
         >
-          {/* Island 1: Typography, Formatting & Insertion Toolbar */}
-          <div className="w-full flex items-center justify-between h-[42px] px-3.5 bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-[0_12px_36px_-12px_rgba(15,23,42,0.15),0_2px_8px_rgba(0,0,0,0.04)] rounded-2xl transition-all duration-200 hover:bg-white hover:shadow-[0_16px_44px_-12px_rgba(15,23,42,0.2)]">
+          {/* Top Row: Navigation Tabs & Collapse/Expand Toggle */}
+          <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
+            {/* Apple Segmented Control Track */}
+            <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner">
+              {['Context', 'Templates', 'Write', 'Review', 'View'].map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => {
+                    if (isDocumentSubToolbarCollapsed) {
+                      setIsDocumentSubToolbarCollapsed(false);
+                    }
+                    setDocToolbarTab(tab);
+                    showToast?.(`${tab} tools ready`);
+                  }}
+                  className={`relative px-3.5 py-1 text-[12.5px] font-medium rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.97] cursor-pointer ${
+                    docToolbarTab === tab
+                      ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs border border-slate-200/80 dark:border-zinc-700/80'
+                      : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            {/* Collapse / Expand Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setIsDocumentSubToolbarCollapsed((prev) => !prev)}
+              className="text-xs font-semibold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/60 shadow-2xs cursor-pointer"
+              title={isDocumentSubToolbarCollapsed ? "Expand toolbar details" : "Collapse toolbar details"}
+            >
+              <span>{isDocumentSubToolbarCollapsed ? 'Expand' : 'Collapse'}</span>
+              <ChevronDown size={13} className={`transition-transform duration-200 ease-out ${isDocumentSubToolbarCollapsed ? '' : 'rotate-180 text-violet-600'}`} />
+            </button>
+          </div>
+
+          {/* Sub-toolbar details (shown when expanded) */}
+          {!isDocumentSubToolbarCollapsed && (
+            <div className="flex flex-wrap items-center justify-start gap-3 sm:gap-4 px-1 pt-1.5 border-t border-gray-200/60 dark:border-zinc-800 text-xs font-medium">
+              {docToolbarTab === 'Write' && (
+                <div className="w-full flex flex-col gap-2">
+                  <div className="w-full flex flex-wrap items-center justify-start gap-3 sm:gap-4">
             {/* Group 1: Typography Structure */}
             <div className="flex items-center gap-1.5">
               <div
@@ -49742,7 +49792,216 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             </div>
           )}
-      </div>
+          </div>
+          )}
+
+          {docToolbarTab === 'Context' && (
+            /* Context Sub-toolbar: Source Material Management for AI */
+            <div className="w-full flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 shrink-0">Context Sources:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.onchange = (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setDocContextMaterials((prev) => [...prev, { id: String(Date.now()), name: file.name, type: file.name.endsWith('.pdf') ? 'pdf' : 'document', size: `${Math.round(file.size/1024)} KB` }]);
+                        showToast(`Added ${file.name} to AI Context`);
+                      }
+                    };
+                    input.click();
+                  }}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 border border-violet-200/60 dark:border-violet-800/40 flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
+                >
+                  <Plus size={13} /> Add Source File
+                </button>
+
+                {docContextMaterials.map((mat) => (
+                  <div key={mat.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 select-none">
+                    <span>{mat.type === 'pdf' ? '📄' : mat.type === 'spreadsheet' ? '📊' : '📝'}</span>
+                    <span className="max-w-[140px] truncate">{mat.name}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">({mat.size})</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDocContextMaterials((prev) => prev.filter((m) => m.id !== mat.id));
+                        showToast(`Removed ${mat.name}`);
+                      }}
+                      className="ml-0.5 text-slate-400 hover:text-rose-500 rounded p-0.5 transition-colors cursor-pointer"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 shrink-0 border-l border-slate-200/60 dark:border-zinc-800 pl-3">
+                <button
+                  type="button"
+                  onClick={() => showToast('AI synthesized all attached context sources')}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Sparkles size={13} className="text-violet-600 dark:text-violet-400" /> Synthesize
+                </button>
+              </div>
+            </div>
+          )}
+
+          {docToolbarTab === 'Templates' && (
+            /* Templates Sub-toolbar: Preset Document Layouts */
+            <div className="w-full flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 shrink-0 mr-1">Presets:</span>
+                {[
+                  { name: 'Executive Report', desc: 'Formal executive summary layout' },
+                  { name: 'Business Proposal', desc: 'Client proposal structure' },
+                  { name: 'Meeting Notes', desc: 'Agenda, action items, decisions' },
+                  { name: 'Technical Spec', desc: 'Engineering design doc' },
+                  { name: 'Project Charter', desc: 'Project goals & milestones' },
+                  { name: 'Creative Brief', desc: 'Brand campaign brief' }
+                ].map((tpl) => (
+                  <button
+                    key={tpl.name}
+                    type="button"
+                    onClick={() => showToast(`Applied ${tpl.name} template`)}
+                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
+                    title={tpl.desc}
+                  >
+                    {tpl.name}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateTemplateModalOpen(true)}
+                className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
+              >
+                + Save as Template
+              </button>
+            </div>
+          )}
+
+          {docToolbarTab === 'Review' && (
+            /* Review Sub-toolbar: Proofreading, Metrics & Security */
+            <div className="w-full flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                <button
+                  type="button"
+                  onClick={() => showToast('AI Proofread: 0 spelling errors, 2 style suggestions')}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 border border-violet-200/60 dark:border-violet-800/40 flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
+                >
+                  <Sparkles size={13} /> AI Proofread
+                </button>
+                <div className="px-2.5 py-1 text-xs font-medium rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 shrink-0 select-none">
+                  ✓ Readability: {docReadabilityScore}% (Grade 8)
+                </div>
+                <button
+                  type="button"
+                  onClick={() => showToast('Citation generated & inserted')}
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
+                >
+                  + Insert Citation
+                </button>
+                <button
+                  type="button"
+                  onClick={() => protectSelectedRange('text')}
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
+                >
+                  ⬛ Redact Selection
+                </button>
+                <button
+                  type="button"
+                  onClick={openReplayPanel}
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
+                >
+                  <Clock size={13} /> Version History
+                </button>
+              </div>
+              <div className="text-xs font-semibold text-slate-500 dark:text-zinc-400 shrink-0 border-l border-slate-200/60 dark:border-zinc-800 pl-3">
+                {docWordCount} words · {docCharCount} chars
+              </div>
+            </div>
+          )}
+
+          {docToolbarTab === 'View' && (
+            /* View Sub-toolbar: Document Presentation & Page Settings */
+            <div className="w-full flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                {/* Orientation */}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-0.5 rounded-lg border border-slate-200/60 dark:border-zinc-700/50 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setPageOrientation('portrait')}
+                    className={`px-2 py-0.5 text-xs font-medium rounded-md transition-all cursor-pointer ${pageOrientation === 'portrait' ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                  >
+                    Portrait
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPageOrientation('landscape')}
+                    className={`px-2 py-0.5 text-xs font-medium rounded-md transition-all cursor-pointer ${pageOrientation === 'landscape' ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                  >
+                    Landscape
+                  </button>
+                </div>
+
+                {/* Margins */}
+                <select
+                  value={docMargins}
+                  onChange={(e) => setDocMargins(e.target.value)}
+                  className="text-xs font-medium bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/50 rounded-lg px-2 py-1 outline-none cursor-pointer shrink-0"
+                >
+                  <option value="normal">Normal Margins (1.0 in)</option>
+                  <option value="narrow">Narrow Margins (0.5 in)</option>
+                  <option value="wide">Wide Margins (1.5 in)</option>
+                </select>
+
+                {/* Page Size */}
+                <select
+                  value={docPageSize}
+                  onChange={(e) => setDocPageSize(e.target.value)}
+                  className="text-xs font-medium bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/50 rounded-lg px-2 py-1 outline-none cursor-pointer shrink-0"
+                >
+                  <option value="letter">Letter (8.5 x 11 in)</option>
+                  <option value="a4">A4 (210 x 297 mm)</option>
+                  <option value="legal">Legal (8.5 x 14 in)</option>
+                </select>
+
+                {/* Outline Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowDocumentOutlineView((prev) => !prev)}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer ${showDocumentOutlineView ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/60'}`}
+                >
+                  Outline: {showDocumentOutlineView ? 'On' : 'Off'}
+                </button>
+
+                {/* Dark Mode Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setIsDarkMode((prev) => !prev)}
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
+                >
+                  {isDarkMode ? <Sun size={13} /> : <Moon size={13} />} {isDarkMode ? 'Light' : 'Dark'} Mode
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 border-l border-slate-200/60 dark:border-zinc-800 pl-3">
+                <button
+                  type="button"
+                  onClick={() => setIsWatermarkModalOpen(true)}
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 shrink-0 transition-colors cursor-pointer"
+                >
+                  Watermark
+                </button>
+              </div>
+            </div>
+          )}
+          </div>
+          )}
+        </div>
         
         {/* Document Editor Content (Beautifully separated page area) */}
         <div className="flex-1 relative w-full h-full overflow-hidden bg-[#F7F7F9]">
@@ -52161,7 +52420,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onMouseMove={handleEditorMouseMove}
             onMouseLeave={handleEditorMouseLeave}
             onScroll={handleEditorScroll}
-            className={`flex-1 min-h-0 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative p-2 md:p-4 transition-all duration-200 ${
+            className={`flex-1 min-h-0 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative px-2 pt-1 pb-6 md:px-4 md:pt-1.5 md:pb-8 transition-all duration-200 ${
               activeRightTab === 'whiteboard' ? 'opacity-0 pointer-events-none select-none' : ''
             }`}
           >
@@ -52175,7 +52434,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               transition: 'transform 180ms ease-out',
             }}
           >
-            <div className={`flex justify-between items-center mb-3 px-6 select-none bg-slate-50 border border-slate-100 rounded-full py-1 text-[11px] font-bold text-slate-500 shadow-sm relative z-[100] transition-all duration-300 ${
+            <div className={`flex justify-between items-center mb-1 px-6 select-none bg-slate-50 border border-slate-100 rounded-full py-0.5 text-[11px] font-bold text-slate-500 shadow-sm relative z-[100] transition-all duration-300 ${
               (pageSizeDropdownOpen || pageMarginDropdownOpen) ? 'opacity-100' : 'opacity-0 hover:opacity-100'
             }`}>
               
@@ -53824,17 +54083,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setDocStateDropdownOpen(!docStateDropdownOpen);
                       }
                     }}
-                    className={`text-sm font-medium rounded-lg px-2.5 py-1 cursor-pointer select-none transition-all duration-200 capitalize flex items-center gap-1.5 hover:shadow-sm ${
-                      docState === 'draft' ? 'bg-violet-100/40 hover:bg-violet-100/60 text-violet-700' :
-                      docState === 'ready' ? 'bg-emerald-100/40 hover:bg-emerald-100/60 text-emerald-700' :
-                      docState === 'review' ? 'bg-blue-100/40 hover:bg-blue-100/60 text-blue-700' :
-                      'bg-slate-100/40 hover:bg-slate-100/60 text-slate-600'
-                    } ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'pointer-events-none opacity-80 cursor-default' : ''}`}
+                    className={`text-xs font-semibold rounded-lg px-2.5 py-1 cursor-pointer select-none transition-all duration-200 capitalize flex items-center gap-1.5 bg-slate-100/90 dark:bg-zinc-800/90 hover:bg-slate-200/80 dark:hover:bg-zinc-700/80 text-slate-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'pointer-events-none opacity-80 cursor-default' : ''}`}
                   >
-                    {docState === 'draft' && <FileEdit size={14} className="stroke-[2]" />}
-                    {docState === 'ready' && <CheckCircle2 size={14} className="stroke-[2]" />}
-                    {docState === 'review' && <Users2 size={14} className="stroke-[2]" />}
-                    {docState === 'archived' && <Archive size={14} className="stroke-[2]" />}
+                    {docState === 'draft' && <FileEdit size={13} className="stroke-[2] text-violet-600 dark:text-violet-400" />}
+                    {docState === 'ready' && <CheckCircle2 size={13} className="stroke-[2] text-emerald-600 dark:text-emerald-400" />}
+                    {docState === 'review' && <Users2 size={13} className="stroke-[2] text-blue-600 dark:text-blue-400" />}
+                    {docState === 'archived' && <Archive size={13} className="stroke-[2] text-slate-500 dark:text-zinc-400" />}
                     <span>{docState.charAt(0).toUpperCase() + docState.slice(1)}</span>
                   </button>
 

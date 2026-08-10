@@ -1414,8 +1414,8 @@ input[type="range"] {
   box-sizing: border-box !important;
   padding-left: var(--page-padding, 48px) !important;
   padding-right: var(--page-padding, 48px) !important;
-  padding-top: 64px !important;
-  padding-bottom: 78px !important;
+  padding-top: 48px !important;
+  padding-bottom: 72px !important;
 }/* Page break vertical oval/pill Add button */
 .page-break-plus-btn {
   position: absolute !important;
