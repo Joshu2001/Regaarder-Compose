@@ -14992,8 +14992,7 @@ export default function App() {
         if (!isDocumentImmersive) {
           setIsDocumentImmersive(true);
         }
-        // Dismiss any open citation popover — its anchor coords are no longer valid in fullscreen
-        setCitationPopover({ open: false, anchorRect: null, savedRange: null, selectedText: '' });
+        // CitationPopover repositions itself via its own fullscreenchange listener — no reset needed.
       } else {
         // Only collapse immersive state if native window fullscreen WAS previously active (e.g. user pressed ESC key)
         if (wasNativeFullscreenRef.current) {
@@ -15005,7 +15004,7 @@ export default function App() {
             showToast('Fullscreen mode disabled.');
           }
         }
-        setCitationPopover({ open: false, anchorRect: null, savedRange: null, selectedText: '' });
+        // CitationPopover repositions itself via its own fullscreenchange listener — no reset needed.
       }
     };
 
