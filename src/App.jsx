@@ -268,6 +268,26 @@ const LassoLoopIcon = ({ size = 12, className = '', style = {} }) => (
   </svg>
 );
 
+const RegaarderAiIcon = ({ size = 18, className = '', style = {} }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    className={className}
+    style={style}
+  >
+    <path
+      d="M12 3.75C7.44 3.75 3.75 7.44 3.75 12C3.75 16.56 7.44 20.25 12 20.25C16.56 20.25 20.25 16.56 20.25 12C20.25 9.1 18.75 6.55 16.4 5.2C14.05 3.85 11.15 3.9 8.85 5.3C6.55 6.7 5.25 9.25 5.35 12C5.5 15.65 8.45 18.55 12.1 18.55C14.55 18.55 16.75 17.15 17.85 15"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const WHITEBOARD_EMOJI_LIBRARY = [
   '??', '??', '?', '??', '??', '??', '??', '?', '??', '??',
   '??', '??', '??', '??', '?', '??', '??', '??', '??', '??',
@@ -10145,6 +10165,41 @@ export default function App() {
   const [selectionMenuPrompt, setSelectionMenuPrompt] = useState('');
   const [tonePickerState, setTonePickerState] = useState({ open: false, instruction: '', actionKey: '', selectionScoped: undefined });
   const [isPromptMinimized, setIsPromptMinimized] = useState(false);
+  const [hasSeenAiOnboarding, setHasSeenAiOnboarding] = useState(() => {
+    return typeof window !== 'undefined' && localStorage.getItem('rc.hasSeenAIAssistant') === 'true';
+  });
+  const [aiPulseState, setAiPulseState] = useState('idle');
+  const [showAiTooltip, setShowAiTooltip] = useState(false);
+
+  useEffect(() => {
+    if (!isPromptMinimized || hasSeenAiOnboarding) return;
+    let t1, t2, t3, t4;
+    t1 = setTimeout(() => {
+      setAiPulseState('pulse1');
+      setShowAiTooltip(true);
+      t2 = setTimeout(() => setAiPulseState('idle'), 500);
+    }, 1500);
+
+    t3 = setTimeout(() => {
+      setShowAiTooltip(false);
+    }, 3500);
+
+    t4 = setTimeout(() => {
+      setAiPulseState('pulse2');
+      setTimeout(() => setAiPulseState('idle'), 500);
+      try {
+        localStorage.setItem('rc.hasSeenAIAssistant', 'true');
+      } catch (e) {}
+      setHasSeenAiOnboarding(true);
+    }, 6500);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+    };
+  }, [isPromptMinimized, hasSeenAiOnboarding]);
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [selectionActionMenu, setSelectionActionMenu] = useState({ open: false, left: 0, top: 0 });
   const selectionActionMenuEnabled = true;
@@ -56116,7 +56171,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             className="pointer-events-none absolute left-6 top-20 z-[140]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
           >
-            <div className="pointer-events-auto flex items-center gap-2 group">
+            <div className="pointer-events-auto flex items-center gap-2 group relative">
               <button
                 type="button"
                 onClick={(e) => {
@@ -56124,6 +56179,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     window.__dragged_mini_prompt = false;
                     return;
                   }
+                  try {
+                    localStorage.setItem('rc.hasSeenAIAssistant', 'true');
+                  } catch (err) {}
+                  setHasSeenAiOnboarding(true);
+                  setShowAiTooltip(false);
+                  setAiPulseState('idle');
                   setIsPromptDismissed(false);
                   setIsPromptExpanded(true);
                   setIsPromptMinimized(false);
@@ -56165,11 +56226,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   window.addEventListener('pointermove', handleMove);
                   window.addEventListener('pointerup', handleUp);
                 }}
-                className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] hover:bg-violet-700 transition-all cursor-move touch-none"
-                title="Open AI prompt or drag to move"
+                className={`h-11 w-11 rounded-full flex items-center justify-center transition-all duration-200 ease-out cursor-move touch-none select-none ${
+                  (aiPulseState === 'pulse1' || aiPulseState === 'pulse2')
+                    ? 'scale-[1.06] ring-4 ring-violet-400/25 shadow-md'
+                    : 'hover:scale-[1.03]'
+                } ${
+                  isDarkMode 
+                    ? 'bg-violet-950/90 text-violet-300 border border-violet-800/60 shadow-[0_4px_14px_rgba(0,0,0,0.3)] hover:bg-violet-900/90 hover:border-violet-700 hover:shadow-[0_6px_20px_rgba(0,0,0,0.4)]' 
+                    : 'bg-violet-50/95 text-violet-700 border border-violet-200/80 shadow-[0_4px_14px_rgba(124,58,237,0.1)] hover:bg-violet-100 hover:border-violet-300 hover:text-violet-800 hover:shadow-[0_6px_20px_rgba(124,58,237,0.16)]'
+                } active:scale-95`}
+                title="Open AI Assistant or drag to move"
+                aria-label="Open AI Assistant"
               >
-                <PenTool size={18} className="mx-auto" />
+                <RegaarderAiIcon size={18} className="mx-auto shrink-0" />
               </button>
+
+              <div
+                className={`absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-semibold bg-slate-900/90 text-white rounded-lg shadow-md whitespace-nowrap pointer-events-none transition-all duration-300 ${
+                  showAiTooltip ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-1'
+                }`}
+              >
+                AI Assistant
+              </div>
             </div>
           </div>
         )}
