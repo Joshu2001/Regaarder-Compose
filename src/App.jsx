@@ -49939,17 +49939,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   type="button"
                   onClick={() => showToast('AI synthesized all attached context sources')}
-                  className="px-3 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 active:scale-95 text-white flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 active:scale-95 text-white flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 >
-                  {/* Custom Geometric Synthesis / Fusion Icon (Converging sources -> coherent output) */}
-                  <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="6.75" y="6.75" width="2.5" height="2.5" rx="0.5" fill="currentColor" />
-                    <path d="M3 3L6.5 6.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                    <circle cx="2.5" cy="2.5" r="1.2" fill="currentColor" />
-                    <path d="M3 13L6.5 9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                    <circle cx="2.5" cy="13.5" r="1.2" fill="currentColor" />
-                    <path d="M13 8H9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                    <circle cx="13.5" cy="8" r="1.2" fill="currentColor" />
+                  {/* Ultra-Delicate Multi-Source Convergent Output SVG Icon (~12% smaller/thinner) */}
+                  <svg className="w-[11px] h-[11px] text-white/85 shrink-0" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* Top-left input source document */}
+                    <rect x="2" y="2.5" width="3.5" height="4.5" rx="0.5" stroke="currentColor" strokeWidth="0.85" />
+                    {/* Bottom-left input source document */}
+                    <rect x="2" y="9" width="3.5" height="4.5" rx="0.5" stroke="currentColor" strokeWidth="0.85" />
+                    {/* Converging flow lines */}
+                    <path d="M6 4.75H8C8.55 4.75 9 5.2 9 5.75V8" stroke="currentColor" strokeWidth="0.85" strokeLinecap="round" />
+                    <path d="M6 11.25H8C8.55 11.25 9 10.8 9 10.25V8" stroke="currentColor" strokeWidth="0.85" strokeLinecap="round" />
+                    {/* Central Synthesized Output Document */}
+                    <rect x="9.5" y="4.5" width="4.5" height="7" rx="0.75" fill="currentColor" opacity="0.9" />
+                    {/* Inner core mark */}
+                    <path d="M11.75 6.75V9.25" stroke="#7C3AED" strokeWidth="0.75" strokeLinecap="round" />
+                    <path d="M10.5 8H13" stroke="#7C3AED" strokeWidth="0.75" strokeLinecap="round" />
                   </svg>
                   Synthesize
                 </button>
