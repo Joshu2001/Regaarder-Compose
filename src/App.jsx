@@ -10171,6 +10171,7 @@ export default function App() {
   const [isMoreMaterialsOpen, setIsMoreMaterialsOpen] = useState(false);
   const [moreMaterialsAnchorRect, setMoreMaterialsAnchorRect] = useState(null);
   const [docReadabilityScore, setDocReadabilityScore] = useState(94);
+  const [readabilityAnalysis, setReadabilityAnalysis] = useState(null);
   // Readability popover — anchor is the button's DOMRect
   const [readabilityPopover, setReadabilityPopover] = useState({ open: false, anchorRect: null });
   const readabilityPopoverRef = useRef(null);
@@ -12522,6 +12523,78 @@ export default function App() {
     const characters = cleanedText.length;
     setDocumentStats({ words, characters });
   }, [syncPageFooters, docBodyHtml, getPlainText]);
+
+  const handleAnalyzeReadability = useCallback(() => {
+    const activeEl = documentCardRef.current || blankBodyRef.current;
+    let rawText = String(activeEl?.innerText || activeEl?.textContent || '');
+    if (!rawText.trim() && docBodyHtml) {
+      rawText = getPlainText(docBodyHtml);
+    }
+    const cleanedText = rawText.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!cleanedText) {
+      showToast?.('Add content to your document before analyzing readability');
+      return;
+    }
+
+    const words = cleanedText.split(' ').filter(Boolean);
+    if (words.length < 3) {
+      showToast?.('Write a few more words for an accurate readability score');
+      return;
+    }
+
+    const sentences = cleanedText.split(/[.!?]+/).filter((s) => s.trim().length > 0).length || 1;
+    let totalSyllables = 0;
+    words.forEach((w) => {
+      const word = w.toLowerCase().replace(/[^a-z]/g, '');
+      if (!word) return;
+      if (word.length <= 3) {
+        totalSyllables += 1;
+        return;
+      }
+      let count = word.match(/[aeiouy]{1,2}/g)?.length || 1;
+      if (word.endsWith('e') && !word.endsWith('le')) count -= 1;
+      totalSyllables += Math.max(1, count);
+    });
+
+    const wordsPerSentence = words.length / sentences;
+    const syllablesPerWord = totalSyllables / words.length;
+
+    let score = Math.round(206.835 - (1.015 * wordsPerSentence) - (84.6 * syllablesPerWord));
+    score = Math.max(15, Math.min(100, score));
+
+    let status = 'Excellent';
+    let grade = 'Grade 8';
+    if (score >= 90) { status = 'Very Easy'; grade = 'Grade 5'; }
+    else if (score >= 80) { status = 'Easy'; grade = 'Grade 6'; }
+    else if (score >= 70) { status = 'Fairly Easy'; grade = 'Grade 7'; }
+    else if (score >= 60) { status = 'Standard'; grade = 'Grade 8–9'; }
+    else if (score >= 50) { status = 'Fairly Difficult'; grade = 'Grade 10–12'; }
+    else if (score >= 30) { status = 'Difficult'; grade = 'College'; }
+    else { status = 'Very Confusing'; grade = 'Graduate Level'; }
+
+    const suggestions = [];
+    if (wordsPerSentence > 18) {
+      suggestions.push(`Average sentence length is ${Math.round(wordsPerSentence)} words — consider breaking long sentences`);
+    } else {
+      suggestions.push('Sentence length is well balanced for good reading rhythm');
+    }
+
+    if (syllablesPerWord > 1.5) {
+      suggestions.push('Vocabulary contains complex multisyllabic words — simplify for broader clarity');
+    } else {
+      suggestions.push('Clear vocabulary and smooth reading flow');
+    }
+
+    setReadabilityAnalysis({
+      score,
+      status,
+      grade,
+      wordsCount: words.length,
+      suggestions,
+    });
+    setDocReadabilityScore(score);
+    showToast?.(`Readability analyzed: ${score}/100 (${status})`);
+  }, [docBodyHtml, getPlainText]);
 
   const computeDocumentOutline = useCallback(() => {
     if (!documentCardRef.current) {
@@ -50567,13 +50640,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                   {/* ── Readability Popover ─────────────────────────────── */}
                   {readabilityPopover.open && (() => {
-                    const vw = window.innerWidth;
-                    const rect = readabilityPopover.anchorRect;
-                    const W = 268;
-                    let left = rect ? rect.left : (vw - W) / 2;
-                    if (left + W > vw - 12) left = vw - W - 12;
-                    if (left < 12) left = 12;
-                    const top = rect ? rect.bottom + 6 : 80;
+                    const W = 216;
                     return createPortal(
                       <>
                         {/* Scrim — click outside closes */}
@@ -50584,62 +50651,117 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         />
                         <div
                           className="readability-popover"
-                          style={{ position: 'fixed', top, left, width: W }}
+                          style={{ position: 'fixed', top: 12, left: 12, width: W }}
                           role="dialog"
                           aria-label="Readability analysis"
                           onPointerDown={(e) => e.stopPropagation()}
                         >
-                          {/* Score row */}
-                          <div className="readability-popover__score-row">
-                            <div className="readability-popover__score-ring">
-                              <svg width="52" height="52" viewBox="0 0 52 52">
-                                <circle cx="26" cy="26" r="22" fill="none" stroke="#ede9fe" strokeWidth="4"/>
-                                <circle
-                                  cx="26" cy="26" r="22"
-                                  fill="none"
-                                  stroke="#7c3aed"
-                                  strokeWidth="4"
-                                  strokeLinecap="round"
-                                  strokeDasharray={`${2 * Math.PI * 22 * docReadabilityScore / 100} ${2 * Math.PI * 22}`}
-                                  strokeDashoffset={2 * Math.PI * 22 * 0.25}
-                                  style={{ transition: 'stroke-dasharray 0.5s ease' }}
-                                />
-                                <text x="26" y="30" textAnchor="middle" fontSize="13" fontWeight="700" fill="#5b21b6" fontFamily="Inter, system-ui">{docReadabilityScore}</text>
-                              </svg>
+                          {!readabilityAnalysis ? (
+                            /* Empty State when no analysis has been run yet */
+                            <div className="flex flex-col items-center justify-center py-1.5 px-0.5 text-center select-none">
+                              {/* Compact document-gauge container */}
+                              <div className="w-8 h-8 rounded-lg bg-violet-50/80 dark:bg-violet-950/40 border border-violet-200/50 dark:border-violet-800/40 flex items-center justify-center mb-1.5 shadow-2xs">
+                                {/* Custom Regaarder Readability Icon: Document + Gauge/Score Meter (22px) */}
+                                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true" className="text-violet-600 dark:text-violet-400">
+                                  <path d="M4.5 3C4.5 2.17 5.17 1.5 6 1.5H11.5L16 6V17.5C16 18.33 15.33 19 14.5 19H6C5.17 19 4.5 18.33 4.5 17.5V3Z" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M11.5 1.5V6H16" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M7 5H9.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+                                  {/* Readability Score Gauge Meter inside document */}
+                                  <path d="M7 14.5A3.5 3.5 0 1 1 14 14.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+                                  <path d="M10.5 14.5L12 12" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+                                  <circle cx="10.5" cy="14.5" r="0.75" fill="currentColor"/>
+                                </svg>
+                              </div>
+                              
+                              {/* Restrained Typography: ~13.5px semibold title */}
+                              <div className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 mb-0.5 tracking-tight">
+                                No readability data yet
+                              </div>
+                              
+                              {/* Concise, readable supporting text (~11.5px) */}
+                              <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 leading-snug max-w-[185px] mb-2.5">
+                                Analyze document to compute reading ease, grade level, and writing flow.
+                              </p>
+
+                              {/* Predominantly neutral/white button with restrained purple accent & matching analysis icon */}
+                              <button
+                                type="button"
+                                onClick={handleAnalyzeReadability}
+                                className="w-full py-1.5 px-2.5 rounded-lg bg-white hover:bg-violet-50/70 active:bg-violet-100/60 dark:bg-zinc-800 dark:hover:bg-violet-950/50 text-slate-800 dark:text-zinc-100 hover:text-violet-700 dark:hover:text-violet-300 border border-slate-200 dark:border-zinc-700 hover:border-violet-300 dark:hover:border-violet-700 text-[12px] font-semibold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] group"
+                              >
+                                {/* Custom Regaarder Analyze Document Icon: Document + Inspection Mark concept */}
+                                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true" className="text-violet-600 dark:text-violet-400 group-hover:scale-105 transition-transform shrink-0">
+                                  <path d="M2.5 1.5C2.5 1.05 2.85 0.7 3.3 0.7H7.5L10.5 3.7V11.3C10.5 11.75 10.15 12.1 9.7 12.1H3.3C2.85 12.1 2.5 11.75 2.5 11.3V1.5Z" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M7.5 0.7V3.7H10.5" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round"/>
+                                  {/* Inspection graph & check mark */}
+                                  <path d="M4.5 7.5L6 9L8.8 5.5" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                <span>Analyze Document</span>
+                              </button>
                             </div>
-                            <div className="readability-popover__score-meta">
-                              <div className="readability-popover__score-label">Flesch Reading Ease</div>
-                              <div className="readability-popover__score-status">Excellent</div>
-                              <div className="readability-popover__score-grade">Reading level: Grade 8</div>
-                            </div>
-                          </div>
+                          ) : (
+                            /* Real-time Analyzed Data View */
+                            <>
+                              {/* Score row */}
+                              <div className="readability-popover__score-row">
+                                <div className="readability-popover__score-ring">
+                                  <svg width="40" height="40" viewBox="0 0 40 40">
+                                    <circle cx="20" cy="20" r="16" fill="none" stroke="#ede9fe" strokeWidth="3"/>
+                                    <circle
+                                      cx="20" cy="20" r="16"
+                                      fill="none"
+                                      stroke="#7c3aed"
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                      strokeDasharray={`${2 * Math.PI * 16 * readabilityAnalysis.score / 100} ${2 * Math.PI * 16}`}
+                                      strokeDashoffset={2 * Math.PI * 16 * 0.25}
+                                      style={{ transition: 'stroke-dasharray 0.5s ease' }}
+                                    />
+                                    <text x="20" y="24" textAnchor="middle" fontSize="11.5" fontWeight="700" fill="#5b21b6" fontFamily="Inter, system-ui">{readabilityAnalysis.score}</text>
+                                  </svg>
+                                </div>
+                                <div className="readability-popover__score-meta">
+                                  <div className="readability-popover__score-label">Flesch Reading Ease</div>
+                                  <div className="readability-popover__score-status">{readabilityAnalysis.status}</div>
+                                  <div className="readability-popover__score-grade">Reading level: {readabilityAnalysis.grade}</div>
+                                </div>
+                              </div>
 
-                          {/* Divider */}
-                          <div className="readability-popover__divider" />
+                              {/* Divider */}
+                              <div className="readability-popover__divider" />
 
-                          {/* Suggestions */}
-                          <div className="readability-popover__suggestions">
-                            <div className="readability-popover__suggestions-title">Suggestions</div>
-                            <ul className="readability-popover__suggestions-list">
-                              <li>Shorten sentences in paragraph 3 for clarity</li>
-                              <li>Replace passive voice in the introduction</li>
-                            </ul>
-                          </div>
+                              {/* Suggestions */}
+                              <div className="readability-popover__suggestions">
+                                <div className="readability-popover__suggestions-title">Suggestions</div>
+                                <ul className="readability-popover__suggestions-list">
+                                  {readabilityAnalysis.suggestions.map((sug, i) => (
+                                    <li key={i}>{sug}</li>
+                                  ))}
+                                </ul>
+                              </div>
 
-                          {/* Footer CTA */}
-                          <button
-                            type="button"
-                            className="readability-popover__cta"
-                            onClick={() => {
-                              setReadabilityPopover({ open: false, anchorRect: null });
-                              showToast('Readability suggestions: coming soon');
-                            }}
-                          >
-                            View suggestions
-                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-                              <path d="M2 5.5h7M6 3l3 2.5L6 8" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </button>
+                              {/* Footer Actions */}
+                              <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-100 dark:border-zinc-800/80">
+                                <button
+                                  type="button"
+                                  onClick={() => setReadabilityAnalysis(null)}
+                                  className="text-[11px] font-medium text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+                                >
+                                  Reset
+                                </button>
+                                <button
+                                  type="button"
+                                  className="readability-popover__cta !mt-0 !w-auto"
+                                  onClick={handleAnalyzeReadability}
+                                >
+                                  <span>Re-analyze</span>
+                                  <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                                    <path d="M2 5.5h7M6 3l3 2.5L6 8" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </>,
                       document.fullscreenElement ?? document.body
