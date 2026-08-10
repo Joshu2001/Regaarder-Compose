@@ -33,6 +33,7 @@ import RoomLandingPage from './RoomLandingPage';
 import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 import HelpSupportPanel from './components/HelpSupportPanel';
 import TemplateChartVisualizer, { extractTemplateChartData } from './components/TemplateChartVisualizer';
+import CitationPopover from './components/CitationPopover';
 
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
@@ -6038,6 +6039,7 @@ export default function App() {
   const [pageOrientation, setPageOrientation] = useState('portrait');
   const [docMargins, setDocMargins] = useState('normal');
   const [docPageSize, setDocPageSize] = useState('a4');
+  const [docOutlineEnabled, setDocOutlineEnabled] = useState(true);
   const [showPageNumbers, setShowPageNumbers] = useState(true);
   const [pageNumberPos, setPageNumberPos] = useState('bottom-center');
   const [docHeaderText, setDocHeaderText] = useState('');
@@ -11537,6 +11539,251 @@ export default function App() {
     }
     return blankBodyRef.current || documentCardRef.current;
   };
+
+  // ── Citation System State ─────────────────────────────────────────────────
+  // Layer 1: master source registry — one entry per unique real-world source
+  const [docSources,   setDocSources]   = useState([]);
+  // Layer 2: inline citation placements — many may share the same sourceId
+  const [docCitations, setDocCitations] = useState([]);
+  // Always-current ref for use inside event listeners
+  const docCitationsRef = useRef([]);
+  const docSourcesRef   = useRef([]);
+  const [citationPopover, setCitationPopover] = useState({
+    open: false, anchorRect: null, savedRange: null, selectedText: '',
+  });
+
+  /**
+   * Restore a saved selection range then insert HTML at the cursor.
+   * Falls back to document.execCommand if the compose helper is unavailable.
+   */
+  const restoreSelectionAndInsert = (html) => {
+    const range = citationPopover.savedRange || savedSelectionRef.current;
+    const editor = getActiveEditorRoot();
+    if (editor) editor.focus();
+    if (range) {
+      const sel = window.getSelection();
+      if (sel) { sel.removeAllRanges(); sel.addRange(range); }
+    }
+    if (window.__composeInsertHTML) {
+      window.__composeInsertHTML(html);
+    } else {
+      document.execCommand('insertHTML', false, html);
+    }
+  };
+
+  /**
+   * Scan the document body top-to-bottom and recompute [N] display numbers.
+   * Returns Map<sourceId, displayNumber> — first-seen source gets 1, etc.
+   * Updates each sup.compose-citation textContent in place.
+   */
+  const computeAndApplyCitationOrder = (citations, sources) => {
+    if (!blankBodyRef.current) return new Map();
+    const markers = Array.from(
+      blankBodyRef.current.querySelectorAll('sup.compose-citation[data-cit-id]')
+    );
+    const seen = new Map(); // sourceId → display number
+    let counter = 1;
+    markers.forEach((el) => {
+      const citId = el.dataset.citId;
+      const cit = citations.find((c) => c.id === citId);
+      if (!cit) return;
+      if (!seen.has(cit.sourceId)) seen.set(cit.sourceId, counter++);
+      el.textContent = `[${seen.get(cit.sourceId)}]`;
+    });
+    return seen;
+  };
+
+  /**
+   * Find or create the References block at the end of the document body.
+   * Clears and rebuilds it from the canonical sources list, ordered by
+   * first appearance in the document (derived from computeAndApplyCitationOrder).
+   * Uses only CSS classes — no inline styles, no inline event handlers.
+   */
+  const upsertReferencesSection = (sources, citations) => {
+    if (!blankBodyRef.current || sources.length === 0) {
+      // Remove block if no sources remain
+      blankBodyRef.current?.querySelector('.references-block')?.remove();
+      return;
+    }
+    const orderMap = computeAndApplyCitationOrder(citations, sources);
+
+    // Sort sources by their display number (document appearance order)
+    const ordered = [...sources].sort((a, b) => {
+      const na = orderMap.get(a.id) ?? Infinity;
+      const nb = orderMap.get(b.id) ?? Infinity;
+      return na - nb;
+    });
+
+    // Find or create the references-block container
+    let block = blankBodyRef.current.querySelector('.references-block');
+    if (!block) {
+      block = document.createElement('div');
+      block.className = 'references-block';
+      block.setAttribute('data-block-type', 'references');
+      block.setAttribute('contenteditable', 'false');
+      blankBodyRef.current.appendChild(block);
+    }
+    // Always move to very end of body
+    blankBodyRef.current.appendChild(block);
+
+    // Rebuild inner content from canonical data
+    const heading = document.createElement('div');
+    heading.className = 'references-heading';
+    heading.textContent = 'References';
+
+    const entries = ordered.map((src) => {
+      const num = orderMap.get(src.id) ?? '?';
+      const entry = document.createElement('div');
+      entry.className = 'reference-entry';
+      entry.id = `ref-${src.id}`;
+      entry.dataset.sourceId = src.id;
+      // Vancouver format: [N] Authors. Title. Publisher; Year. doi/url
+      const parts = [];
+      if (src.authors) parts.push(src.authors);
+      if (src.title)   parts.push(src.title);
+      if (src.publisher) parts.push(src.publisher);
+      if (src.year)    parts.push(src.year);
+      let refText = `[${num}] ${parts.join('. ')}.`;
+      if (src.doi)     refText += ` doi:${src.doi}`;
+      else if (src.url) refText += ` ${src.url}`;
+      entry.textContent = refText;
+      return entry;
+    });
+
+    block.innerHTML = '';
+    block.appendChild(heading);
+    entries.forEach((e) => block.appendChild(e));
+  };
+
+  /**
+   * Controlled insertion API.
+   * The ONLY entry point for placing a citation in the document — for both
+   * manual/URL/DOI flows and the AI contract. The AI never calls this directly;
+   * it goes through window.__insertCitationFromAI which validates first.
+   */
+  const insertCitation = (sourceData) => {
+    // Deduplicate: reuse existing source if doi/url/title+authors match
+    const existingSrc = docSourcesRef.current.find((s) => {
+      if (sourceData.doi && s.doi &&
+          sourceData.doi.trim().toLowerCase() === s.doi.trim().toLowerCase()) return true;
+      if (sourceData.url && s.url &&
+          sourceData.url.trim().toLowerCase() === s.url.trim().toLowerCase()) return true;
+      if (sourceData.title && sourceData.authors &&
+          sourceData.title.trim().toLowerCase() === s.title.trim().toLowerCase() &&
+          sourceData.authors.trim().toLowerCase() === s.authors.trim().toLowerCase()) return true;
+      return false;
+    });
+
+    const source = existingSrc ?? {
+      id: 'src_' + Math.random().toString(36).slice(2, 9),
+      title: sourceData.title ?? '',
+      authors: sourceData.authors ?? '',
+      year: sourceData.year ?? '',
+      publisher: sourceData.publisher ?? '',
+      url: sourceData.url ?? '',
+      doi: sourceData.doi ?? '',
+      citationStyle: 'vancouver',
+      addedAt: new Date().toISOString(),
+    };
+
+    const nextSources = existingSrc
+      ? docSourcesRef.current
+      : [...docSourcesRef.current, source];
+
+    // Create a new citation placement record
+    const citId = 'cit_' + Math.random().toString(36).slice(2, 9);
+    const newCitation = { id: citId, sourceId: source.id };
+    const nextCitations = [...docCitationsRef.current, newCitation];
+
+    // Update state and refs atomically
+    if (!existingSrc) setDocSources(nextSources);
+    setDocCitations(nextCitations);
+    docCitationsRef.current   = nextCitations;
+    docSourcesRef.current     = nextSources;
+
+    // Insert a clean <sup> marker — no inline style, no inline onclick
+    const markerHtml = `<sup class="compose-citation" data-cit-id="${citId}" contenteditable="false">[?]</sup>`;
+    restoreSelectionAndInsert(markerHtml);
+
+    // Recompute all [N] labels from document order
+    computeAndApplyCitationOrder(nextCitations, nextSources);
+
+    // Rebuild the References section
+    upsertReferencesSection(nextSources, nextCitations);
+
+    // Sync DOM → React state
+    if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+    showToast('Citation inserted');
+  };
+
+  /**
+   * Click-delegation listener for the document body.
+   * Handles [N] → Reference scroll and Reference → [N] back-navigation.
+   * Wired in a useEffect so it always uses current docCitationsRef.
+   */
+  useEffect(() => {
+    const body = blankBodyRef.current;
+    if (!body) return;
+
+    const handleCitationClick = (e) => {
+      // Forward: marker → Reference entry
+      const marker = e.target.closest('sup.compose-citation[data-cit-id]');
+      if (marker) {
+        const citId = marker.dataset.citId;
+        const cit = docCitationsRef.current.find((c) => c.id === citId);
+        if (cit) {
+          document.getElementById(`ref-${cit.sourceId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+      // Backward: reference entry → first marker for that source
+      const refEntry = e.target.closest('.reference-entry[data-source-id]');
+      if (refEntry) {
+        const sourceId = refEntry.dataset.sourceId;
+        const firstMarkerCit = docCitationsRef.current.find((c) => c.sourceId === sourceId);
+        if (firstMarkerCit) {
+          const markerEl = body.querySelector(`sup.compose-citation[data-cit-id="${firstMarkerCit.id}"]`);
+          markerEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    };
+
+    body.addEventListener('click', handleCitationClick);
+    return () => body.removeEventListener('click', handleCitationClick);
+  // Re-wire whenever the body ref changes (e.g. doc switched)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blankBodyRef.current]);
+
+  /**
+   * Controlled AI surface — the ONLY way the AI agent may insert a citation.
+   * Validates all required fields and confidence before delegating to insertCitation().
+   * The AI must never call DOM APIs, execCommand, or insertCitation() directly.
+   */
+  useEffect(() => {
+    window.__insertCitationFromAI = (payload) => {
+      // Validate required fields
+      if (!payload?.title?.trim() || !payload?.authors?.trim()) {
+        console.warn('[Citation AI] Rejected: missing title or authors');
+        showToast('Error: Citation must have a title and authors.');
+        return;
+      }
+      if (!payload?.url?.trim() && !payload?.doi?.trim()) {
+        console.warn('[Citation AI] Rejected: no url or doi provided');
+        showToast('Error: Citation must include a URL or DOI.');
+        return;
+      }
+      if (payload.confidence === 'low') {
+        console.warn('[Citation AI] Rejected: low confidence');
+        showToast('No reliable source found supporting this claim.');
+        return;
+      }
+      // Delegate to the controlled API
+      insertCitation(payload);
+    };
+    return () => { delete window.__insertCitationFromAI; };
+  // Re-register whenever insertCitation identity changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docSources, docCitations]);
 
   const pageOptionsMenuRef = useRef(null);
   const emojiControlsRef = useRef(null);
@@ -30218,7 +30465,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       ? 'right-12 text-right'
       : 'left-1/2 -translate-x-1/2 text-center';
 
-  const showDocumentOutlineView = (isFocusMode || activeDocView === 'document') && activeRightTab !== 'whiteboard';
+  const showDocumentOutlineView = (isFocusMode || activeDocView === 'document') && activeRightTab !== 'whiteboard' && docOutlineEnabled;
   const rightMiniRailWidth = 0;
   const blurEdgeGuard = 0;
   const blurLeftInset = leftSidebarOpen ? leftSidebarWidth : 0;
@@ -50212,14 +50459,50 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
                 <button
                   type="button"
-                  onClick={() => showToast('Citation generated & inserted')}
+                  id="review-toolbar-insert-citation-btn"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    // Capture the current selection range and selected text BEFORE
+                    // the popover opens and the editor loses focus.
+                    const sel = window.getSelection();
+                    let savedRange = null;
+                    let selectedText = '';
+                    if (sel && sel.rangeCount) {
+                      try {
+                        const r = sel.getRangeAt(0);
+                        if (blankBodyRef.current?.contains(r.commonAncestorContainer)) {
+                          savedRange = r.cloneRange();
+                          savedSelectionRef.current = savedRange;
+                          selectedText = sel.toString().trim();
+                        }
+                      } catch (_) {}
+                    }
+                    const anchorRect = e.currentTarget.getBoundingClientRect();
+                    setCitationPopover({ open: true, anchorRect, savedRange, selectedText });
+                  }}
                   className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
                 >
                   + Insert Citation
                 </button>
                 <button
                   type="button"
-                  onClick={() => protectSelectedRange('text')}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    // Focus editor so DOM commands and range detection work
+                    getActiveEditorRoot()?.focus();
+                    const sel = window.getSelection();
+                    if (sel && sel.rangeCount > 0 && !sel.getRangeAt(0).collapsed) {
+                      // Text is selected — redact the selection
+                      protectSelectedRange('text');
+                    } else {
+                      // No selection — redact the current block element (paragraph, heading, table, etc.)
+                      protectCurrentElement('block');
+                    }
+                    // Sync DOM back to React state (mirrors slash command behaviour)
+                    if (blankBodyRef.current) {
+                      setDocBodyHtml(blankBodyRef.current.innerHTML);
+                    }
+                  }}
                   className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
                 >
                   ⬛ Redact Selection
@@ -50260,35 +50543,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </button>
                 </div>
 
-                {/* Margins */}
-                <select
+                {/* Margins — AppleToolbarDropdown */}
+                <AppleToolbarDropdown
                   value={docMargins}
-                  onChange={(e) => setDocMargins(e.target.value)}
-                  className="text-xs font-medium bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/50 rounded-lg px-2 py-1 outline-none cursor-pointer shrink-0"
-                >
-                  <option value="normal">Normal Margins (1.0 in)</option>
-                  <option value="narrow">Narrow Margins (0.5 in)</option>
-                  <option value="wide">Wide Margins (1.5 in)</option>
-                </select>
+                  options={[
+                    { id: 'normal', label: 'Normal Margins (1.0 in)' },
+                    { id: 'narrow', label: 'Narrow Margins (0.5 in)' },
+                    { id: 'wide',   label: 'Wide Margins (1.5 in)'   },
+                  ]}
+                  onChange={(id) => setDocMargins(id)}
+                  width="w-52"
+                />
 
-                {/* Page Size */}
-                <select
+                {/* Page Size — AppleToolbarDropdown */}
+                <AppleToolbarDropdown
                   value={docPageSize}
-                  onChange={(e) => setDocPageSize(e.target.value)}
-                  className="text-xs font-medium bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/50 rounded-lg px-2 py-1 outline-none cursor-pointer shrink-0"
-                >
-                  <option value="letter">Letter (8.5 x 11 in)</option>
-                  <option value="a4">A4 (210 x 297 mm)</option>
-                  <option value="legal">Legal (8.5 x 14 in)</option>
-                </select>
+                  options={[
+                    { id: 'letter', label: 'Letter (8.5 x 11 in)' },
+                    { id: 'a4',     label: 'A4 (210 x 297 mm)'    },
+                    { id: 'legal',  label: 'Legal (8.5 x 14 in)'  },
+                  ]}
+                  onChange={(id) => setDocPageSize(id)}
+                  width="w-48"
+                />
 
                 {/* Outline Toggle */}
                 <button
                   type="button"
-                  onClick={() => setShowDocumentOutlineView((prev) => !prev)}
-                  className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer ${showDocumentOutlineView ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/60'}`}
+                  onClick={() => setDocOutlineEnabled((prev) => !prev)}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer ${docOutlineEnabled ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/60'}`}
                 >
-                  Outline: {showDocumentOutlineView ? 'On' : 'Off'}
+                  Outline: {docOutlineEnabled ? 'On' : 'Off'}
                 </button>
 
                 {/* Dark Mode Toggle */}
@@ -59215,6 +59500,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
           setSheetToolbarTab(null);
           showToast(`Created and opened new template page "${newTpl.name}" in View!`);
         }}
+      />
+
+      {/* ── Citation Popover ────────────────────────────────────────────── */}
+      <CitationPopover
+        isOpen={citationPopover.open}
+        anchorRect={citationPopover.anchorRect}
+        selectedText={citationPopover.selectedText}
+        existingSources={docSources}
+        onInsert={(sourceData) => insertCitation(sourceData)}
+        onClose={() => setCitationPopover((p) => ({ ...p, open: false }))}
       />
     </div>
   );
