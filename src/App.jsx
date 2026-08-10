@@ -14992,6 +14992,8 @@ export default function App() {
         if (!isDocumentImmersive) {
           setIsDocumentImmersive(true);
         }
+        // Dismiss any open citation popover — its anchor coords are no longer valid in fullscreen
+        setCitationPopover({ open: false, anchorRect: null, savedRange: null, selectedText: '' });
       } else {
         // Only collapse immersive state if native window fullscreen WAS previously active (e.g. user pressed ESC key)
         if (wasNativeFullscreenRef.current) {
@@ -15003,6 +15005,7 @@ export default function App() {
             showToast('Fullscreen mode disabled.');
           }
         }
+        setCitationPopover({ open: false, anchorRect: null, savedRange: null, selectedText: '' });
       }
     };
 
@@ -50204,7 +50207,34 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
 
                       <div className="flex flex-col gap-1 border-t border-gray-100 pt-2 mt-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 mb-1">Collaboration Security</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 mb-1">Citations & Security</span>
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            setTextStyleMenuOpen(false);
+                            const sel = window.getSelection();
+                            let savedRange = null;
+                            let selectedText = '';
+                            if (sel && sel.rangeCount > 0) {
+                              try {
+                                const r = sel.getRangeAt(0);
+                                const editorRoot = getActiveEditorRoot();
+                                if (editorRoot?.contains(r.commonAncestorContainer) || blankBodyRef.current?.contains(r.commonAncestorContainer)) {
+                                  savedRange = r.cloneRange();
+                                  savedSelectionRef.current = savedRange;
+                                  selectedText = sel.toString().trim();
+                                }
+                              } catch (_) {}
+                            }
+                            const rect = e.currentTarget?.getBoundingClientRect();
+                            const anchorRect = rect && rect.width > 0 && rect.height > 0 ? rect : null;
+                            setCitationPopover({ open: true, anchorRect, savedRange, selectedText });
+                          }}
+                          className="w-full text-left px-2 py-1 text-xs rounded hover:bg-violet-50 hover:text-violet-700 flex items-center gap-1.5 font-medium text-slate-700 dark:text-zinc-200"
+                        >
+                          <BookOpen size={13} /> Insert Citation
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
@@ -50467,17 +50497,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     const sel = window.getSelection();
                     let savedRange = null;
                     let selectedText = '';
-                    if (sel && sel.rangeCount) {
+                    if (sel && sel.rangeCount > 0) {
                       try {
                         const r = sel.getRangeAt(0);
-                        if (blankBodyRef.current?.contains(r.commonAncestorContainer)) {
+                        const editorRoot = getActiveEditorRoot();
+                        if (editorRoot?.contains(r.commonAncestorContainer) || blankBodyRef.current?.contains(r.commonAncestorContainer)) {
                           savedRange = r.cloneRange();
                           savedSelectionRef.current = savedRange;
                           selectedText = sel.toString().trim();
                         }
                       } catch (_) {}
                     }
-                    const anchorRect = e.currentTarget.getBoundingClientRect();
+                    const rect = e.currentTarget?.getBoundingClientRect();
+                    const anchorRect = rect && rect.width > 0 && rect.height > 0 ? rect : null;
                     setCitationPopover({ open: true, anchorRect, savedRange, selectedText });
                   }}
                   className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
@@ -59509,7 +59541,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         selectedText={citationPopover.selectedText}
         existingSources={docSources}
         onInsert={(sourceData) => insertCitation(sourceData)}
-        onClose={() => setCitationPopover((p) => ({ ...p, open: false }))}
+        onClose={() => setCitationPopover({ open: false, anchorRect: null, savedRange: null, selectedText: "" })}
       />
     </div>
   );

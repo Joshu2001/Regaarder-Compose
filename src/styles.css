@@ -1884,13 +1884,13 @@ sup.compose-citation:hover {
 .citation-popover-scrim {
   position: fixed;
   inset: 0;
-  z-index: 9998;
+  z-index: 200005;
   background: transparent;
 }
 
 /* ── Citation Popover panel ──────────────────────────────────────────────── */
 .citation-popover {
-  z-index: 9999;
+  z-index: 200010;
   background: rgba(255, 255, 255, 0.97);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);

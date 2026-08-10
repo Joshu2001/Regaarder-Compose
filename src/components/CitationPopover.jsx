@@ -108,7 +108,11 @@ export default function CitationPopover({
     if (!isOpen) return;
     const onResize = () => setResizeTick((t) => t + 1);
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    document.addEventListener("fullscreenchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      document.removeEventListener("fullscreenchange", onResize);
+    };
   }, [isOpen]);
 
   // Compute position anchored below the trigger button with strict viewport bounds
@@ -117,11 +121,19 @@ export default function CitationPopover({
     const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
     const vh = typeof window !== "undefined" ? window.innerHeight : 800;
 
-    // Fallback if anchorRect is missing or invalid (0,0)
-    if (!anchorRect || (anchorRect.top === 0 && anchorRect.bottom === 0)) {
+    // Check if anchorRect is missing, zero, or off-screen (e.g. after exiting fullscreen or when toolbar is hidden)
+    const isAnchorInvalid =
+      !anchorRect ||
+      (anchorRect.top === 0 && anchorRect.bottom === 0) ||
+      anchorRect.bottom <= 0 ||
+      anchorRect.top >= vh - 20 ||
+      anchorRect.right <= 0 ||
+      anchorRect.left >= vw;
+
+    if (isAnchorInvalid) {
       const left = Math.max(16, Math.min(vw - W - 16, (vw - W) / 2));
-      const top = Math.max(16, 120);
-      const maxHeight = Math.max(200, vh - top - 24);
+      const top = Math.max(16, Math.min(vh - 200, 120));
+      const maxHeight = Math.max(220, vh - top - 24);
       return { top, left, width: W, maxHeight };
     }
 
