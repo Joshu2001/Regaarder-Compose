@@ -25,7 +25,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -40135,14 +40135,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <div className={`w-full space-y-2.5 ${hasMoreThan3Docs && isDataFilesDropdownOpen ? 'max-h-[220px] overflow-y-auto thin-scrollbar pr-1.5' : ''}`}>
                                   {filesToRender.map((fileItem) => {
                                     const ext = fileItem?.name ? fileItem.name.substring(fileItem.name.lastIndexOf('.') + 1).toUpperCase() : 'XLSX';
+                                    const isSpreadsheet = ['XLSX', 'XLS', 'CSV', 'ODS'].includes(ext);
+                                    const isPdf = ext === 'PDF';
+                                    const isPresentation = ['PPTX', 'PPT', 'KEY'].includes(ext);
+                                    const badgeBgColor = isSpreadsheet ? '#059669' : isPdf ? '#DC2626' : isPresentation ? '#D97706' : '#7C3AED';
+
                                     return (
                                       <div key={fileItem.id || fileItem.name} className="w-full bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-700/60 rounded-2xl p-3.5 flex items-center justify-between text-left transition-all hover:border-slate-300 dark:hover:border-zinc-600">
                                         <div className="flex items-center gap-3.5 min-w-0">
-                                          <div className="w-10 h-11 rounded-lg bg-violet-600 flex flex-col items-center justify-center text-white shrink-0 shadow-sm relative overflow-hidden">
-                                            <div className="text-[9px] font-black tracking-tighter uppercase mb-0.5">
+                                          <div
+                                            className="w-10 h-11 rounded-xl flex flex-col items-center justify-center text-white shrink-0 shadow-xs relative overflow-hidden"
+                                            style={{ backgroundColor: badgeBgColor }}
+                                          >
+                                            <div className="text-[9.5px] font-black tracking-tighter uppercase mb-0.5">
                                               {ext}
                                             </div>
-                                            <Table size={14} />
+                                            {isSpreadsheet ? (
+                                              <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                                                <path d="M2.5 6.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+                                                <path d="M2.5 10.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+                                                <path d="M6.5 6.5V13.5" stroke="currentColor" strokeWidth="1.2" />
+                                              </svg>
+                                            ) : isPdf ? (
+                                              <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M3.5 2H10L13.5 5.5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+                                                <path d="M9.5 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+                                              </svg>
+                                            ) : (
+                                              <Table size={14} />
+                                            )}
                                           </div>
                                           <div className="min-w-0">
                                             <h4 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 truncate">
@@ -49808,7 +49830,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     input.onchange = (e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        setDocContextMaterials((prev) => [...prev, { id: String(Date.now()), name: file.name, type: file.name.endsWith('.pdf') ? 'pdf' : 'document', size: `${Math.round(file.size/1024)} KB` }]);
+                        const ext = file.name.split('.').pop().toLowerCase();
+                        let type = 'document';
+                        if (['xlsx', 'xls', 'csv', 'ods'].includes(ext)) type = 'spreadsheet';
+                        else if (['pptx', 'ppt', 'key'].includes(ext)) type = 'presentation';
+                        else if (['pdf'].includes(ext)) type = 'pdf';
+                        else if (['txt', 'md', 'doc', 'docx'].includes(ext)) type = 'document';
+
+                        setDocContextMaterials((prev) => [...prev, { id: String(Date.now()), name: file.name, type, size: `${Math.round(file.size/1024)} KB` }]);
                         showToast(`Added ${file.name} to AI Context`);
                       }
                     };
@@ -49819,31 +49848,110 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <Plus size={13} /> Add Source File
                 </button>
 
-                {docContextMaterials.map((mat) => (
-                  <div key={mat.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 select-none">
-                    <span>{mat.type === 'pdf' ? '📄' : mat.type === 'spreadsheet' ? '📊' : '📝'}</span>
-                    <span className="max-w-[140px] truncate">{mat.name}</span>
-                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">({mat.size})</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDocContextMaterials((prev) => prev.filter((m) => m.id !== mat.id));
-                        showToast(`Removed ${mat.name}`);
-                      }}
-                      className="ml-0.5 text-slate-400 hover:text-rose-500 rounded p-0.5 transition-colors cursor-pointer"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                ))}
+                {docContextMaterials.map((mat) => {
+                  const nameLower = (mat.name || '').toLowerCase();
+                  const typeLower = (mat.type || '').toLowerCase();
+
+                  let category = 'document';
+                  if (typeLower === 'spreadsheet' || nameLower.endsWith('.xlsx') || nameLower.endsWith('.xls') || nameLower.endsWith('.csv') || nameLower.endsWith('.ods')) {
+                    category = 'spreadsheet';
+                  } else if (typeLower === 'presentation' || nameLower.endsWith('.pptx') || nameLower.endsWith('.ppt') || nameLower.endsWith('.key')) {
+                    category = 'presentation';
+                  } else if (typeLower === 'pdf' || nameLower.endsWith('.pdf')) {
+                    category = 'pdf';
+                  }
+
+                  let extLabel = (mat.name.split('.').pop() || mat.type || 'FILE').toUpperCase();
+                  if (extLabel.length > 4) {
+                    extLabel = category === 'spreadsheet' ? 'XLS' : category === 'presentation' ? 'PPT' : category === 'pdf' ? 'PDF' : 'DOC';
+                  }
+
+                  const fileBadges = {
+                    spreadsheet: {
+                      bgHex: '#059669', // Emerald Green for Sheets
+                      svg: (
+                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                          <path d="M2.5 6.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+                          <path d="M2.5 10.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+                          <path d="M6.5 6.5V13.5" stroke="currentColor" strokeWidth="1.2" />
+                        </svg>
+                      )
+                    },
+                    presentation: {
+                      bgHex: '#D97706', // Amber Orange for Decks
+                      svg: (
+                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="2" y="2.5" width="12" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                          <path d="M5.5 14L8 11L10.5 14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )
+                    },
+                    pdf: {
+                      bgHex: '#DC2626', // Rose Red for PDF
+                      svg: (
+                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3.5 2H10L13.5 5.5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+                          <path d="M9.5 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+                        </svg>
+                      )
+                    },
+                    document: {
+                      bgHex: '#7C3AED', // Violet Purple for Docs/Text
+                      svg: (
+                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3.5 2H10.5L13.5 5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+                          <path d="M10 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+                        </svg>
+                      )
+                    }
+                  };
+
+                  const badge = fileBadges[category];
+
+                  return (
+                    <div key={mat.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 select-none">
+                      {/* Miniature SVG Icon Badge replacing the emoji (same size as emoji) */}
+                      <span
+                        className="w-[18px] h-[20px] rounded-[4px] flex flex-col items-center justify-center shrink-0 leading-none select-none text-white shadow-2xs"
+                        style={{ backgroundColor: badge.bgHex }}
+                      >
+                        <span className="text-[6px] font-black tracking-tighter uppercase mb-[1px] text-white leading-none">{extLabel}</span>
+                        {badge.svg}
+                      </span>
+                      <span className="max-w-[140px] truncate">{mat.name}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">({mat.size})</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDocContextMaterials((prev) => prev.filter((m) => m.id !== mat.id));
+                          showToast(`Removed ${mat.name}`);
+                        }}
+                        className="ml-0.5 text-slate-400 hover:text-rose-500 rounded p-0.5 transition-colors cursor-pointer"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex items-center gap-2 shrink-0 border-l border-slate-200/60 dark:border-zinc-800 pl-3">
                 <button
                   type="button"
                   onClick={() => showToast('AI synthesized all attached context sources')}
-                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-3 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 active:scale-95 text-white flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 >
-                  <Sparkles size={13} className="text-violet-600 dark:text-violet-400" /> Synthesize
+                  {/* Custom Geometric Synthesis / Fusion Icon (Converging sources -> coherent output) */}
+                  <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="6.75" y="6.75" width="2.5" height="2.5" rx="0.5" fill="currentColor" />
+                    <path d="M3 3L6.5 6.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                    <circle cx="2.5" cy="2.5" r="1.2" fill="currentColor" />
+                    <path d="M3 13L6.5 9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                    <circle cx="2.5" cy="13.5" r="1.2" fill="currentColor" />
+                    <path d="M13 8H9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                    <circle cx="13.5" cy="8" r="1.2" fill="currentColor" />
+                  </svg>
+                  Synthesize
                 </button>
               </div>
             </div>
