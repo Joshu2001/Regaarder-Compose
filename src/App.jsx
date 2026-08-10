@@ -12512,14 +12512,16 @@ export default function App() {
 
   const computeDocumentStats = useCallback(() => {
     syncPageFooters();
-    const rawText = String(documentCardRef.current?.innerText || '')
-      .replace(/\u00a0/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    const words = rawText ? rawText.split(' ').filter(Boolean).length : 0;
-    const characters = rawText.length;
+    const activeEl = documentCardRef.current || blankBodyRef.current;
+    let rawText = String(activeEl?.innerText || activeEl?.textContent || '');
+    if (!rawText.trim() && docBodyHtml) {
+      rawText = getPlainText(docBodyHtml);
+    }
+    const cleanedText = rawText.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+    const words = cleanedText ? cleanedText.split(' ').filter(Boolean).length : 0;
+    const characters = cleanedText.length;
     setDocumentStats({ words, characters });
-  }, [syncPageFooters]);
+  }, [syncPageFooters, docBodyHtml, getPlainText]);
 
   const computeDocumentOutline = useCallback(() => {
     if (!documentCardRef.current) {
@@ -14856,7 +14858,7 @@ export default function App() {
   useEffect(() => {
     computeDocumentStats();
     computeDocumentOutline();
-    if (!documentCardRef.current || typeof MutationObserver === 'undefined') {
+    if (typeof MutationObserver === 'undefined') {
       return;
     }
 
@@ -14866,11 +14868,14 @@ export default function App() {
       window.refreshImageCaptions?.();
     });
 
-    observer.observe(documentCardRef.current, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-    });
+    const targetNode = documentCardRef.current || blankBodyRef.current;
+    if (targetNode) {
+      observer.observe(targetNode, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+    }
 
     return () => observer.disconnect();
   }, [
@@ -50497,8 +50502,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
           {docToolbarTab === 'Review' && (
             /* Review Sub-toolbar: Proofreading, Metrics & Security — Apple-style editorial hierarchy */
-            <div className="w-full flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            <div className="w-full flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0 flex-1">
 
                 {/* ── PRIMARY: Proofread ───────────────────────────────── */}
                 <button
@@ -50507,14 +50512,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   className="review-btn review-btn--primary"
                   title="Proofread document"
                 >
-                  {/* Custom quill + checkmark glyph — semantic, not decorative */}
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                    {/* Quill body */}
-                    <path d="M9.5 1C7.5 1 5.5 3 4.5 5.5L3 10l4.5-1.5C10 7.5 12 5.5 12 3.5c0-1.4-1.1-2.5-2.5-2.5Z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" fill="none"/>
-                    {/* Quill tip line */}
-                    <path d="M4.5 5.5C3.5 6.5 3 8 3 10" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-                    {/* Checkmark tick */}
-                    <path d="M1.5 7.5L3 9l2.5-3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+                  {/* Refined Quill Feather glyph — clean silhouette, unmistakable writing tool */}
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path
+                      d="M12.5 1.5C12.5 1.5 8.2 1.8 5.8 4.8C4.5 6.5 3.3 8.8 2 12C3.8 10.5 6.2 9.2 8.2 7.8C11.2 5.5 12.5 1.5 12.5 1.5Z"
+                      stroke="currentColor"
+                      strokeWidth="1.15"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M12.5 1.5L2 12"
+                      stroke="currentColor"
+                      strokeWidth="1.15"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M8.8 3.5L10.2 2.3"
+                      stroke="currentColor"
+                      strokeWidth="1.1"
+                      strokeLinecap="round"
+                    />
                   </svg>
                   Proofread
                 </button>
@@ -50538,7 +50556,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     aria-expanded={readabilityPopover.open}
                   >
                     {/* Document-eye icon: analytical, not decorative */}
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 13 13" fill="none" aria-hidden="true">
                       <rect x="1.5" y="1.5" width="7" height="9" rx="1" stroke="currentColor" strokeWidth="1"/>
                       <path d="M3.5 4.5h4M3.5 6.5h3" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
                       <circle cx="9.5" cy="9.5" r="2" stroke="currentColor" strokeWidth="1"/>
@@ -50664,7 +50682,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   title="Insert citation"
                 >
                   {/* Reference marker icon */}
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 13 13" fill="none" aria-hidden="true">
                     <rect x="1.5" y="2" width="8" height="9.5" rx="1" stroke="currentColor" strokeWidth="1"/>
                     <path d="M3.5 5h4M3.5 7h2.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
                     <circle cx="10" cy="3.5" r="2" fill="currentColor" opacity="0.85"/>
@@ -50697,7 +50715,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   title="Redact selected text"
                 >
                   {/* Redaction bar icon */}
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 13 13" fill="none" aria-hidden="true">
                     <rect x="1.5" y="5" width="10" height="3" rx="0.75" fill="currentColor" opacity="0.8"/>
                     <path d="M2 2.5h6M2 10h4" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
                   </svg>
@@ -50711,13 +50729,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   className="review-btn review-btn--utility"
                   title="View version history"
                 >
-                  <Clock size={13} />
+                  <Clock size={14} />
                   Version History
                 </button>
 
               </div>
-              <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 shrink-0 border-l border-slate-200/50 dark:border-zinc-800 pl-3 tabular-nums">
-                {docWordCount} words · {docCharCount} chars
+              <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 shrink-0 border-l border-slate-200/50 dark:border-zinc-800 pl-3 pr-1 whitespace-nowrap tabular-nums">
+                {documentStats.words} words · {documentStats.characters} chars
               </div>
             </div>
           )}

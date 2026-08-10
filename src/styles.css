@@ -18,39 +18,39 @@ body { margin: 0; background: #ffffff; }
 .review-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 9px;
-  font-size: 11.5px;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
   font-weight: 500;
   font-family: inherit;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid transparent;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
   transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
-  line-height: 1;
+  line-height: 1.4;
   letter-spacing: -0.01em;
 }
 .review-btn svg { flex-shrink: 0; }
 
-/* PRIMARY — Proofread: purple accent, Regaarder brand colour */
+/* PRIMARY — Proofread: restrained purple accent, Apple editorial hierarchy */
 .review-btn--primary {
-  background: #f5f3ff;
-  border-color: #ddd6fe;
+  background: rgba(124, 58, 237, 0.05);
+  border-color: rgba(124, 58, 237, 0.18);
   color: #6d28d9;
-  font-weight: 600;
+  font-weight: 550;
 }
 .review-btn--primary:hover {
-  background: #ede9fe;
-  border-color: #c4b5fd;
-  box-shadow: 0 1px 3px 0 rgba(109, 40, 217, 0.10);
+  background: rgba(124, 58, 237, 0.09);
+  border-color: rgba(124, 58, 237, 0.28);
+  box-shadow: 0 1px 3px 0 rgba(109, 40, 217, 0.06);
 }
-.review-btn--primary:active { background: #ddd6fe; }
+.review-btn--primary:active { background: rgba(124, 58, 237, 0.14); }
 
 /* Dark mode — primary */
-.dark .review-btn--primary { background: rgba(109,40,217,0.14); border-color: rgba(167,139,250,0.22); color: #a78bfa; }
-.dark .review-btn--primary:hover { background: rgba(109,40,217,0.22); border-color: rgba(167,139,250,0.38); }
+.dark .review-btn--primary { background: rgba(139, 92, 246, 0.08); border-color: rgba(167, 139, 250, 0.18); color: #c4b5fd; }
+.dark .review-btn--primary:hover { background: rgba(139, 92, 246, 0.14); border-color: rgba(167, 139, 250, 0.30); }
 
 /* SECONDARY — Readability: neutral with subtle outline, becomes outlined-purple when active */
 .review-btn--secondary {
