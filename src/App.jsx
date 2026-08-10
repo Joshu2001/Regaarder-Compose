@@ -43,6 +43,50 @@ import AnalyticsHubUI from './analytics/AnalyticsHubUI';
 const API_BASE_URL = (typeof process !== 'undefined' && process.env?.VITE_COLLAB_SERVER_URL) || 
   (import.meta.env?.VITE_COLLAB_SERVER_URL) || 
   (typeof window !== 'undefined' ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? `${window.location.protocol}//${window.location.hostname}:3001` : 'http://localhost:3001') : 'http://localhost:3001');
+
+function hexToRgb(hex) {
+  if (!hex || typeof hex !== 'string') return { r: 124, g: 58, b: 237 };
+  let c = hex.replace('#', '').trim();
+  if (c.length === 3) c = c.split('').map(x => x + x).join('');
+  if (c.length !== 6) return { r: 124, g: 58, b: 237 };
+  const num = parseInt(c, 16);
+  if (isNaN(num)) return { r: 124, g: 58, b: 237 };
+  return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+
+function rgbToHex(r, g, b) {
+  const toHex = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function mixColor(rgb, targetRgb, factor) {
+  return rgbToHex(
+    rgb.r + (targetRgb.r - rgb.r) * factor,
+    rgb.g + (targetRgb.g - rgb.g) * factor,
+    rgb.b + (targetRgb.b - rgb.b) * factor
+  );
+}
+
+function generateColorShades(baseHex) {
+  const baseRgb = hexToRgb(baseHex);
+  const white = { r: 255, g: 255, b: 255 };
+  const dark = { r: 15, g: 23, b: 42 };
+
+  return {
+    50: mixColor(baseRgb, white, 0.92),
+    100: mixColor(baseRgb, white, 0.82),
+    200: mixColor(baseRgb, white, 0.65),
+    300: mixColor(baseRgb, white, 0.45),
+    400: mixColor(baseRgb, white, 0.25),
+    500: baseHex,
+    600: mixColor(baseRgb, dark, 0.15),
+    700: mixColor(baseRgb, dark, 0.30),
+    800: mixColor(baseRgb, dark, 0.45),
+    900: mixColor(baseRgb, dark, 0.60),
+    950: mixColor(baseRgb, dark, 0.75),
+  };
+}
+
 function AIChatAttachmentChip({ file, onRemove }) {
   return (
     <span style={{
@@ -2170,7 +2214,7 @@ const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
                         <div className="flex items-center gap-3">
                           <div className="relative w-9 h-9">
                             <img src={u.avatar} alt={u.name} className="w-full h-full rounded-full object-cover shadow-sm" />
-                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-violet-600 dark:bg-violet-500 border-2 border-white dark:border-zinc-900 rounded-full"></span>
                           </div>
                           <div className="flex flex-col">
                             <span className="text-[13px] font-semibold text-gray-800 leading-tight">{u.name}</span>
@@ -3140,7 +3184,7 @@ const FullPageTemplateGallery = ({
         </div>
 
         {/* Initial 4 Category Pills Bar (Apple Segmented Control Track) */}
-        <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner overflow-x-auto thin-scrollbar my-1">
+        <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-black/90 rounded-xl border border-slate-200/60 dark:border-zinc-800/80 shadow-inner overflow-x-auto thin-scrollbar my-1">
           {[
             { id: 'all', label: 'All Templates' },
             { id: 'finance', label: 'Finance & Growth' },
@@ -3343,7 +3387,7 @@ const FullPageTemplateGallery = ({
               
               {/* Apple-style floating live status badge */}
               <div className="absolute bottom-3 right-3 backdrop-blur-md bg-white/90 dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800/80 rounded-lg px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-zinc-300 shadow-sm flex items-center gap-2 pointer-events-none">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-violet-600 dark:bg-violet-500 animate-pulse" />
                 <span>Live Grid Preview • 100%</span>
               </div>
             </div>
@@ -4641,14 +4685,14 @@ function MoreViewOptionsDropdown({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 origin-top-right top-full mt-1.5 w-60 rounded-xl border border-slate-200/60 dark:border-zinc-800/60 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-xl shadow-md z-[400] overflow-hidden p-3.5 space-y-3.5 animate-in zoom-in-95 fade-in duration-150 select-none">
+        <div className="absolute right-0 origin-top-right top-full mt-1.5 w-[280px] rounded-xl border border-slate-200/60 dark:border-zinc-800/60 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-xl shadow-md z-[400] p-3.5 space-y-3.5 animate-in zoom-in-95 fade-in duration-150 select-none">
           <div className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
             View options
           </div>
 
           {/* Theme Configuration */}
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-medium text-slate-700 dark:text-zinc-300">Theme</span>
+            <span className="text-xs font-medium text-slate-700 dark:text-zinc-300 shrink-0">Theme</span>
             <ThemeDropdown
               value={sheetsThemePalette}
               onChange={(newThemeId) => {
@@ -4665,8 +4709,8 @@ function MoreViewOptionsDropdown({
 
           {/* Freeze Panes Setting */}
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-medium text-slate-700 dark:text-zinc-300">Freeze panes</span>
-            <div className="inline-flex items-center p-0.5 bg-slate-100/80 dark:bg-zinc-800/70 rounded-md text-[11px] border border-slate-200/50 dark:border-zinc-700/50">
+            <span className="text-xs font-medium text-slate-700 dark:text-zinc-300 shrink-0">Freeze panes</span>
+            <div className="inline-flex items-center p-0.5 bg-slate-100/80 dark:bg-zinc-800/70 rounded-lg text-[11px] border border-slate-200/50 dark:border-zinc-700/50">
               {[
                 { id: 'off', label: 'Off' },
                 { id: 'row', label: 'Top Row' },
@@ -4680,7 +4724,7 @@ function MoreViewOptionsDropdown({
                     setFreezePanes?.(item.id);
                     showToast?.(`Freeze panes: ${item.label}`);
                   }}
-                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
                     freezePanes === item.id
                       ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-2xs font-semibold'
                       : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
@@ -4697,6 +4741,8 @@ function MoreViewOptionsDropdown({
             <span className="text-xs font-medium text-slate-700 dark:text-zinc-300">Headers</span>
             <button
               type="button"
+              data-toggle-active={showRowHeaders ? 'true' : 'false'}
+              style={{ backgroundColor: showRowHeaders ? '#7c3aed' : undefined }}
               onPointerDown={(e) => {
                 e.preventDefault();
                 const nextState = !showRowHeaders;
@@ -4704,7 +4750,7 @@ function MoreViewOptionsDropdown({
                 showToast?.(`Headers: ${nextState ? 'Shown' : 'Hidden'}`);
               }}
               className={`relative inline-flex h-3.5 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                showRowHeaders ? 'bg-violet-600 dark:bg-violet-500' : 'bg-slate-300 dark:bg-zinc-600'
+                showRowHeaders ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-600'
               }`}
             >
               <span className={`pointer-events-none inline-block h-2.5 w-2.5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
@@ -5827,54 +5873,16 @@ export default function App() {
     root.style.setProperty('--secondary-color', secondaryColor);
     root.style.setProperty('--accent-gradient', accentGradient || `linear-gradient(135deg, ${brandColor}, ${secondaryColor})`);
 
-    function hexToRgb(hex) {
-      if (!hex || typeof hex !== 'string') return { r: 124, g: 58, b: 237 };
-      let c = hex.replace('#', '').trim();
-      if (c.length === 3) c = c.split('').map(x => x + x).join('');
-      if (c.length !== 6) return { r: 124, g: 58, b: 237 };
-      const num = parseInt(c, 16);
-      if (isNaN(num)) return { r: 124, g: 58, b: 237 };
-      return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
-    }
-
-    function rgbToHex(r, g, b) {
-      const toHex = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
-      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-    }
-
-    function mixColor(rgb, targetRgb, factor) {
-      return rgbToHex(
-        rgb.r + (targetRgb.r - rgb.r) * factor,
-        rgb.g + (targetRgb.g - rgb.g) * factor,
-        rgb.b + (targetRgb.b - rgb.b) * factor
-      );
-    }
-
-    function generateColorShades(baseHex) {
-      const baseRgb = hexToRgb(baseHex);
-      const white = { r: 255, g: 255, b: 255 };
-      const dark = { r: 15, g: 23, b: 42 };
-
-      return {
-        50: mixColor(baseRgb, white, 0.92),
-        100: mixColor(baseRgb, white, 0.82),
-        200: mixColor(baseRgb, white, 0.65),
-        300: mixColor(baseRgb, white, 0.45),
-        400: mixColor(baseRgb, white, 0.25),
-        500: baseHex,
-        600: mixColor(baseRgb, dark, 0.15),
-        700: mixColor(baseRgb, dark, 0.30),
-        800: mixColor(baseRgb, dark, 0.45),
-        900: mixColor(baseRgb, dark, 0.60),
-        950: mixColor(baseRgb, dark, 0.75),
-      };
-    }
-
     const primaryShades = generateColorShades(brandColor);
     const secondaryShades = generateColorShades(secondaryColor);
 
     [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].forEach(weight => {
-      root.style.setProperty(`--accent-${weight}`, primaryShades[weight]);
+      const isDark = document.documentElement.classList.contains('dark') || document.documentElement.classList.contains('app-dark');
+      const violetFallback = {
+        50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd', 400: '#a78bfa',
+        500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95', 950: '#2e1065'
+      };
+      root.style.setProperty(`--accent-${weight}`, isDark ? violetFallback[weight] : primaryShades[weight]);
       root.style.setProperty(`--secondary-${weight}`, secondaryShades[weight]);
     });
   }, [brandColor, secondaryColor, accentGradient]);
@@ -11573,7 +11581,7 @@ export default function App() {
     if (providerRef.current?.awareness) {
       providerRef.current.awareness.setLocalStateField('user', {
         name: currentUser ? currentUser.name : guestUser.name,
-        color: currentUser ? '#10B981' : guestUser.color,
+        color: currentUser ? '#8b5cf6' : guestUser.color,
         avatar: currentUser?.avatar || guestUser.avatar
       });
       providerRef.current.awareness.setLocalStateField('roomId', roomId);
@@ -11601,7 +11609,7 @@ export default function App() {
     const awareness = providerRef.current.awareness;
     awareness.setLocalStateField('user', {
       name: currentUser ? currentUser.name : guestUser.name,
-      color: currentUser ? '#10B981' : guestUser.color,
+      color: currentUser ? '#8b5cf6' : guestUser.color,
       avatar: currentUser?.avatar || guestUser.avatar
     });
     awareness.setLocalStateField('roomId', roomId);
@@ -13436,14 +13444,30 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('rc.darkMode', String(isDarkMode));
+    const root = document.documentElement;
     if (isDarkMode) {
       document.documentElement.classList.add('app-dark', 'dark');
       document.body.classList.add('app-dark', 'dark');
+      const violetFallback = {
+        50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd', 400: '#a78bfa',
+        500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95', 950: '#2e1065'
+      };
+      [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].forEach(weight => {
+        root.style.setProperty(`--accent-${weight}`, violetFallback[weight]);
+      });
+      root.style.setProperty('--accent-primary', '#7c3aed');
+      root.style.setProperty('--accent-dark', '#6d28d9');
+      root.style.setProperty('--accent-hover', '#8b5cf6');
     } else {
       document.documentElement.classList.remove('app-dark', 'dark');
       document.body.classList.remove('app-dark', 'dark');
+      const primaryShades = generateColorShades(brandColor);
+      [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].forEach(weight => {
+        root.style.setProperty(`--accent-${weight}`, primaryShades[weight]);
+      });
+      root.style.setProperty('--accent-primary', brandColor);
     }
-  }, [isDarkMode]);
+  }, [isDarkMode, brandColor]);
 
   useEffect(() => {
     localStorage.setItem('rc.gridLineContrast', gridLineContrast);
@@ -34003,7 +34027,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                           {/* Quiet Apple Status Indicator Dot */}
                           <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-white dark:bg-zinc-900 ring-2 ring-white dark:ring-zinc-900">
                             {person.status === 'active' && (
-                              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                              <span className="h-2 w-2 rounded-full bg-violet-600 dark:bg-violet-500" />
                             )}
                             {person.status === 'away' && (
                               <span className="h-2 w-2 rounded-full bg-amber-500" />
@@ -35740,7 +35764,7 @@ You can recommend task creations on the board.`;
               <div className="space-y-1 text-[14px]">
                 {directMessages.map((name) => (
                   <button key={name} type="button" onClick={() => showToast(`${name} conversation opened`)} className="w-full h-8 px-2 rounded-lg text-[14px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="w-2 h-2 rounded-full bg-violet-600 dark:bg-violet-500" />
                     <span className="truncate">{name}</span>
                   </button>
                 ))}
@@ -35842,7 +35866,7 @@ You can recommend task creations on the board.`;
                       className={`w-full h-8 px-2 rounded-lg text-[14px] flex items-center justify-between text-left ${active ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`}
                     >
                       <span className="truncate">{item}</span>
-                      {index === 0 ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />}
+                      {index === 0 ? <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-500" /> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />}
                     </button>
                   );
                 })}
@@ -37995,9 +38019,9 @@ const renderRoomTopHeader = () => (
         </button>
 
         {/* Recording pill */}
-        <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full border shadow-sm ${isRoomRecording ? 'border-emerald-100/50 bg-emerald-50/10' : 'border-slate-200 bg-white'}`}>
-          {isRoomRecording ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>}
-          <span className="text-[11px] font-medium text-slate-600 tracking-wide pr-1">Recording</span>
+        <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full border shadow-sm ${isRoomRecording ? 'border-violet-100/50 bg-violet-50/10 dark:border-violet-900/50 dark:bg-violet-950/20' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900'}`}>
+          {isRoomRecording ? <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-500 animate-pulse"></span> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600"></span>}
+          <span className="text-[11px] font-medium text-slate-600 dark:text-zinc-300 tracking-wide pr-1">Recording</span>
         </div>
 
         <button 
@@ -38726,7 +38750,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onClick={createSheetsExperience}
                   className="group text-left rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 hover:bg-emerald-50 transition-colors"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center mb-3">
+                  <div className="w-9 h-9 rounded-lg bg-violet-600 text-white flex items-center justify-center mb-3">
                     <Database size={18} />
                   </div>
                   <div className="text-sm font-semibold text-gray-900 mb-1">Sheets</div>
@@ -39014,7 +39038,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setShareModalOpen(false);
                     }
                   }}
-                  className="bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none"
+                  data-share="true"
+                  className="btn-share btn-share-primary bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none"
+                  style={{ backgroundColor: '#7c3aed', color: '#ffffff' }}
                 >
                   <Users size={13} strokeWidth={1.5} /> Share
                 </button>
@@ -39078,12 +39104,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       onClick={() => setProfileMenuOpen(prev => !prev)}
                       className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] hover:ring-2 hover:ring-slate-200 dark:hover:ring-zinc-700 flex items-center justify-center text-[11px] leading-none font-semibold transition-all shadow-sm focus:outline-none ${currentUser ? 'text-white' : 'text-slate-600 dark:text-zinc-350'}`}
                       style={{
-                        backgroundColor: currentUser ? '#10B981' : (isDarkMode ? '#27272a' : '#f1f5f9'),
+                        backgroundColor: currentUser ? '#8b5cf6' : (isDarkMode ? '#27272a' : '#f1f5f9'),
                       }}
                       title={currentUser ? `Profile: ${currentUser.name}` : 'Sign In'}
                     >
                       {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                     </button>
+
 
                     {/* Profile Dropdown Menu */}
                     {profileMenuOpen && (
@@ -39097,7 +39124,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             // Logged In State
                             <div className="flex flex-col gap-3">
                               <div className="flex items-center gap-3 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                                <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-inner">
+                                <div className="w-9 h-9 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold shadow-inner">
                                   {currentUser.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex flex-col min-w-0">
@@ -39112,7 +39139,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Status</span>
-                                  <span className="font-medium text-emerald-600 dark:text-emerald-400">Authenticated ✓</span>
+                                  <span className="font-medium text-violet-600 dark:text-violet-400">Authenticated ✓</span>
                                 </div>
                               </div>
                               <button
@@ -39688,9 +39715,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               >
                                 <span>Chart panel</span>
                                 {/* Compact iOS-Style Switch */}
-                                <span className={`relative inline-flex h-3.5 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                                  showTemplateChart ? 'bg-violet-600 dark:bg-violet-500' : 'bg-slate-300 dark:bg-zinc-600'
-                                }`}>
+                                <span
+                                  data-toggle-active={showTemplateChart ? 'true' : 'false'}
+                                  style={{ backgroundColor: showTemplateChart ? '#7c3aed' : undefined }}
+                                  className={`relative inline-flex h-3.5 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                                    showTemplateChart ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-600'
+                                  }`}
+                                >
                                   <span className={`pointer-events-none inline-block h-2.5 w-2.5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
                                     showTemplateChart ? 'translate-x-2.5' : 'translate-x-0'
                                   }`} />
@@ -39855,7 +39886,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   <span className="text-[9px] font-semibold text-slate-400 px-1 uppercase tracking-tight">Presets & Shades</span>
                                                   <div className="grid grid-cols-6 gap-1 px-1">
                                                     {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff', '#f1f5f9', '#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f0abfc', '#475569', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#0f172a', '#991b1b', '#9a3412', '#854d0e', '#065f46', '#155e75', '#1e40af', '#6b21a8', '#86198f'].map(c => (
-                                                      <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); }} className="w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c}></button>
+                                                      <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); }} className="color-swatch-btn w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c}></button>
                                                     ))}
                                                   </div>
                                                 </div>
@@ -39875,7 +39906,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       'linear-gradient(90deg, #4f46e5 0%, #06b6d4 100%)',
                                                       'linear-gradient(90deg, #10b981 0%, #f59e0b 100%)'
                                                     ].map(g => (
-                                                      <button key={g} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', g); }} className="w-full h-5 rounded-md border border-slate-200 hover:scale-105 transition-transform shadow-xs cursor-pointer" style={{ background: g }} title={g}></button>
+                                                      <button key={g} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', g); }} className="color-swatch-btn w-full h-5 rounded-md border border-slate-200 hover:scale-105 transition-transform shadow-xs cursor-pointer" style={{ background: g }} title={g}></button>
                                                     ))}
                                                   </div>
                                                 </div>
@@ -39929,7 +39960,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 </div>
                                                 <div className="grid grid-cols-6 gap-1 px-1">
                                                   {['#ffffff', '#000000', '#1e293b', '#475569', '#64748b', '#94a3b8', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ec4899', '#991b1b', '#9a3412', '#854d0e', '#065f46', '#155e75', '#1e40af', '#3730a3', '#6b21a8'].map(c => (
-                                                    <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', c); }} className="w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c === '#ffffff' ? 'White (#ffffff)' : c}></button>
+                                                    <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', c); }} className="color-swatch-btn w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c === '#ffffff' ? 'White (#ffffff)' : c}></button>
                                                   ))}
                                                 </div>
                                                 <div className="flex items-center gap-1.5 px-1 pt-1">
@@ -39963,7 +39994,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 <div className="grid grid-cols-6 gap-1 px-1">
                                                   <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); }} className="w-5 h-5 rounded-md border border-slate-200 bg-white hover:scale-110 transition-transform flex items-center justify-center cursor-pointer" title="No Highlight"><X size={11} className="text-slate-400"/></button>
                                                   {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff', '#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f0abfc'].map(c => (
-                                                    <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); }} className="w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c}></button>
+                                                    <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); }} className="color-swatch-btn w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c}></button>
                                                   ))}
                                                 </div>
                                               </div>
@@ -40065,7 +40096,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     return (
                                       <div key={fileItem.id || fileItem.name} className="w-full bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-700/60 rounded-2xl p-3.5 flex items-center justify-between text-left transition-all hover:border-slate-300 dark:hover:border-zinc-600">
                                         <div className="flex items-center gap-3.5 min-w-0">
-                                          <div className="w-10 h-11 rounded-lg bg-emerald-500 flex flex-col items-center justify-center text-white shrink-0 shadow-sm relative overflow-hidden">
+                                          <div className="w-10 h-11 rounded-lg bg-violet-600 flex flex-col items-center justify-center text-white shrink-0 shadow-sm relative overflow-hidden">
                                             <div className="text-[9px] font-black tracking-tighter uppercase mb-0.5">
                                               {ext}
                                             </div>
@@ -40085,7 +40116,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0">
-                                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-medium border border-emerald-200/60 dark:border-emerald-800/40">
+                                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 text-xs font-medium border border-violet-200/60 dark:border-violet-800/40">
                                             <Check size={13} strokeWidth={2.5} />
                                             <span>Processed</span>
                                           </div>
@@ -42012,7 +42043,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           
                                           <label className="flex items-center justify-between cursor-pointer group">
                                             <span className="text-[13px] font-medium text-slate-700 group-hover:text-slate-900 transition-colors">Show Axes & Grid</span>
-                                            <div className={`w-9 h-5 rounded-full transition-colors relative shadow-inner ${overlay.showAxes !== false ? 'bg-violet-500' : 'bg-slate-200'}`}>
+                                            <div data-toggle-active={overlay.showAxes !== false ? "true" : "false"} style={{ backgroundColor: overlay.showAxes !== false ? '#7c3aed' : undefined }} className={`w-9 h-5 rounded-full transition-colors relative shadow-inner ${overlay.showAxes !== false ? 'bg-violet-600 dark:bg-violet-500' : 'bg-slate-200 dark:bg-zinc-700'}`}>
                                               <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${overlay.showAxes !== false ? 'translate-x-4' : 'translate-x-0'}`} />
                                               <input type="checkbox" className="hidden" checked={overlay.showAxes !== false} onChange={(e) => updateOverlay({ showAxes: e.target.checked })} />
                                             </div>
@@ -42373,6 +42404,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 const shadowStyle = (shadows.length > 0 || isCellSelectedAnchor) && !isShapeInteracting 
                                   ? { boxShadow: shadows.length > 0 ? shadows.join(', ') : `0 0 0 2px ${selectionBorderColor}`, zIndex: isCellSelectedAnchor ? 35 : 25 } 
                                   : {};
+                                const isBottomRightCorner = (isSingleCellSelected || (selectedSheetRange && isBottomEdge && isRightEdge)) && sheetSelectionMode === 'cell';
 
                                 const isInColBand = !isShapeInteracting && sheetSelectionMode === 'col' && selectedSheetRange &&
                                   colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) &&
@@ -42395,6 +42427,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   if (computedFormat.borders.right) customBorders.borderRight = `1px ${bStyle} ${bColor}`;
                                 }
                                 let tableBorderStyles = {};
+                                 let isTableBottomRight = false;
                                 const tableIntersections = (activeSheetGridRaw.tables || []).filter(t => 
                                   rowIndex + 1 >= t.startRow && rowIndex + 1 <= t.endRow && colIndex + 1 >= t.startCol && colIndex + 1 <= t.endCol
                                 );
@@ -42410,6 +42443,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    const isTableBottom = rowIndex + 1 === table.endRow;
                                    const isTableLeft = colIndex + 1 === table.startCol;
                                    const isTableRight = colIndex + 1 === table.endCol;
+                                   isTableBottomRight = isTableBottom && isTableRight;
                                    if (isTableTop) tableBorderStyles.borderTop = `2px solid ${preset.border}`;
                                    if (isTableBottom) tableBorderStyles.borderBottom = `2px solid ${preset.border}`;
                                    if (isTableLeft) tableBorderStyles.borderLeft = `2px solid ${preset.border}`;
@@ -42417,6 +42451,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                  }
 
                                  const customBgStyle = computedFormat.fill ? { background: computedFormat.fill } : {};
+                                  const customTextStyle = computedFormat.color ? { color: computedFormat.color } : {};
                                  const cellBg = (selectedSheetRange && num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) && num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) && colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) && colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol)) 
                                   ? (isDarkMode ? 'bg-purple-950/30' : 'bg-[#ebf0fc]/50') 
                                   : (isInColBand || isInRowBand || isAllSelected ? (isDarkMode ? 'bg-zinc-900/40' : 'bg-slate-50/50') : '');
@@ -42762,8 +42797,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               fontStyle: cellFormat.italic ? 'italic' : 'normal',
                                               color: computedFormat.color || cellFormat.color || undefined,
                                               backgroundColor: computedFormat.fill || cellFormat.highlight || undefined,
-                                              textAlign: computedFormat.align || undefined,
-                                              ...customTextStyle
+                                              textAlign: computedFormat.align || undefined
                                             }}
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -42810,8 +42844,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             fontStyle: cellFormat.italic ? 'italic' : 'normal',
                                             color: computedFormat.color || cellFormat.color || undefined,
                                             backgroundColor: computedFormat.fill || cellFormat.highlight || undefined,
-                                            textAlign: computedFormat.align || undefined,
-                                            ...customTextStyle
+                                            textAlign: computedFormat.align || undefined
                                           }}
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -43007,7 +43040,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     )}
                                     {isBottomRightCorner && (
                                       <div 
-                                        className="absolute -bottom-[2.75px] -right-[2.75px] w-[5.5px] h-[5.5px] rounded-[1px] z-30 cursor-crosshair border border-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] hover:scale-125 transition-transform" 
+                                        className="absolute -bottom-[2.75px] -right-[2.75px] w-[5.5px] h-[5.5px] rounded-[1px] z-30 cursor-crosshair hover:scale-125 transition-transform" 
                                         style={{ backgroundColor: selectionBorderColor }}
                                       />
                                     )}
@@ -46761,7 +46794,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                 let badgeColorClass = "bg-slate-100/70 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60";
                 if (item.completed || item.progress >= 80) {
-                  badgeColorClass = "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50";
+                  badgeColorClass = "bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-200/60 dark:border-violet-800/50";
                 } else if (item.progress >= 40) {
                   badgeColorClass = "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50";
                 } else if (item.progress > 0) {
@@ -46839,7 +46872,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         <div className="flex items-center gap-1 pl-1 shrink-0">
                           {item.completed ? (
-                            <span className="w-4 h-4 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/60 dark:border-emerald-800/50 flex items-center justify-center text-[9px] text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                            <span className="w-4 h-4 rounded-full bg-violet-50 dark:bg-violet-950/50 border border-violet-200/60 dark:border-violet-800/50 flex items-center justify-center text-[9px] text-violet-600 dark:text-violet-400 font-bold">✓</span>
                           ) : (
                             item.progress > 0 && (
                               <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${badgeColorClass}`}>
@@ -47618,9 +47651,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               
               {/* ── Owner View (left) ── */}
               <div className="flex-1 flex flex-col border-r border-slate-100 overflow-hidden">
-                <div className="flex items-center gap-2 px-6 py-3 bg-slate-50 border-b border-slate-100 shrink-0">
-                  <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                  <span className="text-xs font-bold text-slate-700">Your view</span>
+                <div className="flex items-center gap-2 px-6 py-3 bg-slate-50 dark:bg-zinc-900 border-b border-slate-100 dark:border-zinc-800 shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-violet-600 dark:bg-violet-500"></div>
+                  <span className="text-xs font-bold text-slate-700 dark:text-zinc-200">Your view</span>
                   <span className="text-[10px] text-slate-400 ml-auto">All content visible</span>
                 </div>
                 <div className="flex-1 overflow-auto px-8 py-6 bg-white">
@@ -47892,7 +47925,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   className={`w-full flex items-center justify-between px-2.5 py-2 text-sm rounded-lg transition-colors ${activeRightTab === 'calendar' && rightSidebarOpen ? 'bg-violet-50 text-violet-700 font-semibold dark:bg-violet-950/40 dark:text-violet-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800'}`}
                 >
                   <span className="flex items-center gap-3"><Calendar size={15} /> Schedule</span>
-                  <span className="text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-full">Today</span>
+                  <span className="text-[10px] font-semibold bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 px-1.5 py-0.5 rounded-full">Today</span>
                 </button>
                 <button
                   type="button"
@@ -48190,7 +48223,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     closeTransientMenus();
                     setComposeExportMenuOpen(!composeExportMenuOpen);
                   }}
-                  className={`text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all border ${composeExportMenuOpen ? 'border-slate-300 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 border-slate-200/80 bg-white dark:bg-zinc-800 dark:border-zinc-700'}`}
+                  className={`text-xs font-semibold px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all border ${composeExportMenuOpen ? 'border-slate-300 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 border-slate-200/80 bg-white dark:bg-zinc-800 dark:border-zinc-700'}`}
                   title="Export Document"
                 >
                   <Download size={14} strokeWidth={1.5} className="text-slate-500" />
@@ -48251,7 +48284,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     setShareModalOpen(false);
                   }
                 }}
-                className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+                data-share="true"
+                className="btn-share btn-share-primary bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+                style={{ backgroundColor: '#7c3aed', color: '#ffffff' }}
               >
                 <Users size={14} strokeWidth={1.5} /> Share
               </button>
@@ -48334,7 +48369,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 onClick={() => setComposeProfileMenuOpen(prev => !prev)}
                 className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] flex items-center justify-center text-[11px] leading-none font-semibold text-white transition-all shadow-sm focus:outline-none ${activeRightTab === 'whiteboard' ? 'hover:ring-2 hover:ring-orange-300 dark:hover:ring-orange-850' : 'hover:ring-2 hover:ring-slate-300 dark:hover:ring-slate-800'}`}
                 style={{
-                  backgroundColor: activeRightTab === 'whiteboard' ? '#f97316' : (currentUser ? '#10B981' : '#64748B'),
+                  backgroundColor: activeRightTab === 'whiteboard' ? '#f97316' : (currentUser ? '#8b5cf6' : '#64748B'),
                 }}
                 title={currentUser ? `Profile: ${currentUser?.name || ''}` : 'Sign In'}
               >
@@ -48353,7 +48388,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     // Logged In State
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-3 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                        <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-inner">
+                        <div className="w-9 h-9 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold shadow-inner">
                           {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                         </div>
                         <div className="flex flex-col min-w-0">
@@ -48368,7 +48403,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                         <div className="flex justify-between">
                           <span>Status</span>
-                          <span className="font-medium text-emerald-600 dark:text-emerald-400">Authenticated ✓</span>
+                          <span className="font-medium text-violet-600 dark:text-violet-400">Authenticated ✓</span>
                         </div>
                       </div>
                       <button
@@ -49689,7 +49724,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="flex-1 flex flex-col p-3 text-white relative group select-none">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">Meeting Live</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-500 animate-pulse"></span>
                 </div>
                 <div className="flex-1 rounded-lg overflow-hidden bg-slate-800 relative flex items-center justify-center">
                   {isVideoOff ? (
@@ -51817,7 +51852,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               {[
                                 { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
                                 { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
-                                { target: 'Sheets', icon: FileSpreadsheet, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40' }
+                                { target: 'Sheets', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50 dark:bg-violet-950/40' }
                               ].map(t => (
                                 <button 
                                   key={t.target}
@@ -53319,7 +53354,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           
                                           <label className="flex items-center justify-between cursor-pointer group">
                                             <span className="text-[13px] font-medium text-slate-700 group-hover:text-slate-900 transition-colors">Show Axes & Grid</span>
-                                            <div className={`w-9 h-5 rounded-full transition-colors relative shadow-inner ${overlay.showAxes !== false ? 'bg-violet-500' : 'bg-slate-200'}`}>
+                                            <div data-toggle-active={overlay.showAxes !== false ? "true" : "false"} style={{ backgroundColor: overlay.showAxes !== false ? '#7c3aed' : undefined }} className={`w-9 h-5 rounded-full transition-colors relative shadow-inner ${overlay.showAxes !== false ? 'bg-violet-600 dark:bg-violet-500' : 'bg-slate-200 dark:bg-zinc-700'}`}>
                                               <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${overlay.showAxes !== false ? 'translate-x-4' : 'translate-x-0'}`} />
                                               <input type="checkbox" className="hidden" checked={overlay.showAxes !== false} onChange={(e) => updateOverlay({ showAxes: e.target.checked })} />
                                             </div>
@@ -55094,7 +55129,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div className="bg-black/60 backdrop-blur-xl rounded-[20px] px-6 py-3 flex flex-col shadow-2xl border border-white/10">
                         <div className="text-white text-[15px] font-medium text-center tracking-tight leading-relaxed flex items-center justify-center gap-2">
                           <span 
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGeminiActive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} 
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGeminiActive ? 'bg-violet-500 dark:bg-violet-400 animate-pulse' : 'bg-amber-400'}`} 
                             title={isGeminiActive ? "AI Mode Active (Gemini)" : "Local Mode (Native Speech)"}
                           />
                           <span className="opacity-60 text-[13px] mr-2">{liveCaption.speaker}</span>
@@ -55607,7 +55642,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {roomState === 'active' && mainView === 'document' && (
         <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="w-2 h-2 rounded-full bg-violet-600 dark:bg-violet-500 animate-pulse"></span>
           <span className="text-xs font-semibold text-gray-700">Meeting live - {meetingDurationLabel}</span>
           <button onClick={() => { setMainView('document'); setRoomPanelMode('docked'); }} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700">Return</button>
           <button onClick={leaveRoom} className="px-2 py-1 text-[11px] rounded border border-red-200 text-red-600 hover:bg-red-50">Leave</button>

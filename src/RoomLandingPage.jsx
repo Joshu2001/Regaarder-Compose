@@ -544,7 +544,7 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                   <div className="w-8 h-8 rounded-full bg-[#1e293b] text-white flex items-center justify-center font-semibold text-[14px]">
                     Y
                   </div>
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-violet-600 dark:bg-violet-500 border-2 border-white dark:border-zinc-900 rounded-full" />
                 </div>
                 <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
 

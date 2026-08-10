@@ -86,6 +86,19 @@ body { margin: 0; background: #ffffff; }
 	--accent-hover:   #8b5cf6;
 	--accent-muted:   rgba(124, 58, 237, 0.15);
 
+	/* Full violet/accent scale — guarantees Tailwind var(--accent-N) resolves to violet, not green */
+	--accent-50:  #f5f3ff;
+	--accent-100: #ede9fe;
+	--accent-200: #ddd6fe;
+	--accent-300: #c4b5fd;
+	--accent-400: #a78bfa;
+	--accent-500: #8b5cf6;
+	--accent-600: #7c3aed;
+	--accent-700: #6d28d9;
+	--accent-800: #5b21b6;
+	--accent-900: #4c1d95;
+	--accent-950: #2e1065;
+
 	--data-neutral:  #94A3B8;
 	--data-positive: #10B981;
 	--data-warning:  #F59E0B;
@@ -222,42 +235,136 @@ body { margin: 0; background: #ffffff; }
 	border-color: var(--border-primary) !important;
 }
 
-/* ── Buttons & Segmented Tabs ────────────────────────────────── */
-/* Share button: Vibrant Purple preserved */
-.app-dark .btn-share-primary,
+/* Universal Purple Accent Overrides for Share Buttons, Active Toggle Switches, Badges, and Status Indicators */
+button.btn-share,
+button.btn-share-primary,
+.btn-share,
+.btn-share-primary,
+[class*="btn-share"],
+button[class*="btn-share"],
+[data-share="true"],
+button[data-share="true"],
 .app-dark button.btn-share,
-.dark .btn-share-primary,
 .dark button.btn-share,
-.app-dark button.bg-purple-600,
-.app-dark button.bg-violet-600 {
-	background-color: var(--accent-dark) !important;
+.app-dark button.btn-share-primary,
+.dark button.btn-share-primary,
+.app-dark [class*="btn-share"],
+.dark [class*="btn-share"],
+.app-dark [data-share="true"],
+.dark [data-share="true"],
+.app-dark button.bg-violet-600,
+.dark button.bg-violet-600,
+.app-dark .bg-violet-600,
+.dark .bg-violet-600,
+[data-toggle-active="true"],
+.app-dark [data-toggle-active="true"],
+.dark [data-toggle-active="true"] {
+	background-color: #7c3aed !important;
+	background: #7c3aed !important;
 	color: #ffffff !important;
-	border: none !important;
-	box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35) !important;
+	border-color: #7c3aed !important;
+	border-radius: 12px !important;
 }
 
-.app-dark .btn-share-primary:hover,
+.export-menu-container > button {
+	border-radius: 12px !important;
+}
+
+button.btn-share:hover,
+button.btn-share-primary:hover,
+.btn-share:hover,
+.btn-share-primary:hover,
+[class*="btn-share"]:hover,
+[data-share="true"]:hover,
+button.bg-violet-600:hover,
+button.bg-purple-600:hover,
 .app-dark button.btn-share:hover,
-.dark .btn-share-primary:hover,
-.dark button.btn-share:hover {
-	background-color: var(--accent-primary) !important;
+.dark button.btn-share:hover,
+.app-dark [data-share="true"]:hover,
+.dark [data-share="true"]:hover,
+.app-dark .bg-violet-600:hover,
+.dark .bg-violet-600:hover {
+	background-color: #6d28d9 !important;
+	background: #6d28d9 !important;
+	color: #ffffff !important;
+}
+
+/* Global Native Input Accent Color (Checkboxes, Radio buttons, Range Sliders) */
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+	accent-color: #7c3aed !important;
+}
+
+[class*="text-emerald"]:not([style*="color"]),
+[class*="text-green"]:not([style*="color"]),
+[class*="text-teal"]:not([style*="color"]),
+[class*="text-mint"]:not([style*="color"]) {
+	color: #8b5cf6 !important;
+}
+
+[class*="border-emerald"],
+[class*="border-green"],
+[class*="border-teal"],
+[class*="border-mint"] {
+	border-color: #7c3aed !important;
+}
+
+[class*="stroke-emerald"],
+[class*="stroke-green"],
+[class*="stroke-teal"] {
+	stroke: #7c3aed !important;
+}
+
+[class*="fill-emerald"],
+[class*="fill-green"],
+[class*="fill-teal"] {
+	fill: #7c3aed !important;
+}
+
+[class*="ring-emerald"],
+[class*="ring-green"],
+[class*="ring-teal"] {
+	--tw-ring-color: #7c3aed !important;
+}
+.dark [class*="ring-emerald"],
+.dark [class*="ring-green"],
+.dark [class*="ring-teal"] {
+	--tw-ring-color: #7c3aed !important;
+}
+
+[class*="bg-emerald"]:not(.color-swatch-btn):not([style*="background"]):not([class*="bg-emerald-50"]):not([class*="bg-emerald-100"]):not([class*="bg-emerald-950"]),
+[class*="bg-green"]:not(.color-swatch-btn):not([style*="background"]):not([class*="bg-green-50"]):not([class*="bg-green-100"]):not([class*="bg-green-950"]) {
+	background-color: #7c3aed !important;
+	color: #ffffff !important;
 }
 
 /* Secondary Buttons */
-.app-dark button:not([class*="bg-violet"]):not([class*="bg-purple"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-blue"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="btn-share"]):not([class*="bg-zinc-"]):not([class*="bg-slate-"]) {
+.app-dark button:not([class*="bg-violet"]):not([class*="bg-purple"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-blue"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="btn-share"]):not([class*="bg-zinc-"]):not([class*="bg-slate-"]):not([style*="background"]):not([style*="background-color"]):not(.color-swatch-btn),
+.dark button:not([class*="bg-violet"]):not([class*="bg-purple"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-blue"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="btn-share"]):not([class*="bg-zinc-"]):not([class*="bg-slate-"]):not([style*="background"]):not([style*="background-color"]):not(.color-swatch-btn) {
 	background-color: var(--bg-surface) !important;
 	border-color: var(--border-secondary) !important;
 	color: var(--text-primary) !important;
 }
 
-/* Active Segmented Control Pill (like 'Visualize' tab in screenshot) */
+/* Ensure color swatches in dropdowns always preserve their explicit light mode fill/gradient colors in dark mode */
+.app-dark button[style*="background"],
+.dark button[style*="background"],
+.app-dark button[style*="background-color"],
+.dark button[style*="background-color"],
+.app-dark button.color-swatch-btn,
+.dark button.color-swatch-btn {
+	border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Active Segmented Control Pill (dark container, white/grey text in dark mode) */
 .app-dark [class*="bg-white"][class*="text-slate-900"],
 .app-dark [class*="bg-white"][class*="dark:text-zinc-100"],
 .dark [class*="bg-white"][class*="text-slate-900"],
 .dark [class*="bg-white"][class*="dark:text-zinc-100"] {
-	background-color: #E4E4E7 !important;
-	color: #0D0D12 !important;
-	border-color: #E4E4E7 !important;
+	background-color: #27272a !important;
+	color: #f4f4f5 !important;
+	border-color: #3f3f46 !important;
 }
 
 /* ── Form Inputs & Selects ───────────────────────────────────── */

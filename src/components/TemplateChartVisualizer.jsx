@@ -575,7 +575,7 @@ export default function TemplateChartVisualizer({
   if (!hasData) {
     return (
       <div className="w-80 xl:w-96 border-l border-slate-200/80 dark:border-[#1f1d2c] bg-slate-50 dark:bg-[#12111a] p-6 flex flex-col items-center justify-center text-center shrink-0 select-none">
-        <div className="w-20 h-20 rounded-2xl bg-purple-100 dark:bg-[#1c1a2b] border border-purple-200 dark:border-[#2e2a47] flex items-center justify-center mb-5 shadow-xl shadow-purple-950/40 text-purple-600 dark:text-purple-400">
+        <div className="w-20 h-20 rounded-2xl bg-purple-100/70 dark:bg-[#1c1a2b] border border-purple-200/60 dark:border-[#2e2a47] flex items-center justify-center mb-5 shadow-2xs text-purple-600 dark:text-purple-400">
           <svg className="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="6" y1="20" x2="6" y2="14" />
             <line x1="12" y1="20" x2="12" y2="10" />
@@ -646,7 +646,7 @@ export default function TemplateChartVisualizer({
                     onClick={() => { handleInsertAllDashboardCharts(); setIsOptionsMenuOpen(false); }}
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
-                    <Plus size={14} className="text-emerald-500" />
+                    <Plus size={14} className="text-violet-600 dark:text-violet-400" />
                     <span>Insert All Charts to Sheet</span>
                   </button>
                   <button
@@ -675,7 +675,7 @@ export default function TemplateChartVisualizer({
                     onClick={() => { handleExportSvgChart(); setIsOptionsMenuOpen(false); }}
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
-                    <FileText size={14} className="text-emerald-500" />
+                    <FileText size={14} className="text-violet-600 dark:text-violet-400" />
                     <span>Export Chart Vector (SVG)</span>
                   </button>
                   <button
@@ -1019,7 +1019,7 @@ export default function TemplateChartVisualizer({
                 <button
                   type="button"
                   onClick={() => handleInsertNativeSheetChart('line', `${scCard.name} Trend`)}
-                  className="p-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
+                  className="p-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
                   title="Insert to Sheet"
                 >
                   <Plus size={13} />
@@ -1220,7 +1220,7 @@ export default function TemplateChartVisualizer({
       {/* Panel Footer Bar */}
       <div className="px-4 py-2.5 border-t border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 flex items-center justify-between text-[11px] shadow-2xs shrink-0">
         <div className="flex items-center gap-1.5 text-slate-500 dark:text-zinc-400 font-medium">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
           <span>Charts update automatically as you edit</span>
         </div>
 
