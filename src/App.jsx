@@ -206,6 +206,39 @@ const MANAGEEN_BOARD_DEFAULT_COLUMNS = [
     ],
   },
 ];
+const CustomAIIcon = ({ size = 16, className = '', style = {} }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    style={style}
+  >
+    <defs>
+      <linearGradient id="rcAiGradMain" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#8B5CF6" />
+        <stop offset="50%" stopColor="#6366F1" />
+        <stop offset="100%" stopColor="#D946EF" />
+      </linearGradient>
+      <linearGradient id="rcAiGradSec" x1="13" y1="2" x2="23" y2="12" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#A855F7" />
+        <stop offset="100%" stopColor="#3B82F6" />
+      </linearGradient>
+    </defs>
+    <path
+      d="M12 2C12 7.52285 7.52285 12 2 12C7.52285 12 12 16.4771 12 22C12 16.4771 16.4771 12 22 12C16.4771 12 12 7.52285 12 2Z"
+      fill="url(#rcAiGradMain)"
+    />
+    <path
+      d="M18.5 2.5C18.5 4.98528 16.4853 7 14 7C16.4853 7 18.5 9.01472 18.5 11.5C18.5 9.01472 20.5147 7 23 7C20.5147 7 18.5 4.98528 18.5 2.5Z"
+      fill="url(#rcAiGradSec)"
+    />
+    <circle cx="5" cy="19" r="1.5" fill="#8B5CF6" />
+  </svg>
+);
+
 const LassoLoopIcon = ({ size = 12, className = '', style = {} }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -54415,7 +54448,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             transform: `translateY(${promptOffset.y}px)`
           }}
         >
-          <div className={`max-w-[1600px] mx-auto px-6 md:px-10 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
+          <div className="max-w-[1600px] mx-auto px-6 md:px-10 flex justify-center" style={{ transform: `translateX(${promptOffset.x}px)` }}>
             <form
               ref={promptRootRef}
               onSubmit={handleFloatingSend}
@@ -54671,10 +54704,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setIsPromptMinimized(true);
                         setIsPromptExpanded(false);
                       }}
-                      className="p-1.5 rounded-lg bg-violet-50/70 text-violet-400 hover:bg-violet-100 hover:text-violet-600 shrink-0"
+                      className="p-1.5 rounded-lg bg-violet-50/80 dark:bg-violet-950/60 text-violet-600 dark:text-violet-300 hover:bg-violet-100 hover:text-violet-700 shrink-0 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center border border-violet-200/50 dark:border-violet-800/50 shadow-2xs"
                       title="Minimize to floating icon"
                     >
-                      <Sparkles size={16} />
+                      <CustomAIIcon size={17} />
                     </button>
                     <div className="relative">
                       <button
@@ -54775,8 +54808,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
                       placeholder="Describe what you'd like to write..."
                       rows={1}
-                      style={{ textAlign: alignMode }}
-                      className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-800 placeholder:text-slate-400 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1 font-normal tracking-normal"
+                      style={{ textAlign: 'left' }}
+                      className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-800 dark:text-zinc-100 placeholder:text-slate-400 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1 font-normal tracking-normal text-left"
                     />
                     <button
                       type="submit"
