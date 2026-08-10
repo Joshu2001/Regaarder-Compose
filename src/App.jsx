@@ -8470,6 +8470,7 @@ export default function App() {
   const [figureMenuTarget, setFigureMenuTarget] = useState(null);
   const [figureMenuCoords, setFigureMenuCoords] = useState({ top: 0, left: 0 });
   const [figureNameInput, setFigureNameInput] = useState('');
+  const namingPopoverRef = useRef(null);
   const [promptCollapsed, setPromptCollapsed] = useState(false);
   const [rotatingExampleSetIndex, setRotatingExampleSetIndex] = useState(0);
 
@@ -32227,6 +32228,62 @@ Respond with a JSON array of slide objects matching the schema.`;
     productMode,
     activeDocId,
   ]);
+
+  const updateFigureMenuPosition = useCallback(() => {
+    if (!figureMenuTarget) return;
+    const rect = figureMenuTarget.getBoundingClientRect();
+    const popoverWidth = 340;
+    const popoverHeight = 38;
+    
+    // Center horizontally over the target object
+    const targetCenterX = rect.left + (rect.width / 2);
+    let left = targetCenterX - (popoverWidth / 2);
+    
+    // Intelligently clamp inside viewport with 16px safety padding
+    const minLeft = 16;
+    const maxLeft = Math.max(16, window.innerWidth - popoverWidth - 16);
+    left = Math.max(minLeft, Math.min(left, maxLeft));
+
+    // Prefer positioning 8px immediately above the target object
+    let top = rect.top - popoverHeight - 8;
+    
+    // If insufficient space above in viewport, position 8px below target object
+    if (rect.top - popoverHeight - 8 < 8) {
+      top = rect.bottom + 8;
+    }
+
+    setFigureMenuCoords({ top, left });
+  }, [figureMenuTarget]);
+
+  useEffect(() => {
+    if (!figureMenuTarget) return;
+
+    updateFigureMenuPosition();
+
+    const handleOutsideClick = (e) => {
+      if (
+        namingPopoverRef.current && 
+        !namingPopoverRef.current.contains(e.target) && 
+        !figureMenuTarget.contains(e.target)
+      ) {
+        setFigureMenuTarget(null);
+      }
+    };
+
+    const handleScrollOrResize = () => {
+      updateFigureMenuPosition();
+    };
+
+    window.addEventListener('pointerdown', handleOutsideClick, true);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+
+    return () => {
+      window.removeEventListener('pointerdown', handleOutsideClick, true);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [figureMenuTarget, updateFigureMenuPosition]);
 
   useEffect(() => {
     if (productMode !== 'compose') {
@@ -60493,107 +60550,115 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {productMode === 'compose' && activeDocId && figureMenuTarget && (
-        <div 
-          className="absolute z-[9999] bg-white border border-slate-200 shadow-[0_12px_30px_-6px_rgba(15,23,42,0.1)] rounded-full p-2 flex items-center gap-2"
-          style={{ top: `${figureMenuCoords.top - 54}px`, left: `${figureMenuCoords.left}px`, fontFamily: editorFont }}
-        >
-          <div className="flex items-center justify-center p-1.5 rounded-md bg-violet-50 text-violet-600">
-            <LayoutGrid size={16} />
-          </div>
+      {productMode === 'compose' && activeDocId && figureMenuTarget && (() => {
+        const isTableTarget = figureMenuTarget.tagName === 'TABLE' || Boolean(figureMenuTarget.closest?.('table'));
+        const labelType = isTableTarget ? 'table' : 'figure';
+        const placeholderText = `Name this ${labelType}…`;
+        const isSaveActive = Boolean(figureNameInput.trim());
+
+        const handleSave = () => {
+          const trimmed = figureNameInput.trim();
+          if (!trimmed) return;
           
-          <div className="relative flex items-center">
-            <input
-              type="text"
-              placeholder="Name this figure or table..."
-              value={figureNameInput}
-              onChange={(e) => setFigureNameInput(e.target.value)}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  if (figureNameInput.trim()) {
-                    figureMenuTarget.setAttribute('data-figure-name', figureNameInput.trim());
-                    let captionEl = figureMenuTarget.nextElementSibling;
-                    if (captionEl && captionEl.classList.contains('figure-caption')) {
-                      captionEl.textContent = `Figure: ${figureNameInput.trim()}`;
-                    } else {
-                      captionEl = document.createElement('div');
-                      captionEl.className = 'figure-caption text-xs text-center text-slate-500 font-medium mt-2 mb-4 italic';
-                      captionEl.contentEditable = 'false';
-                      captionEl.textContent = `Figure: ${figureNameInput.trim()}`;
-                      if (figureMenuTarget.parentNode) {
-                        figureMenuTarget.parentNode.insertBefore(captionEl, figureMenuTarget.nextSibling);
-                      }
-                    }
-                    if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
-                    showToast('Figure named successfully');
+          figureMenuTarget.setAttribute('data-figure-name', trimmed);
+          figureMenuTarget.setAttribute('data-table-name', trimmed);
+          figureMenuTarget.setAttribute('data-name', trimmed);
+          
+          let captionEl = figureMenuTarget.nextElementSibling;
+          const isCaption = captionEl && (captionEl.classList.contains('figure-caption') || captionEl.classList.contains('table-caption'));
+          
+          if (isCaption) {
+            captionEl.textContent = `${isTableTarget ? 'Table' : 'Figure'}: ${trimmed}`;
+          } else {
+            captionEl = document.createElement('div');
+            captionEl.className = 'figure-caption table-caption text-xs text-center text-slate-500 dark:text-zinc-400 font-medium mt-2 mb-4 italic select-none';
+            captionEl.contentEditable = 'false';
+            captionEl.textContent = `${isTableTarget ? 'Table' : 'Figure'}: ${trimmed}`;
+            if (figureMenuTarget.parentNode) {
+              figureMenuTarget.parentNode.insertBefore(captionEl, figureMenuTarget.nextSibling);
+            }
+          }
+          
+          if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+          showToast(`${isTableTarget ? 'Table' : 'Figure'} named successfully`);
+          setFigureMenuTarget(null);
+        };
+
+        return (
+          <div 
+            ref={namingPopoverRef}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            className="fixed z-[9999] bg-white/95 dark:bg-zinc-900/95 border border-slate-200/90 dark:border-zinc-800 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.08)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] rounded-xl px-3 py-1.5 flex items-center gap-2.5 backdrop-blur-md h-[38px] w-[340px] max-w-[92vw] transition-all duration-150 ease-out"
+            style={{ top: `${figureMenuCoords.top}px`, left: `${figureMenuCoords.left}px`, fontFamily: editorFont }}
+          >
+            {/* Semantic Icon: Restrained table or figure outline with naming tag indicator */}
+            <div className="flex items-center justify-center shrink-0 text-slate-400 dark:text-zinc-500 select-none">
+              {isTableTarget ? (
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="2" y="3" width="12" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" />
+                  <path d="M2 6.5H14" stroke="currentColor" strokeWidth="1.2" />
+                  <path d="M7 6.5V13" stroke="currentColor" strokeWidth="1.2" strokeDasharray="1.5 1.5" />
+                  <circle cx="12" cy="4.5" r="1.25" fill="#8b5cf6" />
+                </svg>
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="2" y="3" width="12" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" />
+                  <path d="M3.5 11L6.5 7.5L9 10.5L10.5 9L12.5 11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="12" cy="4.5" r="1.25" fill="#8b5cf6" />
+                </svg>
+              )}
+            </div>
+
+            {/* Contextual Input */}
+            <div className="relative flex items-center flex-1 min-w-0">
+              <input
+                type="text"
+                placeholder={placeholderText}
+                value={figureNameInput}
+                onChange={(e) => setFigureNameInput(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSave();
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
                     setFigureMenuTarget(null);
                   }
-                } else if (e.key === 'Escape') {
-                  setFigureMenuTarget(null);
-                }
-              }}
-              className="text-[13px] font-medium text-slate-800 bg-transparent border border-transparent focus:border-violet-500 focus:bg-white hover:bg-slate-50 rounded-md px-2 py-1.5 outline-none w-56 transition-all placeholder:text-slate-400"
-            />
-            {figureNameInput && (
-              <button 
-                type="button" 
-                onClick={() => setFigureNameInput('')} 
-                className="absolute right-2 text-slate-400 hover:text-slate-600"
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
-          
-          <div className="w-px h-5 bg-slate-200 mx-1"></div>
-          
-          <button
-            type="button"
-            onClick={() => setFigureMenuTarget(null)}
-            className="text-[13px] font-medium text-slate-500 hover:text-slate-700 px-2"
-          >
-            Cancel
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => {
-              if (figureNameInput.trim()) {
-                figureMenuTarget.setAttribute('data-figure-name', figureNameInput.trim());
-                let captionEl = figureMenuTarget.nextElementSibling;
-                if (captionEl && captionEl.classList.contains('figure-caption')) {
-                  captionEl.textContent = `Figure: ${figureNameInput.trim()}`;
-                } else {
-                  captionEl = document.createElement('div');
-                  captionEl.className = 'figure-caption text-xs text-center text-slate-500 font-medium mt-2 mb-4 italic';
-                  captionEl.contentEditable = 'false';
-                  captionEl.textContent = `Figure: ${figureNameInput.trim()}`;
-                  if (figureMenuTarget.parentNode) {
-                    figureMenuTarget.parentNode.insertBefore(captionEl, figureMenuTarget.nextSibling);
-                  }
-                }
-                if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
-                showToast('Figure named successfully');
-                setFigureMenuTarget(null);
-              }
-            }}
-            disabled={!figureNameInput.trim()}
-            className={`px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors ${
-              figureNameInput.trim() 
-                ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm' 
-                : 'bg-violet-100 text-violet-400 cursor-not-allowed'
-            }`}
-          >
-            Save
-          </button>
+                }}
+                className="w-full text-xs font-medium text-slate-800 dark:text-zinc-100 bg-transparent outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-zinc-500 pr-5"
+              />
+              {figureNameInput && (
+                <button 
+                  type="button" 
+                  onClick={() => setFigureNameInput('')} 
+                  className="absolute right-0 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
 
-          <div className="flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-400 rounded px-1.5 h-6 text-[10px] font-semibold uppercase tracking-wider ml-1">
-            {figureNameInput.trim() ? '↵ Enter' : 'esc'}
+            {/* Subtle Divider */}
+            <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 shrink-0" />
+
+            {/* Save Button */}
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!isSaveActive}
+              className={`shrink-0 px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                isSaveActive 
+                  ? 'text-violet-600 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/50 hover:bg-violet-600 hover:text-white dark:hover:bg-violet-600 dark:hover:text-white active:scale-[0.98]' 
+                  : 'text-slate-300 dark:text-zinc-600 cursor-not-allowed bg-transparent'
+              }`}
+            >
+              Save
+            </button>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {showWatermarkMenu && (
         <div
