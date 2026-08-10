@@ -190,7 +190,8 @@ export default function ShareModal({
         <button
           type="button"
           onClick={handleShareModalConfirm}
-          className="px-4 py-2 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm transition-all whitespace-nowrap min-w-[90px] active:scale-98"
+          style={{ backgroundColor: '#7c3aed', color: '#ffffff' }}
+          className="btn-share btn-share-primary px-4 py-2 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm transition-all whitespace-nowrap min-w-[90px] active:scale-98"
         >
           {shareDestination === 'downloads'
             ? `Export ${shareFormat}`
@@ -326,7 +327,8 @@ export default function ShareModal({
               type="checkbox"
               checked={sharePasswordProtected}
               onChange={(e) => setSharePasswordProtected(e.target.checked)}
-              className="accent-slate-900 dark:accent-zinc-100 rounded border-slate-300 dark:border-zinc-700 cursor-pointer"
+              style={{ accentColor: '#7c3aed' }}
+              className="accent-violet-600 rounded border-slate-300 dark:border-zinc-700 cursor-pointer"
             />
             <Lock size={13} className="text-slate-400 dark:text-zinc-500" />
             <span>Password protection</span>
@@ -397,7 +399,8 @@ export default function ShareModal({
               type="checkbox"
               checked={shareExpiringAccess}
               onChange={(e) => setShareExpiringAccess(e.target.checked)}
-              className="accent-slate-900 dark:accent-zinc-100 rounded border-slate-300 dark:border-zinc-700 cursor-pointer"
+              style={{ accentColor: '#7c3aed' }}
+              className="accent-violet-600 rounded border-slate-300 dark:border-zinc-700 cursor-pointer"
             />
             <Clock size={13} className="text-slate-400 dark:text-zinc-500" />
             <span>Expiring access</span>
