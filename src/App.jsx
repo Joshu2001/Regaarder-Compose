@@ -146,11 +146,12 @@ const UNTITLED_WHITEBOARD_LABEL = 'Untitled whiteboard';
 const SAVED_DRAFT_LABEL = 'Saved Drafts';
 const REGAARDER_WORKSPACE_FILES = [
   { id: 'rw-1', name: 'Annual_Strategy_2026.pdf', type: 'pdf', size: '2.4 MB' },
-  { id: 'rw-2', name: 'Q2_Performance_Report.docx', type: 'document', size: '890 KB' },
-  { id: 'rw-3', name: 'Financial_Forecast_2026.xlsx', type: 'spreadsheet', size: '1.5 MB' },
+  { id: 'rw-2', name: 'Q2_Performance_Report.docx', type: 'word', size: '890 KB' },
+  { id: 'rw-3', name: 'Financial_Forecast_2026.xlsx', type: 'excel', size: '1.5 MB' },
   { id: 'rw-4', name: 'Brand_Guidelines.pdf', type: 'pdf', size: '3.1 MB' },
-  { id: 'rw-5', name: 'Product_Roadmap_Q3.pptx', type: 'presentation', size: '4.2 MB' },
-  { id: 'rw-6', name: 'Customer_Feedback_Log.csv', type: 'spreadsheet', size: '320 KB' }
+  { id: 'rw-5', name: 'Product_Roadmap_Q3.pptx', type: 'powerpoint', size: '4.2 MB' },
+  { id: 'rw-6', name: 'Customer_Feedback_Log.csv', type: 'excel', size: '320 KB' },
+  { id: 'rw-7', name: 'Regaarder_Product_Spec.rgdoc', type: 'regaarder_doc', size: '150 KB', isRegaarderDoc: true }
 ];
 const ENTERPRISE_PAGE_WIDTH_PX = 794;
 const ENTERPRISE_PAGE_HEIGHT_PX = 1123;
@@ -714,6 +715,158 @@ const RoomStageFeed = ({ stream, placeholder }) => {
   }
 
   return <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />;
+};
+
+const getFileSemanticBadge = (mat) => {
+  const nameLower = (mat?.name || '').toLowerCase();
+  const typeLower = (mat?.type || '').toLowerCase();
+  const ext = (nameLower.split('.').pop() || typeLower || '').toLowerCase();
+
+  // 1. PDF -> Red (#DC2626)
+  if (ext === 'pdf' || typeLower === 'pdf') {
+    return {
+      category: 'pdf',
+      bgHex: '#DC2626',
+      iconColor: 'text-red-500 dark:text-red-400',
+      label: 'PDF',
+      svg: (
+        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3.5 2H10L13.5 5.5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M9.5 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      )
+    };
+  }
+
+  // 2. Microsoft Word / DOC / DOCX -> Blue (#2563EB)
+  if (['doc', 'docx'].includes(ext) || ['word', 'doc', 'docx'].includes(typeLower)) {
+    return {
+      category: 'word',
+      bgHex: '#2563EB',
+      iconColor: 'text-blue-500 dark:text-blue-400',
+      label: ext.toUpperCase() || 'DOC',
+      svg: (
+        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3.5 2H10.5L13.5 5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M10 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      )
+    };
+  }
+
+  // 3. Microsoft Excel / XLS / XLSX / CSV / ODS -> Green (#059669)
+  if (['xls', 'xlsx', 'csv', 'ods'].includes(ext) || ['excel', 'spreadsheet', 'csv'].includes(typeLower)) {
+    return {
+      category: 'excel',
+      bgHex: '#059669',
+      iconColor: 'text-emerald-500 dark:text-emerald-400',
+      label: ext === 'csv' ? 'CSV' : 'XLS',
+      svg: (
+        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M2.5 6.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M2.5 10.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M6.5 6.5V13.5" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      )
+    };
+  }
+
+  // 4. Microsoft PowerPoint / PPT / PPTX / KEY -> Orange (#D97706)
+  if (['ppt', 'pptx', 'key'].includes(ext) || ['powerpoint', 'presentation', 'ppt'].includes(typeLower)) {
+    return {
+      category: 'powerpoint',
+      bgHex: '#D97706',
+      iconColor: 'text-amber-500 dark:text-amber-400',
+      label: ext.toUpperCase() || 'PPT',
+      svg: (
+        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2.5" width="12" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M5.5 14L8 11L10.5 14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
+    };
+  }
+
+  // 5. Regaarder Document (Native) -> Purple (#7C3AED)
+  if (mat?.isRegaarderDoc || typeLower === 'regaarder_doc' || typeLower === 'regaarder_document' || ext === 'rgdoc' || ext === 'regaarder') {
+    return {
+      category: 'regaarder_doc',
+      bgHex: '#7C3AED',
+      iconColor: 'text-purple-500 dark:text-purple-400',
+      label: 'RGD',
+      svg: (
+        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3.5 2H10.5L13.5 5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M10 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      )
+    };
+  }
+
+  // 6. Regaarder Sheets -> Green (#059669)
+  if (mat?.isRegaarderSheet || typeLower === 'regaarder_sheet' || typeLower === 'regaarder_sheets' || ext === 'rgsheet') {
+    return {
+      category: 'regaarder_sheet',
+      bgHex: '#059669',
+      iconColor: 'text-emerald-500 dark:text-emerald-400',
+      label: 'RGS',
+      svg: (
+        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M2.5 6.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M2.5 10.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M6.5 6.5V13.5" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      )
+    };
+  }
+
+  // 7. Regaarder Presentation / Deck -> Orange (#D97706)
+  if (mat?.isRegaarderDeck || typeLower === 'regaarder_deck' || typeLower === 'regaarder_presentation' || ext === 'rgdeck') {
+    return {
+      category: 'regaarder_deck',
+      bgHex: '#D97706',
+      iconColor: 'text-amber-500 dark:text-amber-400',
+      label: 'RGD',
+      svg: (
+        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2.5" width="12" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M5.5 14L8 11L10.5 14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
+    };
+  }
+
+  // 8. Plain text / TXT / MD -> Neutral Gray (#64748B)
+  if (['txt', 'md', 'text', 'markdown', 'log'].includes(ext) || ['text', 'txt', 'plain'].includes(typeLower)) {
+    return {
+      category: 'text',
+      bgHex: '#64748B',
+      iconColor: 'text-slate-500 dark:text-zinc-400',
+      label: ext.toUpperCase() || 'TXT',
+      svg: (
+        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3.5 2H10.5L13.5 5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M10 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      )
+    };
+  }
+
+  // Default / generic -> Neutral Gray (#64748B)
+  return {
+    category: 'generic',
+    bgHex: '#64748B',
+    iconColor: 'text-slate-500 dark:text-zinc-400',
+    label: (ext || 'FILE').substring(0, 4).toUpperCase(),
+    svg: (
+      <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.5 2H10.5L13.5 5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M10 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+    )
+  };
 };
 
 const TABLE_PRESETS = {
@@ -10001,9 +10154,9 @@ export default function App() {
   const [sheetToolbarTab, setSheetToolbarTab] = useState(null);
   const [docToolbarTab, setDocToolbarTab] = useState('Write');
   const [docContextMaterials, setDocContextMaterials] = useState([
-    { id: '1', name: 'Project_Requirements.pdf', type: 'pdf', size: '1.2 MB' },
-    { id: '2', name: 'Q3_Financial_Summary.xlsx', type: 'spreadsheet', size: '450 KB' },
-    { id: '3', name: 'Market_Research_Notes.txt', type: 'text', size: '28 KB' }
+    { id: '1', name: 'Project_Requirements.docx', type: 'word', size: '1.2 MB' },
+    { id: '2', name: 'Q3_Financial_Summary.xlsx', type: 'excel', size: '450 KB' },
+    { id: '3', name: 'Market_Research_Notes.pdf', type: 'pdf', size: '28 KB' }
   ]);
   const [isAddSourceMenuOpen, setIsAddSourceMenuOpen] = useState(false);
   const [isChooseRegaarderOpen, setIsChooseRegaarderOpen] = useState(false);
@@ -49859,65 +50012,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 {/* Progressive Overflow Model Chips List ([File 1] [File 2] [File 3] [+N more ▾]) */}
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0">
                   {docContextMaterials.slice(0, 3).map((mat) => {
-                    const nameLower = (mat.name || '').toLowerCase();
-                    const typeLower = (mat.type || '').toLowerCase();
-
-                    let category = 'document';
-                    if (typeLower === 'spreadsheet' || nameLower.endsWith('.xlsx') || nameLower.endsWith('.xls') || nameLower.endsWith('.csv') || nameLower.endsWith('.ods')) {
-                      category = 'spreadsheet';
-                    } else if (typeLower === 'presentation' || nameLower.endsWith('.pptx') || nameLower.endsWith('.ppt') || nameLower.endsWith('.key')) {
-                      category = 'presentation';
-                    } else if (typeLower === 'pdf' || nameLower.endsWith('.pdf')) {
-                      category = 'pdf';
-                    }
-
-                    let extLabel = (mat.name.split('.').pop() || mat.type || 'FILE').toUpperCase();
-                    if (extLabel.length > 4) {
-                      extLabel = category === 'spreadsheet' ? 'XLS' : category === 'presentation' ? 'PPT' : category === 'pdf' ? 'PDF' : 'DOC';
-                    }
-
-                    const fileBadges = {
-                      spreadsheet: {
-                        bgHex: '#059669', // Emerald Green for Sheets
-                        svg: (
-                          <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-                            <path d="M2.5 6.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-                            <path d="M2.5 10.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-                            <path d="M6.5 6.5V13.5" stroke="currentColor" strokeWidth="1.2" />
-                          </svg>
-                        )
-                      },
-                      presentation: {
-                        bgHex: '#D97706', // Amber Orange for Decks
-                        svg: (
-                          <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="2" y="2.5" width="12" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-                            <path d="M5.5 14L8 11L10.5 14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        )
-                      },
-                      pdf: {
-                        bgHex: '#DC2626', // Rose Red for PDF
-                        svg: (
-                          <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3.5 2H10L13.5 5.5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
-                            <path d="M9.5 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-                          </svg>
-                        )
-                      },
-                      document: {
-                        bgHex: '#7C3AED', // Violet Purple for Docs/Text
-                        svg: (
-                          <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3.5 2H10.5L13.5 5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
-                            <path d="M10 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-                          </svg>
-                        )
-                      }
-                    };
-
-                    const badge = fileBadges[category];
+                    const badge = getFileSemanticBadge(mat);
 
                     return (
                       <div key={mat.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 select-none">
@@ -49925,7 +50020,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           className="w-[18px] h-[20px] rounded-[4px] flex flex-col items-center justify-center shrink-0 leading-none select-none text-white shadow-2xs"
                           style={{ backgroundColor: badge.bgHex }}
                         >
-                          <span className="text-[6px] font-black tracking-tighter uppercase mb-[1px] text-white leading-none">{extLabel}</span>
+                          <span className="text-[6px] font-black tracking-tighter uppercase mb-[1px] text-white leading-none">{badge.label}</span>
                           {badge.svg}
                         </span>
                         <span className="max-w-[130px] truncate">{mat.name}</span>
@@ -50005,26 +50100,29 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </button>
                             </div>
                             <div className="space-y-1">
-                              {docContextMaterials.map((mat) => (
-                                <div key={mat.id} className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <FileText size={13} className="text-violet-500 shrink-0" />
-                                    <span className="truncate text-slate-700 dark:text-zinc-200 font-medium">{mat.name}</span>
-                                    <span className="text-[10px] text-slate-400 shrink-0">({mat.size})</span>
+                              {docContextMaterials.map((mat) => {
+                                const badge = getFileSemanticBadge(mat);
+                                return (
+                                  <div key={mat.id} className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <FileText size={13} className={`${badge.iconColor} shrink-0`} />
+                                      <span className="truncate text-slate-700 dark:text-zinc-200 font-medium">{mat.name}</span>
+                                      <span className="text-[10px] text-slate-400 shrink-0">({mat.size})</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDocContextMaterials((prev) => prev.filter((m) => m.id !== mat.id));
+                                        showToast(`Removed ${mat.name}`);
+                                      }}
+                                      className="p-1 text-slate-400 hover:text-rose-500 transition-colors rounded cursor-pointer"
+                                    >
+                                      <X size={12} />
+                                    </button>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDocContextMaterials((prev) => prev.filter((m) => m.id !== mat.id));
-                                      showToast(`Removed ${mat.name}`);
-                                    }}
-                                    className="p-1 text-slate-400 hover:text-rose-500 transition-colors rounded cursor-pointer"
-                                  >
-                                    <X size={12} />
-                                  </button>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         </>
@@ -58866,11 +58964,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   if (files.length > 0) {
                     const newMaterials = files.map((file, idx) => {
                       const ext = file.name.split('.').pop().toLowerCase();
-                      let type = 'document';
-                      if (['xlsx', 'xls', 'csv', 'ods'].includes(ext)) type = 'spreadsheet';
-                      else if (['pptx', 'ppt', 'key'].includes(ext)) type = 'presentation';
+                      let type = 'text';
+                      if (['xlsx', 'xls', 'csv', 'ods'].includes(ext)) type = 'excel';
+                      else if (['pptx', 'ppt', 'key'].includes(ext)) type = 'powerpoint';
                       else if (['pdf'].includes(ext)) type = 'pdf';
-                      else if (['txt', 'md', 'doc', 'docx'].includes(ext)) type = 'document';
+                      else if (['doc', 'docx'].includes(ext)) type = 'word';
+                      else if (['txt', 'md'].includes(ext)) type = 'text';
 
                       return {
                         id: String(Date.now() + idx),
@@ -58925,6 +59024,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
                 {REGAARDER_WORKSPACE_FILES.map((rwFile) => {
                   const isAdded = docContextMaterials.some((m) => m.name === rwFile.name);
+                  const badge = getFileSemanticBadge(rwFile);
                   return (
                     <button
                       key={rwFile.id}
@@ -58934,7 +59034,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         if (isAdded) {
                           showToast(`"${rwFile.name}" is already in Context`);
                         } else {
-                          setDocContextMaterials((prev) => [...prev, { id: String(Date.now()), name: rwFile.name, type: rwFile.type, size: rwFile.size }]);
+                          setDocContextMaterials((prev) => [...prev, { id: String(Date.now()), name: rwFile.name, type: rwFile.type, size: rwFile.size, isRegaarderDoc: rwFile.isRegaarderDoc }]);
                           showToast(`Added ${rwFile.name} to AI Context`);
                         }
                       }}
@@ -58945,7 +59045,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }`}
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <FileText size={13} className={isAdded ? 'text-slate-400' : 'text-violet-500'} />
+                        <FileText size={13} className={isAdded ? 'text-slate-400' : badge.iconColor} />
                         <span className="truncate">{rwFile.name}</span>
                       </div>
                       {isAdded ? (
