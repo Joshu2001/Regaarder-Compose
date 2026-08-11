@@ -6823,19 +6823,24 @@ export default function App() {
 
     const handleTableCellClick = (e) => {
       const cell = e.target.closest?.('td, th');
-      const inTable = cell?.closest?.('.table-block');
-      if (inTable && cell) {
+      const inTableBlock = cell?.closest?.('.table-block');
+
+      if (cell) {
+        lastFocusedTableCellRef.current = cell;
         setFocusedTableCell(cell);
-        setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
       } else if (
         !e.target.closest?.('#block-hover-menu') &&
         !e.target.closest?.('.table-dropdown-popover') &&
         !e.target.closest?.('.table-dropdown-btn') &&
         !e.target.closest?.('.table-dropdown-modal-container') &&
+        !e.target.closest?.('.table-toolbar-container') &&
         !e.target.closest?.('#top-toolbar') &&
-        !e.target.closest?.('.compose-cell-strip-portal')
+        !e.target.closest?.('.compose-cell-strip-portal') &&
+        !(tableToolbarRef.current && tableToolbarRef.current.contains(e.target))
       ) {
+        // Truly outside any table cell — clear tracking.
         setFocusedTableCell(null);
+        lastFocusedTableCellRef.current = null;
       }
     };
 
@@ -6927,6 +6932,9 @@ export default function App() {
   const [tableColorPickerOpen, setTableColorPickerOpen] = useState(false);
   const [tableDropdownMenuOpen, setTableDropdownMenuOpen] = useState(false);
   const tableDropdownBtnRef = useRef(null);
+  const lastFocusedTableCellRef = useRef(null);
+  const tableDropdownMenuOpenRef = useRef(false);
+  tableDropdownMenuOpenRef.current = tableDropdownMenuOpen;
   const [dropdownChoicesText, setDropdownChoicesText] = useState('In Progress, Done, Upcoming, Blocked, Ready');
   // Compose table cell customizer
   const [composeHoveredCell, setComposeHoveredCell] = useState(null);
@@ -7121,6 +7129,10 @@ export default function App() {
       targetEl.closest?.('.table-color-picker-container') ||
       targetEl.closest?.('.table-dropdown-popover')
     );
+
+    // Do not wipe cellEl while the dropdown popover is open — reading tableDropdownMenuOpen
+    // directly from closure is stale; use a ref guard instead.
+    if (tableDropdownMenuOpenRef.current) return;
 
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount) {
@@ -7361,6 +7373,11 @@ export default function App() {
       if (!cell || !blankBodyRef.current?.contains(cell)) return;
       const table = cell.closest('table');
       if (!table) return;
+
+      // Pin the clicked cell into the stable ref immediately — this is the ground truth
+      // source for resolveTargetCell, immune to React state staleness and focus theft.
+      lastFocusedTableCellRef.current = cell;
+      setFocusedTableCell(cell);
 
       const rect = cell.getBoundingClientRect();
       setTableToolbar({
@@ -51097,7 +51114,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {tableToolbar.open && (
         <div
           ref={tableToolbarRef}
-          className="fixed z-[290] flex items-center gap-1 p-1 bg-white/95 dark:bg-zinc-900/95 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-[0_4px_20px_-4px_rgba(15,23,42,0.08)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] backdrop-blur-md select-none"
+          className="table-toolbar-container fixed z-[290] flex items-center gap-1 p-1 bg-white/95 dark:bg-zinc-900/95 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-[0_4px_20px_-4px_rgba(15,23,42,0.08)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] backdrop-blur-md select-none"
           style={{
             left: `${tableToolbar.left}px`,
             top:  `${tableToolbar.top}px`,
@@ -51111,6 +51128,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               e.stopPropagation();
             }
           }}
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Drag grip */}
           <div
@@ -51288,7 +51306,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               ref={tableDropdownBtnRef}
               type="button"
-              onClick={() => setTableDropdownMenuOpen(!tableDropdownMenuOpen)}
+              onPointerDown={(e) => {
+                // Capture the currently focused cell BEFORE focus shifts to this button.
+                // We prevent default so the editor selection is never lost.
+                e.preventDefault();
+                e.stopPropagation();
+
+                const activeSelectionCell = (() => {
+                  const sel = window.getSelection();
+                  if (sel && sel.rangeCount > 0) {
+                    const node = sel.getRangeAt(0).startContainer;
+                    return node?.nodeType === 1
+                      ? node.closest('td, th')
+                      : node?.parentElement?.closest('td, th');
+                  }
+                  return null;
+                })();
+
+                // Prefer the explicit cell that the toolbar is attached to (or the
+                // last cell the user clicked) over a browser selection snapshotted in
+                // some earlier DOM range. The selection range can point at a stale
+                // text node/ancestor cell when focus is being moved to the toolbar button.
+                const currentCell =
+                  tableToolbar?.cellEl ||
+                  focusedTableCell ||
+                  lastFocusedTableCellRef.current ||
+                  activeSelectionCell;
+
+                if (currentCell) lastFocusedTableCellRef.current = currentCell;
+
+                setTableDropdownMenuOpen(prev => !prev);
+              }}
               className={`group relative w-7 h-7 flex items-center justify-center rounded-lg transition-all active:scale-[0.95] ${
                 tableDropdownMenuOpen 
                   ? 'bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300' 
@@ -51309,6 +51357,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               onClose={() => setTableDropdownMenuOpen(false)}
               tableToolbar={tableToolbar}
               focusedTableCell={focusedTableCell}
+              lastFocusedTableCellRef={lastFocusedTableCellRef}
               dropdownChoicesText={dropdownChoicesText}
               setDropdownChoicesText={setDropdownChoicesText}
               triggerButtonRef={tableDropdownBtnRef}

@@ -57,8 +57,13 @@ export const createDropdownHTML = (choices, initialValue = '', customColors = {}
   const selectedVal = matchedVal || cleanChoices[0];
   const initialPalette = getOptionPalette(selectedVal, customColors);
 
+  const escapeAttr = (str) => String(str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const escapeHtml = (str) => String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
   const optionItems = cleanChoices.map(opt => {
     const p = getOptionPalette(opt, customColors);
+    const safeOptAttr = escapeAttr(opt);
+    const safeOptHtml = escapeHtml(opt);
     return `<div onpointerdown="
       event.preventDefault();
       event.stopPropagation();
@@ -76,9 +81,9 @@ export const createDropdownHTML = (choices, initialValue = '', customColors = {}
       if (block) {
         block.dispatchEvent(new Event('input', { bubbles: true }));
       }
-    " data-val="${opt}" onmouseover="this.style.background='#f1f5f9';" onmouseout="this.style.background='transparent';" style="display:flex; align-items:center; gap:8px; padding:6px 10px; font-size:12px; font-weight:500; color:#334155; cursor:pointer; text-align:left; transition:background 0.15s; font-family:inherit; border-radius:6px; margin-bottom:1px;">
+    " data-val="${safeOptAttr}" onmouseover="this.style.background='#f1f5f9';" onmouseout="this.style.background='transparent';" style="display:flex; align-items:center; gap:8px; padding:6px 10px; font-size:12px; font-weight:500; color:#334155; cursor:pointer; text-align:left; transition:background 0.15s; font-family:inherit; border-radius:6px; margin-bottom:1px;">
       <span style="width:7px; height:7px; border-radius:50%; background:${p.color}; flex-shrink:0; display:inline-block;"></span>
-      <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${opt}</span>
+      <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeOptHtml}</span>
     </div>`;
   }).join('');
 
@@ -93,7 +98,7 @@ export const createDropdownHTML = (choices, initialValue = '', customColors = {}
     menu.style.display = isOpen ? 'none' : 'block';
   }
 " style="appearance:none; -webkit-appearance:none; display:inline-flex; align-items:center; justify-content:space-between; gap:6px; background:${initialPalette.bg}; color:${initialPalette.color}; border:1px solid ${initialPalette.border}; border-radius:6px; padding:3px 10px; font-size:11px; font-weight:600; outline:none; cursor:pointer; min-width:85px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition:all 0.2s; user-select:none;">
-  <span class="selected-val" style="margin-right:2px; display:inline-block; text-align:left; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${selectedVal}</span>
+  <span class="selected-val" style="margin-right:2px; display:inline-block; text-align:left; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(selectedVal)}</span>
   <svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24' style="flex-shrink:0; margin-left:auto; opacity:0.65;"><polyline points='6 9 12 15 18 9'></polyline></svg>
 </button>
 <div class="custom-doc-dropdown-menu" onpointerdown="event.stopPropagation();" onmousedown="event.stopPropagation();" style="display:none; position:absolute; left:0; top:100%; margin-top:4px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 10px 25px -5px rgba(15,23,42,0.12), 0 8px 16px -6px rgba(15,23,42,0.08); z-index:100005; min-width:130px; padding:4px; max-height:220px; overflow-y:auto; scrollbar-width:thin;">
@@ -107,6 +112,7 @@ export default function TableDropdownPopover({
   onClose,
   tableToolbar,
   focusedTableCell,
+  lastFocusedTableCellRef,
   dropdownChoicesText,
   setDropdownChoicesText,
   createDropdownHTML: createDropdownHTMLProp,
@@ -158,22 +164,22 @@ export default function TableDropdownPopover({
   const [pos, setPos] = useState({ top: 120, left: 100 });
 
   const activeTargetCellRef = useRef(null);
+  const prevIsOpenRef = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
-      let cell = tableToolbar?.cellEl || focusedTableCell;
-      if (!cell && typeof window !== 'undefined') {
-        const sel = window.getSelection();
-        if (sel && sel.rangeCount > 0) {
-          const node = sel.getRangeAt(0).startContainer;
-          cell = node?.nodeType === 1 ? node.closest('td, th') : node?.parentElement?.closest('td, th');
-        }
-        if (!cell && document.activeElement) {
-          cell = document.activeElement.closest('td, th');
-        }
-      }
+      // Highest-priority: the cell pinned at button-press time (before focus theft).
+      const pinnedCell = lastFocusedTableCellRef?.current;
+      const cell = (pinnedCell && document.body?.contains(pinnedCell))
+        ? pinnedCell
+        : (focusedTableCell && document.body?.contains(focusedTableCell))
+          ? focusedTableCell
+          : (tableToolbar?.cellEl && document.body?.contains(tableToolbar?.cellEl))
+            ? tableToolbar.cellEl
+            : null;
 
-      activeTargetCellRef.current = cell || null;
+      // Always force overwrite activeTargetCellRef so stale targets from past sessions never persist
+      activeTargetCellRef.current = cell;
 
       if (cell) {
         const dropdownMenu = cell.querySelector('.custom-doc-dropdown-menu');
@@ -184,18 +190,27 @@ export default function TableDropdownPopover({
           }
         }
       }
-      if (cell && cell.tagName?.toUpperCase() === 'TH') {
-        setDropdownTarget('column');
-      } else {
-        setDropdownTarget('cell');
+
+      if (!prevIsOpenRef.current) {
+        const activeCell = cell;
+        if (activeCell && activeCell.tagName?.toUpperCase() === 'TH') {
+          setDropdownTarget('column');
+        } else {
+          setDropdownTarget('cell');
+        }
       }
+
       setIsAddingOption(false);
       setNewOptionInput('');
       setEditingIdx(-1);
       setSavingPreset(false);
       setPresetNameInput('');
+    } else {
+      // Reset active target when popover is closed
+      activeTargetCellRef.current = null;
     }
-  }, [isOpen, tableToolbar?.cellEl, focusedTableCell, setDropdownChoicesText]);
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen, lastFocusedTableCellRef, tableToolbar?.cellEl, focusedTableCell, setDropdownChoicesText]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -203,13 +218,41 @@ export default function TableDropdownPopover({
     const updatePosition = () => {
       const popoverWidth = 310;
       const popoverHeight = 380;
+
+      const targetEl = activeTargetCellRef.current && document.body.contains(activeTargetCellRef.current)
+        ? activeTargetCellRef.current
+        : (lastFocusedTableCellRef?.current && document.body.contains(lastFocusedTableCellRef.current))
+          ? lastFocusedTableCellRef.current
+          : (tableToolbar?.cellEl && document.body.contains(tableToolbar.cellEl))
+            ? tableToolbar.cellEl
+            : (triggerButtonRef?.current && document.body.contains(triggerButtonRef.current))
+              ? triggerButtonRef.current
+              : null;
+
+      if (targetEl) {
+        const rect = targetEl.getBoundingClientRect();
+        let top = rect.bottom + 8;
+        let left = rect.left;
+
+        if (top + popoverHeight > window.innerHeight - 16) {
+          top = Math.max(16, rect.top - popoverHeight - 8);
+        }
+        if (left + popoverWidth > window.innerWidth - 16) {
+          left = Math.max(16, window.innerWidth - popoverWidth - 16);
+        }
+        left = Math.max(16, left);
+        top = Math.max(16, top);
+
+        setPos({ top, left });
+        return;
+      }
+
       const editorPaperEl = document.querySelector('.compose-blank-body') || 
                             document.querySelector('[contenteditable="true"]')?.closest('.bg-white, .dark\\:bg-zinc-900') || 
                             document.querySelector('[contenteditable="true"]');
       let editorTop = editorPaperEl ? editorPaperEl.getBoundingClientRect().top : 120;
       let top = Math.max(16, Math.min(editorTop, window.innerHeight - popoverHeight - 16));
-      let left = window.innerWidth - popoverWidth - 24;
-      left = Math.max(16, left);
+      let left = Math.max(16, window.innerWidth - popoverWidth - 24);
       setPos({ top, left });
     };
 
@@ -220,13 +263,28 @@ export default function TableDropdownPopover({
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
     };
-  }, [isOpen]);
+  }, [isOpen, lastFocusedTableCellRef, tableToolbar?.cellEl, triggerButtonRef]);
 
   useEffect(() => {
     if (!isOpen) return;
     const handlePointerDown = (e) => {
       const isInsidePopover = e.target.closest('.table-dropdown-popover') || (popoverRef.current && popoverRef.current.contains(e.target));
       const isTrigger = e.target.closest('.table-dropdown-btn') || (triggerButtonRef?.current && triggerButtonRef.current.contains(e.target));
+      const clickedCell = e.target.closest('td, th');
+
+      if (clickedCell) {
+        activeTargetCellRef.current = clickedCell;
+        if (lastFocusedTableCellRef) {
+          lastFocusedTableCellRef.current = clickedCell;
+        }
+        if (clickedCell.tagName?.toUpperCase() === 'TH') {
+          setDropdownTarget('column');
+        } else {
+          setDropdownTarget('cell');
+        }
+        return;
+      }
+
       if (!isInsidePopover && !isTrigger) {
         onClose?.();
       }
@@ -238,7 +296,7 @@ export default function TableDropdownPopover({
       document.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose, triggerButtonRef]);
+  }, [isOpen, onClose, triggerButtonRef, lastFocusedTableCellRef]);
 
   if (!isOpen || typeof document === 'undefined') return null;
 
@@ -299,30 +357,29 @@ export default function TableDropdownPopover({
   };
 
   const resolveTargetCell = () => {
-    if (tableToolbar?.cellEl && document.body.contains(tableToolbar.cellEl)) {
-      return tableToolbar.cellEl;
-    }
-    if (focusedTableCell && document.body.contains(focusedTableCell)) {
-      return focusedTableCell;
-    }
+    // 1. Explicitly clicked cell while popover is open takes highest priority
     if (activeTargetCellRef.current && document.body.contains(activeTargetCellRef.current)) {
       return activeTargetCellRef.current;
     }
-    const sel = typeof window !== 'undefined' ? window.getSelection() : null;
-    if (sel && sel.rangeCount > 0) {
-      const node = sel.getRangeAt(0).startContainer;
-      const cell = node?.nodeType === 1 ? node.closest('td, th') : node?.parentElement?.closest('td, th');
-      if (cell) return cell;
+    // 2. Pinned cell from button press (from live selection or focused cell)
+    if (lastFocusedTableCellRef?.current && document.body?.contains(lastFocusedTableCellRef.current)) {
+      return lastFocusedTableCellRef.current;
     }
-    if (typeof document !== 'undefined' && document.activeElement) {
-      const cell = document.activeElement.closest('td, th');
-      if (cell) return cell;
+    // 3. Focused cell
+    if (focusedTableCell && document.body.contains(focusedTableCell)) {
+      return focusedTableCell;
+    }
+    // 4. Floating toolbar cell fallback
+    if (tableToolbar?.cellEl && document.body.contains(tableToolbar.cellEl)) {
+      return tableToolbar.cellEl;
     }
     if (tableToolbar?.tableEl && document.body.contains(tableToolbar.tableEl)) {
       const firstCell = tableToolbar.tableEl.querySelector('td, th');
       if (firstCell) return firstCell;
     }
-    return document.querySelector('td:focus, td.selected, table td, .table-block td');
+    // Never resolve a "default" table cell via a generic DOM query. That can
+    // drift to the far-left cell in the page when UI focus is shifting.
+    return null;
   };
 
   const getCellInitialVal = (c) => {
@@ -350,11 +407,13 @@ export default function TableDropdownPopover({
     } else if (dropdownTarget === 'column') {
       const parentRow = cell.closest('tr');
       if (parentRow) {
-        const colIndex = Array.from(parentRow.children).indexOf(cell);
+        const colIndex = typeof cell.cellIndex === 'number' ? cell.cellIndex : Array.from(parentRow.children).indexOf(cell);
         if (colIndex >= 0) {
-          table.querySelectorAll('tr').forEach((row) => {
-            if (row.parentElement?.tagName.toLowerCase() === 'thead' || (row.querySelector('th') && !row.querySelector('td'))) return;
-            const colCell = row.children[colIndex];
+          const rows = table.rows && table.rows.length ? Array.from(table.rows) : Array.from(table.querySelectorAll('tr'));
+          rows.forEach((row) => {
+            if (row.parentElement?.tagName.toLowerCase() === 'thead') return;
+            if (row.querySelector('th') && !row.querySelector('td')) return;
+            const colCell = row.cells ? row.cells[colIndex] : row.children[colIndex];
             if (colCell && (colCell.tagName.toLowerCase() === 'td' || colCell.tagName.toLowerCase() === 'th')) {
               const initVal = getCellInitialVal(colCell);
               colCell.innerHTML = makeDropdownHTML(applyChoices, initVal, optionColors);
@@ -386,11 +445,13 @@ export default function TableDropdownPopover({
     if (cell && table) {
       const parentRow = cell.closest('tr');
       if (parentRow) {
-        const colIndex = Array.from(parentRow.children).indexOf(cell);
+        const colIndex = typeof cell.cellIndex === 'number' ? cell.cellIndex : Array.from(parentRow.children).indexOf(cell);
         if (colIndex >= 0) {
-          table.querySelectorAll('tr').forEach((row) => {
-            if (row.parentElement?.tagName.toLowerCase() === 'thead' || (row.querySelector('th') && !row.querySelector('td'))) return;
-            const colCell = row.children[colIndex];
+          const rows = table.rows && table.rows.length ? Array.from(table.rows) : Array.from(table.querySelectorAll('tr'));
+          rows.forEach((row) => {
+            if (row.parentElement?.tagName.toLowerCase() === 'thead') return;
+            if (row.querySelector('th') && !row.querySelector('td')) return;
+            const colCell = row.cells ? row.cells[colIndex] : row.children[colIndex];
             if (colCell?.tagName.toLowerCase() === 'td') {
               colCell.innerHTML = getCellInitialVal(colCell).trim() || '&nbsp;';
               colCell.contentEditable = 'true';
