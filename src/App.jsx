@@ -46768,15 +46768,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       )}
                                     </div>
 
-                                    {/* Date & Divider Lockup */}
-                                    <div className="flex items-center justify-between pointer-events-auto pt-2">
-                                      <div className="flex flex-col gap-1.5">
-                                        <div className="w-10 h-0.5 rounded" style={{ backgroundColor: brandColor }} />
-                                        <span className={`text-[11px] font-semibold tracking-wider uppercase ${isDarkTheme ? 'text-white/60' : 'text-gray-400'}`}>
-                                          May 20, 2025
-                                        </span>
-                                      </div>
-                                    </div>
+
                                   </div>
                                 </div>
                               );
