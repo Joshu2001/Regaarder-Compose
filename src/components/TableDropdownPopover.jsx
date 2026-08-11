@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, Check } from 'lucide-react';
+import { Plus, Check, X } from 'lucide-react';
 
 export const createDropdownHTML = (choices, initialValue = '') => {
   const cleanChoices = choices.map(s => s.trim()).filter(Boolean);
@@ -67,7 +67,7 @@ export default function TableDropdownPopover({
   const [editingText, setEditingText] = useState('');
 
   // Position state
-  const [pos, setPos] = useState({ top: 100, left: 100 });
+  const [pos, setPos] = useState({ top: 120, left: 100 });
 
   // Update target when opening
   useEffect(() => {
@@ -84,27 +84,23 @@ export default function TableDropdownPopover({
     }
   }, [isOpen, tableToolbar?.cellEl, focusedTableCell]);
 
-  // Compute position relative to active interaction while maintaining right-side viewport placement
+  // Compute position relative to top of editor canvas while maintaining right-side viewport placement
   useEffect(() => {
     if (!isOpen) return;
 
     const updatePosition = () => {
-      const cell = tableToolbar?.cellEl || focusedTableCell;
-      const anchorEl = triggerButtonRef?.current || cell;
-
       const popoverWidth = 300;
       const popoverHeight = 330;
 
-      let rect = null;
-      if (anchorEl && typeof anchorEl.getBoundingClientRect === 'function') {
-        rect = anchorEl.getBoundingClientRect();
-      }
+      // Find top edge of the main editor paper canvas
+      const editorPaperEl = document.querySelector('.compose-blank-body') || 
+                            document.querySelector('[contenteditable="true"]')?.closest('.bg-white, .dark\\:bg-zinc-900') || 
+                            document.querySelector('[contenteditable="true"]');
+      
+      let editorTop = editorPaperEl ? editorPaperEl.getBoundingClientRect().top : 120;
 
-      // Vertical position: align 20px higher than anchor/toolbar to raise modal higher as requested
-      let top = rect ? rect.top - 20 : 60;
-
-      // Clamp top inside viewport margins
-      top = Math.max(16, Math.min(top, window.innerHeight - popoverHeight - 16));
+      // Position top anchor level with editor canvas top edge
+      let top = Math.max(16, Math.min(editorTop, window.innerHeight - popoverHeight - 16));
 
       // Right-side placement: maintain consistent distance from right viewport edge
       let left = window.innerWidth - popoverWidth - 24;
@@ -121,7 +117,7 @@ export default function TableDropdownPopover({
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
     };
-  }, [isOpen, tableToolbar, focusedTableCell, triggerButtonRef]);
+  }, [isOpen]);
 
   // Outside click & Escape listener
   useEffect(() => {
@@ -167,16 +163,28 @@ export default function TableDropdownPopover({
     { label: 'Yes / No', choices: ['Yes', 'No'] }
   ];
 
-  const handleSelectPreset = (presetChoices) => {
+  const handleSelectPreset = (presetChoices, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setDropdownChoicesText(presetChoices.join(', '));
   };
 
-  const handleRemoveOption = (indexToRemove) => {
+  const handleRemoveOption = (indexToRemove, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const updated = choices.filter((_, idx) => idx !== indexToRemove);
     setDropdownChoicesText(updated.join(', '));
   };
 
-  const handleAddOption = () => {
+  const handleAddOption = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (!newOptionInput.trim()) {
       setIsAddingOption(false);
       return;
@@ -188,7 +196,11 @@ export default function TableDropdownPopover({
     setIsAddingOption(false);
   };
 
-  const handleSaveEditedOption = (idx) => {
+  const handleSaveEditedOption = (idx, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (!editingText.trim()) {
       handleRemoveOption(idx);
     } else {
@@ -245,8 +257,10 @@ export default function TableDropdownPopover({
   };
 
   const handleResetCell = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const cell = tableToolbar?.cellEl || focusedTableCell;
     if (cell) {
       const text = cell.textContent || '';
@@ -260,8 +274,10 @@ export default function TableDropdownPopover({
   };
 
   const handleResetColumn = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const cell = tableToolbar?.cellEl || focusedTableCell;
     const table = tableToolbar?.tableEl || cell?.closest('table');
     if (cell && table) {
@@ -292,34 +308,23 @@ export default function TableDropdownPopover({
     <div
       ref={popoverRef}
       style={{ top: `${pos.top}px`, left: `${pos.left}px` }}
-      className="fixed z-[200000] w-[300px] rounded-xl border border-slate-200/80 dark:border-zinc-800/90 bg-white/95 dark:bg-zinc-900/95 shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] backdrop-blur-xl text-left font-sans select-none p-3 space-y-3 transition-all duration-150 animate-in fade-in zoom-in-98"
+      className="fixed z-[200000] w-[300px] table-dropdown-popover rounded-xl border border-slate-200/80 dark:border-zinc-800/90 bg-white/95 dark:bg-zinc-900/95 shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] backdrop-blur-xl text-left font-sans select-none p-3 space-y-3 transition-all duration-150 animate-in fade-in zoom-in-98"
       onPointerDown={(e) => e.stopPropagation()}
     >
       {/* Header */}
-      <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-zinc-800/80 pb-2.5">
-        <div>
-          <div className="flex items-center gap-1.5">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="text-violet-600 dark:text-violet-400 shrink-0">
-              <rect x="2" y="3" width="12" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" />
-              <path d="M5 7L8 10L11 7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <h3 className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 leading-tight">
-              Convert to dropdown
-            </h3>
-          </div>
-          <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal leading-snug">
-            Choose options for this cell or column.
-          </p>
+      <div className="border-b border-slate-100 dark:border-zinc-800/80 pb-2">
+        <div className="flex items-center gap-1.5">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="text-violet-600 dark:text-violet-400 shrink-0">
+            <rect x="2" y="3" width="12" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" />
+            <path d="M5 7L8 10L11 7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 leading-tight">
+            Convert to dropdown
+          </h3>
         </div>
-        <button
-          type="button"
-          onClick={() => onClose?.()}
-          aria-label="Close popover"
-          className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-colors shrink-0 -mr-1 -mt-0.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-violet-500"
-          title="Close"
-        >
-          <X size={14} strokeWidth={1.75} />
-        </button>
+        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal leading-snug">
+          Choose options for this cell or column.
+        </p>
       </div>
 
       {/* Preset section */}
@@ -336,7 +341,8 @@ export default function TableDropdownPopover({
               <button
                 key={p.label}
                 type="button"
-                onClick={() => handleSelectPreset(p.choices)}
+                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onClick={(e) => handleSelectPreset(p.choices, e)}
                 aria-pressed={isSelected}
                 className={`px-2.5 py-1 text-[11px] font-medium rounded-md border transition-all duration-150 ${
                   isSelected
@@ -368,10 +374,10 @@ export default function TableDropdownPopover({
                   className="px-2 py-0.5 text-[11px] bg-white dark:bg-zinc-800 border border-violet-500 rounded-md outline-none text-slate-800 dark:text-zinc-100 w-24 focus:ring-1 focus:ring-violet-500"
                   value={editingText}
                   onChange={(e) => setEditingText(e.target.value)}
-                  onBlur={() => handleSaveEditedOption(idx)}
+                  onBlur={(e) => handleSaveEditedOption(idx, e)}
                   onKeyDown={(e) => {
                     e.stopPropagation();
-                    if (e.key === 'Enter') handleSaveEditedOption(idx);
+                    if (e.key === 'Enter') handleSaveEditedOption(idx, e);
                     if (e.key === 'Escape') setEditingIdx(-1);
                   }}
                 />
@@ -385,7 +391,10 @@ export default function TableDropdownPopover({
                 <span
                   className="cursor-pointer hover:text-violet-700 dark:hover:text-violet-300"
                   title="Click to edit"
-                  onClick={() => {
+                  onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setEditingIdx(idx);
                     setEditingText(opt);
                   }}
@@ -394,7 +403,8 @@ export default function TableDropdownPopover({
                 </span>
                 <button
                   type="button"
-                  onClick={() => handleRemoveOption(idx)}
+                  onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onClick={(e) => handleRemoveOption(idx, e)}
                   aria-label={`Remove option ${opt}`}
                   className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors p-0.5 rounded focus-visible:outline-none"
                   title="Remove option"
@@ -419,13 +429,14 @@ export default function TableDropdownPopover({
                 onChange={(e) => setNewOptionInput(e.target.value)}
                 onKeyDown={(e) => {
                   e.stopPropagation();
-                  if (e.key === 'Enter') handleAddOption();
+                  if (e.key === 'Enter') handleAddOption(e);
                   if (e.key === 'Escape') setIsAddingOption(false);
                 }}
               />
               <button
                 type="button"
-                onClick={handleAddOption}
+                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onClick={(e) => handleAddOption(e)}
                 aria-label="Confirm add option"
                 className="p-1 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950 rounded transition-colors"
               >
@@ -435,7 +446,8 @@ export default function TableDropdownPopover({
           ) : (
             <button
               type="button"
-              onClick={() => setIsAddingOption(true)}
+              onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsAddingOption(true); }}
               aria-label="Add option"
               className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-violet-600 dark:text-violet-400 bg-violet-50/50 dark:bg-violet-950/30 hover:bg-violet-100/70 dark:hover:bg-violet-900/50 border border-dashed border-violet-200/80 dark:border-violet-800/80 rounded-md transition-colors"
             >
@@ -451,7 +463,8 @@ export default function TableDropdownPopover({
         <div className="flex items-center p-0.5 bg-slate-100/80 dark:bg-zinc-800/80 rounded-lg border border-slate-200/60 dark:border-zinc-700/60">
           <button
             type="button"
-            onClick={() => setDropdownTarget('cell')}
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDropdownTarget('cell'); }}
             aria-pressed={dropdownTarget === 'cell'}
             className={`px-2.5 py-0.5 text-[11px] rounded-md transition-all ${
               dropdownTarget === 'cell'
@@ -463,7 +476,8 @@ export default function TableDropdownPopover({
           </button>
           <button
             type="button"
-            onClick={() => setDropdownTarget('column')}
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDropdownTarget('column'); }}
             aria-pressed={dropdownTarget === 'column'}
             className={`px-2.5 py-0.5 text-[11px] rounded-md transition-all ${
               dropdownTarget === 'column'
@@ -479,6 +493,7 @@ export default function TableDropdownPopover({
       {/* Primary Apply Button */}
       <button
         type="button"
+        onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onClick={handleApply}
         className="w-full py-1.5 px-3 text-[12px] font-semibold text-white bg-violet-600 hover:bg-violet-700 active:bg-violet-800 rounded-lg shadow-2xs transition-all duration-150 text-center cursor-pointer active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-1"
       >
@@ -489,6 +504,7 @@ export default function TableDropdownPopover({
       <div className="pt-1.5 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-center gap-2.5 text-[10.5px]">
         <button
           type="button"
+          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onClick={handleResetCell}
           className="text-slate-400 dark:text-zinc-500 hover:text-rose-500 dark:hover:text-rose-400 font-medium transition-colors"
         >
@@ -497,6 +513,7 @@ export default function TableDropdownPopover({
         <span className="text-slate-300 dark:text-zinc-700">·</span>
         <button
           type="button"
+          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onClick={handleResetColumn}
           className="text-slate-400 dark:text-zinc-500 hover:text-rose-500 dark:hover:text-rose-400 font-medium transition-colors"
         >

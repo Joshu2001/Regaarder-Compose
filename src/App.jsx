@@ -7149,7 +7149,8 @@ export default function App() {
     const isInsideTableToolbar = targetEl && (
       targetEl.closest?.('.table-toolbar-container') ||
       targetEl.closest?.('.table-dropdown-modal-container') ||
-      targetEl.closest?.('.table-color-picker-container')
+      targetEl.closest?.('.table-color-picker-container') ||
+      targetEl.closest?.('.table-dropdown-popover')
     );
 
     const selection = window.getSelection();
