@@ -7353,19 +7353,31 @@ export default function App() {
 
     /** Intercept clicks on cells configured as dropdown columns or dropdown badges. */
     const onCellClick = (e) => {
-      const cell = e.target.closest('td[data-cell-col-type="dropdown"]') || (e.target.closest('.compose-cell-badge') ? e.target.closest('td') : null);
+      // Direct click on the inline dropdown badge or menu -> allow normal inline toggle / selection
+      if (e.target.closest('.custom-doc-dropdown')) {
+        return;
+      }
+      const cell = e.target.closest('td, th');
       if (!cell || !blankBodyRef.current?.contains(cell)) return;
       const table = cell.closest('table');
       if (!table) return;
-      const colIndex = cell.cellIndex;
-      let config = getColConfig(table, colIndex);
-      let options = config.options;
-      if (!options || !options.length) {
-        options = ['Critical', 'High', 'Medium', 'Low', 'In Progress', 'Done', 'Upcoming'];
+
+      const isDropdownCell = cell.getAttribute('data-cell-col-type') === 'dropdown' ||
+                             cell.querySelector('.custom-doc-dropdown') ||
+                             e.target.closest('.compose-cell-badge');
+
+      if (isDropdownCell) {
+        const rect = cell.getBoundingClientRect();
+        setTableToolbar({
+          open: true,
+          left: Math.max(16, rect.left + rect.width / 2),
+          top: Math.max(16, rect.top - 5),
+          tableEl: table,
+          cellEl: cell
+        });
+        setTableDropdownMenuOpen(true);
+        e.stopPropagation();
       }
-      const rect = cell.getBoundingClientRect();
-      setComposeCellDropdownPicker({ cellEl: cell, tableEl: table, colIndex, options, rect });
-      e.stopPropagation();
     };
 
     const editorEl = blankBodyRef.current;
