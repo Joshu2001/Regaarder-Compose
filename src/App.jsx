@@ -45151,9 +45151,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    const table = tableIntersections[tableIntersections.length - 1];
                                    const preset = TABLE_PRESETS[table.presetStyle] || TABLE_PRESETS.blue;
                                    const isHeader = rowIndex + 1 === table.startRow;
-                                   computedFormat.fill = isHeader ? preset.headerBg : ((rowIndex + 1 - table.startRow) % 2 === 0 ? preset.oddBg : preset.evenBg);
-                                   computedFormat.color = isHeader ? preset.headerColor : '#333';
-                                   computedFormat.bold = isHeader;
+                                   computedFormat.fill = cellFormat.fill || cellFormat.highlight || (isHeader ? preset.headerBg : ((rowIndex + 1 - table.startRow) % 2 === 0 ? preset.oddBg : preset.evenBg));
+                                   computedFormat.color = cellFormat.color || (isHeader ? preset.headerColor : '#333');
+                                   computedFormat.bold = cellFormat.bold !== undefined ? cellFormat.bold : isHeader;
                                    computedFormat.isHeader = isHeader;
                                    const isTableTop = rowIndex + 1 === table.startRow;
                                    const isTableBottom = rowIndex + 1 === table.endRow;
