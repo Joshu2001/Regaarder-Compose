@@ -4,7 +4,7 @@
 
 During the “Convert to dropdown” workflow in the table editor, the UI could apply dropdown conversion to the wrong DOM cell: the far-left cell in the table would sometimes receive the dropdown HTML instead of the cell that the user had clicked or otherwise interacted with in the active toolbar context.
 
-The symptoms were not deterministic across attempts. In one pass the user clicked a target cell and the apply flow selected the wrong cell; in a second pass, after state had been re-established, the same workflow behaved correctly. That suggested a stale-target resolution problem rather than a rendering-only defect.
+The symptoms were not deterministic across attempts. In one pass the user clicked a target cell and the apply flow selected the wrong cell; in a second pass, after state had been re-established, the same workflow behaved correctly. The user later clarified that the first click on the Apply button can be swallowed entirely — it never reaches the `handleApply()` branch because the target cell is not resolved; on a second attempt, the same modal can re-open with a stable target and the Apply button path executes normally. That suggested a stale-target resolution problem rather than a rendering-only defect.
 
 ## Impact
 
@@ -21,6 +21,7 @@ Observed symptom:
 - Click a cell in the table.
 - Launch the dropdown/popover conversion workflow.
 - In the first attempt the wrong cell can become the conversion target and runtime DOM updates land in the far-left table cell.
+- In the first modal pass, the Apply button click can be suppressed before the target node reaches `handleApply()`; there is no concrete HTML mutation, so it looks like the first press fails to trigger.
 - In a second attempt the process can succeed because the cell context is now pinned through state and refs and does not depend on a stale browser selection path.
 
 ## Root-cause analysis
@@ -78,6 +79,8 @@ Attempt 3: Blindly rely on the last clicked/focused cell path
 ## Detailed resolution
 
 The resolution was a defensive, higher-confidence target ordering and a safer failure mode.
+
+The apply-flow hit a second-order symptom: because `handleApply()` depends on `resolveTargetCell()` and `resolveTargetCell()` can return `null` for the initial attempt, the first Apply press can be a live no-op. That is why the UI can look like the button never triggered. The second pass becomes available only after the same open flow gets a rehydrated cell context that survives the pointer lifecycle.
 
 The application code now treats the target cell as an explicit context object, not a permissive CSS fallback.
 
