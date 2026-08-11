@@ -6,6 +6,12 @@ import BrowserResearchPanel from './BrowserResearchPanel';
 import SendToSheetsPopover from './SendToSheetsPopover';
 import SendToComposePopover from './SendToComposePopover';
 import CompetitorResearchWorkflow from './CompetitorResearchWorkflow';
+import BrowserFlowsPopover from './flows/BrowserFlowsPopover';
+import RecordingIndicatorBar from './flows/RecordingIndicatorBar';
+import FlowSynthesisModal from './flows/FlowSynthesisModal';
+import FlowLibraryModal from './flows/FlowLibraryModal';
+import FlowExecutionModal from './flows/FlowExecutionModal';
+import { globalActivityObserver, synthesizeFlowFromActions, getSavedFlows } from '../../services/flowEngine';
 
 const STORAGE_KEY = 'regaarder_research_tabs_v2';
 const SAVED_ITEMS_KEY = 'regaarder_saved_research_v1';
@@ -19,6 +25,14 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
   const [sendToSheetsPopoverRect, setSendToSheetsPopoverRect] = useState(null);
   const [sendToComposePopoverRect, setSendToComposePopoverRect] = useState(null);
   const [showCompetitorWorkflow, setShowCompetitorWorkflow] = useState(false);
+
+  // Regaarder Flows system state
+  const [isFlowRecording, setIsFlowRecording] = useState(false);
+  const [flowsPopoverRect, setFlowsPopoverRect] = useState(null);
+  const [recordedActionCount, setRecordedActionCount] = useState(0);
+  const [synthesizedFlowToReview, setSynthesizedFlowToReview] = useState(null);
+  const [showFlowLibraryModal, setShowFlowLibraryModal] = useState(false);
+  const [activeExecutingFlow, setActiveExecutingFlow] = useState(null);
 
   // Restore or initialize research tabs
   const [tabs, setTabs] = useState(() => {
@@ -221,6 +235,14 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
       window.electronAPI.createTab(activeTabId, formattedUrl);
       window.electronAPI.navigate(activeTabId, formattedUrl);
     }
+
+    // Record action in Flow engine
+    globalActivityObserver.record({
+      type: 'navigate',
+      url: formattedUrl,
+      title: activeTab?.title || formattedUrl
+    });
+    setRecordedActionCount((prev) => prev + 1);
   };
 
   const handleGoBack = () => {
@@ -259,6 +281,30 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
     if (activeTab?.url && activeTab.url !== DEFAULT_RESEARCH_URL && activeTab.url !== 'regaarder://saved') {
       window.open(activeTab.url, '_blank', 'noopener,noreferrer');
     }
+  };
+
+  // Flow Recording Control Handlers
+  const handleStartRecordingFlow = () => {
+    globalActivityObserver.startRecording();
+    setIsFlowRecording(true);
+    setRecordedActionCount(0);
+    if (showToast) showToast('Started Flow recording session');
+  };
+
+  const handleStopRecordingFlow = () => {
+    const sessionActions = globalActivityObserver.stopRecording();
+    setIsFlowRecording(false);
+    const synthesized = synthesizeFlowFromActions(
+      sessionActions.length > 0 ? sessionActions : globalActivityObserver.getRecentActions(),
+      'Competitor Pricing Research'
+    );
+    setSynthesizedFlowToReview(synthesized);
+  };
+
+  const handleSaveRecentAsFlow = () => {
+    const recent = globalActivityObserver.getRecentActions();
+    const synthesized = synthesizeFlowFromActions(recent, 'Flow from Recent Activity');
+    setSynthesizedFlowToReview(synthesized);
   };
 
   // Direct Toggle Bookmark Action (Zero dialogs prompt, toast with Undo)
@@ -322,6 +368,13 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
     const count = tableData.rows ? tableData.rows.length : 24;
     const msg = `${count} rows added to ${destinationSheet}`;
 
+    globalActivityObserver.record({
+      type: 'send_to_sheets',
+      target: 'Sheets',
+      destination: destinationSheet
+    });
+    setRecordedActionCount((prev) => prev + 1);
+
     const undoAction = () => {
       if (showToast) showToast(`Reverted data export to ${destinationSheet}`);
     };
@@ -336,6 +389,13 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
     const { destinationDoc } = payload;
     const msg = `Added to ${destinationDoc}`;
 
+    globalActivityObserver.record({
+      type: 'send_to_compose',
+      target: 'Compose',
+      destination: destinationDoc
+    });
+    setRecordedActionCount((prev) => prev + 1);
+
     const undoAction = () => {
       if (showToast) showToast(`Reverted content export to ${destinationDoc}`);
     };
@@ -346,7 +406,15 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
   };
 
   return (
-    <div className="flex flex-col w-full h-full bg-slate-900 overflow-hidden font-sans select-none">
+    <div className="flex flex-col w-full h-full bg-slate-900 overflow-hidden font-sans select-none relative">
+      {/* Active Flow Recording Sticky Indicator Bar */}
+      {isFlowRecording && (
+        <RecordingIndicatorBar
+          actionCount={recordedActionCount}
+          onStop={handleStopRecordingFlow}
+        />
+      )}
+
       {/* Regaarder Research Tab Bar */}
       <BrowserTabBar
         tabs={tabs}
@@ -365,6 +433,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
         isSecure={activeTab?.isSecure !== false}
         isBookmarked={isBookmarked}
         isSidePanelOpen={isSidePanelOpen}
+        isFlowRecording={isFlowRecording}
         onNavigate={handleNavigate}
         onGoBack={handleGoBack}
         onGoForward={handleGoForward}
@@ -376,6 +445,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
         onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
         onOpenSendToSheetsPopover={(rect) => setSendToSheetsPopoverRect(rect)}
         onOpenSendToComposePopover={(rect) => setSendToComposePopoverRect(rect)}
+        onOpenFlowsPopover={(rect) => setFlowsPopoverRect(rect)}
         onSendWhiteboardChip={() => {
           if (showToast) showToast('Clipped visual layout to Whiteboard canvas');
         }}
@@ -418,10 +488,75 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
             onSendToWhiteboard={() => {
               if (showToast) showToast('Clipped visual layout to Whiteboard canvas');
             }}
+            onRunFlowRequested={(flow, initialInputs) => {
+              setActiveExecutingFlow({ flow, initialInputs });
+            }}
             showToast={showToast}
           />
         )}
       </div>
+
+      {/* Regaarder Flows Menu Popover */}
+      {flowsPopoverRect && (
+        <BrowserFlowsPopover
+          anchorRect={flowsPopoverRect}
+          isRecording={isFlowRecording}
+          onClose={() => setFlowsPopoverRect(null)}
+          onStartRecording={() => {
+            if (isFlowRecording) {
+              handleStopRecordingFlow();
+            } else {
+              handleStartRecordingFlow();
+            }
+          }}
+          onSaveRecentAsFlow={handleSaveRecentAsFlow}
+          onOpenRunFlow={() => {
+            const saved = getSavedFlows();
+            if (saved.length > 0) {
+              setActiveExecutingFlow({ flow: saved[0] });
+            }
+          }}
+          onOpenMyFlows={() => setShowFlowLibraryModal(true)}
+        />
+      )}
+
+      {/* Flow Synthesis & Review Modal */}
+      {synthesizedFlowToReview && (
+        <FlowSynthesisModal
+          synthesizedFlow={synthesizedFlowToReview}
+          onClose={() => setSynthesizedFlowToReview(null)}
+          onSaveSuccess={(updatedFlows, savedFlow) => {
+            // Optionally auto-open execution modal for immediate reuse
+          }}
+          showToast={showToast}
+        />
+      )}
+
+      {/* My Flows Library Modal */}
+      {showFlowLibraryModal && (
+        <FlowLibraryModal
+          onClose={() => setShowFlowLibraryModal(false)}
+          onRunFlow={(flow) => setActiveExecutingFlow({ flow })}
+          showToast={showToast}
+        />
+      )}
+
+      {/* Flow Execution Overlay Modal */}
+      {activeExecutingFlow && (
+        <FlowExecutionModal
+          flow={activeExecutingFlow.flow}
+          initialInputs={activeExecutingFlow.initialInputs}
+          onClose={() => setActiveExecutingFlow(null)}
+          onNavigate={handleNavigate}
+          onSendToSheets={(tableData) => {
+            handleExecuteSendToSheets({
+              destinationSheet: activeExecutingFlow.flow?.name || 'Competitor Analysis',
+              tableData
+            });
+          }}
+          showToast={showToast}
+        />
+      )}
 
       {/* Contextual Action Popover: Send to Sheets */}
       {sendToSheetsPopoverRect && (

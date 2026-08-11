@@ -285,6 +285,47 @@ export const BrowserCheckIcon = ({ size = 16, className = '', strokeWidth = 1.5,
   </svg>
 );
 
+// 15. FLOW / WORKFLOW: Regaarder node loop graph with central focal node
+export const BrowserFlowIcon = ({ size = 18, className = '', strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M4.5 12A7.5 7.5 0 0 1 12 4.5h5.5" />
+    <polyline points="15 2 18.5 4.5 15 7" />
+    <path d="M19.5 12A7.5 7.5 0 0 1 12 19.5H6.5" />
+    <polyline points="9 22 5.5 19.5 9 17" />
+    <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+// 16. RECORDING: Active flow recording indicator (recording dot + spark node)
+export const BrowserRecordIcon = ({ size = 18, className = '', strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <circle cx="8" cy="12" r="4.5" fill="#ef4444" stroke="#ef4444" />
+    <path d="M15.5 8.5L16.5 12L15.5 15.5L19 12L15.5 8.5Z" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 // Export map for easy lookup
 export const RegaarderBrowserIconMap = {
   Home: BrowserHomeIcon,
@@ -300,7 +341,10 @@ export const RegaarderBrowserIconMap = {
   Search: BrowserSearchIcon,
   SearchWeb: BrowserSearchWebIcon,
   Competitors: BrowserCompetitorsIcon,
-  Check: BrowserCheckIcon
+  Check: BrowserCheckIcon,
+  Flow: BrowserFlowIcon,
+  Record: BrowserRecordIcon
 };
 
 export default RegaarderBrowserIconMap;
+

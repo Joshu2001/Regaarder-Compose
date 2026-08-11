@@ -8,7 +8,9 @@ import {
   BrowserInsecureIcon,
   BrowserExternalIcon,
   BrowserBookmarkIcon,
-  BrowserCloseIcon
+  BrowserCloseIcon,
+  BrowserFlowIcon,
+  BrowserRecordIcon
 } from './RegaarderBrowserIcons';
 import {
   AgentsIcon,
@@ -37,6 +39,7 @@ export const BrowserToolbar = ({
   isSecure = true,
   isBookmarked = false,
   isSidePanelOpen = false,
+  isFlowRecording = false,
   onNavigate,
   onGoBack,
   onGoForward,
@@ -48,6 +51,7 @@ export const BrowserToolbar = ({
   onToggleSidePanel,
   onOpenSendToSheetsPopover,
   onOpenSendToComposePopover,
+  onOpenFlowsPopover,
   onSendWhiteboardChip,
   onSaveMemoryChip,
   onSummarizeChip
@@ -58,6 +62,7 @@ export const BrowserToolbar = ({
   // Button anchor refs for contextual popovers
   const sheetsBtnRef = useRef(null);
   const composeBtnRef = useRef(null);
+  const flowsBtnRef = useRef(null);
 
   useEffect(() => {
     if (!isEditing) {
@@ -257,6 +262,33 @@ export const BrowserToolbar = ({
 
       {/* Top Right Action Bar */}
       <div className="flex items-center gap-1 shrink-0">
+        {/* Regaarder Flows Control Button */}
+        <button
+          ref={flowsBtnRef}
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            if (flowsBtnRef.current && onOpenFlowsPopover) {
+              onOpenFlowsPopover(flowsBtnRef.current.getBoundingClientRect());
+            }
+          }}
+          className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 font-mono text-xs ${
+            isFlowRecording
+              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/50 outline-rose-500/60 ring-2 ring-rose-500/30 animate-pulse'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-violet-500'
+          }`}
+          title={isFlowRecording ? 'Recording Flow (Click for options)' : 'Regaarder Flows (Teach Once, Reuse Forever)'}
+        >
+          {isFlowRecording ? (
+            <span className="flex items-center gap-1 text-[11px] font-bold text-rose-400">
+              <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+              <span>● ✦</span>
+            </span>
+          ) : (
+            <BrowserFlowIcon size={16} />
+          )}
+        </button>
+
         {/* Bookmark Direct Toggle Button (Active outline state per design system rule) */}
         <button
           type="button"

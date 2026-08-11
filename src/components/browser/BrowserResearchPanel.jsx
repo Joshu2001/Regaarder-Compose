@@ -27,6 +27,7 @@ export const BrowserResearchPanel = ({
   onOpenSendToSheets,
   onSaveToMemory,
   onSendToWhiteboard,
+  onRunFlowRequested,
   showToast
 }) => {
   const [isExtracting, setIsExtracting] = useState(false);
@@ -80,7 +81,7 @@ export const BrowserResearchPanel = ({
         setChatMessages([
           {
             sender: 'agent',
-            text: `I'm looking at this page with you (**${activeTab?.title || domain}**). Ask me any question, or use the suggested action chips below.`
+            text: `I'm looking at this page with you (**${activeTab?.title || domain}**). Ask me any question, or ask me to run one of your saved **Flows**.`
           }
         ]);
       } catch (err) {
@@ -106,27 +107,50 @@ export const BrowserResearchPanel = ({
     const newMessages = [...chatMessages, { sender: 'user', text: userText }];
     setChatMessages(newMessages);
 
-    setTimeout(() => {
-      let responseText = `Regarding "${userText}" on **${activeTab?.title || 'Webpage'}**: `;
-      if (selectedTextContext) {
-        responseText += `Analyzing selection context ("${selectedTextContext.slice(0, 40)}..."). `;
-      }
-      responseText += 'The page structure confirms operational parameters with zero superficial popups and full deterministic execution.';
+    // Check for Flow execution intent
+    const isFlowRequest = /\b(run|execute|repeat)\b.*\b(flow|pricing|competitor|market|lead|grant)\b/i.test(userText);
 
-      setChatMessages((prev) => [
-        ...prev,
-        { sender: 'agent', text: responseText }
-      ]);
+    setTimeout(() => {
+      if (isFlowRequest && onRunFlowRequested) {
+        // Extract parameters if provided
+        const forMatch = userText.match(/\bfor\s+(.+)$/i);
+        const companies = forMatch ? forMatch[1].trim() : 'Notion, Asana, Monday, ClickUp';
+        
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            sender: 'agent',
+            text: `⚡ Recognized saved Flow request: **Competitor Pricing Research** with inputs: \`${companies}\`. Launching adaptive execution...`
+          }
+        ]);
+
+        onRunFlowRequested({
+          name: 'Competitor Pricing Research',
+          id: 'flow-competitor-pricing',
+          inputs: [{ name: 'companies', defaultValue: companies.split(',').map((s) => s.trim()) }]
+        }, { companies });
+      } else {
+        let responseText = `Regarding "${userText}" on **${activeTab?.title || 'Webpage'}**: `;
+        if (selectedTextContext) {
+          responseText += `Analyzing selection context ("${selectedTextContext.slice(0, 40)}..."). `;
+        }
+        responseText += 'The page structure confirms operational parameters with zero superficial popups and full deterministic execution.';
+
+        setChatMessages((prev) => [
+          ...prev,
+          { sender: 'agent', text: responseText }
+        ]);
+      }
     }, 450);
   };
 
   const actionChips = [
+    'Run Competitor Flow',
     'Summarize',
     'Explain',
     'Extract key facts',
     'Analyze',
-    'Compare',
-    'Ask a question'
+    'Compare'
   ];
 
   return (
