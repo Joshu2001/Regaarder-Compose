@@ -7362,19 +7362,20 @@ export default function App() {
       const table = cell.closest('table');
       if (!table) return;
 
+      const rect = cell.getBoundingClientRect();
+      setTableToolbar({
+        open: true,
+        left: Math.max(16, rect.left + rect.width / 2),
+        top: Math.max(16, rect.top - 5),
+        tableEl: table,
+        cellEl: cell
+      });
+
       const isDropdownCell = cell.getAttribute('data-cell-col-type') === 'dropdown' ||
                              cell.querySelector('.custom-doc-dropdown') ||
                              e.target.closest('.compose-cell-badge');
 
       if (isDropdownCell) {
-        const rect = cell.getBoundingClientRect();
-        setTableToolbar({
-          open: true,
-          left: Math.max(16, rect.left + rect.width / 2),
-          top: Math.max(16, rect.top - 5),
-          tableEl: table,
-          cellEl: cell
-        });
         setTableDropdownMenuOpen(true);
         e.stopPropagation();
       }

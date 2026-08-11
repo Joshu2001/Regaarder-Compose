@@ -318,7 +318,11 @@ export default function TableDropdownPopover({
       const cell = document.activeElement.closest('td, th');
       if (cell) return cell;
     }
-    return null;
+    if (tableToolbar?.tableEl && document.body.contains(tableToolbar.tableEl)) {
+      const firstCell = tableToolbar.tableEl.querySelector('td, th');
+      if (firstCell) return firstCell;
+    }
+    return document.querySelector('td:focus, td.selected, table td, .table-block td');
   };
 
   const getCellInitialVal = (c) => {
@@ -329,7 +333,9 @@ export default function TableDropdownPopover({
   };
 
   const handleApply = () => {
-    if (choices.length === 0) return;
+    const raw = (dropdownChoicesText || '').split(',').map((s) => s.trim()).filter(Boolean);
+    const applyChoices = raw.length > 0 ? raw : ['In Progress', 'Done', 'Upcoming', 'Blocked', 'Ready'];
+
     const cell = resolveTargetCell();
     if (!cell) return;
     const table = tableToolbar?.tableEl || cell.closest('table');
@@ -337,7 +343,7 @@ export default function TableDropdownPopover({
 
     if (dropdownTarget === 'cell') {
       const initVal = getCellInitialVal(cell);
-      cell.innerHTML = makeDropdownHTML(choices, initVal, optionColors);
+      cell.innerHTML = makeDropdownHTML(applyChoices, initVal, optionColors);
       cell.contentEditable = 'false';
       cell.setAttribute('data-cell-col-type', 'dropdown');
       table.dispatchEvent(new Event('input', { bubbles: true }));
@@ -351,7 +357,7 @@ export default function TableDropdownPopover({
             const colCell = row.children[colIndex];
             if (colCell && (colCell.tagName.toLowerCase() === 'td' || colCell.tagName.toLowerCase() === 'th')) {
               const initVal = getCellInitialVal(colCell);
-              colCell.innerHTML = makeDropdownHTML(choices, initVal, optionColors);
+              colCell.innerHTML = makeDropdownHTML(applyChoices, initVal, optionColors);
               colCell.contentEditable = 'false';
               colCell.setAttribute('data-cell-col-type', 'dropdown');
             }
