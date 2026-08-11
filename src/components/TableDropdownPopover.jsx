@@ -712,7 +712,10 @@ export default function TableDropdownPopover({
 
       <button
         type="button"
-        onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleApply(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleApply();
+        }}
         className="w-full py-1.5 px-3 text-[12px] font-semibold text-white bg-violet-600 hover:bg-violet-700 active:bg-violet-800 rounded-lg shadow-2xs transition-all duration-150 text-center cursor-pointer active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-1"
       >
         Apply
