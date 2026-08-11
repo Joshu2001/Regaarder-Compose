@@ -1,26 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
-  X,
-  Sparkles,
-  RefreshCw,
-  Send,
-  CheckCircle2,
-  FileText,
-  Table,
-  Bookmark,
-  Share2,
-  ListFilter,
-  Bot,
-  User,
-  ArrowRight,
-  ExternalLink
-} from 'lucide-react';
+  BrowserCloseIcon,
+  BrowserReloadIcon,
+  BrowserForwardIcon
+} from './RegaarderBrowserIcons';
 import {
   AgentsIcon,
   MemoryIcon,
   ComposeIcon,
   SheetIcon,
-  WhiteboardIcon
+  WhiteboardIcon,
+  AssistIcon
 } from '../RegaarderProductIcons';
 
 export const BrowserResearchPanel = ({
@@ -154,7 +144,7 @@ export const BrowserResearchPanel = ({
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-30"
             title="Re-analyze webpage text"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isExtracting ? 'animate-spin text-violet-400' : ''}`} />
+            <BrowserReloadIcon size={14} className={isExtracting ? 'animate-spin text-violet-400' : ''} />
           </button>
           <button
             type="button"
@@ -162,7 +152,7 @@ export const BrowserResearchPanel = ({
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
             title="Close Assistant Panel"
           >
-            <X className="w-4 h-4" />
+            <BrowserCloseIcon size={16} />
           </button>
         </div>
       </div>
@@ -216,7 +206,7 @@ export const BrowserResearchPanel = ({
         {/* AI Page Overview & Key Takeaways */}
         {isExtracting ? (
           <div className="flex flex-col items-center justify-center p-8 bg-slate-950/40 rounded-xl border border-slate-800/60 text-slate-400 text-xs">
-            <RefreshCw className="w-5 h-5 text-violet-400 animate-spin mb-2" />
+            <BrowserReloadIcon size={20} className="text-violet-400 animate-spin mb-2" />
             <span>Analyzing webpage contents & structure...</span>
           </div>
         ) : summary ? (
@@ -225,7 +215,7 @@ export const BrowserResearchPanel = ({
             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-violet-400 uppercase tracking-wide flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <AssistIcon size={14} className="text-violet-400" />
                   AI Executive Summary
                 </span>
                 <span className="text-[10px] text-slate-500 font-mono">{summary.domain}</span>
@@ -239,7 +229,7 @@ export const BrowserResearchPanel = ({
             {summary.keyFacts && summary.keyFacts.length > 0 && (
               <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2">
                 <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wide flex items-center gap-1.5">
-                  <ListFilter className="w-3.5 h-3.5 text-sky-400" />
+                  <MemoryIcon size={14} className="text-sky-400" />
                   Key Facts & Takeaways
                 </span>
                 <ul className="space-y-1.5">
@@ -263,7 +253,7 @@ export const BrowserResearchPanel = ({
         <div className="space-y-2 pt-1">
           <div className="flex items-center justify-between px-1">
             <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wide flex items-center gap-1.5">
-              <Bot className="w-3.5 h-3.5 text-purple-400" />
+              <AgentsIcon size={14} className="text-violet-400" />
               Ask Regaarder Agent
             </span>
           </div>
@@ -297,8 +287,8 @@ export const BrowserResearchPanel = ({
                     {msg.text}
                   </div>
                   {msg.sender === 'user' && (
-                    <div className="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 mt-0.5">
-                      <User className="w-3 h-3" />
+                    <div className="w-5 h-5 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5">
+                      U
                     </div>
                   )}
                 </div>
@@ -321,7 +311,7 @@ export const BrowserResearchPanel = ({
               className="p-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-30 text-white transition-colors cursor-pointer shrink-0"
               title="Send message"
             >
-              <Send className="w-3.5 h-3.5" />
+              <BrowserForwardIcon size={14} />
             </button>
           </form>
         </div>

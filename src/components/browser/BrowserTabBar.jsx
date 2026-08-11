@@ -1,13 +1,13 @@
 import React from 'react';
-import { Plus, X, RotateCw, Globe, FileText, BarChart, Search } from 'lucide-react';
-import { AgentsIcon } from '../RegaarderProductIcons';
+import { BrowserPlusIcon, BrowserCloseIcon, BrowserReloadIcon, BrowserSearchWebIcon } from './RegaarderBrowserIcons';
+import { AgentsIcon, SheetIcon, ComposeIcon } from '../RegaarderProductIcons';
 
 /**
  * BrowserTabBar: Executive Apple-tier Browser Tab Bar
  * Rules Enforced:
  * - Tabs are slightly rounded rectangles (rounded-md), NEVER pill-shaped or elliptical.
  * - Active tab uses "outline" visual state.
- * - Dynamic domain / favicon badges.
+ * - Dynamic domain / favicon badges with Regaarder SVG icons.
  */
 export const BrowserTabBar = ({
   tabs = [],
@@ -18,7 +18,7 @@ export const BrowserTabBar = ({
 }) => {
   const getTabIcon = (tab) => {
     if (tab.isLoading) {
-      return <RotateCw className="w-3.5 h-3.5 animate-spin text-violet-500" />;
+      return <BrowserReloadIcon size={14} className="animate-spin text-violet-500" />;
     }
 
     if (tab.url === 'regaarder://research' || tab.title === 'Regaarder Research') {
@@ -39,21 +39,16 @@ export const BrowserTabBar = ({
     }
 
     const titleLower = (tab.title || '').toLowerCase();
-    const urlLower = (tab.url || '').toLowerCase();
 
     if (titleLower.includes('sheet') || titleLower.includes('data') || titleLower.includes('matrix')) {
-      return <BarChart className="w-3.5 h-3.5 text-emerald-500" />;
+      return <SheetIcon size={14} className="text-emerald-500" />;
     }
 
     if (titleLower.includes('research') || titleLower.includes('doc') || titleLower.includes('wiki')) {
-      return <FileText className="w-3.5 h-3.5 text-sky-500" />;
+      return <ComposeIcon size={14} className="text-sky-500" />;
     }
 
-    if (urlLower.includes('google') || urlLower.includes('duckduckgo') || titleLower.includes('search')) {
-      return <Globe className="w-3.5 h-3.5 text-indigo-500" />;
-    }
-
-    return <Globe className="w-3.5 h-3.5 opacity-70" />;
+    return <BrowserSearchWebIcon size={14} className="opacity-70 text-slate-400 dark:text-zinc-400" />;
   };
 
   const getDisplayTitle = (tab) => {
@@ -112,7 +107,7 @@ export const BrowserTabBar = ({
                   }`}
                   title="Close tab"
                 >
-                  <X className="w-3 h-3" />
+                  <BrowserCloseIcon size={12} />
                 </button>
               )}
             </div>
@@ -128,7 +123,7 @@ export const BrowserTabBar = ({
         className="flex items-center justify-center w-7 h-7 rounded-md text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors shrink-0 cursor-pointer"
         title="Open new research tab"
       >
-        <Plus className="w-4 h-4" />
+        <BrowserPlusIcon size={16} />
       </button>
     </div>
   );
