@@ -1,30 +1,31 @@
 import React, { useState } from "react";
 import {
-  FileText,
-  MonitorPlay,
-  Table,
-  Video,
-  Shapes,
-  Calendar,
-  Users,
-  CheckSquare,
-  Plus,
   ChevronRight,
   ChevronLeft,
-  X,
-  Brain
+  X
 } from "lucide-react";
+import {
+  ComposeIcon,
+  DeckIcon,
+  SheetIcon,
+  RoomIcon,
+  WhiteboardIcon,
+  ScheduleIcon,
+  MemoryIcon,
+  TasksIcon
+} from "./components/RegaarderProductIcons";
 
 const products = [
-  { title: "Compose", description: "Write and edit documents", icon: FileText },
-  { title: "Deck", description: "Create presentations", icon: MonitorPlay },
-  { title: "Sheet", description: "Manage spreadsheets", icon: Table },
-  { title: "Room", description: "Host meetings", icon: Video },
-  { title: "Whiteboard", description: "Brainstorm ideas", icon: Shapes },
-  { title: "Schedule", description: "Manage calendar", icon: Calendar },
-  { title: "Memory", description: "Access memories", icon: Brain },
-  { title: "Tasks", description: "Track to-dos", icon: CheckSquare },
+  { title: "Compose", description: "Write and edit documents", icon: ComposeIcon },
+  { title: "Deck", description: "Create presentations", icon: DeckIcon },
+  { title: "Sheet", description: "Manage spreadsheets", icon: SheetIcon },
+  { title: "Room", description: "Host meetings", icon: RoomIcon },
+  { title: "Whiteboard", description: "Brainstorm ideas", icon: WhiteboardIcon },
+  { title: "Schedule", description: "Manage calendar", icon: ScheduleIcon },
+  { title: "Memory", description: "Access memories", icon: MemoryIcon },
+  { title: "Tasks", description: "Track to-dos", icon: TasksIcon },
 ];
+
 
 export default function RegaarderComposeLanding({ onLaunch }) {
   const [showNewMenu, setShowNewMenu] = useState(false);
