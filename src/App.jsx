@@ -40,9 +40,11 @@ import {
   TasksIcon,
   ChatIcon,
   AssistIcon,
-  AgentsIcon
+  AgentsIcon,
+  BrowserIcon
 } from './components/RegaarderProductIcons';
 import RoomLandingPage from './RoomLandingPage';
+import BrowserWorkspace from './components/browser/BrowserWorkspace';
 import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 import HelpSupportPanel from './components/HelpSupportPanel';
 import TemplateChartVisualizer, { extractTemplateChartData } from './components/TemplateChartVisualizer';
@@ -12617,7 +12619,8 @@ export default function App() {
                 { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: ComposeIcon },
                 { mode: 'sheets', label: 'Sheets', desc: 'Grid & Data Analysis', icon: SheetIcon },
                 { mode: 'deck', label: 'Decks', desc: 'Slide & Presentation', icon: DeckIcon },
-                { mode: 'room', label: 'Room', desc: 'Team Video & Meetings', icon: RoomIcon }
+                { mode: 'room', label: 'Room', desc: 'Team Video & Meetings', icon: RoomIcon },
+                { mode: 'browser', label: 'Browser', desc: 'Embedded Chromium Web', icon: BrowserIcon }
               ].map((item) => {
                 const IconComponent = item.icon;
                 const isCurrent = productMode === item.mode;
@@ -26364,6 +26367,7 @@ Rules:
   };
 
   const activeProductTitle = useMemo(() => {
+    if (productMode === 'browser') return 'Regaarder Web Browser';
     if (productMode === 'sheets') return sheetsTitle?.trim() || 'Untitled Sheet';
     if (productMode === 'deck') return (deckTitle || activeDeckTitle)?.trim() || 'Untitled Deck';
     if (productMode === 'whiteboard') return 'Untitled Whiteboard';
@@ -26371,6 +26375,7 @@ Rules:
   }, [productMode, sheetsTitle, deckTitle, activeDeckTitle, docTitle]);
 
   const defaultDocNameForMode = useMemo(() => {
+    if (productMode === 'browser') return 'Regaarder Web Browser';
     if (productMode === 'sheets') return 'Untitled Sheet';
     if (productMode === 'deck') return 'Untitled Deck';
     if (productMode === 'whiteboard') return 'Untitled Whiteboard';
@@ -50865,6 +50870,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }
             }} 
           />
+        </div>
+      ) : productMode === 'browser' ? (
+        <div className="flex-1 flex flex-col min-w-0 bg-slate-900 relative overflow-hidden">
+          <BrowserWorkspace showToast={showToast} />
         </div>
       ) : (
       <div className="flex-1 min-h-0 flex flex-col min-w-0 overflow-hidden bg-[#f5f7fc] dark:bg-[#000000] relative z-10">

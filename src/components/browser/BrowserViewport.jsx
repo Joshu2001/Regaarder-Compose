@@ -1,0 +1,127 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { Globe, AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react';
+
+/**
+ * BrowserViewport: Container mounting point for Electron WebContentsView Chromium Surface.
+ * Automatically synchronizes DOM container bounds with Electron main process via IPC.
+ * Also provides graceful iframe fallback if run in pure browser environment outside Electron shell.
+ */
+export const BrowserViewport = ({
+  activeTab = null,
+  isElectron = false,
+  onNavigate
+}) => {
+  const containerRef = useRef(null);
+  const [iframeError, setIframeError] = useState(false);
+
+  useEffect(() => {
+    if (!isElectron) return;
+
+    const updateBounds = () => {
+      if (!containerRef.current || !window.electronAPI) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      window.electronAPI.updateViewportBounds({
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height
+      });
+    };
+
+    // Make browser view visible
+    if (window.electronAPI) {
+      window.electronAPI.setBrowserVisibility(true);
+      updateBounds();
+    }
+
+    // ResizeObserver to track layout changes smoothly
+    const resizeObserver = new ResizeObserver(() => {
+      updateBounds();
+    });
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    window.addEventListener('resize', updateBounds);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateBounds);
+      if (window.electronAPI) {
+        window.electronAPI.setBrowserVisibility(false);
+      }
+    };
+  }, [isElectron, activeTab?.id]);
+
+  // Reset iframe error when URL changes in web fallback
+  useEffect(() => {
+    setIframeError(false);
+  }, [activeTab?.url]);
+
+  return (
+    <div
+      id="regaarder-browser-viewport"
+      ref={containerRef}
+      className="relative flex-1 w-full h-full bg-slate-900 overflow-hidden"
+    >
+      {/* If inside Electron, Electron's WebContentsView paints directly on top of this container */}
+      {isElectron ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/20 text-slate-400 select-none pointer-events-none">
+          {activeTab?.isLoading && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 backdrop-blur-md shadow-lg animate-pulse">
+              <Globe className="w-4 h-4 text-violet-400 animate-spin" />
+              <span>Loading {activeTab?.title || activeTab?.url}...</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Standalone Browser (Non-Electron) Fallback Renderer */
+        <div className="relative w-full h-full flex flex-col">
+          {iframeError ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-950 text-slate-200 text-center font-sans">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4">
+                <AlertTriangle className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Display Restricted by Web Security</h3>
+              <p className="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
+                This website restricts iframe embedding via <code className="text-violet-300">X-Frame-Options</code> header policies.
+                To view this page inside an embedded Chromium browser with full native web capabilities, launch Regaarder inside the Electron desktop shell.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIframeError(false)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Retry Frame</span>
+                </button>
+                <a
+                  href={activeTab?.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white transition-colors cursor-pointer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open in External Browser</span>
+                </a>
+              </div>
+            </div>
+          ) : (
+            <iframe
+              key={activeTab?.id}
+              src={activeTab?.url || 'https://google.com'}
+              title={activeTab?.title || 'Browser tab'}
+              className="w-full h-full border-0 bg-white"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-modals"
+              onError={() => setIframeError(true)}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default BrowserViewport;

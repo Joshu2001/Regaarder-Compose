@@ -284,6 +284,28 @@ export const AgentsIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...pr
   </svg>
 );
 
+export const BrowserIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Global compass/web globe outer frame */}
+    <circle cx="12" cy="12" r="8.5" />
+    {/* Latitude equator divider */}
+    <line x1="3.5" y1="12" x2="20.5" y2="12" />
+    {/* Longitude meridian curve */}
+    <path d="M12 3.5a12.5 12.5 0 0 1 0 17a12.5 12.5 0 0 1 0-17z" />
+  </svg>
+);
+
 export const RegaarderProductIconMap = {
   Compose: ComposeIcon,
   Deck: DeckIcon,
@@ -296,6 +318,7 @@ export const RegaarderProductIconMap = {
   Chat: ChatIcon,
   Assist: AssistIcon,
   Agents: AgentsIcon,
+  Browser: BrowserIcon,
   compose: ComposeIcon,
   deck: DeckIcon,
   sheet: SheetIcon,
@@ -310,6 +333,7 @@ export const RegaarderProductIconMap = {
   assistant: AssistIcon,
   agents: AgentsIcon,
   'ai-studio': AgentsIcon,
+  browser: BrowserIcon,
 };
 
 export const RegaarderProductIcon = ({ name, size = 24, className = "", strokeWidth = 1.6, ...props }) => {
