@@ -47001,8 +47001,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      setIsSheetsPresentationMode(true);
-                                      showToast('Started presentation mode');
+                                      handleStartDeckPresentation();
                                     }}
                                     className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 text-white flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
                                   >
