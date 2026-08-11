@@ -35,6 +35,7 @@ import HelpSupportPanel from './components/HelpSupportPanel';
 import TemplateChartVisualizer, { extractTemplateChartData } from './components/TemplateChartVisualizer';
 import CitationPopover from './components/CitationPopover';
 import ContextSourcePreviewModal from './components/ContextSourcePreviewModal';
+import TableDropdownPopover from './components/TableDropdownPopover';
 import { registerDocumentEditorBinding } from './services/docsCommandApi';
 import { executeTool, undoTransaction, getExecutionLogs, getTransactionHistory } from './services/docsToolExecutor';
 import { CANONICAL_DOCS_TOOLS } from './services/docsToolRegistry';
@@ -1856,6 +1857,46 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
     setShowDropdownChoicesInput(false);
   };
 
+  const createDropdownHTML = (choices, initialValue = '') => {
+    const cleanChoices = choices.map(s => s.trim()).filter(Boolean);
+    if (cleanChoices.length === 0) return '';
+    const trimmedInitial = (initialValue || '').trim();
+    const matchedVal = cleanChoices.find(c => c.toLowerCase() === trimmedInitial.toLowerCase());
+    const selectedVal = matchedVal || cleanChoices[0];
+
+    const optionItems = cleanChoices.map(opt => `
+      <div onclick="
+        const menu = this.parentElement;
+        const btn = menu.previousElementSibling;
+        btn.querySelector('.selected-val').innerText = this.innerText;
+        menu.style.display = 'none';
+        btn.style.borderColor = '#e2e8f0';
+        btn.style.boxShadow = 'none';
+        const block = this.closest('.table-block');
+        if (block) {
+          block.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        event.stopPropagation();
+      " onmouseover="this.style.background='#f5f3ff'; this.style.color='#7c3aed';" onmouseout="this.style.background='transparent'; this.style.color='#334155';" style="padding:6px 12px; font-size:11px; color:#334155; cursor:pointer; text-align:left; transition:background 0.15s, color 0.15s; font-weight: 500; font-family: inherit; border-radius: 4px;">${opt}</div>
+    `).join('');
+
+    return `<div class="custom-doc-dropdown relative" contenteditable="false" style="position:relative; display:inline-block; user-select:none; font-family:inherit; vertical-align:middle; line-height:normal;">
+  <button onclick="
+    const menu = this.nextElementSibling;
+    const isOpen = menu.style.display === 'block';
+    document.querySelectorAll('.custom-doc-dropdown-menu').forEach(m => { m.style.display = 'none'; });
+    menu.style.display = isOpen ? 'none' : 'block';
+    event.stopPropagation();
+  " onmouseover="this.style.borderColor='#7c3aed'; this.style.boxShadow='0 0 0 2px rgba(124,58,237,0.1)'" onmouseout="const menu = this.nextElementSibling; if(menu && menu.style.display !== 'block'){ this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'; }" style="appearance:none; -webkit-appearance:none; display:flex; align-items:center; justify-content:space-between; background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:5px 12px; font-size:11px; font-weight:500; color:#334155; outline:none; cursor:pointer; min-width:120px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); transition:all 0.2s;">
+    <span class="selected-val" style="margin-right:8px; display:inline-block; text-align:left; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${selectedVal}</span>
+    <svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24' style="flex-shrink:0; margin-left:auto;"><polyline points='6 9 12 15 18 9'></polyline></svg>
+  </button>
+  <div class="custom-doc-dropdown-menu" style="display:none; position:absolute; left:0; top:100%; margin-top:4px; background:#ffffff; border:1px solid #e6e3fb; border-radius:8px; box-shadow:0 10px 25px -5px rgba(76,29,149,0.08), 0 8px 16px -6px rgba(76,29,149,0.06); z-index:100005; min-width:130px; padding:4px; max-height:200px; overflow-y:auto; scrollbar-width:thin;">
+    ${optionItems}
+  </div>
+</div>`;
+  };
+
   const resetCellToInput = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1863,7 +1904,74 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
     const text = focusedTableCell.textContent || '';
     focusedTableCell.innerHTML = text.trim() || '&nbsp;';
     focusedTableCell.contentEditable = 'true';
+    focusedTableCell.removeAttribute('data-cell-col-type');
     element.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  const resetColumnToInput = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!focusedTableCell) return;
+    const parentRow = focusedTableCell.closest('tr');
+    if (!parentRow) return;
+    const colIndex = Array.from(parentRow.children).indexOf(focusedTableCell);
+    const table = element.querySelector('table');
+    if (!table || colIndex < 0) return;
+
+    const rows = table.querySelectorAll('tr');
+    rows.forEach(row => {
+      if (row.parentElement && row.parentElement.tagName.toLowerCase() === 'thead') return;
+      if (row.querySelector('th') && !row.querySelector('td')) return;
+      const cell = row.children[colIndex];
+      if (cell && cell.tagName.toLowerCase() === 'td') {
+        const text = cell.textContent || '';
+        cell.innerHTML = text.trim() || '&nbsp;';
+        cell.contentEditable = 'true';
+        cell.removeAttribute('data-cell-col-type');
+      }
+    });
+
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  const handleApplyDropdownCell = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const choices = dropdownChoicesText.split(',').map(s => s.trim()).filter(Boolean);
+    if (choices.length > 0 && focusedTableCell) {
+      const existingText = focusedTableCell.textContent || '';
+      focusedTableCell.innerHTML = createDropdownHTML(choices, existingText);
+      focusedTableCell.contentEditable = 'false';
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      setShowDropdownChoicesInput(false);
+    }
+  };
+
+  const handleApplyDropdownColumn = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const choices = dropdownChoicesText.split(',').map(s => s.trim()).filter(Boolean);
+    if (choices.length === 0 || !focusedTableCell) return;
+    const parentRow = focusedTableCell.closest('tr');
+    if (!parentRow) return;
+    const colIndex = Array.from(parentRow.children).indexOf(focusedTableCell);
+    const table = element.querySelector('table');
+    if (!table || colIndex < 0) return;
+
+    const rows = table.querySelectorAll('tr');
+    rows.forEach(row => {
+      if (row.parentElement && row.parentElement.tagName.toLowerCase() === 'thead') return;
+      if (row.querySelector('th') && !row.querySelector('td')) return;
+      const cell = row.children[colIndex];
+      if (cell && cell.tagName.toLowerCase() === 'td') {
+        const existingText = cell.textContent || '';
+        cell.innerHTML = createDropdownHTML(choices, existingText);
+        cell.contentEditable = 'false';
+      }
+    });
+
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+    setShowDropdownChoicesInput(false);
   };
 
   return (
@@ -1905,7 +2013,7 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
           <div className="h-[1px] bg-slate-100 my-0.5" />
           <div className="flex flex-col gap-1.5 w-64">
             <div className="flex justify-between items-center px-1">
-              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Active Cell</span>
+              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Active Cell / Column</span>
               {focusedTableCell && (
                 <span className="text-[8px] font-bold text-violet-600 bg-violet-50 border border-violet-100 px-1 rounded uppercase tracking-wider">Outline State</span>
               )}
@@ -1938,15 +2046,43 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
                   <button onClick={triggerButtonInput} className="flex-1 py-1 px-1.5 text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded border border-blue-150 transition-colors text-center">
                     To Button
                   </button>
-                  <button onClick={resetCellToInput} className="py-1 px-1.5 text-[10px] font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded border border-slate-200 transition-colors text-center">
-                    Reset
+                  <button onClick={resetCellToInput} className="py-1 px-1 text-[9.5px] font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded border border-slate-200 transition-colors text-center" title="Reset active cell text">
+                    Reset Cell
+                  </button>
+                  <button onClick={resetColumnToInput} className="py-1 px-1 text-[9.5px] font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded border border-slate-200 transition-colors text-center" title="Reset all cells in column">
+                    Reset Col
                   </button>
                 </div>
 
                 {/* Inline Dropdown Options Editor */}
                 {showDropdownChoicesInput && (
                   <div className="flex flex-col gap-1.5 mt-2 border-t border-slate-100 pt-2">
-                    <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Dropdown Choices (comma-separated)</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Dropdown Choices</span>
+                    </div>
+
+                    {/* Sheet Presets */}
+                    <div className="flex flex-col gap-1 my-0.5">
+                      <span className="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">Sheet Presets</span>
+                      <div className="flex flex-wrap gap-1">
+                        {[
+                          { label: 'Status', choices: 'In Progress, Done, Upcoming, Blocked, Ready' },
+                          { label: 'Priority', choices: 'High, Medium, Low, Critical' },
+                          { label: 'Stage', choices: 'Phase 1, Phase 2, Phase 3, Phase 4' },
+                          { label: 'Category', choices: 'Engineering, Design, Marketing, Finance' },
+                          { label: 'Yes/No', choices: 'Yes, No' }
+                        ].map(p => (
+                          <button
+                            key={p.label}
+                            onClick={(e) => { e.preventDefault(); setDropdownChoicesText(p.choices); }}
+                            className="px-1.5 py-0.5 text-[8.5px] font-semibold bg-slate-100 hover:bg-violet-100 hover:text-violet-700 text-slate-600 rounded border border-slate-200 transition-colors"
+                          >
+                            + {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <input 
                       type="text"
                       className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-[11px] outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 text-slate-800"
@@ -1954,55 +2090,26 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
                       onChange={(e) => setDropdownChoicesText(e.target.value)}
                       onKeyDown={(evt) => evt.stopPropagation()}
                       autoFocus
+                      placeholder="e.g. In Progress, Done, Upcoming"
                     />
-                    <div className="flex gap-1.5 justify-end">
+
+                    <div className="flex gap-1.5 justify-end mt-0.5">
                       <button onClick={(e) => { e.preventDefault(); setShowDropdownChoicesInput(false); }} className="px-2 py-0.5 text-[9px] font-semibold text-slate-500 hover:bg-slate-100 rounded transition-colors">
                         Cancel
                       </button>
                       <button 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          const choices = dropdownChoicesText.split(',').map(s => s.trim()).filter(Boolean);
-                          if (choices.length > 0) {
-                            const optionItems = choices.map(opt => `
-                              <div onclick="
-                                const menu = this.parentElement;
-                                const btn = menu.previousElementSibling;
-                                btn.querySelector('.selected-val').innerText = this.innerText;
-                                menu.style.display = 'none';
-                                btn.style.borderColor = '#e2e8f0';
-                                btn.style.boxShadow = 'none';
-                                const block = this.closest('.table-block');
-                                if (block) {
-                                  block.dispatchEvent(new Event('input', { bubbles: true }));
-                                }
-                                event.stopPropagation();
-                              " onmouseover="this.style.background='#f5f3ff'; this.style.color='#7c3aed';" onmouseout="this.style.background='transparent'; this.style.color='#334155';" style="padding:6px 12px; font-size:11px; color:#334155; cursor:pointer; text-align:left; transition:background 0.15s, color 0.15s; font-weight: 500; font-family: inherit; border-radius: 4px;">${opt}</div>
-                            `).join('');
-                             
-                            focusedTableCell.innerHTML = `
-<div class="custom-doc-dropdown relative" contenteditable="false" style="position:relative; display:inline-block; user-select:none; font-family:inherit; vertical-align:middle; line-height:normal;">
-  <button onclick="
-    const menu = this.nextElementSibling;
-    const isOpen = menu.style.display === 'block';
-    document.querySelectorAll('.custom-doc-dropdown-menu').forEach(m => { m.style.display = 'none'; });
-    menu.style.display = isOpen ? 'none' : 'block';
-    event.stopPropagation();
-  " onmouseover="this.style.borderColor='#7c3aed'; this.style.boxShadow='0 0 0 2px rgba(124,58,237,0.1)'" onmouseout="const menu = this.nextElementSibling; if(menu && menu.style.display !== 'block'){ this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'; }" style="appearance:none; -webkit-appearance:none; display:flex; align-items:center; justify-content:space-between; background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:5px 12px; font-size:11px; font-weight:500; color:#334155; outline:none; cursor:pointer; min-width:120px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); transition:all 0.2s;">
-    <span class="selected-val" style="margin-right:8px; display:inline-block; text-align:left; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${choices[0]}</span>
-    <svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24' style="flex-shrink:0; margin-left:auto;"><polyline points='6 9 12 15 18 9'></polyline></svg>
-  </button>
-  <div class="custom-doc-dropdown-menu" style="display:none; position:absolute; left:0; top:100%; margin-top:4px; background:#ffffff; border:1px solid #e6e3fb; border-radius:8px; box-shadow:0 10px 25px -5px rgba(76,29,149,0.08), 0 8px 16px -6px rgba(76,29,149,0.06); z-index:100005; min-width:130px; padding:4px; max-height:200px; overflow-y:auto; scrollbar-width:thin;">
-    ${optionItems}
-  </div>
-</div>`;
-                            element.dispatchEvent(new Event('input', { bubbles: true }));
-                            setShowDropdownChoicesInput(false);
-                          }
-                        }}
-                        className="px-2 py-0.5 text-[9px] font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded shadow-sm transition-colors"
+                        onClick={handleApplyDropdownCell}
+                        className="px-2 py-0.5 text-[9px] font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded transition-colors"
+                        title="Apply dropdown to active cell only"
                       >
-                        Create
+                        Apply to Cell
+                      </button>
+                      <button 
+                        onClick={handleApplyDropdownColumn}
+                        className="px-2.5 py-0.5 text-[9px] font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded shadow-sm transition-colors"
+                        title="Apply dropdown to all cells in this column"
+                      >
+                        Apply to Column
                       </button>
                     </div>
                   </div>
@@ -6849,6 +6956,17 @@ export default function App() {
   const [imageToolbar, setImageToolbar] = useState({ open: false, top: 0, left: 0, node: null });
   const [tableToolbar, setTableToolbar] = useState({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
   const [tableColorPickerOpen, setTableColorPickerOpen] = useState(false);
+  const [tableDropdownMenuOpen, setTableDropdownMenuOpen] = useState(false);
+  const tableDropdownBtnRef = useRef(null);
+  const [dropdownChoicesText, setDropdownChoicesText] = useState('In Progress, Done, Upcoming, Blocked, Ready');
+  // Compose table cell customizer
+  const [composeHoveredCell, setComposeHoveredCell] = useState(null);
+  // null | 'color' | 'dropdown'
+  const [composeCellStripPanel, setComposeCellStripPanel] = useState(null);
+  // null | { cellEl, tableEl, colIndex, options, rect }
+  const [composeCellDropdownPicker, setComposeCellDropdownPicker] = useState(null);
+  const [composeCellDropdownDraft, setComposeCellDropdownDraft] = useState('');
+  const cellHoverClearTimerRef = useRef(null);
   const [shapeToolbar, setShapeToolbar] = useState({ open: false, top: 0, left: 0, node: null });
   const [shapeColorMenu, setShapeColorMenu] = useState({ open: false, top: 0, left: 0, containerId: null });
   const [shapeBorderMenu, setShapeBorderMenu] = useState({ open: false, top: 0, left: 0, containerId: null });
@@ -7021,14 +7139,24 @@ export default function App() {
     syncEditorHtml();
   };
 
-  const updateTableToolbarPosition = () => {
+  const updateTableToolbarPosition = (evt) => {
     if (isTableLocked) {
       setTableToolbar(prev => (prev.open ? { ...prev, open: false } : prev));
       return;
     }
+
+    const targetEl = evt?.target || document.activeElement;
+    const isInsideTableToolbar = targetEl && (
+      targetEl.closest?.('.table-toolbar-container') ||
+      targetEl.closest?.('.table-dropdown-modal-container') ||
+      targetEl.closest?.('.table-color-picker-container')
+    );
+
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount) {
-      setTableToolbar(prev => (prev.open ? { ...prev, open: false } : prev));
+      if (!isInsideTableToolbar) {
+        setTableToolbar(prev => (prev.open ? { ...prev, open: false } : prev));
+      }
       return;
     }
     const range = selection.getRangeAt(0);
@@ -7041,28 +7169,19 @@ export default function App() {
     const insideChartBlock = table && table.closest('.interactive-chart-block');
     
     if (cell && table && insideEditor && !insideChartBlock) {
-      const cellRect = cell.getBoundingClientRect();
       const tableRect = table.getBoundingClientRect();
       
-      const toolbarWidth = 460;
-      const toolbarHeight = 38;
+      const toolbarWidth = 520;
       
-      const cellCenterX = cellRect.left + (cellRect.width / 2);
-      let left = cellCenterX;
+      const tableCenterX = tableRect.left + (tableRect.width / 2);
+      let left = tableCenterX;
       
       const minLeft = 16 + (toolbarWidth / 2);
       const maxLeft = Math.max(minLeft, window.innerWidth - 16 - (toolbarWidth / 2));
       left = Math.max(minLeft, Math.min(left, maxLeft));
 
-      let top = cellRect.top - 8;
-      
-      if (cellRect.top - toolbarHeight - 8 < 8) {
-        if (tableRect.top - toolbarHeight - 8 >= 8) {
-          top = tableRect.top - 8;
-        } else {
-          top = cellRect.bottom + toolbarHeight + 8;
-        }
-      }
+      // Fixed 5px above top edge of table so table toolbar stays on top and does not jump around
+      let top = tableRect.top - 5;
       
       // Dismiss image / shape toolbars so they don't overlap the table toolbar
       setImageToolbar({ open: false, node: null, top: 0, left: 0 });
@@ -7074,6 +7193,9 @@ export default function App() {
         tableEl: table,
         cellEl: cell
       });
+    } else if (isInsideTableToolbar) {
+      // Retain active tableToolbar state when clicking inside toolbar or modal controls
+      return;
     } else {
       setTableToolbar(prev => (prev.open ? { ...prev, open: false } : prev));
     }
@@ -7114,9 +7236,164 @@ export default function App() {
     }
   };
 
+  /* ── Compose Table Cell Customizer — helpers ──────────────────────────── */
+
+  /** Semantic badge color map keyed by lowercase text values. */
+  const BADGE_COLOR_MAP = {
+    'in progress':  { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+    'upcoming':     { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
+    'done':         { bg: '#dcfce7', color: '#166534', border: '#86efac' },
+    'complete':     { bg: '#dcfce7', color: '#166534', border: '#86efac' },
+    'completed':    { bg: '#dcfce7', color: '#166534', border: '#86efac' },
+    'blocked':      { bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+    'cancelled':    { bg: '#f1f5f9', color: '#94a3b8', border: '#e2e8f0' },
+    'pending':      { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+    'review':       { bg: '#ede9fe', color: '#5b21b6', border: '#c4b5fd' },
+    'in review':    { bg: '#ede9fe', color: '#5b21b6', border: '#c4b5fd' },
+    'not started':  { bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' },
+    'at risk':      { bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' },
+    'on hold':      { bg: '#faf5ff', color: '#7c3aed', border: '#e9d5ff' },
+  };
+
+  /** Read the column config array stored on a table element. */
+  const getTableColConfig = (tableEl) => {
+    try { return JSON.parse(tableEl?.getAttribute('data-compose-cols') || '[]'); }
+    catch { return []; }
+  };
+
+  /** Read config for a specific column index. */
+  const getColConfig = (tableEl, colIndex) => {
+    const cols = getTableColConfig(tableEl);
+    return cols[colIndex] || { type: 'text', options: [] };
+  };
+
+  /** Persist a patch into the column config stored on the table element. */
+  const setColConfig = (tableEl, colIndex, patch) => {
+    const cols = getTableColConfig(tableEl);
+    while (cols.length <= colIndex) cols.push({ type: 'text', options: [] });
+    cols[colIndex] = { ...cols[colIndex], ...patch };
+    tableEl.setAttribute('data-compose-cols', JSON.stringify(cols));
+    syncEditorHtml();
+  };
+
+  /**
+   * Stamps / clears `data-cell-col-type` on every td in a column so CSS and
+   * click delegation can identify dropdown cells without reading the table attr.
+   */
+  const refreshColCellAttributes = (tableEl, colIndex, type) => {
+    if (!tableEl) return;
+    for (const row of tableEl.rows) {
+      const cell = row.cells[colIndex];
+      if (!cell) continue;
+      if (type && type !== 'text') {
+        cell.setAttribute('data-cell-col-type', type);
+      } else {
+        cell.removeAttribute('data-cell-col-type');
+      }
+    }
+  };
+
+  /**
+   * Writes a value into a cell wrapped in a styled badge span.
+   * Auto-selects a semantic palette from BADGE_COLOR_MAP; falls back to slate.
+   */
+  const applyBadgeToCell = (cell, value) => {
+    if (!cell || !value) return;
+    const key = value.toLowerCase().trim();
+    const p = BADGE_COLOR_MAP[key] || { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' };
+    cell.innerHTML = `<span class="compose-cell-badge" style="background:${p.bg};color:${p.color};border:1px solid ${p.border};display:inline-flex;align-items:center;padding:2px 10px;border-radius:5px;font-size:11px;font-weight:600;letter-spacing:0.02em;white-space:nowrap;line-height:1.6">${value}</span>`;
+    syncEditorHtml();
+  };
+
+  /** Remove dropdown config from an entire column and restore plain text cells. */
+  const clearCellTypeFromCol = (tableEl, colIndex) => {
+    if (!tableEl) return;
+    setColConfig(tableEl, colIndex, { type: 'text', options: [] });
+    refreshColCellAttributes(tableEl, colIndex, 'text');
+    for (const row of tableEl.rows) {
+      const cell = row.cells[colIndex];
+      if (!cell) continue;
+      const badge = cell.querySelector('.compose-cell-badge');
+      if (badge) cell.innerHTML = badge.textContent;
+    }
+    syncEditorHtml();
+  };
+
+  /* ── Compose cell hover detection + dropdown click delegation ─────────── */
   useEffect(() => {
-    const handleEvents = () => {
-      updateTableToolbarPosition();
+    const cancelClear = () => {
+      if (cellHoverClearTimerRef.current) {
+        clearTimeout(cellHoverClearTimerRef.current);
+        cellHoverClearTimerRef.current = null;
+      }
+    };
+    const scheduleClear = () => {
+      cancelClear();
+      cellHoverClearTimerRef.current = setTimeout(() => {
+        setComposeHoveredCell(null);
+        setComposeCellStripPanel(null);
+      }, 250);
+    };
+
+    const onMouseOver = (e) => {
+      if (e.target.closest('.compose-cell-strip-portal')) { cancelClear(); return; }
+      const cell = e.target.closest('td');
+      if (!cell) return;
+      const table = cell.closest('table');
+      if (!table || !blankBodyRef.current?.contains(table)) return;
+      cancelClear();
+      const rect = cell.getBoundingClientRect();
+      setComposeHoveredCell(prev => {
+        if (prev && prev.cellEl === cell) return prev;
+        setComposeCellStripPanel(null);
+        return { cellEl: cell, tableEl: table, colIndex: cell.cellIndex, rect };
+      });
+    };
+
+    const onMouseOut = (e) => {
+      if (e.target.closest('.compose-cell-strip-portal')) return;
+      const to = e.relatedTarget;
+      if (to?.closest('td') || to?.closest('.compose-cell-strip-portal')) {
+        cancelClear();
+        return;
+      }
+      scheduleClear();
+    };
+
+    /** Intercept clicks on cells configured as dropdown columns. */
+    const onCellClick = (e) => {
+      const cell = e.target.closest('td[data-cell-col-type="dropdown"]');
+      if (!cell || !blankBodyRef.current?.contains(cell)) return;
+      const table = cell.closest('table');
+      if (!table) return;
+      const colIndex = cell.cellIndex;
+      const config = getColConfig(table, colIndex);
+      if (!config.options?.length) return;
+      const rect = cell.getBoundingClientRect();
+      setComposeCellDropdownPicker({ cellEl: cell, tableEl: table, colIndex, options: config.options, rect });
+      e.stopPropagation();
+    };
+
+    const editorEl = blankBodyRef.current;
+    if (editorEl) {
+      editorEl.addEventListener('mouseover', onMouseOver);
+      editorEl.addEventListener('mouseout',  onMouseOut);
+      editorEl.addEventListener('click',     onCellClick);
+    }
+    return () => {
+      if (editorEl) {
+        editorEl.removeEventListener('mouseover', onMouseOver);
+        editorEl.removeEventListener('mouseout',  onMouseOut);
+        editorEl.removeEventListener('click',     onCellClick);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const handleEvents = (e) => {
+
+      updateTableToolbarPosition(e);
       // Update dynamic active page
       setCurrentActivePage(getCurrentPageNumber());
       setImageToolbar(prev => {
@@ -23477,6 +23754,12 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (!e.target.closest('.table-color-picker-container')) {
         setTableColorPickerOpen(false);
       }
+      if (!e.target.closest('.table-dropdown-modal-container')) {
+        setTableDropdownMenuOpen(false);
+      }
+      if (!e.target.closest('.compose-cell-strip-portal') && !e.target.closest('td')) {
+        setComposeCellDropdownPicker(null);
+      }
       if (!e.target.closest('.shape-color-menu-container')) {
         setShapeColorMenu({ open: false, top: 0, left: 0, containerId: null });
       }
@@ -32318,12 +32601,12 @@ Respond with a JSON array of slide objects matching the schema.`;
     const maxLeft = Math.max(16, window.innerWidth - popoverWidth - 16);
     left = Math.max(minLeft, Math.min(left, maxLeft));
 
-    // Prefer positioning 8px immediately above the target object
-    let top = rect.top - popoverHeight - 8;
+    // Position slightly above or below the target object (never overlap top of table)
+    let top = rect.top - popoverHeight - 48;
     
-    // If insufficient space above in viewport, position 8px below target object
-    if (rect.top - popoverHeight - 8 < 8) {
-      top = rect.bottom + 8;
+    // If insufficient space above in viewport (or toolbar is positioned above table top), position slightly below target object
+    if (rect.top - popoverHeight - 48 < 12) {
+      top = rect.bottom + 12;
     }
 
     setFigureMenuCoords({ top, left });
@@ -50814,7 +51097,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }}
           onMouseDown={(e) => {
             if (!e.target.hasAttribute('data-drag-handle')) {
-              e.preventDefault();
+              if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && !e.target.closest('input') && !e.target.closest('textarea')) {
+                e.preventDefault();
+              }
               e.stopPropagation();
             }
           }}
@@ -50988,65 +51273,38 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
           <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
 
-          {/* Cell Fill Color Picker */}
-          <div className="relative table-color-picker-container flex items-center">
+          <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
+
+          {/* Convert Cell / Column to Dropdown Group */}
+          <div className="relative table-dropdown-modal-container flex items-center">
             <button
+              ref={tableDropdownBtnRef}
               type="button"
-              onClick={() => setTableColorPickerOpen(!tableColorPickerOpen)}
+              onClick={() => setTableDropdownMenuOpen(!tableDropdownMenuOpen)}
               className={`group relative w-7 h-7 flex items-center justify-center rounded-lg transition-all active:scale-[0.95] ${
-                tableColorPickerOpen 
+                tableDropdownMenuOpen 
                   ? 'bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300' 
                   : 'text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40'
               }`}
             >
               <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="2.5" y="2.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.2" />
-                <path d="M2.5 9.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-                <circle cx="10" cy="6" r="1.25" fill="#8b5cf6" />
+                <rect x="2" y="3" width="12" height="10" rx="2" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M5 7L8 10L11 7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white dark:text-zinc-900 bg-slate-900/90 dark:bg-zinc-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
-                Cell Fill Color
+                Convert to dropdown
               </span>
             </button>
 
-            {tableColorPickerOpen && (
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-2.5 bg-white/95 dark:bg-zinc-900/95 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-xl backdrop-blur-md z-[300] min-w-[200px]">
-                <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5 px-1 text-left">Solid Colors</div>
-                <div className="grid grid-cols-4 gap-1.5 mb-3">
-                  {['#ffffff', '#f8fafc', '#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#ccfbf1', '#dbeafe', '#e0e7ff', '#f3e8ff', '#fae8ff'].map(color => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => { changeCellColor(tableToolbar.cellEl, color); setTableColorPickerOpen(false); }}
-                      style={{ backgroundColor: color }}
-                      className="w-6 h-6 rounded border border-slate-200 dark:border-zinc-700 hover:scale-110 hover:border-violet-500 transition-all active:scale-95 cursor-pointer"
-                      title={color}
-                    />
-                  ))}
-                </div>
-                
-                <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5 px-1 text-left">Gradients</div>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {[
-                    'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
-                    'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-                    'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
-                    'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
-                    'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)',
-                    'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
-                  ].map(grad => (
-                    <button
-                      key={grad}
-                      type="button"
-                      onClick={() => { changeCellColor(tableToolbar.cellEl, grad); setTableColorPickerOpen(false); }}
-                      style={{ background: grad }}
-                      className="h-6 rounded border border-slate-200 dark:border-zinc-700 hover:scale-110 hover:border-violet-500 transition-all active:scale-95 cursor-pointer"
-                      title="Gradient background"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+            <TableDropdownPopover
+              isOpen={tableDropdownMenuOpen}
+              onClose={() => setTableDropdownMenuOpen(false)}
+              tableToolbar={tableToolbar}
+              focusedTableCell={focusedTableCell}
+              dropdownChoicesText={dropdownChoicesText}
+              setDropdownChoicesText={setDropdownChoicesText}
+              triggerButtonRef={tableDropdownBtnRef}
+            />
           </div>
 
           <div className="w-px h-4 bg-slate-200/80 dark:bg-zinc-800 mx-0.5" />
@@ -51345,6 +51603,215 @@ if (productMode === 'deck' || productMode === 'sheets') {
               Delete Shape
             </span>
           </button>
+        </div>
+      )}
+
+      {/* ── Compose Cell Hover Strip ─────────────────────────────────────────── */}
+      {composeHoveredCell && (() => {
+        const { cellEl, tableEl, colIndex, rect } = composeHoveredCell;
+        const colCfg = getColConfig(tableEl, colIndex);
+        const isDropdownCol = colCfg.type === 'dropdown';
+        const stripTop  = rect.top  + window.scrollY;
+        const stripLeft = rect.right + window.scrollX;
+        return (
+          <div
+            className="compose-cell-strip-portal"
+            style={{ position: 'fixed', top: stripTop - 2, left: rect.right - 2, zIndex: 260, transform: 'translateX(-100%)' }}
+            onMouseEnter={() => {
+              if (cellHoverClearTimerRef.current) { clearTimeout(cellHoverClearTimerRef.current); cellHoverClearTimerRef.current = null; }
+            }}
+            onMouseLeave={() => {
+              cellHoverClearTimerRef.current = setTimeout(() => { setComposeHoveredCell(null); setComposeCellStripPanel(null); }, 250);
+            }}
+          >
+            {/* Strip pill */}
+            <div className="flex items-center gap-0.5 p-0.5 bg-white/96 dark:bg-zinc-900/96 border border-slate-200/80 dark:border-zinc-700/70 rounded-lg shadow-[0_4px_16px_-4px_rgba(15,23,42,0.12)] backdrop-blur-md select-none">
+
+              {/* Color button */}
+              <button
+                type="button"
+                onPointerDown={e => e.preventDefault()}
+                onClick={() => setComposeCellStripPanel(p => p === 'color' ? null : 'color')}
+                className={`group relative w-6 h-6 flex items-center justify-center rounded-md transition-all active:scale-95 ${
+                  composeCellStripPanel === 'color'
+                    ? 'bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300'
+                    : 'text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/40'
+                }`}
+                title="Cell color"
+              >
+                <Palette size={12} className="pointer-events-none" />
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-1.5 py-0.5 text-[9px] font-semibold text-white bg-slate-900/90 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[320]">Color</span>
+              </button>
+
+              {/* Dropdown config button */}
+              <button
+                type="button"
+                onPointerDown={e => e.preventDefault()}
+                onClick={() => {
+                  setComposeCellDropdownDraft(isDropdownCol ? (colCfg.options || []).join('\n') : '');
+                  setComposeCellStripPanel(p => p === 'dropdown' ? null : 'dropdown');
+                }}
+                className={`group relative w-6 h-6 flex items-center justify-center rounded-md transition-all active:scale-95 ${
+                  isDropdownCol || composeCellStripPanel === 'dropdown'
+                    ? 'bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300'
+                    : 'text-slate-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/40'
+                }`}
+                title={isDropdownCol ? 'Edit dropdown options' : 'Set as dropdown column'}
+              >
+                <ChevronDown size={12} className="pointer-events-none" />
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-1.5 py-0.5 text-[9px] font-semibold text-white bg-slate-900/90 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[320]">{isDropdownCol ? 'Edit options' : 'Dropdown'}</span>
+              </button>
+
+              {/* Clear type button — only visible when column has a type */}
+              {isDropdownCol && (
+                <button
+                  type="button"
+                  onPointerDown={e => e.preventDefault()}
+                  onClick={() => { clearCellTypeFromCol(tableEl, colIndex); setComposeCellStripPanel(null); setComposeHoveredCell(null); }}
+                  className="group relative w-6 h-6 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md transition-all active:scale-95"
+                  title="Remove dropdown from column"
+                >
+                  <X size={11} className="pointer-events-none" />
+                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-1.5 py-0.5 text-[9px] font-semibold text-white bg-slate-900/90 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-[320]">Remove</span>
+                </button>
+              )}
+            </div>
+
+            {/* ── Color sub-panel ── */}
+            {composeCellStripPanel === 'color' && (
+              <div
+                className="absolute top-full right-0 mt-1.5 p-2.5 bg-white/97 dark:bg-zinc-900/97 border border-slate-200/80 dark:border-zinc-700/70 rounded-xl shadow-xl backdrop-blur-md z-[270] w-[188px]"
+                onMouseEnter={() => { if (cellHoverClearTimerRef.current) { clearTimeout(cellHoverClearTimerRef.current); cellHoverClearTimerRef.current = null; } }}
+              >
+                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1.5 px-0.5">Cell Fill</p>
+                <div className="grid grid-cols-6 gap-1 mb-2">
+                  {['#ffffff','#f8fafc','#fee2e2','#fef3c7','#dcfce7','#dbeafe','#ede9fe','#fae8ff','#ccfbf1','#ffedd5','#f0fdf4','#fdf4ff'].map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onPointerDown={e => e.preventDefault()}
+                      onClick={() => { changeCellColor(cellEl, c); setComposeCellStripPanel(null); }}
+                      style={{ backgroundColor: c }}
+                      className="w-5 h-5 rounded border border-slate-200 dark:border-zinc-700 hover:scale-110 hover:border-violet-400 transition-all active:scale-95 cursor-pointer"
+                      title={c}
+                    />
+                  ))}
+                </div>
+                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1.5 px-0.5">Gradients</p>
+                <div className="grid grid-cols-3 gap-1">
+                  {[
+                    'linear-gradient(135deg,#f5f3ff 0%,#ede9fe 100%)',
+                    'linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%)',
+                    'linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%)',
+                    'linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%)',
+                    'linear-gradient(135deg,#fff1f2 0%,#ffe4e6 100%)',
+                    'linear-gradient(135deg,#fafafa 0%,#f1f5f9 100%)',
+                  ].map(g => (
+                    <button
+                      key={g}
+                      type="button"
+                      onPointerDown={e => e.preventDefault()}
+                      onClick={() => { changeCellColor(cellEl, g); setComposeCellStripPanel(null); }}
+                      style={{ background: g }}
+                      className="h-5 rounded border border-slate-200 dark:border-zinc-700 hover:scale-[1.06] hover:border-violet-400 transition-all active:scale-95 cursor-pointer"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Dropdown config sub-panel ── */}
+            {composeCellStripPanel === 'dropdown' && (
+              <div
+                className="absolute top-full right-0 mt-1.5 p-3 bg-white/97 dark:bg-zinc-900/97 border border-slate-200/80 dark:border-zinc-700/70 rounded-xl shadow-xl backdrop-blur-md z-[270] w-52"
+                onMouseEnter={() => { if (cellHoverClearTimerRef.current) { clearTimeout(cellHoverClearTimerRef.current); cellHoverClearTimerRef.current = null; } }}
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-0.5">Column Dropdown Options</p>
+                <p className="text-[9px] text-slate-400 dark:text-zinc-500 mb-2">One option per line — applied to every cell in this column.</p>
+                <textarea
+                  rows={5}
+                  value={composeCellDropdownDraft}
+                  onChange={e => setComposeCellDropdownDraft(e.target.value)}
+                  placeholder={`In Progress\nUpcoming\nDone\nBlocked`}
+                  className="w-full text-xs border border-slate-200 dark:border-zinc-700 rounded-lg bg-slate-50 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 px-2 py-1.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 font-mono leading-relaxed"
+                />
+                <div className="flex gap-1.5 mt-2">
+                  <button
+                    type="button"
+                    onPointerDown={e => e.preventDefault()}
+                    onClick={() => {
+                      const options = composeCellDropdownDraft.split('\n').map(s => s.trim()).filter(Boolean);
+                      if (!options.length) return;
+                      setColConfig(tableEl, colIndex, { type: 'dropdown', options });
+                      refreshColCellAttributes(tableEl, colIndex, 'dropdown');
+                      setComposeCellStripPanel(null);
+                    }}
+                    className="flex-1 py-1.5 text-[11px] font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors active:scale-[0.98]"
+                  >
+                    Apply to Column
+                  </button>
+                  {isDropdownCol && (
+                    <button
+                      type="button"
+                      onPointerDown={e => e.preventDefault()}
+                      onClick={() => { clearCellTypeFromCol(tableEl, colIndex); setComposeCellStripPanel(null); setComposeHoveredCell(null); }}
+                      className="px-2.5 py-1.5 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors active:scale-[0.98]"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── Compose Cell Dropdown Picker ─────────────────────────────────────── */}
+      {composeCellDropdownPicker && (
+        <div
+          className="compose-cell-strip-portal fixed z-[270] bg-white/97 dark:bg-zinc-900/97 border border-slate-200/80 dark:border-zinc-700/70 rounded-xl shadow-[0_8px_32px_-8px_rgba(15,23,42,0.16)] backdrop-blur-md overflow-hidden"
+          style={{
+            top:  composeCellDropdownPicker.rect.bottom + window.scrollY + 6,
+            left: composeCellDropdownPicker.rect.left  + window.scrollX,
+            minWidth: Math.max(composeCellDropdownPicker.rect.width, 140),
+          }}
+          onMouseDown={e => e.preventDefault()}
+        >
+          <div className="p-1">
+            {composeCellDropdownPicker.options.map((opt, i) => {
+              const key = opt.toLowerCase().trim();
+              const p = BADGE_COLOR_MAP[key] || { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' };
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onPointerDown={e => e.preventDefault()}
+                  onClick={() => {
+                    applyBadgeToCell(composeCellDropdownPicker.cellEl, opt);
+                    setComposeCellDropdownPicker(null);
+                  }}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors group"
+                >
+                  <span
+                    style={{ background: p.bg, color: p.color, border: `1px solid ${p.border}` }}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-[5px] text-[11px] font-semibold whitespace-nowrap tracking-wide"
+                  >
+                    {opt}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="border-t border-slate-100 dark:border-zinc-800 px-2 py-1.5">
+            <button
+              type="button"
+              onClick={() => setComposeCellDropdownPicker(null)}
+              className="w-full text-[10px] font-medium text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 py-0.5 transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 
