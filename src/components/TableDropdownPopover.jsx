@@ -87,21 +87,31 @@ export const createDropdownHTML = (choices, initialValue = '', customColors = {}
     </div>`;
   }).join('');
 
-  return `<div class="custom-doc-dropdown relative" contenteditable="false" onpointerdown="event.stopPropagation();" onmousedown="event.stopPropagation();" style="position:relative; display:inline-block; user-select:none; font-family:inherit; vertical-align:middle; line-height:normal;">
+  return `<div class="custom-doc-dropdown relative" contenteditable="false" onpointerdown="event.stopPropagation();" onmousedown="event.stopPropagation();" style="position:relative; display:inline-block; user-select:none; font-family:inherit; vertical-align:middle; line-height:normal; z-index:50;">
 <button type="button" onpointerdown="
   event.preventDefault();
   event.stopPropagation();
+  const dropdownContainer = this.closest('.custom-doc-dropdown');
   const menu = this.nextElementSibling;
   if (menu) {
     const isOpen = menu.style.display === 'block';
-    document.querySelectorAll('.custom-doc-dropdown-menu').forEach(m => { m.style.display = 'none'; });
-    menu.style.display = isOpen ? 'none' : 'block';
+    document.querySelectorAll('.custom-doc-dropdown-menu').forEach(m => { 
+      m.style.display = 'none'; 
+      if (m.closest('.custom-doc-dropdown')) m.closest('.custom-doc-dropdown').style.zIndex = '50';
+    });
+    if (!isOpen) {
+      menu.style.display = 'block';
+      if (dropdownContainer) dropdownContainer.style.zIndex = '99999';
+    } else {
+      menu.style.display = 'none';
+      if (dropdownContainer) dropdownContainer.style.zIndex = '50';
+    }
   }
 " style="appearance:none; -webkit-appearance:none; display:inline-flex; align-items:center; justify-content:space-between; gap:6px; background:${initialPalette.bg}; color:${initialPalette.color}; border:1px solid ${initialPalette.border}; border-radius:6px; padding:3px 10px; font-size:11px; font-weight:600; outline:none; cursor:pointer; min-width:85px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition:all 0.2s; user-select:none;">
   <span class="selected-val" style="margin-right:2px; display:inline-block; text-align:left; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(selectedVal)}</span>
   <svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24' style="flex-shrink:0; margin-left:auto; opacity:0.65;"><polyline points='6 9 12 15 18 9'></polyline></svg>
 </button>
-<div class="custom-doc-dropdown-menu" onpointerdown="event.stopPropagation();" onmousedown="event.stopPropagation();" style="display:none; position:absolute; left:0; top:100%; margin-top:4px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 10px 25px -5px rgba(15,23,42,0.12), 0 8px 16px -6px rgba(15,23,42,0.08); z-index:100005; min-width:130px; padding:4px; max-height:220px; overflow-y:auto; scrollbar-width:thin;">
+<div class="custom-doc-dropdown-menu" onpointerdown="event.stopPropagation();" onmousedown="event.stopPropagation();" style="display:none; position:absolute; left:0; top:100%; margin-top:4px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 10px 25px -5px rgba(15,23,42,0.18), 0 8px 16px -6px rgba(15,23,42,0.12); z-index:100005; min-width:130px; padding:4px; max-height:220px; overflow-y:auto; scrollbar-width:thin;">
   ${optionItems}
 </div>
 </div>`;
@@ -168,18 +178,34 @@ export default function TableDropdownPopover({
 
   useEffect(() => {
     if (isOpen) {
-      // Highest-priority: the cell pinned at button-press time (before focus theft).
+      // Highest-priority: cell pinned at button-press or active live selection
+      const getActiveSelectionCell = () => {
+        const sel = typeof window !== 'undefined' ? window.getSelection() : null;
+        if (sel && sel.rangeCount > 0) {
+          const node = sel.getRangeAt(0).startContainer;
+          const selCell = node ? (node.nodeType === 1 ? node.closest('td, th') : node.parentElement?.closest('td, th')) : null;
+          if (selCell && document.body.contains(selCell)) return selCell;
+        }
+        return null;
+      };
+
       const pinnedCell = lastFocusedTableCellRef?.current;
+      const liveSelCell = getActiveSelectionCell();
       const cell = (pinnedCell && document.body?.contains(pinnedCell))
         ? pinnedCell
-        : (focusedTableCell && document.body?.contains(focusedTableCell))
-          ? focusedTableCell
-          : (tableToolbar?.cellEl && document.body?.contains(tableToolbar?.cellEl))
-            ? tableToolbar.cellEl
-            : null;
+        : (liveSelCell && document.body?.contains(liveSelCell))
+          ? liveSelCell
+          : (focusedTableCell && document.body?.contains(focusedTableCell))
+            ? focusedTableCell
+            : (tableToolbar?.cellEl && document.body?.contains(tableToolbar?.cellEl))
+              ? tableToolbar.cellEl
+              : null;
 
       // Always force overwrite activeTargetCellRef so stale targets from past sessions never persist
       activeTargetCellRef.current = cell;
+      if (cell && lastFocusedTableCellRef) {
+        lastFocusedTableCellRef.current = cell;
+      }
 
       if (cell) {
         const dropdownMenu = cell.querySelector('.custom-doc-dropdown-menu');
@@ -365,11 +391,20 @@ export default function TableDropdownPopover({
     if (lastFocusedTableCellRef?.current && document.body?.contains(lastFocusedTableCellRef.current)) {
       return lastFocusedTableCellRef.current;
     }
-    // 3. Focused cell
+    // 3. Cell from active window selection anchor node
+    const sel = typeof window !== 'undefined' ? window.getSelection() : null;
+    if (sel && sel.rangeCount > 0) {
+      const node = sel.getRangeAt(0).startContainer;
+      const selCell = node ? (node.nodeType === 1 ? node.closest('td, th') : node.parentElement?.closest('td, th')) : null;
+      if (selCell && document.body.contains(selCell)) {
+        return selCell;
+      }
+    }
+    // 4. Focused cell
     if (focusedTableCell && document.body.contains(focusedTableCell)) {
       return focusedTableCell;
     }
-    // 4. Floating toolbar cell fallback
+    // 5. Floating toolbar cell fallback
     if (tableToolbar?.cellEl && document.body.contains(tableToolbar.cellEl)) {
       return tableToolbar.cellEl;
     }
@@ -377,8 +412,6 @@ export default function TableDropdownPopover({
       const firstCell = tableToolbar.tableEl.querySelector('td, th');
       if (firstCell) return firstCell;
     }
-    // Never resolve a "default" table cell via a generic DOM query. That can
-    // drift to the far-left cell in the page when UI focus is shifting.
     return null;
   };
 
@@ -712,7 +745,8 @@ export default function TableDropdownPopover({
 
       <button
         type="button"
-        onClick={(e) => {
+        onPointerDown={(e) => {
+          e.preventDefault();
           e.stopPropagation();
           handleApply();
         }}

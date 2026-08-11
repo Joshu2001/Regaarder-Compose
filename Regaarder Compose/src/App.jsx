@@ -994,18 +994,161 @@ const UnifiedMediaModal = ({ isOpen, setOpen, mediaInsertionModal, setMediaInser
   );
 };
 
+const getStatusBadgeStyles = (val = '') => {
+  const lower = String(val).toLowerCase().trim();
+  if (lower.includes('progress') || lower.includes('in review') || lower.includes('execut')) {
+    return { bg: '#fffbeb', border: '#fde68a', color: '#b45309' };
+  }
+  if (lower.includes('complet') || lower.includes('done') || lower.includes('finish') || lower.includes('pass')) {
+    return { bg: '#f0fdf4', border: '#bbf7d0', color: '#15803d' };
+  }
+  if (lower.includes('block') || lower.includes('high') || lower.includes('urg') || lower.includes('critic') || lower.includes('fail')) {
+    return { bg: '#fff1f2', border: '#fecdd3', color: '#be123c' };
+  }
+  if (lower.includes('medium') || lower.includes('hold') || lower.includes('pend')) {
+    return { bg: '#eff6ff', border: '#bfdbfe', color: '#1d4ed8' };
+  }
+  return { bg: '#f8fafc', border: '#e2e8f0', color: '#475569' };
+};
+
+const makeCustomDocDropdownHTML = (selectedValue, customChoices = null) => {
+  const defaultStatusChoices = ['In Progress', 'Completed', 'Planned', 'On Hold', 'Not Started', 'In Review', 'Blocked'];
+  let choices = customChoices || defaultStatusChoices;
+  const val = (selectedValue || '').trim() || choices[0];
+  if (!choices.some(c => c.toLowerCase() === val.toLowerCase())) {
+    choices = [val, ...choices];
+  }
+  const badgeStyle = getStatusBadgeStyles(val);
+
+  const optionItems = choices.map(opt => {
+    const itemStyle = getStatusBadgeStyles(opt);
+    return `<div onclick="
+        const menu = this.parentElement;
+        const btn = menu.previousElementSibling;
+        const valSpan = btn.querySelector('.selected-val');
+        valSpan.innerText = this.innerText;
+        menu.style.display = 'none';
+        btn.style.background = this.getAttribute('data-bg');
+        btn.style.borderColor = this.getAttribute('data-border');
+        btn.style.color = this.getAttribute('data-color');
+        event.stopPropagation();
+      " 
+      data-bg="${itemStyle.bg}" data-border="${itemStyle.border}" data-color="${itemStyle.color}"
+      onmouseover="this.style.background='#f5f3ff'; this.style.color='#7c3aed';" 
+      onmouseout="this.style.background='transparent'; this.style.color='#334155';" 
+      style="padding:6px 12px; font-size:11px; color:#334155; cursor:pointer; text-align:left; transition:background 0.15s, color 0.15s; font-weight: 500; font-family: inherit; border-radius: 4px;">${opt}</div>`;
+  }).join('');
+
+  return `<div class="custom-doc-dropdown relative" contenteditable="false" style="position:relative; display:inline-block; user-select:none; font-family:inherit; vertical-align:middle; line-height:normal;">
+  <button onclick="
+    const menu = this.nextElementSibling;
+    const isOpen = menu.style.display === 'block';
+    document.querySelectorAll('.custom-doc-dropdown-menu').forEach(m => { m.style.display = 'none'; });
+    menu.style.display = isOpen ? 'none' : 'block';
+    event.stopPropagation();
+  " onmouseover="this.style.boxShadow='0 0 0 2px rgba(124,58,237,0.15)'" onmouseout="const menu = this.nextElementSibling; if(menu && menu.style.display !== 'block'){ this.style.boxShadow='none'; }" style="appearance:none; -webkit-appearance:none; display:flex; align-items:center; justify-content:space-between; background:${badgeStyle.bg}; border:1px solid ${badgeStyle.border}; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:600; color:${badgeStyle.color}; outline:none; cursor:pointer; min-width:105px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); transition:all 0.2s;">
+    <span class="selected-val" style="margin-right:6px; display:inline-block; text-align:left; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${val}</span>
+    <svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24' style="flex-shrink:0; margin-left:auto; opacity:0.75;"><polyline points='6 9 12 15 18 9'></polyline></svg>
+  </button>
+  <div class="custom-doc-dropdown-menu" style="display:none; position:absolute; left:0; top:100%; margin-top:4px; background:#ffffff; border:1px solid #e6e3fb; border-radius:8px; box-shadow:0 10px 25px -5px rgba(76,29,149,0.1), 0 8px 16px -6px rgba(76,29,149,0.06); z-index:100005; min-width:130px; padding:4px; max-height:200px; overflow-y:auto; scrollbar-width:thin;">
+    ${optionItems}
+  </div>
+</div>`;
+};
+
+const autoConvertTableDropdowns = (input) => {
+  if (!input) return input;
+  const isString = typeof input === 'string';
+  if (isString && !input.includes('<table')) return input;
+
+  try {
+    let doc;
+    if (isString) {
+      const parser = new DOMParser();
+      doc = parser.parseFromString(input, 'text/html');
+    } else if (input instanceof Element) {
+      doc = input;
+    } else {
+      return input;
+    }
+
+    const tables = doc.querySelectorAll('table');
+    if (!tables.length) return input;
+
+    const CATEGORICAL_HEADERS = ['status', 'priority', 'category', 'stage', 'assignee', 'owner', 'state', 'tier', 'level'];
+    const HEADER_CHOICES = {
+      status: ['In Progress', 'Completed', 'Planned', 'On Hold', 'Not Started', 'In Review', 'Blocked'],
+      priority: ['High', 'Medium', 'Low', 'Critical', 'Urgent'],
+      category: ['Design', 'Engineering', 'Marketing', 'Product', 'Operations', 'Finance'],
+      stage: ['Phase 1', 'Phase 2', 'Phase 3', 'Discovery', 'Execution', 'Audit', 'Launch'],
+      assignee: ['Alex R.', 'Cross-functional Team', 'Product Lead', 'Unassigned'],
+      owner: ['Alex R.', 'Cross-functional Team', 'Product Lead', 'Unassigned'],
+      state: ['Active', 'Pending', 'Closed', 'Archived']
+    };
+
+    tables.forEach(table => {
+      const headers = Array.from(table.querySelectorAll('th'));
+      if (!headers.length) return;
+
+      const dropdownColIndices = [];
+      headers.forEach((th, idx) => {
+        const text = th.textContent.trim().toLowerCase();
+        for (const catKey of CATEGORICAL_HEADERS) {
+          if (text.includes(catKey)) {
+            dropdownColIndices.push({ idx, catKey });
+            break;
+          }
+        }
+      });
+
+      if (!dropdownColIndices.length) return;
+
+      const rows = table.querySelectorAll('tbody tr');
+      rows.forEach(row => {
+        const cells = Array.from(row.querySelectorAll('td'));
+        dropdownColIndices.forEach(({ idx, catKey }) => {
+          if (cells[idx]) {
+            const cell = cells[idx];
+            if (!cell.querySelector('.custom-doc-dropdown')) {
+              const cellText = cell.textContent.trim();
+              const choices = HEADER_CHOICES[catKey] || HEADER_CHOICES['status'];
+              cell.innerHTML = makeCustomDocDropdownHTML(cellText, choices);
+            }
+          }
+        });
+      });
+    });
+
+    return isString ? doc.body.innerHTML : doc;
+  } catch (err) {
+    return input;
+  }
+};
+
 const TableGridPicker = ({ setInsertDropdownOpen }) => {
   const ROWS = 6, COLS = 8;
   const [hovered, setHovered] = React.useState({ r: 0, c: 0 });
   const buildTable = (rows, cols) => {
-    const ths = Array.from({ length: cols }, (_, i) =>
-      `<th contenteditable="true" style="border:1px solid #e2e8f0;padding:8px 12px;background:#f8fafc;font-weight:600;text-align:left;color:#334155;outline:none;">Col ${i + 1}</th>`
-    ).join('');
-    const tds = Array.from({ length: cols }, () =>
-      `<td contenteditable="true" style="border:1px solid #e2e8f0;padding:8px 12px;outline:none;">&nbsp;</td>`
-    ).join('');
-    const bodyRows = Array.from({ length: rows - 1 }, () => `<tr>${tds}</tr>`).join('');
-    return `<div class="table-block" data-block-type="table" contenteditable="false" style="margin:12px 0; position:relative; border-radius:8px;"><table style="border-collapse:collapse;width:100%;"><thead><tr>${ths}</tr></thead><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
+    const hasStatusCol = cols >= 4;
+    const ths = Array.from({ length: cols }, (_, i) => {
+      const isStatus = hasStatusCol && i === cols - 1;
+      const headerTitle = isStatus ? 'Status' : `Col ${i + 1}`;
+      return `<th contenteditable="true" style="border:1px solid #e2e8f0;padding:8px 12px;background:#f8fafc;font-weight:600;text-align:left;color:#334155;outline:none;">${headerTitle}</th>`;
+    }).join('');
+
+    const bodyRows = Array.from({ length: rows - 1 }, () => {
+      const tds = Array.from({ length: cols }, (_, i) => {
+        const isStatus = hasStatusCol && i === cols - 1;
+        if (isStatus) {
+          return `<td contenteditable="true" style="border:1px solid #e2e8f0;padding:8px 12px;outline:none;">${makeCustomDocDropdownHTML('In Progress')}</td>`;
+        }
+        return `<td contenteditable="true" style="border:1px solid #e2e8f0;padding:8px 12px;outline:none;">&nbsp;</td>`;
+      }).join('');
+      return `<tr>${tds}</tr>`;
+    }).join('');
+
+    const html = `<div class="table-block" data-block-type="table" contenteditable="false" style="margin:12px 0; position:relative; border-radius:8px;"><table style="border-collapse:collapse;width:100%;"><thead><tr>${ths}</tr></thead><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
+    return autoConvertTableDropdowns(html);
   };
   return (
     <div className="px-2.5 py-2">
@@ -10678,6 +10821,7 @@ export default function App() {
     window.__composeInsertHTML = (html) => {
       const ed = blankBodyRef.current;
       if (!ed) return;
+      const processedHtml = autoConvertTableDropdowns(html);
       const sel = window.getSelection();
       // Unconditionally restore saved selection to avoid focus race conditions
       if (savedSelectionRef.current) {
@@ -10693,7 +10837,7 @@ export default function App() {
         sel.removeAllRanges();
         sel.addRange(range);
       }
-      document.execCommand('insertHTML', false, html);
+      document.execCommand('insertHTML', false, processedHtml);
       setDocBodyHtml(ed.innerHTML);
     };
     window.__composeInsertText = (text) => {
@@ -10780,11 +10924,27 @@ export default function App() {
       setDocBodyHtml(ed.innerHTML);
     };
 
+    window.__composeAutoConvertTableDropdowns = () => {
+      if (blankBodyRef.current) {
+        autoConvertTableDropdowns(blankBodyRef.current);
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
+    // Auto-convert existing tables on mount/load and keep active document tables synced
+    const autoConvertTimer = setInterval(() => {
+      if (blankBodyRef.current) {
+        autoConvertTableDropdowns(blankBodyRef.current);
+      }
+    }, 1000);
+
     return () => {
+      clearInterval(autoConvertTimer);
       delete window.__composeInsertHTML;
       delete window.__composeInsertText;
       delete window.__composeApplyFormatCommand;
       delete window.__composeApplyListStyle;
+      delete window.__composeAutoConvertTableDropdowns;
     };
   }, []);
 
@@ -13710,6 +13870,21 @@ IMPORTANT POPULATION RULE:
 - If the user highlighted a text, or specified precisely what data/topics should be in the table (e.g. "product sales", "grade tracking table for class A"), populate the table with realistic sample data relevant to that description.
 - Otherwise, if the prompt is generic (e.g., just "table", "create a table", "table 3x3", "empty table"), the table columns MUST have headers (like Column 1, Column 2, etc.), but the data cells (tbody cells) MUST be empty (i.e. empty td tags like <td></td> or containing only a single space for typing) so the user can fill them in manually.
 
+CATEGORICAL / STATUS DROPDOWN RULE:
+- Any column representing categorical status, choices, or triggers (such as "Status", "Priority", "Category", "Stage", "Assignee", "State", "Owner") MUST be configured as interactive dropdown cells by default with preset menu choices, rather than plain text strings.
+Format interactive dropdown cells as:
+<div class="custom-doc-dropdown relative" contenteditable="false" style="position:relative; display:inline-block; user-select:none; font-family:inherit; vertical-align:middle; line-height:normal;">
+  <button onclick="const menu = this.nextElementSibling; const isOpen = menu.style.display === 'block'; document.querySelectorAll('.custom-doc-dropdown-menu').forEach(m => { m.style.display = 'none'; }); menu.style.display = isOpen ? 'none' : 'block'; event.stopPropagation();" onmouseover="this.style.boxShadow='0 0 0 2px rgba(124,58,237,0.15)'" onmouseout="const menu = this.nextElementSibling; if(menu && menu.style.display !== 'block'){ this.style.boxShadow='none'; }" style="appearance:none; -webkit-appearance:none; display:flex; align-items:center; justify-content:space-between; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:600; color:#b45309; outline:none; cursor:pointer; min-width:105px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); transition:all 0.2s;">
+    <span class="selected-val" style="margin-right:6px; display:inline-block; text-align:left; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">In Progress</span>
+    <svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24' style="flex-shrink:0; margin-left:auto; opacity:0.75;"><polyline points='6 9 12 15 18 9'></polyline></svg>
+  </button>
+  <div class="custom-doc-dropdown-menu" style="display:none; position:absolute; left:0; top:100%; margin-top:4px; background:#ffffff; border:1px solid #e6e3fb; border-radius:8px; box-shadow:0 10px 25px -5px rgba(76,29,149,0.1), 0 8px 16px -6px rgba(76,29,149,0.06); z-index:100005; min-width:130px; padding:4px; max-height:200px; overflow-y:auto; scrollbar-width:thin;">
+    <div onclick="const menu = this.parentElement; const btn = menu.previousElementSibling; btn.querySelector('.selected-val').innerText = this.innerText; menu.style.display = 'none'; btn.style.background='#fffbeb'; btn.style.borderColor='#fde68a'; btn.style.color='#b45309'; event.stopPropagation();" onmouseover="this.style.background='#f5f3ff'; this.style.color='#7c3aed';" onmouseout="this.style.background='transparent'; this.style.color='#334155';" style="padding:6px 12px; font-size:11px; color:#334155; cursor:pointer; text-align:left; transition:background 0.15s, color 0.15s; font-weight: 500; font-family: inherit; border-radius: 4px;">In Progress</div>
+    <div onclick="const menu = this.parentElement; const btn = menu.previousElementSibling; btn.querySelector('.selected-val').innerText = this.innerText; menu.style.display = 'none'; btn.style.background='#f0fdf4'; btn.style.borderColor='#bbf7d0'; btn.style.color='#15803d'; event.stopPropagation();" onmouseover="this.style.background='#f5f3ff'; this.style.color='#7c3aed';" onmouseout="this.style.background='transparent'; this.style.color='#334155';" style="padding:6px 12px; font-size:11px; color:#334155; cursor:pointer; text-align:left; transition:background 0.15s, color 0.15s; font-weight: 500; font-family: inherit; border-radius: 4px;">Completed</div>
+    <div onclick="const menu = this.parentElement; const btn = menu.previousElementSibling; btn.querySelector('.selected-val').innerText = this.innerText; menu.style.display = 'none'; btn.style.background='#f8fafc'; btn.style.borderColor='#e2e8f0'; btn.style.color='#475569'; event.stopPropagation();" onmouseover="this.style.background='#f5f3ff'; this.style.color='#7c3aed';" onmouseout="this.style.background='transparent'; this.style.color='#334155';" style="padding:6px 12px; font-size:11px; color:#334155; cursor:pointer; text-align:left; transition:background 0.15s, color 0.15s; font-weight: 500; font-family: inherit; border-radius: 4px;">Planned</div>
+  </div>
+</div>
+
 STRUCTURAL REQUIREMENTS:
 - ALWAYS include a <thead> with <th> column headers.
 - ALWAYS include a <tbody>. If the user specifies the number of rows or columns, follow that exactly. If not specified, create 5 rows and 3 columns.
@@ -13862,6 +14037,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
     const container = document.getElementById(previewId);
     if (!container) return;
     
+    const processedHtml = autoConvertTableDropdowns(contentHtml);
     const originalHtmlAttr = container.getAttribute('data-original-html') 
       ? `data-original-html="${container.getAttribute('data-original-html').replace(/"/g, '&quot;')}"` 
       : '';
@@ -13869,7 +14045,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
     container.className = 'ai-preview-block';
     container.setAttribute('contenteditable', 'false');
     container.innerHTML = `
-      <div class="ai-preview-content">${contentHtml}</div>
+      <div class="ai-preview-content">${processedHtml}</div>
       <div class="ai-preview-action-banner" contenteditable="false">
         <div class="ai-preview-banner-left">
           <span class="ai-preview-banner-badge">AI</span>
