@@ -39,6 +39,21 @@ export const FlowLibraryModal = ({
     if (showToast) showToast(`Copied share link for "${flow.name}" to clipboard`);
   };
 
+  const handleDownload = (flow) => {
+    try {
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(flow, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', dataStr);
+      downloadAnchor.setAttribute('download', `${flow.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_flow.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      if (showToast) showToast(`Downloaded "${flow.name}" JSON specification`);
+    } catch (e) {
+      console.error('Download flow error:', e);
+    }
+  };
+
   const renderAppBadge = (app) => {
     if (app === 'Sheets') {
       return (
@@ -198,9 +213,21 @@ export const FlowLibraryModal = ({
                       handleShare(flow);
                     }}
                     className="px-2.5 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-slate-100 text-xs font-medium transition-colors cursor-pointer"
-                    title="Share Flow"
+                    title="Share Flow link"
                   >
                     Share
+                  </button>
+
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      handleDownload(flow);
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-slate-100 text-xs font-medium transition-colors cursor-pointer"
+                    title="Download Flow as JSON"
+                  >
+                    Download
                   </button>
 
                   <button
