@@ -12126,6 +12126,8 @@ export default function App() {
 
   const [sheetToolbarTab, setSheetToolbarTab] = useState(null);
   const [docToolbarTab, setDocToolbarTab] = useState('Write');
+  const [deckToolbarTab, setDeckToolbarTab] = useState('Create');
+  const [isDeckToolbarCollapsed, setIsDeckToolbarCollapsed] = useState(false);
   const [docContextMaterials, setDocContextMaterials] = useState([]);
   const [activeSourcePreviewIndex, setActiveSourcePreviewIndex] = useState(null);
   const [isAddSourceMenuOpen, setIsAddSourceMenuOpen] = useState(false);
@@ -46156,196 +46158,459 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     <div className="flex-1 flex flex-col min-w-0 relative z-10">
                       {/* Floating Sub-header Toolbar */}
-                      <div className="py-2.5 px-6 flex justify-center shrink-0 z-30 relative">
-                        <div className="bg-white/95 backdrop-blur-md border border-gray-200/80 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-4 py-1.5 flex items-center gap-3 max-w-full relative z-30">
-                          {/* Active Presentation Title Selector */}
-                          <div className="relative z-40">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeckActiveToolbarMenu((prev) => (prev === 'title' ? null : 'title'));
-                              }}
-                              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all whitespace-nowrap ${
-                                deckActiveToolbarMenu === 'title' 
-                                  ? 'bg-violet-50 border-violet-200 text-[#7C4DFF]' 
-                                  : 'bg-white border-gray-150 hover:bg-gray-100/80 text-gray-800'
-                              }`}
-                            >
-                              <span>{activeDeckTitle}</span>
-                              <ChevronDown size={13} className={`text-gray-400 shrink-0 transition-transform ${deckActiveToolbarMenu === 'title' ? 'rotate-180 text-[#7C4DFF]' : ''}`} />
-                            </button>
-
-                            {deckActiveToolbarMenu === 'title' && (
-                              <div 
-                                onClick={(e) => e.stopPropagation()}
-                                className="absolute left-0 top-10 w-60 bg-white border border-gray-200 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.12)] p-2 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
+                      <div className="mx-4 mt-2 mb-1.5 w-[calc(100%-2rem)] p-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-2 z-30 shrink-0 transition-all duration-200">
+                        {/* Top Row: Navigation Tabs & Collapse/Expand Toggle */}
+                        <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
+                          {/* Apple Segmented Control Track */}
+                          <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner">
+                            {['Context', 'Templates', 'Create', 'Review', 'View'].map((tab) => (
+                              <button
+                                key={tab}
+                                type="button"
+                                onClick={() => {
+                                  if (isDeckToolbarCollapsed) {
+                                    setIsDeckToolbarCollapsed(false);
+                                  }
+                                  setDeckToolbarTab(tab);
+                                  showToast?.(`${tab} tools ready`);
+                                }}
+                                className={`relative px-3.5 py-1 text-[12.5px] font-medium rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.97] cursor-pointer ${
+                                  deckToolbarTab === tab
+                                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs border border-slate-200/80 dark:border-zinc-700/80'
+                                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40'
+                                }`}
                               >
-                                <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Presentations</div>
-                                {[
-                                  'Product Roadmap 2025',
-                                  'Q3 Executive Pitch',
-                                  'Marketing Strategy Deck',
-                                  'AI Product Overview'
-                                ].map((t) => (
-                                  <button
-                                    key={t}
-                                    type="button"
-                                    onClick={() => {
-                                      setActiveDeckTitle(t);
-                                      setDeckActiveToolbarMenu(null);
-                                      showToast(`Switched deck to ${t}`);
-                                    }}
-                                    className={`w-full text-left px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center justify-between ${
-                                      t === activeDeckTitle ? 'bg-violet-50 text-[#7C4DFF] font-semibold' : 'hover:bg-gray-100 text-gray-700'
-                                    }`}
-                                  >
-                                    <span>{t}</span>
-                                    {t === activeDeckTitle && <Sparkles size={12} className="text-[#7C4DFF]" />}
-                                  </button>
-                                ))}
-                                <div className="h-px bg-gray-100 my-1"></div>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setDeckActiveToolbarMenu(null);
-                                    addDeckSlide();
-                                    showToast('Created new presentation deck');
-                                  }}
-                                  className="w-full text-left px-2.5 py-1.5 text-xs font-semibold text-[#7C4DFF] hover:bg-violet-50 rounded-lg transition-colors flex items-center gap-1.5"
-                                >
-                                  <Plus size={13} />
-                                  <span>+ Create New Deck</span>
-                                </button>
-                              </div>
-                            )}
+                                {tab}
+                              </button>
+                            ))}
                           </div>
 
+                          {/* Collapse / Expand Toggle Button */}
                           <button
                             type="button"
-                            onClick={addDeckSlide}
-                            className="w-7 h-7 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-100/80 text-[#7C4DFF] transition-colors shrink-0"
-                            title="Add slide"
+                            onClick={() => setIsDeckToolbarCollapsed((prev) => !prev)}
+                            className="text-xs font-semibold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/60 shadow-2xs cursor-pointer"
+                            title={isDeckToolbarCollapsed ? "Expand toolbar details" : "Collapse toolbar details"}
                           >
-                            <Plus size={15} />
+                            <span>{isDeckToolbarCollapsed ? 'Expand' : 'Collapse'}</span>
+                            <ChevronDown size={13} className={`transition-transform duration-200 ease-out ${isDeckToolbarCollapsed ? '' : 'rotate-180 text-violet-600'}`} />
                           </button>
+                        </div>
+                          {/* Contextual Sub-toolbar details (shown when expanded) */}
+                        {!isDeckToolbarCollapsed && (
+                          <div className="flex flex-wrap items-center justify-start gap-3 sm:gap-4 px-1 pt-1.5 border-t border-gray-200/60 dark:border-zinc-800 text-xs font-medium">
+                            
+                            {/* ── CREATE TAB (Default Active Tab) ── */}
+                            {deckToolbarTab === 'Create' && (
+                              <div className="w-full flex items-center justify-between gap-3 overflow-x-auto no-scrollbar py-0.5">
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {/* Active Presentation Title Selector */}
+                                  <div className="relative z-40">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeckActiveToolbarMenu((prev) => (prev === 'title' ? null : 'title'));
+                                      }}
+                                      className={`flex items-center gap-2 px-3 py-1 rounded-xl border text-xs font-bold transition-all whitespace-nowrap ${
+                                        deckActiveToolbarMenu === 'title' 
+                                          ? 'bg-violet-50 border-violet-200 text-[#7C4DFF]' 
+                                          : 'bg-white border-gray-200 hover:bg-gray-100/80 text-gray-800'
+                                      }`}
+                                    >
+                                      <span>{activeDeckTitle}</span>
+                                      <ChevronDown size={13} className={`text-gray-400 shrink-0 transition-transform ${deckActiveToolbarMenu === 'title' ? 'rotate-180 text-[#7C4DFF]' : ''}`} />
+                                    </button>
 
-                          <div className="w-px h-4 bg-gray-200 shrink-0 mx-0.5"></div>
+                                    {deckActiveToolbarMenu === 'title' && (
+                                      <div 
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="absolute left-0 top-9 w-60 bg-white border border-gray-200 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.12)] p-2 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
+                                      >
+                                        <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Presentations</div>
+                                        {[
+                                          'Product Roadmap 2025',
+                                          'Q3 Executive Pitch',
+                                          'Marketing Strategy Deck',
+                                          'AI Product Overview'
+                                        ].map((t) => (
+                                          <button
+                                            key={t}
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveDeckTitle(t);
+                                              setDeckActiveToolbarMenu(null);
+                                              showToast(`Switched deck to ${t}`);
+                                            }}
+                                            className={`w-full text-left px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center justify-between ${
+                                              t === activeDeckTitle ? 'bg-violet-50 text-[#7C4DFF] font-semibold' : 'hover:bg-gray-100 text-gray-700'
+                                            }`}
+                                          >
+                                            <span>{t}</span>
+                                            {t === activeDeckTitle && <Sparkles size={12} className="text-[#7C4DFF]" />}
+                                          </button>
+                                        ))}
+                                        <div className="h-px bg-gray-100 my-1"></div>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setDeckActiveToolbarMenu(null);
+                                            addDeckSlide();
+                                            showToast('Created new presentation deck');
+                                          }}
+                                          className="w-full text-left px-2.5 py-1.5 text-xs font-semibold text-[#7C4DFF] hover:bg-violet-50 rounded-lg transition-colors flex items-center gap-1.5"
+                                        >
+                                          <Plus size={13} />
+                                          <span>+ Create New Deck</span>
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
 
-                          {/* Interactive Floating Toolbar Options with Dropdowns */}
-                          <div className="flex items-center gap-1 relative z-40">
-                            {[
-                              { 
-                                label: 'Theme', 
-                                icon: Sparkles,
-                                menuItems: ['Aurora', 'Minimal Dark', 'Sunset Glow', 'Oceanic', 'Cyberpunk', 'Classic White'],
-                                onSelect: (item) => {
-                                  setRightSidebarOpen(true);
-                                  setDeckContextRailTab('Design');
-                                  showToast(`Theme changed to ${item}`);
-                                }
-                              },
-                              { 
-                                label: 'Layouts', 
-                                icon: LayoutGrid,
-                                menuItems: ['Title Slide', 'Title & Content', 'Two Columns', 'Section Header', 'Big Number', 'Blank Slide'],
-                                onSelect: (item) => {
-                                  setRightSidebarOpen(true);
-                                  setDeckContextRailTab('Design');
-                                  showToast(`Layout changed to ${item}`);
-                                }
-                              },
-                              { 
-                                label: 'Transition', 
-                                icon: Layers,
-                                menuItems: ['Fade (Default)', 'Slide Left', 'Zoom & Push', 'Morph', 'Dissolve'],
-                                onSelect: (item) => {
-                                  setRightSidebarOpen(true);
-                                  setDeckContextRailTab('Animate');
-                                  showToast(`Transition set to ${item}`);
-                                }
-                              },
-                              { 
-                                label: 'Animation', 
-                                icon: Wand2,
-                                menuItems: ['Fade In Element', 'Slide Up', 'Pop Scale', 'Pulse & Glow'],
-                                onSelect: (item) => {
-                                  setRightSidebarOpen(true);
-                                  setDeckContextRailTab('Animate');
-                                  showToast(`Animation added: ${item}`);
-                                }
-                              },
-                              { 
-                                label: 'Insert', 
-                                icon: Plus,
-                                menuItems: ['Text Box', 'Heading', 'Image / Media', 'Shape / Icon', 'Chart / Table', 'Code Block'],
-                                onSelect: (item) => {
-                                  showToast(`Inserted ${item}`);
-                                }
-                              },
-                              { 
-                                label: 'AI', 
-                                icon: Bot,
-                                menuItems: ['Improve slide layout', 'Generate slide content', 'Auto-retheme presentation', 'Summarize key points'],
-                                onSelect: (item) => {
-                                  showToast(`AI Action: ${item}`);
-                                }
-                              }
-                            ].map((btn) => {
-                              const isOpen = deckActiveToolbarMenu === btn.label;
-                              return (
-                                <div key={btn.label} className="relative z-40">
+                                  <button
+                                    type="button"
+                                    onClick={addDeckSlide}
+                                    className="w-7 h-7 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-100/80 text-[#7C4DFF] transition-colors shrink-0"
+                                    title="Add slide"
+                                  >
+                                    <Plus size={15} />
+                                  </button>
+
+                                  <div className="w-px h-4 bg-gray-200/80 shrink-0 mx-0.5" />
+                                </div>
+
+                                {/* Moved Deck Controls: Theme, Layouts, Transition, Animation, Insert, AI */}
+                                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                                  {[
+                                    { 
+                                      label: 'Theme', 
+                                      icon: Sparkles,
+                                      menuItems: ['Aurora', 'Minimal Dark', 'Sunset Glow', 'Oceanic', 'Cyberpunk', 'Classic White'],
+                                      onSelect: (item) => {
+                                        setRightSidebarOpen(true);
+                                        setDeckContextRailTab('Design');
+                                        showToast(`Theme changed to ${item}`);
+                                      }
+                                    },
+                                    { 
+                                      label: 'Layouts', 
+                                      icon: LayoutGrid,
+                                      menuItems: ['Title Slide', 'Title & Content', 'Two Columns', 'Section Header', 'Big Number', 'Key Metric', 'Blank Slide'],
+                                      onSelect: (item) => {
+                                        updateDeckSlideField(activeDeckSlide?.id, 'layoutStyle', item);
+                                        setRightSidebarOpen(true);
+                                        setDeckContextRailTab('Design');
+                                        showToast(`Layout set to ${item}`);
+                                      }
+                                    },
+                                    { 
+                                      label: 'Transition', 
+                                      icon: Layers,
+                                      menuItems: ['Fade (Default)', 'Slide Left', 'Zoom & Push', 'Morph', 'Dissolve'],
+                                      onSelect: (item) => {
+                                        setRightSidebarOpen(true);
+                                        setDeckContextRailTab('Animate');
+                                        showToast(`Transition set to ${item}`);
+                                      }
+                                    },
+                                    { 
+                                      label: 'Animation', 
+                                      icon: Wand2,
+                                      menuItems: ['Fade In Element', 'Slide Up', 'Pop Scale', 'Pulse & Glow'],
+                                      onSelect: (item) => {
+                                        setRightSidebarOpen(true);
+                                        setDeckContextRailTab('Animate');
+                                        showToast(`Animation added: ${item}`);
+                                      }
+                                    },
+                                    { 
+                                      label: 'Insert', 
+                                      icon: Plus,
+                                      menuItems: ['Text Box', 'Heading', 'Image / Media', 'Shape / Icon', 'Chart / Table', 'Code Block'],
+                                      onSelect: (item) => {
+                                        showToast(`Inserted ${item}`);
+                                      }
+                                    },
+                                    { 
+                                      label: 'AI', 
+                                      icon: Bot,
+                                      menuItems: ['Improve slide layout', 'Generate slide content', 'Auto-retheme presentation', 'Summarize key points', 'Make More Visual'],
+                                      onSelect: (item) => {
+                                        showToast(`AI Action: ${item}`);
+                                      }
+                                    }
+                                  ].map((btn) => {
+                                    const isOpen = deckActiveToolbarMenu === btn.label;
+                                    return (
+                                      <div key={btn.label} className="relative shrink-0">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeckActiveToolbarMenu((prev) => (prev === btn.label ? null : btn.label));
+                                            if (btn.label === 'Theme' || btn.label === 'Layouts') {
+                                              setRightSidebarOpen(true);
+                                              setDeckContextRailTab('Design');
+                                            } else if (btn.label === 'Transition' || btn.label === 'Animation') {
+                                              setRightSidebarOpen(true);
+                                              setDeckContextRailTab('Animate');
+                                            }
+                                          }}
+                                          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                                            isOpen 
+                                              ? 'bg-violet-100 dark:bg-violet-900/60 text-[#7C4DFF] dark:text-violet-300 border border-violet-200' 
+                                              : 'text-gray-700 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white bg-slate-100/70 dark:bg-zinc-800/70 hover:bg-slate-200/60 border border-slate-200/60 dark:border-zinc-700/60'
+                                          }`}
+                                        >
+                                          <btn.icon size={13} className={`shrink-0 ${isOpen ? 'text-[#7C4DFF]' : 'text-gray-500'}`} />
+                                          <span>{btn.label}</span>
+                                          <ChevronDown size={10} className={`shrink-0 transition-transform ${isOpen ? 'rotate-180 text-[#7C4DFF]' : 'text-gray-400'}`} />
+                                        </button>
+
+                                        {/* Dropdown Menu */}
+                                        {isOpen && (
+                                          <div 
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="absolute left-0 top-8 w-52 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.12)] p-1.5 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
+                                          >
+                                            <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">{btn.label} Options</div>
+                                            {btn.menuItems.map((item) => (
+                                              <button
+                                                key={item}
+                                                type="button"
+                                                onClick={() => {
+                                                  btn.onSelect(item);
+                                                  setDeckActiveToolbarMenu(null);
+                                                }}
+                                                className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-gray-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/60 hover:text-[#7C4DFF] rounded-lg transition-colors flex items-center justify-between"
+                                              >
+                                                <span>{item}</span>
+                                              </button>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* ── CONTEXT TAB ── */}
+                            {deckToolbarTab === 'Context' && (
+                              <div className="w-full flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 shrink-0 select-none">Presentation Context & Sources:</span>
                                   <button
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setDeckActiveToolbarMenu((prev) => (prev === btn.label ? null : btn.label));
-                                      if (btn.label === 'Theme' || btn.label === 'Layouts') {
-                                        setRightSidebarOpen(true);
-                                        setDeckContextRailTab('Design');
-                                      } else if (btn.label === 'Transition' || btn.label === 'Animation') {
-                                        setRightSidebarOpen(true);
-                                        setDeckContextRailTab('Animate');
-                                      }
+                                      const rect = e.currentTarget.getBoundingClientRect();
+                                      setAddSourceAnchorRect(rect);
+                                      setIsAddSourceMenuOpen((prev) => !prev);
                                     }}
-                                    className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
-                                      isOpen 
-                                        ? 'bg-violet-100 text-[#7C4DFF]' 
-                                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80'
+                                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 border border-violet-200/60 flex items-center gap-1.5 shrink-0 cursor-pointer"
+                                  >
+                                    <Plus size={13} /> Upload / Import Sources <ChevronDown size={11} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => showToast('Pasted briefing context into presentation memory')}
+                                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200/60 border border-slate-200/60 shrink-0 cursor-pointer flex items-center gap-1"
+                                  >
+                                    <FileText size={13} /> Briefing Notes
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => showToast('Research links attached to slide context')}
+                                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200/60 border border-slate-200/60 shrink-0 cursor-pointer flex items-center gap-1"
+                                  >
+                                    <BookOpen size={13} /> Research & Links
+                                  </button>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => showToast('Synthesized context sources into presentation outline')}
+                                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 text-white flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+                                >
+                                  <Sparkles size={13} /> Synthesize Context
+                                </button>
+                              </div>
+                            )}
+
+                            {/* ── TEMPLATES TAB ── */}
+                            {deckToolbarTab === 'Templates' && (
+                              <div className="w-full flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
+                                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 flex-1">
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 select-none">DECK TEMPLATES:</span>
+                                  {[
+                                    { label: 'Pitch Deck', category: 'Executive' },
+                                    { label: 'Quarterly Review', category: 'Business' },
+                                    { label: 'Product Launch', category: 'Product' },
+                                    { label: 'Sales Proposal', category: 'Sales' },
+                                    { label: 'Strategy Deck', category: 'Strategy' },
+                                    { label: 'Technical Architecture', category: 'Engineering' }
+                                  ].map((tmpl) => (
+                                    <button
+                                      key={tmpl.label}
+                                      type="button"
+                                      onClick={() => {
+                                        showToast(`Applied ${tmpl.label} presentation template`);
+                                      }}
+                                      className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 hover:bg-slate-200/60 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200/60 shrink-0 transition-colors cursor-pointer flex items-center gap-1.5"
+                                    >
+                                      <LayoutGrid size={12} className="text-violet-500 shrink-0" />
+                                      <span className="font-semibold">{tmpl.label}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => showToast('AI generating custom presentation template...')}
+                                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200/80 shrink-0 cursor-pointer flex items-center gap-1"
+                                >
+                                  <Sparkles size={13} /> AI Template Generator
+                                </button>
+                              </div>
+                            )}
+
+                            {/* ── REVIEW TAB ── */}
+                            {deckToolbarTab === 'Review' && (
+                              <div className="w-full flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
+                                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 flex-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => showToast('Story structure: 5 sections balanced, clear narrative progression')}
+                                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200/60 hover:bg-slate-200/60 shrink-0 cursor-pointer flex items-center gap-1.5"
+                                  >
+                                    <Layers size={13} className="text-violet-500" /> Story Structure
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => showToast('Content Quality: 0 typos, text density is optimal (24 words/slide)')}
+                                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200/60 hover:bg-slate-200/60 shrink-0 cursor-pointer flex items-center gap-1.5"
+                                  >
+                                    <CheckCircle2 size={13} className="text-emerald-500" /> Content Quality
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => showToast('Visual Hierarchy: Font sizes and contrast verified across all slides')}
+                                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200/60 hover:bg-slate-200/60 shrink-0 cursor-pointer flex items-center gap-1.5"
+                                  >
+                                    <Eye size={13} className="text-blue-500" /> Visual Hierarchy
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => showToast('Accessibility: High contrast pass, alt text ready')}
+                                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200/60 hover:bg-slate-200/60 shrink-0 cursor-pointer flex items-center gap-1.5"
+                                  >
+                                    <CheckCircle2 size={13} className="text-purple-500" /> Accessibility
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => showToast('Presentation Pacing: Estimated duration 12 min (~1.5 min/slide)')}
+                                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200/60 hover:bg-slate-200/60 shrink-0 cursor-pointer flex items-center gap-1.5"
+                                  >
+                                    <Clock size={13} className="text-amber-500" /> Presentation Pacing
+                                  </button>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => showToast('AI completed presentation review: 3 visual & narrative improvements suggested')}
+                                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 text-white flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+                                >
+                                  <Bot size={13} /> AI Deck Audit
+                                </button>
+                              </div>
+                            )}
+
+                            {/* ── VIEW TAB ── */}
+                            {deckToolbarTab === 'View' && (
+                              <div className="w-full flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
+                                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0">
+                                  {/* Slide Sorter / Panel Toggle */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setDeckSlidesPanelOpen((prev) => !prev)}
+                                    className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                      deckSlidesPanelOpen
+                                        ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs'
+                                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 hover:bg-slate-200/60'
                                     }`}
                                   >
-                                    <btn.icon size={13} className={`shrink-0 ${isOpen ? 'text-[#7C4DFF]' : 'text-gray-400'}`} />
-                                    <span>{btn.label}</span>
-                                    <ChevronDown size={10} className={`shrink-0 transition-transform ${isOpen ? 'rotate-180 text-[#7C4DFF]' : 'text-gray-400'}`} />
+                                    <LayoutGrid size={13} /> Slide Sorter: {deckSlidesPanelOpen ? 'On' : 'Off'}
                                   </button>
 
-                                  {/* Dropdown Menu */}
-                                  {isOpen && (
-                                    <div 
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="absolute left-0 top-9 w-52 bg-white border border-gray-200 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.12)] p-1.5 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
+                                  {/* Right Inspector Sidebar Toggle */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setRightSidebarOpen((prev) => !prev)}
+                                    className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                      rightSidebarOpen
+                                        ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs'
+                                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 hover:bg-slate-200/60'
+                                    }`}
+                                  >
+                                    <Sidebar size={13} /> Inspector: {rightSidebarOpen ? 'On' : 'Off'}
+                                  </button>
+
+                                  {/* Zoom Controls */}
+                                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-0.5 rounded-lg border border-slate-200/60 dark:border-zinc-700/50 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => setDeckZoomLevel((prev) => Math.max(50, prev - 10))}
+                                      className="px-2 py-0.5 text-xs font-bold text-slate-600 dark:text-zinc-300 hover:text-slate-900 rounded cursor-pointer"
+                                      title="Zoom Out"
                                     >
-                                      <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">{btn.label} Options</div>
-                                      {btn.menuItems.map((item) => (
-                                        <button
-                                          key={item}
-                                          type="button"
-                                          onClick={() => {
-                                            btn.onSelect(item);
-                                            setDeckActiveToolbarMenu(null);
-                                          }}
-                                          className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-violet-50 hover:text-[#7C4DFF] rounded-lg transition-colors flex items-center justify-between"
-                                        >
-                                          <span>{item}</span>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
+                                      -
+                                    </button>
+                                    <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200 px-1 min-w-[36px] text-center">
+                                      {deckZoomLevel}%
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setDeckZoomLevel((prev) => Math.min(200, prev + 10))}
+                                      className="px-2 py-0.5 text-xs font-bold text-slate-600 dark:text-zinc-300 hover:text-slate-900 rounded cursor-pointer"
+                                      title="Zoom In"
+                                    >
+                                      +
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setDeckZoomLevel(100)}
+                                      className="px-1.5 py-0.5 text-[10.5px] font-medium text-slate-500 hover:text-slate-800 rounded cursor-pointer border-l border-slate-200/60 pl-1.5"
+                                    >
+                                      Reset
+                                    </button>
+                                  </div>
+
+                                  {/* Dark Mode Toggle */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsDarkMode((prev) => !prev)}
+                                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 hover:bg-slate-200/60 flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
+                                  >
+                                    {isDarkMode ? <Sun size={13} /> : <Moon size={13} />} {isDarkMode ? 'Light' : 'Dark'} Mode
+                                  </button>
                                 </div>
-                              );
-                            })}
+
+                                <div className="flex items-center gap-2 shrink-0 border-l border-slate-200/60 dark:border-zinc-800 pl-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setIsSheetsPresentationMode(true);
+                                      showToast('Started presentation mode');
+                                    }}
+                                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 text-white flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+                                  >
+                                    <Play size={13} /> Fullscreen Presentation Mode
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
                           </div>
-                        </div>
+                        )}
                       </div>
 
                       {/* Presentation Editor Main Workspace Canvas */}
