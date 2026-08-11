@@ -62728,10 +62728,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
             {/* Active Slide Display */}
             {(() => {
-              const currentSlide = deckSlidesData?.[presentationSlideIndex] || deckSlidesData?.[0] || {
-                headline: 'Executive Deck Overview',
-                blurb: 'Strategic Initiatives and Product Roadmap for Q3/Q4',
-              };
+              const currentSlide = (deckSlidesData && deckSlidesData[presentationSlideIndex]) || (deckSlidesData && deckSlidesData[0]) || {};
+              const slideHeadline = currentSlide.headline || currentSlide.title || currentSlide.name || 'Untitled Slide';
+              const slideBlurb = currentSlide.blurb || currentSlide.subtitle || currentSlide.body || currentSlide.description || '';
               return (
                 <div className="w-full aspect-[16/9] max-w-[1200px] max-h-[85vh] bg-zinc-900 border border-zinc-800/90 rounded-[28px] md:rounded-[36px] shadow-[0_32px_90px_-20px_rgba(0,0,0,0.8)] relative overflow-hidden flex flex-col justify-between p-10 md:p-16 text-white transition-all duration-300">
                   {/* Decorative Background Curves */}
@@ -62758,11 +62757,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   {/* Slide Body / Content */}
                   <div className="flex-1 flex flex-col justify-center max-w-[80%] py-6 relative z-10">
                     <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
-                      {currentSlide.headline || currentSlide.title || 'Executive Strategy & Execution'}
+                      {slideHeadline}
                     </h1>
-                    <p className="mt-4 text-base md:text-xl text-zinc-300 leading-relaxed font-normal">
-                      {currentSlide.blurb || 'Key deliverables, architecture milestones, and strategic roadmap overview for upcoming releases.'}
-                    </p>
+                    {slideBlurb && (
+                      <p className="mt-4 text-base md:text-xl text-zinc-300 leading-relaxed font-normal">
+                        {slideBlurb}
+                      </p>
+                    )}
 
                     {/* Interactive Dropdown & Field Controls inside slide */}
                     <div className="mt-8 flex flex-wrap items-center gap-4">
