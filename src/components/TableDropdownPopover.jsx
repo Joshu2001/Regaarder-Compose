@@ -172,12 +172,8 @@ export default function TableDropdownPopover({
           cell = document.activeElement.closest('td, th');
         }
       }
-      if (!cell && typeof document !== 'undefined') {
-        cell = document.querySelector('td:focus, td.selected, td[contenteditable], table td, .table-block td');
-      }
-      if (cell) {
-        activeTargetCellRef.current = cell;
-      }
+
+      activeTargetCellRef.current = cell || null;
 
       if (cell) {
         const dropdownMenu = cell.querySelector('.custom-doc-dropdown-menu');
@@ -303,14 +299,14 @@ export default function TableDropdownPopover({
   };
 
   const resolveTargetCell = () => {
-    if (activeTargetCellRef.current && document.body.contains(activeTargetCellRef.current)) {
-      return activeTargetCellRef.current;
-    }
     if (tableToolbar?.cellEl && document.body.contains(tableToolbar.cellEl)) {
       return tableToolbar.cellEl;
     }
     if (focusedTableCell && document.body.contains(focusedTableCell)) {
       return focusedTableCell;
+    }
+    if (activeTargetCellRef.current && document.body.contains(activeTargetCellRef.current)) {
+      return activeTargetCellRef.current;
     }
     const sel = typeof window !== 'undefined' ? window.getSelection() : null;
     if (sel && sel.rangeCount > 0) {
@@ -322,7 +318,7 @@ export default function TableDropdownPopover({
       const cell = document.activeElement.closest('td, th');
       if (cell) return cell;
     }
-    return document.querySelector('td:focus, td.selected, td[contenteditable], table td, .table-block td');
+    return null;
   };
 
   const getCellInitialVal = (c) => {
@@ -335,15 +331,17 @@ export default function TableDropdownPopover({
   const handleApply = () => {
     if (choices.length === 0) return;
     const cell = resolveTargetCell();
-    const table = tableToolbar?.tableEl || cell?.closest('table');
+    if (!cell) return;
+    const table = tableToolbar?.tableEl || cell.closest('table');
+    if (!table) return;
+
     if (dropdownTarget === 'cell') {
-      if (cell) {
-        cell.innerHTML = makeDropdownHTML(choices, getCellInitialVal(cell), optionColors);
-        cell.contentEditable = 'false';
-        cell.setAttribute('data-cell-col-type', 'dropdown');
-        (tableToolbar?.tableEl || cell.closest('table'))?.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-    } else if (cell && table) {
+      const initVal = getCellInitialVal(cell);
+      cell.innerHTML = makeDropdownHTML(choices, initVal, optionColors);
+      cell.contentEditable = 'false';
+      cell.setAttribute('data-cell-col-type', 'dropdown');
+      table.dispatchEvent(new Event('input', { bubbles: true }));
+    } else if (dropdownTarget === 'column') {
       const parentRow = cell.closest('tr');
       if (parentRow) {
         const colIndex = Array.from(parentRow.children).indexOf(cell);
@@ -351,8 +349,9 @@ export default function TableDropdownPopover({
           table.querySelectorAll('tr').forEach((row) => {
             if (row.parentElement?.tagName.toLowerCase() === 'thead' || (row.querySelector('th') && !row.querySelector('td'))) return;
             const colCell = row.children[colIndex];
-            if (colCell?.tagName.toLowerCase() === 'td') {
-              colCell.innerHTML = makeDropdownHTML(choices, getCellInitialVal(colCell), optionColors);
+            if (colCell && (colCell.tagName.toLowerCase() === 'td' || colCell.tagName.toLowerCase() === 'th')) {
+              const initVal = getCellInitialVal(colCell);
+              colCell.innerHTML = makeDropdownHTML(choices, initVal, optionColors);
               colCell.contentEditable = 'false';
               colCell.setAttribute('data-cell-col-type', 'dropdown');
             }
