@@ -196,6 +196,94 @@ export const TasksIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...pro
   </svg>
 );
 
+/**
+ * Proprietary Regaarder Conversation Glyph
+ * Metaphor: Speech bubble with an offset secondary dialogue curve and central Regaarder pulse node.
+ */
+export const ChatIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Secondary background dialogue echo curve */}
+    <path d="M16 6.5A7.5 7.5 0 0 1 19.5 13c0 1.8-.7 3.4-1.8 4.6l.8 2.9-2.9-.8A7.5 7.5 0 0 1 12 20.5" opacity="0.4" />
+    {/* Primary Regaarder speech bubble with refined tail */}
+    <path d="M12 4.5A7.5 7.5 0 0 0 4.5 12c0 1.8.6 3.4 1.7 4.6l-.7 2.9 2.9-.7A7.4 7.4 0 0 0 12 19.5a7.5 7.5 0 0 0 7.5-7.5A7.5 7.5 0 0 0 12 4.5Z" />
+    {/* Regaarder conversation focal node */}
+    <circle cx="12" cy="12" r="0.85" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+/**
+ * Proprietary Regaarder AI Assistance & Action Glyph
+ * Metaphor: Compact intelligence spark lens + action execution arrow ("intelligence → action").
+ * Concept: AI helping the user accomplish an action.
+ */
+export const AssistIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Compact curved 4-point intelligence spark lens */}
+    <path d="M10.5 3.5C10.5 7 12 8.5 15.5 8.5C12 8.5 10.5 10 10.5 13.5C10.5 10 9 8.5 5.5 8.5C9 8.5 10.5 7 10.5 3.5Z" />
+    {/* Focal intelligence core node */}
+    <circle cx="10.5" cy="8.5" r="1" fill="currentColor" stroke="none" />
+    {/* Action execution vector (intelligence guiding user action) */}
+    <path d="M14 14L19.5 19.5" />
+    <path d="M16 19.5H19.5V16" />
+  </svg>
+);
+
+/**
+ * Proprietary Regaarder Autonomous Agent Constellation Network Glyph
+ * Metaphor: Central coordinator node linked to an orbital constellation of autonomous sub-agent nodes.
+ * Reusable visual language for Regaarder AI Workflows and agentic execution (replacing generic sparkles).
+ */
+export const AgentsIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Inter-agent orbital network constellation links */}
+    <line x1="12" y1="12" x2="18" y2="6.5" opacity="0.45" />
+    <line x1="12" y1="12" x2="6" y2="17.5" opacity="0.45" />
+    <line x1="12" y1="12" x2="6" y2="6.5" opacity="0.4" />
+    <line x1="12" y1="12" x2="18" y2="17.5" opacity="0.4" />
+    {/* Central coordinator agent node */}
+    <circle cx="12" cy="12" r="2.25" />
+    <circle cx="12" cy="12" r="0.75" fill="currentColor" stroke="none" />
+    {/* Autonomous satellite agent nodes */}
+    <circle cx="18" cy="6.5" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="6" cy="17.5" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="6" cy="6.5" r="1.25" fill="currentColor" opacity="0.65" stroke="none" />
+    <circle cx="18" cy="17.5" r="1.25" fill="currentColor" opacity="0.65" stroke="none" />
+  </svg>
+);
+
 export const RegaarderProductIconMap = {
   Compose: ComposeIcon,
   Deck: DeckIcon,
@@ -205,6 +293,9 @@ export const RegaarderProductIconMap = {
   Schedule: ScheduleIcon,
   Memory: MemoryIcon,
   Tasks: TasksIcon,
+  Chat: ChatIcon,
+  Assist: AssistIcon,
+  Agents: AgentsIcon,
   compose: ComposeIcon,
   deck: DeckIcon,
   sheet: SheetIcon,
@@ -214,6 +305,11 @@ export const RegaarderProductIconMap = {
   schedule: ScheduleIcon,
   memory: MemoryIcon,
   tasks: TasksIcon,
+  chat: ChatIcon,
+  assist: AssistIcon,
+  assistant: AssistIcon,
+  agents: AgentsIcon,
+  'ai-studio': AgentsIcon,
 };
 
 export const RegaarderProductIcon = ({ name, size = 24, className = "", strokeWidth = 1.6, ...props }) => {

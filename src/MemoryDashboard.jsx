@@ -4,6 +4,7 @@ import {
   RefreshCcw, Filter, ChevronDown, Sparkles, HelpCircle,
   Network, ArrowRight, Box, Layers, Globe, Layout
 } from 'lucide-react';
+import { MemoryIcon, TasksIcon } from './components/RegaarderProductIcons';
 
 const MemoryDashboard = () => {
   return (
@@ -11,7 +12,7 @@ const MemoryDashboard = () => {
       {/* Left Sidebar */}
       <div className="w-[240px] flex-shrink-0 bg-[#f8f9fa] border-r border-slate-200 flex flex-col p-4 overflow-y-auto">
         <div className="flex items-center gap-2 mb-8 mt-2 px-2 text-violet-700">
-          <Brain size={18} strokeWidth={2.5} />
+          <MemoryIcon size={18} strokeWidth={2.0} />
           <span className="font-semibold text-sm">Memory</span>
         </div>
         
@@ -20,7 +21,7 @@ const MemoryDashboard = () => {
           <NavItem icon={<Network size={16} />} label="Knowledge Graph" />
           <NavItem icon={<Users size={16} />} label="People" />
           <NavItem icon={<Folder size={16} />} label="Projects" />
-          <NavItem icon={<CheckSquare size={16} />} label="Decisions" />
+          <NavItem icon={<TasksIcon size={16} strokeWidth={1.8} />} label="Decisions" />
           <NavItem icon={<Clock size={16} />} label="Timeline" />
           <NavItem icon={<FileText size={16} />} label="Files" />
           <NavItem icon={<History size={16} />} label="Room History" />

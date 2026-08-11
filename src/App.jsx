@@ -29,6 +29,19 @@ import {
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
+import {
+  ComposeIcon,
+  DeckIcon,
+  SheetIcon,
+  RoomIcon,
+  WhiteboardIcon,
+  ScheduleIcon,
+  MemoryIcon,
+  TasksIcon,
+  ChatIcon,
+  AssistIcon,
+  AgentsIcon
+} from './components/RegaarderProductIcons';
 import RoomLandingPage from './RoomLandingPage';
 import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 import HelpSupportPanel from './components/HelpSupportPanel';
@@ -12554,10 +12567,10 @@ export default function App() {
           <div className="w-[220px] rounded-[22px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/85 dark:bg-[#1c1c1e]/85 backdrop-blur-3xl shadow-2xl p-2 font-sans origin-top-left overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="flex flex-col gap-1">
               {[
-                { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: FileText },
-                { mode: 'sheets', label: 'Sheets', desc: 'Grid & Data Analysis', icon: Table },
-                { mode: 'deck', label: 'Decks', desc: 'Slide & Presentation', icon: MonitorPlay },
-                { mode: 'room', label: 'Room', desc: 'Team Video & Meetings', icon: Users }
+                { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: ComposeIcon },
+                { mode: 'sheets', label: 'Sheets', desc: 'Grid & Data Analysis', icon: SheetIcon },
+                { mode: 'deck', label: 'Decks', desc: 'Slide & Presentation', icon: DeckIcon },
+                { mode: 'room', label: 'Room', desc: 'Team Video & Meetings', icon: RoomIcon }
               ].map((item) => {
                 const IconComponent = item.icon;
                 const isCurrent = productMode === item.mode;
@@ -12886,7 +12899,7 @@ export default function App() {
     }
     return [
       { label: 'Import Data', subtitle: 'Upload structured/unstructured files', icon: Upload },
-      { label: 'Generate Sheet', subtitle: 'Build spreadsheet from prompt', icon: FileSpreadsheet },
+      { label: 'Generate Sheet', subtitle: 'Build spreadsheet from prompt', icon: SheetIcon },
       { label: 'Build Dashboard', subtitle: 'Add visual metrics and charts', icon: LayoutGrid },
       { label: 'Ask Questions', subtitle: 'Query assistant about data', icon: MessageSquare },
       { label: 'Find Insights', subtitle: 'Discover automated highlights', icon: Sparkles }
@@ -36527,7 +36540,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           {activeRightTab === 'room' && (
             <div className="flex-1 flex flex-col p-6 items-center justify-center text-center bg-[#FAFAFC] animate-fade-in">
               <div className="w-12 h-12 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center mb-3 border border-violet-100 shadow-sm">
-                <MonitorPlay size={20} />
+                <RoomIcon size={20} />
               </div>
               <h3 className="text-sm font-bold text-slate-800">Meeting Room</h3>
               <p className="text-xs text-slate-500 max-w-[240px] mt-1.5 leading-relaxed">
@@ -37220,18 +37233,18 @@ Respond with a JSON array of slide objects matching the schema.`;
          * 'comments' is conditionally shown only when comments exist.
          */
         const ALL_FEATURES = [
-          { key: 'chat',       label: 'Chat',       icon: MessageCircle,    pinned: true },
-          { key: 'assistant',  label: 'Assist',     icon: Wand2,            pinned: true },
-          { key: 'ai-studio',  label: 'Agents',     icon: Sparkles,         pinned: true },
-          { key: 'tasks',      label: 'Tasks',      icon: CheckSquare,      pinned: true },
-          { key: 'calendar',   label: 'Schedule',   icon: Calendar,         pinned: true },
-          { key: 'room',       label: 'Room',       icon: MonitorPlay,      pinned: true },
+          { key: 'chat',       label: 'Chat',       icon: ChatIcon,         pinned: true },
+          { key: 'assistant',  label: 'Assist',     icon: AssistIcon,       pinned: true },
+          { key: 'ai-studio',  label: 'Agents',     icon: AgentsIcon,       pinned: true },
+          { key: 'tasks',      label: 'Tasks',      icon: TasksIcon,        pinned: true },
+          { key: 'calendar',   label: 'Schedule',   icon: ScheduleIcon,     pinned: true },
+          { key: 'room',       label: 'Room',       icon: RoomIcon,         pinned: true },
           { key: 'help',       label: 'Help',       icon: HelpCircle,       pinned: true },
           { key: 'comments',   label: 'Comments',   icon: MessageSquareText, conditional: comments.length > 0 },
           { key: 'dm',         label: 'DMs',        icon: MessageSquare },
-          { key: 'whiteboard', label: 'Whiteboard', icon: Shapes },
+          { key: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon },
           { key: 'people',     label: 'People',     icon: Users },
-          { key: 'memory',     label: 'Memory',     icon: Database },
+          { key: 'memory',     label: 'Memory',     icon: MemoryIcon },
           { key: 'orb',        label: 'Orb',        icon: Cloud },
           { key: 'manageen',   label: 'Manageen',   icon: ListTodo },
           { key: 'files',      label: 'Files',      icon: File },
@@ -37375,11 +37388,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </div>
                     <div className="space-y-0.5">
                       {[
-                        { key: 'compose', label: 'Compose', icon: FileText },
-                        { key: 'deck',    label: 'Deck',    icon: MonitorPlay },
-                        { key: 'sheet',   label: 'Sheet',   icon: Table },
-                        { key: 'room',    label: 'Room',    icon: Video },
-                        { key: 'whiteboard', label: 'Whiteboard', icon: Shapes },
+                        { key: 'compose', label: 'Compose', icon: ComposeIcon },
+                        { key: 'deck',    label: 'Deck',    icon: DeckIcon },
+                        { key: 'sheet',   label: 'Sheet',   icon: SheetIcon },
+                        { key: 'room',    label: 'Room',    icon: RoomIcon },
+                        { key: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon },
                       ].map(({ key, label, icon: Icon }) => (
                         <button
                           key={key}
@@ -37400,22 +37413,22 @@ Respond with a JSON array of slide objects matching the schema.`;
               </div>
 
               {/* ── Slot 2: Chat (always fixed) ─── */}
-              <div className="w-full">{renderNavIcon({ key: 'chat', label: 'Chat', icon: MessageCircle })}</div>
+              <div className="w-full">{renderNavIcon({ key: 'chat', label: 'Chat', icon: ChatIcon })}</div>
 
               {/* ── Slot 3: Assist (always fixed) ─── */}
-              <div className="w-full">{renderNavIcon({ key: 'assistant', label: 'Assist', icon: Wand2 })}</div>
+              <div className="w-full">{renderNavIcon({ key: 'assistant', label: 'Assist', icon: AssistIcon })}</div>
 
               {/* ── Slot 4: Agents (always fixed) ─── */}
-              <div className="w-full mb-1">{renderNavIcon({ key: 'ai-studio', label: 'Agents', icon: Sparkles })}</div>
+              <div className="w-full mb-1">{renderNavIcon({ key: 'ai-studio', label: 'Agents', icon: AgentsIcon })}</div>
 
               {/* ── Slot 5: Tasks (always fixed) ─── */}
-              <div className="w-full">{renderNavIcon({ key: 'tasks', label: 'Tasks', icon: CheckSquare })}</div>
+              <div className="w-full">{renderNavIcon({ key: 'tasks', label: 'Tasks', icon: TasksIcon })}</div>
 
               {/* ── Slot 6: Schedule (always fixed) ─── */}
-              <div className="w-full">{renderNavIcon({ key: 'calendar', label: 'Schedule', icon: Calendar })}</div>
+              <div className="w-full">{renderNavIcon({ key: 'calendar', label: 'Schedule', icon: ScheduleIcon })}</div>
 
               {/* ── Slot 7: Room (always fixed) ─── */}
-              <div className="w-full">{renderNavIcon({ key: 'room', label: 'Room', icon: MonitorPlay })}</div>
+              <div className="w-full">{renderNavIcon({ key: 'room', label: 'Room', icon: RoomIcon })}</div>
 
               {/* ── Slot 8: Help (always fixed) ─── */}
               <div className="w-full mb-1">{renderNavIcon({ key: 'help', label: 'Help', icon: HelpCircle })}</div>
@@ -42157,11 +42170,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
                         <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Home size={16} /> Home</button>
                         <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><BookOpen size={16} /> Library</button>
-                        <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm bg-violet-50 text-violet-700 rounded-md transition-colors"><LayoutGrid size={16} /> Deck</button>
+                        <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm bg-violet-50 text-violet-700 rounded-md transition-colors"><DeckIcon size={16} /> Deck</button>
                         <button className="w-full flex items-center justify-between px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><div className="flex items-center gap-3"><Inbox size={16} /> Inbox</div><span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full font-medium">12</span></button>
                         <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Star size={16} /> Starred</button>
                         <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Users size={16} /> Shared</button>
-                        <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Database size={16} /> Memory</button>
+                        <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><MemoryIcon size={16} /> Memory</button>
                         <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors mb-4"><Trash size={16} /> Trash</button>
             
                         <div className="flex items-center justify-between px-2 py-2 mt-4">
@@ -47131,7 +47144,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="grid grid-cols-2 gap-4">
             <button className="flex flex-col items-start p-4 border border-gray-200 rounded-xl hover:border-violet-500 hover:bg-violet-50 transition-colors text-left group">
               <div className="w-12 h-8 bg-gray-100 group-hover:bg-violet-100 rounded mb-3 flex items-center justify-center">
-                <MonitorPlay size={16} className="text-gray-500 group-hover:text-violet-600" />
+                <DeckIcon size={16} className="text-gray-500 group-hover:text-violet-600" />
               </div>
               <span className="text-sm font-semibold text-gray-900">Presentation</span>
               <span className="text-xs text-gray-500 mt-1">1920 × 1080 px</span>
@@ -55614,9 +55627,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <div className="flex flex-col gap-2">
                               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Convert to</span>
                               {[
-                                { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
-                                { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
-                                { target: 'Sheets', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50 dark:bg-violet-950/40' }
+                                { target: 'Compose', icon: ComposeIcon, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
+                                { target: 'Deck', icon: DeckIcon, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
+                                { target: 'Sheets', icon: SheetIcon, color: 'text-violet-500 bg-violet-50 dark:bg-violet-950/40' }
                               ].map(t => (
                                 <button 
                                   key={t.target}

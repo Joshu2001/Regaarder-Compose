@@ -17,6 +17,7 @@ import {
   Star, Users, Link, Shield, Lightbulb, Sparkles,
   ChevronDown, Search, Plus, Check,
 } from 'lucide-react';
+import { AgentsIcon } from '../components/RegaarderProductIcons';
 
 import {
   AGENT_IDS, AGENT_REGISTRY, AGENT_HIGHLIGHT_CATEGORY,
@@ -538,7 +539,7 @@ ${text}
         <div className="absolute inset-0 z-50 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md p-4 flex flex-col animate-in fade-in zoom-in-95 duration-200">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
             <div className="flex items-center gap-2">
-              <Sparkles className="text-violet-600" size={18} />
+              <AgentsIcon className="text-violet-600" size={18} />
               <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-100">Create Custom AI Agent</h3>
             </div>
             <button
