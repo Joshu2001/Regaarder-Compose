@@ -445,7 +445,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
         onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
         onOpenSendToSheetsPopover={(rect) => setSendToSheetsPopoverRect(rect)}
         onOpenSendToComposePopover={(rect) => setSendToComposePopoverRect(rect)}
-        onOpenFlowsPopover={(rect) => setFlowsPopoverRect(rect)}
+        onOpenFlowsPopover={(rect) => setFlowsPopoverRect((prev) => (prev ? null : rect))}
         onSendWhiteboardChip={() => {
           if (showToast) showToast('Clipped visual layout to Whiteboard canvas');
         }}

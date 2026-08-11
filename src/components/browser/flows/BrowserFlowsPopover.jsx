@@ -16,15 +16,24 @@ export const BrowserFlowsPopover = ({
 }) => {
   const popoverRef = useRef(null);
 
-  // Global click outside listener
+  // Global click outside listener (deferred to prevent initiating pointerdown from closing immediately)
   useEffect(() => {
-    const handleOutsideClick = (e) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
-        onClose();
+    let handleOutsideClick;
+    const timer = setTimeout(() => {
+      handleOutsideClick = (e) => {
+        if (popoverRef.current && !popoverRef.current.contains(e.target)) {
+          onClose();
+        }
+      };
+      document.addEventListener('pointerdown', handleOutsideClick);
+    }, 60);
+
+    return () => {
+      clearTimeout(timer);
+      if (handleOutsideClick) {
+        document.removeEventListener('pointerdown', handleOutsideClick);
       }
     };
-    document.addEventListener('pointerdown', handleOutsideClick);
-    return () => document.removeEventListener('pointerdown', handleOutsideClick);
   }, [onClose]);
 
   if (!anchorRect) return null;
