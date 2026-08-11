@@ -4,19 +4,23 @@ import BrowserResearchHome from './BrowserResearchHome';
 
 /**
  * BrowserViewport: Container mounting point for Electron WebContentsView Chromium Surface.
- * Renders executive BrowserResearchHome canvas when on regaarder://research,
+ * Renders executive BrowserResearchHome canvas when on regaarder://research or regaarder://saved,
  * and synchronizes DOM container bounds with Electron main process via IPC.
  */
 export const BrowserViewport = ({
   activeTab = null,
+  savedItems = [],
   isElectron = false,
   isSidePanelOpen = false,
-  onNavigate
+  onNavigate,
+  onLaunchCompetitorWorkflow,
+  onToggleSidePanel,
+  onRemoveBookmark
 }) => {
   const containerRef = useRef(null);
   const [iframeError, setIframeError] = useState(false);
 
-  const isResearchHome = activeTab?.url === 'regaarder://research';
+  const isResearchHome = activeTab?.url === 'regaarder://research' || activeTab?.url === 'regaarder://saved';
 
   useEffect(() => {
     if (!isElectron || !window.electronAPI) return;
@@ -65,8 +69,13 @@ export const BrowserViewport = ({
   if (isResearchHome) {
     return (
       <BrowserResearchHome
+        activeUrl={activeTab?.url}
+        savedItems={savedItems}
         onSearch={onNavigate}
         onNavigate={onNavigate}
+        onLaunchCompetitorWorkflow={onLaunchCompetitorWorkflow}
+        onToggleSidePanel={onToggleSidePanel}
+        onRemoveBookmark={onRemoveBookmark}
       />
     );
   }
@@ -103,7 +112,10 @@ export const BrowserViewport = ({
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setIframeError(false)}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    setIframeError(false);
+                  }}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors cursor-pointer"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />

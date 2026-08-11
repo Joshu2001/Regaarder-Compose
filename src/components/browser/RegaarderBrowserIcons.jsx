@@ -259,14 +259,29 @@ export const BrowserCompetitorsIcon = ({ size = 20, className = '', strokeWidth 
     className={className}
     {...props}
   >
-    {/* Executive matrix frame */}
     <rect x="3.5" y="4" width="17" height="16" rx="2" />
-    {/* Grid divider line */}
     <line x1="3.5" y1="10" x2="20.5" y2="10" />
-    {/* Column comparison bars */}
     <line x1="8" y1="14" x2="8" y2="17" />
     <line x1="12" y1="12" x2="12" y2="17" />
     <line x1="16" y1="13" x2="16" y2="17" />
+  </svg>
+);
+
+// 14. CHECKMARK: Precision check icon for confirmation & context badges
+export const BrowserCheckIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 
@@ -284,7 +299,8 @@ export const RegaarderBrowserIconMap = {
   Close: BrowserCloseIcon,
   Search: BrowserSearchIcon,
   SearchWeb: BrowserSearchWebIcon,
-  Competitors: BrowserCompetitorsIcon
+  Competitors: BrowserCompetitorsIcon,
+  Check: BrowserCheckIcon
 };
 
 export default RegaarderBrowserIconMap;
