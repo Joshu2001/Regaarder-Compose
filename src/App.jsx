@@ -46567,11 +46567,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     </div>
                                   </div>
 
-                                  {/* Floating bottom-right "Ask AI" pill inside the canvas bounds */}
+                                  {/* Floating bottom-right "Ask AI" button inside the canvas bounds */}
                                   <button
                                     type="button"
                                     onClick={() => { setActiveRightTab('chat'); setRightSidebarOpen(true); }}
-                                    className="absolute bottom-6 right-6 px-4 py-2 rounded-full border bg-white/80 backdrop-blur-md shadow-sm flex items-center gap-1.5 text-xs font-semibold hover:bg-white transition-all z-20 pointer-events-auto"
+                                    className="absolute bottom-6 right-6 px-4 py-2 rounded-xl border bg-white/80 backdrop-blur-md shadow-sm flex items-center gap-1.5 text-xs font-semibold hover:bg-white transition-all z-20 pointer-events-auto"
                                     style={{ color: brandColor, borderColor: `${brandColor}33` }}
                                   >
                                     <Sparkles size={13} />
@@ -46583,51 +46583,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           )}
                         </div>
 
-                        {/* Floating bottom actions (outside canvas) */}
+                        {/* Bottom Status Bar */}
                         <div className="w-full flex flex-col items-center shrink-0 relative mt-2 gap-2 pb-1">
-                          {/* Main Row: Bottom-left AI button + Center Carousel */}
-                          <div className="w-full flex items-end justify-between px-4 relative min-h-[52px]">
-                            {/* Circular magical purple button on the bottom left */}
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-0 flex items-center gap-2 p-1.5 bg-white/70 backdrop-blur-md rounded-2xl border border-gray-200/60 shadow-sm max-w-[85%] overflow-x-auto no-scrollbar z-15">
-                              {deckSlides.map((slide, idx) => {
-                                const isSlideActive = slide.id === activeDeckSlideId;
-                                return (
-                                  <div key={slide.id} className="flex flex-col items-center gap-1 shrink-0">
-                                    <button
-                                      type="button"
-                                      onClick={() => setActiveDeckSlideId(slide.id)}
-                                      className={`h-11 aspect-[16/9] rounded-xl border overflow-hidden bg-white shrink-0 transition-all ${
-                                        isSlideActive 
-                                          ? 'border-2 border-[#7C4DFF] ring-2 ring-[#7C4DFF]/15 shadow-md scale-105' 
-                                          : 'border-gray-200 hover:border-gray-300 opacity-80 hover:opacity-100'
-                                      }`}
-                                    >
-                                      <div className="w-full h-full relative p-1 bg-[#FAFAFC] flex flex-col justify-between">
-                                        <div className="w-full h-1 bg-gray-200 rounded-sm" />
-                                        <div className="w-2/3 h-1 bg-violet-200 rounded-sm" />
-                                      </div>
-                                    </button>
-                                    <span className={`text-[10px] font-bold ${isSlideActive ? 'text-[#7C4DFF]' : 'text-gray-400'}`}>
-                                      {idx + 1}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                              <div className="flex flex-col items-center gap-1 shrink-0">
-                                <button
-                                  type="button"
-                                  onClick={addDeckSlide}
-                                  className="h-11 aspect-[16/9] rounded-xl border border-dashed border-gray-300 hover:border-[#7C4DFF] flex items-center justify-center shrink-0 text-gray-400 hover:text-[#7C4DFF] bg-white/50 hover:bg-white transition-all"
-                                  title="Add new slide"
-                                >
-                                  <Plus size={16} />
-                                </button>
-                                <span className="text-[10px] font-bold text-transparent">+</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Bottom Status Bar matching Image 2 */}
                           <div className="w-full px-6 flex items-center justify-between text-[11px] font-medium text-gray-400 pt-1 border-t border-gray-150/50">
                             <div className="flex items-center gap-4">
                               <span>Slide {deckSlides.findIndex(s => s.id === activeDeckSlideId) + 1} of {deckSlides.length}</span>
