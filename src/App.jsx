@@ -7164,11 +7164,12 @@ export default function App() {
     const element = node.nodeType === Node.TEXT_NODE ? node.parentNode : node;
     const cell = element?.closest?.('td, th');
     const table = element?.closest?.('table');
+    const isHeaderRow = cell && (cell.tagName === 'TH' || (cell.parentNode && cell.parentNode.rowIndex === 0));
     
     const insideEditor = blankBodyRef.current && blankBodyRef.current.contains(table);
     const insideChartBlock = table && table.closest('.interactive-chart-block');
     
-    if (cell && table && insideEditor && !insideChartBlock) {
+    if (cell && table && insideEditor && !insideChartBlock && !isHeaderRow) {
       const tableRect = table.getBoundingClientRect();
       
       const toolbarWidth = 520;
@@ -57510,18 +57511,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml, e)}
                   onClick={(e) => {
                     const targetElement = e.target;
-                    if (targetElement.tagName === 'IMG' || targetElement.closest('table')) {
-                      const figureEl = targetElement.tagName === 'IMG' ? targetElement : targetElement.closest('table');
+                    const tableEl = targetElement.closest('table');
+                    const imgEl = targetElement.tagName === 'IMG' ? targetElement : null;
+                    
+                    if (imgEl) {
                       if (isTableLocked) {
                         setFigureMenuTarget(null);
                       } else {
-                        const rect = figureEl.getBoundingClientRect();
-                        setFigureMenuTarget(figureEl);
+                        const rect = imgEl.getBoundingClientRect();
+                        setFigureMenuTarget(imgEl);
                         setFigureMenuCoords({ 
                           top: rect.top + window.scrollY, 
                           left: rect.right + window.scrollX - 250 
                         });
-                        setFigureNameInput(figureEl.getAttribute('data-figure-name') || '');
+                        setFigureNameInput(imgEl.getAttribute('data-figure-name') || '');
+                      }
+                    } else if (tableEl) {
+                      const cell = targetElement.closest('td, th');
+                      const isHeaderRow = cell && (cell.tagName === 'TH' || (cell.parentNode && cell.parentNode.rowIndex === 0));
+                      if (isHeaderRow && !isTableLocked) {
+                        // Tapped on top header row: show "Name this table..." naming bar only
+                        const rect = tableEl.getBoundingClientRect();
+                        setFigureMenuTarget(tableEl);
+                        setFigureMenuCoords({ 
+                          top: Math.max(10, rect.top + window.scrollY - 44), 
+                          left: rect.right + window.scrollX - 340 
+                        });
+                        setFigureNameInput(tableEl.getAttribute('data-figure-name') || tableEl.getAttribute('data-table-name') || '');
+                        setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
+                      } else {
+                        // Tapped on body cell: hide "Name this table..." naming bar to avoid competition
+                        setFigureMenuTarget(null);
                       }
                     } else {
                       setFigureMenuTarget(null);

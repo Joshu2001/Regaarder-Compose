@@ -84,7 +84,7 @@ export default function TableDropdownPopover({
     }
   }, [isOpen, tableToolbar?.cellEl, focusedTableCell]);
 
-  // Compute position relative to selected cell or trigger button
+  // Compute position relative to active interaction while maintaining right-side viewport placement
   useEffect(() => {
     if (!isOpen) return;
 
@@ -92,32 +92,23 @@ export default function TableDropdownPopover({
       const cell = tableToolbar?.cellEl || focusedTableCell;
       const anchorEl = triggerButtonRef?.current || cell;
 
-      const popoverWidth = 320;
-      const popoverHeight = 310;
+      const popoverWidth = 300;
+      const popoverHeight = 330;
 
       let rect = null;
       if (anchorEl && typeof anchorEl.getBoundingClientRect === 'function') {
         rect = anchorEl.getBoundingClientRect();
       }
 
-      // Vertical position: drop down below anchor matching Add Source File & TableGridPickerModal
-      let top = rect ? rect.bottom + 8 : 12;
-      // Horizontal alignment: align to left edge of trigger/anchor
-      let left = rect ? rect.left : 12;
+      // Vertical position: align 20px higher than anchor/toolbar to raise modal higher as requested
+      let top = rect ? rect.top - 20 : 60;
 
-      // Clamp left inside viewport margins
-      left = Math.max(12, Math.min(left, window.innerWidth - popoverWidth - 12));
+      // Clamp top inside viewport margins
+      top = Math.max(16, Math.min(top, window.innerHeight - popoverHeight - 16));
 
-      // Flip above anchor if bottom is cut off by viewport bottom
-      if (rect && (top + popoverHeight > window.innerHeight - 12)) {
-        const topAbove = rect.top - popoverHeight - 8;
-        if (topAbove >= 12) {
-          top = topAbove;
-        }
-      }
-
-      // Final viewport clamping
-      top = Math.max(12, Math.min(top, window.innerHeight - popoverHeight - 12));
+      // Right-side placement: maintain consistent distance from right viewport edge
+      let left = window.innerWidth - popoverWidth - 24;
+      left = Math.max(16, left);
 
       setPos({ top, left });
     };
@@ -298,21 +289,12 @@ export default function TableDropdownPopover({
   };
 
   return createPortal(
-    <>
-      <div
-        className="fixed inset-0 z-[199999]"
-        onPointerDown={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onClose?.();
-        }}
-      />
-      <div
-        ref={popoverRef}
-        style={{ top: `${pos.top}px`, left: `${pos.left}px` }}
-        className="fixed z-[200000] w-[320px] rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 shadow-[0_12px_40px_rgb(0,0,0,0.14)] backdrop-blur-xl text-left font-sans select-none p-3.5 space-y-3.5 animate-in fade-in zoom-in-95 duration-100"
-        onPointerDown={(e) => e.stopPropagation()}
-      >
+    <div
+      ref={popoverRef}
+      style={{ top: `${pos.top}px`, left: `${pos.left}px` }}
+      className="fixed z-[200000] w-[300px] rounded-xl border border-slate-200/80 dark:border-zinc-800/90 bg-white/95 dark:bg-zinc-900/95 shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] backdrop-blur-xl text-left font-sans select-none p-3 space-y-3 transition-all duration-150 animate-in fade-in zoom-in-98"
+      onPointerDown={(e) => e.stopPropagation()}
+    >
       {/* Header */}
       <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-zinc-800/80 pb-2.5">
         <div>
@@ -325,17 +307,18 @@ export default function TableDropdownPopover({
               Convert to dropdown
             </h3>
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">
+          <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal leading-snug">
             Choose options for this cell or column.
           </p>
         </div>
         <button
           type="button"
           onClick={() => onClose?.()}
-          className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors shrink-0 -mr-1 -mt-1"
+          aria-label="Close popover"
+          className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-colors shrink-0 -mr-1 -mt-0.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-violet-500"
           title="Close"
         >
-          <X size={14} strokeWidth={2} />
+          <X size={14} strokeWidth={1.75} />
         </button>
       </div>
 
@@ -354,10 +337,11 @@ export default function TableDropdownPopover({
                 key={p.label}
                 type="button"
                 onClick={() => handleSelectPreset(p.choices)}
-                className={`px-2.5 py-1 text-[11px] font-medium rounded-md border transition-colors ${
+                aria-pressed={isSelected}
+                className={`px-2.5 py-1 text-[11px] font-medium rounded-md border transition-all duration-150 ${
                   isSelected
-                    ? 'bg-violet-50 dark:bg-violet-950/60 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300'
-                    : 'bg-slate-100/70 dark:bg-zinc-800/80 border-slate-200/60 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 hover:bg-slate-200/60 dark:hover:bg-zinc-700/80'
+                    ? 'bg-violet-50/80 dark:bg-violet-950/40 border-violet-300 dark:border-violet-700/80 text-violet-700 dark:text-violet-300 shadow-2xs'
+                    : 'bg-slate-50 dark:bg-zinc-800/50 border-slate-200/60 dark:border-zinc-700/60 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-800 dark:hover:text-zinc-200'
                 }`}
               >
                 {p.label}
@@ -372,7 +356,7 @@ export default function TableDropdownPopover({
         <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1.5">
           Options
         </span>
-        <div className="flex flex-wrap gap-1.5 items-center max-h-[110px] overflow-y-auto thin-scrollbar p-0.5">
+        <div className="flex flex-wrap gap-1.5 items-center max-h-[105px] overflow-y-auto thin-scrollbar p-0.5">
           {choices.map((opt, idx) => {
             if (editingIdx === idx) {
               return (
@@ -380,7 +364,8 @@ export default function TableDropdownPopover({
                   key={idx}
                   type="text"
                   autoFocus
-                  className="px-2 py-0.5 text-[11px] bg-white dark:bg-zinc-800 border border-violet-500 rounded-md outline-none text-slate-800 dark:text-zinc-100 w-24"
+                  aria-label={`Edit option ${opt}`}
+                  className="px-2 py-0.5 text-[11px] bg-white dark:bg-zinc-800 border border-violet-500 rounded-md outline-none text-slate-800 dark:text-zinc-100 w-24 focus:ring-1 focus:ring-violet-500"
                   value={editingText}
                   onChange={(e) => setEditingText(e.target.value)}
                   onBlur={() => handleSaveEditedOption(idx)}
@@ -395,10 +380,10 @@ export default function TableDropdownPopover({
             return (
               <div
                 key={idx}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium bg-slate-100 dark:bg-zinc-800/90 text-slate-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700 rounded-md group"
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium bg-slate-50 dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/70 rounded-md transition-colors"
               >
                 <span
-                  className="cursor-pointer hover:underline"
+                  className="cursor-pointer hover:text-violet-700 dark:hover:text-violet-300"
                   title="Click to edit"
                   onClick={() => {
                     setEditingIdx(idx);
@@ -410,10 +395,11 @@ export default function TableDropdownPopover({
                 <button
                   type="button"
                   onClick={() => handleRemoveOption(idx)}
-                  className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
+                  aria-label={`Remove option ${opt}`}
+                  className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors p-0.5 rounded focus-visible:outline-none"
                   title="Remove option"
                 >
-                  <X size={12} strokeWidth={2} />
+                  <X size={11} strokeWidth={2} />
                 </button>
               </div>
             );
@@ -426,8 +412,9 @@ export default function TableDropdownPopover({
                 ref={addInputRef}
                 type="text"
                 autoFocus
+                aria-label="New option name"
                 placeholder="Option name..."
-                className="px-2 py-0.5 text-[11px] bg-white dark:bg-zinc-800 border border-violet-500 rounded-md outline-none text-slate-800 dark:text-zinc-100 w-28"
+                className="px-2 py-0.5 text-[11px] bg-white dark:bg-zinc-800 border border-violet-500 rounded-md outline-none text-slate-800 dark:text-zinc-100 w-26 focus:ring-1 focus:ring-violet-500"
                 value={newOptionInput}
                 onChange={(e) => setNewOptionInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -439,31 +426,34 @@ export default function TableDropdownPopover({
               <button
                 type="button"
                 onClick={handleAddOption}
-                className="p-1 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950 rounded"
+                aria-label="Confirm add option"
+                className="p-1 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950 rounded transition-colors"
               >
-                <Check size={13} strokeWidth={2} />
+                <Check size={12} strokeWidth={2} />
               </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setIsAddingOption(true)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-violet-600 dark:text-violet-400 bg-violet-50/60 dark:bg-violet-950/40 hover:bg-violet-100/80 dark:hover:bg-violet-900/60 border border-violet-200/60 dark:border-violet-800 rounded-md transition-colors"
+              aria-label="Add option"
+              className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-violet-600 dark:text-violet-400 bg-violet-50/50 dark:bg-violet-950/30 hover:bg-violet-100/70 dark:hover:bg-violet-900/50 border border-dashed border-violet-200/80 dark:border-violet-800/80 rounded-md transition-colors"
             >
-              <Plus size={12} strokeWidth={2} /> Add option
+              <Plus size={11} strokeWidth={2} /> Add option
             </button>
           )}
         </div>
       </div>
 
       {/* Target Segmented Control */}
-      <div className="flex items-center justify-between gap-2 pt-1">
+      <div className="flex items-center justify-between gap-2 pt-0.5">
         <span className="text-[11px] font-medium text-slate-600 dark:text-zinc-300">Apply to</span>
-        <div className="flex items-center p-0.5 bg-slate-100/90 dark:bg-zinc-800/90 rounded-lg border border-slate-200/60 dark:border-zinc-700/80">
+        <div className="flex items-center p-0.5 bg-slate-100/80 dark:bg-zinc-800/80 rounded-lg border border-slate-200/60 dark:border-zinc-700/60">
           <button
             type="button"
             onClick={() => setDropdownTarget('cell')}
-            className={`px-3 py-1 text-[11px] rounded-md transition-all ${
+            aria-pressed={dropdownTarget === 'cell'}
+            className={`px-2.5 py-0.5 text-[11px] rounded-md transition-all ${
               dropdownTarget === 'cell'
                 ? 'bg-white dark:bg-zinc-700 text-violet-700 dark:text-violet-300 shadow-2xs font-semibold'
                 : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 font-medium'
@@ -474,7 +464,8 @@ export default function TableDropdownPopover({
           <button
             type="button"
             onClick={() => setDropdownTarget('column')}
-            className={`px-3 py-1 text-[11px] rounded-md transition-all ${
+            aria-pressed={dropdownTarget === 'column'}
+            className={`px-2.5 py-0.5 text-[11px] rounded-md transition-all ${
               dropdownTarget === 'column'
                 ? 'bg-white dark:bg-zinc-700 text-violet-700 dark:text-violet-300 shadow-2xs font-semibold'
                 : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 font-medium'
@@ -489,13 +480,13 @@ export default function TableDropdownPopover({
       <button
         type="button"
         onClick={handleApply}
-        className="w-full py-2 px-3 text-[12px] font-semibold text-white bg-violet-600 hover:bg-violet-700 active:bg-violet-800 rounded-lg shadow-sm transition-all duration-150 text-center cursor-pointer"
+        className="w-full py-1.5 px-3 text-[12px] font-semibold text-white bg-violet-600 hover:bg-violet-700 active:bg-violet-800 rounded-lg shadow-2xs transition-all duration-150 text-center cursor-pointer active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-1"
       >
         Apply
       </button>
 
       {/* Reversal Footer */}
-      <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-center gap-3 text-[10.5px]">
+      <div className="pt-1.5 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-center gap-2.5 text-[10.5px]">
         <button
           type="button"
           onClick={handleResetCell}
@@ -512,8 +503,7 @@ export default function TableDropdownPopover({
           Reset column
         </button>
       </div>
-    </div>
-  </>,
-  document.body
-);
+    </div>,
+    document.body
+  );
 }
