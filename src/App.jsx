@@ -10364,10 +10364,24 @@ export default function App() {
   const [activeAgentTag, setActiveAgentTag] = useState(null);
   const [isSheetsPresentationMode, setIsSheetsPresentationMode] = useState(false);
   const [isSheetZenMode, setIsSheetZenMode] = useState(false);
+  const [isDeckPresentationMode, setIsDeckPresentationMode] = useState(false);
+  const [presentationSlideIndex, setPresentationSlideIndex] = useState(0);
   const [sheetZoomDropdownOpen, setSheetZoomDropdownOpen] = useState(false);
 
+  const handleStartDeckPresentation = () => {
+    const currentIdx = deckSlidesData.findIndex((s) => s.id === activeDeckSlideId);
+    setPresentationSlideIndex(currentIdx >= 0 ? currentIdx : 0);
+    setIsDeckPresentationMode(true);
+    const docEl = document.documentElement;
+    const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+    if (requestFS && !document.fullscreenElement) {
+      requestFS.call(docEl).catch(() => {});
+    }
+    showToast('Started Deck Presentation Mode (Press Esc to exit)');
+  };
+
   useEffect(() => {
-    if (!isSheetsPresentationMode && !isSheetZenMode) return;
+    if (!isSheetsPresentationMode && !isSheetZenMode && !isDeckPresentationMode) return;
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         if (isSheetsPresentationMode) {
@@ -10376,14 +10390,28 @@ export default function App() {
             document.exitFullscreen().catch(() => {});
           }
         }
+        if (isDeckPresentationMode) {
+          setIsDeckPresentationMode(false);
+          if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          }
+        }
         if (isSheetZenMode) {
           setIsSheetZenMode(false);
+        }
+      } else if (isDeckPresentationMode) {
+        if (['ArrowRight', 'ArrowDown', 'Space', 'PageDown'].includes(e.key)) {
+          e.preventDefault();
+          setPresentationSlideIndex((prev) => Math.min((deckSlidesData?.length || 1) - 1, prev + 1));
+        } else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) {
+          e.preventDefault();
+          setPresentationSlideIndex((prev) => Math.max(0, prev - 1));
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSheetsPresentationMode, isSheetZenMode]);
+  }, [isSheetsPresentationMode, isSheetZenMode, isDeckPresentationMode, deckSlidesData?.length]);
 
   const [newTaskInput, setNewTaskInput] = useState('');
   const newTaskInputRef = useRef('');
@@ -41456,8 +41484,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
 
-        <main className={`flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-[#000000] ${isSheetsPresentationMode ? 'fixed inset-0 z-[9999] bg-white dark:bg-[#000000]' : ''}`}>
-          {!isSheetsPresentationMode && (
+        <main className={`flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-[#000000] ${isSheetsPresentationMode || isDeckPresentationMode ? 'fixed inset-0 z-[9999] bg-white dark:bg-[#000000]' : ''}`}>
+          {!isSheetsPresentationMode && !isDeckPresentationMode && (
             <div data-sheets-toolbar="true" className={`h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/70 dark:bg-[#111111] backdrop-blur-xl shrink-0 select-none group/header relative z-[350] transition-all duration-200 ${
               isSheetZenMode ? 'fixed top-0 left-0 right-0 z-[9000] opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto shadow-md border-b' : ''
             }`}>
@@ -46093,22 +46121,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               onPointerDown={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                setIsSheetsPresentationMode(true);
-                                const docEl = document.documentElement;
-                                const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-                                if (requestFS && !document.fullscreenElement) {
-                                  requestFS.call(docEl).catch(() => {});
-                                }
+                                handleStartDeckPresentation();
                               }}
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                setIsSheetsPresentationMode(true);
-                                const docEl = document.documentElement;
-                                const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-                                if (requestFS && !document.fullscreenElement) {
-                                  requestFS.call(docEl).catch(() => {});
-                                }
+                                handleStartDeckPresentation();
                               }}
                               aria-label="Enter presentation mode"
                               className={`px-2.5 py-1 rounded-full transition-all duration-150 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
@@ -62664,6 +62682,201 @@ if (productMode === 'deck' || productMode === 'sheets') {
         isOpen={isDevConsoleOpen}
         onClose={() => setIsDevConsoleOpen(false)}
       />
+
+      {/* ── Layer 7: Presentation Deck Fullscreen Mode Overlay ──────────────── */}
+      {isDeckPresentationMode && (
+        <div className="fixed inset-0 z-[999999] bg-zinc-950 text-white flex flex-col min-w-0 min-h-0 select-none animate-in fade-in duration-200">
+          {/* Top Header Bar */}
+          <div className="h-14 px-6 border-b border-zinc-800/80 bg-zinc-900/80 backdrop-blur-md flex items-center justify-between shrink-0 z-50">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-violet-400" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(45 12 12)" />
+                  <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                <span className="font-bold text-sm text-zinc-100 tracking-tight">{deckTitle || 'Product Roadmap 2025'}</span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-950/60 text-violet-300 border border-violet-800/50">
+                Presentation Deck
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="text-xs font-semibold text-zinc-400">
+                Slide <span className="text-zinc-100">{presentationSlideIndex + 1}</span> of {deckSlidesData?.length || 1}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDeckPresentationMode(false);
+                  if (document.fullscreenElement && document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                  }
+                }}
+                className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                title="Exit Presentation (Esc)"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Slide Canvas Container */}
+          <div className="flex-1 flex items-center justify-center p-6 md:p-10 relative overflow-hidden bg-zinc-950">
+            {/* Background Ambient Glow */}
+            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(124,77,255,0.12)_0%,transparent_70%)]" />
+
+            {/* Active Slide Display */}
+            {(() => {
+              const currentSlide = deckSlidesData?.[presentationSlideIndex] || deckSlidesData?.[0] || {
+                headline: 'Executive Deck Overview',
+                blurb: 'Strategic Initiatives and Product Roadmap for Q3/Q4',
+              };
+              return (
+                <div className="w-full aspect-[16/9] max-w-[1200px] max-h-[85vh] bg-zinc-900 border border-zinc-800/90 rounded-[28px] md:rounded-[36px] shadow-[0_32px_90px_-20px_rgba(0,0,0,0.8)] relative overflow-hidden flex flex-col justify-between p-10 md:p-16 text-white transition-all duration-300">
+                  {/* Decorative Background Curves */}
+                  <div className="absolute inset-0 pointer-events-none select-none opacity-40">
+                    <svg className="absolute bottom-0 right-0 w-[60%] h-[90%]" viewBox="0 0 900 650" fill="none">
+                      <path d="M 250 650 C 420 420, 630 230, 950 330" stroke="#8B5CF6" strokeWidth="3" opacity="0.6" fill="none" />
+                      <path d="M 180 650 C 350 400, 580 200, 950 280" stroke="#6366F1" strokeWidth="1.5" opacity="0.4" fill="none" />
+                    </svg>
+                  </div>
+
+                  {/* Slide Header */}
+                  <div className="flex items-center justify-between relative z-10">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-violet-500" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-violet-400">
+                        {currentSlide.section || `Section ${presentationSlideIndex + 1}`}
+                      </span>
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">
+                      {currentSlide.layoutStyle || 'Executive View'}
+                    </span>
+                  </div>
+
+                  {/* Slide Body / Content */}
+                  <div className="flex-1 flex flex-col justify-center max-w-[80%] py-6 relative z-10">
+                    <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
+                      {currentSlide.headline || currentSlide.title || 'Executive Strategy & Execution'}
+                    </h1>
+                    <p className="mt-4 text-base md:text-xl text-zinc-300 leading-relaxed font-normal">
+                      {currentSlide.blurb || 'Key deliverables, architecture milestones, and strategic roadmap overview for upcoming releases.'}
+                    </p>
+
+                    {/* Interactive Dropdown & Field Controls inside slide */}
+                    <div className="mt-8 flex flex-wrap items-center gap-4">
+                      <div className="flex items-center gap-2 bg-zinc-800/80 border border-zinc-700/80 px-3.5 py-2 rounded-xl text-xs font-semibold text-zinc-200 shadow-sm">
+                        <span className="text-zinc-400">Status:</span>
+                        <select
+                          className="bg-transparent text-violet-300 font-bold outline-none cursor-pointer"
+                          defaultValue="In Progress"
+                          onChange={(e) => showToast(`Status updated to: ${e.target.value}`)}
+                        >
+                          <option value="In Progress" className="bg-zinc-900 text-white">In Progress</option>
+                          <option value="Completed" className="bg-zinc-900 text-white">Completed</option>
+                          <option value="Review" className="bg-zinc-900 text-white">In Review</option>
+                          <option value="Planned" className="bg-zinc-900 text-white">Planned</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-2 bg-zinc-800/80 border border-zinc-700/80 px-3.5 py-2 rounded-xl text-xs font-semibold text-zinc-200 shadow-sm">
+                        <span className="text-zinc-400">Priority:</span>
+                        <select
+                          className="bg-transparent text-amber-300 font-bold outline-none cursor-pointer"
+                          defaultValue="High"
+                          onChange={(e) => showToast(`Priority set to: ${e.target.value}`)}
+                        >
+                          <option value="High" className="bg-zinc-900 text-white">High (P1)</option>
+                          <option value="Medium" className="bg-zinc-900 text-white">Medium (P2)</option>
+                          <option value="Low" className="bg-zinc-900 text-white">Low (P3)</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-2 bg-violet-950/40 border border-violet-800/50 px-3.5 py-2 rounded-xl text-xs font-semibold text-violet-300 shadow-sm">
+                        <Sparkles size={13} />
+                        <span>AI Score: 98% Optimal</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Slide Footer */}
+                  <div className="flex items-center justify-between border-t border-zinc-800/80 pt-4 relative z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-0.5 bg-violet-500 rounded-full" />
+                      <span className="text-xs font-medium text-zinc-400">
+                        {currentSlide.footer || 'Regaarder Executive Suite • Confidential'}
+                      </span>
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-500">
+                      {presentationSlideIndex + 1} / {deckSlidesData?.length || 1}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Bottom Floating Navigation Toolbar */}
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/70 rounded-2xl shadow-2xl">
+            <button
+              type="button"
+              disabled={presentationSlideIndex <= 0}
+              onClick={() => setPresentationSlideIndex((prev) => Math.max(0, prev - 1))}
+              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+              title="Previous Slide (Left Arrow)"
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            {/* Slide Index Counter & Thumbnails Picker */}
+            <div className="flex items-center gap-1.5 px-3">
+              {(deckSlidesData || []).map((slide, idx) => (
+                <button
+                  key={slide.id || idx}
+                  type="button"
+                  onClick={() => setPresentationSlideIndex(idx)}
+                  className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
+                    presentationSlideIndex === idx
+                      ? 'bg-violet-600 text-white shadow-md shadow-violet-950 ring-2 ring-violet-400/30'
+                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+                  }`}
+                  title={`Go to slide ${idx + 1}`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              disabled={presentationSlideIndex >= (deckSlidesData?.length || 1) - 1}
+              onClick={() => setPresentationSlideIndex((prev) => Math.min((deckSlidesData?.length || 1) - 1, prev + 1))}
+              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+              title="Next Slide (Right Arrow)"
+            >
+              <ChevronRight size={18} />
+            </button>
+
+            <div className="w-px h-5 bg-zinc-800 my-0.5" />
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsDeckPresentationMode(false);
+                if (document.fullscreenElement && document.exitFullscreen) {
+                  document.exitFullscreen().catch(() => {});
+                }
+              }}
+              className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-red-950/60 hover:text-red-300 text-zinc-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <X size={14} />
+              <span>Exit</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
