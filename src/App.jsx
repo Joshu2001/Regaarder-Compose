@@ -35,7 +35,7 @@ import HelpSupportPanel from './components/HelpSupportPanel';
 import TemplateChartVisualizer, { extractTemplateChartData } from './components/TemplateChartVisualizer';
 import CitationPopover from './components/CitationPopover';
 import ContextSourcePreviewModal from './components/ContextSourcePreviewModal';
-import TableDropdownPopover from './components/TableDropdownPopover';
+import TableDropdownPopover, { createDropdownHTML } from './components/TableDropdownPopover';
 import { registerDocumentEditorBinding } from './services/docsCommandApi';
 import { executeTool, undoTransaction, getExecutionLogs, getTransactionHistory } from './services/docsToolExecutor';
 import { CANONICAL_DOCS_TOOLS } from './services/docsToolRegistry';
@@ -1857,45 +1857,7 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
     setShowDropdownChoicesInput(false);
   };
 
-  const createDropdownHTML = (choices, initialValue = '') => {
-    const cleanChoices = choices.map(s => s.trim()).filter(Boolean);
-    if (cleanChoices.length === 0) return '';
-    const trimmedInitial = (initialValue || '').trim();
-    const matchedVal = cleanChoices.find(c => c.toLowerCase() === trimmedInitial.toLowerCase());
-    const selectedVal = matchedVal || cleanChoices[0];
 
-    const optionItems = cleanChoices.map(opt => `
-      <div onclick="
-        const menu = this.parentElement;
-        const btn = menu.previousElementSibling;
-        btn.querySelector('.selected-val').innerText = this.innerText;
-        menu.style.display = 'none';
-        btn.style.borderColor = '#e2e8f0';
-        btn.style.boxShadow = 'none';
-        const block = this.closest('.table-block');
-        if (block) {
-          block.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-        event.stopPropagation();
-      " onmouseover="this.style.background='#f5f3ff'; this.style.color='#7c3aed';" onmouseout="this.style.background='transparent'; this.style.color='#334155';" style="padding:6px 12px; font-size:11px; color:#334155; cursor:pointer; text-align:left; transition:background 0.15s, color 0.15s; font-weight: 500; font-family: inherit; border-radius: 4px;">${opt}</div>
-    `).join('');
-
-    return `<div class="custom-doc-dropdown relative" contenteditable="false" style="position:relative; display:inline-block; user-select:none; font-family:inherit; vertical-align:middle; line-height:normal;">
-  <button onclick="
-    const menu = this.nextElementSibling;
-    const isOpen = menu.style.display === 'block';
-    document.querySelectorAll('.custom-doc-dropdown-menu').forEach(m => { m.style.display = 'none'; });
-    menu.style.display = isOpen ? 'none' : 'block';
-    event.stopPropagation();
-  " onmouseover="this.style.borderColor='#7c3aed'; this.style.boxShadow='0 0 0 2px rgba(124,58,237,0.1)'" onmouseout="const menu = this.nextElementSibling; if(menu && menu.style.display !== 'block'){ this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'; }" style="appearance:none; -webkit-appearance:none; display:flex; align-items:center; justify-content:space-between; background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:5px 12px; font-size:11px; font-weight:500; color:#334155; outline:none; cursor:pointer; min-width:120px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); transition:all 0.2s;">
-    <span class="selected-val" style="margin-right:8px; display:inline-block; text-align:left; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${selectedVal}</span>
-    <svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24' style="flex-shrink:0; margin-left:auto;"><polyline points='6 9 12 15 18 9'></polyline></svg>
-  </button>
-  <div class="custom-doc-dropdown-menu" style="display:none; position:absolute; left:0; top:100%; margin-top:4px; background:#ffffff; border:1px solid #e6e3fb; border-radius:8px; box-shadow:0 10px 25px -5px rgba(76,29,149,0.08), 0 8px 16px -6px rgba(76,29,149,0.06); z-index:100005; min-width:130px; padding:4px; max-height:200px; overflow-y:auto; scrollbar-width:thin;">
-    ${optionItems}
-  </div>
-</div>`;
-  };
 
   const resetCellToInput = (e) => {
     e.preventDefault();
@@ -3383,19 +3345,19 @@ const AI_WORKFLOW_LIBRARY = [
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Phase 1: Discovery & Audit</td>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Gap analysis, policy baseline draft</td>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Month 1</td>
-                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #d97706; font-weight: 600;">In Progress</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Critical</td>
               </tr>
               <tr>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Phase 2: Remediation & Controls</td>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Infrastructure logging, access controls</td>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Month 2</td>
-                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #64748b; font-weight: 600;">Upcoming</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">High</td>
               </tr>
               <tr>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px; font-weight: 600;">Phase 3: Formal Audit & Certification</td>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Third-party audit review & final report</td>
                 <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">Month 3</td>
-                <td style="border: 1px solid #e2e8f0; padding: 8px 12px; color: #64748b; font-weight: 600;">Upcoming</td>
+                <td style="border: 1px solid #e2e8f0; padding: 8px 12px;">High</td>
               </tr>
             </tbody>
           </table>
@@ -6865,7 +6827,14 @@ export default function App() {
       if (inTable && cell) {
         setFocusedTableCell(cell);
         setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
-      } else if (!e.target.closest?.('#block-hover-menu')) {
+      } else if (
+        !e.target.closest?.('#block-hover-menu') &&
+        !e.target.closest?.('.table-dropdown-popover') &&
+        !e.target.closest?.('.table-dropdown-btn') &&
+        !e.target.closest?.('.table-dropdown-modal-container') &&
+        !e.target.closest?.('#top-toolbar') &&
+        !e.target.closest?.('.compose-cell-strip-portal')
+      ) {
         setFocusedTableCell(null);
       }
     };
@@ -7242,6 +7211,10 @@ export default function App() {
 
   /** Semantic badge color map keyed by lowercase text values. */
   const BADGE_COLOR_MAP = {
+    'critical':     { bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+    'high':         { bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' },
+    'medium':       { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+    'low':          { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
     'in progress':  { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
     'upcoming':     { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
     'done':         { bg: '#dcfce7', color: '#166534', border: '#86efac' },
@@ -7282,29 +7255,45 @@ export default function App() {
    * Stamps / clears `data-cell-col-type` on every td in a column so CSS and
    * click delegation can identify dropdown cells without reading the table attr.
    */
-  const refreshColCellAttributes = (tableEl, colIndex, type) => {
+  const refreshColCellAttributes = (tableEl, colIndex, type, options = []) => {
     if (!tableEl) return;
     for (const row of tableEl.rows) {
-      const cell = row.cells[colIndex];
-      if (!cell) continue;
+      if (row.parentElement && row.parentElement.tagName.toLowerCase() === 'thead') continue;
+      if (row.querySelector('th') && !row.querySelector('td')) continue;
+      const cell = row.children[colIndex];
+      if (!cell || cell.tagName.toLowerCase() !== 'td') continue;
       if (type && type !== 'text') {
         cell.setAttribute('data-cell-col-type', type);
+        const text = (cell.textContent || '').trim() || (options.length ? options[0] : 'Critical');
+        applyBadgeToCell(cell, text);
       } else {
         cell.removeAttribute('data-cell-col-type');
+        const badge = cell.querySelector('.compose-cell-badge');
+        if (badge) cell.innerHTML = badge.textContent;
       }
     }
   };
 
   /**
-   * Writes a value into a cell wrapped in a styled badge span.
-   * Auto-selects a semantic palette from BADGE_COLOR_MAP; falls back to slate.
+   * Writes a value into a cell wrapped in an interactive dropdown pill element.
    */
-  const applyBadgeToCell = (cell, value) => {
+  const applyBadgeToCell = (cell, value, options = null) => {
     if (!cell || !value) return;
-    const key = value.toLowerCase().trim();
-    const p = BADGE_COLOR_MAP[key] || { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' };
-    cell.innerHTML = `<span class="compose-cell-badge" style="background:${p.bg};color:${p.color};border:1px solid ${p.border};display:inline-flex;align-items:center;padding:2px 10px;border-radius:5px;font-size:11px;font-weight:600;letter-spacing:0.02em;white-space:nowrap;line-height:1.6">${value}</span>`;
+    const valText = value.trim();
+    const optList = options && options.length ? options : ['Critical', 'High', 'Medium', 'Low', 'In Progress', 'Done', 'Upcoming', 'Blocked'];
+    if (!optList.some(o => o.toLowerCase() === valText.toLowerCase())) {
+      optList.unshift(valText);
+    }
+    cell.setAttribute('data-cell-col-type', 'dropdown');
+    cell.contentEditable = 'false';
+    cell.innerHTML = createDropdownHTML(optList, valText);
     syncEditorHtml();
+  };
+
+  /** Auto-hydrates document tables to convert status/priority columns and badge cells into dropdown pills */
+  const autoHydrateTableDropdowns = (container) => {
+    // Disabled auto-hydration: table cells remain normal editable text by default
+    return;
   };
 
   /** Remove dropdown config from an entire column and restore plain text cells. */
@@ -7362,22 +7351,26 @@ export default function App() {
       scheduleClear();
     };
 
-    /** Intercept clicks on cells configured as dropdown columns. */
+    /** Intercept clicks on cells configured as dropdown columns or dropdown badges. */
     const onCellClick = (e) => {
-      const cell = e.target.closest('td[data-cell-col-type="dropdown"]');
+      const cell = e.target.closest('td[data-cell-col-type="dropdown"]') || (e.target.closest('.compose-cell-badge') ? e.target.closest('td') : null);
       if (!cell || !blankBodyRef.current?.contains(cell)) return;
       const table = cell.closest('table');
       if (!table) return;
       const colIndex = cell.cellIndex;
-      const config = getColConfig(table, colIndex);
-      if (!config.options?.length) return;
+      let config = getColConfig(table, colIndex);
+      let options = config.options;
+      if (!options || !options.length) {
+        options = ['Critical', 'High', 'Medium', 'Low', 'In Progress', 'Done', 'Upcoming'];
+      }
       const rect = cell.getBoundingClientRect();
-      setComposeCellDropdownPicker({ cellEl: cell, tableEl: table, colIndex, options: config.options, rect });
+      setComposeCellDropdownPicker({ cellEl: cell, tableEl: table, colIndex, options, rect });
       e.stopPropagation();
     };
 
     const editorEl = blankBodyRef.current;
     if (editorEl) {
+      autoHydrateTableDropdowns(editorEl);
       editorEl.addEventListener('mouseover', onMouseOver);
       editorEl.addEventListener('mouseout',  onMouseOut);
       editorEl.addEventListener('click',     onCellClick);
@@ -23756,7 +23749,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (!e.target.closest('.table-color-picker-container')) {
         setTableColorPickerOpen(false);
       }
-      if (!e.target.closest('.table-dropdown-modal-container')) {
+      if (!e.target.closest('.table-dropdown-modal-container') && !e.target.closest('.table-dropdown-popover') && !e.target.closest('.table-dropdown-btn')) {
         setTableDropdownMenuOpen(false);
       }
       if (!e.target.closest('.compose-cell-strip-portal') && !e.target.closest('td')) {
@@ -51797,9 +51790,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 >
                   <span
                     style={{ background: p.bg, color: p.color, border: `1px solid ${p.border}` }}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-[5px] text-[11px] font-semibold whitespace-nowrap tracking-wide"
+                    className="inline-flex items-center justify-between gap-1.5 px-2.5 py-0.5 rounded-[5px] text-[11px] font-semibold whitespace-nowrap tracking-wide"
                   >
-                    {opt}
+                    <span>{opt}</span>
+                    <ChevronDown size={12} className="opacity-60 shrink-0" />
                   </span>
                 </button>
               );

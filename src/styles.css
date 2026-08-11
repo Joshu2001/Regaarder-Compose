@@ -1002,6 +1002,38 @@ input[type="range"] {
   background: rgba(51, 65, 85, 0.8);
 }
 
+.compose-cell-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  white-space: nowrap !important;
+  line-height: 1.4 !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: all 0.15s ease !important;
+}
+
+.compose-cell-badge:hover {
+  filter: brightness(0.96);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.compose-cell-badge svg {
+  flex-shrink: 0 !important;
+  opacity: 0.65 !important;
+  transition: opacity 0.15s ease !important;
+}
+
+.compose-cell-badge:hover svg {
+  opacity: 0.9 !important;
+}
+
 .app-dark .slash-menu-container::-webkit-scrollbar-thumb {
   background: rgba(161, 161, 170, 0.2);
 }
