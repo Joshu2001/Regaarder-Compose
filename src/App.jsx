@@ -30665,33 +30665,32 @@ Respond with a JSON array of slide objects matching the schema.`;
     if (!activeDeckSlide) {
       return {
         preset: fallback,
-        headline: 'The future of work is human + AI.',
-        blurb: 'An adaptive workspace that thinks with you, so you can create without limits.',
-        visualType: 'hero statement',
-        layoutStyle: 'cinematic split',
-        motionCue: 'Soft fade and stagger reveal',
+        headline: '',
+        blurb: '',
+        visualType: '',
+        layoutStyle: 'Title Slide',
+        motionCue: '',
         keyMetric: '',
         speakerNotes: '',
-        section: 'Opening',
-        footer: 'May 15, 2026',
+        section: '',
+        footer: '',
       };
     }
-    const presetKey = activeDeckSlide.designPresetKey || activeDeckSlide.presetKey;
+    const presetKey = activeDeckSlide.designPresetKey || activeDeckSlide.presetKey || 'blank';
     const preset = DECK_DESIGN_PRESETS.find((item) => item.key === presetKey)
-      || DECK_DESIGN_PRESETS[(Math.max(0, activeDeckSlide.id - 1)) % DECK_DESIGN_PRESETS.length]
       || fallback;
 
     return {
       preset,
-      headline: activeDeckSlide.headline || `${activeDeckSlide.title || 'Original concept'} that earns attention`,
-      blurb: activeDeckSlide.blurb || `${activeDeckSlide.subtitle || 'Built for modern teams'} and crafted to be edited live.`,
-      visualType: activeDeckSlide.visualType || 'hero statement',
-      layoutStyle: activeDeckSlide.layoutStyle || 'cinematic split',
-      motionCue: activeDeckSlide.motionCue || 'Soft fade and stagger reveal',
+      headline: activeDeckSlide.headline || '',
+      blurb: activeDeckSlide.blurb || '',
+      visualType: activeDeckSlide.visualType || '',
+      layoutStyle: activeDeckSlide.layoutStyle || 'Title Slide',
+      motionCue: activeDeckSlide.motionCue || '',
       keyMetric: activeDeckSlide.keyMetric || '',
       speakerNotes: activeDeckSlide.speakerNotes || '',
-      section: activeDeckSlide.section || inferDeckStorySection(activeDeckSlide, Math.max(0, activeDeckSlide.id - 1), Math.max(1, deckSlides.length)),
-      footer: activeDeckSlide.footer || 'Original design 繚 Editable',
+      section: activeDeckSlide.section || '',
+      footer: activeDeckSlide.footer || '',
     };
   }, [activeDeckSlide, deckSlides.length]);
 
@@ -31023,70 +31022,26 @@ Respond with a JSON array of slide objects matching the schema.`;
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
     const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
     
-    const slideArchetypes = [
-      {
-        title: 'Agenda',
-        headline: 'Agenda & Key Objectives',
-        blurb: '• Product Vision & Core Pillars\n• Market Opportunity & Competitive Moat\n• Strategic Execution Roadmap\n• Financial Projections & Metrics\n• Next Steps & Discussion',
-        subtitle: 'Presentation outline',
-        designPresetKey: 'aurora-split',
-        accent: 'from-indigo-500 to-violet-500',
-      },
-      {
-        title: 'Market Opportunity',
-        headline: 'Market Opportunity',
-        blurb: 'Addressing a $120B total addressable market with 45% YoY expansion across enterprise workspace intelligence.',
-        subtitle: 'Growth & TAM projection',
-        designPresetKey: 'mint-depth',
-        accent: 'from-emerald-500 to-teal-500',
-      },
-      {
-        title: 'Our Strategy',
-        headline: 'Our Core Strategy',
-        blurb: 'Focus on Apple-tier executive UI design, integrate proactive AI agent architecture, and scale global team collaboration.',
-        subtitle: 'Strategic pillars',
-        designPresetKey: 'sunset-grid',
-        accent: 'from-amber-500 to-orange-500',
-      },
-      {
-        title: 'Roadmap Timeline',
-        headline: 'Roadmap Timeline',
-        blurb: 'Q1: Core Platform & Engine → Q2: Beta Rollout → Q3: Global Expansion → Q4: Ecosystem Scale',
-        subtitle: 'Execution milestones',
-        designPresetKey: 'aurora-split',
-        accent: 'from-sky-500 to-indigo-500',
-      },
-      {
-        title: 'Thank You',
-        headline: 'Thank You',
-        blurb: 'Building the future together. Open for questions & discussion.',
-        subtitle: 'Closing remarks',
-        designPresetKey: 'blank',
-        accent: 'from-violet-600 to-indigo-700',
-      }
-    ];
-
-    const archetype = slideArchetypes[(nextId - 2) % slideArchetypes.length] || slideArchetypes[0];
-
     const newSlide = {
       id: nextId,
-      title: archetype.title,
-      subtitle: archetype.subtitle,
-      accent: archetype.accent,
-      designPresetKey: archetype.designPresetKey,
-      headline: archetype.headline,
-      blurb: archetype.blurb,
-      visualType: 'hero statement',
-      layoutStyle: 'cinematic split',
-      motionCue: 'Soft fade and stagger reveal',
+      title: `Slide ${nextId}`,
+      subtitle: '',
+      accent: '',
+      designPresetKey: 'blank',
+      presetKey: 'blank',
+      headline: '',
+      blurb: '',
+      visualType: '',
+      layoutStyle: 'Title Slide',
+      motionCue: '',
       keyMetric: '',
       speakerNotes: '',
-      section: inferDeckStorySection({ title: archetype.title }, nextId - 1, Math.max(deckSlides.length + 1, 1)),
-      footer: 'Original design • Editable',
+      section: 'Opening',
+      footer: '',
     };
     setDeckSlidesData((prev) => [...prev, newSlide]);
     setActiveDeckSlideId(nextId);
-    showToast(`Slide ${nextId} (${newSlide.title}) created`);
+    showToast(`Slide ${nextId} created`);
   };
   const addWorksheet = () => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
