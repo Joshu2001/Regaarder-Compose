@@ -10,14 +10,20 @@ import {
   Search,
   ExternalLink,
   Sparkles,
-  FileText,
-  Table,
-  Bookmark
+  Star,
+  Plus
 } from 'lucide-react';
+import {
+  AgentsIcon,
+  MemoryIcon,
+  ComposeIcon,
+  SheetIcon,
+  WhiteboardIcon
+} from '../RegaarderProductIcons';
 
 /**
- * BrowserToolbar: Regaarder Executive Navigation Toolbar
- * Contains back, forward, reload, URL/Search field, security badge, and AI integration capability triggers.
+ * BrowserToolbar: Regaarder Research Executive Navigation Toolbar
+ * Incorporates URL bar action chips, non-red loading controls, knowledge ingestion triggers, and AI side panel toggle.
  */
 export const BrowserToolbar = ({
   currentUrl = '',
@@ -25,6 +31,7 @@ export const BrowserToolbar = ({
   canGoBack = false,
   canGoForward = false,
   isSecure = true,
+  isSidePanelOpen = false,
   onNavigate,
   onGoBack,
   onGoForward,
@@ -32,14 +39,20 @@ export const BrowserToolbar = ({
   onStop,
   onHome,
   onOpenExternal,
-  onExtractAIContent
+  onToggleSidePanel,
+  onSummarizeChip,
+  onSaveMemoryChip,
+  onSendComposeChip,
+  onSendSheetsChip,
+  onSendWhiteboardChip,
+  onBookmarkPage
 }) => {
   const [inputValue, setInputValue] = useState(currentUrl);
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (!isEditing) {
-      setInputValue(currentUrl);
+      setInputValue(currentUrl === 'regaarder://research' ? '' : currentUrl);
     }
   }, [currentUrl, isEditing]);
 
@@ -63,8 +76,10 @@ export const BrowserToolbar = ({
     }
   };
 
+  const isResearchHome = currentUrl === 'regaarder://research';
+
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-[#18181b]/90 border-b border-slate-200/80 dark:border-zinc-800/80 shrink-0 shadow-2xs font-sans">
+    <div className="flex items-center gap-2 px-3 py-2 bg-white/95 dark:bg-[#18181b]/95 border-b border-slate-200/80 dark:border-zinc-800/80 shrink-0 shadow-2xs font-sans select-none">
       {/* Back / Forward / Reload Controls */}
       <div className="flex items-center gap-1">
         <button
@@ -87,6 +102,7 @@ export const BrowserToolbar = ({
           <ChevronRight className="w-4 h-4" />
         </button>
 
+        {/* Reload / Stop Loading (NEVER RED per UX directive) */}
         <button
           type="button"
           onClick={isLoading ? onStop : onReload}
@@ -94,7 +110,7 @@ export const BrowserToolbar = ({
           title={isLoading ? 'Stop loading' : 'Reload page'}
         >
           {isLoading ? (
-            <X className="w-4 h-4 text-rose-500" />
+            <RotateCw className="w-4 h-4 animate-spin text-violet-500" />
           ) : (
             <RotateCw className="w-4 h-4" />
           )}
@@ -104,18 +120,20 @@ export const BrowserToolbar = ({
           type="button"
           onClick={onHome}
           className="p-1.5 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-          title="Go to Home"
+          title="Go to Research Home"
         >
           <Home className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Smart URL / Search Bar Container */}
-      <form onSubmit={handleSubmit} className="flex-1 min-w-[200px] flex items-center">
+      {/* Smart URL / Search Bar Container with Action Chips */}
+      <form onSubmit={handleSubmit} className="flex-1 min-w-[240px] flex items-center">
         <div className="group flex items-center gap-2 px-3 py-1.5 w-full rounded-xl bg-slate-100/90 dark:bg-zinc-800/90 border border-slate-200 dark:border-zinc-700/60 focus-within:border-violet-500/80 focus-within:ring-2 focus-within:ring-violet-500/20 transition-all">
           {/* Security / Search Icon */}
           <div className="shrink-0 flex items-center text-slate-400 dark:text-zinc-400">
-            {isSecure ? (
+            {isResearchHome ? (
+              <AgentsIcon size={14} className="text-violet-500" />
+            ) : isSecure ? (
               <Lock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" title="Secure connection (HTTPS)" />
             ) : (
               <ShieldAlert className="w-3.5 h-3.5 text-amber-500" title="Insecure connection (HTTP)" />
@@ -129,11 +147,46 @@ export const BrowserToolbar = ({
             onChange={(e) => setInputValue(e.target.value)}
             onFocus={() => setIsEditing(true)}
             onBlur={() => setIsEditing(false)}
-            placeholder="Search web or enter URL (https://...)"
+            placeholder="Search web, ask AI, or enter URL..."
             className="w-full bg-transparent text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-hidden font-mono tracking-tight"
           />
 
-          {/* Clear / Search Action */}
+          {/* URL Bar Knowledge Action Chips (Summarize, Save, Compose) */}
+          {!isResearchHome && (
+            <div className="hidden md:flex items-center gap-1 shrink-0 pl-1 border-l border-slate-200 dark:border-zinc-700">
+              <button
+                type="button"
+                onClick={onSummarizeChip}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-300 transition-colors border border-violet-500/20 cursor-pointer"
+                title="Summarize page with AI"
+              >
+                <Sparkles className="w-3 h-3 text-violet-500" />
+                <span>Summarize</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onSaveMemoryChip}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-300 transition-colors border border-sky-500/20 cursor-pointer"
+                title="Save page into Regaarder Memory"
+              >
+                <MemoryIcon size={12} className="text-sky-500" />
+                <span>Save to Memory</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onSendComposeChip}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 transition-colors border border-emerald-500/20 cursor-pointer"
+                title="Send page text to Compose document"
+              >
+                <ComposeIcon size={12} className="text-emerald-500" />
+                <span>Send to Compose</span>
+              </button>
+            </div>
+          )}
+
+          {/* Clear Button */}
           {inputValue && (
             <button
               type="button"
@@ -146,7 +199,7 @@ export const BrowserToolbar = ({
         </div>
       </form>
 
-      {/* Open External Action */}
+      {/* External Browser Action */}
       <button
         type="button"
         onClick={onOpenExternal}
@@ -156,18 +209,50 @@ export const BrowserToolbar = ({
         <ExternalLink className="w-4 h-4" />
       </button>
 
-      {/* Reserved Future Regaarder AI Capability Actions */}
       <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-1 shrink-0" />
 
+      {/* Top Right Knowledge Ingestion Action Bar */}
       <div className="flex items-center gap-1 shrink-0">
         <button
           type="button"
-          onClick={() => onExtractAIContent && onExtractAIContent('summarize')}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 hover:bg-violet-500/20 dark:hover:bg-violet-500/30 transition-all border border-violet-500/20 cursor-pointer"
-          title="Extract & summarize page content with Regaarder AI"
+          onClick={onBookmarkPage}
+          className="p-1.5 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-amber-500 transition-colors cursor-pointer"
+          title="Save Page Bookmark"
         >
-          <Sparkles className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
-          <span className="hidden sm:inline">AI Summarize</span>
+          <Star className="w-4 h-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={onSendSheetsChip}
+          className="p-1.5 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-emerald-500 transition-colors cursor-pointer"
+          title="Send table to Sheets"
+        >
+          <SheetIcon size={16} />
+        </button>
+
+        <button
+          type="button"
+          onClick={onSendWhiteboardChip}
+          className="p-1.5 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-amber-500 transition-colors cursor-pointer"
+          title="Send visual clip to Whiteboard"
+        >
+          <WhiteboardIcon size={16} />
+        </button>
+
+        {/* AI Research Assistant Toggle Button (Official Regaarder Agent Symbol) */}
+        <button
+          type="button"
+          onClick={onToggleSidePanel}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border cursor-pointer ${
+            isSidePanelOpen
+              ? 'bg-violet-600 text-white border-violet-500 shadow-md ring-2 ring-violet-500/30'
+              : 'bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 hover:bg-violet-500/20 dark:hover:bg-violet-500/30 border-violet-500/30'
+          }`}
+          title="Toggle Regaarder Research Assistant Side Panel"
+        >
+          <AgentsIcon size={15} className={isSidePanelOpen ? 'text-white' : 'text-violet-500'} />
+          <span className="hidden sm:inline">Research AI</span>
         </button>
       </div>
     </div>

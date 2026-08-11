@@ -1,11 +1,13 @@
 import React from 'react';
-import { Plus, X, RotateCw, Globe } from 'lucide-react';
+import { Plus, X, RotateCw, Globe, FileText, BarChart, Search } from 'lucide-react';
+import { AgentsIcon } from '../RegaarderProductIcons';
 
 /**
  * BrowserTabBar: Executive Apple-tier Browser Tab Bar
  * Rules Enforced:
- * - Tabs are slightly rounded rectangles (rounded-lg / rounded-md), NEVER pill-shaped or elliptical.
- * - Active tab uses "outline" styling rather than generic highlights.
+ * - Tabs are slightly rounded rectangles (rounded-md), NEVER pill-shaped or elliptical.
+ * - Active tab uses "outline" visual state.
+ * - Dynamic domain / favicon badges.
  */
 export const BrowserTabBar = ({
   tabs = [],
@@ -14,6 +16,52 @@ export const BrowserTabBar = ({
   onCloseTab,
   onNewTab
 }) => {
+  const getTabIcon = (tab) => {
+    if (tab.isLoading) {
+      return <RotateCw className="w-3.5 h-3.5 animate-spin text-violet-500" />;
+    }
+
+    if (tab.url === 'regaarder://research' || tab.title === 'Regaarder Research') {
+      return <AgentsIcon size={14} className="text-violet-500" />;
+    }
+
+    if (tab.favicon) {
+      return (
+        <img
+          src={tab.favicon}
+          alt=""
+          className="w-3.5 h-3.5 object-contain"
+          onError={(e) => {
+            e.target.style.display = 'none';
+          }}
+        />
+      );
+    }
+
+    const titleLower = (tab.title || '').toLowerCase();
+    const urlLower = (tab.url || '').toLowerCase();
+
+    if (titleLower.includes('sheet') || titleLower.includes('data') || titleLower.includes('matrix')) {
+      return <BarChart className="w-3.5 h-3.5 text-emerald-500" />;
+    }
+
+    if (titleLower.includes('research') || titleLower.includes('doc') || titleLower.includes('wiki')) {
+      return <FileText className="w-3.5 h-3.5 text-sky-500" />;
+    }
+
+    if (urlLower.includes('google') || urlLower.includes('duckduckgo') || titleLower.includes('search')) {
+      return <Globe className="w-3.5 h-3.5 text-indigo-500" />;
+    }
+
+    return <Globe className="w-3.5 h-3.5 opacity-70" />;
+  };
+
+  const getDisplayTitle = (tab) => {
+    if (tab.url === 'regaarder://research') return 'Regaarder Research';
+    if (!tab.title || tab.title === 'New Tab') return 'Research Home';
+    return tab.title;
+  };
+
   return (
     <div className="flex items-center gap-1.5 px-3 pt-2 pb-1 bg-slate-100/90 dark:bg-[#18181b]/90 border-b border-slate-200/80 dark:border-zinc-800/80 select-none overflow-x-auto no-scrollbar shrink-0">
       <div className="flex items-center gap-1 min-w-0 flex-1 overflow-x-auto no-scrollbar">
@@ -24,7 +72,6 @@ export const BrowserTabBar = ({
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
               onPointerDown={(e) => {
-                // Prevent focus blur disruption across pointer/touch
                 if (e.target.closest('button')) return;
                 onSelectTab(tab.id);
               }}
@@ -34,32 +81,19 @@ export const BrowserTabBar = ({
                   : 'bg-slate-200/50 dark:bg-zinc-800/50 text-slate-600 dark:text-zinc-400 border-transparent hover:bg-slate-200/80 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-200'
               }`}
             >
-              {/* Active Tab Outline Visual Indicator Bar */}
+              {/* Active Tab Outline Bar */}
               {isActive && (
                 <div className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-violet-600 dark:bg-violet-400" />
               )}
 
-              {/* Favicon / Icon */}
+              {/* Favicon / Smart Domain Badge */}
               <div className="w-4 h-4 flex items-center justify-center shrink-0">
-                {tab.isLoading ? (
-                  <RotateCw className="w-3.5 h-3.5 animate-spin text-violet-500" />
-                ) : tab.favicon ? (
-                  <img
-                    src={tab.favicon}
-                    alt=""
-                    className="w-3.5 h-3.5 object-contain"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <Globe className="w-3.5 h-3.5 opacity-70" />
-                )}
+                {getTabIcon(tab)}
               </div>
 
               {/* Tab Title */}
               <span className="truncate flex-1 text-[12px] leading-tight font-medium">
-                {tab.title || 'New Tab'}
+                {getDisplayTitle(tab)}
               </span>
 
               {/* Close Tab Button */}
@@ -92,7 +126,7 @@ export const BrowserTabBar = ({
         onClick={onNewTab}
         onPointerDown={(e) => e.preventDefault()}
         className="flex items-center justify-center w-7 h-7 rounded-md text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors shrink-0 cursor-pointer"
-        title="Open new tab"
+        title="Open new research tab"
       >
         <Plus className="w-4 h-4" />
       </button>

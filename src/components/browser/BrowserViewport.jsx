@@ -1,21 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Globe, AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react';
+import BrowserResearchHome from './BrowserResearchHome';
 
 /**
  * BrowserViewport: Container mounting point for Electron WebContentsView Chromium Surface.
- * Automatically synchronizes DOM container bounds with Electron main process via IPC.
- * Also provides graceful iframe fallback if run in pure browser environment outside Electron shell.
+ * Renders executive BrowserResearchHome canvas when on regaarder://research,
+ * and synchronizes DOM container bounds with Electron main process via IPC.
  */
 export const BrowserViewport = ({
   activeTab = null,
   isElectron = false,
+  isSidePanelOpen = false,
   onNavigate
 }) => {
   const containerRef = useRef(null);
   const [iframeError, setIframeError] = useState(false);
 
+  const isResearchHome = activeTab?.url === 'regaarder://research';
+
   useEffect(() => {
-    if (!isElectron) return;
+    if (!isElectron || !window.electronAPI) return;
 
     const updateBounds = () => {
       if (!containerRef.current || !window.electronAPI) return;
@@ -28,15 +32,17 @@ export const BrowserViewport = ({
       });
     };
 
-    // Make browser view visible
-    if (window.electronAPI) {
+    if (isResearchHome) {
+      window.electronAPI.setBrowserVisibility(false);
+    } else {
       window.electronAPI.setBrowserVisibility(true);
       updateBounds();
     }
 
-    // ResizeObserver to track layout changes smoothly
     const resizeObserver = new ResizeObserver(() => {
-      updateBounds();
+      if (!isResearchHome) {
+        updateBounds();
+      }
     });
 
     if (containerRef.current) {
@@ -48,16 +54,22 @@ export const BrowserViewport = ({
     return () => {
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateBounds);
-      if (window.electronAPI) {
-        window.electronAPI.setBrowserVisibility(false);
-      }
     };
-  }, [isElectron, activeTab?.id]);
+  }, [isElectron, activeTab?.id, isResearchHome, isSidePanelOpen]);
 
   // Reset iframe error when URL changes in web fallback
   useEffect(() => {
     setIframeError(false);
   }, [activeTab?.url]);
+
+  if (isResearchHome) {
+    return (
+      <BrowserResearchHome
+        onSearch={onNavigate}
+        onNavigate={onNavigate}
+      />
+    );
+  }
 
   return (
     <div

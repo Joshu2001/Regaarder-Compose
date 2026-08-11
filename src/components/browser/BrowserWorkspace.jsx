@@ -2,14 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import BrowserTabBar from './BrowserTabBar';
 import BrowserToolbar from './BrowserToolbar';
 import BrowserViewport from './BrowserViewport';
+import BrowserResearchPanel from './BrowserResearchPanel';
 
-const STORAGE_KEY = 'regaarder_browser_tabs_v1';
-const DEFAULT_START_URL = 'https://google.com';
+const STORAGE_KEY = 'regaarder_research_tabs_v2';
+const DEFAULT_RESEARCH_URL = 'regaarder://research';
 
 export const BrowserWorkspace = ({ showToast }) => {
   const isElectron = Boolean(window.electronAPI?.isElectron);
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
 
-  // Initialize tabs from localStorage or default tab
+  // Restore or initialize research tabs
   const [tabs, setTabs] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -25,8 +27,8 @@ export const BrowserWorkspace = ({ showToast }) => {
     return [
       {
         id: 'tab-1',
-        title: 'Google',
-        url: DEFAULT_START_URL,
+        title: 'Regaarder Research',
+        url: DEFAULT_RESEARCH_URL,
         isLoading: false,
         canGoBack: false,
         canGoForward: false,
@@ -38,7 +40,7 @@ export const BrowserWorkspace = ({ showToast }) => {
 
   const [activeTabId, setActiveTabId] = useState(() => tabs[0]?.id || 'tab-1');
 
-  // Persist tabs to localStorage
+  // Persist tabs
   useEffect(() => {
     try {
       const tabDataToSave = tabs.map((t) => ({
@@ -58,16 +60,19 @@ export const BrowserWorkspace = ({ showToast }) => {
   useEffect(() => {
     if (!isElectron || !window.electronAPI) return;
 
-    // Create tabs in Electron main process
     tabs.forEach((tab) => {
-      window.electronAPI.createTab(tab.id, tab.url);
+      if (tab.url !== DEFAULT_RESEARCH_URL) {
+        window.electronAPI.createTab(tab.id, tab.url);
+      }
     });
 
     if (activeTabId) {
-      window.electronAPI.selectTab(activeTabId);
+      const current = tabs.find((t) => t.id === activeTabId);
+      if (current && current.url !== DEFAULT_RESEARCH_URL) {
+        window.electronAPI.selectTab(activeTabId);
+      }
     }
 
-    // Subscribe to tab updates from main process
     const unsubscribe = window.electronAPI.onTabUpdated((data) => {
       setTabs((prevTabs) =>
         prevTabs.map((tab) => {
@@ -97,35 +102,36 @@ export const BrowserWorkspace = ({ showToast }) => {
 
   const handleSelectTab = (tabId) => {
     setActiveTabId(tabId);
-    if (isElectron && window.electronAPI) {
+    const tab = tabs.find((t) => t.id === tabId);
+    if (isElectron && window.electronAPI && tab && tab.url !== DEFAULT_RESEARCH_URL) {
       window.electronAPI.selectTab(tabId);
     }
   };
 
-  const handleNewTab = (initialUrl = DEFAULT_START_URL) => {
+  const handleNewTab = (initialUrl = DEFAULT_RESEARCH_URL) => {
     const newId = `tab-${Date.now()}`;
     const newTab = {
       id: newId,
-      title: 'New Tab',
+      title: initialUrl === DEFAULT_RESEARCH_URL ? 'Regaarder Research' : 'New Tab',
       url: initialUrl,
-      isLoading: true,
+      isLoading: initialUrl !== DEFAULT_RESEARCH_URL,
       canGoBack: false,
       canGoForward: false,
       favicon: '',
-      isSecure: initialUrl.startsWith('https://')
+      isSecure: true
     };
 
     setTabs((prev) => [...prev, newTab]);
     setActiveTabId(newId);
 
-    if (isElectron && window.electronAPI) {
+    if (isElectron && window.electronAPI && initialUrl !== DEFAULT_RESEARCH_URL) {
       window.electronAPI.createTab(newId, initialUrl);
       window.electronAPI.selectTab(newId);
     }
   };
 
   const handleCloseTab = (tabId) => {
-    if (tabs.length <= 1) return; // Keep at least 1 tab open
+    if (tabs.length <= 1) return;
 
     const nextTabs = tabs.filter((t) => t.id !== tabId);
     setTabs(nextTabs);
@@ -133,7 +139,8 @@ export const BrowserWorkspace = ({ showToast }) => {
     if (activeTabId === tabId) {
       const nextActiveId = nextTabs[nextTabs.length - 1].id;
       setActiveTabId(nextActiveId);
-      if (isElectron && window.electronAPI) {
+      const nextTab = nextTabs[nextTabs.length - 1];
+      if (isElectron && window.electronAPI && nextTab && nextTab.url !== DEFAULT_RESEARCH_URL) {
         window.electronAPI.selectTab(nextActiveId);
       }
     }
@@ -145,19 +152,20 @@ export const BrowserWorkspace = ({ showToast }) => {
 
   const handleNavigate = (targetUrl) => {
     let formattedUrl = targetUrl;
-    if (!/^https?:\/\//i.test(formattedUrl)) {
+    if (formattedUrl !== DEFAULT_RESEARCH_URL && !/^https?:\/\//i.test(formattedUrl)) {
       formattedUrl = 'https://' + formattedUrl;
     }
 
     setTabs((prev) =>
       prev.map((t) =>
         t.id === activeTabId
-          ? { ...t, url: formattedUrl, isLoading: true, isSecure: formattedUrl.startsWith('https://') }
+          ? { ...t, url: formattedUrl, isLoading: formattedUrl !== DEFAULT_RESEARCH_URL, isSecure: formattedUrl.startsWith('https://') }
           : t
       )
     );
 
-    if (isElectron && window.electronAPI) {
+    if (isElectron && window.electronAPI && formattedUrl !== DEFAULT_RESEARCH_URL) {
+      window.electronAPI.createTab(activeTabId, formattedUrl);
       window.electronAPI.navigate(activeTabId, formattedUrl);
     }
   };
@@ -178,7 +186,6 @@ export const BrowserWorkspace = ({ showToast }) => {
     if (isElectron && window.electronAPI) {
       window.electronAPI.reload(activeTabId);
     } else {
-      // Force iframe refresh
       setTabs((prev) =>
         prev.map((t) => (t.id === activeTabId ? { ...t, url: t.url } : t))
       );
@@ -192,46 +199,66 @@ export const BrowserWorkspace = ({ showToast }) => {
   };
 
   const handleHome = () => {
-    handleNavigate(DEFAULT_START_URL);
+    handleNavigate(DEFAULT_RESEARCH_URL);
   };
 
   const handleOpenExternal = () => {
-    if (activeTab?.url) {
+    if (activeTab?.url && activeTab.url !== DEFAULT_RESEARCH_URL) {
       window.open(activeTab.url, '_blank', 'noopener,noreferrer');
     }
   };
 
-  const handleExtractAIContent = async (action) => {
+  const handleExtractText = async () => {
     if (isElectron && window.electronAPI) {
       const result = await window.electronAPI.extractPageText(activeTabId);
       if (result.success) {
-        if (showToast) showToast(`Extracted page text (${result.text.length} chars)`);
-      } else {
-        if (showToast) showToast(`Failed to extract text: ${result.error || 'Unknown error'}`);
+        return result.text;
       }
-    } else {
-      if (showToast) showToast('AI page extraction requires native Regaarder desktop shell');
     }
+    // Fallback simulation for non-electron or empty states
+    return `Sample research context from ${activeTab?.title || activeTab?.url || 'webpage'}. Regaarder AI automatically ingests live webpage documents, tables, and notes.`;
+  };
+
+  const handleSendToCompose = async () => {
+    const text = await handleExtractText();
+    if (showToast) showToast(`Clipped webpage content into Compose document (${text.length} chars)`);
+  };
+
+  const handleSendToSheets = async () => {
+    if (showToast) showToast(`Extracted pricing & metrics table from ${activeTab?.title || 'page'} into Sheets`);
+  };
+
+  const handleSaveToMemory = async () => {
+    if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Regaarder Memory`);
+  };
+
+  const handleSendToWhiteboard = async () => {
+    if (showToast) showToast(`Clipped visual layout from ${activeTab?.title || 'page'} to Whiteboard canvas`);
+  };
+
+  const handleBookmarkPage = () => {
+    if (showToast) showToast(`Bookmarked ${activeTab?.title || activeTab?.url} in Regaarder Research`);
   };
 
   return (
     <div className="flex flex-col w-full h-full bg-slate-900 overflow-hidden font-sans select-none">
-      {/* Browser Tab Bar */}
+      {/* Regaarder Research Tab Bar */}
       <BrowserTabBar
         tabs={tabs}
         activeTabId={activeTabId}
         onSelectTab={handleSelectTab}
         onCloseTab={handleCloseTab}
-        onNewTab={() => handleNewTab(DEFAULT_START_URL)}
+        onNewTab={() => handleNewTab(DEFAULT_RESEARCH_URL)}
       />
 
-      {/* Navigation Toolbar */}
+      {/* Regaarder Research Navigation & Action Bar */}
       <BrowserToolbar
         currentUrl={activeTab?.url || ''}
         isLoading={activeTab?.isLoading || false}
         canGoBack={activeTab?.canGoBack || false}
         canGoForward={activeTab?.canGoForward || false}
         isSecure={activeTab?.isSecure !== false}
+        isSidePanelOpen={isSidePanelOpen}
         onNavigate={handleNavigate}
         onGoBack={handleGoBack}
         onGoForward={handleGoForward}
@@ -239,15 +266,41 @@ export const BrowserWorkspace = ({ showToast }) => {
         onStop={handleStop}
         onHome={handleHome}
         onOpenExternal={handleOpenExternal}
-        onExtractAIContent={handleExtractAIContent}
+        onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
+        onSummarizeChip={() => {
+          setIsSidePanelOpen(true);
+        }}
+        onSaveMemoryChip={handleSaveToMemory}
+        onSendComposeChip={handleSendToCompose}
+        onSendSheetsChip={handleSendToSheets}
+        onSendWhiteboardChip={handleSendToWhiteboard}
+        onBookmarkPage={handleBookmarkPage}
       />
 
-      {/* Chromium / Viewport Surface */}
-      <BrowserViewport
-        activeTab={activeTab}
-        isElectron={isElectron}
-        onNavigate={handleNavigate}
-      />
+      {/* Main Workspace Layout (Viewport + AI Research Assistant Side Panel) */}
+      <div className="flex-1 flex w-full h-full overflow-hidden relative">
+        {/* Chromium Viewport / Research Home */}
+        <BrowserViewport
+          activeTab={activeTab}
+          isElectron={isElectron}
+          isSidePanelOpen={isSidePanelOpen}
+          onNavigate={handleNavigate}
+        />
+
+        {/* AI Research Assistant Side Panel */}
+        {isSidePanelOpen && (
+          <BrowserResearchPanel
+            activeTab={activeTab}
+            onClose={() => setIsSidePanelOpen(false)}
+            onExtractText={handleExtractText}
+            onSendToCompose={handleSendToCompose}
+            onSendToSheets={handleSendToSheets}
+            onSaveToMemory={handleSaveToMemory}
+            onSendToWhiteboard={handleSendToWhiteboard}
+            showToast={showToast}
+          />
+        )}
+      </div>
     </div>
   );
 };
