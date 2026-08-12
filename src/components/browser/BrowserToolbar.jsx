@@ -117,7 +117,7 @@ export const BrowserToolbar = ({
   const currentInputFontSize = Math.max(11, Math.round(13 * ((browserFontSize || 100) / 100)));
 
   return (
-    <div className="flex items-center gap-2.5 px-3 py-1.5 bg-white/95 dark:bg-[#18181b]/95 border-b border-slate-200/80 dark:border-zinc-800/80 shrink-0 shadow-2xs font-sans select-none z-20">
+    <div className="flex items-center gap-2.5 px-3 py-1.5 bg-white dark:bg-[#18181b] border-b border-slate-200 dark:border-zinc-800 shrink-0 shadow-xs font-sans select-none z-20">
       {/* Visually Grouped Left Navigation Controls (6-10px gap, 32px hit areas, ~17px optical icons) */}
       <div className="flex items-center gap-1.5 shrink-0">
         <button

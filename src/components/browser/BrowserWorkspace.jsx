@@ -129,28 +129,52 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   };
 
   const handleOpenFontPopoverAction = useCallback((rect) => {
-    setFontPopoverRect((prev) => (prev ? null : rect));
-  }, []);
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'font', bounds: serializeRect(rect) });
+    } else {
+      setFontPopoverRect((prev) => (prev ? null : rect));
+    }
+  }, [isElectron]);
 
   const handleOpenOverflowMenuAction = useCallback((rect) => {
-    setOverflowMenuRect((prev) => (prev ? null : rect));
-  }, []);
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'overflow', bounds: serializeRect(rect) });
+    } else {
+      setOverflowMenuRect((prev) => (prev ? null : rect));
+    }
+  }, [isElectron]);
 
   const handleOpenUtilitiesPopoverAction = useCallback((rect) => {
-    setUtilitiesPopoverRect((prev) => (prev ? null : rect));
-  }, []);
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'utilities', bounds: serializeRect(rect) });
+    } else {
+      setUtilitiesPopoverRect((prev) => (prev ? null : rect));
+    }
+  }, [isElectron]);
 
   const handleOpenFlowsPopoverAction = useCallback((rect) => {
-    setFlowsPopoverRect((prev) => (prev ? null : rect));
-  }, []);
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'flows', bounds: serializeRect(rect) });
+    } else {
+      setFlowsPopoverRect((prev) => (prev ? null : rect));
+    }
+  }, [isElectron]);
 
   const handleOpenSendToSheetsPopoverAction = useCallback((rect) => {
-    setSendToSheetsPopoverRect((prev) => (prev ? null : rect));
-  }, []);
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'sendToSheets', bounds: serializeRect(rect) });
+    } else {
+      setSendToSheetsPopoverRect((prev) => (prev ? null : rect));
+    }
+  }, [isElectron]);
 
   const handleOpenSendToComposePopoverAction = useCallback((rect) => {
-    setSendToComposePopoverRect((prev) => (prev ? null : rect));
-  }, []);
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'sendToCompose', bounds: serializeRect(rect) });
+    } else {
+      setSendToComposePopoverRect((prev) => (prev ? null : rect));
+    }
+  }, [isElectron]);
 
   useEffect(() => {
     const handleMainWindowPointerDown = (e) => {
@@ -560,7 +584,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     activeExecutingFlow
   );
 
-  const isPopoverOpen = Boolean(
+  const isPopoverOpen = !isElectron && Boolean(
     fontPopoverRect ||
     overflowMenuRect ||
     utilitiesPopoverRect ||
@@ -643,7 +667,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
 
         {/* Regaarder AI Assistant Side Panel (Hovering Overlay over research page) */}
         {isSidePanelOpen && (
-          <div className="absolute right-0 top-0 bottom-0 z-40 w-[360px] max-w-[90vw] h-full shadow-2xl border-l border-slate-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl animate-in slide-in-from-right duration-200">
+          <div className="absolute right-0 top-0 bottom-0 z-40 w-[360px] max-w-[90vw] h-full shadow-2xl border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-in slide-in-from-right duration-200">
             <BrowserResearchPanel
               activeTab={activeTab}
               onClose={() => setIsSidePanelOpen(false)}
