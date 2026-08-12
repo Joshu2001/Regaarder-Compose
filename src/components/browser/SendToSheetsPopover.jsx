@@ -185,6 +185,7 @@ export const SendToSheetsPopover = ({
 
   const content = (
     <div
+      data-popover
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       style={isStandalone ? {} : { top: `${topPos}px`, right: `${rightPos}px` }}

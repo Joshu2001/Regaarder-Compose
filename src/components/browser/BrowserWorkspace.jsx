@@ -128,7 +128,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     };
   };
 
-  const handleOpenFontPopoverAction = useCallback((rect) => {
+  const handleOpenFontPopoverAction = useCallback((rect, forceOpen = false) => {
     setOverflowMenuRect(null);
     setUtilitiesPopoverRect(null);
     setFlowsPopoverRect(null);
@@ -137,11 +137,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'font', bounds: serializeRect(rect) });
     } else {
-      setFontPopoverRect((prev) => (prev ? null : rect));
+      setFontPopoverRect((prev) => (forceOpen ? rect : (prev ? null : rect)));
     }
   }, [isElectron]);
 
-  const handleOpenOverflowMenuAction = useCallback((rect) => {
+  const handleOpenOverflowMenuAction = useCallback((rect, forceOpen = false) => {
     setFontPopoverRect(null);
     setUtilitiesPopoverRect(null);
     setFlowsPopoverRect(null);
@@ -150,11 +150,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'overflow', bounds: serializeRect(rect) });
     } else {
-      setOverflowMenuRect((prev) => (prev ? null : rect));
+      setOverflowMenuRect((prev) => (forceOpen ? rect : (prev ? null : rect)));
     }
   }, [isElectron]);
 
-  const handleOpenUtilitiesPopoverAction = useCallback((rect) => {
+  const handleOpenUtilitiesPopoverAction = useCallback((rect, forceOpen = false) => {
     setFontPopoverRect(null);
     setOverflowMenuRect(null);
     setFlowsPopoverRect(null);
@@ -163,11 +163,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'utilities', bounds: serializeRect(rect) });
     } else {
-      setUtilitiesPopoverRect((prev) => (prev ? null : rect));
+      setUtilitiesPopoverRect((prev) => (forceOpen ? rect : (prev ? null : rect)));
     }
   }, [isElectron]);
 
-  const handleOpenFlowsPopoverAction = useCallback((rect) => {
+  const handleOpenFlowsPopoverAction = useCallback((rect, forceOpen = false) => {
     setFontPopoverRect(null);
     setOverflowMenuRect(null);
     setUtilitiesPopoverRect(null);
@@ -176,11 +176,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'flows', bounds: serializeRect(rect) });
     } else {
-      setFlowsPopoverRect((prev) => (prev ? null : rect));
+      setFlowsPopoverRect((prev) => (forceOpen ? rect : (prev ? null : rect)));
     }
   }, [isElectron]);
 
-  const handleOpenSendToSheetsPopoverAction = useCallback((rect) => {
+  const handleOpenSendToSheetsPopoverAction = useCallback((rect, forceOpen = false) => {
     setFontPopoverRect(null);
     setOverflowMenuRect(null);
     setUtilitiesPopoverRect(null);
@@ -189,11 +189,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'sendToSheets', bounds: serializeRect(rect) });
     } else {
-      setSendToSheetsPopoverRect((prev) => (prev ? null : rect));
+      setSendToSheetsPopoverRect((prev) => (forceOpen ? rect : (prev ? null : rect)));
     }
   }, [isElectron]);
 
-  const handleOpenSendToComposePopoverAction = useCallback((rect) => {
+  const handleOpenSendToComposePopoverAction = useCallback((rect, forceOpen = false) => {
     setFontPopoverRect(null);
     setOverflowMenuRect(null);
     setUtilitiesPopoverRect(null);
@@ -202,7 +202,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'sendToCompose', bounds: serializeRect(rect) });
     } else {
-      setSendToComposePopoverRect((prev) => (prev ? null : rect));
+      setSendToComposePopoverRect((prev) => (forceOpen ? rect : (prev ? null : rect)));
     }
   }, [isElectron]);
 
@@ -836,16 +836,16 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
           onClose={() => setUtilitiesPopoverRect(null)}
           onOpenFontPopover={(rect) => {
             setUtilitiesPopoverRect(null);
-            handleOpenFontPopoverAction(rect || utilitiesPopoverRect);
+            handleOpenFontPopoverAction(rect || utilitiesPopoverRect, true);
           }}
           onOpenExternal={handleOpenExternal}
           onOpenSendToSheets={(rect) => {
             setUtilitiesPopoverRect(null);
-            handleOpenSendToSheetsPopoverAction(rect || utilitiesPopoverRect);
+            handleOpenSendToSheetsPopoverAction(rect || utilitiesPopoverRect, true);
           }}
           onOpenSendToCompose={(rect) => {
             setUtilitiesPopoverRect(null);
-            handleOpenSendToComposePopoverAction(rect || utilitiesPopoverRect);
+            handleOpenSendToComposePopoverAction(rect || utilitiesPopoverRect, true);
           }}
           onSendWhiteboard={() => {
             if (showToast) showToast('Clipped visual layout to Whiteboard canvas');
