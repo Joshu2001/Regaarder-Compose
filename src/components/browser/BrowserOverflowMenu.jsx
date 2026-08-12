@@ -19,6 +19,7 @@ import {
  */
 export const BrowserOverflowMenu = ({
   anchorRect,
+  isStandalone = false,
   onClose,
   onNewTab,
   onReloadHard,
@@ -31,53 +32,49 @@ export const BrowserOverflowMenu = ({
   const menuRef = useRef(null);
 
   useEffect(() => {
-    let handleOutsideClick;
-    const timer = setTimeout(() => {
-      handleOutsideClick = (e) => {
-        if (menuRef.current && !menuRef.current.contains(e.target)) {
-          onClose?.();
-        }
-      };
-      document.addEventListener('pointerdown', handleOutsideClick);
-    }, 60);
-
+    // Outside-click dismissal is handled globally by BrowserWorkspace's pointerdown
+    // listener (which guards via [data-popover]). Only Escape key is handled here.
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        onClose?.();
-      }
+      if (e.key === 'Escape') onClose?.();
     };
     window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      clearTimeout(timer);
-      if (handleOutsideClick) {
-        document.removeEventListener('pointerdown', handleOutsideClick);
-      }
-      window.removeEventListener('keydown', handleKeyDown);
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  if (!anchorRect) return null;
+  if (!anchorRect && !isStandalone) return null;
 
-  const top = Math.max(86, anchorRect.bottom + 6);
-  const right = Math.max(16, window.innerWidth - anchorRect.right);
+  // Estimated overflow menu height for bottom-clamp calculation.
+  // Flips above the anchor button when it would overflow below the viewport fold.
+  const MENU_HEIGHT_ESTIMATE = 280;
+  const spaceBelow = anchorRect ? window.innerHeight - (anchorRect.bottom + 6) : 999;
+  const top = anchorRect
+    ? spaceBelow >= MENU_HEIGHT_ESTIMATE
+      ? Math.max(86, anchorRect.bottom + 6)
+      : Math.max(8, anchorRect.top - MENU_HEIGHT_ESTIMATE - 6)
+    : 86;
+  const right = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right) : 16;
 
   const handleAction = (callback, e) => {
     e?.preventDefault();
     e?.stopPropagation();
-    onClose?.();
     if (callback) {
-      setTimeout(() => callback(anchorRect), 10);
+      callback(anchorRect);
     }
+    onClose?.();
   };
 
   const menuContent = (
     <div
       ref={menuRef}
+      data-popover
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
-      style={{ top: `${top}px`, right: `${right}px` }}
-      className="fixed z-[100000] w-[240px] bg-white dark:bg-[#1c1c1e] border border-slate-200 dark:border-zinc-700/80 shadow-2xl rounded-2xl p-1.5 animate-in fade-in zoom-in-95 duration-150 font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden"
+      style={isStandalone ? {} : { top: `${top}px`, right: `${Math.max(12, right)}px` }}
+      className={`${
+        isStandalone
+          ? 'relative z-[100000] w-full max-w-sm border border-slate-200/90 dark:border-zinc-800/90 shadow-2xl p-1.5'
+          : 'fixed z-[100000] w-64 border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] p-1.5 animate-in zoom-in-95 fade-in duration-150'
+      } bg-white dark:bg-[#1c1c1e] rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden`}
     >
       {/* SECTION 1: WORKSPACE & NAVIGATION */}
       <div className="px-1 py-1 space-y-0.5">
@@ -100,7 +97,7 @@ export const BrowserOverflowMenu = ({
         <button
           type="button"
           onPointerDown={(e) => handleAction(onReloadHard, e)}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-2.5">
             <RotateCcw size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
@@ -112,7 +109,7 @@ export const BrowserOverflowMenu = ({
         <button
           type="button"
           onPointerDown={(e) => handleAction(onResetWorkspace, e)}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
         >
           <Layers size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
           <span>Reset Tabs Workspace</span>
@@ -130,7 +127,7 @@ export const BrowserOverflowMenu = ({
         <button
           type="button"
           onPointerDown={(e) => handleAction(onOpenSettings, e)}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-2.5">
             <Settings size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
@@ -142,7 +139,7 @@ export const BrowserOverflowMenu = ({
         <button
           type="button"
           onPointerDown={(e) => handleAction(onOpenShortcuts, e)}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-2.5">
             <Keyboard size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
@@ -154,7 +151,7 @@ export const BrowserOverflowMenu = ({
         <button
           type="button"
           onPointerDown={(e) => handleAction(onOpenHelp, e)}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
         >
           <HelpCircle size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
           <span>Help & Documentation</span>
@@ -163,7 +160,7 @@ export const BrowserOverflowMenu = ({
         <button
           type="button"
           onPointerDown={(e) => handleAction(onAbout, e)}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
         >
           <Sparkles size={15} className="text-violet-500 shrink-0" />
           <span>About Regaarder Research</span>
@@ -171,6 +168,8 @@ export const BrowserOverflowMenu = ({
       </div>
     </div>
   );
+
+  if (isStandalone) return menuContent;
 
   const targetNode = document.fullscreenElement ?? document.body;
   return createPortal(menuContent, targetNode);

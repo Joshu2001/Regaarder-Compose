@@ -170,7 +170,9 @@ export const BrowserExternalIcon = ({ size = 18, className = '', strokeWidth = 1
 );
 
 // 9. BOOKMARK: Geometric ribbon node
-export const BrowserBookmarkIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+// `filled` prop sets fill="currentColor" directly on the SVG path, avoiding
+// reliance on Tailwind fill-* CSS class cascade which is JIT-scanner-fragile.
+export const BrowserBookmarkIcon = ({ size = 18, className = '', strokeWidth = 1.75, filled = false, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -183,7 +185,7 @@ export const BrowserBookmarkIcon = ({ size = 18, className = '', strokeWidth = 1
     className={className}
     {...props}
   >
-    <path d="M6 3.5h12a1.5 1.5 0 0 1 1.5 1.5v16l-7.5-4-7.5 4V5a1.5 1.5 0 0 1 1.5-1.5z" />
+    <path d="M6 3.5h12a1.5 1.5 0 0 1 1.5 1.5v16l-7.5-4-7.5 4V5a1.5 1.5 0 0 1 1.5-1.5z" fill={filled ? 'currentColor' : 'none'} />
   </svg>
 );
 
@@ -240,8 +242,10 @@ export const BrowserSearchWebIcon = ({ size = 20, className = '', strokeWidth = 
     {...props}
   >
     <circle cx="12" cy="12" r="8.5" />
+    {/* Latitude equator line */}
     <line x1="3.5" y1="12" x2="20.5" y2="12" />
-    <path d="M12 3.5a12.5 12.5 0 0 1 0 17a12.5 12.5 0 0 1 0-17z" />
+    {/* Longitude oval: proper ellipse replacing the former zero-height arc path */}
+    <ellipse cx="12" cy="12" rx="4" ry="8.5" />
   </svg>
 );
 
@@ -315,7 +319,8 @@ export const BrowserFlowIcon = ({ size = 18, mode = 'idle', className = '', stro
 
     {/* Mode specific focal indicator */}
     {mode === 'recording' || mode === 'capture' ? (
-      <circle cx="4" cy="12" r="1.1" fill="#ef4444" stroke="none" />
+      // currentColor inherits from the parent button's text-rose-400 token in recording state
+      <circle cx="4" cy="12" r="1.1" fill="currentColor" stroke="none" />
     ) : mode === 'run' || mode === 'replay' ? (
       <polygon points="12.2 10.6 14.2 12 12.2 13.4" fill="currentColor" stroke="none" />
     ) : (
@@ -338,7 +343,7 @@ export const BrowserRecordIcon = ({ size = 18, className = '', strokeWidth = 1.7
     className={className}
     {...props}
   >
-    <circle cx="8" cy="12" r="4.5" fill="#ef4444" stroke="#ef4444" />
+    <circle cx="8" cy="12" r="4.5" fill="currentColor" stroke="currentColor" />
     <path d="M15.5 8.5L16.5 12L15.5 15.5L19 12L15.5 8.5Z" fill="currentColor" stroke="none" />
   </svg>
 );

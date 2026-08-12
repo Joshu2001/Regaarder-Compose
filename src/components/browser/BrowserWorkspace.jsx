@@ -129,6 +129,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   };
 
   const handleOpenFontPopoverAction = useCallback((rect) => {
+    setOverflowMenuRect(null);
+    setUtilitiesPopoverRect(null);
+    setFlowsPopoverRect(null);
+    setSendToSheetsPopoverRect(null);
+    setSendToComposePopoverRect(null);
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'font', bounds: serializeRect(rect) });
     } else {
@@ -137,6 +142,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   }, [isElectron]);
 
   const handleOpenOverflowMenuAction = useCallback((rect) => {
+    setFontPopoverRect(null);
+    setUtilitiesPopoverRect(null);
+    setFlowsPopoverRect(null);
+    setSendToSheetsPopoverRect(null);
+    setSendToComposePopoverRect(null);
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'overflow', bounds: serializeRect(rect) });
     } else {
@@ -145,6 +155,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   }, [isElectron]);
 
   const handleOpenUtilitiesPopoverAction = useCallback((rect) => {
+    setFontPopoverRect(null);
+    setOverflowMenuRect(null);
+    setFlowsPopoverRect(null);
+    setSendToSheetsPopoverRect(null);
+    setSendToComposePopoverRect(null);
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'utilities', bounds: serializeRect(rect) });
     } else {
@@ -153,6 +168,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   }, [isElectron]);
 
   const handleOpenFlowsPopoverAction = useCallback((rect) => {
+    setFontPopoverRect(null);
+    setOverflowMenuRect(null);
+    setUtilitiesPopoverRect(null);
+    setSendToSheetsPopoverRect(null);
+    setSendToComposePopoverRect(null);
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'flows', bounds: serializeRect(rect) });
     } else {
@@ -161,6 +181,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   }, [isElectron]);
 
   const handleOpenSendToSheetsPopoverAction = useCallback((rect) => {
+    setFontPopoverRect(null);
+    setOverflowMenuRect(null);
+    setUtilitiesPopoverRect(null);
+    setFlowsPopoverRect(null);
+    setSendToComposePopoverRect(null);
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'sendToSheets', bounds: serializeRect(rect) });
     } else {
@@ -169,6 +194,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   }, [isElectron]);
 
   const handleOpenSendToComposePopoverAction = useCallback((rect) => {
+    setFontPopoverRect(null);
+    setOverflowMenuRect(null);
+    setUtilitiesPopoverRect(null);
+    setFlowsPopoverRect(null);
+    setSendToSheetsPopoverRect(null);
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'sendToCompose', bounds: serializeRect(rect) });
     } else {
@@ -178,7 +208,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
 
   useEffect(() => {
     const handleMainWindowPointerDown = (e) => {
+      // Guard: bail if the event originated inside any open popover surface or a toolbar button.
+      // Without the [data-popover] check, clicks on section labels, dividers, or wrapper divs
+      // inside the popover would pass the button-only guard and race-close the popover instantly.
       if (e.target?.closest?.('button')) return;
+      if (e.target?.closest?.('[data-popover]')) return;
       if (isElectron && window.electronAPI?.closePopover) {
         window.electronAPI.closePopover();
       }
@@ -607,11 +641,9 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
       <BrowserTabBar
         tabs={tabs}
         activeTabId={activeTabId}
-        isFontPopoverOpen={Boolean(fontPopoverRect)}
         onSelectTab={handleSelectTab}
         onCloseTab={handleCloseTab}
         onNewTab={() => handleNewTab(DEFAULT_RESEARCH_URL)}
-        onOpenFontPopover={handleOpenFontPopoverAction}
       />
 
       {/* Executive Navigation Toolbar */}
@@ -624,6 +656,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         isBookmarked={isBookmarked}
         isSidePanelOpen={isSidePanelOpen}
         isFlowRecording={isFlowRecording}
+        isFlowsPopoverOpen={Boolean(flowsPopoverRect)}
         isFontPopoverOpen={Boolean(fontPopoverRect)}
         isUtilitiesPopoverOpen={Boolean(utilitiesPopoverRect)}
         isOverflowMenuOpen={Boolean(overflowMenuRect)}
@@ -672,11 +705,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
               activeTab={activeTab}
               onClose={() => setIsSidePanelOpen(false)}
               onExtractText={handleExtractText}
-              onOpenSendToCompose={() => {
-                setSendToComposePopoverRect({ bottom: 60, right: 300 });
+              onOpenSendToCompose={(rect) => {
+                handleOpenSendToComposePopoverAction(rect || { bottom: 60, right: 300 });
               }}
-              onOpenSendToSheets={() => {
-                setSendToSheetsPopoverRect({ bottom: 60, right: 300 });
+              onOpenSendToSheets={(rect) => {
+                handleOpenSendToSheetsPopoverAction(rect || { bottom: 60, right: 300 });
               }}
               onSaveToMemory={() => {
                 if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Memory`);

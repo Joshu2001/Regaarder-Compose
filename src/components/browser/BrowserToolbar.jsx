@@ -10,7 +10,6 @@ import {
   BrowserBookmarkIcon,
   BrowserCloseIcon,
   BrowserFlowIcon,
-  BrowserRecordIcon,
   BrowserEllipsisIcon,
   BrowserUtilitiesIcon
 } from './RegaarderBrowserIcons';
@@ -36,6 +35,7 @@ export const BrowserToolbar = ({
   isBookmarked = false,
   isSidePanelOpen = false,
   isFlowRecording = false,
+  isFlowsPopoverOpen = false,
   isFontPopoverOpen = false,
   isUtilitiesPopoverOpen = false,
   isOverflowMenuOpen = false,
@@ -72,24 +72,18 @@ export const BrowserToolbar = ({
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsEditing(false);
-    let target = inputValue.trim();
+    const target = inputValue.trim();
     if (!target) return;
 
-    // Check intent: URL vs Natural Language Research Request vs Search Engine
-    const hasProtocol = /^https?:\/\//i.test(target);
-    const looksLikeDomain = /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/.*)?$/.test(target);
+    // Detect research-intent phrasing to automatically open the AI side panel.
+    // All URL normalization (protocol prefixing, search routing) is the sole
+    // responsibility of BrowserWorkspace.handleNavigate — single source of truth.
     const isResearchPhrasing = /^(compare|research|analyze|synthesize|find competitors|financial health|vs)\b/i.test(target);
-
-    if (hasProtocol) {
-      onNavigate(target);
-    } else if (looksLikeDomain) {
-      onNavigate('https://' + target);
-    } else if (isResearchPhrasing) {
-      onNavigate(`https://duckduckgo.com/?q=${encodeURIComponent(target)}`);
+    if (isResearchPhrasing) {
       onToggleSidePanel(true);
-    } else {
-      onNavigate(`https://duckduckgo.com/?q=${encodeURIComponent(target)}`);
     }
+
+    onNavigate(target);
   };
 
   const isResearchHome = currentUrl === 'regaarder://research' || currentUrl === 'regaarder://saved';
@@ -152,11 +146,12 @@ export const BrowserToolbar = ({
             e.preventDefault();
             isLoading ? onStop() : onReload();
           }}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          disabled={isResearchHome}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors cursor-pointer"
           title={isLoading ? 'Stop loading' : 'Reload page'}
         >
           {isLoading ? (
-            <BrowserReloadIcon size={17} className="animate-spin text-violet-500" />
+            <BrowserCloseIcon size={15} className="text-rose-500" />
           ) : (
             <BrowserReloadIcon size={17} />
           )}
@@ -267,7 +262,7 @@ export const BrowserToolbar = ({
           }`}
           title={isBookmarked ? 'Remove from Saved Research' : 'Save to Research'}
         >
-          <BrowserBookmarkIcon size={17} className={isBookmarked ? 'fill-violet-600 dark:fill-violet-400' : ''} />
+          <BrowserBookmarkIcon size={17} filled={isBookmarked} />
         </button>
 
         {/* Subtle Divider */}
@@ -286,6 +281,8 @@ export const BrowserToolbar = ({
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
             isFlowRecording
               ? 'bg-rose-500/20 text-rose-400 border border-rose-500/50 ring-2 ring-rose-500/30 animate-pulse'
+              : isFlowsPopoverOpen
+              ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/40 ring-1 ring-violet-500/20'
               : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent'
           }`}
           title={isFlowRecording ? 'Recording Flow (Click for options)' : 'Regaarder Flows (Action → Action → Replayable Workflow)'}

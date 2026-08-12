@@ -18,6 +18,7 @@ import { SheetIcon, ComposeIcon, WhiteboardIcon, MemoryIcon } from '../Regaarder
  */
 export const BrowserUtilitiesPopover = ({
   anchorRect,
+  isStandalone = false,
   onClose,
   onOpenFontPopover,
   onOpenExternal,
@@ -34,53 +35,49 @@ export const BrowserUtilitiesPopover = ({
   const popoverRef = useRef(null);
 
   useEffect(() => {
-    let handleOutsideClick;
-    const timer = setTimeout(() => {
-      handleOutsideClick = (e) => {
-        if (popoverRef.current && !popoverRef.current.contains(e.target)) {
-          onClose?.();
-        }
-      };
-      document.addEventListener('pointerdown', handleOutsideClick);
-    }, 60);
-
+    // Outside-click dismissal is handled globally by BrowserWorkspace's pointerdown
+    // listener (which guards via [data-popover]). Only Escape key is handled here.
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        onClose?.();
-      }
+      if (e.key === 'Escape') onClose?.();
     };
     window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      clearTimeout(timer);
-      if (handleOutsideClick) {
-        document.removeEventListener('pointerdown', handleOutsideClick);
-      }
-      window.removeEventListener('keydown', handleKeyDown);
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  if (!anchorRect) return null;
+  if (!anchorRect && !isStandalone) return null;
 
-  const top = Math.max(86, anchorRect.bottom + 6);
-  const right = Math.max(16, window.innerWidth - anchorRect.right);
+  // Estimated utilities popover height for bottom-clamp calculation.
+  // Flips above the anchor button when it would overflow below the viewport fold.
+  const POPOVER_HEIGHT_ESTIMATE = 380;
+  const spaceBelow = anchorRect ? window.innerHeight - (anchorRect.bottom + 6) : 999;
+  const top = anchorRect
+    ? spaceBelow >= POPOVER_HEIGHT_ESTIMATE
+      ? Math.max(86, anchorRect.bottom + 6)
+      : Math.max(8, anchorRect.top - POPOVER_HEIGHT_ESTIMATE - 6)
+    : 86;
+  const right = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right) : 16;
 
   const handleAction = (callback, e) => {
     e?.preventDefault();
     e?.stopPropagation();
-    onClose?.();
     if (callback) {
-      setTimeout(() => callback(anchorRect), 10);
+      callback(anchorRect);
     }
+    onClose?.();
   };
 
   const content = (
     <div
       ref={popoverRef}
+      data-popover
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
-      style={{ top: `${top}px`, right: `${right}px` }}
-      className="fixed z-[100000] w-[256px] bg-white dark:bg-[#1c1c1e] border border-slate-200 dark:border-zinc-700/80 shadow-2xl rounded-2xl p-1.5 animate-in fade-in zoom-in-95 duration-150 font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden"
+      style={isStandalone ? {} : { top: `${top}px`, right: `${Math.max(12, right)}px` }}
+      className={`${
+        isStandalone
+          ? 'relative z-[100000] w-full max-w-sm border border-slate-200/90 dark:border-zinc-800/90 shadow-2xl p-1.5'
+          : 'fixed z-[100000] w-[260px] border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] p-1.5 animate-in fade-in zoom-in-95 duration-150'
+      } bg-white dark:bg-[#1c1c1e] rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden`}
     >
       {/* SECTION 1: PAGE CUSTOMIZATION */}
       <div className="px-1 py-1">
@@ -223,6 +220,8 @@ export const BrowserUtilitiesPopover = ({
       </div>
     </div>
   );
+
+  if (isStandalone) return content;
 
   const targetNode = document.fullscreenElement ?? document.body;
   return createPortal(content, targetNode);

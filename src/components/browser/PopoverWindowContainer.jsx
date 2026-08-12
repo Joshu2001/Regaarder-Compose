@@ -3,6 +3,8 @@ import BrowserFlowsPopover from './flows/BrowserFlowsPopover';
 import SendToSheetsPopover from './SendToSheetsPopover';
 import SendToComposePopover from './SendToComposePopover';
 import BrowserFontPopover from './BrowserFontPopover';
+import BrowserUtilitiesPopover from './BrowserUtilitiesPopover';
+import BrowserOverflowMenu from './BrowserOverflowMenu';
 
 export const PopoverWindowContainer = () => {
   const [popoverType, setPopoverType] = useState('font');
@@ -143,6 +145,38 @@ export const PopoverWindowContainer = () => {
             onSaveRecentAsFlow={handleClose}
             onOpenRunFlow={handleClose}
             onOpenMyFlows={handleClose}
+          />
+        )}
+
+        {popoverType === 'utilities' && (
+          <BrowserUtilitiesPopover
+            isStandalone={true}
+            onClose={handleClose}
+            onOpenFontPopover={() => setPopoverType('font')}
+            onOpenExternal={handleClose}
+            onOpenSendToSheets={() => setPopoverType('sendToSheets')}
+            onOpenSendToCompose={() => setPopoverType('sendToCompose')}
+            onSendWhiteboard={handleClose}
+            onSaveMemory={handleClose}
+            onFindInPage={handleClose}
+            onOpenHistory={handleClose}
+            onOpenDownloads={handleClose}
+            onOpenBookmarks={handleClose}
+            onPrintPage={handleClose}
+          />
+        )}
+
+        {popoverType === 'overflow' && (
+          <BrowserOverflowMenu
+            isStandalone={true}
+            onClose={handleClose}
+            onNewTab={handleClose}
+            onReloadHard={handleClose}
+            onResetWorkspace={handleClose}
+            onOpenSettings={() => setPopoverType('font')}
+            onOpenShortcuts={handleClose}
+            onOpenHelp={handleClose}
+            onAbout={handleClose}
           />
         )}
 

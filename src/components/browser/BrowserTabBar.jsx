@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { BrowserPlusIcon, BrowserCloseIcon, BrowserReloadIcon, BrowserSearchWebIcon, BrowserEllipsisIcon } from './RegaarderBrowserIcons';
+import React from 'react';
+import { BrowserPlusIcon, BrowserCloseIcon, BrowserReloadIcon, BrowserSearchWebIcon } from './RegaarderBrowserIcons';
 import { AgentsIcon, SheetIcon, ComposeIcon } from '../RegaarderProductIcons';
 
 /**
@@ -14,13 +14,10 @@ import { AgentsIcon, SheetIcon, ComposeIcon } from '../RegaarderProductIcons';
 export const BrowserTabBar = ({
   tabs = [],
   activeTabId,
-  isFontPopoverOpen = false,
   onSelectTab,
   onCloseTab,
-  onNewTab,
-  onOpenFontPopover
+  onNewTab
 }) => {
-  const ellipsisBtnRef = useRef(null);
 
   const getTabIcon = (tab) => {
     if (tab.isLoading) {
@@ -72,7 +69,6 @@ export const BrowserTabBar = ({
           return (
             <div
               key={tab.id}
-              onClick={() => onSelectTab(tab.id)}
               onPointerDown={(e) => {
                 if (e.target.closest('button')) return;
                 onSelectTab(tab.id);
@@ -107,7 +103,7 @@ export const BrowserTabBar = ({
                     onCloseTab(tab.id);
                   }}
                   onPointerDown={(e) => e.stopPropagation()}
-                  className={`p-0.5 rounded transition-colors shrink-0 opacity-0 group-hover:opacity-100 ${
+                  className={`p-0.5 rounded transition-colors shrink-0 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto ${
                     isActive
                       ? 'hover:bg-violet-100 dark:hover:bg-violet-900/40 text-violet-600 dark:text-violet-300'
                       : 'hover:bg-slate-300 dark:hover:bg-zinc-700 text-slate-500 dark:text-zinc-400'

@@ -82,16 +82,9 @@ export const BrowserFontPopover = ({
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    let handleOutsideClick;
-    const timer = setTimeout(() => {
-      handleOutsideClick = (e) => {
-        if (popoverRef.current && !popoverRef.current.contains(e.target)) {
-          onClose?.();
-        }
-      };
-      document.addEventListener('pointerdown', handleOutsideClick);
-    }, 60);
-
+    // Outside-click dismissal is handled globally by BrowserWorkspace's pointerdown
+    // listener (which guards via [data-popover]). Only Escape key is handled here.
+    // Escape navigates back to main view if in sub-view, otherwise closes the popover.
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         if (currentView === 'fontPicker') {
@@ -101,16 +94,8 @@ export const BrowserFontPopover = ({
         }
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      clearTimeout(timer);
-      if (handleOutsideClick) {
-        document.removeEventListener('pointerdown', handleOutsideClick);
-      }
-      window.removeEventListener('keydown', handleKeyDown);
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose, currentView]);
 
   const filteredFonts = useMemo(() => {
@@ -131,8 +116,8 @@ export const BrowserFontPopover = ({
   const right = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right) : 16;
 
   const containerClasses = isStandalone
-    ? "w-full h-full bg-white dark:bg-[#1c1c1e] border border-slate-200 dark:border-zinc-700/80 shadow-2xl rounded-2xl p-3.5 font-sans select-none text-slate-800 dark:text-zinc-100 flex flex-col justify-between overflow-hidden"
-    : "fixed z-[100000] w-[330px] bg-white dark:bg-[#1c1c1e] border border-slate-200 dark:border-zinc-700/80 shadow-2xl rounded-2xl p-3.5 animate-in fade-in zoom-in-95 duration-150 font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden";
+    ? "w-full h-full bg-white dark:bg-[#1c1c1e] border border-slate-200/90 dark:border-zinc-800/90 shadow-2xl rounded-2xl p-3.5 font-sans select-none text-slate-800 dark:text-zinc-100 flex flex-col justify-between overflow-hidden"
+    : "fixed z-[100000] w-[330px] bg-white dark:bg-[#1c1c1e] border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] rounded-2xl p-3.5 animate-in fade-in zoom-in-95 duration-150 font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden";
 
   const containerStyle = isStandalone ? {} : { top: `${top}px`, right: `${right}px` };
 
@@ -389,6 +374,7 @@ export const BrowserFontPopover = ({
   const content = (
     <div
       ref={popoverRef}
+      data-popover
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       className={containerClasses}

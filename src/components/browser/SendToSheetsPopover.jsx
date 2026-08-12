@@ -171,21 +171,31 @@ export const SendToSheetsPopover = ({
     onClose();
   };
 
-  // Compute position relative to toolbar icon
-  const topPos = anchorRect ? Math.max(86, anchorRect.bottom + 6) : 86;
-  const rightPos = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right - 20) : 24;
+  // Compute position relative to toolbar icon or side panel anchor
+  const topPos = anchorRect
+    ? (anchorRect.top !== undefined && anchorRect.bottom !== undefined && anchorRect.bottom < 200
+        ? Math.max(86, anchorRect.bottom + 6)
+        : anchorRect.top !== undefined
+          ? Math.max(86, anchorRect.top)
+          : Math.max(86, (anchorRect.bottom || 80) + 6))
+    : 86;
+  const rightPos = anchorRect
+    ? Math.max(16, window.innerWidth - (anchorRect.right || (anchorRect.x ? anchorRect.x + (anchorRect.width || 0) : window.innerWidth - 420)))
+    : 24;
 
   const content = (
     <div
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
       style={isStandalone ? {} : { top: `${topPos}px`, right: `${rightPos}px` }}
       className={`${
         isStandalone
-          ? 'relative z-50 w-full max-w-md border border-slate-800 shadow-2xl'
-          : 'fixed z-50 w-[420px] border border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-150'
-      } bg-slate-900 rounded-2xl overflow-hidden font-sans text-slate-100 select-none`}
+          ? 'relative z-[100000] w-full max-w-md border border-slate-200 dark:border-zinc-800 shadow-2xl'
+          : 'fixed z-[100000] w-[420px] border border-slate-200 dark:border-zinc-800 shadow-2xl animate-in fade-in zoom-in-95 duration-150'
+      } bg-white dark:bg-[#1c1c1e] rounded-2xl overflow-hidden font-sans text-slate-800 dark:text-zinc-100 select-none`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-slate-950/80 border-b border-slate-800">
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-50/60 dark:bg-zinc-900/60 border-b border-slate-100 dark:border-zinc-800/80">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
             <SheetIcon size={16} />

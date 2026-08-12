@@ -65,42 +65,47 @@ export const BrowserFlowsPopover = ({
     setFlows(getSavedFlows());
   }, []);
 
-  // Global click outside listener (deferred to prevent initiating pointerdown from closing immediately)
+  // Outside-click dismissal is handled globally by BrowserWorkspace's pointerdown
+  // listener (which guards via [data-popover]). Only Escape key is handled here.
   useEffect(() => {
     if (isStandalone) return;
-    let handleOutsideClick;
-    const timer = setTimeout(() => {
-      handleOutsideClick = (e) => {
-        if (popoverRef.current && !popoverRef.current.contains(e.target)) {
-          onClose();
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (view === 'picker') {
+          setView('main');
+        } else {
+          onClose?.();
         }
-      };
-      document.addEventListener('pointerdown', handleOutsideClick);
-    }, 60);
-
-    return () => {
-      clearTimeout(timer);
-      if (handleOutsideClick) {
-        document.removeEventListener('pointerdown', handleOutsideClick);
       }
     };
-  }, [onClose, isStandalone]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, isStandalone, view]);
 
   if (!anchorRect && !isStandalone) return null;
 
-  // Calculate dynamic top/left position below the anchor button
-  const top = anchorRect ? Math.max(86, anchorRect.bottom + 6) : 86;
+  // Calculate dynamic position below (or above, if space is tight) the anchor button.
+  const POPOVER_HEIGHT_ESTIMATE = 340;
+  const spaceBelow = anchorRect ? window.innerHeight - (anchorRect.bottom + 6) : 999;
+  const top = anchorRect
+    ? spaceBelow >= POPOVER_HEIGHT_ESTIMATE
+      ? Math.max(86, anchorRect.bottom + 6)
+      : Math.max(8, anchorRect.top - POPOVER_HEIGHT_ESTIMATE - 6)
+    : 86;
   const right = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right) : 16;
 
   const content = (
     <div
       ref={popoverRef}
+      data-popover
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
       style={isStandalone ? {} : { top: `${top}px`, right: `${Math.max(12, right)}px` }}
       className={`${
         isStandalone
-          ? 'relative z-50 w-full max-w-sm border border-slate-200/90 dark:border-zinc-800/90 shadow-2xl'
-          : 'fixed z-50 w-72 border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] animate-in zoom-in-95 fade-in duration-150'
-      } bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden`}
+          ? 'relative z-[100000] w-full max-w-sm border border-slate-200/90 dark:border-zinc-800/90 shadow-2xl'
+          : 'fixed z-[100000] w-72 border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] animate-in zoom-in-95 fade-in duration-150'
+      } bg-white dark:bg-[#1c1c1e] rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden`}
     >
       {/* Header */}
       <div className="px-3.5 py-3 bg-slate-50/60 dark:bg-zinc-900/60 border-b border-slate-100 dark:border-zinc-800/80 flex items-center justify-between">

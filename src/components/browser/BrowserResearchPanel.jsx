@@ -214,7 +214,7 @@ export const BrowserResearchPanel = ({
               type="button"
               onPointerDown={(e) => {
                 e.preventDefault();
-                onOpenSendToCompose();
+                onOpenSendToCompose?.(e.currentTarget.getBoundingClientRect());
               }}
               className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-slate-800/80 hover:bg-violet-600/20 text-slate-200 hover:text-violet-300 border border-slate-700/60 hover:border-violet-500/40 transition-all cursor-pointer"
             >
@@ -226,7 +226,7 @@ export const BrowserResearchPanel = ({
               type="button"
               onPointerDown={(e) => {
                 e.preventDefault();
-                onOpenSendToSheets();
+                onOpenSendToSheets?.(e.currentTarget.getBoundingClientRect());
               }}
               className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-slate-800/80 hover:bg-emerald-600/20 text-slate-200 hover:text-emerald-300 border border-slate-700/60 hover:border-emerald-500/40 transition-all cursor-pointer"
             >
