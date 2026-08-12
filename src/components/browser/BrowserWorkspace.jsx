@@ -417,6 +417,16 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
     }
   };
 
+  const isOverlayOpen = Boolean(
+    sendToSheetsPopoverRect ||
+    sendToComposePopoverRect ||
+    flowsPopoverRect ||
+    showCompetitorWorkflow ||
+    synthesizedFlowToReview ||
+    showFlowLibraryModal ||
+    activeExecutingFlow
+  );
+
   return (
     <div className="flex flex-col w-full h-full bg-slate-900 overflow-hidden font-sans select-none relative">
       {/* Active Flow Recording Sticky Indicator Bar */}
