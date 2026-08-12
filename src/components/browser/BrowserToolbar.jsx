@@ -10,7 +10,8 @@ import {
   BrowserBookmarkIcon,
   BrowserCloseIcon,
   BrowserFlowIcon,
-  BrowserRecordIcon
+  BrowserRecordIcon,
+  BrowserEllipsisIcon
 } from './RegaarderBrowserIcons';
 import {
   AgentsIcon,
@@ -30,6 +31,7 @@ import {
  * - Bookmark / Save (Direct Class A Toggle with active 'outline' visual state & toast with Undo)
  * - Send to Sheets & Send to Compose (Class B Contextual Popovers)
  * - Research AI (Class B Contextual Sidebar)
+ * - Ellipsis Menu (...) for Isolated Browser Font & Size Customization
  */
 export const BrowserToolbar = ({
   currentUrl = '',
@@ -40,6 +42,7 @@ export const BrowserToolbar = ({
   isBookmarked = false,
   isSidePanelOpen = false,
   isFlowRecording = false,
+  isFontPopoverOpen = false,
   onNavigate,
   onGoBack,
   onGoForward,
@@ -52,6 +55,7 @@ export const BrowserToolbar = ({
   onOpenSendToSheetsPopover,
   onOpenSendToComposePopover,
   onOpenFlowsPopover,
+  onOpenFontPopover,
   onSendWhiteboardChip,
   onSaveMemoryChip,
   onSummarizeChip
@@ -63,6 +67,7 @@ export const BrowserToolbar = ({
   const sheetsBtnRef = useRef(null);
   const composeBtnRef = useRef(null);
   const flowsBtnRef = useRef(null);
+  const ellipsisBtnRef = useRef(null);
 
   useEffect(() => {
     if (!isEditing) {

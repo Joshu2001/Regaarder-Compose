@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserPlusIcon, BrowserCloseIcon, BrowserReloadIcon, BrowserSearchWebIcon } from './RegaarderBrowserIcons';
+import React, { useRef } from 'react';
+import { BrowserPlusIcon, BrowserCloseIcon, BrowserReloadIcon, BrowserSearchWebIcon, BrowserEllipsisIcon } from './RegaarderBrowserIcons';
 import { AgentsIcon, SheetIcon, ComposeIcon } from '../RegaarderProductIcons';
 
 /**
@@ -8,14 +8,20 @@ import { AgentsIcon, SheetIcon, ComposeIcon } from '../RegaarderProductIcons';
  * - Tabs are slightly rounded rectangles (rounded-md), NEVER pill-shaped or elliptical.
  * - Active tab uses "outline" visual state.
  * - Dynamic domain / favicon badges with Regaarder SVG icons.
+ * - New Tab (+) button sits immediately adjacent to the tabs.
+ * - Ellipsis (...) browser options menu sits anchored on the far right.
  */
 export const BrowserTabBar = ({
   tabs = [],
   activeTabId,
+  isFontPopoverOpen = false,
   onSelectTab,
   onCloseTab,
-  onNewTab
+  onNewTab,
+  onOpenFontPopover
 }) => {
+  const ellipsisBtnRef = useRef(null);
+
   const getTabIcon = (tab) => {
     if (tab.isLoading) {
       return <BrowserReloadIcon size={14} className="animate-spin text-violet-500" />;
@@ -58,7 +64,8 @@ export const BrowserTabBar = ({
   };
 
   return (
-    <div className="flex items-center gap-1.5 px-3 pt-2 pb-1 bg-slate-100/90 dark:bg-[#18181b]/90 border-b border-slate-200/80 dark:border-zinc-800/80 select-none overflow-x-auto no-scrollbar shrink-0">
+    <div className="flex items-center gap-1.5 px-3 pt-2 pb-1 bg-slate-100/90 dark:bg-[#18181b]/90 border-b border-slate-200/80 dark:border-zinc-800/80 select-none shrink-0 z-30 relative">
+      {/* Tabs Container */}
       <div className="flex items-center gap-1 min-w-0 flex-1 overflow-x-auto no-scrollbar">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
@@ -70,7 +77,7 @@ export const BrowserTabBar = ({
                 if (e.target.closest('button')) return;
                 onSelectTab(tab.id);
               }}
-              className={`group relative flex items-center gap-2 px-3 py-1.5 min-w-[140px] max-w-[220px] flex-1 rounded-md text-xs font-medium cursor-pointer transition-all duration-150 border ${
+              className={`group relative flex items-center gap-2 px-3 py-1.5 min-w-[140px] max-w-[220px] shrink-0 rounded-md text-xs font-medium cursor-pointer transition-all duration-150 border ${
                 isActive
                   ? 'bg-white dark:bg-[#27272a] text-violet-600 dark:text-violet-400 border-violet-500/30 dark:border-violet-400/40 ring-1 ring-violet-500/20 shadow-xs'
                   : 'bg-slate-200/50 dark:bg-zinc-800/50 text-slate-600 dark:text-zinc-400 border-transparent hover:bg-slate-200/80 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-200'
@@ -113,18 +120,41 @@ export const BrowserTabBar = ({
             </div>
           );
         })}
+
+        {/* New Tab (+) Button Positioned Immediately Next to Tabs */}
+        <button
+          type="button"
+          onClick={onNewTab}
+          onPointerDown={(e) => e.preventDefault()}
+          className="flex items-center justify-center w-7 h-7 rounded-md text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors shrink-0 cursor-pointer ml-0.5"
+          title="Open new research tab"
+        >
+          <BrowserPlusIcon size={16} />
+        </button>
       </div>
 
-      {/* New Tab Button */}
-      <button
-        type="button"
-        onClick={onNewTab}
-        onPointerDown={(e) => e.preventDefault()}
-        className="flex items-center justify-center w-7 h-7 rounded-md text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors shrink-0 cursor-pointer"
-        title="Open new research tab"
-      >
-        <BrowserPlusIcon size={16} />
-      </button>
+      {/* Far Right Action Group: Isolated Browser Options Ellipsis Button (...) */}
+      <div className="flex items-center gap-1 shrink-0 pl-1 border-l border-slate-200/80 dark:border-zinc-800">
+        <button
+          ref={ellipsisBtnRef}
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (ellipsisBtnRef.current && onOpenFontPopover) {
+              onOpenFontPopover(ellipsisBtnRef.current.getBoundingClientRect());
+            }
+          }}
+          className={`w-7 h-7 flex items-center justify-center rounded-md transition-all cursor-pointer ${
+            isFontPopoverOpen
+              ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/40 ring-1 ring-violet-500/30'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100'
+          }`}
+          title="Browser Options & Typography (Browser-Only)"
+        >
+          <BrowserEllipsisIcon size={16} />
+        </button>
+      </div>
     </div>
   );
 };

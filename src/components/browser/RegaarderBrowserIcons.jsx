@@ -326,6 +326,26 @@ export const BrowserRecordIcon = ({ size = 18, className = '', strokeWidth = 1.5
   </svg>
 );
 
+// 17. ELLIPSIS / MORE OPTIONS: Precision horizontal 3-dot menu icon
+export const BrowserEllipsisIcon = ({ size = 18, className = '', strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <circle cx="12" cy="12" r="1.25" fill="currentColor" stroke="none" />
+    <circle cx="18" cy="12" r="1.25" fill="currentColor" stroke="none" />
+    <circle cx="6" cy="12" r="1.25" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 // Export map for easy lookup
 export const RegaarderBrowserIconMap = {
   Home: BrowserHomeIcon,
@@ -343,7 +363,8 @@ export const RegaarderBrowserIconMap = {
   Competitors: BrowserCompetitorsIcon,
   Check: BrowserCheckIcon,
   Flow: BrowserFlowIcon,
-  Record: BrowserRecordIcon
+  Record: BrowserRecordIcon,
+  Ellipsis: BrowserEllipsisIcon
 };
 
 export default RegaarderBrowserIconMap;

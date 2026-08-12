@@ -7,6 +7,8 @@ class BrowserViewManager {
     this.activeTabId = null;
     this.bounds = { x: 0, y: 0, width: 0, height: 0 };
     this.isVisible = false;
+    this.popoverView = null;
+    this.popoverType = null;
   }
 
   createTab(tabId, initialUrl = 'https://google.com') {
@@ -263,6 +265,90 @@ class BrowserViewManager {
       return { success: true, text: text || '' };
     } catch (e) {
       return { success: false, error: e.message };
+    }
+  }
+
+  showPopover(type, bounds) {
+    if (!this.mainWindow || !bounds) return;
+
+    if (this.popoverView && this.popoverType === type) {
+      this.closePopover();
+      return;
+    }
+
+    this.closePopover();
+    this.popoverType = type;
+
+    const path = require('path');
+    const popoverView = new WebContentsView({
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false
+      }
+    });
+
+    this.popoverView = popoverView;
+    try {
+      popoverView.setBackgroundColor('#00000000');
+    } catch (e) {}
+
+    const width = type === 'font' ? 360 : type === 'flows' ? 380 : 420;
+    const height = type === 'font' ? 340 : type === 'flows' ? 380 : 440;
+
+    let x = Math.round(bounds.x || bounds.left || 0);
+    if (bounds.right && (!bounds.x || bounds.right > width)) {
+      x = Math.max(16, Math.round(bounds.right - width));
+    }
+    const windowBounds = this.mainWindow.getBounds();
+    if (x + width > windowBounds.width - 16) {
+      x = Math.max(16, windowBounds.width - width - 16);
+    }
+
+    let y = Math.round((bounds.bottom || bounds.y || 80) + 4);
+
+    popoverView.setBounds({ x, y, width, height });
+
+    let baseUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
+    try {
+      const mainUrl = this.mainWindow.webContents.getURL();
+      if (mainUrl && (mainUrl.startsWith('http://') || mainUrl.startsWith('https://') || mainUrl.startsWith('file://'))) {
+        baseUrl = mainUrl.split('#')[0].split('?')[0];
+      }
+    } catch (e) {}
+
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1);
+    }
+    const popoverUrl = `${baseUrl}/#/popover-window?type=${type}`;
+
+    popoverView.webContents.loadURL(popoverUrl).catch(() => {
+      popoverView.webContents.loadFile(path.join(__dirname, '../dist/index.html'), {
+        hash: `/popover-window?type=${type}`
+      });
+    });
+
+    popoverView.webContents.on('blur', () => {
+      this.closePopover();
+    });
+
+    try {
+      this.mainWindow.contentView.addChildView(popoverView);
+    } catch (e) {
+      console.error('[BrowserViewManager] Error adding popover view:', e);
+    }
+  }
+
+  closePopover() {
+    if (this.popoverView) {
+      try {
+        this.mainWindow.contentView.removeChildView(this.popoverView);
+      } catch (e) {}
+      try {
+        this.popoverView.webContents.close();
+      } catch (e) {}
+      this.popoverView = null;
+      this.popoverType = null;
     }
   }
 

@@ -27,5 +27,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   
   // Safe AI extraction bridge pipeline
-  extractPageText: (tabId) => ipcRenderer.invoke('browser:extract-page-text', { tabId })
+  extractPageText: (tabId) => ipcRenderer.invoke('browser:extract-page-text', { tabId }),
+
+  // Popover Overlay Window
+  openPopover: (params) => ipcRenderer.invoke('browser:open-popover', params),
+  closePopover: () => ipcRenderer.invoke('browser:close-popover')
 });

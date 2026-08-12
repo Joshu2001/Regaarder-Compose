@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { SheetIcon, AssistIcon } from '../RegaarderProductIcons';
 import { BrowserCloseIcon, BrowserCheckIcon } from './RegaarderBrowserIcons';
 
@@ -10,6 +11,7 @@ export const SendToSheetsPopover = ({
   anchorRect,
   activeTab,
   activeSheets = [],
+  isStandalone = false,
   onClose,
   onExecuteExport,
   showToast
@@ -165,10 +167,14 @@ export const SendToSheetsPopover = ({
   const topPos = anchorRect ? anchorRect.bottom + 6 : 60;
   const rightPos = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right - 20) : 24;
 
-  return (
+  const content = (
     <div
-      style={{ top: `${topPos}px`, right: `${rightPos}px` }}
-      className="fixed z-50 w-[420px] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden font-sans text-slate-100 animate-in fade-in zoom-in-95 duration-150 select-none"
+      style={isStandalone ? {} : { top: `${topPos}px`, right: `${rightPos}px` }}
+      className={`${
+        isStandalone
+          ? 'relative z-50 w-full max-w-md border border-slate-800 shadow-2xl'
+          : 'fixed z-50 w-[420px] border border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-150'
+      } bg-slate-900 rounded-2xl overflow-hidden font-sans text-slate-100 select-none`}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-slate-950/80 border-b border-slate-800">
@@ -397,6 +403,11 @@ export const SendToSheetsPopover = ({
       </div>
     </div>
   );
+
+  if (isStandalone) return content;
+
+  const targetNode = document.fullscreenElement ?? document.body;
+  return createPortal(content, targetNode);
 };
 
 export default SendToSheetsPopover;

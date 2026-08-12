@@ -11,15 +11,69 @@ import RecordingIndicatorBar from './flows/RecordingIndicatorBar';
 import FlowSynthesisModal from './flows/FlowSynthesisModal';
 import FlowLibraryModal from './flows/FlowLibraryModal';
 import FlowExecutionModal from './flows/FlowExecutionModal';
+import BrowserFontPopover from './BrowserFontPopover';
 import { globalActivityObserver, synthesizeFlowFromActions, getSavedFlows } from '../../services/flowEngine';
 
 const STORAGE_KEY = 'regaarder_research_tabs_v2';
 const SAVED_ITEMS_KEY = 'regaarder_saved_research_v1';
+const BROWSER_FONT_STORAGE_KEY = 'regaarder_browser_font_v1';
+const BROWSER_FONT_SIZE_STORAGE_KEY = 'regaarder_browser_font_size_v1';
 const DEFAULT_RESEARCH_URL = 'regaarder://research';
 
 export const BrowserWorkspace = ({ showToast, setProductMode }) => {
   const isElectron = Boolean(window.electronAPI?.isElectron);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
+
+  // Browser-Specific Isolated Font & Font Size States (Does not touch Compose document editor)
+  const [browserFont, setBrowserFont] = useState(() => {
+    try {
+      return localStorage.getItem(BROWSER_FONT_STORAGE_KEY) || 'System Default';
+    } catch (e) {
+      return 'System Default';
+    }
+  });
+
+  const [browserFontSize, setBrowserFontSize] = useState(() => {
+    try {
+      const saved = localStorage.getItem(BROWSER_FONT_SIZE_STORAGE_KEY);
+      return saved ? Number(saved) : 100;
+    } catch (e) {
+      return 100;
+    }
+  });
+
+  const [fontPopoverRect, setFontPopoverRect] = useState(null);
+
+  // Persist Browser font settings
+  useEffect(() => {
+    try {
+      localStorage.setItem(BROWSER_FONT_STORAGE_KEY, browserFont);
+    } catch (e) {
+      // ignore
+    }
+  }, [browserFont]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(BROWSER_FONT_SIZE_STORAGE_KEY, String(browserFontSize));
+    } catch (e) {
+      // ignore
+    }
+  }, [browserFontSize]);
+
+  // Sync font & size state across windows (e.g. native Electron popover overlay)
+  useEffect(() => {
+    const handleStorageSync = () => {
+      try {
+        const savedFont = localStorage.getItem(BROWSER_FONT_STORAGE_KEY);
+        if (savedFont && savedFont !== browserFont) setBrowserFont(savedFont);
+        const savedSize = localStorage.getItem(BROWSER_FONT_SIZE_STORAGE_KEY);
+        if (savedSize && Number(savedSize) !== browserFontSize) setBrowserFontSize(Number(savedSize));
+      } catch (e) {}
+    };
+    window.addEventListener('storage', handleStorageSync);
+    return () => window.removeEventListener('storage', handleStorageSync);
+  }, [browserFont, browserFontSize]);
 
   // Popover state anchors
   const [sendToSheetsPopoverRect, setSendToSheetsPopoverRect] = useState(null);
@@ -33,6 +87,52 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
   const [synthesizedFlowToReview, setSynthesizedFlowToReview] = useState(null);
   const [showFlowLibraryModal, setShowFlowLibraryModal] = useState(false);
   const [activeExecutingFlow, setActiveExecutingFlow] = useState(null);
+
+  const serializeRect = (rect) => {
+    if (!rect) return null;
+    return {
+      x: Math.round(rect.x || rect.left || 0),
+      y: Math.round(rect.y || rect.top || 0),
+      width: Math.round(rect.width || 0),
+      height: Math.round(rect.height || 0),
+      top: Math.round(rect.top || 0),
+      right: Math.round(rect.right || 0),
+      bottom: Math.round(rect.bottom || 0),
+      left: Math.round(rect.left || 0)
+    };
+  };
+
+  const handleOpenFontPopoverAction = useCallback((rect) => {
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'font', bounds: serializeRect(rect) });
+    } else {
+      setFontPopoverRect((prev) => (prev ? null : rect));
+    }
+  }, [isElectron]);
+
+  const handleOpenFlowsPopoverAction = useCallback((rect) => {
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'flows', bounds: serializeRect(rect) });
+    } else {
+      setFlowsPopoverRect((prev) => (prev ? null : rect));
+    }
+  }, [isElectron]);
+
+  const handleOpenSendToSheetsPopoverAction = useCallback((rect) => {
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'sendToSheets', bounds: serializeRect(rect) });
+    } else {
+      setSendToSheetsPopoverRect((prev) => (prev ? null : rect));
+    }
+  }, [isElectron]);
+
+  const handleOpenSendToComposePopoverAction = useCallback((rect) => {
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'sendToCompose', bounds: serializeRect(rect) });
+    } else {
+      setSendToComposePopoverRect((prev) => (prev ? null : rect));
+    }
+  }, [isElectron]);
 
   // Restore or initialize research tabs
   const [tabs, setTabs] = useState(() => {
@@ -417,19 +517,6 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
     }
   };
 
-  const activePopoverBottom = useMemo(() => {
-    if (flowsPopoverRect) {
-      return (flowsPopoverRect.bottom || 88) + 360;
-    }
-    if (sendToSheetsPopoverRect) {
-      return (sendToSheetsPopoverRect.bottom || 88) + 400;
-    }
-    if (sendToComposePopoverRect) {
-      return (sendToComposePopoverRect.bottom || 88) + 400;
-    }
-    return null;
-  }, [flowsPopoverRect, sendToSheetsPopoverRect, sendToComposePopoverRect]);
-
   const isModalOpen = Boolean(
     showCompetitorWorkflow ||
     synthesizedFlowToReview ||
@@ -451,12 +538,14 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
       <BrowserTabBar
         tabs={tabs}
         activeTabId={activeTabId}
+        isFontPopoverOpen={Boolean(fontPopoverRect)}
         onSelectTab={handleSelectTab}
         onCloseTab={handleCloseTab}
         onNewTab={() => handleNewTab(DEFAULT_RESEARCH_URL)}
+        onOpenFontPopover={handleOpenFontPopoverAction}
       />
 
-      {/* Regaarder Research Toolbar */}
+      {/* Executive Navigation Toolbar */}
       <BrowserToolbar
         currentUrl={activeTab?.url || ''}
         isLoading={activeTab?.isLoading || false}
@@ -466,6 +555,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
         isBookmarked={isBookmarked}
         isSidePanelOpen={isSidePanelOpen}
         isFlowRecording={isFlowRecording}
+        isFontPopoverOpen={Boolean(fontPopoverRect)}
         onNavigate={handleNavigate}
         onGoBack={handleGoBack}
         onGoForward={handleGoForward}
@@ -475,9 +565,10 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
         onOpenExternal={handleOpenExternal}
         onToggleBookmark={handleToggleBookmark}
         onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
-        onOpenSendToSheetsPopover={(rect) => setSendToSheetsPopoverRect(rect)}
-        onOpenSendToComposePopover={(rect) => setSendToComposePopoverRect(rect)}
-        onOpenFlowsPopover={(rect) => setFlowsPopoverRect((prev) => (prev ? null : rect))}
+        onOpenSendToSheetsPopover={handleOpenSendToSheetsPopoverAction}
+        onOpenSendToComposePopover={handleOpenSendToComposePopoverAction}
+        onOpenFlowsPopover={handleOpenFlowsPopoverAction}
+        onOpenFontPopover={handleOpenFontPopoverAction}
         onSendWhiteboardChip={() => {
           if (showToast) showToast('Clipped visual layout to Whiteboard canvas');
         }}
@@ -497,36 +588,39 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
           isElectron={isElectron}
           isSidePanelOpen={isSidePanelOpen}
           isModalOpen={isModalOpen}
-          activePopoverBottom={activePopoverBottom}
+          browserFont={browserFont}
+          browserFontSize={browserFontSize}
           onNavigate={handleNavigate}
           onLaunchCompetitorWorkflow={() => setShowCompetitorWorkflow(true)}
           onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
           onRemoveBookmark={handleRemoveBookmark}
         />
 
-        {/* Regaarder AI Assistant Side Panel */}
+        {/* Regaarder AI Assistant Side Panel (Hovering Overlay over research page) */}
         {isSidePanelOpen && (
-          <BrowserResearchPanel
-            activeTab={activeTab}
-            onClose={() => setIsSidePanelOpen(false)}
-            onExtractText={handleExtractText}
-            onOpenSendToCompose={() => {
-              setSendToComposePopoverRect({ bottom: 60, right: 300 });
-            }}
-            onOpenSendToSheets={() => {
-              setSendToSheetsPopoverRect({ bottom: 60, right: 300 });
-            }}
-            onSaveToMemory={() => {
-              if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Memory`);
-            }}
-            onSendToWhiteboard={() => {
-              if (showToast) showToast('Clipped visual layout to Whiteboard canvas');
-            }}
-            onRunFlowRequested={(flow, initialInputs) => {
-              setActiveExecutingFlow({ flow, initialInputs });
-            }}
-            showToast={showToast}
-          />
+          <div className="absolute right-0 top-0 bottom-0 z-40 w-[360px] max-w-[90vw] h-full shadow-2xl border-l border-slate-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl animate-in slide-in-from-right duration-200">
+            <BrowserResearchPanel
+              activeTab={activeTab}
+              onClose={() => setIsSidePanelOpen(false)}
+              onExtractText={handleExtractText}
+              onOpenSendToCompose={() => {
+                setSendToComposePopoverRect({ bottom: 60, right: 300 });
+              }}
+              onOpenSendToSheets={() => {
+                setSendToSheetsPopoverRect({ bottom: 60, right: 300 });
+              }}
+              onSaveToMemory={() => {
+                if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Memory`);
+              }}
+              onSendToWhiteboard={() => {
+                if (showToast) showToast('Clipped visual layout to Whiteboard canvas');
+              }}
+              onRunFlowRequested={(flow, initialInputs) => {
+                setActiveExecutingFlow({ flow, initialInputs });
+              }}
+              showToast={showToast}
+            />
+          </div>
         )}
       </div>
 
@@ -626,6 +720,29 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
           }}
           onNavigate={handleNavigate}
           showToast={showToast}
+        />
+      )}
+
+      {/* Contextual Options Popover: Isolated Browser Font & Size */}
+      {fontPopoverRect && (
+        <BrowserFontPopover
+          anchorRect={fontPopoverRect}
+          browserFont={browserFont}
+          browserFontSize={browserFontSize}
+          onChangeFont={(newFont) => {
+            setBrowserFont(newFont);
+            if (showToast) showToast(`Browser font updated to ${newFont}`);
+          }}
+          onChangeFontSize={(newSize) => {
+            setBrowserFontSize(newSize);
+            if (showToast) showToast(`Browser size set to ${newSize}%`);
+          }}
+          onReset={() => {
+            setBrowserFont('System Default');
+            setBrowserFontSize(100);
+            if (showToast) showToast('Reset browser font and zoom');
+          }}
+          onClose={() => setFontPopoverRect(null)}
         />
       )}
     </div>

@@ -2,6 +2,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Globe, AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react';
 import BrowserResearchHome from './BrowserResearchHome';
 
+const BROWSER_FONT_STACKS = {
+  'System Default': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  'Inter': 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  'Manrope': 'Manrope, Inter, sans-serif',
+  'SF Pro Display': '"SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
+  'Georgia': 'Georgia, Cambria, "Times New Roman", serif',
+  'Charter': 'Charter, Georgia, serif',
+  'JetBrains Mono': '"JetBrains Mono", monospace'
+};
+
+const resolveBrowserFontStack = (name) => BROWSER_FONT_STACKS[name] || name || '-apple-system, sans-serif';
+
 /**
  * BrowserViewport: Container mounting point for Electron WebContentsView Chromium Surface.
  * Renders executive BrowserResearchHome canvas when on regaarder://research or regaarder://saved,
@@ -13,7 +25,9 @@ export const BrowserViewport = ({
   isElectron = false,
   isSidePanelOpen = false,
   isModalOpen = false,
-  activePopoverBottom = null,
+  isPopoverOpen = false,
+  browserFont = 'System Default',
+  browserFontSize = 100,
   onNavigate,
   onLaunchCompetitorWorkflow,
   onToggleSidePanel,
@@ -31,27 +45,15 @@ export const BrowserViewport = ({
       if (!containerRef.current || !window.electronAPI) return;
       const rect = containerRef.current.getBoundingClientRect();
 
-      let targetX = Math.round(rect.x);
-      let targetY = Math.round(rect.y);
-      let targetWidth = Math.round(rect.width);
-      let targetHeight = Math.round(rect.height);
-
-      if (activePopoverBottom) {
-        // Top-right popovers occupy ~340px at right edge.
-        // Trimming targetWidth keeps webpage anchored at y = 88px with zero top gap or downward shift,
-        // while leaving top right region clear for unclipped React DOM popovers!
-        targetWidth = Math.max(0, Math.round(rect.width - 340));
-      }
-
       window.electronAPI.updateViewportBounds({
-        x: targetX,
-        y: targetY,
-        width: targetWidth,
-        height: targetHeight
+        x: Math.round(rect.x),
+        y: Math.round(rect.y),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height)
       });
     };
 
-    if (isResearchHome || isModalOpen) {
+    if (isResearchHome || isModalOpen || isPopoverOpen) {
       window.electronAPI.setBrowserVisibility(false);
     } else {
       window.electronAPI.setBrowserVisibility(true);
@@ -74,24 +76,32 @@ export const BrowserViewport = ({
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateBounds);
     };
-  }, [isElectron, activeTab?.id, isResearchHome, isSidePanelOpen, isModalOpen, activePopoverBottom]);
+  }, [isElectron, activeTab?.id, isResearchHome, isSidePanelOpen, isModalOpen, isPopoverOpen]);
 
   // Reset iframe error when URL changes in web fallback
   useEffect(() => {
     setIframeError(false);
   }, [activeTab?.url]);
 
+  const viewportStyle = {
+    fontFamily: resolveBrowserFontStack(browserFont),
+    fontSize: `${browserFontSize}%`,
+    zoom: browserFontSize !== 100 ? `${browserFontSize / 100}` : undefined
+  };
+
   if (isResearchHome) {
     return (
-      <BrowserResearchHome
-        activeUrl={activeTab?.url}
-        savedItems={savedItems}
-        onSearch={onNavigate}
-        onNavigate={onNavigate}
-        onLaunchCompetitorWorkflow={onLaunchCompetitorWorkflow}
-        onToggleSidePanel={onToggleSidePanel}
-        onRemoveBookmark={onRemoveBookmark}
-      />
+      <div className="w-full h-full" style={viewportStyle}>
+        <BrowserResearchHome
+          activeUrl={activeTab?.url}
+          savedItems={savedItems}
+          onSearch={onNavigate}
+          onNavigate={onNavigate}
+          onLaunchCompetitorWorkflow={onLaunchCompetitorWorkflow}
+          onToggleSidePanel={onToggleSidePanel}
+          onRemoveBookmark={onRemoveBookmark}
+        />
+      </div>
     );
   }
 
@@ -100,6 +110,7 @@ export const BrowserViewport = ({
       id="regaarder-browser-viewport"
       ref={containerRef}
       className="relative flex-1 w-full h-full bg-transparent overflow-hidden"
+      style={viewportStyle}
     >
       {/* If inside Electron, Electron's WebContentsView paints directly behind this container */}
       {isElectron ? (

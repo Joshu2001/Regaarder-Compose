@@ -45,6 +45,7 @@ import {
 } from './components/RegaarderProductIcons';
 import RoomLandingPage from './RoomLandingPage';
 import BrowserWorkspace from './components/browser/BrowserWorkspace';
+import PopoverWindowContainer from './components/browser/PopoverWindowContainer';
 import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 import HelpSupportPanel from './components/HelpSupportPanel';
 import TemplateChartVisualizer, { extractTemplateChartData } from './components/TemplateChartVisualizer';
@@ -6604,7 +6605,8 @@ function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, grid
   );
 }
 
-export default function App() {
+function AppCore() {
+
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
   const [sheetGrids, setSheetGrids] = useState(() => {
     const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
@@ -49581,7 +49583,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
     const wordsCount = documentStats?.words || 0;
     const minRead = wordsCount > 0 ? Math.max(1, Math.ceil(wordsCount / 200)) : 0;
     return (
-      <div className="flex-1 flex flex-col min-h-0 px-3.5 py-3.5 animate-fade-in-slide-right space-y-3.5" style={{ fontFamily: editorFont }}>
+      <div className="flex-1 flex flex-col min-h-0 px-3.5 py-3.5 animate-fade-in-slide-right space-y-3.5" style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <div className="space-y-1.5 shrink-0 px-1">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold tracking-[0.12em] text-slate-400 dark:text-zinc-500 uppercase">Structure</span>
@@ -49612,7 +49614,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                 if (depth === 0) {
                   return (
-                    <div key={item.id} className="space-y-1" style={{ fontFamily: editorFont }}>
+                    <div key={item.id} className="space-y-1" style={{ fontFamily: resolveFontFamily(editorFont) }}>
                       <div
                         onClick={() => setActiveOutlineSectionId(item.id)}
                         className={`group flex items-center justify-between p-1.5 rounded-xl transition-all duration-150 relative flex-nowrap min-w-0 cursor-pointer ${
@@ -49658,7 +49660,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               }}
                               autoFocus
                               className="text-xs font-semibold text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-400 w-full"
-                              style={{ fontFamily: editorFont }}
+                              style={{ fontFamily: resolveFontFamily(editorFont) }}
                             />
                           ) : (
                             <span 
@@ -49736,7 +49738,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 }
 
                 return (
-                  <div key={item.id} className="space-y-1" style={{ fontFamily: editorFont }}>
+                  <div key={item.id} className="space-y-1" style={{ fontFamily: resolveFontFamily(editorFont) }}>
                     <div 
                       className={`flex items-center justify-between gap-2 py-1 min-w-0 flex-nowrap group/sub cursor-pointer px-1 rounded-lg transition-colors ${
                         isSelected ? 'bg-violet-50/60 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 font-medium' : 'hover:bg-slate-100/50 dark:hover:bg-zinc-800/40'
@@ -49780,7 +49782,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             }}
                             autoFocus
                             className="text-xs font-semibold text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-400 w-full"
-                            style={{ fontFamily: editorFont }}
+                            style={{ fontFamily: resolveFontFamily(editorFont) }}
                           />
                         ) : (
                           <span 
@@ -49861,7 +49863,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 setActiveOutlineSectionId(newId);
               }} 
               className="text-[12px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/50 border border-violet-200/80 dark:border-violet-800/60 hover:bg-violet-100 dark:hover:bg-violet-900/60 active:scale-[0.99] px-4 py-2 rounded-xl transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer select-none"
-              style={{ fontFamily: editorFont }}
+              style={{ fontFamily: resolveFontFamily(editorFont) }}
             >
               + Add Section
             </button>
@@ -49881,7 +49883,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 setEditingOutlineText('Untitled Section');
               }}
               className="w-full py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-900/60 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-950/30 text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-              style={{ fontFamily: editorFont }}
+              style={{ fontFamily: resolveFontFamily(editorFont) }}
             >
               + Add Section
             </button>
@@ -49895,7 +49897,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               insertEnterprisePage();
             }}
             className="w-full py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-900/60 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-950/30 text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none shrink-0"
-            style={{ fontFamily: editorFont }}
+            style={{ fontFamily: resolveFontFamily(editorFont) }}
           >
             + New page
           </button>
@@ -53559,6 +53561,44 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     Landscape
                   </button>
                 </div>
+
+                {/* Font Selector — AppleToolbarDropdown */}
+                <AppleToolbarDropdown
+                  label="Font ·"
+                  value={editorFont}
+                  options={fontOptions.map((font) => ({
+                    id: font,
+                    label: font,
+                    style: { fontFamily: resolveFontFamily(font) }
+                  }))}
+                  onChange={(fontId) => {
+                    setEditorFont(fontId);
+                    applyFormatCommand('fontName', fontId);
+                    showToast?.(`Font changed to ${fontId}`);
+                  }}
+                  searchable={true}
+                  searchPlaceholder="Search font..."
+                  width="w-56"
+                />
+
+                {/* Font Size — AppleToolbarDropdown */}
+                <AppleToolbarDropdown
+                  label="Size ·"
+                  value={String(activeFontSize)}
+                  options={sizeOptions.map((size) => ({
+                    id: String(size),
+                    label: `${size} pt`
+                  }))}
+                  onChange={(sizeId) => {
+                    const numSize = Number(sizeId);
+                    setActiveFontSize(numSize);
+                    applyFormatCommand('fontSize', sizeId);
+                    showToast?.(`Font size changed to ${sizeId} pt`);
+                  }}
+                  searchable={true}
+                  searchPlaceholder="Search size..."
+                  width="w-28"
+                />
 
                 {/* Margins — AppleToolbarDropdown */}
                 <AppleToolbarDropdown
@@ -57560,13 +57600,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   docTheme === 'slate' ? '#0f172a' :
                   '#0f172a'
                 ),
-                fontFamily: editorFont || (
-                  docTheme === 'emerald' ? 'sans-serif' :
-                  docTheme === 'amber' ? 'serif' :
-                  docTheme === 'rose' ? 'sans-serif' :
-                  docTheme === 'slate' ? 'monospace' :
-                  'sans-serif'
-                ),
+                fontFamily: resolveFontFamily(editorFont),
                 minHeight: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)}px`,
                 paddingLeft: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
                 paddingRight: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
@@ -57911,7 +57945,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   dir="ltr"
                   data-doc-id={activeDocId || ''}
                   className={`mb-4 min-h-[70vh] cursor-text outline-none text-sm leading-relaxed transition-colors ${isDarkMode ? 'text-zinc-100' : 'text-slate-800'}`}
-                  style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
+                  style={{ fontFamily: resolveFontFamily(editorFont), textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
                   dangerouslySetInnerHTML={{ __html: docBodyHtml }}
                 />
                 {canShowComposeActions && (
@@ -58170,13 +58204,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       docTheme === 'rose' ? '#4c0519' :
                       docTheme === 'slate' ? '#0f172a' :
                       '#0f172a',
-                    fontFamily: editorFont || (
-                      docTheme === 'emerald' ? 'sans-serif' :
-                      docTheme === 'amber' ? 'serif' :
-                      docTheme === 'rose' ? 'sans-serif' :
-                      docTheme === 'slate' ? 'monospace' :
-                      'sans-serif'
-                    ),
+                    fontFamily: resolveFontFamily(editorFont),
                     minHeight: pgHeight + 'px',
                     paddingLeft: pgPadding,
                     paddingRight: pgPadding,
@@ -58244,7 +58272,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setExtraPages(prev => prev.map(p => p.id === pg.id ? { ...p, html } : p));
                     }}
                     className="outline-none text-sm text-gray-700 leading-relaxed min-h-[200px]"
-                    style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
+                    style={{ fontFamily: resolveFontFamily(editorFont), textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
                     dangerouslySetInnerHTML={{ __html: pg.html }}
                   />
                 </div>
@@ -61511,7 +61539,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           className="fixed bg-white/95 dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-[9999] min-w-[160px] backdrop-blur-md"
-          style={{ top: `${outlineMenuCoords.top + 4}px`, left: `${outlineMenuCoords.left}px`, fontFamily: editorFont }}
+          style={{ top: `${outlineMenuCoords.top + 4}px`, left: `${outlineMenuCoords.left}px`, fontFamily: resolveFontFamily(editorFont) }}
         >
           <button 
             type="button" 
@@ -61621,7 +61649,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             className="fixed z-[9999] bg-white/95 dark:bg-zinc-900/95 border border-slate-200/90 dark:border-zinc-800 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.08)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] rounded-xl px-3 py-1.5 flex items-center gap-2.5 backdrop-blur-md h-[38px] w-[340px] max-w-[92vw] transition-all duration-150 ease-out"
-            style={{ top: `${figureMenuCoords.top}px`, left: `${figureMenuCoords.left}px`, fontFamily: editorFont }}
+            style={{ top: `${figureMenuCoords.top}px`, left: `${figureMenuCoords.left}px`, fontFamily: resolveFontFamily(editorFont) }}
           >
             {/* Semantic Icon: Restrained table or figure outline with naming tag indicator */}
             <div className="flex items-center justify-center shrink-0 text-slate-400 dark:text-zinc-500 select-none">
@@ -62890,9 +62918,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
   );
 }
 
+/**
+ * App: Thin routing shell.
+ * Routes to PopoverWindowContainer for detached popover windows,
+ * or AppCore for the full workspace. Evaluated before any hooks,
+ * so it correctly complies with React Rules of Hooks.
+ */
+export default function App() {
+  if (window.location.hash.startsWith('#/popover-window')) {
+    return <PopoverWindowContainer />;
+  }
+  return <AppCore />;
+}
 
-
-
+// Triggering HMR refresh: 2026-08-03T01:21:00+08:00
 
 
 

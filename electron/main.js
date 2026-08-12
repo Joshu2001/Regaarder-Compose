@@ -127,6 +127,18 @@ ipcMain.handle('browser:extract-page-text', async (event, { tabId }) => {
   return { success: false, error: 'Browser manager not initialized' };
 });
 
+ipcMain.handle('browser:open-popover', async (event, { type, bounds }) => {
+  if (browserViewManager) {
+    browserViewManager.showPopover(type, bounds);
+  }
+});
+
+ipcMain.handle('browser:close-popover', async () => {
+  if (browserViewManager) {
+    browserViewManager.closePopover();
+  }
+});
+
 app.whenReady().then(() => {
   createWindow();
 
