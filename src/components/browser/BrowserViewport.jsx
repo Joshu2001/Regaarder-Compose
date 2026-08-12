@@ -31,19 +31,22 @@ export const BrowserViewport = ({
       if (!containerRef.current || !window.electronAPI) return;
       const rect = containerRef.current.getBoundingClientRect();
 
+      let targetX = Math.round(rect.x);
       let targetY = Math.round(rect.y);
+      let targetWidth = Math.round(rect.width);
       let targetHeight = Math.round(rect.height);
 
-      if (activePopoverBottom && activePopoverBottom > rect.y) {
-        const offset = activePopoverBottom - rect.y;
-        targetY = Math.round(activePopoverBottom);
-        targetHeight = Math.max(0, Math.round(rect.height - offset));
+      if (activePopoverBottom) {
+        // Top-right popovers occupy ~340px at right edge.
+        // Trimming targetWidth keeps webpage anchored at y = 88px with zero top gap or downward shift,
+        // while leaving top right region clear for unclipped React DOM popovers!
+        targetWidth = Math.max(0, Math.round(rect.width - 340));
       }
 
       window.electronAPI.updateViewportBounds({
-        x: Math.round(rect.x),
+        x: targetX,
         y: targetY,
-        width: Math.round(rect.width),
+        width: targetWidth,
         height: targetHeight
       });
     };
