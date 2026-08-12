@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   SlidersHorizontal,
@@ -7,14 +7,15 @@ import {
   Download,
   ExternalLink,
   Bookmark,
-  Printer
+  Printer,
+  Plus,
+  X
 } from 'lucide-react';
 import { SheetIcon, ComposeIcon, WhiteboardIcon, MemoryIcon } from '../RegaarderProductIcons';
 
 /**
  * BrowserUtilitiesPopover: Regaarder Dedicated Browser Utilities & Tools Popover
- * Houses secondary browser actions (Export, Ingestion, Page Tools, Bookmarks, Print, Display & Appearance)
- * Surfaces use ~96% opacity to prevent webpage content bleed-through while retaining glass blur.
+ * Houses search & filter, tab management, export/ingestion, page tools, and display appearance settings.
  */
 export const BrowserUtilitiesPopover = ({
   anchorRect,
@@ -27,16 +28,26 @@ export const BrowserUtilitiesPopover = ({
   onSendWhiteboard,
   onSaveMemory,
   onFindInPage,
+  onNewTab,
+  onCloseTab,
   onOpenHistory,
   onOpenDownloads,
   onOpenBookmarks,
   onPrintPage
 }) => {
   const popoverRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Auto-focus search input when popover mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
-    // Outside-click dismissal is handled globally by BrowserWorkspace's pointerdown
-    // listener (which guards via [data-popover]). Only Escape key is handled here.
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose?.();
     };
@@ -47,8 +58,7 @@ export const BrowserUtilitiesPopover = ({
   if (!anchorRect && !isStandalone) return null;
 
   // Estimated utilities popover height for bottom-clamp calculation.
-  // Flips above the anchor button when it would overflow below the viewport fold.
-  const POPOVER_HEIGHT_ESTIMATE = 380;
+  const POPOVER_HEIGHT_ESTIMATE = 420;
   const spaceBelow = anchorRect ? window.innerHeight - (anchorRect.bottom + 6) : 999;
   const top = anchorRect
     ? spaceBelow >= POPOVER_HEIGHT_ESTIMATE
@@ -66,6 +76,152 @@ export const BrowserUtilitiesPopover = ({
     onClose?.();
   };
 
+  // Comprehensive utility items registry with tags/keywords
+  const allUtilities = useMemo(() => [
+    {
+      id: 'new-tab',
+      title: 'New Research Tab',
+      shortcut: '⌘T',
+      category: 'Tabs & Navigation',
+      keywords: ['tab', 'new tab', 'add tab', 'open tab', 'create tab', 'tabs'],
+      icon: <Plus size={15} className="text-violet-500 shrink-0" />,
+      action: onNewTab
+    },
+    {
+      id: 'close-tab',
+      title: 'Close Active Tab',
+      shortcut: '⌘W',
+      category: 'Tabs & Navigation',
+      keywords: ['tab', 'close tab', 'remove tab', 'delete tab', 'tabs'],
+      icon: <X size={15} className="text-rose-500 shrink-0" />,
+      action: onCloseTab
+    },
+    {
+      id: 'history',
+      title: 'Saved Tabs & History',
+      shortcut: '⌘H',
+      category: 'Tabs & Navigation',
+      keywords: ['tab', 'saved tabs', 'history', 'recent tabs', 'tabs', 'saved'],
+      icon: <History size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
+      action: onOpenHistory
+    },
+    {
+      id: 'display',
+      title: 'Display & Appearance',
+      shortcut: '⌘,',
+      category: 'Page Customization',
+      keywords: ['display', 'appearance', 'font', 'dark', 'light', 'theme', 'zoom', 'tab', 'page', 'customization'],
+      icon: (
+        <div className="w-5 h-5 rounded-md bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 border border-violet-500/20">
+          <SlidersHorizontal size={12} />
+        </div>
+      ),
+      action: onOpenFontPopover,
+      isFeatured: true
+    },
+    {
+      id: 'send-sheets',
+      title: 'Send to Sheets',
+      category: 'Export & Ingestion',
+      keywords: ['sheet', 'sheets', 'export', 'table', 'excel', 'csv', 'data', 'tab'],
+      icon: <SheetIcon size={15} className="text-emerald-500 shrink-0" />,
+      action: onOpenSendToSheets
+    },
+    {
+      id: 'send-compose',
+      title: 'Send to Compose',
+      category: 'Export & Ingestion',
+      keywords: ['compose', 'doc', 'document', 'export', 'text', 'notes'],
+      icon: <ComposeIcon size={15} className="text-sky-500 shrink-0" />,
+      action: onOpenSendToCompose
+    },
+    {
+      id: 'send-whiteboard',
+      title: 'Send to Whiteboard',
+      category: 'Export & Ingestion',
+      keywords: ['whiteboard', 'canvas', 'clip', 'draw', 'export', 'image'],
+      icon: <WhiteboardIcon size={15} className="text-amber-500 shrink-0" />,
+      action: onSendWhiteboard
+    },
+    {
+      id: 'save-memory',
+      title: 'Save to Regaarder Memory',
+      category: 'Export & Ingestion',
+      keywords: ['memory', 'knowledge', 'save', 'ai', 'remember', 'node'],
+      icon: <MemoryIcon size={15} className="text-violet-500 shrink-0" />,
+      action: onSaveMemory
+    },
+    {
+      id: 'find-page',
+      title: 'Find in Page',
+      shortcut: '⌘F',
+      category: 'Page & Browser Tools',
+      keywords: ['find', 'search', 'page', 'text', 'filter'],
+      icon: <Search size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
+      action: onFindInPage
+    },
+    {
+      id: 'bookmarks',
+      title: 'Bookmarks Manager',
+      shortcut: '⌘B',
+      category: 'Page & Browser Tools',
+      keywords: ['bookmark', 'bookmarks', 'favorite', 'saved', 'tab', 'tabs'],
+      icon: <Bookmark size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
+      action: onOpenBookmarks
+    },
+    {
+      id: 'downloads',
+      title: 'Downloads',
+      shortcut: '⌘J',
+      category: 'Page & Browser Tools',
+      keywords: ['download', 'downloads', 'files', 'saved'],
+      icon: <Download size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
+      action: onOpenDownloads
+    },
+    {
+      id: 'external-browser',
+      title: 'Open in External Browser',
+      category: 'Page & Browser Tools',
+      keywords: ['external', 'chrome', 'browser', 'open', 'system', 'tab'],
+      icon: <ExternalLink size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
+      action: onOpenExternal
+    },
+    {
+      id: 'print',
+      title: 'Print Page...',
+      shortcut: '⌘P',
+      category: 'Page & Browser Tools',
+      keywords: ['print', 'pdf', 'page', 'export', 'paper'],
+      icon: <Printer size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
+      action: onPrintPage
+    }
+  ], [onNewTab, onCloseTab, onOpenHistory, onOpenFontPopover, onOpenSendToSheets, onOpenSendToCompose, onSendWhiteboard, onSaveMemory, onFindInPage, onOpenBookmarks, onOpenDownloads, onOpenExternal, onPrintPage]);
+
+  // Filter utilities based on search query
+  const filteredUtilities = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return allUtilities;
+    return allUtilities.filter((u) => {
+      return (
+        u.title.toLowerCase().includes(q) ||
+        u.category.toLowerCase().includes(q) ||
+        u.keywords.some((k) => k.toLowerCase().includes(q))
+      );
+    });
+  }, [allUtilities, searchQuery]);
+
+  // Group items by category
+  const groupedUtilities = useMemo(() => {
+    const groups = {};
+    filteredUtilities.forEach((item) => {
+      if (!groups[item.category]) {
+        groups[item.category] = [];
+      }
+      groups[item.category].push(item);
+    });
+    return groups;
+  }, [filteredUtilities]);
+
   const content = (
     <div
       ref={popoverRef}
@@ -76,147 +232,76 @@ export const BrowserUtilitiesPopover = ({
       className={`${
         isStandalone
           ? 'relative z-[100000] w-full max-w-sm border border-slate-200/90 dark:border-zinc-800/90 shadow-2xl p-1.5'
-          : 'fixed z-[100000] w-[260px] border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] p-1.5 animate-in fade-in zoom-in-95 duration-150'
+          : 'fixed z-[100000] w-[275px] max-h-[460px] border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] p-1.5 animate-in fade-in zoom-in-95 duration-150 flex flex-col'
       } bg-white dark:bg-[#1c1c1e] rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden`}
     >
-      {/* SECTION 1: PAGE CUSTOMIZATION */}
-      <div className="px-1 py-1">
-        <button
-          type="button"
-          onPointerDown={(e) => handleAction(onOpenFontPopover, e)}
-          className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-900 dark:text-zinc-50 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-300 transition-colors cursor-pointer group"
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-lg bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 border border-violet-500/20">
-              <SlidersHorizontal size={13} />
+      {/* Quick Utility Search / Filter Field */}
+      <div className="px-1 pt-1 pb-1.5 border-b border-slate-100 dark:border-zinc-800/80 shrink-0">
+        <div className="relative flex items-center">
+          <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search utilities... (e.g. tab, sheets, print)"
+            className="w-full pl-8 pr-6 py-1.5 rounded-xl bg-slate-100/80 dark:bg-zinc-800/80 text-xs font-sans text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 outline-none border border-transparent focus:border-violet-500/40 transition-all"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                setSearchQuery('');
+              }}
+              className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-0.5 cursor-pointer"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Utility Items Scroll Container */}
+      <div className="flex-1 overflow-y-auto thin-scrollbar pt-1 space-y-1.5">
+        {Object.keys(groupedUtilities).length === 0 ? (
+          <div className="p-4 text-center text-xs text-slate-400 dark:text-zinc-500">
+            No utilities matching &quot;{searchQuery}&quot;
+          </div>
+        ) : (
+          Object.entries(groupedUtilities).map(([category, items], idx) => (
+            <div key={category} className="px-1">
+              {idx > 0 && <div className="h-px bg-slate-200/60 dark:bg-zinc-800/80 my-1" />}
+              <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5">
+                {category}
+              </span>
+              <div className="space-y-0.5 mt-0.5">
+                {items.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onPointerDown={(e) => handleAction(item.action, e)}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-colors cursor-pointer group ${
+                      item.isFeatured
+                        ? 'font-semibold text-slate-900 dark:text-zinc-50 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-300'
+                        : 'font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {item.icon}
+                      <span className="truncate">{item.title}</span>
+                    </div>
+                    {item.shortcut && (
+                      <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 opacity-70 group-hover:opacity-100 shrink-0 ml-2">
+                        {item.shortcut}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
-            <span>Display & Appearance</span>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 opacity-70 group-hover:opacity-100">⌘,</span>
-        </button>
-      </div>
-
-      <div className="h-px bg-slate-200/60 dark:bg-zinc-800/80 my-1" />
-
-      {/* SECTION 2: INGESTION & EXPORT UTILITIES */}
-      <div className="px-1 py-1 space-y-0.5">
-        <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5">
-          Export & Ingestion
-        </span>
-
-        <button
-          type="button"
-          onPointerDown={(e) => handleAction(onOpenSendToSheets, e)}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-        >
-          <SheetIcon size={15} className="text-emerald-500 shrink-0" />
-          <span>Send to Sheets</span>
-        </button>
-
-        <button
-          type="button"
-          onPointerDown={(e) => handleAction(onOpenSendToCompose, e)}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-        >
-          <ComposeIcon size={15} className="text-sky-500 shrink-0" />
-          <span>Send to Compose</span>
-        </button>
-
-        <button
-          type="button"
-          onPointerDown={(e) => handleAction(onSendWhiteboard, e)}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-        >
-          <WhiteboardIcon size={15} className="text-amber-500 shrink-0" />
-          <span>Send to Whiteboard</span>
-        </button>
-
-        <button
-          type="button"
-          onPointerDown={(e) => handleAction(onSaveMemory, e)}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-        >
-          <MemoryIcon size={15} className="text-violet-500 shrink-0" />
-          <span>Save to Regaarder Memory</span>
-        </button>
-      </div>
-
-      <div className="h-px bg-slate-200/60 dark:bg-zinc-800/80 my-1" />
-
-      {/* SECTION 3: BROWSER PAGE UTILITIES */}
-      <div className="px-1 py-1 space-y-0.5">
-        <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5">
-          Page & Browser Tools
-        </span>
-
-        <button
-          type="button"
-          onPointerDown={(e) => handleAction(onOpenExternal, e)}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-        >
-          <ExternalLink size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
-          <span>Open in External Browser</span>
-        </button>
-
-        <button
-          type="button"
-          onPointerDown={(e) => handleAction(onFindInPage, e)}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2.5">
-            <Search size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
-            <span>Find in Page</span>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500">⌘F</span>
-        </button>
-
-        <button
-          type="button"
-          onPointerDown={(e) => handleAction(onOpenHistory, e)}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2.5">
-            <History size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
-            <span>Saved Research & History</span>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500">⌘H</span>
-        </button>
-
-        <button
-          type="button"
-          onPointerDown={(e) => handleAction(onOpenBookmarks, e)}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2.5">
-            <Bookmark size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
-            <span>Bookmarks Manager</span>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500">⌘B</span>
-        </button>
-
-        <button
-          type="button"
-          onPointerDown={(e) => handleAction(onOpenDownloads, e)}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2.5">
-            <Download size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
-            <span>Downloads</span>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500">⌘J</span>
-        </button>
-
-        <button
-          type="button"
-          onPointerDown={(e) => handleAction(onPrintPage, e)}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2.5">
-            <Printer size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
-            <span>Print Page...</span>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500">⌘P</span>
-        </button>
+          ))
+        )}
       </div>
     </div>
   );

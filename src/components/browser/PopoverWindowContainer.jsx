@@ -159,6 +159,8 @@ export const PopoverWindowContainer = () => {
             onSendWhiteboard={handleClose}
             onSaveMemory={handleClose}
             onFindInPage={handleClose}
+            onNewTab={handleClose}
+            onCloseTab={handleClose}
             onOpenHistory={handleClose}
             onOpenDownloads={handleClose}
             onOpenBookmarks={handleClose}

@@ -856,6 +856,8 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
           onFindInPage={() => {
             if (showToast) showToast('Opened Find in Page search');
           }}
+          onNewTab={() => handleNewTab(DEFAULT_RESEARCH_URL)}
+          onCloseTab={() => handleCloseTab(activeTabId)}
           onOpenHistory={() => {
             handleNavigate('regaarder://saved');
           }}
