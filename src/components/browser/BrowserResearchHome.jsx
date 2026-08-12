@@ -20,6 +20,8 @@ import { AgentsIcon, MemoryIcon, ComposeIcon, SheetIcon } from '../RegaarderProd
 export const BrowserResearchHome = ({
   activeUrl = 'regaarder://research',
   savedItems = [],
+  browserFont = 'System Default',
+  browserFontSize = 100,
   onSearch,
   onNavigate,
   onLaunchCompetitorWorkflow,
@@ -29,6 +31,26 @@ export const BrowserResearchHome = ({
   const [query, setQuery] = useState('');
   const [activeSavedTab, setActiveSavedTab] = useState('pages'); // 'pages', 'clippings', 'knowledge', 'sessions'
   const searchInputRef = useRef(null);
+
+  const getFontFamilyStack = (fontName) => {
+    const map = {
+      'System Default': '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
+      'Inter': 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      'SF Pro Display': '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      'JetBrains Mono': '"JetBrains Mono", "IBM Plex Mono", "Fira Code", monospace',
+      'IBM Plex Mono': '"IBM Plex Mono", "JetBrains Mono", "Fira Code", monospace',
+      'Fira Code': '"Fira Code", "JetBrains Mono", monospace',
+      'Manrope': 'Manrope, sans-serif',
+      'DM Sans': '"DM Sans", sans-serif',
+      'Plus Jakarta Sans': '"Plus Jakarta Sans", sans-serif',
+      'Public Sans': '"Public Sans", sans-serif',
+      'Satoshi': 'Satoshi, sans-serif',
+      'General Sans': '"General Sans", sans-serif',
+      'Outfit': 'Outfit, sans-serif',
+      'Space Grotesk': '"Space Grotesk", sans-serif'
+    };
+    return map[fontName] || fontName || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  };
 
   const isSavedView = activeUrl === 'regaarder://saved';
 
@@ -286,7 +308,11 @@ export const BrowserResearchHome = ({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search the web, ask a topic, or type a URL..."
-              className="flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden font-sans tracking-wide"
+              style={{
+                fontFamily: getFontFamilyStack(browserFont),
+                fontSize: `${Math.max(12, Math.round(14 * ((browserFontSize || 100) / 100)))}px`
+              }}
+              className="flex-1 bg-transparent text-slate-100 placeholder-slate-500 border-none outline-none focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none focus-visible:ring-0 select-text tracking-wide"
               autoFocus
             />
             <button

@@ -24,11 +24,11 @@ export const BrowserTabBar = ({
 
   const getTabIcon = (tab) => {
     if (tab.isLoading) {
-      return <BrowserReloadIcon size={14} className="animate-spin text-violet-500" />;
+      return <BrowserReloadIcon size={16} className="animate-spin text-violet-500" />;
     }
 
     if (tab.url === 'regaarder://research' || tab.title === 'Regaarder Research') {
-      return <AgentsIcon size={14} className="text-violet-500" />;
+      return <AgentsIcon size={16} className="text-violet-500" />;
     }
 
     if (tab.favicon) {
@@ -36,7 +36,7 @@ export const BrowserTabBar = ({
         <img
           src={tab.favicon}
           alt=""
-          className="w-3.5 h-3.5 object-contain"
+          className="w-4 h-4 object-contain"
           onError={(e) => {
             e.target.style.display = 'none';
           }}
@@ -47,14 +47,14 @@ export const BrowserTabBar = ({
     const titleLower = (tab.title || '').toLowerCase();
 
     if (titleLower.includes('sheet') || titleLower.includes('data') || titleLower.includes('matrix')) {
-      return <SheetIcon size={14} className="text-emerald-500" />;
+      return <SheetIcon size={16} className="text-emerald-500" />;
     }
 
     if (titleLower.includes('research') || titleLower.includes('doc') || titleLower.includes('wiki')) {
-      return <ComposeIcon size={14} className="text-sky-500" />;
+      return <ComposeIcon size={16} className="text-sky-500" />;
     }
 
-    return <BrowserSearchWebIcon size={14} className="opacity-70 text-slate-400 dark:text-zinc-400" />;
+    return <BrowserSearchWebIcon size={16} className="opacity-70 text-slate-400 dark:text-zinc-400" />;
   };
 
   const getDisplayTitle = (tab) => {
@@ -114,7 +114,7 @@ export const BrowserTabBar = ({
                   }`}
                   title="Close tab"
                 >
-                  <BrowserCloseIcon size={12} />
+                  <BrowserCloseIcon size={14} />
                 </button>
               )}
             </div>
@@ -126,33 +126,10 @@ export const BrowserTabBar = ({
           type="button"
           onClick={onNewTab}
           onPointerDown={(e) => e.preventDefault()}
-          className="flex items-center justify-center w-7 h-7 rounded-md text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors shrink-0 cursor-pointer ml-0.5"
+          className="flex items-center justify-center w-8 h-8 rounded-md text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors shrink-0 cursor-pointer ml-0.5"
           title="Open new research tab"
         >
-          <BrowserPlusIcon size={16} />
-        </button>
-      </div>
-
-      {/* Far Right Action Group: Isolated Browser Options Ellipsis Button (...) */}
-      <div className="flex items-center gap-1 shrink-0 pl-1 border-l border-slate-200/80 dark:border-zinc-800">
-        <button
-          ref={ellipsisBtnRef}
-          type="button"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (ellipsisBtnRef.current && onOpenFontPopover) {
-              onOpenFontPopover(ellipsisBtnRef.current.getBoundingClientRect());
-            }
-          }}
-          className={`w-7 h-7 flex items-center justify-center rounded-md transition-all cursor-pointer ${
-            isFontPopoverOpen
-              ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/40 ring-1 ring-violet-500/30'
-              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100'
-          }`}
-          title="Browser Options & Typography (Browser-Only)"
-        >
-          <BrowserEllipsisIcon size={16} />
+          <BrowserPlusIcon size={18} />
         </button>
       </div>
     </div>

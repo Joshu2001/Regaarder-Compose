@@ -10,6 +10,17 @@ body { margin: 0; background: #ffffff; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Universal Input Focus Outline & Highlight Reset (Eliminates harsh rectangular focus outlines) */
+input, textarea, select, button {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+input:focus, input:focus-visible, textarea:focus, textarea:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    Review Toolbar — Apple-style editorial hierarchy
    ───────────────────────────────────────────────────────────────────────── */

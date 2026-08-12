@@ -95,6 +95,8 @@ export const BrowserViewport = ({
         <BrowserResearchHome
           activeUrl={activeTab?.url}
           savedItems={savedItems}
+          browserFont={browserFont}
+          browserFontSize={browserFontSize}
           onSearch={onNavigate}
           onNavigate={onNavigate}
           onLaunchCompetitorWorkflow={onLaunchCompetitorWorkflow}

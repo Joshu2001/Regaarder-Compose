@@ -33,7 +33,7 @@ export const BrowserHomeIcon = ({ size = 18, className = '', strokeWidth = 1.5, 
   </svg>
 );
 
-// 2. REFRESH / RELOAD: Clean, engineered 270-degree circular arc with precision arrowhead
+// 2. REFRESH / RELOAD: Clean, balanced 300-degree circular arrow with precision arrowhead
 export const BrowserReloadIcon = ({ size = 18, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
@@ -47,10 +47,10 @@ export const BrowserReloadIcon = ({ size = 18, className = '', strokeWidth = 1.5
     className={className}
     {...props}
   >
-    {/* Engineered circular reload vector */}
-    <path d="M19.5 12A7.5 7.5 0 1 1 17.2 6.8" />
-    {/* Precision arrowhead */}
-    <polyline points="17 3.5 17 7.2 20.7 7.2" />
+    {/* Smooth circular arc */}
+    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.24" />
+    {/* Precision aligned arrowhead */}
+    <polyline points="21 3 21 9 15 9" />
   </svg>
 );
 
@@ -285,7 +285,7 @@ export const BrowserCheckIcon = ({ size = 16, className = '', strokeWidth = 1.5,
   </svg>
 );
 
-// 15. FLOW / WORKFLOW: Regaarder node loop graph with central focal node
+// 15. FLOW / WORKFLOW: Regaarder workflow pipeline node graph (Origin -> Action -> Node Output)
 export const BrowserFlowIcon = ({ size = 18, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
@@ -299,11 +299,16 @@ export const BrowserFlowIcon = ({ size = 18, className = '', strokeWidth = 1.5, 
     className={className}
     {...props}
   >
-    <path d="M4.5 12A7.5 7.5 0 0 1 12 4.5h5.5" />
-    <polyline points="15 2 18.5 4.5 15 7" />
-    <path d="M19.5 12A7.5 7.5 0 0 1 12 19.5H6.5" />
-    <polyline points="9 22 5.5 19.5 9 17" />
-    <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+    {/* Workflow step 1 node */}
+    <circle cx="4.5" cy="12" r="2" />
+    {/* Flow connector line 1 */}
+    <line x1="6.5" y1="12" x2="10" y2="12" />
+    {/* Workflow step 2 node diamond */}
+    <polygon points="13 8.5 16.5 12 13 15.5 9.5 12" />
+    {/* Flow connector line 2 */}
+    <line x1="16.5" y1="12" x2="19.5" y2="12" />
+    {/* Output node terminal dot */}
+    <circle cx="20.5" cy="12" r="1" fill="currentColor" stroke="none" />
   </svg>
 );
 

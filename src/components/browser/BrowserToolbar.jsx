@@ -43,6 +43,8 @@ export const BrowserToolbar = ({
   isSidePanelOpen = false,
   isFlowRecording = false,
   isFontPopoverOpen = false,
+  browserFont = 'System Default',
+  browserFontSize = 100,
   onNavigate,
   onGoBack,
   onGoForward,
@@ -102,6 +104,28 @@ export const BrowserToolbar = ({
 
   const isResearchHome = currentUrl === 'regaarder://research' || currentUrl === 'regaarder://saved';
 
+  const getFontFamilyStack = (fontName) => {
+    const map = {
+      'System Default': '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
+      'Inter': 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      'SF Pro Display': '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      'JetBrains Mono': '"JetBrains Mono", "IBM Plex Mono", "Fira Code", monospace',
+      'IBM Plex Mono': '"IBM Plex Mono", "JetBrains Mono", "Fira Code", monospace',
+      'Fira Code': '"Fira Code", "JetBrains Mono", monospace',
+      'Manrope': 'Manrope, sans-serif',
+      'DM Sans': '"DM Sans", sans-serif',
+      'Plus Jakarta Sans': '"Plus Jakarta Sans", sans-serif',
+      'Public Sans': '"Public Sans", sans-serif',
+      'Satoshi': 'Satoshi, sans-serif',
+      'General Sans': '"General Sans", sans-serif',
+      'Outfit': 'Outfit, sans-serif',
+      'Space Grotesk': '"Space Grotesk", sans-serif'
+    };
+    return map[fontName] || fontName || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  };
+
+  const currentInputFontSize = Math.max(11, Math.round(13 * ((browserFontSize || 100) / 100)));
+
   return (
     <div className="flex items-center gap-2 px-3 py-2 bg-white/95 dark:bg-[#18181b]/95 border-b border-slate-200/80 dark:border-zinc-800/80 shrink-0 shadow-2xs font-sans select-none z-20">
       {/* Back / Forward / Reload / Home Controls */}
@@ -113,10 +137,10 @@ export const BrowserToolbar = ({
             if (canGoBack) onGoBack();
           }}
           disabled={!canGoBack}
-          className="p-1.5 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+          className="p-2 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
           title="Back"
         >
-          <BrowserBackIcon size={16} />
+          <BrowserBackIcon size={19} />
         </button>
 
         <button
@@ -126,10 +150,10 @@ export const BrowserToolbar = ({
             if (canGoForward) onGoForward();
           }}
           disabled={!canGoForward}
-          className="p-1.5 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+          className="p-2 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
           title="Forward"
         >
-          <BrowserForwardIcon size={16} />
+          <BrowserForwardIcon size={19} />
         </button>
 
         {/* Reload (spinning state on icon, zero dropdown) */}
@@ -139,13 +163,13 @@ export const BrowserToolbar = ({
             e.preventDefault();
             isLoading ? onStop() : onReload();
           }}
-          className="p-1.5 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          className="p-2 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
           title={isLoading ? 'Stop loading' : 'Reload page'}
         >
           {isLoading ? (
-            <BrowserReloadIcon size={16} className="animate-spin text-violet-500" />
+            <BrowserReloadIcon size={19} className="animate-spin text-violet-500" />
           ) : (
-            <BrowserReloadIcon size={16} />
+            <BrowserReloadIcon size={19} />
           )}
         </button>
 
@@ -155,28 +179,28 @@ export const BrowserToolbar = ({
             e.preventDefault();
             onHome();
           }}
-          className="p-1.5 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          className="p-2 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
           title="Go to Research Home"
         >
-          <BrowserHomeIcon size={16} />
+          <BrowserHomeIcon size={19} />
         </button>
       </div>
 
-      {/* Smart Address Bar Container with Action Chips */}
-      <form onSubmit={handleSubmit} className="flex-1 min-w-[240px] flex items-center">
-        <div className="group flex items-center gap-2 px-3 py-1.5 w-full rounded-xl bg-slate-100/90 dark:bg-zinc-800/90 border border-slate-200 dark:border-zinc-700/60 focus-within:border-violet-500/80 focus-within:ring-2 focus-within:ring-violet-500/20 transition-all">
+      {/* Smart Address Bar Container with Action Chips - Constrained max-w-3xl for balanced search area */}
+      <form onSubmit={handleSubmit} className="flex-1 min-w-[240px] max-w-3xl flex items-center">
+        <div className="group flex items-center gap-2 px-3.5 py-1.5 w-full rounded-xl bg-slate-100/90 dark:bg-zinc-800/90 border border-slate-200 dark:border-zinc-700/60 focus-within:border-violet-500/80 focus-within:ring-2 focus-within:ring-violet-500/20 transition-all">
           {/* Security / Search Icon */}
           <div className="shrink-0 flex items-center text-slate-400 dark:text-zinc-400">
             {isResearchHome ? (
-              <AgentsIcon size={14} className="text-violet-500" />
+              <AgentsIcon size={17} className="text-violet-500" />
             ) : isSecure ? (
-              <BrowserLockIcon size={14} className="text-emerald-600 dark:text-emerald-400" title="Secure connection (HTTPS)" />
+              <BrowserLockIcon size={17} className="text-emerald-600 dark:text-emerald-400" title="Secure connection (HTTPS)" />
             ) : (
-              <BrowserInsecureIcon size={14} className="text-amber-500" title="Insecure connection (HTTP)" />
+              <BrowserInsecureIcon size={17} className="text-amber-500" title="Insecure connection (HTTP)" />
             )}
           </div>
 
-          {/* URL Input */}
+          {/* URL Input with Dynamic Font & Size Inheritance */}
           <input
             type="text"
             value={inputValue}
@@ -184,22 +208,26 @@ export const BrowserToolbar = ({
             onFocus={() => setIsEditing(true)}
             onBlur={() => setIsEditing(false)}
             placeholder="Search web, ask AI, or enter URL..."
-            className="w-full bg-transparent text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-hidden font-mono tracking-tight"
+            style={{
+              fontFamily: getFontFamilyStack(browserFont),
+              fontSize: `${currentInputFontSize}px`
+            }}
+            className="w-full bg-transparent text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 border-none outline-none focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none focus-visible:ring-0 select-text tracking-tight"
           />
 
           {/* URL Bar Knowledge Action Chips */}
           {!isResearchHome && (
-            <div className="hidden md:flex items-center gap-1 shrink-0 pl-1 border-l border-slate-200 dark:border-zinc-700">
+            <div className="hidden md:flex items-center gap-1.5 shrink-0 pl-1.5 border-l border-slate-200 dark:border-zinc-700">
               <button
                 type="button"
                 onPointerDown={(e) => {
                   e.preventDefault();
                   onSummarizeChip();
                 }}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-300 transition-colors border border-violet-500/20 cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-300 transition-colors border border-violet-500/20 cursor-pointer"
                 title="Summarize page with AI"
               >
-                <AssistIcon size={12} className="text-violet-500" />
+                <AssistIcon size={14} className="text-violet-500" />
                 <span>Summarize</span>
               </button>
 
@@ -209,10 +237,10 @@ export const BrowserToolbar = ({
                   e.preventDefault();
                   onSaveMemoryChip();
                 }}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-300 transition-colors border border-sky-500/20 cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-300 transition-colors border border-sky-500/20 cursor-pointer"
                 title="Save page into Regaarder Memory"
               >
-                <MemoryIcon size={12} className="text-sky-500" />
+                <MemoryIcon size={14} className="text-sky-500" />
                 <span>Save to Memory</span>
               </button>
 
@@ -225,10 +253,10 @@ export const BrowserToolbar = ({
                     onOpenSendToComposePopover(composeBtnRef.current.getBoundingClientRect());
                   }
                 }}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 transition-colors border border-emerald-500/20 cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 transition-colors border border-emerald-500/20 cursor-pointer"
                 title="Send page text to Compose document"
               >
-                <ComposeIcon size={12} className="text-emerald-500" />
+                <ComposeIcon size={14} className="text-emerald-500" />
                 <span>Send to Compose</span>
               </button>
             </div>
@@ -242,9 +270,9 @@ export const BrowserToolbar = ({
                 e.preventDefault();
                 setInputValue('');
               }}
-              className="p-0.5 rounded text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors shrink-0"
+              className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors shrink-0"
             >
-              <BrowserCloseIcon size={12} />
+              <BrowserCloseIcon size={14} />
             </button>
           )}
         </div>
@@ -257,13 +285,13 @@ export const BrowserToolbar = ({
           e.preventDefault();
           onOpenExternal();
         }}
-        className="p-1.5 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors shrink-0 cursor-pointer"
+        className="p-2 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors shrink-0 cursor-pointer"
         title="Open in external web browser"
       >
-        <BrowserExternalIcon size={16} />
+        <BrowserExternalIcon size={19} />
       </button>
 
-      <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-1 shrink-0" />
+      <div className="h-5 w-px bg-slate-200 dark:bg-zinc-800 mx-1 shrink-0" />
 
       {/* Top Right Action Bar */}
       <div className="flex items-center gap-1 shrink-0">
@@ -277,7 +305,7 @@ export const BrowserToolbar = ({
               onOpenFlowsPopover(flowsBtnRef.current.getBoundingClientRect());
             }
           }}
-          className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 font-mono text-xs ${
+          className={`p-2 rounded-lg transition-all cursor-pointer flex items-center gap-1 font-mono text-xs ${
             isFlowRecording
               ? 'bg-rose-500/20 text-rose-400 border border-rose-500/50 outline-rose-500/60 ring-2 ring-rose-500/30 animate-pulse'
               : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-violet-500'
@@ -290,7 +318,7 @@ export const BrowserToolbar = ({
               <span>● ✦</span>
             </span>
           ) : (
-            <BrowserFlowIcon size={16} />
+            <BrowserFlowIcon size={19} />
           )}
         </button>
 
@@ -301,14 +329,14 @@ export const BrowserToolbar = ({
             e.preventDefault();
             onToggleBookmark();
           }}
-          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+          className={`p-2 rounded-lg transition-colors cursor-pointer ${
             isBookmarked
               ? 'bg-amber-500/15 border border-amber-500/40 text-amber-500 outline-amber-500/50 ring-1 ring-amber-500/30'
               : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-amber-500'
           }`}
           title={isBookmarked ? 'Remove from Saved Research' : 'Save to Research'}
         >
-          <BrowserBookmarkIcon size={16} className={isBookmarked ? 'fill-amber-500' : ''} />
+          <BrowserBookmarkIcon size={19} className={isBookmarked ? 'fill-amber-500' : ''} />
         </button>
 
         {/* Send to Sheets Button Trigger */}
@@ -321,10 +349,10 @@ export const BrowserToolbar = ({
               onOpenSendToSheetsPopover(sheetsBtnRef.current.getBoundingClientRect());
             }
           }}
-          className="p-1.5 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-emerald-500 transition-colors cursor-pointer"
+          className="p-2 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-emerald-500 transition-colors cursor-pointer"
           title="Send table to Sheets"
         >
-          <SheetIcon size={16} />
+          <SheetIcon size={19} />
         </button>
 
         {/* Send to Whiteboard Button Trigger */}
@@ -334,10 +362,10 @@ export const BrowserToolbar = ({
             e.preventDefault();
             onSendWhiteboardChip();
           }}
-          className="p-1.5 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-amber-500 transition-colors cursor-pointer"
+          className="p-2 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-amber-500 transition-colors cursor-pointer"
           title="Send visual clip to Whiteboard"
         >
-          <WhiteboardIcon size={16} />
+          <WhiteboardIcon size={19} />
         </button>
 
         {/* AI Research Assistant Toggle Button */}
@@ -347,15 +375,35 @@ export const BrowserToolbar = ({
             e.preventDefault();
             onToggleSidePanel();
           }}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border cursor-pointer ${
             isSidePanelOpen
               ? 'bg-violet-600 text-white border-violet-500 shadow-md ring-2 ring-violet-500/30 outline-violet-500/60'
               : 'bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 hover:bg-violet-500/20 dark:hover:bg-violet-500/30 border-violet-500/30'
           }`}
           title="Toggle Regaarder Research Assistant Side Panel"
         >
-          <AgentsIcon size={15} className={isSidePanelOpen ? 'text-white' : 'text-violet-500'} />
+          <AgentsIcon size={17} className={isSidePanelOpen ? 'text-white' : 'text-violet-500'} />
           <span className="hidden sm:inline">Research AI</span>
+        </button>
+
+        {/* Browser Options & Typography Ellipsis Menu (...) */}
+        <button
+          ref={ellipsisBtnRef}
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            if (ellipsisBtnRef.current && onOpenFontPopover) {
+              onOpenFontPopover(ellipsisBtnRef.current.getBoundingClientRect());
+            }
+          }}
+          className={`p-2 rounded-lg transition-all cursor-pointer ${
+            isFontPopoverOpen
+              ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/40 ring-1 ring-violet-500/30'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100'
+          }`}
+          title="Browser Options & Typography"
+        >
+          <BrowserEllipsisIcon size={19} />
         </button>
       </div>
     </div>
