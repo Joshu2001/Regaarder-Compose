@@ -476,6 +476,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
           savedItems={savedItems}
           isElectron={isElectron}
           isSidePanelOpen={isSidePanelOpen}
+          isOverlayOpen={isOverlayOpen}
           onNavigate={handleNavigate}
           onLaunchCompetitorWorkflow={() => setShowCompetitorWorkflow(true)}
           onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}

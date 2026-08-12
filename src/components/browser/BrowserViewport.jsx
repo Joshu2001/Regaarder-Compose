@@ -12,6 +12,7 @@ export const BrowserViewport = ({
   savedItems = [],
   isElectron = false,
   isSidePanelOpen = false,
+  isOverlayOpen = false,
   onNavigate,
   onLaunchCompetitorWorkflow,
   onToggleSidePanel,
@@ -36,7 +37,7 @@ export const BrowserViewport = ({
       });
     };
 
-    if (isResearchHome) {
+    if (isResearchHome || isOverlayOpen) {
       window.electronAPI.setBrowserVisibility(false);
     } else {
       window.electronAPI.setBrowserVisibility(true);
@@ -44,7 +45,7 @@ export const BrowserViewport = ({
     }
 
     const resizeObserver = new ResizeObserver(() => {
-      if (!isResearchHome) {
+      if (!isResearchHome && !isOverlayOpen) {
         updateBounds();
       }
     });
@@ -59,7 +60,7 @@ export const BrowserViewport = ({
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateBounds);
     };
-  }, [isElectron, activeTab?.id, isResearchHome, isSidePanelOpen]);
+  }, [isElectron, activeTab?.id, isResearchHome, isSidePanelOpen, isOverlayOpen]);
 
   // Reset iframe error when URL changes in web fallback
   useEffect(() => {
