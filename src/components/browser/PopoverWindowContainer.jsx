@@ -6,6 +6,15 @@ import BrowserFontPopover from './BrowserFontPopover';
 
 export const PopoverWindowContainer = () => {
   const [popoverType, setPopoverType] = useState('flows');
+
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rc.darkMode');
+      if (saved !== null) return saved === 'true';
+    } catch (e) {}
+    return typeof document !== 'undefined' && (document.documentElement.classList.contains('dark') || document.documentElement.classList.contains('app-dark'));
+  });
+
   const [browserFont, setBrowserFont] = useState(() => {
     try {
       return localStorage.getItem('regaarder_browser_font_v1') || 'System Default';
@@ -22,6 +31,14 @@ export const PopoverWindowContainer = () => {
       return 100;
     }
   });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark', 'app-dark');
+    } else {
+      document.documentElement.classList.remove('dark', 'app-dark');
+    }
+  }, [isDarkMode]);
 
   useEffect(() => {
     const parseType = () => {
@@ -45,12 +62,22 @@ export const PopoverWindowContainer = () => {
     }
   };
 
+  const handleToggleDarkMode = (newVal) => {
+    const target = typeof newVal === 'boolean' ? newVal : !isDarkMode;
+    setIsDarkMode(target);
+    try {
+      localStorage.setItem('rc.darkMode', String(target));
+      window.dispatchEvent(new Event('storage'));
+    } catch (e) {}
+  };
+
   return (
     <div className="w-screen h-screen min-h-screen bg-transparent text-slate-100 overflow-hidden flex items-center justify-center p-0 m-0 font-sans">
       <div className="w-full h-full flex flex-col items-center justify-center">
         {popoverType === 'font' && (
           <BrowserFontPopover
             isStandalone={true}
+            isDarkMode={isDarkMode}
             browserFont={browserFont}
             browserFontSize={browserFontSize}
             onChangeFont={(newFont) => {
@@ -59,6 +86,9 @@ export const PopoverWindowContainer = () => {
                 localStorage.setItem('regaarder_browser_font_v1', newFont);
                 window.dispatchEvent(new Event('storage'));
               } catch (e) {}
+              if (window.electronAPI?.setFontZoom) {
+                window.electronAPI.setFontZoom({ font: newFont, size: browserFontSize });
+              }
             }}
             onChangeFontSize={(newSize) => {
               setBrowserFontSize(newSize);
@@ -66,7 +96,11 @@ export const PopoverWindowContainer = () => {
                 localStorage.setItem('regaarder_browser_font_size_v1', String(newSize));
                 window.dispatchEvent(new Event('storage'));
               } catch (e) {}
+              if (window.electronAPI?.setFontZoom) {
+                window.electronAPI.setFontZoom({ font: browserFont, size: newSize });
+              }
             }}
+            onToggleDarkMode={handleToggleDarkMode}
             onReset={() => {
               setBrowserFont('System Default');
               setBrowserFontSize(100);
@@ -75,6 +109,9 @@ export const PopoverWindowContainer = () => {
                 localStorage.setItem('regaarder_browser_font_size_v1', '100');
                 window.dispatchEvent(new Event('storage'));
               } catch (e) {}
+              if (window.electronAPI?.setFontZoom) {
+                window.electronAPI.setFontZoom({ font: 'System Default', size: 100 });
+              }
             }}
             onClose={handleClose}
           />

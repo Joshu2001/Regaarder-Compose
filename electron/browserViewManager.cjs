@@ -341,7 +341,7 @@ class BrowserViewManager {
       x = Math.max(16, windowBounds.width - width - 16);
     }
 
-    let y = Math.round((bounds.bottom || bounds.y || 80) + 4);
+    let y = Math.max(86, Math.round((bounds.bottom || bounds.y || 80) + 4));
 
     popoverView.setBounds({ x, y, width, height });
 

@@ -125,8 +125,12 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   };
 
   const handleOpenFontPopoverAction = useCallback((rect) => {
-    setFontPopoverRect((prev) => (prev ? null : rect));
-  }, []);
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'font', bounds: serializeRect(rect) });
+    } else {
+      setFontPopoverRect((prev) => (prev ? null : rect));
+    }
+  }, [isElectron]);
 
   const handleOpenFlowsPopoverAction = useCallback((rect) => {
     if (isElectron && window.electronAPI?.openPopover) {
@@ -542,7 +546,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     activeExecutingFlow
   );
 
-  const isPopoverOpen = Boolean(
+  const isPopoverOpen = !isElectron && Boolean(
     fontPopoverRect ||
     flowsPopoverRect ||
     sendToSheetsPopoverRect ||
