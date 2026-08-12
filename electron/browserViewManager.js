@@ -377,7 +377,7 @@ class BrowserViewManager {
     const popoverWin = this.getOrCreatePopoverWindow();
 
     const width = type === 'font' ? 340 : type === 'flows' ? 380 : 420;
-    const height = type === 'font' ? 380 : type === 'flows' ? 390 : 440;
+    const height = type === 'font' ? 345 : type === 'flows' ? 390 : 440;
 
     const mainBounds = this.mainWindow.getBounds();
 

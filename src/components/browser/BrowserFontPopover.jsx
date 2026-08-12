@@ -57,10 +57,11 @@ const BROWSER_FONT_OPTIONS = [
 const ZOOM_PRESETS = [80, 90, 100, 110, 125, 150, 200];
 
 /**
- * BrowserFontPopover: Restrained Apple/Safari-Style Display & Appearance Popover
+ * BrowserFontPopover: Executive Apple/Safari-Style Display & Appearance Popover
  * Features:
- * - Clean visual system, 0ms render via React Portal, no rectangular window shadow artifacts.
- * - Hierarchy: Display & Appearance → Appearance → Page Zoom → Reading Font → Reset to defaults.
+ * - Softer, restrained Regaarder purple accent for active states.
+ * - ~10% tighter vertical padding & layout.
+ * - Strengthened title/subtitle hierarchy ("Display & Appearance" bold/darker, "Customize this page" small/muted).
  * - Progressive Disclosure: Font selector opens in dedicated secondary subview; Zoom dropdown opens in compact menu.
  */
 export const BrowserFontPopover = ({
@@ -123,30 +124,30 @@ export const BrowserFontPopover = ({
   const right = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right) : 16;
 
   const containerClasses = isStandalone
-    ? "w-full h-full bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/80 dark:border-zinc-800/80 shadow-lg rounded-2xl p-4 backdrop-blur-2xl font-sans select-none text-slate-800 dark:text-zinc-100 flex flex-col justify-between overflow-hidden"
-    : "fixed z-[100000] w-[330px] bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/80 dark:border-zinc-800/80 shadow-lg rounded-2xl p-4 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150 font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden";
+    ? "w-full h-full bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/80 dark:border-zinc-800/80 shadow-lg rounded-2xl p-3.5 backdrop-blur-2xl font-sans select-none text-slate-800 dark:text-zinc-100 flex flex-col justify-between overflow-hidden"
+    : "fixed z-[100000] w-[330px] bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/80 dark:border-zinc-800/80 shadow-lg rounded-2xl p-3.5 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150 font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden";
 
   const containerStyle = isStandalone ? {} : { top: `${top}px`, right: `${right}px` };
 
   const renderMainView = () => (
-    <div className="flex flex-col justify-between h-full space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-zinc-800/80 shrink-0">
+    <div className="flex flex-col justify-between h-full space-y-2.5">
+      {/* Header with strengthened hierarchy */}
+      <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800/80 shrink-0">
         <div className="w-7 h-7 rounded-xl bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 border border-violet-500/20">
-          <SlidersHorizontal size={15} />
+          <SlidersHorizontal size={14} />
         </div>
         <div>
-          <h4 className="text-xs font-bold tracking-tight text-slate-900 dark:text-zinc-100">
+          <h4 className="text-[13px] font-extrabold tracking-tight text-slate-900 dark:text-zinc-50 leading-tight">
             Display & Appearance
           </h4>
-          <p className="text-[10px] text-slate-400 dark:text-zinc-400 font-medium">
+          <p className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal leading-tight mt-0.5">
             Customize this page
           </p>
         </div>
       </div>
 
       {/* SECTION 1: APPEARANCE */}
-      <div className="space-y-1.5 shrink-0">
+      <div className="space-y-1 shrink-0">
         <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">
           Appearance
         </span>
@@ -159,7 +160,7 @@ export const BrowserFontPopover = ({
             }}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
               !isDarkMode
-                ? 'bg-violet-600 text-white shadow-2xs'
+                ? 'bg-violet-500/90 text-white shadow-2xs'
                 : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
             }`}
           >
@@ -175,7 +176,7 @@ export const BrowserFontPopover = ({
             }}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
               isDarkMode
-                ? 'bg-violet-600 text-white shadow-2xs'
+                ? 'bg-violet-500/90 text-white shadow-2xs'
                 : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
             }`}
           >
@@ -186,12 +187,12 @@ export const BrowserFontPopover = ({
       </div>
 
       {/* SECTION 2: PAGE ZOOM */}
-      <div className="space-y-1.5 shrink-0">
+      <div className="space-y-1 shrink-0">
         <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">
           Page Zoom
         </span>
         <div className="relative">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onPointerDown={(e) => {
@@ -199,7 +200,7 @@ export const BrowserFontPopover = ({
                 onChangeFontSize?.(Math.max(70, browserFontSize - 10));
               }}
               disabled={browserFontSize <= 70}
-              className="w-9 h-8 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-100/60 dark:bg-zinc-800/60 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-700 disabled:opacity-30 flex items-center justify-center transition-colors cursor-pointer"
+              className="w-8 h-7 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-100/60 dark:bg-zinc-800/60 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-700 disabled:opacity-30 flex items-center justify-center transition-colors cursor-pointer"
               title="Decrease zoom"
             >
               <Minus size={13} />
@@ -211,7 +212,7 @@ export const BrowserFontPopover = ({
                 e.preventDefault();
                 setShowZoomMenu((prev) => !prev);
               }}
-              className="flex-1 h-8 px-3 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-100/60 dark:bg-zinc-800/60 text-slate-800 dark:text-zinc-100 hover:bg-slate-200 dark:hover:bg-zinc-700 flex items-center justify-between text-xs font-semibold font-mono transition-colors cursor-pointer"
+              className="flex-1 h-7 px-3 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-100/60 dark:bg-zinc-800/60 text-slate-800 dark:text-zinc-100 hover:bg-slate-200 dark:hover:bg-zinc-700 flex items-center justify-between text-xs font-semibold font-mono transition-colors cursor-pointer"
             >
               <span>{browserFontSize}%</span>
               <ChevronDown size={13} className={`text-slate-400 transition-transform duration-150 ${showZoomMenu ? 'rotate-180' : ''}`} />
@@ -224,7 +225,7 @@ export const BrowserFontPopover = ({
                 onChangeFontSize?.(Math.min(200, browserFontSize + 10));
               }}
               disabled={browserFontSize >= 200}
-              className="w-9 h-8 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-100/60 dark:bg-zinc-800/60 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-700 disabled:opacity-30 flex items-center justify-center transition-colors cursor-pointer"
+              className="w-8 h-7 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-100/60 dark:bg-zinc-800/60 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-700 disabled:opacity-30 flex items-center justify-center transition-colors cursor-pointer"
               title="Increase zoom"
             >
               <Plus size={13} />
@@ -233,7 +234,7 @@ export const BrowserFontPopover = ({
 
           {/* Compact Secondary Zoom Dropdown Menu */}
           {showZoomMenu && (
-            <div className="absolute top-9 left-11 right-11 z-50 py-1 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-lg text-xs space-y-0.5 animate-in fade-in zoom-in-95 duration-100 max-h-[160px] overflow-y-auto thin-scrollbar">
+            <div className="absolute top-8 left-10 right-10 z-50 py-1 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-lg text-xs space-y-0.5 animate-in fade-in zoom-in-95 duration-100 max-h-[150px] overflow-y-auto thin-scrollbar">
               {ZOOM_PRESETS.map((preset) => {
                 const isSelected = browserFontSize === preset;
                 return (
@@ -262,7 +263,7 @@ export const BrowserFontPopover = ({
       </div>
 
       {/* SECTION 3: READING FONT */}
-      <div className="space-y-1.5 shrink-0">
+      <div className="space-y-1 shrink-0">
         <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">
           Reading Font
         </span>
@@ -272,7 +273,7 @@ export const BrowserFontPopover = ({
             e.preventDefault();
             setCurrentView('fontPicker');
           }}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-slate-100/60 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/80 text-xs font-medium text-slate-800 dark:text-zinc-100 hover:bg-slate-200/70 dark:hover:bg-zinc-700/80 transition-colors cursor-pointer"
+          className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-100/60 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/80 text-xs font-medium text-slate-800 dark:text-zinc-100 hover:bg-slate-200/70 dark:hover:bg-zinc-700/80 transition-colors cursor-pointer"
         >
           <span style={{ fontFamily: selectedFontObj.stack }} className="truncate pr-2 font-medium">
             {selectedFontObj.label}
@@ -281,8 +282,8 @@ export const BrowserFontPopover = ({
         </button>
       </div>
 
-      {/* Subtle Reset to Defaults Action */}
-      <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-center shrink-0">
+      {/* Subtle Low-Emphasis Reset to Defaults Action */}
+      <div className="pt-1.5 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-center shrink-0">
         <button
           type="button"
           onPointerDown={(e) => {
@@ -290,9 +291,9 @@ export const BrowserFontPopover = ({
             onReset?.();
             setShowZoomMenu(false);
           }}
-          className="flex items-center gap-1.5 py-1 px-2.5 rounded-lg text-[11px] font-medium text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 py-0.5 px-2 rounded-lg text-[10px] font-medium text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors cursor-pointer"
         >
-          <RotateCcw size={12} />
+          <RotateCcw size={11} />
           <span>Reset to defaults</span>
         </button>
       </div>
@@ -300,9 +301,9 @@ export const BrowserFontPopover = ({
   );
 
   const renderFontPickerView = () => (
-    <div className="flex flex-col justify-between h-full space-y-3">
+    <div className="flex flex-col justify-between h-full space-y-2.5">
       {/* Header with Back button */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800/80 shrink-0">
+      <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-zinc-800/80 shrink-0">
         <button
           type="button"
           onPointerDown={(e) => {
@@ -328,7 +329,7 @@ export const BrowserFontPopover = ({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search fonts..."
-          className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+          className="w-full pl-8 pr-7 py-1 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
         />
         {searchQuery && (
           <button
