@@ -160,11 +160,11 @@ export const BrowserFontPopover = ({
             }}
             className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
               !isDarkMode
-                ? 'bg-violet-500/90 text-white shadow-2xs'
-                : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                ? 'bg-violet-100 dark:bg-violet-950/60 text-violet-800 dark:text-violet-300 border border-violet-300 dark:border-violet-700/60 shadow-2xs'
+                : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 border border-transparent'
             }`}
           >
-            <Sun size={13} className={!isDarkMode ? 'text-white' : ''} />
+            <Sun size={13} className={!isDarkMode ? 'text-violet-700 dark:text-violet-300' : ''} />
             <span>Light</span>
           </button>
 

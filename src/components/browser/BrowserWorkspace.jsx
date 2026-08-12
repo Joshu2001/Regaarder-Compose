@@ -12,6 +12,7 @@ import FlowSynthesisModal from './flows/FlowSynthesisModal';
 import FlowLibraryModal from './flows/FlowLibraryModal';
 import FlowExecutionModal from './flows/FlowExecutionModal';
 import BrowserFontPopover from './BrowserFontPopover';
+import BrowserOverflowMenu from './BrowserOverflowMenu';
 import { globalActivityObserver, synthesizeFlowFromActions, getSavedFlows } from '../../services/flowEngine';
 
 const STORAGE_KEY = 'regaarder_research_tabs_v2';
@@ -100,6 +101,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   // Popover state anchors
   const [sendToSheetsPopoverRect, setSendToSheetsPopoverRect] = useState(null);
   const [sendToComposePopoverRect, setSendToComposePopoverRect] = useState(null);
+  const [overflowMenuRect, setOverflowMenuRect] = useState(null);
   const [showCompetitorWorkflow, setShowCompetitorWorkflow] = useState(false);
 
   // Regaarder Flows system state
@@ -129,6 +131,14 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
       window.electronAPI.openPopover({ type: 'font', bounds: serializeRect(rect) });
     } else {
       setFontPopoverRect((prev) => (prev ? null : rect));
+    }
+  }, [isElectron]);
+
+  const handleOpenOverflowMenuAction = useCallback((rect) => {
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'overflow', bounds: serializeRect(rect) });
+    } else {
+      setOverflowMenuRect((prev) => (prev ? null : rect));
     }
   }, [isElectron]);
 
@@ -163,6 +173,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         window.electronAPI.closePopover();
       }
       setFontPopoverRect(null);
+      setOverflowMenuRect(null);
       setFlowsPopoverRect(null);
       setSendToSheetsPopoverRect(null);
       setSendToComposePopoverRect(null);
@@ -564,6 +575,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
 
   const isPopoverOpen = !isElectron && Boolean(
     fontPopoverRect ||
+    overflowMenuRect ||
     flowsPopoverRect ||
     sendToSheetsPopoverRect ||
     sendToComposePopoverRect
@@ -601,6 +613,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         isSidePanelOpen={isSidePanelOpen}
         isFlowRecording={isFlowRecording}
         isFontPopoverOpen={Boolean(fontPopoverRect)}
+        isOverflowMenuOpen={Boolean(overflowMenuRect)}
         browserFont={browserFont}
         browserFontSize={browserFontSize}
         onNavigate={handleNavigate}
@@ -609,16 +622,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         onReload={handleReload}
         onStop={handleStop}
         onHome={handleHome}
-        onOpenExternal={handleOpenExternal}
         onToggleBookmark={handleToggleBookmark}
         onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
-        onOpenSendToSheetsPopover={handleOpenSendToSheetsPopoverAction}
-        onOpenSendToComposePopover={handleOpenSendToComposePopoverAction}
         onOpenFlowsPopover={handleOpenFlowsPopoverAction}
-        onOpenFontPopover={handleOpenFontPopoverAction}
-        onSendWhiteboardChip={() => {
-          if (showToast) showToast('Clipped visual layout to Whiteboard canvas');
-        }}
+        onOpenOverflowMenu={handleOpenOverflowMenuAction}
+        onOpenSendToComposePopover={handleOpenSendToComposePopoverAction}
         onSaveMemoryChip={() => {
           if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Memory`);
         }}
@@ -768,6 +776,42 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
           }}
           onNavigate={handleNavigate}
           showToast={showToast}
+        />
+      )}
+
+      {/* Executive Browser Overflow Popover Menu */}
+      {overflowMenuRect && (
+        <BrowserOverflowMenu
+          anchorRect={overflowMenuRect}
+          onClose={() => setOverflowMenuRect(null)}
+          onOpenFontPopover={(rect) => {
+            setOverflowMenuRect(null);
+            handleOpenFontPopoverAction(rect || overflowMenuRect);
+          }}
+          onOpenExternal={handleOpenExternal}
+          onOpenSendToSheets={(rect) => {
+            setOverflowMenuRect(null);
+            handleOpenSendToSheetsPopoverAction(rect || overflowMenuRect);
+          }}
+          onOpenSendToCompose={(rect) => {
+            setOverflowMenuRect(null);
+            handleOpenSendToComposePopoverAction(rect || overflowMenuRect);
+          }}
+          onSendWhiteboard={() => {
+            if (showToast) showToast('Clipped visual layout to Whiteboard canvas');
+          }}
+          onSaveMemory={() => {
+            if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Memory`);
+          }}
+          onFindInPage={() => {
+            if (showToast) showToast('Opened Find in Page search');
+          }}
+          onOpenHistory={() => {
+            handleNavigate('regaarder://saved');
+          }}
+          onOpenDownloads={() => {
+            if (showToast) showToast('Opened Downloads manager');
+          }}
         />
       )}
 
