@@ -50634,13 +50634,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
 
-      {/* Left Sidebar Invisible Hover Trigger */}
-      {!leftSidebarOpen && productMode !== 'landing' && activeRightTab !== 'whiteboard' && docOutlineEnabled && (
-        <div 
-          className="absolute left-0 top-0 h-full w-[6px] z-[900]"
-          onMouseEnter={() => setLeftSidebarOpen(true)}
-        />
-      )}
+
 
       {/* 1. Left Navigation Sidebar — collapses to 0px when floating Document Outline is active to avoid squeezing canvas */}
       <div
