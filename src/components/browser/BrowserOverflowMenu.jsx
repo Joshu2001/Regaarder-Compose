@@ -57,10 +57,11 @@ export const BrowserOverflowMenu = ({
   const handleAction = (callback, e) => {
     e?.preventDefault();
     e?.stopPropagation();
-    if (callback) {
-      callback(anchorRect);
-    }
-    onClose?.();
+    if (!callback) return;
+    callback(anchorRect);
+    requestAnimationFrame(() => {
+      onClose?.();
+    });
   };
 
   const menuContent = (

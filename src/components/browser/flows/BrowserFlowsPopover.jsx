@@ -155,7 +155,7 @@ export const BrowserFlowsPopover = ({
                 onPointerDown={(e) => {
                   e.preventDefault();
                   onStartRecording();
-                  onClose();
+                  requestAnimationFrame(() => onClose?.());
                 }}
                 className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-all duration-150 cursor-pointer ${
                   isRecording
@@ -186,7 +186,7 @@ export const BrowserFlowsPopover = ({
                 onPointerDown={(e) => {
                   e.preventDefault();
                   onSaveRecentAsFlow();
-                  onClose();
+                  requestAnimationFrame(() => onClose?.());
                 }}
                 className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-100 transition-all duration-150 cursor-pointer group"
               >
