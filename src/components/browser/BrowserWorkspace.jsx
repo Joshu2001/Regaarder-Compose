@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import BrowserTabBar from './BrowserTabBar';
 import BrowserToolbar from './BrowserToolbar';
 import BrowserViewport from './BrowserViewport';
