@@ -9158,7 +9158,7 @@ export default function App() {
 
     replayLoadedFromUrlRef.current = true;
 
-    const sharedMode = ['compose', 'deck', 'sheets'].includes(String(parsed?.productMode || ''))
+    const sharedMode = ['compose', 'deck', 'sheets', 'whiteboard', 'dm', 'room', 'manageen'].includes(String(parsed?.productMode || ''))
       ? String(parsed.productMode)
       : null;
     if (sharedMode) {
@@ -20117,8 +20117,8 @@ Rules:
       return;
     }
     if (tabKey === 'whiteboard') {
-      setProductMode('compose');
-      setLeftSidebarOpen(true);
+      createWhiteboardExperience();
+      return;
     }
     if (tabKey === 'room') {
       if (roomState === 'active' && roomPanelMode === 'expanded') {
@@ -21140,8 +21140,8 @@ Rules:
 
   const createWhiteboardExperience = () => {
     setCreationPickerOpen(false);
-    setProductMode('compose');
-    setLeftSidebarOpen(true);
+    setProductMode('whiteboard');
+    setLeftSidebarOpen(false);
     setRightSidebarOpen(false);
     setActiveRightTab('whiteboard');
     resetWhiteboardCanvas({ toastMessage: 'New whiteboard created' });
@@ -21149,7 +21149,7 @@ Rules:
 
   const createItemForCurrentContext = () => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
-    if (activeRightTab === 'whiteboard') {
+    if (productMode === 'whiteboard' || activeRightTab === 'whiteboard') {
       createWhiteboardExperience();
       return;
     }
@@ -37979,7 +37979,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* 1. Left Navigation Sidebar */}
       <div
         className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-white border-r border-gray-100"
-        style={{ width: (activeRightTab === 'whiteboard') ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
+        style={{ width: (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
         {showDocumentOutlineView ? (
           <div className="px-4 py-4 border-b border-gray-100 bg-white/80">
@@ -38174,16 +38174,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
-                if (activeRightTab === 'whiteboard') {
+                if (productMode === 'whiteboard' || activeRightTab === 'whiteboard') {
                   setIsHoverNavVisible((prev) => !prev);
                 } else {
                   setLeftSidebarOpen((prev) => !prev);
                 }
               }}
               className="text-gray-400 hover:text-gray-600 shrink-0"
-              title={activeRightTab === 'whiteboard' ? (isHoverNavVisible ? "Hide navigation" : "Show navigation") : (leftSidebarOpen ? "Hide sidebar" : "Show sidebar")}
+              title={(productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? (isHoverNavVisible ? "Hide navigation" : "Show navigation") : (leftSidebarOpen ? "Hide sidebar" : "Show sidebar")}
             >
-              {activeRightTab === 'whiteboard'
+              {(productMode === 'whiteboard' || activeRightTab === 'whiteboard')
                 ? (isHoverNavVisible ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
                 : (leftSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
               }
@@ -38369,9 +38369,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <button
                 type="button"
                 onClick={() => setComposeProfileMenuOpen(prev => !prev)}
-                className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] flex items-center justify-center text-[11px] font-semibold text-white transition-all shadow-sm focus:outline-none ${activeRightTab === 'whiteboard' ? 'hover:ring-2 hover:ring-orange-300 dark:hover:ring-orange-850' : 'hover:ring-2 hover:ring-violet-300 dark:hover:ring-violet-850'}`}
+                className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] flex items-center justify-center text-[11px] font-semibold text-white transition-all shadow-sm focus:outline-none ${(productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? 'hover:ring-2 hover:ring-orange-300 dark:hover:ring-orange-850' : 'hover:ring-2 hover:ring-violet-300 dark:hover:ring-violet-850'}`}
                 style={{
-                  backgroundColor: activeRightTab === 'whiteboard' ? '#f97316' : (currentUser ? '#10B981' : '#7C3AED'),
+                  backgroundColor: (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? '#f97316' : (currentUser ? '#10B981' : '#7C3AED'),
                 }}
                 title={currentUser ? `Profile: ${currentUser?.name || ''}` : 'Sign In'}
               >
@@ -39102,7 +39102,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] min-w-0 bg-[#FAF9FF] dark:bg-[#1c1b22] shadow-[0_1px_3px_rgba(15,23,42,0.01)] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
+          className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] min-w-0 bg-[#FAF9FF] dark:bg-[#1c1b22] shadow-[0_1px_3px_rgba(15,23,42,0.01)] ${productMode === 'whiteboard' || (activeRightTab === 'whiteboard' && isWhiteboardImmersive) ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           <div
             className="relative"
@@ -40092,7 +40092,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onScroll={handleEditorScroll}
             className="flex-1 overflow-y-auto thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100"
           >
-          {activeRightTab === 'whiteboard' && (
+          {(productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
             <div className={`absolute inset-0 ${isWhiteboardImmersive ? 'z-[340] p-0 bg-white' : isWhiteboardFloatingUiOpen ? 'z-[320] p-6 md:p-8 bg-[#F7F7F9]' : 'z-30 p-6 md:p-8 bg-[#F7F7F9]'}`}>
               <div className={`h-full w-full bg-white overflow-hidden flex flex-col ${isWhiteboardImmersive ? 'rounded-none border-0 shadow-none' : 'rounded-[24px] border border-violet-100/50 shadow-[0_20px_50px_-30px_rgba(124,58,237,0.15)]'}`}>
                 <div className="h-14 border-b border-gray-100 px-5 flex items-center justify-between">
@@ -42257,7 +42257,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             </div>
           )}
-          <div className={activeRightTab === 'whiteboard' ? 'opacity-0 pointer-events-none select-none' : ''}>
+          <div className={(productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? 'opacity-0 pointer-events-none select-none hidden' : ''}>
           <div
             className="mx-auto"
             style={{
@@ -44882,7 +44882,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 text-gray-400">
-              <button onClick={() => { setActiveDocView('document'); if (activeRightTab === 'whiteboard') { setActiveRightTab('assistant'); } showToast('Document view active'); }} className={`p-1 rounded ${activeDocView === 'document' ? 'text-violet-600 bg-violet-50' : 'hover:text-gray-600'}`} title="Document view"><FileText size={14} /></button>
+              <button onClick={() => { setActiveDocView('document'); if (productMode === 'whiteboard' || activeRightTab === 'whiteboard') { setProductMode('compose'); setActiveRightTab('assistant'); } showToast('Document view active'); }} className={`p-1 rounded ${activeDocView === 'document' && productMode === 'compose' ? 'text-violet-600 bg-violet-50' : 'hover:text-gray-600'}`} title="Document view"><FileText size={14} /></button>
               <button onClick={() => setTextStyleMenuOpen((prev) => !prev)} className="p-1 rounded hover:text-gray-600" title="Text style options"><Type size={14} /></button>
               <button onClick={() => { setRightSidebarOpen((prev) => !prev); }} className="p-1 rounded hover:text-gray-600" title="Toggle right panel"><LayoutGrid size={14} /></button>
               <button onClick={() => showToast('Quality review complete: no critical formatting issues')} className="p-1 rounded hover:text-gray-600" title="Run quick quality check"><AlertTriangle size={14} /></button>
