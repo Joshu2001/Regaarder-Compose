@@ -65,8 +65,16 @@ export const BrowserResearchPanel = ({
         const text = await onExtractText();
         if (!isMounted) return;
 
-        setExtractedText(text || '');
-        const domain = activeTab?.url ? new URL(activeTab.url).hostname.replace('www.', '') : 'webpage';
+        let domain = 'webpage';
+        try {
+          if (activeTab?.url && activeTab.url.startsWith('http')) {
+            domain = new URL(activeTab.url).hostname.replace(/^www\./i, '');
+          } else if (activeTab?.url) {
+            domain = activeTab.url.replace(/^regaarder:\/\//i, '');
+          }
+        } catch (e) {
+          domain = 'webpage';
+        }
 
         setSummary({
           domain,

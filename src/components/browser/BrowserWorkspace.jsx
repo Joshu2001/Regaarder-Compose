@@ -707,10 +707,14 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
             }
           }}
           onSaveRecentAsFlow={handleSaveRecentAsFlow}
-          onOpenRunFlow={() => {
-            const saved = getSavedFlows();
-            if (saved.length > 0) {
-              setActiveExecutingFlow({ flow: saved[0] });
+          onOpenRunFlow={(selectedFlow) => {
+            if (selectedFlow) {
+              setActiveExecutingFlow({ flow: selectedFlow });
+            } else {
+              const saved = getSavedFlows();
+              if (saved.length > 0) {
+                setActiveExecutingFlow({ flow: saved[0] });
+              }
             }
           }}
           onOpenMyFlows={() => setShowFlowLibraryModal(true)}

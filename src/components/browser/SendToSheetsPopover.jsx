@@ -58,8 +58,16 @@ export const SendToSheetsPopover = ({
         return;
       }
 
-      // Simulate structured table detection from webpage context
-      const domain = activeTab?.url ? new URL(activeTab.url).hostname.replace('www.', '') : 'page';
+      let domain = 'page';
+      try {
+        if (activeTab?.url && activeTab.url.startsWith('http')) {
+          domain = new URL(activeTab.url).hostname.replace(/^www\./i, '');
+        } else if (activeTab?.url) {
+          domain = activeTab.url.replace(/^regaarder:\/\//i, '');
+        }
+      } catch (e) {
+        domain = 'page';
+      }
       const mockTables = [
         {
           id: 'table-1',

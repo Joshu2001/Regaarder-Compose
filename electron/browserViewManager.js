@@ -1,5 +1,40 @@
 const { WebContentsView } = require('electron');
 
+// Safe navigation history helpers resolving Electron webContents.canGoBack / canGoForward deprecation warnings
+function getCanGoBack(wc) {
+  if (!wc || wc.isDestroyed()) return false;
+  if (wc.navigationHistory && typeof wc.navigationHistory.canGoBack === 'function') {
+    return wc.navigationHistory.canGoBack();
+  }
+  return typeof wc.canGoBack === 'function' ? wc.canGoBack() : false;
+}
+
+function getCanGoForward(wc) {
+  if (!wc || wc.isDestroyed()) return false;
+  if (wc.navigationHistory && typeof wc.navigationHistory.canGoForward === 'function') {
+    return wc.navigationHistory.canGoForward();
+  }
+  return typeof wc.canGoForward === 'function' ? wc.canGoForward() : false;
+}
+
+function performGoBack(wc) {
+  if (!wc || wc.isDestroyed()) return;
+  if (wc.navigationHistory && typeof wc.navigationHistory.goBack === 'function') {
+    wc.navigationHistory.goBack();
+  } else if (typeof wc.goBack === 'function') {
+    wc.goBack();
+  }
+}
+
+function performGoForward(wc) {
+  if (!wc || wc.isDestroyed()) return;
+  if (wc.navigationHistory && typeof wc.navigationHistory.goForward === 'function') {
+    wc.navigationHistory.goForward();
+  } else if (typeof wc.goForward === 'function') {
+    wc.goForward();
+  }
+}
+
 class BrowserViewManager {
   constructor(mainWindow) {
     this.mainWindow = mainWindow;
@@ -62,8 +97,8 @@ class BrowserViewManager {
 
     wc.on('did-stop-loading', () => {
       tabState.isLoading = false;
-      tabState.canGoBack = wc.canGoBack();
-      tabState.canGoForward = wc.canGoForward();
+      tabState.canGoBack = getCanGoBack(wc);
+      tabState.canGoForward = getCanGoForward(wc);
       this.emitTabUpdate(tabId);
       this.setFontZoom();
     });
@@ -92,15 +127,15 @@ class BrowserViewManager {
     wc.on('did-navigate', (event, url) => {
       tabState.url = url;
       tabState.isSecure = url.startsWith('https://');
-      tabState.canGoBack = wc.canGoBack();
-      tabState.canGoForward = wc.canGoForward();
+      tabState.canGoBack = getCanGoBack(wc);
+      tabState.canGoForward = getCanGoForward(wc);
       this.emitTabUpdate(tabId);
     });
 
     wc.on('did-navigate-in-page', (event, url) => {
       tabState.url = url;
-      tabState.canGoBack = wc.canGoBack();
-      tabState.canGoForward = wc.canGoForward();
+      tabState.canGoBack = getCanGoBack(wc);
+      tabState.canGoForward = getCanGoForward(wc);
       this.emitTabUpdate(tabId);
     });
 
@@ -240,15 +275,15 @@ class BrowserViewManager {
 
   goBack(tabId) {
     const tabState = this.tabs.get(tabId);
-    if (tabState && tabState.view.webContents.canGoBack()) {
-      tabState.view.webContents.goBack();
+    if (tabState) {
+      performGoBack(tabState.view?.webContents);
     }
   }
 
   goForward(tabId) {
     const tabState = this.tabs.get(tabId);
-    if (tabState && tabState.view.webContents.canGoForward()) {
-      tabState.view.webContents.goForward();
+    if (tabState) {
+      performGoForward(tabState.view?.webContents);
     }
   }
 

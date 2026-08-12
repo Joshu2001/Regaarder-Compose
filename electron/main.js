@@ -2,6 +2,11 @@ const { app, BrowserWindow, ipcMain, session } = require('electron');
 const path = require('path');
 const BrowserViewManager = require('./browserViewManager');
 
+// Disable hardware acceleration to eliminate exit_code=34 Chromium GPU process crashes on Windows
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-gpu-compositing');
+
 let mainWindow = null;
 let browserViewManager = null;
 

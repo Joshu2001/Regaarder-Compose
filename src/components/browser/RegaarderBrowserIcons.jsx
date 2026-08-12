@@ -285,7 +285,7 @@ export const BrowserCheckIcon = ({ size = 16, className = '', strokeWidth = 1.75
   </svg>
 );
 
-// 15. FLOW / WORKFLOW: Regaarder custom glyph: connected nodes + directional path (action -> action -> action -> replayable workflow)
+// 15. FLOW / WORKFLOW: Regaarder custom glyph: 3 connected nodes forming a directional path (capture ○ → sequence ◇ → replay ↻)
 export const BrowserFlowIcon = ({ size = 18, mode = 'idle', className = '', strokeWidth = 1.75, ...props }) => (
   <svg
     width={size}
@@ -299,25 +299,25 @@ export const BrowserFlowIcon = ({ size = 18, mode = 'idle', className = '', stro
     className={className}
     {...props}
   >
-    {/* Workflow step 1 origin node (○) */}
-    <circle cx="4" cy="12" r="2.25" />
-    
-    {/* Directional path 1 (action → action) */}
-    <path d="M6.25 12H9.5" />
-    <polyline points="8.5 10.5 10 12 8.5 13.5" />
+    {/* Step 1: Capture origin node (○) */}
+    <circle cx="4" cy="12" r="2.2" />
 
-    {/* Workflow step 2 node diamond (◇) */}
-    <polygon points="13.5 8.5 17 12 13.5 15.5 10 12" />
+    {/* Path 1: Capture → Sequence directional arrow */}
+    <path d="M6.2 12h3.3" />
+    <polyline points="8.2 10.5 9.7 12 8.2 13.5" />
 
-    {/* Directional path 2 (action → replayable workflow) */}
-    <path d="M17 12H19.5" />
-    <polyline points="18.5 10.5 20 12 18.5 13.5" />
+    {/* Step 2: Sequence step node diamond (◇) */}
+    <polygon points="13.2 8.8 16.4 12 13.2 15.2 10 12" />
 
-    {/* State Cues: Capture vs Run mode subtle overlays */}
+    {/* Path 2: Sequence → Replay loop arrow (↻) */}
+    <path d="M16.4 12h1.6a2.5 2.5 0 0 1 2.5 2.5v.5a2.5 2.5 0 0 1-2.5 2.5H16" />
+    <polyline points="17.5 16 16 17.5 17.5 19" />
+
+    {/* Mode specific focal indicator */}
     {mode === 'recording' || mode === 'capture' ? (
-      <circle cx="4" cy="12" r="1.2" fill="#ef4444" stroke="none" />
+      <circle cx="4" cy="12" r="1.1" fill="#ef4444" stroke="none" />
     ) : mode === 'run' || mode === 'replay' ? (
-      <polygon points="12.5 10.5 15 12 12.5 13.5" fill="currentColor" stroke="none" />
+      <polygon points="12.2 10.6 14.2 12 12.2 13.4" fill="currentColor" stroke="none" />
     ) : (
       <circle cx="4" cy="12" r="0.75" fill="currentColor" stroke="none" />
     )}

@@ -31,22 +31,28 @@ export const BrowserOverflowMenu = ({
   const menuRef = useRef(null);
 
   useEffect(() => {
-    const handleOutsideClick = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        onClose?.();
-      }
-    };
+    let handleOutsideClick;
+    const timer = setTimeout(() => {
+      handleOutsideClick = (e) => {
+        if (menuRef.current && !menuRef.current.contains(e.target)) {
+          onClose?.();
+        }
+      };
+      document.addEventListener('pointerdown', handleOutsideClick);
+    }, 60);
+
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         onClose?.();
       }
     };
-
-    document.addEventListener('pointerdown', handleOutsideClick);
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.removeEventListener('pointerdown', handleOutsideClick);
+      clearTimeout(timer);
+      if (handleOutsideClick) {
+        document.removeEventListener('pointerdown', handleOutsideClick);
+      }
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
