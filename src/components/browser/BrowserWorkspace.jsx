@@ -13,6 +13,7 @@ import FlowLibraryModal from './flows/FlowLibraryModal';
 import FlowExecutionModal from './flows/FlowExecutionModal';
 import BrowserFontPopover from './BrowserFontPopover';
 import BrowserOverflowMenu from './BrowserOverflowMenu';
+import BrowserUtilitiesPopover from './BrowserUtilitiesPopover';
 import { globalActivityObserver, synthesizeFlowFromActions, getSavedFlows } from '../../services/flowEngine';
 
 const STORAGE_KEY = 'regaarder_research_tabs_v2';
@@ -102,6 +103,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   const [sendToSheetsPopoverRect, setSendToSheetsPopoverRect] = useState(null);
   const [sendToComposePopoverRect, setSendToComposePopoverRect] = useState(null);
   const [overflowMenuRect, setOverflowMenuRect] = useState(null);
+  const [utilitiesPopoverRect, setUtilitiesPopoverRect] = useState(null);
   const [showCompetitorWorkflow, setShowCompetitorWorkflow] = useState(false);
 
   // Regaarder Flows system state
@@ -142,6 +144,14 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     }
   }, [isElectron]);
 
+  const handleOpenUtilitiesPopoverAction = useCallback((rect) => {
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'utilities', bounds: serializeRect(rect) });
+    } else {
+      setUtilitiesPopoverRect((prev) => (prev ? null : rect));
+    }
+  }, [isElectron]);
+
   const handleOpenFlowsPopoverAction = useCallback((rect) => {
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'flows', bounds: serializeRect(rect) });
@@ -174,6 +184,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
       }
       setFontPopoverRect(null);
       setOverflowMenuRect(null);
+      setUtilitiesPopoverRect(null);
       setFlowsPopoverRect(null);
       setSendToSheetsPopoverRect(null);
       setSendToComposePopoverRect(null);
@@ -576,6 +587,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   const isPopoverOpen = !isElectron && Boolean(
     fontPopoverRect ||
     overflowMenuRect ||
+    utilitiesPopoverRect ||
     flowsPopoverRect ||
     sendToSheetsPopoverRect ||
     sendToComposePopoverRect
@@ -613,6 +625,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         isSidePanelOpen={isSidePanelOpen}
         isFlowRecording={isFlowRecording}
         isFontPopoverOpen={Boolean(fontPopoverRect)}
+        isUtilitiesPopoverOpen={Boolean(utilitiesPopoverRect)}
         isOverflowMenuOpen={Boolean(overflowMenuRect)}
         browserFont={browserFont}
         browserFontSize={browserFontSize}
@@ -625,8 +638,8 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         onToggleBookmark={handleToggleBookmark}
         onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
         onOpenFlowsPopover={handleOpenFlowsPopoverAction}
+        onOpenUtilitiesPopover={handleOpenUtilitiesPopoverAction}
         onOpenOverflowMenu={handleOpenOverflowMenuAction}
-        onOpenSendToComposePopover={handleOpenSendToComposePopoverAction}
         onSaveMemoryChip={() => {
           if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Memory`);
         }}
@@ -779,23 +792,23 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         />
       )}
 
-      {/* Executive Browser Overflow Popover Menu */}
-      {overflowMenuRect && (
-        <BrowserOverflowMenu
-          anchorRect={overflowMenuRect}
-          onClose={() => setOverflowMenuRect(null)}
+      {/* Executive Browser Utilities Popover */}
+      {utilitiesPopoverRect && (
+        <BrowserUtilitiesPopover
+          anchorRect={utilitiesPopoverRect}
+          onClose={() => setUtilitiesPopoverRect(null)}
           onOpenFontPopover={(rect) => {
-            setOverflowMenuRect(null);
-            handleOpenFontPopoverAction(rect || overflowMenuRect);
+            setUtilitiesPopoverRect(null);
+            handleOpenFontPopoverAction(rect || utilitiesPopoverRect);
           }}
           onOpenExternal={handleOpenExternal}
           onOpenSendToSheets={(rect) => {
-            setOverflowMenuRect(null);
-            handleOpenSendToSheetsPopoverAction(rect || overflowMenuRect);
+            setUtilitiesPopoverRect(null);
+            handleOpenSendToSheetsPopoverAction(rect || utilitiesPopoverRect);
           }}
           onOpenSendToCompose={(rect) => {
-            setOverflowMenuRect(null);
-            handleOpenSendToComposePopoverAction(rect || overflowMenuRect);
+            setUtilitiesPopoverRect(null);
+            handleOpenSendToComposePopoverAction(rect || utilitiesPopoverRect);
           }}
           onSendWhiteboard={() => {
             if (showToast) showToast('Clipped visual layout to Whiteboard canvas');
@@ -811,6 +824,48 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
           }}
           onOpenDownloads={() => {
             if (showToast) showToast('Opened Downloads manager');
+          }}
+          onOpenBookmarks={() => {
+            handleNavigate('regaarder://saved');
+          }}
+          onPrintPage={() => {
+            window.print();
+          }}
+        />
+      )}
+
+      {/* Executive Browser Overflow Popover Menu */}
+      {overflowMenuRect && (
+        <BrowserOverflowMenu
+          anchorRect={overflowMenuRect}
+          onClose={() => setOverflowMenuRect(null)}
+          onNewTab={() => handleNewTab(DEFAULT_RESEARCH_URL)}
+          onReloadHard={handleReload}
+          onResetWorkspace={() => {
+            setTabs([{
+              id: 'tab-1',
+              title: 'Regaarder Research',
+              url: DEFAULT_RESEARCH_URL,
+              isLoading: false,
+              canGoBack: false,
+              canGoForward: false,
+              favicon: '',
+              isSecure: true
+            }]);
+            setActiveTabId('tab-1');
+            if (showToast) showToast('Reset browser tabs workspace');
+          }}
+          onOpenSettings={(rect) => {
+            handleOpenFontPopoverAction(rect || overflowMenuRect);
+          }}
+          onOpenShortcuts={() => {
+            if (showToast) showToast('Opened Keyboard Shortcuts guide');
+          }}
+          onOpenHelp={() => {
+            if (showToast) showToast('Opened Regaarder Help & Documentation');
+          }}
+          onAbout={() => {
+            if (showToast) showToast('Regaarder Research v2.4 (Executive Build)');
           }}
         />
       )}

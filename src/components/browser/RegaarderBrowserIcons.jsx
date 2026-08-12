@@ -363,6 +363,51 @@ export const BrowserEllipsisIcon = ({ size = 18, className = '', strokeWidth = 1
   </svg>
 );
 
+// 18. UTILITIES / TOOLS: Custom minimal Regaarder toolbox glyph (browser utilities & actions)
+export const BrowserUtilitiesIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Architectural toolbox main body */}
+    <rect x="3" y="7" width="18" height="13" rx="2" />
+    {/* Toolbox handle */}
+    <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    {/* Horizontal divider line */}
+    <line x1="3" y1="12" x2="21" y2="12" />
+    {/* Central latch clasp node */}
+    <rect x="10.5" y="10.5" width="3" height="3" rx="0.5" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+// 19. PRINT: Precision printer icon
+export const BrowserPrintIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <polyline points="6 9 6 2 18 2 18 9" />
+    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+    <rect x="6" y="14" width="12" height="8" rx="1" />
+  </svg>
+);
+
 // Export map for easy lookup
 export const RegaarderBrowserIconMap = {
   Home: BrowserHomeIcon,
@@ -381,9 +426,12 @@ export const RegaarderBrowserIconMap = {
   Check: BrowserCheckIcon,
   Flow: BrowserFlowIcon,
   Record: BrowserRecordIcon,
-  Ellipsis: BrowserEllipsisIcon
+  Ellipsis: BrowserEllipsisIcon,
+  Utilities: BrowserUtilitiesIcon,
+  Print: BrowserPrintIcon
 };
 
 export default RegaarderBrowserIconMap;
+
 
 

@@ -11,7 +11,8 @@ import {
   BrowserCloseIcon,
   BrowserFlowIcon,
   BrowserRecordIcon,
-  BrowserEllipsisIcon
+  BrowserEllipsisIcon,
+  BrowserUtilitiesIcon
 } from './RegaarderBrowserIcons';
 import {
   AgentsIcon,
@@ -24,14 +25,7 @@ import {
 
 /**
  * BrowserToolbar: Regaarder Research Executive Navigation Toolbar
- * Implements deterministic action architecture for every visible control:
- * - Back / Forward / Reload / Home (Direct Class A Actions)
- * - Address Bar with Intelligent Intent Routing (URL vs Research vs Search)
- * - Open Externally (Direct Class A Action)
- * - Bookmark / Save (Direct Class A Toggle with active 'outline' visual state & toast with Undo)
- * - Send to Sheets & Send to Compose (Class B Contextual Popovers)
- * - Research AI (Class B Contextual Sidebar)
- * - Ellipsis Menu (...) for Isolated Browser Font & Size Customization
+ * Visible Hierarchy: Back, Forward, Reload, Home, URL/Search, Bookmark, Flow, Regaarder AI, Utilities, Overflow
  */
 export const BrowserToolbar = ({
   currentUrl = '',
@@ -43,6 +37,7 @@ export const BrowserToolbar = ({
   isSidePanelOpen = false,
   isFlowRecording = false,
   isFontPopoverOpen = false,
+  isUtilitiesPopoverOpen = false,
   isOverflowMenuOpen = false,
   browserFont = 'System Default',
   browserFontSize = 100,
@@ -55,18 +50,18 @@ export const BrowserToolbar = ({
   onToggleBookmark,
   onToggleSidePanel,
   onOpenFlowsPopover,
+  onOpenUtilitiesPopover,
   onOpenOverflowMenu,
   onSummarizeChip,
-  onSaveMemoryChip,
-  onOpenSendToComposePopover
+  onSaveMemoryChip
 }) => {
   const [inputValue, setInputValue] = useState(currentUrl);
   const [isEditing, setIsEditing] = useState(false);
 
   // Button anchor refs for popovers
   const flowsBtnRef = useRef(null);
+  const utilitiesBtnRef = useRef(null);
   const overflowBtnRef = useRef(null);
-  const composeBtnRef = useRef(null);
 
   useEffect(() => {
     if (!isEditing) {
@@ -256,7 +251,7 @@ export const BrowserToolbar = ({
         </div>
       </form>
 
-      {/* Right-Side Primary Hierarchy: Bookmark -> Flow -> Regaarder AI -> Overflow */}
+      {/* Right-Side Primary Hierarchy: Bookmark -> Flow -> Regaarder AI -> Utilities -> Overflow */}
       <div className="flex items-center gap-1.5 shrink-0">
         {/* 1. BOOKMARK: Standard icon, neutral styling normally, Regaarder purple when active */}
         <button
@@ -319,7 +314,27 @@ export const BrowserToolbar = ({
         {/* Subtle Divider */}
         <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
 
-        {/* 4. OVERFLOW MENU (⋯): Single entry for Display & Appearance, Export, & Page Tools */}
+        {/* 4. UTILITIES / TOOLS: Dedicated popover for secondary browser actions */}
+        <button
+          ref={utilitiesBtnRef}
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            if (utilitiesBtnRef.current && onOpenUtilitiesPopover) {
+              onOpenUtilitiesPopover(utilitiesBtnRef.current.getBoundingClientRect());
+            }
+          }}
+          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
+            isUtilitiesPopoverOpen
+              ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/40 ring-1 ring-violet-500/20'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent'
+          }`}
+          title="Browser Utilities & Tools"
+        >
+          <BrowserUtilitiesIcon size={17} />
+        </button>
+
+        {/* 5. OVERFLOW MENU (⋯): General system & workspace options */}
         <button
           ref={overflowBtnRef}
           type="button"
@@ -334,7 +349,7 @@ export const BrowserToolbar = ({
               ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/40'
               : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 border border-transparent'
           }`}
-          title="More options & Display & Appearance"
+          title="More general options"
         >
           <BrowserEllipsisIcon size={17} />
         </button>
@@ -344,4 +359,3 @@ export const BrowserToolbar = ({
 };
 
 export default BrowserToolbar;
-

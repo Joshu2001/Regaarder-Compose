@@ -124,8 +124,8 @@ export const BrowserFontPopover = ({
   const right = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right) : 16;
 
   const containerClasses = isStandalone
-    ? "w-full h-full bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/80 dark:border-zinc-800/80 shadow-lg rounded-2xl p-3.5 backdrop-blur-2xl font-sans select-none text-slate-800 dark:text-zinc-100 flex flex-col justify-between overflow-hidden"
-    : "fixed z-[100000] w-[330px] bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/80 dark:border-zinc-800/80 shadow-lg rounded-2xl p-3.5 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150 font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden";
+    ? "w-full h-full bg-white/96 dark:bg-[#1c1c1e]/96 border border-slate-200/80 dark:border-zinc-800/80 shadow-2xl rounded-2xl p-3.5 backdrop-blur-xl font-sans select-none text-slate-800 dark:text-zinc-100 flex flex-col justify-between overflow-hidden"
+    : "fixed z-[100000] w-[330px] bg-white/96 dark:bg-[#1c1c1e]/96 border border-slate-200/80 dark:border-zinc-800/80 shadow-2xl rounded-2xl p-3.5 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden";
 
   const containerStyle = isStandalone ? {} : { top: `${top}px`, right: `${right}px` };
 
