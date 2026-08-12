@@ -124,7 +124,7 @@ class BrowserViewManager {
 
     if (this.isVisible && this.bounds.width > 0 && this.bounds.height > 0) {
       try {
-        this.mainWindow.contentView.addChildView(currentTab.view);
+        this.mainWindow.contentView.addChildView(currentTab.view, 0);
         currentTab.view.setBounds(this.bounds);
       } catch (e) {
         console.error('[BrowserViewManager] Error adding child view:', e);
@@ -173,7 +173,7 @@ class BrowserViewManager {
       if (this.bounds.width > 0 && this.bounds.height > 0) {
         try {
           if (!this.mainWindow.contentView.children.includes(currentTab.view)) {
-            this.mainWindow.contentView.addChildView(currentTab.view);
+            this.mainWindow.contentView.addChildView(currentTab.view, 0);
           }
           currentTab.view.setBounds(this.bounds);
         } catch (e) {
@@ -191,7 +191,7 @@ class BrowserViewManager {
     if (visible && this.bounds.width > 0 && this.bounds.height > 0) {
       try {
         if (!this.mainWindow.contentView.children.includes(currentTab.view)) {
-          this.mainWindow.contentView.addChildView(currentTab.view);
+          this.mainWindow.contentView.addChildView(currentTab.view, 0);
         }
         currentTab.view.setBounds(this.bounds);
       } catch (e) {

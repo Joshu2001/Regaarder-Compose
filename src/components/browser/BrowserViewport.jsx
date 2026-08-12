@@ -37,7 +37,7 @@ export const BrowserViewport = ({
       });
     };
 
-    if (isResearchHome || isOverlayOpen) {
+    if (isResearchHome) {
       window.electronAPI.setBrowserVisibility(false);
     } else {
       window.electronAPI.setBrowserVisibility(true);
@@ -45,7 +45,7 @@ export const BrowserViewport = ({
     }
 
     const resizeObserver = new ResizeObserver(() => {
-      if (!isResearchHome && !isOverlayOpen) {
+      if (!isResearchHome) {
         updateBounds();
       }
     });
@@ -60,7 +60,7 @@ export const BrowserViewport = ({
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateBounds);
     };
-  }, [isElectron, activeTab?.id, isResearchHome, isSidePanelOpen, isOverlayOpen]);
+  }, [isElectron, activeTab?.id, isResearchHome, isSidePanelOpen]);
 
   // Reset iframe error when URL changes in web fallback
   useEffect(() => {
@@ -85,11 +85,11 @@ export const BrowserViewport = ({
     <div
       id="regaarder-browser-viewport"
       ref={containerRef}
-      className="relative flex-1 w-full h-full bg-slate-900 overflow-hidden"
+      className="relative flex-1 w-full h-full bg-transparent overflow-hidden"
     >
-      {/* If inside Electron, Electron's WebContentsView paints directly on top of this container */}
+      {/* If inside Electron, Electron's WebContentsView paints directly behind this container */}
       {isElectron ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/20 text-slate-400 select-none pointer-events-none">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-transparent text-slate-400 select-none pointer-events-none">
           {activeTab?.isLoading && (
             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 backdrop-blur-md shadow-lg animate-pulse">
               <Globe className="w-4 h-4 text-violet-400 animate-spin" />
