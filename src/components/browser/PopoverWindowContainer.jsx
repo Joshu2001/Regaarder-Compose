@@ -90,7 +90,7 @@ export const PopoverWindowContainer = () => {
   };
 
   return (
-    <div className="w-screen h-screen min-h-screen bg-transparent text-slate-100 overflow-hidden flex items-start justify-center p-0 m-0 font-sans">
+    <div className="w-screen h-screen min-h-screen bg-transparent text-slate-100 overflow-hidden flex items-start justify-center p-2 m-0 font-sans">
       <div className="w-full h-full flex flex-col items-center justify-start bg-transparent">
         {popoverType === 'font' && (
           <BrowserFontPopover

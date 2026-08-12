@@ -156,6 +156,22 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     }
   }, [isElectron]);
 
+  useEffect(() => {
+    const handleMainWindowPointerDown = (e) => {
+      if (e.target?.closest?.('button')) return;
+      if (isElectron && window.electronAPI?.closePopover) {
+        window.electronAPI.closePopover();
+      }
+      setFontPopoverRect(null);
+      setFlowsPopoverRect(null);
+      setSendToSheetsPopoverRect(null);
+      setSendToComposePopoverRect(null);
+    };
+
+    window.addEventListener('pointerdown', handleMainWindowPointerDown);
+    return () => window.removeEventListener('pointerdown', handleMainWindowPointerDown);
+  }, [isElectron]);
+
   // Restore or initialize research tabs
   const [tabs, setTabs] = useState(() => {
     try {

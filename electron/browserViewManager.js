@@ -49,6 +49,12 @@ class BrowserViewManager {
 
     const wc = view.webContents;
 
+    wc.on('before-input-event', (event, input) => {
+      if (input.type === 'mouseDown' || input.type === 'touchStart') {
+        this.closePopover();
+      }
+    });
+
     wc.on('did-start-loading', () => {
       tabState.isLoading = true;
       this.emitTabUpdate(tabId);
@@ -313,12 +319,13 @@ class BrowserViewManager {
     const path = require('path');
 
     const popoverWindow = new BrowserWindow({
-      width: 330,
+      width: 340,
       height: 380,
       parent: this.mainWindow,
       frame: false,
       transparent: true,
       backgroundColor: '#00000000',
+      hasShadow: false,
       resizable: false,
       show: false,
       skipTaskbar: true,
@@ -352,10 +359,6 @@ class BrowserViewManager {
       });
     });
 
-    popoverWindow.on('blur', () => {
-      this.closePopover();
-    });
-
     this.popoverWindow = popoverWindow;
     return popoverWindow;
   }
@@ -373,8 +376,8 @@ class BrowserViewManager {
 
     const popoverWin = this.getOrCreatePopoverWindow();
 
-    const width = type === 'font' ? 330 : type === 'flows' ? 380 : 420;
-    const height = type === 'font' ? 380 : type === 'flows' ? 380 : 440;
+    const width = type === 'font' ? 340 : type === 'flows' ? 380 : 420;
+    const height = type === 'font' ? 380 : type === 'flows' ? 390 : 440;
 
     const mainBounds = this.mainWindow.getBounds();
 
