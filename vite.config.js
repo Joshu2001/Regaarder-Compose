@@ -4,8 +4,8 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
-      '@regaarder/ui': path.resolve(__dirname, '../packages/ui/src/index.js'),
-      canvg: path.resolve(__dirname, 'src/mock-canvg.js')
+      '@regaarder/ui': path.resolve(import.meta.dirname, '../packages/ui/src/index.js'),
+      canvg: path.resolve(import.meta.dirname, 'src/mock-canvg.js')
     }
   },
   optimizeDeps: {
