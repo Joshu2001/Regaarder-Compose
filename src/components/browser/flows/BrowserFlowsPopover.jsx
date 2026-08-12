@@ -53,7 +53,7 @@ export const BrowserFlowsPopover = ({
         isStandalone
           ? 'relative z-50 w-full max-w-sm border border-slate-700/80 shadow-2xl'
           : 'fixed z-50 w-64 border border-slate-700/80 shadow-2xl animate-in fade-in duration-150'
-      } bg-slate-900/95 dark:bg-slate-900/95 rounded-2xl backdrop-blur-xl font-sans select-none text-slate-100 overflow-hidden`}
+      } bg-slate-900 dark:bg-slate-900 rounded-2xl font-sans select-none text-slate-100 overflow-hidden`}
     >
       {/* Header */}
       <div className="px-3.5 py-2.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">

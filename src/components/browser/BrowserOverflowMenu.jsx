@@ -71,7 +71,7 @@ export const BrowserOverflowMenu = ({
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       style={{ top: `${top}px`, right: `${right}px` }}
-      className="fixed z-[100000] w-[240px] bg-white/96 dark:bg-[#1c1c1e]/96 border border-slate-200/80 dark:border-zinc-800/80 shadow-2xl rounded-2xl p-1.5 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden"
+      className="fixed z-[100000] w-[240px] bg-white dark:bg-[#1c1c1e] border border-slate-200 dark:border-zinc-700/80 shadow-2xl rounded-2xl p-1.5 animate-in fade-in zoom-in-95 duration-150 font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden"
     >
       {/* SECTION 1: WORKSPACE & NAVIGATION */}
       <div className="px-1 py-1 space-y-0.5">
