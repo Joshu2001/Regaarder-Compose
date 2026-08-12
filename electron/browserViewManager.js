@@ -329,7 +329,7 @@ class BrowserViewManager {
       resizable: false,
       show: false,
       skipTaskbar: true,
-      alwaysOnTop: false,
+      alwaysOnTop: true,
       focusable: true,
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
