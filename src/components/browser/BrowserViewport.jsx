@@ -53,7 +53,7 @@ export const BrowserViewport = ({
       });
     };
 
-    if (isResearchHome || isModalOpen || isPopoverOpen) {
+    if (isResearchHome || isModalOpen) {
       window.electronAPI.setBrowserVisibility(false);
     } else {
       window.electronAPI.setBrowserVisibility(true);
