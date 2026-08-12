@@ -32659,7 +32659,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       ? 'right-12 text-right'
       : 'left-1/2 -translate-x-1/2 text-center';
 
-  const showDocumentOutlineView = (isFocusMode || activeDocView === 'document') && activeRightTab !== 'whiteboard' && docOutlineEnabled;
+  const showDocumentOutlineView = productMode === 'compose' && (isFocusMode || activeDocView === 'document') && activeRightTab !== 'whiteboard' && docOutlineEnabled;
   const rightMiniRailWidth = 0;
   const blurEdgeGuard = 0;
   const blurLeftInset = leftSidebarOpen ? leftSidebarWidth : 0;
@@ -50805,7 +50805,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       </div>
 
       {/* Document Outline — full-height floating edge drawer overlay at z-[260] */}
-      {showDocumentOutlineView && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
+      {showDocumentOutlineView && productMode === 'compose' && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
         <div
           ref={documentOutlineDrawerRef}
           className="fixed top-0 left-0 bottom-0 z-[260] flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border-r border-slate-200/60 dark:border-zinc-800/80 shadow-[12px_0_35px_-10px_rgba(15,23,42,0.08)] select-none overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-left-4"
