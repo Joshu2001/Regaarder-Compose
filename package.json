@@ -1,7 +1,7 @@
 {
     "version": "0.0.0",
     "name": "regaarder-compose",
-    "main": "electron/main.js",
+    "main": "electron/main.cjs",
     "scripts": {
         "preview": "vite preview",
         "build": "vite build",

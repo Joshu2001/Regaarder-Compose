@@ -212,9 +212,21 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
   };
 
   const handleNavigate = (targetUrl) => {
-    let formattedUrl = targetUrl;
-    if (formattedUrl !== DEFAULT_RESEARCH_URL && formattedUrl !== 'regaarder://saved' && !/^https?:\/\//i.test(formattedUrl)) {
-      formattedUrl = 'https://' + formattedUrl;
+    if (!targetUrl || !targetUrl.trim()) return;
+    const trimmed = targetUrl.trim();
+    let formattedUrl = trimmed;
+
+    if (formattedUrl !== DEFAULT_RESEARCH_URL && formattedUrl !== 'regaarder://saved') {
+      if (/^https?:\/\//i.test(formattedUrl) || /^regaarder:\/\//i.test(formattedUrl) || /^file:\/\//i.test(formattedUrl)) {
+        // Already valid protocol
+      } else if (trimmed.includes(' ') || (!trimmed.includes('.') && !trimmed.includes('localhost'))) {
+        // Search query (e.g. "react hooks" or "apple market cap")
+        formattedUrl = `https://www.google.com/search?q=${encodeURIComponent(trimmed)}`;
+      } else {
+        // Domain name (e.g. "google.com" or "localhost:5173")
+        const protocol = trimmed.startsWith('localhost') || trimmed.startsWith('127.0.0.1') ? 'http://' : 'https://';
+        formattedUrl = protocol + trimmed;
+      }
     }
 
     setTabs((prev) =>

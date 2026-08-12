@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain, session } = require('electron');
 const path = require('path');
-const BrowserViewManager = require('./browserViewManager');
+const BrowserViewManager = require('./browserViewManager.cjs');
 
 let mainWindow = null;
 let browserViewManager = null;
@@ -34,7 +34,7 @@ function createWindow() {
     title: 'Regaarder',
     backgroundColor: '#0f172a',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -49,14 +49,28 @@ function createWindow() {
     mainWindow.webContents.send('browser:window-resized');
   });
 
-  const targetUrl = isDev ? (process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173') : `file://${path.join(__dirname, '../dist/index.html')}`;
+  const portsToTry = [
+    process.env.VITE_DEV_SERVER_URL,
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175'
+  ].filter(Boolean);
 
-  mainWindow.loadURL(targetUrl).catch(err => {
-    console.warn('[Electron Main] Dev server not active, loading dist/index.html...');
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html')).catch(loadErr => {
-      console.error('[Electron Main] Failed to load dist/index.html:', loadErr);
+  const loadApp = (portIndex = 0, attemptsLeft = 10) => {
+    const currentUrl = portsToTry[portIndex % portsToTry.length];
+    mainWindow.loadURL(currentUrl).catch(err => {
+      if (attemptsLeft > 0) {
+        setTimeout(() => loadApp(portIndex + 1, attemptsLeft - 1), 400);
+      } else {
+        console.warn('[Electron Main] Dev server not active. Loading production dist/index.html...');
+        mainWindow.loadFile(path.join(__dirname, '../dist/index.html')).catch(loadErr => {
+          console.error('[Electron Main] Failed to load dist/index.html:', loadErr);
+        });
+      }
     });
-  });
+  };
+
+  loadApp();
 }
 
 // Setup IPC handlers
@@ -125,6 +139,14 @@ ipcMain.handle('browser:extract-page-text', async (event, { tabId }) => {
     return await browserViewManager.extractPageText(tabId);
   }
   return { success: false, error: 'Browser manager not initialized' };
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[Electron Main] Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Electron Main] Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 app.whenReady().then(() => {
