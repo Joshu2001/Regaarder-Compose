@@ -34,5 +34,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Popover Overlay Window
   openPopover: (params) => ipcRenderer.invoke('browser:open-popover', params),
-  closePopover: () => ipcRenderer.invoke('browser:close-popover')
+  closePopover: () => ipcRenderer.invoke('browser:close-popover'),
+  onPopoverChangeType: (callback) => {
+    const handler = (event, type) => callback(type);
+    ipcRenderer.on('popover:change-type', handler);
+    return () => ipcRenderer.removeListener('popover:change-type', handler);
+  }
 });

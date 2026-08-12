@@ -62,3 +62,9 @@
 [data-enterprise-page="true"]:focus-within .doc-header-chrome:hover {
   opacity: 1;
 }
+
+/* Electron Popover Overlay Window Transparency */
+html.popover-root, body.popover-root, #popover-root {
+  background-color: transparent !important;
+  background: transparent !important;
+}
