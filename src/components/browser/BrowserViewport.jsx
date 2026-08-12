@@ -12,7 +12,8 @@ export const BrowserViewport = ({
   savedItems = [],
   isElectron = false,
   isSidePanelOpen = false,
-  isOverlayOpen = false,
+  isModalOpen = false,
+  activePopoverBottom = null,
   onNavigate,
   onLaunchCompetitorWorkflow,
   onToggleSidePanel,
@@ -29,15 +30,25 @@ export const BrowserViewport = ({
     const updateBounds = () => {
       if (!containerRef.current || !window.electronAPI) return;
       const rect = containerRef.current.getBoundingClientRect();
+
+      let targetY = Math.round(rect.y);
+      let targetHeight = Math.round(rect.height);
+
+      if (activePopoverBottom && activePopoverBottom > rect.y) {
+        const offset = activePopoverBottom - rect.y;
+        targetY = Math.round(activePopoverBottom);
+        targetHeight = Math.max(0, Math.round(rect.height - offset));
+      }
+
       window.electronAPI.updateViewportBounds({
-        x: rect.x,
-        y: rect.y,
-        width: rect.width,
-        height: rect.height
+        x: Math.round(rect.x),
+        y: targetY,
+        width: Math.round(rect.width),
+        height: targetHeight
       });
     };
 
-    if (isResearchHome) {
+    if (isResearchHome || isModalOpen) {
       window.electronAPI.setBrowserVisibility(false);
     } else {
       window.electronAPI.setBrowserVisibility(true);
@@ -45,7 +56,7 @@ export const BrowserViewport = ({
     }
 
     const resizeObserver = new ResizeObserver(() => {
-      if (!isResearchHome) {
+      if (!isResearchHome && !isModalOpen) {
         updateBounds();
       }
     });
@@ -60,7 +71,7 @@ export const BrowserViewport = ({
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateBounds);
     };
-  }, [isElectron, activeTab?.id, isResearchHome, isSidePanelOpen]);
+  }, [isElectron, activeTab?.id, isResearchHome, isSidePanelOpen, isModalOpen, activePopoverBottom]);
 
   // Reset iframe error when URL changes in web fallback
   useEffect(() => {

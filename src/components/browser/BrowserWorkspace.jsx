@@ -417,10 +417,20 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
     }
   };
 
-  const isOverlayOpen = Boolean(
-    sendToSheetsPopoverRect ||
-    sendToComposePopoverRect ||
-    flowsPopoverRect ||
+  const activePopoverBottom = useMemo(() => {
+    if (flowsPopoverRect) {
+      return (flowsPopoverRect.bottom || 88) + 360;
+    }
+    if (sendToSheetsPopoverRect) {
+      return (sendToSheetsPopoverRect.bottom || 88) + 400;
+    }
+    if (sendToComposePopoverRect) {
+      return (sendToComposePopoverRect.bottom || 88) + 400;
+    }
+    return null;
+  }, [flowsPopoverRect, sendToSheetsPopoverRect, sendToComposePopoverRect]);
+
+  const isModalOpen = Boolean(
     showCompetitorWorkflow ||
     synthesizedFlowToReview ||
     showFlowLibraryModal ||
@@ -486,7 +496,8 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
           savedItems={savedItems}
           isElectron={isElectron}
           isSidePanelOpen={isSidePanelOpen}
-          isOverlayOpen={isOverlayOpen}
+          isModalOpen={isModalOpen}
+          activePopoverBottom={activePopoverBottom}
           onNavigate={handleNavigate}
           onLaunchCompetitorWorkflow={() => setShowCompetitorWorkflow(true)}
           onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
