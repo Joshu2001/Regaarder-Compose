@@ -304,13 +304,26 @@ class BrowserViewManager {
     });
   }
 
-  getOrCreatePopoverView() {
-    if (this.popoverView && !this.popoverView.webContents.isDestroyed()) {
-      return this.popoverView;
+  getOrCreatePopoverWindow() {
+    if (this.popoverWindow && !this.popoverWindow.isDestroyed()) {
+      return this.popoverWindow;
     }
 
+    const { BrowserWindow } = require('electron');
     const path = require('path');
-    const popoverView = new WebContentsView({
+
+    const popoverWindow = new BrowserWindow({
+      width: 330,
+      height: 380,
+      parent: this.mainWindow,
+      frame: false,
+      transparent: true,
+      backgroundColor: '#00000000',
+      resizable: false,
+      show: false,
+      skipTaskbar: true,
+      alwaysOnTop: true,
+      focusable: true,
       webPreferences: {
         preload: path.join(__dirname, 'preload.cjs'),
         contextIsolation: true,
@@ -318,10 +331,7 @@ class BrowserViewManager {
       }
     });
 
-    this.popoverView = popoverView;
-    try {
-      popoverView.setBackgroundColor('#00000000');
-    } catch (e) {}
+    popoverWindow.removeMenu();
 
     let baseUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
     try {
@@ -336,17 +346,18 @@ class BrowserViewManager {
     }
 
     const initialUrl = `${baseUrl}/#/popover-window?type=font`;
-    popoverView.webContents.loadURL(initialUrl).catch(() => {
-      popoverView.webContents.loadFile(path.join(__dirname, '../dist/index.html'), {
+    popoverWindow.loadURL(initialUrl).catch(() => {
+      popoverWindow.loadFile(path.join(__dirname, '../dist/index.html'), {
         hash: '/popover-window?type=font'
       });
     });
 
-    popoverView.webContents.on('blur', () => {
+    popoverWindow.on('blur', () => {
       this.closePopover();
     });
 
-    return popoverView;
+    this.popoverWindow = popoverWindow;
+    return popoverWindow;
   }
 
   showPopover(type, bounds) {
@@ -360,41 +371,44 @@ class BrowserViewManager {
     this.popoverType = type;
     this.popoverIsVisible = true;
 
-    const popoverView = this.getOrCreatePopoverView();
+    const popoverWin = this.getOrCreatePopoverWindow();
 
-    const width = type === 'font' ? 340 : type === 'flows' ? 380 : 420;
-    const height = type === 'font' ? 340 : type === 'flows' ? 380 : 440;
+    const width = type === 'font' ? 330 : type === 'flows' ? 380 : 420;
+    const height = type === 'font' ? 380 : type === 'flows' ? 380 : 440;
 
-    let x = Math.round(bounds.x || bounds.left || 0);
+    const mainBounds = this.mainWindow.getBounds();
+
+    let relativeX = Math.round(bounds.x || bounds.left || 0);
     if (bounds.right && (!bounds.x || bounds.right > width)) {
-      x = Math.max(16, Math.round(bounds.right - width));
+      relativeX = Math.max(16, Math.round(bounds.right - width));
     }
-    const windowBounds = this.mainWindow.getBounds();
-    if (x + width > windowBounds.width - 16) {
-      x = Math.max(16, windowBounds.width - width - 16);
+    if (relativeX + width > mainBounds.width - 16) {
+      relativeX = Math.max(16, mainBounds.width - width - 16);
     }
 
-    let y = Math.max(84, Math.round((bounds.bottom || bounds.y || 80) + 4));
+    let relativeY = Math.max(84, Math.round((bounds.bottom || bounds.y || 80) + 4));
 
-    popoverView.setBounds({ x, y, width, height });
+    const screenX = mainBounds.x + relativeX;
+    const screenY = mainBounds.y + relativeY;
+
+    popoverWin.setBounds({ x: screenX, y: screenY, width, height });
 
     try {
-      popoverView.webContents.send('popover:change-type', type);
+      popoverWin.webContents.send('popover:change-type', type);
     } catch (e) {}
 
-    try {
-      this.mainWindow.contentView.addChildView(popoverView);
-    } catch (e) {
-      console.error('[BrowserViewManager] Error adding popover view:', e);
+    if (!popoverWin.isVisible()) {
+      popoverWin.show();
     }
+    popoverWin.focus();
   }
 
   closePopover() {
-    if (this.popoverView && this.popoverIsVisible) {
+    if (this.popoverWindow && !this.popoverWindow.isDestroyed() && this.popoverIsVisible) {
       this.popoverIsVisible = false;
       this.popoverType = null;
       try {
-        this.mainWindow.contentView.removeChildView(this.popoverView);
+        this.popoverWindow.hide();
       } catch (e) {}
     }
   }

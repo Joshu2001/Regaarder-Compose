@@ -5,7 +5,7 @@ import SendToComposePopover from './SendToComposePopover';
 import BrowserFontPopover from './BrowserFontPopover';
 
 export const PopoverWindowContainer = () => {
-  const [popoverType, setPopoverType] = useState('flows');
+  const [popoverType, setPopoverType] = useState('font');
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     try {
@@ -33,6 +33,15 @@ export const PopoverWindowContainer = () => {
   });
 
   useEffect(() => {
+    document.documentElement.style.background = 'transparent';
+    document.body.style.background = 'transparent';
+    document.documentElement.style.backgroundColor = 'transparent';
+    document.body.style.backgroundColor = 'transparent';
+    document.documentElement.classList.add('popover-root', 'bg-transparent');
+    document.body.classList.add('popover-root', 'bg-transparent');
+  }, []);
+
+  useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark', 'app-dark');
     } else {
@@ -45,13 +54,22 @@ export const PopoverWindowContainer = () => {
       const hash = window.location.hash || '';
       const queryStr = hash.includes('?') ? hash.split('?')[1] : '';
       const params = new URLSearchParams(queryStr);
-      const type = params.get('type') || 'flows';
+      const type = params.get('type') || 'font';
       setPopoverType(type);
     };
 
     parseType();
     window.addEventListener('hashchange', parseType);
     return () => window.removeEventListener('hashchange', parseType);
+  }, []);
+
+  useEffect(() => {
+    if (window.electronAPI?.onPopoverChangeType) {
+      const unsubscribe = window.electronAPI.onPopoverChangeType((newType) => {
+        if (newType) setPopoverType(newType);
+      });
+      return unsubscribe;
+    }
   }, []);
 
   const handleClose = () => {
@@ -72,8 +90,8 @@ export const PopoverWindowContainer = () => {
   };
 
   return (
-    <div className="w-screen h-screen min-h-screen bg-transparent text-slate-100 overflow-hidden flex items-center justify-center p-0 m-0 font-sans">
-      <div className="w-full h-full flex flex-col items-center justify-center">
+    <div className="w-screen h-screen min-h-screen bg-transparent text-slate-100 overflow-hidden flex items-start justify-center p-0 m-0 font-sans">
+      <div className="w-full h-full flex flex-col items-center justify-start bg-transparent">
         {popoverType === 'font' && (
           <BrowserFontPopover
             isStandalone={true}
