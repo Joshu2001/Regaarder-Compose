@@ -9,6 +9,8 @@ class BrowserViewManager {
     this.isVisible = false;
     this.popoverView = null;
     this.popoverType = null;
+    this.currentFont = 'System Default';
+    this.currentFontSize = 100;
   }
 
   createTab(tabId, initialUrl = 'https://google.com') {
@@ -57,6 +59,7 @@ class BrowserViewManager {
       tabState.canGoBack = wc.canGoBack();
       tabState.canGoForward = wc.canGoForward();
       this.emitTabUpdate(tabId);
+      this.setFontZoom();
     });
 
     wc.on('did-fail-load', (event, errorCode, errorDescription) => {
@@ -266,6 +269,39 @@ class BrowserViewManager {
     } catch (e) {
       return { success: false, error: e.message };
     }
+  }
+
+  setFontZoom(font, size) {
+    if (font !== undefined && font !== null) this.currentFont = font;
+    if (size !== undefined && size !== null) this.currentFontSize = Number(size);
+
+    const zoomFactor = (this.currentFontSize || 100) / 100;
+    const fontStacks = {
+      'System Default': '',
+      'Inter': 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      'Manrope': 'Manrope, Inter, sans-serif',
+      'SF Pro Display': '"SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
+      'Georgia': 'Georgia, Cambria, "Times New Roman", serif',
+      'Charter': 'Charter, Georgia, serif',
+      'JetBrains Mono': '"JetBrains Mono", monospace'
+    };
+
+    const targetFontStack = fontStacks[this.currentFont] || (this.currentFont !== 'System Default' ? this.currentFont : '');
+
+    this.tabs.forEach((tabState) => {
+      try {
+        const wc = tabState.view?.webContents;
+        if (wc && !wc.isDestroyed()) {
+          wc.setZoomFactor(zoomFactor);
+          if (targetFontStack) {
+            const css = `* { font-family: ${targetFontStack} !important; }`;
+            wc.insertCSS(css).catch(() => {});
+          }
+        }
+      } catch (e) {
+        // ignore destroyed webContents
+      }
+    });
   }
 
   showPopover(type, bounds) {

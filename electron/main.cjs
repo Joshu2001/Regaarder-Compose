@@ -141,6 +141,12 @@ ipcMain.handle('browser:extract-page-text', async (event, { tabId }) => {
   return { success: false, error: 'Browser manager not initialized' };
 });
 
+ipcMain.handle('browser:set-font-zoom', async (event, { font, size }) => {
+  if (browserViewManager) {
+    browserViewManager.setFontZoom(font, size);
+  }
+});
+
 ipcMain.handle('browser:open-popover', async (event, { type, bounds }) => {
   if (browserViewManager) {
     browserViewManager.showPopover(type, bounds);

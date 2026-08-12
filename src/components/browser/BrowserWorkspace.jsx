@@ -20,9 +20,29 @@ const BROWSER_FONT_STORAGE_KEY = 'regaarder_browser_font_v1';
 const BROWSER_FONT_SIZE_STORAGE_KEY = 'regaarder_browser_font_size_v1';
 const DEFAULT_RESEARCH_URL = 'regaarder://research';
 
-export const BrowserWorkspace = ({ showToast, setProductMode }) => {
+export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsDarkMode }) => {
   const isElectron = Boolean(window.electronAPI?.isElectron);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
+
+  const [isDarkModeState, setIsDarkModeState] = useState(() => {
+    if (typeof isDarkMode === 'boolean') return isDarkMode;
+    return typeof document !== 'undefined' && (document.documentElement.classList.contains('dark') || document.documentElement.classList.contains('app-dark'));
+  });
+
+  const handleToggleDarkMode = useCallback((newVal) => {
+    const target = typeof newVal === 'boolean' ? newVal : !isDarkModeState;
+    setIsDarkModeState(target);
+    if (setIsDarkMode) setIsDarkMode(target);
+    if (target) {
+      document.documentElement.classList.add('dark', 'app-dark');
+    } else {
+      document.documentElement.classList.remove('dark', 'app-dark');
+    }
+    try {
+      localStorage.setItem('rc.darkMode', String(target));
+    } catch (e) {}
+    if (showToast) showToast(`Switched to ${target ? 'Dark' : 'Light'} Mode`);
+  }, [isDarkModeState, setIsDarkMode, showToast]);
 
   // Browser-Specific Isolated Font & Font Size States (Does not touch Compose document editor)
   const [browserFont, setBrowserFont] = useState(() => {
@@ -44,22 +64,24 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
 
   const [fontPopoverRect, setFontPopoverRect] = useState(null);
 
-  // Persist Browser font settings
+  // Persist & sync Browser font settings with Electron WebContentsView
   useEffect(() => {
     try {
       localStorage.setItem(BROWSER_FONT_STORAGE_KEY, browserFont);
-    } catch (e) {
-      // ignore
+    } catch (e) {}
+    if (isElectron && window.electronAPI?.setFontZoom) {
+      window.electronAPI.setFontZoom({ font: browserFont, size: browserFontSize });
     }
-  }, [browserFont]);
+  }, [browserFont, isElectron, browserFontSize]);
 
   useEffect(() => {
     try {
       localStorage.setItem(BROWSER_FONT_SIZE_STORAGE_KEY, String(browserFontSize));
-    } catch (e) {
-      // ignore
+    } catch (e) {}
+    if (isElectron && window.electronAPI?.setFontZoom) {
+      window.electronAPI.setFontZoom({ font: browserFont, size: browserFontSize });
     }
-  }, [browserFontSize]);
+  }, [browserFontSize, isElectron, browserFont]);
 
   // Sync font & size state across windows (e.g. native Electron popover overlay)
   useEffect(() => {
@@ -103,12 +125,8 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
   };
 
   const handleOpenFontPopoverAction = useCallback((rect) => {
-    if (isElectron && window.electronAPI?.openPopover) {
-      window.electronAPI.openPopover({ type: 'font', bounds: serializeRect(rect) });
-    } else {
-      setFontPopoverRect((prev) => (prev ? null : rect));
-    }
-  }, [isElectron]);
+    setFontPopoverRect((prev) => (prev ? null : rect));
+  }, []);
 
   const handleOpenFlowsPopoverAction = useCallback((rect) => {
     if (isElectron && window.electronAPI?.openPopover) {
@@ -723,23 +741,34 @@ export const BrowserWorkspace = ({ showToast, setProductMode }) => {
         />
       )}
 
-      {/* Contextual Options Popover: Isolated Browser Font & Size */}
+      {/* Contextual Options Popover: Isolated Browser Font, Size & Appearance */}
       {fontPopoverRect && (
         <BrowserFontPopover
           anchorRect={fontPopoverRect}
+          isDarkMode={isDarkModeState}
           browserFont={browserFont}
           browserFontSize={browserFontSize}
           onChangeFont={(newFont) => {
             setBrowserFont(newFont);
+            if (isElectron && window.electronAPI?.setFontZoom) {
+              window.electronAPI.setFontZoom({ font: newFont, size: browserFontSize });
+            }
             if (showToast) showToast(`Browser font updated to ${newFont}`);
           }}
           onChangeFontSize={(newSize) => {
             setBrowserFontSize(newSize);
+            if (isElectron && window.electronAPI?.setFontZoom) {
+              window.electronAPI.setFontZoom({ font: browserFont, size: newSize });
+            }
             if (showToast) showToast(`Browser size set to ${newSize}%`);
           }}
+          onToggleDarkMode={handleToggleDarkMode}
           onReset={() => {
             setBrowserFont('System Default');
             setBrowserFontSize(100);
+            if (isElectron && window.electronAPI?.setFontZoom) {
+              window.electronAPI.setFontZoom({ font: 'System Default', size: 100 });
+            }
             if (showToast) showToast('Reset browser font and zoom');
           }}
           onClose={() => setFontPopoverRect(null)}
