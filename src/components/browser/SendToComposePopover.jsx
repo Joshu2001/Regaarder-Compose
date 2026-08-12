@@ -52,7 +52,7 @@ export const SendToComposePopover = ({
     onClose();
   };
 
-  const topPos = anchorRect ? anchorRect.bottom + 6 : 60;
+  const topPos = anchorRect ? Math.max(86, anchorRect.bottom + 6) : 86;
   const rightPos = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right - 20) : 24;
 
   const content = (

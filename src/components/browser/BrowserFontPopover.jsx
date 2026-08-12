@@ -60,8 +60,8 @@ export const BrowserFontPopover = ({
 
   if (!isStandalone && !anchorRect) return null;
 
-  const top = anchorRect ? anchorRect.bottom + 6 : 60;
-  const right = anchorRect ? Math.max(12, window.innerWidth - anchorRect.right) : 16;
+  const top = anchorRect ? Math.max(86, anchorRect.bottom + 6) : 86;
+  const right = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right) : 16;
 
   const containerClasses = isStandalone
     ? "w-full h-full bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/90 dark:border-zinc-800/90 shadow-2xl rounded-2xl p-4 backdrop-blur-2xl font-sans select-none text-slate-800 dark:text-zinc-100 flex flex-col justify-between"

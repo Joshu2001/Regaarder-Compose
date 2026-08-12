@@ -542,6 +542,13 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     activeExecutingFlow
   );
 
+  const isPopoverOpen = Boolean(
+    fontPopoverRect ||
+    flowsPopoverRect ||
+    sendToSheetsPopoverRect ||
+    sendToComposePopoverRect
+  );
+
   return (
     <div className="flex flex-col w-full h-full bg-slate-900 overflow-hidden font-sans select-none relative">
       {/* Active Flow Recording Sticky Indicator Bar */}
@@ -606,6 +613,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
           isElectron={isElectron}
           isSidePanelOpen={isSidePanelOpen}
           isModalOpen={isModalOpen}
+          isPopoverOpen={isPopoverOpen}
           browserFont={browserFont}
           browserFontSize={browserFontSize}
           onNavigate={handleNavigate}

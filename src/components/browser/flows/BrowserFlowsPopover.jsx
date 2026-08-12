@@ -42,8 +42,8 @@ export const BrowserFlowsPopover = ({
   if (!anchorRect && !isStandalone) return null;
 
   // Calculate dynamic top/left position below the anchor button
-  const top = anchorRect ? anchorRect.bottom + 6 : 0;
-  const right = anchorRect ? window.innerWidth - anchorRect.right : 0;
+  const top = anchorRect ? Math.max(86, anchorRect.bottom + 6) : 86;
+  const right = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right) : 16;
 
   const content = (
     <div
