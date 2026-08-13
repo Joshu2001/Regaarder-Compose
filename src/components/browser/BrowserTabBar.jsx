@@ -61,9 +61,9 @@ export const BrowserTabBar = ({
   };
 
   return (
-    <div className="flex items-center gap-2 px-4 pt-2 pb-1.5 bg-slate-200/70 dark:bg-[#121214]/90 border-b border-slate-300/60 dark:border-zinc-800/80 select-none shrink-0 z-30 relative backdrop-blur-md">
+    <div className="flex items-center gap-1.5 px-3 pt-1.5 pb-0 bg-[#D9DEE6] dark:bg-[#141416] border-b border-[#CBD1DC] dark:border-zinc-800/90 select-none shrink-0 z-30 relative">
       {/* Tabs Container */}
-      <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar">
+      <div className="flex items-end gap-1 min-w-0 flex-1 overflow-x-auto no-scrollbar">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
           return (
@@ -73,15 +73,15 @@ export const BrowserTabBar = ({
                 if (e.target.closest('button')) return;
                 onSelectTab(tab.id);
               }}
-              className={`group relative flex items-center gap-2 px-3.5 py-1.5 min-w-[145px] max-w-[230px] shrink-0 rounded-lg text-xs font-medium cursor-pointer transition-all duration-150 border ${
+              className={`group relative flex items-center gap-2 px-3 py-1.5 min-w-[140px] max-w-[220px] shrink-0 rounded-t-lg rounded-b-none text-xs font-medium cursor-pointer transition-all duration-150 border ${
                 isActive
-                  ? 'bg-white dark:bg-[#27272a] text-violet-700 dark:text-violet-300 border-violet-500/30 dark:border-violet-400/40 ring-1 ring-violet-500/20 shadow-xs'
-                  : 'bg-slate-300/35 dark:bg-zinc-800/35 text-slate-600 dark:text-zinc-400 border-transparent hover:bg-slate-300/70 dark:hover:bg-zinc-800/70 hover:text-slate-900 dark:hover:text-zinc-200'
+                  ? 'bg-white dark:bg-[#1A1A1E] text-slate-900 dark:text-zinc-100 border-slate-300/80 dark:border-zinc-700/80 border-b-white dark:border-b-[#1A1A1E] -mb-[1px] shadow-xs z-10'
+                  : 'bg-transparent text-slate-600 dark:text-zinc-400 border-transparent hover:bg-[#CBD1DC]/60 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-200'
               }`}
             >
-              {/* Active Tab Outline Indicator */}
+              {/* Active Tab Top 2px Regaarder Purple Accent */}
               {isActive && (
-                <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-violet-600 dark:bg-violet-400" />
+                <div className="absolute top-0 left-2 right-2 h-[2px] rounded-t-sm bg-violet-600 dark:bg-violet-400" />
               )}
 
               {/* Favicon / Smart Domain Badge */}
@@ -89,8 +89,8 @@ export const BrowserTabBar = ({
                 {getTabIcon(tab)}
               </div>
 
-              {/* Tab Title */}
-              <span className="truncate flex-1 text-[12px] leading-tight font-medium">
+              {/* Tab Title with Natural Browser Truncation */}
+              <span className={`truncate flex-1 text-[12px] leading-tight ${isActive ? 'font-semibold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-600 dark:text-zinc-400'}`}>
                 {getDisplayTitle(tab)}
               </span>
 
@@ -105,12 +105,12 @@ export const BrowserTabBar = ({
                   onPointerDown={(e) => e.stopPropagation()}
                   className={`p-0.5 rounded transition-colors shrink-0 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto ${
                     isActive
-                      ? 'hover:bg-violet-100 dark:hover:bg-violet-900/40 text-violet-600 dark:text-violet-300'
-                      : 'hover:bg-slate-300/80 dark:hover:bg-zinc-700 text-slate-500 dark:text-zinc-400'
+                      ? 'hover:bg-slate-200 dark:hover:bg-zinc-700/80 text-slate-600 dark:text-zinc-300'
+                      : 'hover:bg-[#CBD1DC] dark:hover:bg-zinc-700 text-slate-500 dark:text-zinc-400'
                   }`}
                   title="Close tab"
                 >
-                  <BrowserCloseIcon size={14} />
+                  <BrowserCloseIcon size={13} />
                 </button>
               )}
             </div>
@@ -122,10 +122,10 @@ export const BrowserTabBar = ({
           type="button"
           onClick={onNewTab}
           onPointerDown={(e) => e.preventDefault()}
-          className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-300/60 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors shrink-0 cursor-pointer ml-1"
+          className="flex items-center justify-center w-7 h-7 mb-1 rounded-md text-slate-600 dark:text-zinc-400 hover:bg-[#CBD1DC]/70 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors shrink-0 cursor-pointer ml-1"
           title="Open new research tab"
         >
-          <BrowserPlusIcon size={18} />
+          <BrowserPlusIcon size={16} />
         </button>
       </div>
     </div>
