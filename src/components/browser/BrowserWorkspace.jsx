@@ -194,6 +194,43 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     }
   }, [isElectron]);
 
+  // Handle Escape keypresses from Electron webContents & window listeners to exit sidepanel / popovers
+  useEffect(() => {
+    const handleCloseOnEsc = () => {
+      setIsSidePanelOpen(false);
+      setFontPopoverRect(null);
+      setOverflowMenuRect(null);
+      setUtilitiesPopoverRect(null);
+      setFlowsPopoverRect(null);
+      setSendToSheetsPopoverRect(null);
+      setSendToComposePopoverRect(null);
+      if (isElectron && window.electronAPI?.closePopover) {
+        window.electronAPI.closePopover();
+      }
+    };
+
+    if (isElectron && window.electronAPI?.onEscPressed) {
+      const unsubscribe = window.electronAPI.onEscPressed(handleCloseOnEsc);
+      return unsubscribe;
+    }
+  }, [isElectron]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsSidePanelOpen(false);
+        setFontPopoverRect(null);
+        setOverflowMenuRect(null);
+        setUtilitiesPopoverRect(null);
+        setFlowsPopoverRect(null);
+        setSendToSheetsPopoverRect(null);
+        setSendToComposePopoverRect(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleOpenSidePanelAction = useCallback(() => {
     if (isElectron && window.electronAPI?.closePopover) {
       window.electronAPI.closePopover();

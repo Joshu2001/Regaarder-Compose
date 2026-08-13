@@ -112,6 +112,17 @@ class BrowserViewManager {
       this.emitTabUpdate(tabId);
     });
 
+    wc.on('before-input-event', (event, input) => {
+      if (input.type === 'keyDown' && (input.key === 'Escape' || input.code === 'Escape')) {
+        if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+          this.mainWindow.webContents.send('browser:esc-pressed');
+        }
+      }
+      if (input.type === 'mouseDown' || input.type === 'touchStart') {
+        this.closePopover();
+      }
+    });
+
     wc.on('page-title-updated', (event, title) => {
       tabState.title = title || 'Untitled';
       this.emitTabUpdate(tabId);

@@ -47,5 +47,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (event, data) => callback(data);
     ipcRenderer.on('browser:frame-paint', handler);
     return () => ipcRenderer.removeListener('browser:frame-paint', handler);
+  },
+  onEscPressed: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('browser:esc-pressed', handler);
+    return () => ipcRenderer.removeListener('browser:esc-pressed', handler);
   }
 });
