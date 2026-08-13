@@ -395,13 +395,15 @@ class BrowserViewManager {
     });
 
     this.popoverWindow = popoverWindow;
+    this.popoverIsVisible = false;
+    this.popoverType = null;
     return popoverWindow;
   }
 
-  showPopover(type, bounds) {
+  showPopover(type, bounds, force = false) {
     if (!this.mainWindow || !bounds) return;
 
-    if (this.popoverIsVisible && this.popoverType === type) {
+    if (!force && this.popoverIsVisible && this.popoverType === type) {
       this.closePopover();
       return;
     }
@@ -442,9 +444,9 @@ class BrowserViewManager {
   }
 
   closePopover() {
-    if (this.popoverWindow && !this.popoverWindow.isDestroyed() && this.popoverIsVisible) {
-      this.popoverIsVisible = false;
-      this.popoverType = null;
+    this.popoverIsVisible = false;
+    this.popoverType = null;
+    if (this.popoverWindow && !this.popoverWindow.isDestroyed()) {
       try {
         this.popoverWindow.hide();
       } catch (e) {}

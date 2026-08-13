@@ -138,9 +138,9 @@ ipcMain.handle('browser:set-font-zoom', async (event, { font, size }) => {
   }
 });
 
-ipcMain.handle('browser:open-popover', async (event, { type, bounds }) => {
+ipcMain.handle('browser:open-popover', async (event, { type, bounds, force }) => {
   if (browserViewManager) {
-    browserViewManager.showPopover(type, bounds);
+    browserViewManager.showPopover(type, bounds, force);
   }
 });
 
