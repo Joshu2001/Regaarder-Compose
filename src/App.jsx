@@ -50884,7 +50884,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           />
         </div>
       ) : productMode === 'browser' ? (
-        <div className="flex-1 flex flex-col min-w-0 bg-slate-900 relative overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-zinc-950 relative overflow-hidden">
           <BrowserWorkspace showToast={showToast} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} isRightSideHovered={isRightSideHovered} />
         </div>
       ) : (

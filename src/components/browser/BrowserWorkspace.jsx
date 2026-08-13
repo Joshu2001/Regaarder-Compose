@@ -698,9 +698,9 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
       />
 
       {/* Viewport + Side Panel Layout (Reserved Gutter Architecture) */}
-      <div className="flex-1 flex w-full h-full overflow-hidden relative">
+      <div className="flex-1 flex w-full h-full overflow-hidden relative bg-white dark:bg-zinc-950">
         <div 
-          className="flex-1 h-full min-w-0 relative transition-all duration-200"
+          className="flex-1 h-full min-w-0 relative bg-white dark:bg-zinc-950 transition-[margin-right] duration-150 ease-out"
           style={{
             marginRight: isSidePanelOpen ? '360px' : (isRightSideHovered ? '165px' : '0px')
           }}
