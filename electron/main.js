@@ -52,6 +52,15 @@ function createWindow() {
   // Layout resize listener to sync browser view bounds when window resizes
   mainWindow.on('resize', () => {
     mainWindow.webContents.send('browser:window-resized');
+    if (browserViewManager) {
+      browserViewManager.syncPopoverPosition();
+    }
+  });
+
+  mainWindow.on('move', () => {
+    if (browserViewManager) {
+      browserViewManager.syncPopoverPosition();
+    }
   });
 
   const targetUrl = isDev ? (process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173') : `file://${path.join(__dirname, '../dist/index.html')}`;

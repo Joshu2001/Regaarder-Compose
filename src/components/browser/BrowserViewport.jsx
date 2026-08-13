@@ -35,45 +35,9 @@ export const BrowserViewport = ({
   onRemoveBookmark
 }) => {
   const containerRef = useRef(null);
-  const canvasRef = useRef(null);
   const [iframeError, setIframeError] = useState(false);
 
   const isResearchHome = activeTab?.url === 'regaarder://research' || activeTab?.url === 'regaarder://saved';
-
-  // Listen to Electron OSR frame paint events
-  useEffect(() => {
-    if (!isElectron || !window.electronAPI || !window.electronAPI.onFramePaint) return;
-
-    const unsubscribe = window.electronAPI.onFramePaint((data) => {
-      if (!data || (data.tabId && activeTab?.id && data.tabId !== activeTab.id)) return;
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const { width, height, buffer } = data;
-      if (!width || !height || !buffer) return;
-
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width;
-        canvas.height = height;
-      }
-
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      try {
-        const u8Array = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-        const clamped = new Uint8ClampedArray(u8Array.buffer, u8Array.byteOffset, u8Array.byteLength);
-        const imgData = new ImageData(clamped, width, height);
-        ctx.putImageData(imgData, 0, 0);
-      } catch (err) {
-        console.error('[BrowserViewport OSR] Frame paint error:', err);
-      }
-    });
-
-    return () => {
-      if (typeof unsubscribe === 'function') unsubscribe();
-    };
-  }, [isElectron, activeTab?.id]);
 
   useEffect(() => {
     if (!isElectron || !window.electronAPI) return;
@@ -122,67 +86,6 @@ export const BrowserViewport = ({
     setIframeError(false);
   }, [activeTab?.url]);
 
-  const handleCanvasMouseEvent = (type, e) => {
-    if (!isElectron || !window.electronAPI?.sendInputEvent || !canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = Math.round(e.clientX - rect.left);
-    const y = Math.round(e.clientY - rect.top);
-
-    const buttonMap = { 0: 'left', 1: 'middle', 2: 'right' };
-    const button = buttonMap[e.button] || 'left';
-
-    const inputEvent = {
-      type,
-      x,
-      y,
-      button,
-      clickCount: e.detail || 1
-    };
-
-    window.electronAPI.sendInputEvent({ tabId: activeTab?.id, inputEvent });
-  };
-
-  const handleCanvasWheel = (e) => {
-    if (!isElectron || !window.electronAPI?.sendInputEvent || !canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = Math.round(e.clientX - rect.left);
-    const y = Math.round(e.clientY - rect.top);
-
-    const inputEvent = {
-      type: 'mouseWheel',
-      x,
-      y,
-      deltaX: Math.round(-e.deltaX),
-      deltaY: Math.round(-e.deltaY)
-    };
-
-    window.electronAPI.sendInputEvent({ tabId: activeTab?.id, inputEvent });
-  };
-
-  const handleCanvasKeyDown = (e) => {
-    if (!isElectron || !window.electronAPI?.sendInputEvent) return;
-    const inputEvent = {
-      type: 'keyDown',
-      keyCode: e.key
-    };
-    window.electronAPI.sendInputEvent({ tabId: activeTab?.id, inputEvent });
-    if (e.key.length === 1) {
-      window.electronAPI.sendInputEvent({
-        tabId: activeTab?.id,
-        inputEvent: { type: 'char', keyCode: e.key }
-      });
-    }
-  };
-
-  const handleCanvasKeyUp = (e) => {
-    if (!isElectron || !window.electronAPI?.sendInputEvent) return;
-    const inputEvent = {
-      type: 'keyUp',
-      keyCode: e.key
-    };
-    window.electronAPI.sendInputEvent({ tabId: activeTab?.id, inputEvent });
-  };
-
   const viewportStyle = {
     fontFamily: resolveBrowserFontStack(browserFont),
     fontSize: `${browserFontSize}%`,
@@ -214,28 +117,9 @@ export const BrowserViewport = ({
       className="relative flex-1 w-full h-full bg-transparent overflow-hidden"
       style={viewportStyle}
     >
-      {/* Electron Offscreen Rendering (OSR) Canvas Surface */}
+      {/* If inside Electron, Electron's WebContentsView paints directly behind this container */}
       {isElectron ? (
-        <div className="relative w-full h-full bg-white dark:bg-zinc-950 flex items-center justify-center overflow-hidden">
-          <canvas
-            ref={canvasRef}
-            tabIndex={0}
-            className="w-full h-full outline-hidden block cursor-default bg-white dark:bg-zinc-950"
-            onMouseDown={(e) => handleCanvasMouseEvent('mouseDown', e)}
-            onMouseUp={(e) => handleCanvasMouseEvent('mouseUp', e)}
-            onMouseMove={(e) => handleCanvasMouseEvent('mouseMove', e)}
-            onWheel={handleCanvasWheel}
-            onKeyDown={handleCanvasKeyDown}
-            onKeyUp={handleCanvasKeyUp}
-            onContextMenu={(e) => e.preventDefault()}
-          />
-          {activeTab?.isLoading && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 backdrop-blur-md shadow-lg animate-pulse z-30">
-              <Globe className="w-4 h-4 text-violet-400 animate-spin" />
-              <span>Loading {activeTab?.title || activeTab?.url}...</span>
-            </div>
-          )}
-        </div>
+        <div className="absolute inset-0 bg-transparent pointer-events-none select-none" />
       ) : (
         /* Standalone Browser (Non-Electron) Fallback Renderer */
         <div className="relative w-full h-full flex flex-col">

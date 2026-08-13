@@ -56,7 +56,6 @@ class BrowserViewManager {
 
     const view = new WebContentsView({
       webPreferences: {
-        offscreen: true,
         nodeIntegration: false,
         contextIsolation: true,
         sandbox: true,
@@ -68,12 +67,6 @@ class BrowserViewManager {
     view.webContents.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Regaarder/1.0'
     );
-
-    if (typeof view.webContents.setFrameRate === 'function') {
-      try {
-        view.webContents.setFrameRate(60);
-      } catch (e) {}
-    }
 
     const tabState = {
       tabId,
@@ -90,24 +83,6 @@ class BrowserViewManager {
     this.tabs.set(tabId, tabState);
 
     const wc = view.webContents;
-
-    wc.on('paint', (event, dirty, image) => {
-      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-        try {
-          const size = image.getSize();
-          const bitmap = image.toBitmap();
-          this.mainWindow.webContents.send('browser:frame-paint', {
-            tabId,
-            width: size.width,
-            height: size.height,
-            buffer: bitmap,
-            dirty
-          });
-        } catch (err) {
-          console.error('[BrowserViewManager] Frame paint broadcast error:', err);
-        }
-      }
-    });
 
     wc.on('before-input-event', (event, input) => {
       if (input.type === 'mouseDown' || input.type === 'touchStart') {
@@ -439,13 +414,32 @@ class BrowserViewManager {
     });
 
     popoverWindow.on('blur', () => {
-      this.closePopover();
+      if (this.popoverType !== 'sidepanel' && this.popoverType !== 'sidebar') {
+        this.closePopover();
+      }
     });
 
     this.popoverWindow = popoverWindow;
     this.popoverIsVisible = false;
     this.popoverType = null;
     return popoverWindow;
+  }
+
+  syncPopoverPosition() {
+    if (!this.popoverIsVisible || !this.popoverWindow || this.popoverWindow.isDestroyed() || !this.mainWindow || this.mainWindow.isDestroyed()) return;
+
+    const mainBounds = this.mainWindow.getBounds();
+    const type = this.popoverType;
+
+    if (type === 'sidepanel' || type === 'sidebar') {
+      const width = 360;
+      const height = Math.max(400, mainBounds.height - 56);
+      const screenX = mainBounds.x + mainBounds.width - width;
+      const screenY = mainBounds.y + 56;
+      try {
+        this.popoverWindow.setBounds({ x: screenX, y: screenY, width, height });
+      } catch (e) {}
+    }
   }
 
   showPopover(type, bounds, force = false) {

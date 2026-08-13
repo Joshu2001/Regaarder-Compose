@@ -194,6 +194,23 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     }
   }, [isElectron]);
 
+  const handleToggleSidePanelAction = useCallback(() => {
+    if (isElectron && window.electronAPI?.openPopover) {
+      if (isSidePanelOpen) {
+        window.electronAPI.closePopover();
+        setIsSidePanelOpen(false);
+      } else {
+        window.electronAPI.openPopover({
+          type: 'sidepanel',
+          bounds: { x: window.innerWidth - 360, top: 56, right: window.innerWidth, bottom: window.innerHeight }
+        });
+        setIsSidePanelOpen(true);
+      }
+    } else {
+      setIsSidePanelOpen((prev) => !prev);
+    }
+  }, [isElectron, isSidePanelOpen]);
+
   const handleOpenSendToSheetsPopoverAction = useCallback((rect, forceOpen = false) => {
     setFontPopoverRect(null);
     setOverflowMenuRect(null);
@@ -223,8 +240,6 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   useEffect(() => {
     const handleMainWindowPointerDown = (e) => {
       // Guard: bail if the event originated inside any open popover surface or a toolbar button.
-      // Without the [data-popover] check, clicks on section labels, dividers, or wrapper divs
-      // inside the popover would pass the button-only guard and race-close the popover instantly.
       if (e.target?.closest?.('button')) return;
       if (e.target?.closest?.('[data-popover]')) return;
       if (isElectron && window.electronAPI?.closePopover) {
@@ -236,6 +251,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
       setFlowsPopoverRect(null);
       setSendToSheetsPopoverRect(null);
       setSendToComposePopoverRect(null);
+      setIsSidePanelOpen(false);
     };
 
     window.addEventListener('pointerdown', handleMainWindowPointerDown);
@@ -684,7 +700,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         onStop={handleStop}
         onHome={handleHome}
         onToggleBookmark={handleToggleBookmark}
-        onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
+        onToggleSidePanel={handleToggleSidePanelAction}
         onOpenFontPopover={handleOpenFontPopoverAction}
         onOpenFlowsPopover={handleOpenFlowsPopoverAction}
         onOpenUtilitiesPopover={handleOpenUtilitiesPopoverAction}
@@ -692,9 +708,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         onSaveMemoryChip={() => {
           if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Memory`);
         }}
-        onSummarizeChip={() => {
-          setIsSidePanelOpen(true);
-        }}
+        onSummarizeChip={handleToggleSidePanelAction}
       />
 
       {/* Viewport + Side Panel Layout (Reserved Gutter Architecture) */}
@@ -717,13 +731,13 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
             browserFontSize={browserFontSize}
             onNavigate={handleNavigate}
             onLaunchCompetitorWorkflow={() => setShowCompetitorWorkflow(true)}
-            onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
+            onToggleSidePanel={handleToggleSidePanelAction}
             onRemoveBookmark={handleRemoveBookmark}
           />
         </div>
 
-        {/* Regaarder AI Assistant Side Panel */}
-        {isSidePanelOpen && (
+        {/* Regaarder AI Assistant Side Panel (Standard Web Fallback Overlay) */}
+        {(!isElectron && isSidePanelOpen) && (
           <div className="absolute right-0 top-0 bottom-0 z-40 w-[360px] max-w-[90vw] h-full shadow-2xl border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-in slide-in-from-right duration-200">
             <BrowserResearchPanel
               activeTab={activeTab}

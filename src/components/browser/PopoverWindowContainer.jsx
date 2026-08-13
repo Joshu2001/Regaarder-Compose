@@ -5,9 +5,11 @@ import SendToComposePopover from './SendToComposePopover';
 import BrowserFontPopover from './BrowserFontPopover';
 import BrowserUtilitiesPopover from './BrowserUtilitiesPopover';
 import BrowserOverflowMenu from './BrowserOverflowMenu';
+import BrowserResearchPanel from './BrowserResearchPanel';
 
 export const PopoverWindowContainer = () => {
   const [popoverType, setPopoverType] = useState('font');
+  const [activeTab, setActiveTab] = useState(null);
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     try {
@@ -69,6 +71,17 @@ export const PopoverWindowContainer = () => {
     if (window.electronAPI?.onPopoverChangeType) {
       const unsubscribe = window.electronAPI.onPopoverChangeType((newType) => {
         if (newType) setPopoverType(newType);
+      });
+      return unsubscribe;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (window.electronAPI?.onTabUpdated) {
+      const unsubscribe = window.electronAPI.onTabUpdated((data) => {
+        if (data && data.isActive) {
+          setActiveTab(data);
+        }
       });
       return unsubscribe;
     }
@@ -196,6 +209,28 @@ export const PopoverWindowContainer = () => {
             onClose={handleClose}
             onExecuteExport={handleClose}
           />
+        )}
+
+        {(popoverType === 'sidepanel' || popoverType === 'sidebar') && (
+          <div className="w-full h-full p-0 m-0 overflow-hidden flex flex-col bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl">
+            <BrowserResearchPanel
+              activeTab={activeTab}
+              onClose={handleClose}
+              onExtractText={async () => {
+                if (window.electronAPI?.extractPageText && activeTab?.tabId) {
+                  const res = await window.electronAPI.extractPageText(activeTab.tabId);
+                  return res?.text || '';
+                }
+                return 'Page context from active tab';
+              }}
+              onOpenSendToCompose={() => setPopoverType('sendToCompose')}
+              onOpenSendToSheets={() => setPopoverType('sendToSheets')}
+              onSaveToMemory={() => {}}
+              onSendToWhiteboard={() => {}}
+              onRunFlowRequested={() => {}}
+              showToast={() => {}}
+            />
+          </div>
         )}
       </div>
     </div>
