@@ -232,11 +232,66 @@ export const BrowserResearchHome = ({
   }
 
   return (
-    <div className={`w-full h-full text-slate-100 flex flex-col items-center justify-between px-6 pt-8 pb-6 overflow-y-auto select-none font-sans no-scrollbar transition-all duration-500 ${getCanvasBgClass()}`}>
+    <div className={`w-full h-full text-slate-100 flex flex-col items-center justify-between px-6 pt-8 pb-6 overflow-y-auto select-none font-sans no-scrollbar transition-all duration-500 relative ${getCanvasBgClass()}`}>
+      
+      {/* Top-Right Page Controls: Canvas Theme Customizer (Brave Style) */}
+      <div className="absolute top-4 right-6 z-40">
+        <button
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            setIsPrivacyPopoverOpen(false);
+            setIsThemePopoverOpen(!isThemePopoverOpen);
+          }}
+          className="flex items-center justify-center p-2 rounded-full bg-white/[0.04] border border-white/[0.1] text-slate-400 hover:text-white backdrop-blur-xl shadow-lg hover:border-white/[0.22] hover:bg-white/[0.08] transition-all cursor-pointer group"
+          title="Customize Canvas Background"
+        >
+          <Palette size={16} className="group-hover:rotate-12 transition-transform duration-200" />
+        </button>
+
+        {/* Theme Customizer Popover: Positioned to the Top-Left of the trigger icon */}
+        {isThemePopoverOpen && (
+          <div className="absolute top-11 right-0 w-64 p-3.5 rounded-2xl bg-[#14151a] border border-white/[0.15] shadow-2xl backdrop-blur-2xl z-50 text-left space-y-2.5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-2 border-b border-white/[0.08] pb-2.5">
+              <ComposeIcon size={16} className="text-violet-400" />
+              <span className="text-xs font-semibold text-white tracking-wide">Canvas Themes</span>
+            </div>
+            
+            <div className="space-y-1 pt-0.5">
+              {[
+                { id: 'deep-space', label: 'Deep Space Black', desc: 'Minimalist Apple obsidian' },
+                { id: 'midnight-mesh', label: 'Midnight Mesh', desc: 'Subtle radial aura' },
+                { id: 'subtle-blur', label: 'Subtle Dark Glow', desc: 'Ambient cyan-purple gradient' }
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    setBgTheme(t.id);
+                  }}
+                  className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all cursor-pointer ${
+                    bgTheme === t.id
+                      ? 'bg-violet-600/20 border border-violet-500/40 text-violet-200'
+                      : 'hover:bg-white/[0.05] border border-transparent text-slate-300'
+                  }`}
+                >
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium">{t.label}</span>
+                    <span className="text-[10px] text-slate-400">{t.desc}</span>
+                  </div>
+                  {bgTheme === t.id && <Check size={14} className="text-violet-400 shrink-0" />}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="w-full max-w-2xl flex flex-col items-center gap-8 text-center my-auto py-4">
         
-        {/* Top Controls: Privacy Shield + Background Theme Customizer */}
-        <div className="flex items-center gap-2.5 relative">
+        {/* Apple Privacy Shield Header Control */}
+        <div className="relative">
           <button
             ref={privacyBtnRef}
             type="button"
@@ -254,23 +309,9 @@ export const BrowserResearchHome = ({
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           </button>
 
-          {/* Theme Customizer Trigger */}
-          <button
-            type="button"
-            onPointerDown={(e) => {
-              e.preventDefault();
-              setIsPrivacyPopoverOpen(false);
-              setIsThemePopoverOpen(!isThemePopoverOpen);
-            }}
-            className="flex items-center justify-center p-1.5 rounded-full bg-white/[0.04] border border-white/[0.1] text-slate-400 hover:text-slate-200 backdrop-blur-xl shadow-lg hover:border-white/[0.2] transition-all cursor-pointer"
-            title="Customize Canvas Background"
-          >
-            <Palette size={14} />
-          </button>
-
           {/* Apple Privacy Popover */}
           {isPrivacyPopoverOpen && (
-            <div className="absolute top-10 left-0 w-80 p-4 rounded-2xl bg-[#14151a] border border-white/[0.15] shadow-2xl backdrop-blur-2xl z-50 text-left space-y-3.5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="absolute top-10 left-1/2 -translate-x-1/2 w-80 p-4 rounded-2xl bg-[#14151a] border border-white/[0.15] shadow-2xl backdrop-blur-2xl z-50 text-left space-y-3.5 animate-in fade-in zoom-in-95 duration-150">
               <div className="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
                 <div className="flex items-center gap-2"><Lock size={15} className="text-violet-400" /><span className="text-xs font-semibold">Apple Privacy Cues</span></div>
               </div>
@@ -285,44 +326,6 @@ export const BrowserResearchHome = ({
                 </div>
               </div>
               <button type="button" onPointerDown={() => setIsPrivacyPopoverOpen(false)} className="text-violet-400 text-[10px] font-medium hover:underline">Done</button>
-            </div>
-          )}
-
-          {/* Theme Customizer Popover */}
-          {isThemePopoverOpen && (
-            <div className="absolute top-10 right-0 w-64 p-3 rounded-2xl bg-[#14151a] border border-white/[0.15] shadow-2xl backdrop-blur-2xl z-50 text-left space-y-2 animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center gap-2 border-b border-white/[0.08] pb-2">
-                <Sparkles size={14} className="text-amber-400" />
-                <span className="text-xs font-semibold text-white">Canvas Themes</span>
-              </div>
-              
-              <div className="space-y-1 pt-1">
-                {[
-                  { id: 'deep-space', label: 'Deep Space Black', desc: 'Minimalist Apple obsidian' },
-                  { id: 'midnight-mesh', label: 'Midnight Mesh', desc: 'Subtle radial aura' },
-                  { id: 'subtle-blur', label: 'Subtle Dark Glow', desc: 'Ambient cyan-purple gradient' }
-                ].map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      setBgTheme(t.id);
-                    }}
-                    className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all cursor-pointer ${
-                      bgTheme === t.id
-                        ? 'bg-violet-600/20 border border-violet-500/40 text-violet-200'
-                        : 'hover:bg-white/[0.05] border border-transparent text-slate-300'
-                    }`}
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-xs font-medium">{t.label}</span>
-                      <span className="text-[10px] text-slate-400">{t.desc}</span>
-                    </div>
-                    {bgTheme === t.id && <Check size={14} className="text-violet-400 shrink-0" />}
-                  </button>
-                ))}
-              </div>
             </div>
           )}
         </div>
