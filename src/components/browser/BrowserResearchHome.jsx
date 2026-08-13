@@ -118,7 +118,7 @@ export const BrowserResearchHome = ({
     {
       id: 'search',
       title: 'Search the Web',
-      desc: 'Deep web search across live global sources',
+      desc: 'Instant web intelligence from live sources',
       icon: BrowserSearchWebIcon,
       iconColor: 'text-violet-400',
       action: () => searchInputRef.current?.focus()
@@ -126,7 +126,7 @@ export const BrowserResearchHome = ({
     {
       id: 'competitors',
       title: 'Research Competitors',
-      desc: 'Extract competitive metrics & feature matrices',
+      desc: 'Extract key metrics & product matrices',
       icon: BrowserCompetitorsIcon,
       iconColor: 'text-emerald-400',
       action: () => onLaunchCompetitorWorkflow()
@@ -134,7 +134,7 @@ export const BrowserResearchHome = ({
     {
       id: 'saved',
       title: 'Saved Research',
-      desc: 'Browse clipped knowledge nodes & saved memories',
+      desc: 'Access saved pages and clipped insights',
       icon: MemoryIcon,
       iconColor: 'text-sky-400',
       action: () => onNavigate('regaarder://saved')
@@ -142,7 +142,7 @@ export const BrowserResearchHome = ({
     {
       id: 'ask-ai',
       title: 'Ask Regaarder AI',
-      desc: 'Synthesize research topics with agent intelligence',
+      desc: 'Synthesize knowledge with intelligent assistance',
       icon: AgentsIcon,
       iconColor: 'text-indigo-400',
       action: () => onToggleSidePanel()
@@ -193,34 +193,40 @@ export const BrowserResearchHome = ({
     return (
       <div className={`w-full h-full text-slate-100 flex flex-col items-center justify-start px-6 pt-10 pb-8 overflow-y-auto select-none no-scrollbar transition-colors duration-300 ${getCanvasBgClass()}`}>
         <div className="w-full max-w-3xl flex flex-col gap-6">
-          <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+          <div className="flex items-center justify-between border-b border-white/[0.08] pb-5">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-400">
-                <MemoryIcon size={20} />
+              <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 backdrop-blur-md shadow-sm">
+                <MemoryIcon size={18} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-100">Saved Research</h1>
-                <p className="text-xs text-slate-400">Organized clippings, pages, and sessions</p>
+                <h1 className="text-xl font-semibold tracking-tight text-white">Saved Research</h1>
+                <p className="text-xs text-slate-400 font-normal">Organized clippings, pages, and sessions</p>
               </div>
             </div>
             <button
               type="button"
               onPointerDown={(e) => { e.preventDefault(); onNavigate('regaarder://research'); }}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white hover:border-slate-700 transition-all cursor-pointer"
+              className="px-3.5 py-1.5 rounded-md bg-white/[0.06] border border-white/[0.12] text-xs font-medium text-slate-200 hover:text-white hover:bg-white/[0.12] hover:border-white/[0.2] backdrop-blur-md transition-all cursor-pointer shadow-sm"
             >
               Back Home
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {displaySavedItems.map((item) => (
-              <div key={item.id} className="group p-4 rounded-2xl bg-slate-900/70 border border-slate-800/80 hover:border-sky-500/40 transition-all">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <BrowserBookmarkIcon size={16} className="text-amber-400" />
-                    <span className="text-xs font-semibold text-slate-200">{item.title}</span>
+              <div key={item.id} className="group relative p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.18] hover:bg-white/[0.06] transition-all backdrop-blur-lg shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                    <BrowserBookmarkIcon size={15} className="text-amber-400/90 shrink-0" />
+                    <span className="text-xs font-medium text-slate-200 truncate group-hover:text-white transition-colors">{item.title}</span>
                   </div>
                   {onRemoveBookmark && (
-                    <button type="button" onPointerDown={() => onRemoveBookmark(item.id)} className="text-[10px] text-rose-400">Remove</button>
+                    <button 
+                      type="button" 
+                      onPointerDown={() => onRemoveBookmark(item.id)} 
+                      className="opacity-0 group-hover:opacity-100 text-[11px] font-medium text-slate-400 hover:text-rose-400 px-2 py-0.5 rounded-md hover:bg-rose-500/10 transition-all cursor-pointer shrink-0"
+                    >
+                      Remove
+                    </button>
                   )}
                 </div>
               </div>
@@ -337,7 +343,7 @@ export const BrowserResearchHome = ({
         {/* Header Greeting */}
         <div className="flex flex-col items-center gap-2">
           <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white/95">{getGreeting()}</h1>
-          <p className="text-xs sm:text-sm text-slate-400/90 max-w-md">Where live web pages turn into structured documents, memories, and AI insight.</p>
+          <p className="text-xs sm:text-sm text-slate-400/90 max-w-md font-normal">Transform web intelligence into structured workspace memory.</p>
         </div>
 
         {/* HIERARCHY LEVEL 1: HERO SEARCH OMNIBOX WITH DICTATION BUTTON */}
@@ -349,7 +355,7 @@ export const BrowserResearchHome = ({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={isListening ? "Listening... Speak your prompt clearly" : "Search the web, ask a topic, or type a URL..."}
+              placeholder={isListening ? "Listening..." : "Search, ask, or jump to a URL"}
               style={{ fontFamily: getFontFamilyStack(browserFont), fontSize: `${Math.max(13, Math.round(15 * ((browserFontSize || 100) / 100)))}px` }}
               className="flex-1 bg-transparent text-white placeholder-slate-500 border-none outline-none font-normal"
             />
@@ -381,7 +387,7 @@ export const BrowserResearchHome = ({
 
         {/* HIERARCHY LEVEL 2: RESEARCH ACTIONS GRID */}
         <div className="w-full flex flex-col gap-3 text-left">
-          <span className="text-[10px] font-semibold tracking-widest uppercase text-slate-400/70 px-1">Research Actions</span>
+          <span className="text-[10px] font-semibold tracking-wider uppercase text-slate-400/70 px-1">Actions</span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full">
             {quickActions.map((item) => {
               const IconComponent = item.icon;

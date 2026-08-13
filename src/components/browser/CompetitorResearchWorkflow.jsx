@@ -69,8 +69,18 @@ export const CompetitorResearchWorkflow = ({ onClose, onSendToSheets, onNavigate
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 font-sans select-none animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden text-slate-100 flex flex-col">
+    <div 
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 font-sans select-none animate-in fade-in duration-200"
+    >
+      <div 
+        onPointerDown={(e) => e.stopPropagation()}
+        className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden text-slate-100 flex flex-col"
+      >
         {/* Modal Header */}
         <div className="flex items-center justify-between px-5 py-4 bg-slate-950/80 border-b border-slate-800">
           <div className="flex items-center gap-3">
@@ -82,17 +92,6 @@ export const CompetitorResearchWorkflow = ({ onClose, onSendToSheets, onNavigate
               <p className="text-xs text-slate-400">Multi-step agentic market analysis</p>
             </div>
           </div>
-
-          <button
-            type="button"
-            onPointerDown={(e) => {
-              e.preventDefault();
-              onClose();
-            }}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
-          >
-            <BrowserCloseIcon size={16} />
-          </button>
         </div>
 
         {/* Content Body */}
@@ -116,17 +115,17 @@ export const CompetitorResearchWorkflow = ({ onClose, onSendToSheets, onNavigate
 
               {/* Research Focus */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 block">Research Focus</label>
+                <label className="text-xs font-medium text-slate-300 block">Research Focus</label>
                 <div className="grid grid-cols-3 gap-2">
                   {['Pricing', 'Features', 'Positioning', 'Funding', 'Customers', 'All'].map((f) => (
                     <button
                       key={f}
                       type="button"
                       onPointerDown={() => setFocusArea(f)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                      className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
                         focusArea === f
-                          ? 'bg-violet-600 text-white border-violet-500 shadow-sm'
-                          : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                          ? 'bg-violet-600/20 text-violet-300 border-violet-500/80 shadow-sm backdrop-blur-md ring-1 ring-violet-500/30'
+                          : 'bg-white/[0.03] border-white/[0.08] text-slate-400 hover:text-white hover:bg-white/[0.07] hover:border-white/[0.15]'
                       }`}
                     >
                       {f}
@@ -137,7 +136,7 @@ export const CompetitorResearchWorkflow = ({ onClose, onSendToSheets, onNavigate
 
               {/* Output Target */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 block">Output Format</label>
+                <label className="text-xs font-medium text-slate-300 block">Output Format</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'table', label: 'Comparison Table' },
@@ -148,10 +147,10 @@ export const CompetitorResearchWorkflow = ({ onClose, onSendToSheets, onNavigate
                       key={o.id}
                       type="button"
                       onPointerDown={() => setOutputType(o.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                      className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
                         outputType === o.id
-                          ? 'bg-violet-600 text-white border-violet-500 shadow-sm'
-                          : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                          ? 'bg-violet-600/20 text-violet-300 border-violet-500/80 shadow-sm backdrop-blur-md ring-1 ring-violet-500/30'
+                          : 'bg-white/[0.03] border-white/[0.08] text-slate-400 hover:text-white hover:bg-white/[0.07] hover:border-white/[0.15]'
                       }`}
                     >
                       {o.label}
@@ -164,7 +163,7 @@ export const CompetitorResearchWorkflow = ({ onClose, onSendToSheets, onNavigate
 
           {workflowState === 'executing' && (
             <div className="flex flex-col items-center justify-center py-10 space-y-4 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400">
+              <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 shadow-sm">
                 <AssistIcon size={24} className="animate-spin" />
               </div>
               <div className="space-y-1">
@@ -175,9 +174,9 @@ export const CompetitorResearchWorkflow = ({ onClose, onSendToSheets, onNavigate
               </div>
 
               {/* Progress bar */}
-              <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
+              <div className="w-full bg-white/[0.04] h-1.5 rounded-md overflow-hidden border border-white/[0.08]">
                 <div
-                  className="bg-violet-500 h-full transition-all duration-300 rounded-full"
+                  className="bg-violet-500 h-full transition-all duration-300 rounded-md"
                   style={{ width: `${((progressStep + 1) / steps.length) * 100}%` }}
                 />
               </div>
@@ -193,15 +192,15 @@ export const CompetitorResearchWorkflow = ({ onClose, onSendToSheets, onNavigate
                   <span>Competitor Research Complete</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center pt-1 font-mono text-[11px] text-slate-300">
-                  <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
+                  <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.08]">
                     <span className="block text-violet-400 font-bold text-sm">{results.sourcesCount}</span>
                     <span className="text-[10px] text-slate-500">Sources</span>
                   </div>
-                  <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
+                  <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.08]">
                     <span className="block text-emerald-400 font-bold text-sm">{results.companiesCount}</span>
                     <span className="text-[10px] text-slate-500">Companies</span>
                   </div>
-                  <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
+                  <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.08]">
                     <span className="block text-sky-400 font-bold text-sm">{results.metricsCount}</span>
                     <span className="text-[10px] text-slate-500">Metrics</span>
                   </div>
@@ -209,16 +208,16 @@ export const CompetitorResearchWorkflow = ({ onClose, onSendToSheets, onNavigate
               </div>
 
               {/* Matrix Snippet */}
-              <div className="overflow-x-auto border border-slate-800 rounded-xl bg-slate-950 p-2">
+              <div className="overflow-x-auto border border-white/[0.08] rounded-xl bg-white/[0.02] p-2">
                 <table className="w-full text-left text-[11px] border-collapse font-sans">
                   <thead>
-                    <tr className="border-b border-slate-800 text-slate-400">
+                    <tr className="border-b border-white/[0.08] text-slate-400">
                       {results.tableData.headers.map((h, i) => (
                         <th key={i} className="pb-1.5 px-2 font-semibold">{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                  <tbody className="divide-y divide-white/[0.06] text-slate-300">
                     {results.tableData.rows.map((r, i) => (
                       <tr key={i}>
                         {r.map((c, cIdx) => (
@@ -234,7 +233,7 @@ export const CompetitorResearchWorkflow = ({ onClose, onSendToSheets, onNavigate
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between px-5 py-4 bg-slate-950/90 border-t border-slate-800">
+        <div className="flex items-center justify-between px-5 py-4 bg-white/[0.02] border-t border-white/[0.08]">
           {workflowState === 'setup' ? (
             <>
               <button
@@ -243,7 +242,7 @@ export const CompetitorResearchWorkflow = ({ onClose, onSendToSheets, onNavigate
                   e.preventDefault();
                   onClose();
                 }}
-                className="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                className="px-3.5 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -255,7 +254,7 @@ export const CompetitorResearchWorkflow = ({ onClose, onSendToSheets, onNavigate
                   handleStartResearch();
                 }}
                 disabled={!companiesInput.trim()}
-                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-xs font-medium shadow-sm transition-all cursor-pointer"
               >
                 <span>Start Research</span>
                 <BrowserForwardIcon size={14} />
