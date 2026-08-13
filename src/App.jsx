@@ -37345,7 +37345,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         return (
           <>
             {/* ── Auto-Hiding Right-Edge Sensor & Hover-Activated Cue Pill ──────────── */}
-            {productMode !== 'landing' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
+            {productMode !== 'landing' && productMode !== 'browser' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
               <div
                 onMouseEnter={handleRightSidebarMouseEnter}
                 onMouseLeave={handleRightSidebarMouseLeave}
