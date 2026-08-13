@@ -7619,6 +7619,23 @@ function AppCore() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(320);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [isRightSideHovered, setIsRightSideHovered] = useState(false);
+  const sidebarHoverTimerRef = useRef(null);
+
+  const handleRightSidebarMouseEnter = () => {
+    if (sidebarHoverTimerRef.current) clearTimeout(sidebarHoverTimerRef.current);
+    sidebarHoverTimerRef.current = setTimeout(() => {
+      setIsRightSideHovered(true);
+      setMiniSidebarDismissed(false);
+    }, 120);
+  };
+
+  const handleRightSidebarMouseLeave = () => {
+    if (sidebarHoverTimerRef.current) clearTimeout(sidebarHoverTimerRef.current);
+    sidebarHoverTimerRef.current = setTimeout(() => {
+      setIsRightSideHovered(false);
+      setMiniSidebarDismissed(false);
+    }, 150);
+  };
 
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
   const [rightPanelMaximized, setRightPanelMaximized] = useState(false);
@@ -37330,12 +37347,9 @@ Respond with a JSON array of slide objects matching the schema.`;
             {/* ── Auto-Hiding Right-Edge Sensor & Hover-Activated Cue Pill ──────────── */}
             {productMode !== 'landing' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
               <div
-                onMouseEnter={() => {
-                  setIsRightSideHovered(true);
-                  setMiniSidebarDismissed(false);
-                }}
-                onMouseLeave={() => setIsRightSideHovered(false)}
-                className="fixed right-0 top-16 h-16 w-8 z-[360] group/sidebar-rail pointer-events-auto flex items-center justify-end"
+                onMouseEnter={handleRightSidebarMouseEnter}
+                onMouseLeave={handleRightSidebarMouseLeave}
+                className="fixed right-0 top-0 h-full w-8 z-[360] group/sidebar-rail pointer-events-auto flex items-center justify-end"
               >
                 {/* Visual Cue Pill (Hidden by default, fades in when hovering right edge sensor zone) */}
                 <div
@@ -37359,12 +37373,14 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                 {/* Sidebar Shell */}
                 <div
-                  onMouseEnter={() => setMiniSidebarDismissed(false)}
-                  onMouseLeave={() => setMiniSidebarDismissed(false)}
-                  className={`fixed right-0 top-0 h-full z-[361] w-[56px] hover:w-[165px] group/sidebar border-l border-slate-200/70 dark:border-zinc-800/80 bg-white/95 dark:bg-[#121216]/95 backdrop-blur-xl flex flex-col items-start px-2 py-4 gap-2.5 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] pointer-events-auto ${
-                    miniSidebarDismissed
-                      ? 'translate-x-full opacity-0'
-                      : 'translate-x-full group-hover/sidebar-rail:translate-x-0 opacity-0 group-hover/sidebar-rail:opacity-100'
+                  onMouseEnter={handleRightSidebarMouseEnter}
+                  onMouseLeave={handleRightSidebarMouseLeave}
+                  className={`fixed right-0 top-0 h-full z-[361] group/sidebar border-l border-slate-200/70 dark:border-zinc-800/80 bg-white/95 dark:bg-[#121216]/95 backdrop-blur-xl flex flex-col items-start px-2 py-4 gap-2.5 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] pointer-events-auto ${
+                    isRightSideHovered && !miniSidebarDismissed
+                      ? 'translate-x-0 opacity-100 w-[165px]'
+                      : (miniSidebarDismissed
+                          ? 'translate-x-full opacity-0 w-[56px]'
+                          : 'translate-x-full group-hover/sidebar-rail:translate-x-0 opacity-0 group-hover/sidebar-rail:opacity-100 w-[56px] hover:w-[165px]')
                   }`}
                 >
 
@@ -50869,7 +50885,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       ) : productMode === 'browser' ? (
         <div className="flex-1 flex flex-col min-w-0 bg-slate-900 relative overflow-hidden">
-          <BrowserWorkspace showToast={showToast} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
+          <BrowserWorkspace showToast={showToast} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} isRightSideHovered={isRightSideHovered} />
         </div>
       ) : (
       <div className="flex-1 min-h-0 flex flex-col min-w-0 overflow-hidden bg-[#f5f7fc] dark:bg-[#000000] relative z-10">

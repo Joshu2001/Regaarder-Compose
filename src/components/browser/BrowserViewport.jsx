@@ -24,6 +24,7 @@ export const BrowserViewport = ({
   savedItems = [],
   isElectron = false,
   isSidePanelOpen = false,
+  isRightSideHovered = false,
   isModalOpen = false,
   isPopoverOpen = false,
   browserFont = 'System Default',
@@ -45,12 +46,14 @@ export const BrowserViewport = ({
       if (!containerRef.current || !window.electronAPI) return;
       const rect = containerRef.current.getBoundingClientRect();
 
-      window.electronAPI.updateViewportBounds({
-        x: Math.round(rect.x),
-        y: Math.round(rect.y),
-        width: Math.round(rect.width),
-        height: Math.round(rect.height)
-      });
+      if (rect.width > 0 && rect.height > 0) {
+        window.electronAPI.updateViewportBounds({
+          x: Math.round(rect.x),
+          y: Math.round(rect.y),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height)
+        });
+      }
     };
 
     if (isResearchHome || isModalOpen || isPopoverOpen) {
@@ -76,7 +79,7 @@ export const BrowserViewport = ({
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateBounds);
     };
-  }, [isElectron, activeTab?.id, isResearchHome, isSidePanelOpen, isModalOpen, isPopoverOpen]);
+  }, [isElectron, activeTab?.id, isResearchHome, isSidePanelOpen, isRightSideHovered, isModalOpen, isPopoverOpen]);
 
   // Reset iframe error when URL changes in web fallback
   useEffect(() => {
