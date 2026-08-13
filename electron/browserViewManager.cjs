@@ -457,6 +457,11 @@ class BrowserViewManager {
   showPopover(type, bounds, force = false) {
     if (!this.mainWindow || !bounds) return;
 
+    if (type === 'sidepanel' || type === 'sidebar') {
+      this.closePopover();
+      return;
+    }
+
     if (!force && this.popoverIsVisible && this.popoverType === type) {
       this.closePopover();
       return;
