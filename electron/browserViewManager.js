@@ -93,6 +93,11 @@ class BrowserViewManager {
     wc.on('did-start-loading', () => {
       tabState.isLoading = true;
       this.emitTabUpdate(tabId);
+      this.injectCustomScrollbar(wc);
+    });
+
+    wc.on('dom-ready', () => {
+      this.injectCustomScrollbar(wc);
     });
 
     wc.on('did-stop-loading', () => {
@@ -101,6 +106,7 @@ class BrowserViewManager {
       tabState.canGoForward = getCanGoForward(wc);
       this.emitTabUpdate(tabId);
       this.setFontZoom();
+      this.injectCustomScrollbar(wc);
     });
 
     wc.on('did-fail-load', (event, errorCode, errorDescription) => {
@@ -141,6 +147,7 @@ class BrowserViewManager {
       tabState.canGoBack = getCanGoBack(wc);
       tabState.canGoForward = getCanGoForward(wc);
       this.emitTabUpdate(tabId);
+      this.injectCustomScrollbar(wc);
     });
 
     wc.on('did-navigate-in-page', (event, url) => {
@@ -148,6 +155,7 @@ class BrowserViewManager {
       tabState.canGoBack = getCanGoBack(wc);
       tabState.canGoForward = getCanGoForward(wc);
       this.emitTabUpdate(tabId);
+      this.injectCustomScrollbar(wc);
     });
 
     wc.setWindowOpenHandler(({ url }) => {
@@ -373,6 +381,82 @@ class BrowserViewManager {
         // ignore destroyed webContents
       }
     });
+    this.tabs.forEach((tabState) => {
+      this.injectCustomScrollbar(tabState.view?.webContents);
+    });
+  }
+
+  injectCustomScrollbar(wc) {
+    if (!wc || wc.isDestroyed()) return;
+    const scrollbarCss = `
+      html, body, *, ::-webkit-scrollbar {
+        scrollbar-width: thin !important;
+        scrollbar-color: rgba(148, 163, 184, 0.45) transparent !important;
+      }
+      ::-webkit-scrollbar {
+        width: 7px !important;
+        height: 7px !important;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent !important;
+        margin: 4px 2px !important;
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: rgba(148, 163, 184, 0.45) !important;
+        border-radius: 9999px !important;
+        border: 1px solid transparent !important;
+        background-clip: padding-box !important;
+        transition: background-color 0.2s ease !important;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(100, 116, 139, 0.75) !important;
+      }
+      ::-webkit-scrollbar-thumb:active {
+        background-color: rgba(71, 85, 105, 0.9) !important;
+      }
+      @media (prefers-color-scheme: dark) {
+        html, body, *, ::-webkit-scrollbar {
+          scrollbar-color: rgba(161, 161, 170, 0.4) transparent !important;
+        }
+        ::-webkit-scrollbar-thumb {
+          background-color: rgba(161, 161, 170, 0.4) !important;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(212, 212, 216, 0.7) !important;
+        }
+      }
+    `;
+    // Insert CSS via native Chromium webContents engine
+    wc.insertCSS(scrollbarCss, { cssOrigin: 'user' }).catch(() => {});
+
+    // Inject into Document DOM & recursively attach to ShadowRoots (e.g. YouTube ytd-app, Polymer, Custom Web Components)
+    const domInjectionScript = `
+      (function injectRegaarderScrollbar() {
+        const css = \`${scrollbarCss}\`;
+        if (!document.getElementById('regaarder-global-scrollbar-style')) {
+          const style = document.createElement('style');
+          style.id = 'regaarder-global-scrollbar-style';
+          style.textContent = css;
+          (document.head || document.documentElement).appendChild(style);
+        }
+        
+        function styleShadowRoots(root) {
+          const treeWalker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+          let node;
+          while ((node = treeWalker.nextNode())) {
+            if (node.shadowRoot && !node.shadowRoot.querySelector('#regaarder-shadow-scrollbar-style')) {
+              const shadowStyle = document.createElement('style');
+              shadowStyle.id = 'regaarder-shadow-scrollbar-style';
+              shadowStyle.textContent = css;
+              node.shadowRoot.appendChild(shadowStyle);
+              styleShadowRoots(node.shadowRoot);
+            }
+          }
+        }
+        try { styleShadowRoots(document.body || document.documentElement); } catch(e) {}
+      })();
+    `;
+    wc.executeJavaScript(domInjectionScript).catch(() => {});
   }
 
   getOrCreatePopoverWindow() {
