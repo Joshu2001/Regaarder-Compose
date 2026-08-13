@@ -194,22 +194,31 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     }
   }, [isElectron]);
 
+  const handleOpenSidePanelAction = useCallback(() => {
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({
+        type: 'sidepanel',
+        bounds: { x: window.innerWidth - 380, top: 56, right: window.innerWidth, bottom: window.innerHeight },
+        force: true
+      });
+      setIsSidePanelOpen(true);
+    } else {
+      setIsSidePanelOpen(true);
+    }
+  }, [isElectron]);
+
   const handleToggleSidePanelAction = useCallback(() => {
     if (isElectron && window.electronAPI?.openPopover) {
       if (isSidePanelOpen) {
         window.electronAPI.closePopover();
         setIsSidePanelOpen(false);
       } else {
-        window.electronAPI.openPopover({
-          type: 'sidepanel',
-          bounds: { x: window.innerWidth - 360, top: 56, right: window.innerWidth, bottom: window.innerHeight }
-        });
-        setIsSidePanelOpen(true);
+        handleOpenSidePanelAction();
       }
     } else {
       setIsSidePanelOpen((prev) => !prev);
     }
-  }, [isElectron, isSidePanelOpen]);
+  }, [isElectron, isSidePanelOpen, handleOpenSidePanelAction]);
 
   const handleOpenSendToSheetsPopoverAction = useCallback((rect, forceOpen = false) => {
     setFontPopoverRect(null);
@@ -761,6 +770,15 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
               showToast={showToast}
             />
           </div>
+        )}
+
+        {/* Right edge hover trigger zone for AI Sidebar */}
+        {!isSidePanelOpen && (
+          <div
+            className="absolute right-0 top-0 bottom-0 w-3.5 z-50 bg-transparent hover:bg-violet-500/20 transition-colors cursor-pointer"
+            onMouseEnter={handleOpenSidePanelAction}
+            title="Hover to reveal AI Research Sidebar"
+          />
         )}
       </div>
 
