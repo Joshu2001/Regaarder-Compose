@@ -195,30 +195,18 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   }, [isElectron]);
 
   const handleOpenSidePanelAction = useCallback(() => {
-    if (isElectron && window.electronAPI?.openPopover) {
-      window.electronAPI.openPopover({
-        type: 'sidepanel',
-        bounds: { x: window.innerWidth - 380, top: 56, right: window.innerWidth, bottom: window.innerHeight },
-        force: true
-      });
-      setIsSidePanelOpen(true);
-    } else {
-      setIsSidePanelOpen(true);
+    if (isElectron && window.electronAPI?.closePopover) {
+      window.electronAPI.closePopover();
     }
+    setIsSidePanelOpen(true);
   }, [isElectron]);
 
   const handleToggleSidePanelAction = useCallback(() => {
-    if (isElectron && window.electronAPI?.openPopover) {
-      if (isSidePanelOpen) {
-        window.electronAPI.closePopover();
-        setIsSidePanelOpen(false);
-      } else {
-        handleOpenSidePanelAction();
-      }
-    } else {
-      setIsSidePanelOpen((prev) => !prev);
+    if (isElectron && window.electronAPI?.closePopover) {
+      window.electronAPI.closePopover();
     }
-  }, [isElectron, isSidePanelOpen, handleOpenSidePanelAction]);
+    setIsSidePanelOpen((prev) => !prev);
+  }, [isElectron]);
 
   const handleOpenSendToSheetsPopoverAction = useCallback((rect, forceOpen = false) => {
     setFontPopoverRect(null);
@@ -725,7 +713,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         <div 
           className="flex-1 h-full min-w-0 relative bg-white dark:bg-zinc-950 transition-[margin-right] duration-150 ease-out"
           style={{
-            marginRight: isElectron ? '0px' : (isSidePanelOpen ? '360px' : (isRightSideHovered ? '165px' : '0px'))
+            marginRight: isSidePanelOpen ? '380px' : (isRightSideHovered ? '165px' : '0px')
           }}
         >
           <BrowserViewport
@@ -745,9 +733,9 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
           />
         </div>
 
-        {/* Regaarder AI Assistant Side Panel (Standard Web Fallback Overlay) */}
-        {(!isElectron && isSidePanelOpen) && (
-          <div className="absolute right-0 top-0 bottom-0 z-40 w-[360px] max-w-[90vw] h-full shadow-2xl border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-in slide-in-from-right duration-200">
+        {/* Regaarder AI Assistant Side Panel (Solution 1 Docked Reserved Bounds Architecture) */}
+        {isSidePanelOpen && (
+          <div className="absolute right-0 top-0 bottom-0 z-40 w-[380px] max-w-[90vw] h-full shadow-2xl border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-in slide-in-from-right duration-200">
             <BrowserResearchPanel
               activeTab={activeTab}
               onClose={() => setIsSidePanelOpen(false)}
