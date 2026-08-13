@@ -56,6 +56,7 @@ class BrowserViewManager {
 
     const view = new WebContentsView({
       webPreferences: {
+        offscreen: true,
         nodeIntegration: false,
         contextIsolation: true,
         sandbox: true,
@@ -67,6 +68,12 @@ class BrowserViewManager {
     view.webContents.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Regaarder/1.0'
     );
+
+    if (typeof view.webContents.setFrameRate === 'function') {
+      try {
+        view.webContents.setFrameRate(60);
+      } catch (e) {}
+    }
 
     const tabState = {
       tabId,
@@ -83,6 +90,24 @@ class BrowserViewManager {
     this.tabs.set(tabId, tabState);
 
     const wc = view.webContents;
+
+    wc.on('paint', (event, dirty, image) => {
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        try {
+          const size = image.getSize();
+          const bitmap = image.toBitmap();
+          this.mainWindow.webContents.send('browser:frame-paint', {
+            tabId,
+            width: size.width,
+            height: size.height,
+            buffer: bitmap,
+            dirty
+          });
+        } catch (err) {
+          console.error('[BrowserViewManager] Frame paint broadcast error:', err);
+        }
+      }
+    });
 
     wc.on('before-input-event', (event, input) => {
       if (input.type === 'mouseDown' || input.type === 'touchStart') {
@@ -172,6 +197,9 @@ class BrowserViewManager {
       try {
         this.mainWindow.contentView.addChildView(currentTab.view, 0);
         currentTab.view.setBounds(this.bounds);
+        if (typeof currentTab.view.webContents.setSize === 'function') {
+          currentTab.view.webContents.setSize({ width: this.bounds.width, height: this.bounds.height });
+        }
       } catch (e) {
         console.error('[BrowserViewManager] Error adding child view:', e);
       }
@@ -222,9 +250,25 @@ class BrowserViewManager {
             this.mainWindow.contentView.addChildView(currentTab.view, 0);
           }
           currentTab.view.setBounds(this.bounds);
+          if (typeof currentTab.view.webContents.setSize === 'function') {
+            currentTab.view.webContents.setSize({ width: this.bounds.width, height: this.bounds.height });
+          }
         } catch (e) {
           console.error('[BrowserViewManager] Error updating view bounds:', e);
         }
+      }
+    }
+  }
+
+  sendInputEvent(tabId, inputEvent) {
+    const targetTabId = tabId || this.activeTabId;
+    if (!targetTabId || !this.tabs.has(targetTabId)) return;
+    const tabState = this.tabs.get(targetTabId);
+    if (tabState && tabState.view && tabState.view.webContents && !tabState.view.webContents.isDestroyed()) {
+      try {
+        tabState.view.webContents.sendInputEvent(inputEvent);
+      } catch (e) {
+        console.error('[BrowserViewManager] Error sending input event:', e);
       }
     }
   }

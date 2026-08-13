@@ -164,6 +164,12 @@ ipcMain.handle('browser:close-popover', async () => {
   }
 });
 
+ipcMain.handle('browser:send-input-event', async (event, { tabId, inputEvent }) => {
+  if (browserViewManager) {
+    browserViewManager.sendInputEvent(tabId, inputEvent);
+  }
+});
+
 process.on('uncaughtException', (err) => {
   console.error('[Electron Main] Uncaught Exception:', err);
 });

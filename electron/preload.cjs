@@ -39,5 +39,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (event, type) => callback(type);
     ipcRenderer.on('popover:change-type', handler);
     return () => ipcRenderer.removeListener('popover:change-type', handler);
+  },
+
+  // Offscreen Rendering (OSR) Canvas Pipeline
+  sendInputEvent: (params) => ipcRenderer.invoke('browser:send-input-event', params),
+  onFramePaint: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('browser:frame-paint', handler);
+    return () => ipcRenderer.removeListener('browser:frame-paint', handler);
   }
 });
