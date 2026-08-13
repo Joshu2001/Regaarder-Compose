@@ -750,7 +750,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         <div 
           className="flex-1 h-full min-w-0 relative bg-white dark:bg-zinc-950 transition-[margin-right] duration-150 ease-out"
           style={{
-            marginRight: isSidePanelOpen ? '380px' : (isRightSideHovered ? '165px' : '0px')
+            marginRight: isSidePanelOpen ? '380px' : '0px'
           }}
         >
           <BrowserViewport
@@ -758,7 +758,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
             savedItems={savedItems}
             isElectron={isElectron}
             isSidePanelOpen={isSidePanelOpen}
-            isRightSideHovered={isRightSideHovered}
+            isRightSideHovered={false}
             isModalOpen={isModalOpen}
             isPopoverOpen={isPopoverOpen}
             browserFont={browserFont}
@@ -770,7 +770,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
           />
         </div>
 
-        {/* Regaarder AI Assistant Side Panel (Solution 1 Docked Reserved Bounds Architecture) */}
+        {/* Regaarder AI Assistant Side Panel (Explicit Click Toggle Only) */}
         {isSidePanelOpen && (
           <div className="absolute right-0 top-0 bottom-0 z-40 w-[380px] max-w-[90vw] h-full shadow-2xl border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-in slide-in-from-right duration-200">
             <BrowserResearchPanel
@@ -795,15 +795,6 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
               showToast={showToast}
             />
           </div>
-        )}
-
-        {/* Right edge hover trigger zone for AI Sidebar */}
-        {!isSidePanelOpen && (
-          <div
-            className="absolute right-0 top-0 bottom-0 w-3.5 z-50 bg-transparent hover:bg-violet-500/20 transition-colors cursor-pointer"
-            onMouseEnter={handleOpenSidePanelAction}
-            title="Hover to reveal AI Research Sidebar"
-          />
         )}
       </div>
 
