@@ -251,7 +251,10 @@ export const BrowserResearchHome = ({
 
         {/* Theme Customizer Popover: Positioned to the Top-Left of the trigger icon */}
         {isThemePopoverOpen && (
-          <div className="absolute top-11 right-0 w-64 p-3.5 rounded-2xl bg-[#14151a] border border-white/[0.15] shadow-2xl backdrop-blur-2xl z-50 text-left space-y-2.5 animate-in fade-in zoom-in-95 duration-150">
+          <div
+            onPointerDown={(e) => e.stopPropagation()}
+            className="absolute top-11 right-0 w-64 p-3.5 rounded-2xl bg-[#14151a] border border-white/[0.15] shadow-2xl backdrop-blur-2xl z-50 text-left space-y-2.5 animate-in fade-in zoom-in-95 duration-150"
+          >
             <div className="flex items-center gap-2 border-b border-white/[0.08] pb-2.5">
               <ComposeIcon size={16} className="text-violet-400" />
               <span className="text-xs font-semibold text-white tracking-wide">Canvas Themes</span>
@@ -269,6 +272,7 @@ export const BrowserResearchHome = ({
                   onPointerDown={(e) => {
                     e.preventDefault();
                     setBgTheme(t.id);
+                    setIsThemePopoverOpen(false);
                   }}
                   className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all cursor-pointer ${
                     bgTheme === t.id
