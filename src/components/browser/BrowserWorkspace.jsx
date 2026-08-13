@@ -670,6 +670,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         onHome={handleHome}
         onToggleBookmark={handleToggleBookmark}
         onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
+        onOpenFontPopover={handleOpenFontPopoverAction}
         onOpenFlowsPopover={handleOpenFlowsPopoverAction}
         onOpenUtilitiesPopover={handleOpenUtilitiesPopoverAction}
         onOpenOverflowMenu={handleOpenOverflowMenuAction}

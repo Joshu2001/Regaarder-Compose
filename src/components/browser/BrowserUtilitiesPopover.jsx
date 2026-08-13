@@ -107,20 +107,6 @@ export const BrowserUtilitiesPopover = ({
       action: onOpenHistory
     },
     {
-      id: 'display',
-      title: 'Display & Appearance',
-      shortcut: '⌘,',
-      category: 'Page Customization',
-      keywords: ['display', 'appearance', 'font', 'dark', 'light', 'theme', 'zoom', 'tab', 'page', 'customization'],
-      icon: (
-        <div className="w-5 h-5 rounded-md bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 border border-violet-500/20">
-          <SlidersHorizontal size={12} />
-        </div>
-      ),
-      action: onOpenFontPopover,
-      isFeatured: true
-    },
-    {
       id: 'send-sheets',
       title: 'Send to Sheets',
       category: 'Export & Ingestion',

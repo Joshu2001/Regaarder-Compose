@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
 import {
   BrowserBackIcon,
   BrowserForwardIcon,
@@ -49,6 +50,7 @@ export const BrowserToolbar = ({
   onHome,
   onToggleBookmark,
   onToggleSidePanel,
+  onOpenFontPopover,
   onOpenFlowsPopover,
   onOpenUtilitiesPopover,
   onOpenOverflowMenu,
@@ -59,6 +61,7 @@ export const BrowserToolbar = ({
   const [isEditing, setIsEditing] = useState(false);
 
   // Button anchor refs for popovers
+  const fontBtnRef = useRef(null);
   const flowsBtnRef = useRef(null);
   const utilitiesBtnRef = useRef(null);
   const overflowBtnRef = useRef(null);
@@ -311,7 +314,27 @@ export const BrowserToolbar = ({
         {/* Subtle Divider */}
         <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
 
-        {/* 4. UTILITIES / TOOLS: Dedicated popover for secondary browser actions */}
+        {/* 4. DISPLAY & APPEARANCE: Dedicated top-level toolbar button for typography, zoom & dark mode */}
+        <button
+          ref={fontBtnRef}
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            if (fontBtnRef.current && onOpenFontPopover) {
+              onOpenFontPopover(fontBtnRef.current.getBoundingClientRect());
+            }
+          }}
+          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
+            isFontPopoverOpen
+              ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/40 ring-1 ring-violet-500/20'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent'
+          }`}
+          title="Display & Appearance (Font, Zoom & Theme)"
+        >
+          <SlidersHorizontal size={17} />
+        </button>
+
+        {/* 5. UTILITIES / TOOLS: Dedicated popover for secondary browser actions */}
         <button
           ref={utilitiesBtnRef}
           type="button"
@@ -331,7 +354,7 @@ export const BrowserToolbar = ({
           <BrowserUtilitiesIcon size={17} />
         </button>
 
-        {/* 5. OVERFLOW MENU (⋯): General system & workspace options */}
+        {/* 6. OVERFLOW MENU (⋯): General system & workspace options */}
         <button
           ref={overflowBtnRef}
           type="button"
@@ -342,7 +365,7 @@ export const BrowserToolbar = ({
             }
           }}
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
-            isOverflowMenuOpen || isFontPopoverOpen
+            isOverflowMenuOpen
               ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/40'
               : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 border border-transparent'
           }`}
