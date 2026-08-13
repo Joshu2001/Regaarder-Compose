@@ -8,7 +8,7 @@ import {
   BrowserExternalIcon,
   BrowserBookmarkIcon
 } from './RegaarderBrowserIcons';
-import { AgentsIcon, MemoryIcon } from '../RegaarderProductIcons';
+import { AgentsIcon, MemoryIcon, ComposeIcon } from '../RegaarderProductIcons';
 
 /**
  * BrowserResearchHome: Regaarder Research Homepage & Saved Research canvas.
