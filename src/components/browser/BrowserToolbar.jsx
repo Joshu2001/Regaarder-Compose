@@ -114,9 +114,9 @@ export const BrowserToolbar = ({
   const currentInputFontSize = Math.max(11, Math.round(13 * ((browserFontSize || 100) / 100)));
 
   return (
-    <div className="flex items-center gap-2.5 px-3 py-1.5 bg-white dark:bg-[#18181b] border-b border-slate-200 dark:border-zinc-800 shrink-0 shadow-xs font-sans select-none z-20">
-      {/* Visually Grouped Left Navigation Controls (6-10px gap, 32px hit areas, ~17px optical icons) */}
-      <div className="flex items-center gap-1.5 shrink-0">
+    <div className="flex items-center gap-3 px-4 py-2 bg-slate-100/95 dark:bg-[#18181b]/95 border-b border-slate-200/80 dark:border-zinc-800/80 shrink-0 shadow-xs font-sans select-none z-20 backdrop-blur-md">
+      {/* Visually Grouped Left Navigation Controls (Spacious Safari-style layout) */}
+      <div className="flex items-center gap-2 shrink-0">
         <button
           type="button"
           onPointerDown={(e) => {
@@ -124,7 +124,7 @@ export const BrowserToolbar = ({
             if (canGoBack) onGoBack();
           }}
           disabled={!canGoBack}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-200/80 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
           title="Back"
         >
           <BrowserBackIcon size={17} />
@@ -137,7 +137,7 @@ export const BrowserToolbar = ({
             if (canGoForward) onGoForward();
           }}
           disabled={!canGoForward}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-200/80 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
           title="Forward"
         >
           <BrowserForwardIcon size={17} />
@@ -150,7 +150,7 @@ export const BrowserToolbar = ({
             isLoading ? onStop() : onReload();
           }}
           disabled={isResearchHome}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-200/80 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors cursor-pointer"
           title={isLoading ? 'Stop loading' : 'Reload page'}
         >
           {isLoading ? (
@@ -166,16 +166,16 @@ export const BrowserToolbar = ({
             e.preventDefault();
             onHome();
           }}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-200/80 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
           title="Go to Research Home"
         >
           <BrowserHomeIcon size={17} />
         </button>
       </div>
 
-      {/* Dominant Smart URL / Search Omnibox */}
+      {/* Dominant Safari-Inspired Pill Search Omnibox */}
       <form onSubmit={handleSubmit} className="flex-1 min-w-[240px] max-w-3xl flex items-center">
-        <div className="group flex items-center gap-2 px-3.5 py-1.5 w-full rounded-xl bg-slate-100/90 dark:bg-zinc-800/90 border border-slate-200 dark:border-zinc-700/60 focus-within:border-violet-500/80 focus-within:ring-2 focus-within:ring-violet-500/20 transition-all">
+        <div className="group flex items-center gap-2.5 px-3.5 py-1.5 w-full rounded-xl bg-slate-200/50 dark:bg-zinc-800/60 border border-slate-300/50 dark:border-zinc-700/50 focus-within:bg-white dark:focus-within:bg-zinc-900 focus-within:border-violet-500/80 focus-within:ring-2 focus-within:ring-violet-500/20 shadow-xs transition-all duration-200">
           {/* Security / Search Icon */}
           <div className="shrink-0 flex items-center text-slate-400 dark:text-zinc-400">
             {isResearchHome ? (
@@ -199,19 +199,19 @@ export const BrowserToolbar = ({
               fontFamily: getFontFamilyStack(browserFont),
               fontSize: `${currentInputFontSize}px`
             }}
-            className="w-full bg-transparent text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 border-none outline-none focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none focus-visible:ring-0 select-text tracking-tight"
+            className="w-full bg-transparent text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 border-none outline-none focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none focus-visible:ring-0 select-text tracking-tight font-medium"
           />
 
           {/* Contextual Knowledge Action Chips */}
           {!isResearchHome && (
-            <div className="hidden lg:flex items-center gap-1.5 shrink-0 pl-1.5 border-l border-slate-200 dark:border-zinc-700">
+            <div className="hidden lg:flex items-center gap-1.5 shrink-0 pl-2 border-l border-slate-300/60 dark:border-zinc-700/80">
               <button
                 type="button"
                 onPointerDown={(e) => {
                   e.preventDefault();
                   onSummarizeChip?.();
                 }}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-300 transition-colors border border-violet-500/20 cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-300 transition-colors border border-violet-500/20 cursor-pointer"
                 title="Summarize page with AI"
               >
                 <AssistIcon size={13} className="text-violet-500" />
@@ -224,7 +224,7 @@ export const BrowserToolbar = ({
                   e.preventDefault();
                   onSaveMemoryChip?.();
                 }}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-300 transition-colors border border-sky-500/20 cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-300 transition-colors border border-sky-500/20 cursor-pointer"
                 title="Save page into Regaarder Memory"
               >
                 <MemoryIcon size={13} className="text-sky-500" />
@@ -250,7 +250,7 @@ export const BrowserToolbar = ({
       </form>
 
       {/* Right-Side Primary Hierarchy: Bookmark -> Flow -> Regaarder AI -> Utilities -> Overflow */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex items-center gap-2 shrink-0">
         {/* 1. BOOKMARK: Standard icon, neutral styling normally, Regaarder purple when active */}
         <button
           type="button"
@@ -261,7 +261,7 @@ export const BrowserToolbar = ({
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
             isBookmarked
               ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-500/30 ring-1 ring-violet-500/20'
-              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent'
           }`}
           title={isBookmarked ? 'Remove from Saved Research' : 'Save to Research'}
         >
@@ -269,7 +269,7 @@ export const BrowserToolbar = ({
         </button>
 
         {/* Subtle Divider */}
-        <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
+        <div className="h-4 w-px bg-slate-300/60 dark:bg-zinc-800 mx-0.5 shrink-0" />
 
         {/* 2. FLOW: Custom Regaarder glyph (connected nodes + directional path) */}
         <button
@@ -286,7 +286,7 @@ export const BrowserToolbar = ({
               ? 'bg-rose-500/20 text-rose-400 border border-rose-500/50 ring-2 ring-rose-500/30 animate-pulse'
               : isFlowsPopoverOpen
               ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/40 ring-1 ring-violet-500/20'
-              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent'
           }`}
           title={isFlowRecording ? 'Recording Flow (Click for options)' : 'Regaarder Flows (Action → Action → Replayable Workflow)'}
         >
@@ -300,7 +300,7 @@ export const BrowserToolbar = ({
             e.preventDefault();
             onToggleSidePanel();
           }}
-          className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+          className={`flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
             isSidePanelOpen
               ? 'bg-violet-600 text-white border-violet-500 shadow-md ring-2 ring-violet-500/30'
               : 'bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 hover:bg-violet-500/20 border-violet-500/30'
@@ -312,7 +312,7 @@ export const BrowserToolbar = ({
         </button>
 
         {/* Subtle Divider */}
-        <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
+        <div className="h-4 w-px bg-slate-300/60 dark:bg-zinc-800 mx-0.5 shrink-0" />
 
         {/* 4. DISPLAY & APPEARANCE: Dedicated top-level toolbar button for typography, zoom & dark mode */}
         <button
@@ -327,7 +327,7 @@ export const BrowserToolbar = ({
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
             isFontPopoverOpen
               ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/40 ring-1 ring-violet-500/20'
-              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent'
           }`}
           title="Display & Appearance (Font, Zoom & Theme)"
         >
@@ -347,7 +347,7 @@ export const BrowserToolbar = ({
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
             isUtilitiesPopoverOpen
               ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/40 ring-1 ring-violet-500/20'
-              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent'
           }`}
           title="Browser Utilities & Tools"
         >
@@ -367,7 +367,7 @@ export const BrowserToolbar = ({
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
             isOverflowMenuOpen
               ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/40'
-              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 border border-transparent'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 border border-transparent'
           }`}
           title="More general options"
         >
