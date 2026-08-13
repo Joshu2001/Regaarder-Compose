@@ -417,20 +417,22 @@ class BrowserViewManager {
 
     const popoverWin = this.getOrCreatePopoverWindow();
 
-    const width = type === 'font' ? 340 : type === 'flows' ? 380 : 420;
-    const height = type === 'font' ? 345 : type === 'flows' ? 390 : 440;
+    const width = type === 'font' ? 340 : type === 'flows' ? 380 : type === 'sidepanel' ? 360 : 420;
+    const height = type === 'font' ? 345 : type === 'flows' ? 390 : type === 'sidepanel' ? Math.max(400, mainBounds.height - 56) : 440;
 
     const mainBounds = this.mainWindow.getBounds();
 
     let relativeX = Math.round(bounds.x || bounds.left || 0);
-    if (bounds.right && (!bounds.x || bounds.right > width)) {
+    if (type === 'sidepanel') {
+      relativeX = Math.max(16, mainBounds.width - width);
+    } else if (bounds.right && (!bounds.x || bounds.right > width)) {
       relativeX = Math.max(16, Math.round(bounds.right - width));
     }
-    if (relativeX + width > mainBounds.width - 16) {
+    if (type !== 'sidepanel' && relativeX + width > mainBounds.width - 16) {
       relativeX = Math.max(16, mainBounds.width - width - 16);
     }
 
-    let relativeY = Math.max(84, Math.round((bounds.bottom || bounds.y || 80) + 4));
+    let relativeY = type === 'sidepanel' ? 56 : Math.max(84, Math.round((bounds.bottom || bounds.y || 80) + 4));
 
     const screenX = mainBounds.x + relativeX;
     const screenY = mainBounds.y + relativeY;

@@ -453,6 +453,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
 
     if (isElectron && window.electronAPI && formattedUrl !== DEFAULT_RESEARCH_URL && formattedUrl !== 'regaarder://saved') {
       window.electronAPI.createTab(activeTabId, formattedUrl);
+      window.electronAPI.selectTab(activeTabId);
       window.electronAPI.navigate(activeTabId, formattedUrl);
     }
 
@@ -696,28 +697,26 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         }}
       />
 
-      {/* Viewport + Side Panel Layout */}
-      <div className="flex-1 flex flex-row w-full h-full overflow-hidden relative">
-        <div className="flex-1 h-full min-w-0 relative">
-          <BrowserViewport
-            activeTab={activeTab}
-            savedItems={savedItems}
-            isElectron={isElectron}
-            isSidePanelOpen={isSidePanelOpen}
-            isModalOpen={isModalOpen}
-            isPopoverOpen={isPopoverOpen}
-            browserFont={browserFont}
-            browserFontSize={browserFontSize}
-            onNavigate={handleNavigate}
-            onLaunchCompetitorWorkflow={() => setShowCompetitorWorkflow(true)}
-            onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
-            onRemoveBookmark={handleRemoveBookmark}
-          />
-        </div>
+      {/* Viewport + Side Panel Layout (Floating Overlay Style) */}
+      <div className="flex-1 flex w-full h-full overflow-hidden relative">
+        <BrowserViewport
+          activeTab={activeTab}
+          savedItems={savedItems}
+          isElectron={isElectron}
+          isSidePanelOpen={isSidePanelOpen}
+          isModalOpen={isModalOpen}
+          isPopoverOpen={isPopoverOpen}
+          browserFont={browserFont}
+          browserFontSize={browserFontSize}
+          onNavigate={handleNavigate}
+          onLaunchCompetitorWorkflow={() => setShowCompetitorWorkflow(true)}
+          onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
+          onRemoveBookmark={handleRemoveBookmark}
+        />
 
-        {/* Regaarder AI Assistant Side Panel */}
+        {/* Regaarder AI Assistant Side Panel (Floating Hover Overlay over research page) */}
         {isSidePanelOpen && (
-          <div className="w-[360px] max-w-[90vw] h-full shrink-0 shadow-2xl border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-in slide-in-from-right duration-200 z-40">
+          <div className="absolute right-0 top-0 bottom-0 z-40 w-[360px] max-w-[90vw] h-full shadow-2xl border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-in slide-in-from-right duration-200">
             <BrowserResearchPanel
               activeTab={activeTab}
               onClose={() => setIsSidePanelOpen(false)}
