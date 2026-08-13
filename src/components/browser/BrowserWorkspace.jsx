@@ -20,11 +20,25 @@ const STORAGE_KEY = 'regaarder_research_tabs_v2';
 const SAVED_ITEMS_KEY = 'regaarder_saved_research_v1';
 const BROWSER_FONT_STORAGE_KEY = 'regaarder_browser_font_v1';
 const BROWSER_FONT_SIZE_STORAGE_KEY = 'regaarder_browser_font_size_v1';
+const SIDE_PANEL_STORAGE_KEY = 'regaarder_side_panel_open_v1';
 const DEFAULT_RESEARCH_URL = 'regaarder://research';
 
 export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsDarkMode }) => {
   const isElectron = Boolean(window.electronAPI?.isElectron);
-  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState(() => {
+    try {
+      const saved = localStorage.getItem(SIDE_PANEL_STORAGE_KEY);
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch (e) {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDE_PANEL_STORAGE_KEY, JSON.stringify(isSidePanelOpen));
+    } catch (e) {}
+  }, [isSidePanelOpen]);
 
   const [isDarkModeState, setIsDarkModeState] = useState(() => {
     if (typeof isDarkMode === 'boolean') return isDarkMode;
@@ -683,25 +697,27 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
       />
 
       {/* Viewport + Side Panel Layout */}
-      <div className="flex-1 flex w-full h-full overflow-hidden relative">
-        <BrowserViewport
-          activeTab={activeTab}
-          savedItems={savedItems}
-          isElectron={isElectron}
-          isSidePanelOpen={isSidePanelOpen}
-          isModalOpen={isModalOpen}
-          isPopoverOpen={isPopoverOpen}
-          browserFont={browserFont}
-          browserFontSize={browserFontSize}
-          onNavigate={handleNavigate}
-          onLaunchCompetitorWorkflow={() => setShowCompetitorWorkflow(true)}
-          onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
-          onRemoveBookmark={handleRemoveBookmark}
-        />
+      <div className="flex-1 flex flex-row w-full h-full overflow-hidden relative">
+        <div className="flex-1 h-full min-w-0 relative">
+          <BrowserViewport
+            activeTab={activeTab}
+            savedItems={savedItems}
+            isElectron={isElectron}
+            isSidePanelOpen={isSidePanelOpen}
+            isModalOpen={isModalOpen}
+            isPopoverOpen={isPopoverOpen}
+            browserFont={browserFont}
+            browserFontSize={browserFontSize}
+            onNavigate={handleNavigate}
+            onLaunchCompetitorWorkflow={() => setShowCompetitorWorkflow(true)}
+            onToggleSidePanel={() => setIsSidePanelOpen((prev) => !prev)}
+            onRemoveBookmark={handleRemoveBookmark}
+          />
+        </div>
 
-        {/* Regaarder AI Assistant Side Panel (Hovering Overlay over research page) */}
+        {/* Regaarder AI Assistant Side Panel */}
         {isSidePanelOpen && (
-          <div className="absolute right-0 top-0 bottom-0 z-40 w-[360px] max-w-[90vw] h-full shadow-2xl border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-in slide-in-from-right duration-200">
+          <div className="w-[360px] max-w-[90vw] h-full shrink-0 shadow-2xl border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-in slide-in-from-right duration-200 z-40">
             <BrowserResearchPanel
               activeTab={activeTab}
               onClose={() => setIsSidePanelOpen(false)}

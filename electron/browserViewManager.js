@@ -394,6 +394,10 @@ class BrowserViewManager {
       });
     });
 
+    popoverWindow.on('blur', () => {
+      this.closePopover();
+    });
+
     this.popoverWindow = popoverWindow;
     this.popoverIsVisible = false;
     this.popoverType = null;
@@ -437,6 +441,10 @@ class BrowserViewManager {
       popoverWin.webContents.send('popover:change-type', type);
     } catch (e) {}
 
+    try {
+      popoverWin.setAlwaysOnTop(true, 'pop-up-menu');
+    } catch (e) {}
+
     if (!popoverWin.isVisible()) {
       popoverWin.show();
     }
@@ -448,6 +456,7 @@ class BrowserViewManager {
     this.popoverType = null;
     if (this.popoverWindow && !this.popoverWindow.isDestroyed()) {
       try {
+        this.popoverWindow.setAlwaysOnTop(false);
         this.popoverWindow.hide();
       } catch (e) {}
     }
