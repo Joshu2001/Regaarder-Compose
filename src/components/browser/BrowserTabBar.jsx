@@ -64,8 +64,9 @@ export const BrowserTabBar = ({
     <div className="flex items-center gap-1.5 px-3 pt-1.5 pb-0 bg-[#D9DEE6] dark:bg-[#141416] border-b border-[#CBD1DC] dark:border-zinc-800/90 select-none shrink-0 z-30 relative">
       {/* Tabs Container */}
       <div className="flex items-end gap-1 min-w-0 flex-1 overflow-x-auto no-scrollbar">
-        {tabs.map((tab) => {
+        {tabs.map((tab, index) => {
           const isActive = tab.id === activeTabId;
+          const isNextActive = index < tabs.length - 1 && tabs[index + 1].id === activeTabId;
           return (
             <div
               key={tab.id}
@@ -79,9 +80,14 @@ export const BrowserTabBar = ({
                   : 'bg-transparent text-slate-600 dark:text-zinc-400 border-transparent hover:bg-[#CBD1DC]/60 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-200'
               }`}
             >
-              {/* Active Tab Top 2px Regaarder Purple Accent */}
+              {/* Active Tab Top Inset 2px Regaarder Purple Accent Pill */}
               {isActive && (
-                <div className="absolute top-0 left-2 right-2 h-[2px] rounded-t-sm bg-violet-600 dark:bg-violet-400" />
+                <div className="absolute top-0 left-3 right-3 h-[2px] rounded-full bg-violet-600 dark:bg-violet-400 shadow-xs" />
+              )}
+
+              {/* Ultra-subtle Vertical Hairline Divider between inactive tabs */}
+              {!isActive && !isNextActive && index < tabs.length - 1 && (
+                <div className="absolute right-0 top-2 bottom-2 w-[1px] bg-slate-300/60 dark:bg-zinc-700/50 pointer-events-none" />
               )}
 
               {/* Favicon / Smart Domain Badge */}
