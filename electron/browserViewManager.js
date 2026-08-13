@@ -432,12 +432,13 @@ class BrowserViewManager {
     const type = this.popoverType;
 
     if (type === 'sidepanel' || type === 'sidebar') {
-      const width = 360;
-      const height = Math.max(400, mainBounds.height - 56);
-      const screenX = mainBounds.x + mainBounds.width - width;
+      const width = 380;
+      const height = Math.max(400, mainBounds.height - 64);
+      const screenX = mainBounds.x + mainBounds.width - width - 12;
       const screenY = mainBounds.y + 56;
       try {
         this.popoverWindow.setBounds({ x: screenX, y: screenY, width, height });
+        this.popoverWindow.setAlwaysOnTop(true, 'pop-up-menu');
       } catch (e) {}
     }
   }
@@ -454,6 +455,7 @@ class BrowserViewManager {
     this.popoverIsVisible = true;
 
     const popoverWin = this.getOrCreatePopoverWindow();
+    const mainBounds = this.mainWindow.getBounds();
 
     const isPanel = type === 'sidepanel' || type === 'sidebar';
     const width = isPanel ? 380 : type === 'font' ? 340 : type === 'flows' ? 380 : 420;
