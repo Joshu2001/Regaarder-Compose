@@ -119,7 +119,34 @@ export const BrowserOverflowMenu = ({
 
       <div className="h-px bg-slate-200/60 dark:bg-zinc-800/80 my-1" />
 
-      {/* SECTION 2: SYSTEM PREFERENCES & HELP */}
+      {/* SECTION 2: BROWSER TOOLS & AUTOMATION */}
+      <div className="px-1 py-1 space-y-0.5">
+        <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5">
+          Tools & Automation
+        </span>
+
+        <button
+          type="button"
+          onPointerDown={(e) => handleAction(onOpenFlows, e)}
+          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+        >
+          <Sparkles size={15} className="text-violet-500 shrink-0" />
+          <span>Regaarder Flows</span>
+        </button>
+
+        <button
+          type="button"
+          onPointerDown={(e) => handleAction(onOpenAppearance, e)}
+          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+        >
+          <Settings size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+          <span>Display & Theme Controls</span>
+        </button>
+      </div>
+
+      <div className="h-px bg-slate-200/60 dark:bg-zinc-800/80 my-1" />
+
+      {/* SECTION 3: SYSTEM PREFERENCES & HELP */}
       <div className="px-1 py-1 space-y-0.5">
         <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5">
           System & Preferences
