@@ -172,7 +172,7 @@ export default function AppleToolbarDropdown({
           style={portalStyle}
           className={`apple-toolbar-dropdown-menu-portal ${
             dropUp ? 'origin-bottom-left' : 'origin-top-left'
-          } ${width} max-h-[320px] flex flex-col rounded-2xl border border-slate-200/90 dark:border-zinc-800/90 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.18)] overflow-hidden animate-in zoom-in-95 fade-in duration-150 select-none`}
+          } ${width} max-h-[320px] flex flex-col rounded-2xl border border-slate-200/70 dark:border-zinc-800/80 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] overflow-hidden animate-in zoom-in-95 fade-in duration-150 select-none`}
         >
           {/* Optional Search Bar */}
           {searchable && (
