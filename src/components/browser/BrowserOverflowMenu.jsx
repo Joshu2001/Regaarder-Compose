@@ -71,9 +71,9 @@ export const BrowserOverflowMenu = ({
   const spaceBelow = anchorRect ? window.innerHeight - (anchorRect.bottom + 6) : 999;
   const top = anchorRect
     ? spaceBelow >= MENU_HEIGHT_ESTIMATE
-      ? Math.max(86, anchorRect.bottom + 6)
+      ? Math.max(46, anchorRect.bottom + 6)
       : Math.max(8, anchorRect.top - MENU_HEIGHT_ESTIMATE - 6)
-    : 86;
+    : 46;
   const right = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right) : 16;
 
   const handleAction = (callback, e) => {

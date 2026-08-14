@@ -559,17 +559,17 @@ class BrowserViewManager {
     const width = isPanel ? 380 : type === 'font' ? 340 : type === 'flows' ? 380 : type === 'overflow' ? 260 : type === 'utilities' ? 285 : 360;
     const height = isPanel ? Math.max(400, mainBounds.height - 64) : type === 'font' ? 345 : type === 'flows' ? 390 : type === 'overflow' ? 390 : type === 'utilities' ? 430 : 380;
 
-    let relativeX = Math.round(bounds.x || bounds.left || 0);
+    let relativeX = Math.round(bounds.left || bounds.x || 0);
     if (isPanel) {
       relativeX = Math.max(16, mainBounds.width - width - 12);
-    } else if (bounds.right && (!bounds.x || bounds.right > width)) {
+    } else if (bounds.right) {
       relativeX = Math.max(16, Math.round(bounds.right - width));
     }
     if (!isPanel && relativeX + width > mainBounds.width - 16) {
       relativeX = Math.max(16, mainBounds.width - width - 16);
     }
 
-    let relativeY = isPanel ? 56 : Math.max(84, Math.round((bounds.bottom || bounds.y || 80) + 4));
+    let relativeY = isPanel ? 44 : Math.max(44, Math.round((bounds.bottom || bounds.y || 40) + 4));
 
     const screenX = mainBounds.x + relativeX;
     const screenY = mainBounds.y + relativeY;
