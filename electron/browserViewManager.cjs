@@ -646,15 +646,24 @@ class BrowserViewManager {
     };
 
     if (popoverWin.webContents.isLoading()) {
-      popoverWin.webContents.once('did-finish-load', sendType);
+      // Window is still loading (first open). Defer both the type message and
+      // show() until content is ready — prevents the blank flash and top-left
+      // positioning artifact caused by showing before React has painted.
+      popoverWin.webContents.once('did-finish-load', () => {
+        sendType();
+        if (!popoverWin.isDestroyed()) {
+          popoverWin.setBounds({ x: screenX, y: screenY, width, height });
+          popoverWin.show();
+          popoverWin.focus();
+        }
+      });
     } else {
       sendType();
+      if (!popoverWin.isVisible()) {
+        popoverWin.show();
+      }
+      popoverWin.focus();
     }
-
-    if (!popoverWin.isVisible()) {
-      popoverWin.show();
-    }
-    popoverWin.focus();
   }
 
   closePopover() {

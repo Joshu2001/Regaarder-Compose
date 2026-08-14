@@ -85,17 +85,15 @@ export const BrowserFlowsPopover = ({
   if (!anchorRect && !isStandalone) return null;
 
   // Calculate dynamic position below (or above, if space is tight) the anchor button.
-  const POPOVER_HEIGHT_ESTIMATE = 340;
+  const POPOVER_HEIGHT_ESTIMATE = 380;
   const spaceBelow = anchorRect ? window.innerHeight - ((anchorRect.bottom || 80) + 6) : 999;
   const top = anchorRect
     ? spaceBelow >= POPOVER_HEIGHT_ESTIMATE
-      ? Math.max(48, (anchorRect.bottom || 80) + 6)
-      : Math.max(8, (anchorRect.top || 48) - POPOVER_HEIGHT_ESTIMATE - 6)
-    : 48;
+      ? Math.max(46, (anchorRect.bottom || 80) + 6)
+      : Math.max(8, (anchorRect.top || 46) - POPOVER_HEIGHT_ESTIMATE - 6)
+    : 46;
   const right = anchorRect
-    ? (anchorRect.right !== undefined && anchorRect.right < 500
-        ? anchorRect.right
-        : Math.max(16, window.innerWidth - (anchorRect.right || 300)))
+    ? Math.max(16, window.innerWidth - (anchorRect.right || 300))
     : 16;
 
   const content = (

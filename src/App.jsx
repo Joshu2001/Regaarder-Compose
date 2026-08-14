@@ -12659,7 +12659,7 @@ function AppCore() {
                         : 'bg-transparent text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-zinc-100 font-medium'
                     }`}
                   >
-                    <div className={`w-7.5 h-7.5 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                       isCurrent 
                         ? 'bg-violet-600 text-white shadow-xs' 
                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 group-hover:text-slate-800 dark:group-hover:text-zinc-200'
@@ -14085,6 +14085,7 @@ function AppCore() {
   const yTextRef = useRef(null);
   const isLocalUpdateRef = useRef(false);
   const [awarenessUsers, setAwarenessUsers] = useState(new Map());
+  const [isAwarenessReady, setIsAwarenessReady] = useState(false);
   const dmpRef = useRef(new DiffMatchPatch());
   const profileMenuRef = useRef(null);
   const composeProfileMenuRef = useRef(null);
@@ -14159,6 +14160,10 @@ function AppCore() {
   useEffect(() => {
     yDocRef.current = new Y.Doc();
     yTextRef.current = yDocRef.current.getText('docBodyHtml');
+    setIsAwarenessReady(false);
+    const readyTimer = setTimeout(() => {
+      setIsAwarenessReady(true);
+    }, 400);
     const wsUrl = API_BASE_URL.replace(/^http/, 'ws') + '/yjs';
     const roomName = roomId ? `compose-room-${roomId}` : `compose-room-${activeDocId || 'default'}`;
     providerRef.current = new WebsocketProvider(wsUrl, roomName, yDocRef.current, {
@@ -14262,6 +14267,8 @@ function AppCore() {
     });
 
     return () => {
+      clearTimeout(readyTimer);
+      setIsAwarenessReady(false);
       providerRef.current?.destroy();
       yDocRef.current?.destroy();
     };
@@ -41369,9 +41376,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
     return (
       <div ref={appShellRef} className={`flex flex-col h-screen ${isDarkMode ? 'app-dark dark bg-[#000000] text-[#FFFFFF]' : 'bg-[#f3f5fb] text-gray-800'} overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <div className="fixed inset-0 pointer-events-none z-[9999]">
-          {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
+          {isAwarenessReady && Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
             if (!userState.user || !userState.pointer) return null;
-            if (clientID === providerRef.current?.awareness?.clientID) return null; // Don't render own cursor
+            const myName = currentUser ? currentUser.name : guestUser.name;
+            if (clientID === providerRef.current?.awareness?.clientID || userState.user.name === myName) return null; // Don't render own cursor
             return (
               <div
                 key={`global-ptr-${idx}`}
@@ -50094,9 +50102,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
   return (
     <div ref={appShellRef} className={`flex bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
       <div className="fixed inset-0 pointer-events-none z-[9999]">
-        {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
+        {isAwarenessReady && Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
           if (!userState.user || !userState.pointer) return null;
-          if (clientID === providerRef.current?.awareness?.clientID) return null; // Don't render own cursor
+          const myName = currentUser ? currentUser.name : guestUser.name;
+          if (clientID === providerRef.current?.awareness?.clientID || userState.user.name === myName) return null; // Don't render own cursor
           return (
             <div
               key={`global-ptr-${idx}`}
@@ -50885,7 +50894,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       ) : productMode === 'browser' ? (
         <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-zinc-950 relative overflow-hidden">
-          <BrowserWorkspace showToast={showToast} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} isRightSideHovered={isRightSideHovered} />
+          <BrowserWorkspace
+            showToast={showToast}
+            isDarkMode={isDarkMode}
+            setIsDarkMode={setIsDarkMode}
+            isRightSideHovered={isRightSideHovered}
+            onOpenWorkspaceSwitcher={() => setWorkspaceSwitcherOpen(!workspaceSwitcherOpen)}
+            isWorkspaceSwitcherOpen={workspaceSwitcherOpen}
+          />
         </div>
       ) : (
       <div className="flex-1 min-h-0 flex flex-col min-w-0 overflow-hidden bg-[#f5f7fc] dark:bg-[#000000] relative z-10">
@@ -51159,7 +51175,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             
             {/* Avatars */}
             <div className="flex -space-x-2">
-              {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
+              {isAwarenessReady && Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
                 if (!userState.user) return null;
                 const isMe = clientID === providerRef.current?.awareness?.clientID;
                 if (isMe) return null;

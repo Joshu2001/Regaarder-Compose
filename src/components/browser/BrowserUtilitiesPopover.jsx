@@ -74,17 +74,24 @@ export const BrowserUtilitiesPopover = ({
     : 46;
   const right = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right) : 16;
 
-  const handleAction = (callback, e) => {
+  const handleAction = (callback, e, handlesOwnClose = false) => {
     e?.preventDefault();
     e?.stopPropagation();
     if (!callback) return;
     callback(anchorRect);
-    requestAnimationFrame(() => {
-      onClose?.();
-    });
+    // Navigation actions that open another popover manage their own lifecycle.
+    // Auto-closing here would terminate the Electron popover window one frame
+    // after the new popover IPC call fires, causing the flash-and-disappear bug.
+    if (!handlesOwnClose) {
+      requestAnimationFrame(() => {
+        onClose?.();
+      });
+    }
   };
 
   // Commands registry (Regaarder intelligence & contextual actions only)
+  // handlesOwnClose: true → action opens another popover; suppress auto-close
+  // so the Electron child window is not terminated one frame after the IPC call.
   const allCommands = useMemo(() => [
     {
       id: 'regaarder-flows',
@@ -92,7 +99,8 @@ export const BrowserUtilitiesPopover = ({
       category: 'Workspace & Regaarder',
       keywords: ['flow', 'automation', 'record', 'replay', 'sequence'],
       icon: <BrowserFlowIcon size={16} className="text-violet-500 shrink-0" />,
-      action: onOpenFlows
+      action: onOpenFlows,
+      handlesOwnClose: true
     },
     {
       id: 'save-memory',
@@ -116,7 +124,8 @@ export const BrowserUtilitiesPopover = ({
       category: 'Export & Ingestion',
       keywords: ['sheet', 'sheets', 'export', 'table', 'excel', 'data'],
       icon: <SheetIcon size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
-      action: onOpenSendToSheets
+      action: onOpenSendToSheets,
+      handlesOwnClose: true
     },
     {
       id: 'send-compose',
@@ -124,7 +133,8 @@ export const BrowserUtilitiesPopover = ({
       category: 'Export & Ingestion',
       keywords: ['compose', 'doc', 'document', 'export', 'text'],
       icon: <ComposeIcon size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
-      action: onOpenSendToCompose
+      action: onOpenSendToCompose,
+      handlesOwnClose: true
     },
     {
       id: 'send-whiteboard',
@@ -259,7 +269,7 @@ export const BrowserUtilitiesPopover = ({
                   <button
                     key={item.id}
                     type="button"
-                    onPointerDown={(e) => handleAction(item.action, e)}
+                    onPointerDown={(e) => handleAction(item.action, e, item.handlesOwnClose)}
                     className={`w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer group ${
                       item.isDestructive
                         ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30'

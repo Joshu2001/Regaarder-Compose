@@ -23,7 +23,7 @@ const BROWSER_FONT_SIZE_STORAGE_KEY = 'regaarder_browser_font_size_v1';
 const SIDE_PANEL_STORAGE_KEY = 'regaarder_side_panel_open_v1';
 const DEFAULT_RESEARCH_URL = 'regaarder://research';
 
-export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsDarkMode, isRightSideHovered = false }) => {
+export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsDarkMode, isRightSideHovered = false, onOpenWorkspaceSwitcher, isWorkspaceSwitcherOpen }) => {
   const isElectron = Boolean(window.electronAPI?.isElectron);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(() => {
     try {
@@ -123,6 +123,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   // Regaarder Flows system state
   const [isFlowRecording, setIsFlowRecording] = useState(false);
   const [flowsPopoverRect, setFlowsPopoverRect] = useState(null);
+  const [isFlowsBackdropOpen, setIsFlowsBackdropOpen] = useState(false);
   const [recordedActionCount, setRecordedActionCount] = useState(0);
   const [synthesizedFlowToReview, setSynthesizedFlowToReview] = useState(null);
   const [showFlowLibraryModal, setShowFlowLibraryModal] = useState(false);
@@ -144,7 +145,6 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
 
   const handleOpenFontPopoverAction = useCallback((rect, forceOpen = false) => {
     setOverflowMenuRect(null);
-    setUtilitiesPopoverRect(null);
     setFlowsPopoverRect(null);
     setSendToSheetsPopoverRect(null);
     setSendToComposePopoverRect(null);
@@ -153,6 +153,9 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     } else {
       setFontPopoverRect((prev) => (forceOpen ? rect : (prev ? null : rect)));
     }
+    requestAnimationFrame(() => {
+      setUtilitiesPopoverRect(null);
+    });
   }, [isElectron]);
 
   const handleOpenOverflowMenuAction = useCallback((rect, forceOpen = false) => {
@@ -184,14 +187,17 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   const handleOpenFlowsPopoverAction = useCallback((rect, forceOpen = false) => {
     setFontPopoverRect(null);
     setOverflowMenuRect(null);
-    setUtilitiesPopoverRect(null);
     setSendToSheetsPopoverRect(null);
     setSendToComposePopoverRect(null);
+    setIsFlowsBackdropOpen(true);
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'flows', bounds: serializeRect(rect), force: forceOpen });
     } else {
       setFlowsPopoverRect((prev) => (forceOpen ? rect : (prev ? null : rect)));
     }
+    requestAnimationFrame(() => {
+      setUtilitiesPopoverRect(null);
+    });
   }, [isElectron]);
 
   // Handle Escape keypresses from Electron webContents & window listeners to exit sidepanel / popovers
@@ -248,7 +254,6 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   const handleOpenSendToSheetsPopoverAction = useCallback((rect, forceOpen = false) => {
     setFontPopoverRect(null);
     setOverflowMenuRect(null);
-    setUtilitiesPopoverRect(null);
     setFlowsPopoverRect(null);
     setSendToComposePopoverRect(null);
     if (isElectron && window.electronAPI?.openPopover) {
@@ -256,12 +261,14 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     } else {
       setSendToSheetsPopoverRect((prev) => (forceOpen ? rect : (prev ? null : rect)));
     }
+    requestAnimationFrame(() => {
+      setUtilitiesPopoverRect(null);
+    });
   }, [isElectron]);
 
   const handleOpenSendToComposePopoverAction = useCallback((rect, forceOpen = false) => {
     setFontPopoverRect(null);
     setOverflowMenuRect(null);
-    setUtilitiesPopoverRect(null);
     setFlowsPopoverRect(null);
     setSendToSheetsPopoverRect(null);
     if (isElectron && window.electronAPI?.openPopover) {
@@ -269,6 +276,9 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     } else {
       setSendToComposePopoverRect((prev) => (forceOpen ? rect : (prev ? null : rect)));
     }
+    requestAnimationFrame(() => {
+      setUtilitiesPopoverRect(null);
+    });
   }, [isElectron]);
 
   useEffect(() => {
@@ -284,6 +294,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
       setOverflowMenuRect(null);
       setUtilitiesPopoverRect(null);
       setFlowsPopoverRect(null);
+      setIsFlowsBackdropOpen(false);
       setSendToSheetsPopoverRect(null);
       setSendToComposePopoverRect(null);
     };
@@ -777,6 +788,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         isFontPopoverOpen={Boolean(fontPopoverRect)}
         isUtilitiesPopoverOpen={Boolean(utilitiesPopoverRect)}
         isOverflowMenuOpen={Boolean(overflowMenuRect)}
+        isWorkspaceSwitcherOpen={isWorkspaceSwitcherOpen}
         browserFont={browserFont}
         browserFontSize={browserFontSize}
         onNavigate={handleNavigate}
@@ -791,6 +803,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         onOpenFlowsPopover={handleOpenFlowsPopoverAction}
         onOpenUtilitiesPopover={handleOpenUtilitiesPopoverAction}
         onOpenOverflowMenu={handleOpenOverflowMenuAction}
+        onOpenWorkspaceSwitcher={onOpenWorkspaceSwitcher}
         onSaveMemoryChip={() => {
           if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Memory`);
         }}
@@ -851,8 +864,22 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
       </div>
 
       {/* Regaarder Flows Menu Popover */}
-      {flowsPopoverRect && (
-        <BrowserFlowsPopover
+      {(flowsPopoverRect || isFlowsBackdropOpen) && (
+        <>
+          {/* Glassmorphic Page Dimming Backdrop Layer */}
+          <div
+            className="fixed inset-0 z-[99999] bg-slate-950/45 dark:bg-black/65 backdrop-blur-md transition-all duration-200 animate-in fade-in cursor-default"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              setIsFlowsBackdropOpen(false);
+              setFlowsPopoverRect(null);
+              if (isElectron && window.electronAPI?.closePopover) {
+                window.electronAPI.closePopover();
+              }
+            }}
+          />
+          {flowsPopoverRect && (
+            <BrowserFlowsPopover
           anchorRect={flowsPopoverRect}
           isRecording={isFlowRecording}
           onClose={() => setFlowsPopoverRect(null)}
@@ -876,6 +903,8 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
           }}
           onOpenMyFlows={() => setShowFlowLibraryModal(true)}
         />
+        )}
+        </>
       )}
 
       {/* Flow Synthesis & Review Modal */}
@@ -959,7 +988,6 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
           anchorRect={utilitiesPopoverRect}
           onClose={() => setUtilitiesPopoverRect(null)}
           onOpenFlows={(rect) => {
-            setShowFlowLibraryModal(true);
             handleOpenFlowsPopoverAction(rect || utilitiesPopoverRect || { top: 48, right: 60 }, true);
           }}
           onOpenExternal={handleOpenExternal}

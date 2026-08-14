@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, LayoutGrid } from 'lucide-react';
 import {
   BrowserBackIcon,
   BrowserForwardIcon,
@@ -40,6 +40,7 @@ export const BrowserToolbar = ({
   isFontPopoverOpen = false,
   isUtilitiesPopoverOpen = false,
   isOverflowMenuOpen = false,
+  isWorkspaceSwitcherOpen = false,
   browserFont = 'System Default',
   browserFontSize = 100,
   onNavigate,
@@ -54,6 +55,7 @@ export const BrowserToolbar = ({
   onOpenFlowsPopover,
   onOpenUtilitiesPopover,
   onOpenOverflowMenu,
+  onOpenWorkspaceSwitcher,
   onSummarizeChip,
   onSaveMemoryChip
 }) => {
@@ -314,6 +316,24 @@ export const BrowserToolbar = ({
           title="More options (Browser & System Settings)"
         >
           <BrowserEllipsisIcon size={16} />
+        </button>
+
+        {/* Switch Workspace App */}
+        <button
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onOpenWorkspaceSwitcher?.();
+          }}
+          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
+            isWorkspaceSwitcherOpen
+              ? 'bg-slate-300 dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 border border-slate-400/40 dark:border-zinc-600/40'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-[#CBD1DC]/60 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 border border-transparent'
+          }`}
+          title="Switch Workspace App"
+        >
+          <LayoutGrid size={16} />
         </button>
       </div>
     </div>

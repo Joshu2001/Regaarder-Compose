@@ -201,9 +201,14 @@ export const PopoverWindowContainer = () => {
           <BrowserUtilitiesPopover
             isStandalone={true}
             onClose={handleClose}
-            onOpenFlows={() => {
+            onOpenFlows={(rect) => {
               setPopoverType('flows');
-              window.electronAPI?.openPopover?.({ type: 'flows', force: true });
+              const fallbackRight = typeof window !== 'undefined' ? Math.max(380, window.innerWidth - 16) : 1100;
+              window.electronAPI?.openPopover?.({
+                type: 'flows',
+                bounds: (rect && (rect.right || rect.x)) ? rect : { top: 44, bottom: 72, left: fallbackRight - 380, right: fallbackRight, width: 380, height: 390 },
+                force: true
+              });
             }}
             onOpenExternal={() => {
               window.electronAPI?.sendPopoverAction?.('openExternal');
