@@ -83,7 +83,7 @@ export default function DropdownModalShell({
 
         {/* Body Content */}
         <div 
-          className={`${maxHeight} ${allowOverflowVisible ? 'overflow-visible' : 'overflow-y-auto'} px-5 pt-4 pb-3.5 space-y-4 flex-1`}
+          className={`${maxHeight} ${allowOverflowVisible ? 'overflow-visible' : 'overflow-y-auto thin-scrollbar'} px-5 pt-4 pb-3.5 space-y-4 flex-1`}
           style={allowOverflowVisible ? {} : { scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.25) transparent' }}
         >
           {children}
