@@ -188,6 +188,8 @@ export const PopoverWindowContainer = () => {
             onNewTab={handleClose}
             onReloadHard={handleClose}
             onResetWorkspace={handleClose}
+            onOpenFlows={() => setPopoverType('flows')}
+            onOpenAppearance={() => setPopoverType('font')}
             onOpenSettings={() => setPopoverType('font')}
             onOpenShortcuts={handleClose}
             onOpenHelp={handleClose}

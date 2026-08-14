@@ -255,7 +255,7 @@ export const AssistIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...pr
  * Metaphor: Central coordinator node linked to an orbital constellation of autonomous sub-agent nodes.
  * Reusable visual language for Regaarder AI Workflows and agentic execution (replacing generic sparkles).
  */
-export const AgentsIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+export const AgentsIcon = ({ size = 24, className = "", strokeWidth = 1.2, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -268,19 +268,20 @@ export const AgentsIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...pr
     className={className}
     {...props}
   >
-    {/* Inter-agent orbital network constellation links */}
-    <line x1="12" y1="12" x2="18" y2="6.5" opacity="0.45" />
-    <line x1="12" y1="12" x2="6" y2="17.5" opacity="0.45" />
-    <line x1="12" y1="12" x2="6" y2="6.5" opacity="0.4" />
-    <line x1="12" y1="12" x2="18" y2="17.5" opacity="0.4" />
-    {/* Central coordinator agent node */}
-    <circle cx="12" cy="12" r="2.25" />
-    <circle cx="12" cy="12" r="0.75" fill="currentColor" stroke="none" />
-    {/* Autonomous satellite agent nodes */}
-    <circle cx="18" cy="6.5" r="1.5" fill="currentColor" stroke="none" />
-    <circle cx="6" cy="17.5" r="1.5" fill="currentColor" stroke="none" />
-    <circle cx="6" cy="6.5" r="1.25" fill="currentColor" opacity="0.65" stroke="none" />
-    <circle cx="18" cy="17.5" r="1.25" fill="currentColor" opacity="0.65" stroke="none" />
+    {/* Apple-style primary 4-point AI spark diamond */}
+    <path
+      d="M12 3.5C12 7.5 13.5 9 17.5 9C13.5 9 12 10.5 12 14.5C12 10.5 10.5 9 6.5 9C10.5 9 12 7.5 12 3.5Z"
+      fill="currentColor"
+      fillOpacity="0.15"
+    />
+    {/* Micro satellite intelligence node */}
+    <path
+      d="M18.5 15.5C18.5 17 19.2 17.7 20.7 17.7C19.2 17.7 18.5 18.4 18.5 19.9C18.5 18.4 17.8 17.7 16.3 17.7C17.8 17.7 18.5 17 18.5 15.5Z"
+      fill="currentColor"
+      fillOpacity="0.25"
+    />
+    {/* Focal core center node */}
+    <circle cx="12" cy="9" r="0.9" fill="currentColor" stroke="none" />
   </svg>
 );
 

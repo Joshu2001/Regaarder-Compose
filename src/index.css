@@ -68,3 +68,24 @@ html.popover-root, body.popover-root, #popover-root {
   background-color: transparent !important;
   background: transparent !important;
 }
+
+/* Regaarder Apple-Style Minimal Overlay Scrollbars */
+.regaarder-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+.regaarder-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.regaarder-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.regaarder-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+.regaarder-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}

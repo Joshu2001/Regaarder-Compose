@@ -71,18 +71,18 @@ export const SendToComposePopover = ({
       style={isStandalone ? {} : { top: `${topPos}px`, right: `${rightPos}px` }}
       className={`${
         isStandalone
-          ? 'relative z-[100000] w-full max-w-md border border-slate-200 dark:border-zinc-800 shadow-2xl'
-          : 'fixed z-[100000] w-[380px] border border-slate-200 dark:border-zinc-800 shadow-2xl animate-in fade-in zoom-in-95 duration-150'
-      } bg-white dark:bg-[#1c1c1e] rounded-2xl overflow-hidden font-sans text-slate-800 dark:text-zinc-100 select-none`}
+          ? 'relative z-[100000] w-full max-w-md border border-white/10 shadow-2xl'
+          : 'fixed z-[100000] w-[380px] border border-white/10 shadow-2xl animate-in fade-in zoom-in-95 duration-150'
+      } bg-[#161822]/95 backdrop-blur-2xl rounded-2xl overflow-hidden font-sans text-slate-100 select-none`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-slate-50/60 dark:bg-zinc-900/60 border-b border-slate-100 dark:border-zinc-800/80">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-400">
+      <div className="flex items-center justify-between px-4 py-3.5 bg-white/[0.03] border-b border-white/[0.08]">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
             <ComposeIcon size={16} />
           </div>
           <div>
-            <h3 className="text-xs font-semibold tracking-tight text-slate-100">Send to Compose</h3>
+            <h3 className="text-xs font-medium tracking-tight text-slate-100">Send to Compose</h3>
             <p className="text-[10px] text-slate-400">Context-aware document clipping</p>
           </div>
         </div>
@@ -93,7 +93,7 @@ export const SendToComposePopover = ({
             e.preventDefault();
             onClose();
           }}
-          className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/[0.06] transition-colors cursor-pointer"
         >
           <BrowserCloseIcon size={14} />
         </button>

@@ -116,8 +116,8 @@ export const BrowserFontPopover = ({
   const right = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right) : 16;
 
   const containerClasses = isStandalone
-    ? "w-full h-full bg-white dark:bg-[#1c1c1e] border border-slate-200/90 dark:border-zinc-800/90 shadow-2xl rounded-2xl p-3.5 font-sans select-none text-slate-800 dark:text-zinc-100 flex flex-col justify-between overflow-hidden"
-    : "fixed z-[100000] w-[330px] bg-white dark:bg-[#1c1c1e] border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] rounded-2xl p-3.5 animate-in fade-in zoom-in-95 duration-150 font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden";
+    ? "w-full h-full bg-white/90 dark:bg-[#1c1c1e]/90 border border-slate-200/70 dark:border-zinc-800/80 shadow-2xl rounded-2xl p-3.5 font-sans select-none text-slate-800 dark:text-zinc-100 flex flex-col justify-between overflow-hidden"
+    : "fixed z-[100000] w-[330px] bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-slate-200/70 dark:border-zinc-800/80 shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] rounded-2xl p-3.5 animate-in fade-in zoom-in-95 duration-150 font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden";
 
   const containerStyle = isStandalone ? {} : { top: `${top}px`, right: `${right}px` };
 

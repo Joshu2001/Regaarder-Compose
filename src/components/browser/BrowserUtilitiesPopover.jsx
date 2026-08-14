@@ -218,9 +218,9 @@ export const BrowserUtilitiesPopover = ({
       style={isStandalone ? {} : { top: `${top}px`, right: `${Math.max(12, right)}px` }}
       className={`${
         isStandalone
-          ? 'relative z-[100000] w-full max-w-sm border border-slate-200/90 dark:border-zinc-800/90 shadow-2xl p-1.5'
-          : 'fixed z-[100000] w-[275px] max-h-[460px] border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] p-1.5 animate-in fade-in zoom-in-95 duration-150 flex flex-col'
-      } bg-white dark:bg-[#1c1c1e] rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden`}
+          ? 'relative z-[100000] w-full max-w-sm border border-slate-200/70 dark:border-zinc-800/80 shadow-2xl p-1.5'
+          : 'fixed z-[100000] w-[275px] max-h-[460px] border border-slate-200/70 dark:border-zinc-800/80 backdrop-blur-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] p-1.5 animate-in fade-in zoom-in-95 duration-150 flex flex-col'
+      } bg-white/90 dark:bg-[#1c1c1e]/90 rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden`}
     >
       {/* Quick Utility Search / Filter Field */}
       <div className="px-1 pt-1 pb-1.5 border-b border-slate-100 dark:border-zinc-800/80 shrink-0">

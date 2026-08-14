@@ -2814,7 +2814,7 @@ const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
               {isDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-0" onClick={() => setIsDropdownOpen(false)}></div>
-                  <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white border border-gray-150 rounded-xl shadow-[0_16_40_rgba(0,0,0,0.1)] py-2 z-20 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-slate-200/70 dark:border-zinc-800/80 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] py-2 z-20 overflow-hidden animate-in fade-in slide-in-from-top-2">
                     <button 
                       onClick={() => { setAccessLevel('anyone'); setIsDropdownOpen(false); }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left"

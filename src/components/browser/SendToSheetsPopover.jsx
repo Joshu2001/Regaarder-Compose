@@ -191,12 +191,12 @@ export const SendToSheetsPopover = ({
       style={isStandalone ? {} : { top: `${topPos}px`, right: `${rightPos}px` }}
       className={`${
         isStandalone
-          ? 'relative z-[100000] w-full max-w-md border border-slate-200 dark:border-zinc-800 shadow-2xl'
-          : 'fixed z-[100000] w-[420px] border border-slate-200 dark:border-zinc-800 shadow-2xl animate-in fade-in zoom-in-95 duration-150'
-      } bg-white dark:bg-[#1c1c1e] rounded-2xl overflow-hidden font-sans text-slate-800 dark:text-zinc-100 select-none`}
+          ? 'relative z-[100000] w-full max-w-md border border-white/10 shadow-2xl'
+          : 'fixed z-[100000] w-[420px] border border-white/10 shadow-2xl animate-in fade-in zoom-in-95 duration-150'
+      } bg-[#161822]/95 backdrop-blur-2xl rounded-2xl overflow-hidden font-sans text-slate-100 select-none`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-slate-50/60 dark:bg-zinc-900/60 border-b border-slate-100 dark:border-zinc-800/80">
+      <div className="flex items-center justify-between px-4 py-3.5 bg-white/[0.03] border-b border-white/[0.08]">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
             <SheetIcon size={16} />

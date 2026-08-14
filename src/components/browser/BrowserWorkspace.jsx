@@ -966,8 +966,14 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
             setActiveTabId('tab-1');
             if (showToast) showToast('Reset browser tabs workspace');
           }}
+          onOpenFlows={(rect) => {
+            handleOpenFlowsPopoverAction(rect || overflowMenuRect, true);
+          }}
+          onOpenAppearance={(rect) => {
+            handleOpenFontPopoverAction(rect || overflowMenuRect, true);
+          }}
           onOpenSettings={(rect) => {
-            handleOpenFontPopoverAction(rect || overflowMenuRect);
+            handleOpenFontPopoverAction(rect || overflowMenuRect, true);
           }}
           onOpenShortcuts={() => {
             if (showToast) showToast('Opened Keyboard Shortcuts guide');
