@@ -513,12 +513,6 @@ class BrowserViewManager {
       });
     });
 
-    popoverWindow.on('blur', () => {
-      if (this.popoverType !== 'sidepanel' && this.popoverType !== 'sidebar') {
-        this.closePopover();
-      }
-    });
-
     this.popoverWindow = popoverWindow;
     this.popoverIsVisible = false;
     this.popoverType = null;
