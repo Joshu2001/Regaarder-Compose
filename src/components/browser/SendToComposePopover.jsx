@@ -60,7 +60,9 @@ export const SendToComposePopover = ({
           : Math.max(86, (anchorRect.bottom || 80) + 6))
     : 86;
   const rightPos = anchorRect
-    ? Math.max(16, window.innerWidth - (anchorRect.right || (anchorRect.x ? anchorRect.x + (anchorRect.width || 0) : window.innerWidth - 380)))
+    ? (anchorRect.right !== undefined && anchorRect.right < 500
+        ? anchorRect.right
+        : Math.max(16, window.innerWidth - (anchorRect.right || 380)))
     : 24;
 
   const content = (
