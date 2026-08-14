@@ -137,7 +137,6 @@ export const BrowserUtilitiesPopover = ({
     {
       id: 'find-page',
       title: 'Find in Page',
-      shortcut: '⌘F',
       category: 'Contextual Actions',
       keywords: ['find', 'search', 'page', 'text', 'filter'],
       icon: <Search size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
@@ -162,7 +161,6 @@ export const BrowserUtilitiesPopover = ({
     {
       id: 'print',
       title: 'Print Page...',
-      shortcut: '⌘P',
       category: 'Contextual Actions',
       keywords: ['print', 'pdf', 'page', 'paper'],
       icon: <Printer size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
@@ -171,7 +169,6 @@ export const BrowserUtilitiesPopover = ({
     {
       id: 'close-tab',
       title: 'Close Active Tab',
-      shortcut: '⌘W',
       category: 'Contextual Actions',
       keywords: ['tab', 'close tab', 'remove tab'],
       icon: <X size={16} className="text-rose-500 shrink-0" />,
@@ -214,9 +211,9 @@ export const BrowserUtilitiesPopover = ({
       style={isStandalone ? {} : { top: `${top}px`, right: `${Math.max(12, right)}px` }}
       className={`${
         isStandalone
-          ? 'relative z-[100000] w-full max-w-sm border border-slate-200/80 dark:border-zinc-800/80 shadow-2xl p-2'
-          : 'fixed z-[100000] w-[280px] max-h-[440px] border border-slate-200/80 dark:border-zinc-800/80 backdrop-blur-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] p-2 animate-in fade-in zoom-in-95 duration-150 flex flex-col'
-      } bg-white/95 dark:bg-[#1c1c1e]/95 rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden`}
+          ? 'relative z-[100000] w-full max-w-sm border border-slate-200/80 dark:border-zinc-800/80 shadow-2xl p-2 max-h-[365px] overflow-y-auto thin-scrollbar'
+          : 'fixed z-[100000] w-64 max-h-[365px] border border-slate-200/80 dark:border-zinc-800/80 backdrop-blur-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] p-2 overflow-y-auto thin-scrollbar animate-in fade-in zoom-in-95 duration-100 flex flex-col'
+      } bg-white/95 dark:bg-[#1c1c1e]/95 rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 flex flex-col`}
     >
       {/* Quick Commands Search Field */}
       <div className="px-1 pt-0.5 pb-2 border-b border-slate-100 dark:border-zinc-800/60 shrink-0">
@@ -252,7 +249,7 @@ export const BrowserUtilitiesPopover = ({
             No commands matching &quot;{searchQuery}&quot;
           </div>
         ) : (
-          Object.entries(groupedCommands).map(([category, items], idx) => (
+          Object.entries(groupedCommands).map(([category, items]) => (
             <div key={category} className="px-1">
               <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5 mb-0.5">
                 {category}
@@ -263,21 +260,14 @@ export const BrowserUtilitiesPopover = ({
                     key={item.id}
                     type="button"
                     onPointerDown={(e) => handleAction(item.action, e)}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer group ${
+                    className={`w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer group ${
                       item.isDestructive
                         ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30'
                         : 'text-slate-800 dark:text-zinc-200 hover:bg-slate-100/90 dark:hover:bg-zinc-800/80'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {item.icon}
-                      <span className="truncate">{item.title}</span>
-                    </div>
-                    {item.shortcut && (
-                      <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 opacity-70 group-hover:opacity-100 shrink-0 ml-2">
-                        {item.shortcut}
-                      </span>
-                    )}
+                    {item.icon}
+                    <span className="truncate">{item.title}</span>
                   </button>
                 ))}
               </div>

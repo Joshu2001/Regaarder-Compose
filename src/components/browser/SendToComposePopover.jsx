@@ -206,9 +206,23 @@ export const SendToComposePopover = ({
 
         {/* Destination Document */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-            Target Document
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+              Target Document
+            </label>
+            <div className="flex items-center gap-1 text-[10px]">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  setDestinationDoc(`New Doc — ${activeTab?.title || 'Web Clipping'}`);
+                }}
+                className="text-violet-400 hover:underline cursor-pointer"
+              >
+                + New Document
+              </button>
+            </div>
+          </div>
           <input
             type="text"
             value={destinationDoc}
