@@ -8,7 +8,16 @@ import BrowserOverflowMenu from './BrowserOverflowMenu';
 import BrowserResearchPanel from './BrowserResearchPanel';
 
 export const PopoverWindowContainer = () => {
-  const [popoverType, setPopoverType] = useState('font');
+  const [popoverType, setPopoverType] = useState(() => {
+    try {
+      const hash = window.location.hash || '';
+      const queryStr = hash.includes('?') ? hash.split('?')[1] : '';
+      const params = new URLSearchParams(queryStr);
+      return params.get('type') || 'overflow';
+    } catch (e) {
+      return 'overflow';
+    }
+  });
   const [activeTab, setActiveTab] = useState(null);
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -58,7 +67,7 @@ export const PopoverWindowContainer = () => {
       const hash = window.location.hash || '';
       const queryStr = hash.includes('?') ? hash.split('?')[1] : '';
       const params = new URLSearchParams(queryStr);
-      const type = params.get('type') || 'font';
+      const type = params.get('type') || 'overflow';
       setPopoverType(type);
     };
 
@@ -165,19 +174,58 @@ export const PopoverWindowContainer = () => {
           <BrowserUtilitiesPopover
             isStandalone={true}
             onClose={handleClose}
-            onOpenFontPopover={() => setPopoverType('font')}
-            onOpenExternal={handleClose}
-            onOpenSendToSheets={() => setPopoverType('sendToSheets')}
-            onOpenSendToCompose={() => setPopoverType('sendToCompose')}
-            onSendWhiteboard={handleClose}
-            onSaveMemory={handleClose}
-            onFindInPage={handleClose}
-            onNewTab={handleClose}
-            onCloseTab={handleClose}
-            onOpenHistory={handleClose}
-            onOpenDownloads={handleClose}
-            onOpenBookmarks={handleClose}
-            onPrintPage={handleClose}
+            onOpenFontPopover={() => {
+              setPopoverType('font');
+              window.electronAPI?.openPopover?.({ type: 'font', force: true });
+            }}
+            onOpenExternal={() => {
+              window.electronAPI?.sendPopoverAction?.('openExternal');
+              handleClose();
+            }}
+            onOpenSendToSheets={() => {
+              setPopoverType('sendToSheets');
+              window.electronAPI?.openPopover?.({ type: 'sendToSheets', force: true });
+            }}
+            onOpenSendToCompose={() => {
+              setPopoverType('sendToCompose');
+              window.electronAPI?.openPopover?.({ type: 'sendToCompose', force: true });
+            }}
+            onSendWhiteboard={() => {
+              window.electronAPI?.sendPopoverAction?.('sendWhiteboard');
+              handleClose();
+            }}
+            onSaveMemory={() => {
+              window.electronAPI?.sendPopoverAction?.('saveMemory');
+              handleClose();
+            }}
+            onFindInPage={() => {
+              window.electronAPI?.sendPopoverAction?.('findInPage');
+              handleClose();
+            }}
+            onNewTab={() => {
+              window.electronAPI?.sendPopoverAction?.('newTab');
+              handleClose();
+            }}
+            onCloseTab={() => {
+              window.electronAPI?.sendPopoverAction?.('closeTab');
+              handleClose();
+            }}
+            onOpenHistory={() => {
+              window.electronAPI?.sendPopoverAction?.('openHistory');
+              handleClose();
+            }}
+            onOpenDownloads={() => {
+              window.electronAPI?.sendPopoverAction?.('openDownloads');
+              handleClose();
+            }}
+            onOpenBookmarks={() => {
+              window.electronAPI?.sendPopoverAction?.('openBookmarks');
+              handleClose();
+            }}
+            onPrintPage={() => {
+              window.electronAPI?.sendPopoverAction?.('printPage');
+              handleClose();
+            }}
           />
         )}
 
@@ -185,15 +233,42 @@ export const PopoverWindowContainer = () => {
           <BrowserOverflowMenu
             isStandalone={true}
             onClose={handleClose}
-            onNewTab={handleClose}
-            onReloadHard={handleClose}
-            onResetWorkspace={handleClose}
-            onOpenFlows={() => setPopoverType('flows')}
-            onOpenAppearance={() => setPopoverType('font')}
-            onOpenSettings={() => setPopoverType('font')}
-            onOpenShortcuts={handleClose}
-            onOpenHelp={handleClose}
-            onAbout={handleClose}
+            onNewTab={() => {
+              window.electronAPI?.sendPopoverAction?.('newTab');
+              handleClose();
+            }}
+            onReloadHard={() => {
+              window.electronAPI?.sendPopoverAction?.('reloadHard');
+              handleClose();
+            }}
+            onResetWorkspace={() => {
+              window.electronAPI?.sendPopoverAction?.('resetWorkspace');
+              handleClose();
+            }}
+            onOpenFlows={() => {
+              setPopoverType('flows');
+              window.electronAPI?.openPopover?.({ type: 'flows', force: true });
+            }}
+            onOpenAppearance={() => {
+              setPopoverType('font');
+              window.electronAPI?.openPopover?.({ type: 'font', force: true });
+            }}
+            onOpenSettings={() => {
+              setPopoverType('font');
+              window.electronAPI?.openPopover?.({ type: 'font', force: true });
+            }}
+            onOpenShortcuts={() => {
+              window.electronAPI?.sendPopoverAction?.('openShortcuts');
+              handleClose();
+            }}
+            onOpenHelp={() => {
+              window.electronAPI?.sendPopoverAction?.('openHelp');
+              handleClose();
+            }}
+            onAbout={() => {
+              window.electronAPI?.sendPopoverAction?.('about');
+              handleClose();
+            }}
           />
         )}
 

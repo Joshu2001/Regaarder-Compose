@@ -349,6 +349,61 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     ];
   });
 
+  const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0];
+  const isBookmarked = savedItems.some((item) => item.url === activeTab?.url);
+
+  // Listen for actions dispatched from popovers running in standalone Electron windows
+  useEffect(() => {
+    if (!isElectron || !window.electronAPI?.onPopoverAction) return;
+
+    const unsubscribe = window.electronAPI.onPopoverAction(({ action }) => {
+      if (action === 'newTab') {
+        handleNewTab(DEFAULT_RESEARCH_URL);
+      } else if (action === 'reloadHard') {
+        handleReload();
+      } else if (action === 'resetWorkspace') {
+        setTabs([{
+          id: 'tab-1',
+          title: 'Regaarder Research',
+          url: DEFAULT_RESEARCH_URL,
+          isLoading: false,
+          canGoBack: false,
+          canGoForward: false,
+          favicon: '',
+          isSecure: true
+        }]);
+        setActiveTabId('tab-1');
+        if (showToast) showToast('Reset browser tabs workspace');
+      } else if (action === 'openShortcuts') {
+        if (showToast) showToast('Opened Keyboard Shortcuts guide');
+      } else if (action === 'openHelp') {
+        if (showToast) showToast('Opened Regaarder Help & Documentation');
+      } else if (action === 'about') {
+        if (showToast) showToast('Regaarder Research v2.4 (Executive Build)');
+      } else if (action === 'openExternal') {
+        handleOpenExternal();
+      } else if (action === 'sendWhiteboard') {
+        if (showToast) showToast('Clipped visual layout to Whiteboard canvas');
+      } else if (action === 'saveMemory') {
+        if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Memory`);
+      } else if (action === 'findInPage') {
+        if (showToast) showToast('Opened Find in Page search');
+      } else if (action === 'closeTab') {
+        handleCloseTab(activeTabId);
+      } else if (action === 'openHistory' || action === 'openBookmarks') {
+        handleNavigate('regaarder://saved');
+      } else if (action === 'openDownloads') {
+        if (showToast) showToast('Opened Downloads manager');
+      } else if (action === 'printPage') {
+        window.print();
+      }
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [isElectron, activeTab, activeTabId, showToast]);
+
   // Persist tabs
   useEffect(() => {
     try {
@@ -415,9 +470,6 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
       if (typeof unsubscribe === 'function') unsubscribe();
     };
   }, [isElectron]);
-
-  const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0];
-  const isBookmarked = savedItems.some((item) => item.url === activeTab?.url);
 
   const handleSelectTab = (tabId) => {
     setActiveTabId(tabId);
@@ -950,8 +1002,14 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         <BrowserOverflowMenu
           anchorRect={overflowMenuRect}
           onClose={() => setOverflowMenuRect(null)}
-          onNewTab={() => handleNewTab(DEFAULT_RESEARCH_URL)}
-          onReloadHard={handleReload}
+          onNewTab={() => {
+            handleNewTab(DEFAULT_RESEARCH_URL);
+            setOverflowMenuRect(null);
+          }}
+          onReloadHard={() => {
+            handleReload();
+            setOverflowMenuRect(null);
+          }}
           onResetWorkspace={() => {
             setTabs([{
               id: 'tab-1',
@@ -965,6 +1023,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
             }]);
             setActiveTabId('tab-1');
             if (showToast) showToast('Reset browser tabs workspace');
+            setOverflowMenuRect(null);
           }}
           onOpenFlows={(rect) => {
             handleOpenFlowsPopoverAction(rect || overflowMenuRect, true);
@@ -977,12 +1036,15 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
           }}
           onOpenShortcuts={() => {
             if (showToast) showToast('Opened Keyboard Shortcuts guide');
+            setOverflowMenuRect(null);
           }}
           onOpenHelp={() => {
             if (showToast) showToast('Opened Regaarder Help & Documentation');
+            setOverflowMenuRect(null);
           }}
           onAbout={() => {
             if (showToast) showToast('Regaarder Research v2.4 (Executive Build)');
+            setOverflowMenuRect(null);
           }}
         />
       )}

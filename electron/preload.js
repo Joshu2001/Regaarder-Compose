@@ -35,10 +35,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Popover Overlay Window
   openPopover: (params) => ipcRenderer.invoke('browser:open-popover', params),
   closePopover: () => ipcRenderer.invoke('browser:close-popover'),
+  sendPopoverAction: (action, payload) => ipcRenderer.invoke('popover:send-action', { action, payload }),
   onPopoverChangeType: (callback) => {
     const handler = (event, type) => callback(type);
     ipcRenderer.on('popover:change-type', handler);
     return () => ipcRenderer.removeListener('popover:change-type', handler);
+  },
+  onPopoverAction: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('popover:action', handler);
+    return () => ipcRenderer.removeListener('popover:action', handler);
   },
 
   // Offscreen Rendering (OSR) Canvas Pipeline

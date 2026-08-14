@@ -159,6 +159,12 @@ ipcMain.handle('browser:close-popover', async () => {
   }
 });
 
+ipcMain.handle('popover:send-action', async (event, { action, payload }) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('popover:action', { action, payload });
+  }
+});
+
 ipcMain.handle('browser:send-input-event', async (event, { tabId, inputEvent }) => {
   if (browserViewManager) {
     browserViewManager.sendInputEvent(tabId, inputEvent);

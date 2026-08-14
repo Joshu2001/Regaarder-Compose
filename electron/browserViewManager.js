@@ -38,6 +38,11 @@ function performGoForward(wc) {
 class BrowserViewManager {
   constructor(mainWindow) {
     this.mainWindow = mainWindow;
+    if (this.mainWindow && typeof this.mainWindow.on === 'function') {
+      this.mainWindow.on('blur', () => this.closePopover());
+      this.mainWindow.on('hide', () => this.closePopover());
+      this.mainWindow.on('minimize', () => this.closePopover());
+    }
     this.tabs = new Map(); // tabId -> tabState object
     this.activeTabId = null;
     this.bounds = { x: 0, y: 0, width: 0, height: 0 };
@@ -459,7 +464,7 @@ class BrowserViewManager {
     wc.executeJavaScript(domInjectionScript).catch(() => {});
   }
 
-  getOrCreatePopoverWindow() {
+  getOrCreatePopoverWindow(type = 'overflow') {
     if (this.popoverWindow && !this.popoverWindow.isDestroyed()) {
       return this.popoverWindow;
     }
@@ -501,10 +506,10 @@ class BrowserViewManager {
       baseUrl = baseUrl.slice(0, -1);
     }
 
-    const initialUrl = `${baseUrl}/#/popover-window?type=font`;
+    const initialUrl = `${baseUrl}/#/popover-window?type=${type || 'overflow'}`;
     popoverWindow.loadURL(initialUrl).catch(() => {
       popoverWindow.loadFile(path.join(__dirname, '../dist/index.html'), {
-        hash: '/popover-window?type=font'
+        hash: `/popover-window?type=${type || 'overflow'}`
       });
     });
 
@@ -533,7 +538,6 @@ class BrowserViewManager {
       const screenY = mainBounds.y + 56;
       try {
         this.popoverWindow.setBounds({ x: screenX, y: screenY, width, height });
-        this.popoverWindow.setAlwaysOnTop(true, 'pop-up-menu');
       } catch (e) {}
     }
   }
@@ -554,12 +558,12 @@ class BrowserViewManager {
     this.popoverType = type;
     this.popoverIsVisible = true;
 
-    const popoverWin = this.getOrCreatePopoverWindow();
+    const popoverWin = this.getOrCreatePopoverWindow(type);
     const mainBounds = this.mainWindow.getBounds();
 
     const isPanel = type === 'sidepanel' || type === 'sidebar';
-    const width = isPanel ? 380 : type === 'font' ? 340 : type === 'flows' ? 380 : 420;
-    const height = isPanel ? Math.max(400, mainBounds.height - 64) : type === 'font' ? 345 : type === 'flows' ? 390 : 440;
+    const width = isPanel ? 380 : type === 'font' ? 340 : type === 'flows' ? 380 : type === 'overflow' ? 260 : type === 'utilities' ? 285 : 360;
+    const height = isPanel ? Math.max(400, mainBounds.height - 64) : type === 'font' ? 345 : type === 'flows' ? 390 : type === 'overflow' ? 390 : type === 'utilities' ? 430 : 380;
 
     let relativeX = Math.round(bounds.x || bounds.left || 0);
     if (isPanel) {
@@ -578,13 +582,17 @@ class BrowserViewManager {
 
     popoverWin.setBounds({ x: screenX, y: screenY, width, height });
 
-    try {
-      popoverWin.webContents.send('popover:change-type', type);
-    } catch (e) {}
+    const sendType = () => {
+      try {
+        popoverWin.webContents.send('popover:change-type', type);
+      } catch (e) {}
+    };
 
-    try {
-      popoverWin.setAlwaysOnTop(true, 'pop-up-menu');
-    } catch (e) {}
+    if (popoverWin.webContents.isLoading()) {
+      popoverWin.webContents.once('did-finish-load', sendType);
+    } else {
+      sendType();
+    }
 
     if (!popoverWin.isVisible()) {
       popoverWin.show();
@@ -597,7 +605,6 @@ class BrowserViewManager {
     this.popoverType = null;
     if (this.popoverWindow && !this.popoverWindow.isDestroyed()) {
       try {
-        this.popoverWindow.setAlwaysOnTop(false);
         this.popoverWindow.hide();
       } catch (e) {}
     }

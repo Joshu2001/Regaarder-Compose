@@ -61,7 +61,6 @@ export const BrowserOverflowMenu = ({
     e?.stopPropagation();
     if (!callback) return;
     callback(anchorRect);
-    onClose?.();
   };
 
   const menuContent = (
@@ -73,9 +72,9 @@ export const BrowserOverflowMenu = ({
       style={isStandalone ? {} : { top: `${top}px`, right: `${Math.max(12, right)}px` }}
       className={`${
         isStandalone
-          ? 'relative z-[100000] w-full max-w-sm border border-slate-200/70 dark:border-zinc-800/80 shadow-2xl p-1.5'
-          : 'fixed z-[100000] w-64 border border-slate-200/70 dark:border-zinc-800/80 backdrop-blur-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] p-1.5 animate-in zoom-in-95 fade-in duration-150'
-      } bg-white/90 dark:bg-[#1c1c1e]/90 rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden`}
+          ? 'relative z-[100000] w-full max-w-sm border border-slate-200 dark:border-zinc-800 shadow-xl p-1.5 max-h-[380px] overflow-y-auto thin-scrollbar'
+          : 'fixed z-[100000] w-60 border border-slate-200 dark:border-zinc-800 shadow-xl p-1.5 max-h-[380px] overflow-y-auto thin-scrollbar animate-in zoom-in-95 fade-in duration-100'
+      } bg-white dark:bg-[#1c1c1e] rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100`}
     >
       {/* SECTION 1: WORKSPACE & NAVIGATION */}
       <div className="px-1 py-1 space-y-0.5">
@@ -86,25 +85,19 @@ export const BrowserOverflowMenu = ({
         <button
           type="button"
           onPointerDown={(e) => handleAction(onNewTab, e)}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+          className="w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
         >
-          <div className="flex items-center gap-2.5">
-            <Plus size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
-            <span>New Tab</span>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500">⌘T</span>
+          <Plus size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+          <span>New Tab</span>
         </button>
 
         <button
           type="button"
           onPointerDown={(e) => handleAction(onReloadHard, e)}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+          className="w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
         >
-          <div className="flex items-center gap-2.5">
-            <RotateCcw size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
-            <span>Hard Reload Page</span>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500">⌘R</span>
+          <RotateCcw size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+          <span>Hard Reload Page</span>
         </button>
 
         <button
@@ -155,25 +148,19 @@ export const BrowserOverflowMenu = ({
         <button
           type="button"
           onPointerDown={(e) => handleAction(onOpenSettings, e)}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+          className="w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
         >
-          <div className="flex items-center gap-2.5">
-            <Settings size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
-            <span>Preferences...</span>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500">⌘,</span>
+          <Settings size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+          <span>Preferences...</span>
         </button>
 
         <button
           type="button"
           onPointerDown={(e) => handleAction(onOpenShortcuts, e)}
-          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+          className="w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
         >
-          <div className="flex items-center gap-2.5">
-            <Keyboard size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
-            <span>Keyboard Shortcuts</span>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500">⌘/</span>
+          <Keyboard size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+          <span>Keyboard Shortcuts</span>
         </button>
 
         <button
