@@ -959,7 +959,12 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
           anchorRect={utilitiesPopoverRect}
           onClose={() => setUtilitiesPopoverRect(null)}
           onOpenFlows={(rect) => {
-            handleOpenFlowsPopoverAction(rect || utilitiesPopoverRect, true);
+            if (isFlowRecording) {
+              handleStopRecordingFlow();
+            } else {
+              handleStartRecordingFlow();
+            }
+            handleOpenFlowsPopoverAction(rect || utilitiesPopoverRect || { top: 48, right: 120, width: 30, height: 30 }, true);
           }}
           onOpenExternal={handleOpenExternal}
           onOpenSendToSheets={(rect) => {
