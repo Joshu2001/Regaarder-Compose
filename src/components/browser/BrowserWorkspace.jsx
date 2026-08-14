@@ -273,9 +273,10 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
 
   useEffect(() => {
     const handleMainWindowPointerDown = (e) => {
-      // Guard: bail if the event originated inside any open popover surface or a toolbar button.
+      // Guard: bail if the event originated inside any open popover surface, side panel, or interactive button.
       if (e.target?.closest?.('button')) return;
       if (e.target?.closest?.('[data-popover]')) return;
+      if (e.target?.closest?.('[data-side-panel]')) return;
       if (isElectron && window.electronAPI?.closePopover) {
         window.electronAPI.closePopover();
       }
@@ -285,7 +286,6 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
       setFlowsPopoverRect(null);
       setSendToSheetsPopoverRect(null);
       setSendToComposePopoverRect(null);
-      setIsSidePanelOpen(false);
     };
 
     window.addEventListener('pointerdown', handleMainWindowPointerDown);
@@ -772,7 +772,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
 
         {/* Regaarder AI Assistant Side Panel (Explicit Click Toggle Only) */}
         {isSidePanelOpen && (
-          <div className="absolute right-0 top-0 bottom-0 z-40 w-[380px] max-w-[90vw] h-full shadow-2xl border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-in slide-in-from-right duration-200">
+          <div data-side-panel="true" data-popover="true" className="absolute right-0 top-0 bottom-0 z-40 w-[380px] max-w-[90vw] h-full shadow-2xl border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-in slide-in-from-right duration-200">
             <BrowserResearchPanel
               activeTab={activeTab}
               onClose={() => setIsSidePanelOpen(false)}

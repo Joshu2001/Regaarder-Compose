@@ -112,9 +112,9 @@ export const FlowExecutionModal = ({
         className="w-full max-w-xl bg-[#161822]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden text-slate-100 flex flex-col font-sans"
       >
         {/* Header (No X exit button per Apple HIG modal directive) */}
-        <div className="flex items-center justify-between px-5 py-4 bg-white/[0.03] border-b border-white/[0.08]">
+        <div className="flex items-center justify-between px-5 py-4 bg-white/[0.03] border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/15 ring-1 ring-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
               <BrowserFlowIcon size={20} />
             </div>
             <div>
@@ -219,7 +219,7 @@ export const FlowExecutionModal = ({
               </div>
 
               {/* Data Preview */}
-              <div className="overflow-x-auto border border-white/[0.08] rounded-xl bg-white/[0.02] p-2 max-h-40 regaarder-scrollbar">
+              <div className="overflow-auto border border-white/[0.08] rounded-xl bg-white/[0.02] p-2 max-h-40 thin-scrollbar regaarder-scrollbar">
                 <table className="w-full text-left text-[11px] border-collapse font-sans">
                   <thead>
                     <tr className="border-b border-white/[0.08] text-slate-400">
