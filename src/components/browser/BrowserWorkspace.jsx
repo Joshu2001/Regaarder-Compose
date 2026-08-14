@@ -959,6 +959,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
           anchorRect={utilitiesPopoverRect}
           onClose={() => setUtilitiesPopoverRect(null)}
           onOpenFlows={(rect) => {
+            setShowFlowLibraryModal(true);
             handleOpenFlowsPopoverAction(rect || utilitiesPopoverRect || { top: 48, right: 60 }, true);
           }}
           onOpenExternal={handleOpenExternal}
@@ -1017,7 +1018,8 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
             setOverflowMenuRect(null);
           }}
           onOpenFlows={(rect) => {
-            handleOpenFlowsPopoverAction(rect || overflowMenuRect, true);
+            setShowFlowLibraryModal(true);
+            handleOpenFlowsPopoverAction(rect || overflowMenuRect || { top: 48, right: 60 }, true);
           }}
           onOpenAppearance={(rect) => {
             handleOpenFontPopoverAction(rect || overflowMenuRect, true);
