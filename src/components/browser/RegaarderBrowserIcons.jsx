@@ -11,7 +11,7 @@ import React from 'react';
  */
 
 // 1. HOME: Simplified geometric house with architectural doorway frame & Regaarder focal node
-export const BrowserHomeIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserHomeIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -34,7 +34,7 @@ export const BrowserHomeIcon = ({ size = 18, className = '', strokeWidth = 1.75,
 );
 
 // 2. REFRESH / RELOAD: Clean, balanced 300-degree circular arrow with precision arrowhead
-export const BrowserReloadIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserReloadIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -55,7 +55,7 @@ export const BrowserReloadIcon = ({ size = 18, className = '', strokeWidth = 1.7
 );
 
 // 3. BACK: Standardized left directional chevron arrow
-export const BrowserBackIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserBackIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -73,7 +73,7 @@ export const BrowserBackIcon = ({ size = 18, className = '', strokeWidth = 1.75,
 );
 
 // 4. FORWARD: Standardized right directional chevron arrow
-export const BrowserForwardIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserForwardIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -91,7 +91,7 @@ export const BrowserForwardIcon = ({ size = 18, className = '', strokeWidth = 1.
 );
 
 // 5. NEW TAB / PLUS: Precision "+" metaphor with rounded caps and balanced geometry
-export const BrowserPlusIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserPlusIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -110,7 +110,7 @@ export const BrowserPlusIcon = ({ size = 18, className = '', strokeWidth = 1.75,
 );
 
 // 6. LOCK / SECURE: Clean geometric padlock with rounded shackle
-export const BrowserLockIcon = ({ size = 16, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserLockIcon = ({ size = 15, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -130,7 +130,7 @@ export const BrowserLockIcon = ({ size = 16, className = '', strokeWidth = 1.75,
 );
 
 // 7. INSECURE: Shield outline with warning focal node
-export const BrowserInsecureIcon = ({ size = 16, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserInsecureIcon = ({ size = 15, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -150,7 +150,7 @@ export const BrowserInsecureIcon = ({ size = 16, className = '', strokeWidth = 1
 );
 
 // 8. EXTERNAL LINK: Precision diagonal arrow + container frame
-export const BrowserExternalIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserExternalIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -170,9 +170,7 @@ export const BrowserExternalIcon = ({ size = 18, className = '', strokeWidth = 1
 );
 
 // 9. BOOKMARK: Geometric ribbon node
-// `filled` prop sets fill="currentColor" directly on the SVG path, avoiding
-// reliance on Tailwind fill-* CSS class cascade which is JIT-scanner-fragile.
-export const BrowserBookmarkIcon = ({ size = 18, className = '', strokeWidth = 1.75, filled = false, ...props }) => (
+export const BrowserBookmarkIcon = ({ size = 16, className = '', strokeWidth = 1.5, filled = false, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -190,7 +188,7 @@ export const BrowserBookmarkIcon = ({ size = 18, className = '', strokeWidth = 1
 );
 
 // 10. CLOSE / DISMISS: Precision 'x' icon
-export const BrowserCloseIcon = ({ size = 16, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserCloseIcon = ({ size = 14, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -209,7 +207,7 @@ export const BrowserCloseIcon = ({ size = 16, className = '', strokeWidth = 1.75
 );
 
 // 11. SEARCH OMNIBOX: Geometric magnifying glass with crisp handle angle
-export const BrowserSearchIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserSearchIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -228,7 +226,7 @@ export const BrowserSearchIcon = ({ size = 18, className = '', strokeWidth = 1.7
 );
 
 // 12. SEARCH WEB ACTION: Standardized web globe with latitude & longitude curves
-export const BrowserSearchWebIcon = ({ size = 20, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserSearchWebIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -242,15 +240,13 @@ export const BrowserSearchWebIcon = ({ size = 20, className = '', strokeWidth = 
     {...props}
   >
     <circle cx="12" cy="12" r="8.5" />
-    {/* Latitude equator line */}
     <line x1="3.5" y1="12" x2="20.5" y2="12" />
-    {/* Longitude oval: proper ellipse replacing the former zero-height arc path */}
     <ellipse cx="12" cy="12" rx="4" ry="8.5" />
   </svg>
 );
 
 // 13. RESEARCH COMPETITORS ACTION: Metric matrix & competitive chart glyph
-export const BrowserCompetitorsIcon = ({ size = 20, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserCompetitorsIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -272,7 +268,7 @@ export const BrowserCompetitorsIcon = ({ size = 20, className = '', strokeWidth 
 );
 
 // 14. CHECKMARK: Precision check icon for confirmation & context badges
-export const BrowserCheckIcon = ({ size = 16, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserCheckIcon = ({ size = 15, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -289,8 +285,8 @@ export const BrowserCheckIcon = ({ size = 16, className = '', strokeWidth = 1.75
   </svg>
 );
 
-// 15. FLOW / WORKFLOW: Regaarder custom glyph: 3 connected nodes forming a directional path (capture ○ → sequence ◇ → replay ↻)
-export const BrowserFlowIcon = ({ size = 18, mode = 'idle', className = '', strokeWidth = 1.75, ...props }) => (
+// 15. FLOW / WORKFLOW: Regaarder custom glyph
+export const BrowserFlowIcon = ({ size = 16, mode = 'idle', className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -303,23 +299,14 @@ export const BrowserFlowIcon = ({ size = 18, mode = 'idle', className = '', stro
     className={className}
     {...props}
   >
-    {/* Step 1: Capture origin node (○) */}
     <circle cx="4" cy="12" r="2.2" />
-
-    {/* Path 1: Capture → Sequence directional arrow */}
     <path d="M6.2 12h3.3" />
     <polyline points="8.2 10.5 9.7 12 8.2 13.5" />
-
-    {/* Step 2: Sequence step node diamond (◇) */}
     <polygon points="13.2 8.8 16.4 12 13.2 15.2 10 12" />
-
-    {/* Path 2: Sequence → Replay loop arrow (↻) */}
     <path d="M16.4 12h1.6a2.5 2.5 0 0 1 2.5 2.5v.5a2.5 2.5 0 0 1-2.5 2.5H16" />
     <polyline points="17.5 16 16 17.5 17.5 19" />
 
-    {/* Mode specific focal indicator */}
     {mode === 'recording' || mode === 'capture' ? (
-      // currentColor inherits from the parent button's text-rose-400 token in recording state
       <circle cx="4" cy="12" r="1.1" fill="currentColor" stroke="none" />
     ) : mode === 'run' || mode === 'replay' ? (
       <polygon points="12.2 10.6 14.2 12 12.2 13.4" fill="currentColor" stroke="none" />
@@ -329,8 +316,8 @@ export const BrowserFlowIcon = ({ size = 18, mode = 'idle', className = '', stro
   </svg>
 );
 
-// 16. RECORDING: Active flow recording indicator (recording dot + spark node)
-export const BrowserRecordIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+// 16. RECORDING: Active flow recording indicator
+export const BrowserRecordIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -349,7 +336,7 @@ export const BrowserRecordIcon = ({ size = 18, className = '', strokeWidth = 1.7
 );
 
 // 17. ELLIPSIS / MORE OPTIONS: Precision horizontal 3-dot menu icon
-export const BrowserEllipsisIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserEllipsisIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -368,8 +355,8 @@ export const BrowserEllipsisIcon = ({ size = 18, className = '', strokeWidth = 1
   </svg>
 );
 
-// 18. UTILITIES / TOOLS: Custom minimal Regaarder toolbox glyph (browser utilities & actions)
-export const BrowserUtilitiesIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+// 18. UTILITIES / TOOLS: Custom minimal Regaarder toolbox glyph
+export const BrowserUtilitiesIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -382,19 +369,15 @@ export const BrowserUtilitiesIcon = ({ size = 18, className = '', strokeWidth = 
     className={className}
     {...props}
   >
-    {/* Architectural toolbox main body */}
     <rect x="3" y="7" width="18" height="13" rx="2" />
-    {/* Toolbox handle */}
     <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    {/* Horizontal divider line */}
     <line x1="3" y1="12" x2="21" y2="12" />
-    {/* Central latch clasp node */}
     <rect x="10.5" y="10.5" width="3" height="3" rx="0.5" fill="currentColor" stroke="none" />
   </svg>
 );
 
 // 19. PRINT: Precision printer icon
-export const BrowserPrintIcon = ({ size = 18, className = '', strokeWidth = 1.75, ...props }) => (
+export const BrowserPrintIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}

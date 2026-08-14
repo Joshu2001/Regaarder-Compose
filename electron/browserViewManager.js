@@ -38,8 +38,19 @@ function performGoForward(wc) {
 class BrowserViewManager {
   constructor(mainWindow) {
     this.mainWindow = mainWindow;
+    this.isOpeningPopover = false;
     if (this.mainWindow && typeof this.mainWindow.on === 'function') {
-      this.mainWindow.on('blur', () => this.closePopover());
+      this.mainWindow.on('blur', () => {
+        if (this.isOpeningPopover) return;
+        try {
+          const { BrowserWindow } = require('electron');
+          const focusedWin = BrowserWindow.getFocusedWindow();
+          if (focusedWin && (focusedWin === this.mainWindow || focusedWin === this.popoverWindow)) {
+            return;
+          }
+        } catch (e) {}
+        this.closePopover();
+      });
       this.mainWindow.on('hide', () => this.closePopover());
       this.mainWindow.on('minimize', () => this.closePopover());
     }
@@ -494,6 +505,53 @@ class BrowserViewManager {
 
     popoverWindow.removeMenu();
 
+    // Kill scrollbar stepper arrows using dual injection strategy:
+    // 1. insertCSS — Chromium compositor-level override (high priority)
+    // 2. executeJavaScript — Injects a <style> tag directly into <head> before first paint
+    // Both are needed because neither alone is guaranteed to win against the
+    // internal user-agent stylesheet on all Electron/Chromium versions.
+    const SCROLLBAR_NUKE_CSS = `
+      ::-webkit-scrollbar-button,
+      ::-webkit-scrollbar-button:single-button,
+      ::-webkit-scrollbar-button:double-button,
+      ::-webkit-scrollbar-button:single-button:vertical:decrement,
+      ::-webkit-scrollbar-button:single-button:vertical:increment,
+      ::-webkit-scrollbar-button:single-button:horizontal:decrement,
+      ::-webkit-scrollbar-button:single-button:horizontal:increment,
+      ::-webkit-scrollbar-button:start,
+      ::-webkit-scrollbar-button:end {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        max-width: 0 !important;
+        max-height: 0 !important;
+        opacity: 0 !important;
+        background: transparent !important;
+        border: none !important;
+      }
+    `;
+
+    const JS_INJECT = `
+      (function() {
+        if (document.getElementById('__rc-no-scrollbar-btns__')) return;
+        var s = document.createElement('style');
+        s.id = '__rc-no-scrollbar-btns__';
+        s.textContent = ${JSON.stringify(SCROLLBAR_NUKE_CSS)};
+        (document.head || document.documentElement).appendChild(s);
+      })();
+    `;
+
+    const injectScrollbarKill = () => {
+      try {
+        popoverWindow.webContents.insertCSS(SCROLLBAR_NUKE_CSS).catch(() => {});
+        popoverWindow.webContents.executeJavaScript(JS_INJECT).catch(() => {});
+      } catch (e) {}
+    };
+
+    popoverWindow.webContents.on('dom-ready', injectScrollbarKill);
+    popoverWindow.webContents.on('did-finish-load', injectScrollbarKill);
+    popoverWindow.webContents.on('did-navigate-in-page', injectScrollbarKill);
+
     let baseUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
     try {
       const mainUrl = this.mainWindow?.webContents?.getURL();
@@ -549,6 +607,11 @@ class BrowserViewManager {
       return;
     }
 
+    this.isOpeningPopover = true;
+    setTimeout(() => {
+      this.isOpeningPopover = false;
+    }, 250);
+
     this.popoverType = type;
     this.popoverIsVisible = true;
 
@@ -556,8 +619,8 @@ class BrowserViewManager {
     const mainBounds = this.mainWindow.getBounds();
 
     const isPanel = type === 'sidepanel' || type === 'sidebar';
-    const width = isPanel ? 380 : type === 'font' ? 340 : type === 'flows' ? 380 : type === 'overflow' ? 260 : type === 'utilities' ? 285 : 360;
-    const height = isPanel ? Math.max(400, mainBounds.height - 64) : type === 'font' ? 345 : type === 'flows' ? 390 : type === 'overflow' ? 390 : type === 'utilities' ? 430 : 380;
+    const width = isPanel ? 380 : type === 'font' ? 340 : type === 'flows' ? 380 : type === 'overflow' ? 270 : type === 'utilities' ? 285 : 360;
+    const height = isPanel ? Math.max(400, mainBounds.height - 64) : type === 'font' ? 345 : type === 'flows' ? 390 : type === 'overflow' ? 375 : type === 'utilities' ? 430 : 380;
 
     let relativeX = Math.round(bounds.left || bounds.x || 0);
     if (isPanel) {

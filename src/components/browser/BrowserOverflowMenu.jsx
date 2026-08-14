@@ -8,37 +8,16 @@ import {
   Keyboard,
   Info,
   Layers,
+  SlidersHorizontal,
   Search,
   X
 } from 'lucide-react';
 
 /**
- * Custom Regaarder Flow Icon
- * Follows executive design principles: geometric orchestration nodes connected by a smooth workflow path.
- */
-const RegaarderFlowIcon = ({ size = 15, className = "text-violet-500 shrink-0" }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.75"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <circle cx="5" cy="6" r="2.5" />
-    <circle cx="19" cy="18" r="2.5" />
-    <path d="M7.5 6h4.5a4 4 0 0 1 4 4v4a4 4 0 0 0 4 4" />
-    <circle cx="12" cy="10" r="1" fill="currentColor" />
-  </svg>
-);
-
-/**
- * BrowserOverflowMenu: Regaarder General System & Browser Options Popover
+ * BrowserOverflowMenu: Browser & System Options Popover (More Menu)
  * Triggered via the `⋯` control in the toolbar.
- * Houses general browser-level system settings, workspace management, search, and documentation.
+ * Houses general browser-level system settings, workspace management, preferences, and documentation.
+ * Strictly separates browser/system controls from Regaarder intelligence actions.
  */
 export const BrowserOverflowMenu = ({
   anchorRect,
@@ -47,7 +26,6 @@ export const BrowserOverflowMenu = ({
   onNewTab,
   onReloadHard,
   onResetWorkspace,
-  onOpenFlows,
   onOpenAppearance,
   onOpenSettings,
   onOpenShortcuts,
@@ -81,6 +59,9 @@ export const BrowserOverflowMenu = ({
     e?.stopPropagation();
     if (!callback) return;
     callback(anchorRect);
+    requestAnimationFrame(() => {
+      onClose?.();
+    });
   };
 
   const matchesSearch = (text) => {
@@ -89,8 +70,8 @@ export const BrowserOverflowMenu = ({
   };
 
   const hasSection1 = matchesSearch('New Tab') || matchesSearch('Hard Reload Page') || matchesSearch('Reset Tabs Workspace');
-  const hasSection2 = matchesSearch('Regaarder Flows') || matchesSearch('Display & Theme Controls');
-  const hasSection3 = matchesSearch('Preferences') || matchesSearch('Keyboard Shortcuts') || matchesSearch('Help & Documentation') || matchesSearch('About Regaarder Research');
+  const hasSection2 = matchesSearch('Display & Theme Controls') || matchesSearch('Preferences');
+  const hasSection3 = matchesSearch('Keyboard Shortcuts') || matchesSearch('Help & Documentation') || matchesSearch('About Regaarder Research');
 
   const menuContent = (
     <div
@@ -101,19 +82,19 @@ export const BrowserOverflowMenu = ({
       style={isStandalone ? {} : { top: `${top}px`, right: `${Math.max(12, right)}px` }}
       className={`${
         isStandalone
-          ? 'relative z-[100000] w-full max-w-sm border border-slate-200 dark:border-zinc-800 shadow-xl p-1.5 max-h-[420px] overflow-y-auto thin-scrollbar'
-          : 'fixed z-[100000] w-64 border border-slate-200 dark:border-zinc-800 shadow-xl p-1.5 max-h-[420px] overflow-y-auto thin-scrollbar animate-in zoom-in-95 fade-in duration-100'
-      } bg-white dark:bg-[#1c1c1e] rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 flex flex-col`}
+          ? 'relative z-[100000] w-full max-w-sm border border-slate-200/80 dark:border-zinc-800/80 shadow-2xl p-2 max-h-[365px] overflow-y-auto thin-scrollbar'
+          : 'fixed z-[100000] w-64 border border-slate-200/80 dark:border-zinc-800/80 backdrop-blur-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] p-2 max-h-[365px] overflow-y-auto thin-scrollbar animate-in zoom-in-95 fade-in duration-100 flex flex-col'
+      } bg-white/95 dark:bg-[#1c1c1e]/95 rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 flex flex-col`}
     >
-      {/* Integrated Search Input Header */}
-      <div className="px-1 pt-0.5 pb-1.5 mb-1 border-b border-slate-100 dark:border-zinc-800/60">
-        <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-100/80 dark:bg-zinc-800/60 rounded-xl border border-slate-200/50 dark:border-zinc-700/50 focus-within:border-violet-500/50 transition-colors">
-          <Search size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+      {/* Integrated Search Field */}
+      <div className="px-1 pt-0.5 pb-2 mb-1 border-b border-slate-100 dark:border-zinc-800/60 shrink-0">
+        <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-100/80 dark:bg-zinc-800/70 rounded-xl border border-transparent focus-within:border-violet-500/40 transition-colors">
+          <Search size={14} className="text-slate-400 dark:text-zinc-500 shrink-0" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search commands..."
+            placeholder="Search options..."
             className="w-full bg-transparent text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
             autoFocus
           />
@@ -129,10 +110,10 @@ export const BrowserOverflowMenu = ({
         </div>
       </div>
 
-      {/* SECTION 1: WORKSPACE & NAVIGATION */}
+      {/* SECTION 1: WORKSPACE & TABS */}
       {hasSection1 && (
         <div className="px-1 py-1 space-y-0.5">
-          <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5">
+          <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5 mb-0.5">
             Workspace & Tabs
           </span>
 
@@ -140,9 +121,9 @@ export const BrowserOverflowMenu = ({
             <button
               type="button"
               onPointerDown={(e) => handleAction(onNewTab, e)}
-              className="w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
             >
-              <Plus size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+              <Plus size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />
               <span>New Tab</span>
             </button>
           )}
@@ -151,9 +132,9 @@ export const BrowserOverflowMenu = ({
             <button
               type="button"
               onPointerDown={(e) => handleAction(onReloadHard, e)}
-              className="w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
             >
-              <RotateCcw size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+              <RotateCcw size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />
               <span>Hard Reload Page</span>
             </button>
           )}
@@ -162,79 +143,60 @@ export const BrowserOverflowMenu = ({
             <button
               type="button"
               onPointerDown={(e) => handleAction(onResetWorkspace, e)}
-              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
             >
-              <Layers size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+              <Layers size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />
               <span>Reset Tabs Workspace</span>
             </button>
           )}
         </div>
       )}
 
-      {hasSection1 && (hasSection2 || hasSection3) && (
-        <div className="h-px bg-slate-200/60 dark:bg-zinc-800/80 my-1" />
-      )}
-
-      {/* SECTION 2: BROWSER TOOLS & AUTOMATION */}
+      {/* SECTION 2: PREFERENCES & DISPLAY */}
       {hasSection2 && (
-        <div className="px-1 py-1 space-y-0.5">
-          <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5">
-            Tools & Automation
+        <div className="px-1 py-1 space-y-0.5 mt-1">
+          <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5 mb-0.5">
+            Preferences & Display
           </span>
-
-          {matchesSearch('Regaarder Flows') && (
-            <button
-              type="button"
-              onPointerDown={(e) => handleAction(onOpenFlows, e)}
-              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-            >
-              <RegaarderFlowIcon size={15} className="text-violet-500 shrink-0" />
-              <span>Regaarder Flows</span>
-            </button>
-          )}
 
           {matchesSearch('Display & Theme Controls') && (
             <button
               type="button"
               onPointerDown={(e) => handleAction(onOpenAppearance, e)}
-              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
             >
-              <Settings size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+              <Settings size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />
               <span>Display & Theme Controls</span>
             </button>
           )}
-        </div>
-      )}
-
-      {hasSection2 && hasSection3 && (
-        <div className="h-px bg-slate-200/60 dark:bg-zinc-800/80 my-1" />
-      )}
-
-      {/* SECTION 3: SYSTEM PREFERENCES & HELP */}
-      {hasSection3 && (
-        <div className="px-1 py-1 space-y-0.5">
-          <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5">
-            System & Preferences
-          </span>
 
           {matchesSearch('Preferences') && (
             <button
               type="button"
               onPointerDown={(e) => handleAction(onOpenSettings, e)}
-              className="w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
             >
-              <Settings size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+              <SlidersHorizontal size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />
               <span>Preferences...</span>
             </button>
           )}
+        </div>
+      )}
+
+      {/* SECTION 3: SYSTEM & HELP */}
+      {hasSection3 && (
+        <div className="px-1 py-1 space-y-0.5 mt-1">
+          <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5 mb-0.5">
+            System & Help
+          </span>
 
           {matchesSearch('Keyboard Shortcuts') && (
             <button
               type="button"
               onPointerDown={(e) => handleAction(onOpenShortcuts, e)}
-              className="w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-start gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
             >
-              <Keyboard size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+              <Keyboard size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />
               <span>Keyboard Shortcuts</span>
             </button>
           )}
@@ -243,9 +205,9 @@ export const BrowserOverflowMenu = ({
             <button
               type="button"
               onPointerDown={(e) => handleAction(onOpenHelp, e)}
-              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
             >
-              <HelpCircle size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+              <HelpCircle size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />
               <span>Help & Documentation</span>
             </button>
           )}
@@ -254,9 +216,9 @@ export const BrowserOverflowMenu = ({
             <button
               type="button"
               onPointerDown={(e) => handleAction(onAbout, e)}
-              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
             >
-              <Info size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+              <Info size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />
               <span>About Regaarder Research</span>
             </button>
           )}

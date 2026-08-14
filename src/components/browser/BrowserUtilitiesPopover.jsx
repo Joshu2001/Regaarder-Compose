@@ -1,39 +1,47 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  SlidersHorizontal,
   Search,
-  History,
-  Download,
   ExternalLink,
-  Bookmark,
   Printer,
-  Plus,
   X
 } from 'lucide-react';
-import { SheetIcon, ComposeIcon, WhiteboardIcon, MemoryIcon } from '../RegaarderProductIcons';
+import {
+  BrowserFlowIcon,
+  BrowserCompetitorsIcon,
+  BrowserCloseIcon,
+  BrowserSearchIcon
+} from './RegaarderBrowserIcons';
+import {
+  SheetIcon,
+  ComposeIcon,
+  WhiteboardIcon,
+  MemoryIcon,
+  AssistIcon,
+  AgentsIcon
+} from '../RegaarderProductIcons';
 
 /**
- * BrowserUtilitiesPopover: Regaarder Dedicated Browser Utilities & Tools Popover
- * Houses search & filter, tab management, export/ingestion, page tools, and display appearance settings.
+ * Regaarder Commands Popover:
+ * Houses Regaarder intelligence, automation, and contextual actions.
+ * Grouped into: Workspace & Regaarder, Export & Ingestion, Contextual Actions.
+ * Menu icons neutral by default, purple for Regaarder capabilities, red for destructive.
  */
 export const BrowserUtilitiesPopover = ({
   anchorRect,
   isStandalone = false,
   onClose,
-  onOpenFontPopover,
+  onOpenFlows,
   onOpenExternal,
   onOpenSendToSheets,
   onOpenSendToCompose,
   onSendWhiteboard,
   onSaveMemory,
   onFindInPage,
-  onNewTab,
   onCloseTab,
-  onOpenHistory,
-  onOpenDownloads,
-  onOpenBookmarks,
-  onPrintPage
+  onPrintPage,
+  onSummarizePage,
+  onOpenCompetitorWorkflow
 }) => {
   const popoverRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -57,14 +65,13 @@ export const BrowserUtilitiesPopover = ({
 
   if (!anchorRect && !isStandalone) return null;
 
-  // Estimated utilities popover height for bottom-clamp calculation.
-  const POPOVER_HEIGHT_ESTIMATE = 420;
+  const POPOVER_HEIGHT_ESTIMATE = 380;
   const spaceBelow = anchorRect ? window.innerHeight - (anchorRect.bottom + 6) : 999;
   const top = anchorRect
     ? spaceBelow >= POPOVER_HEIGHT_ESTIMATE
-      ? Math.max(86, anchorRect.bottom + 6)
+      ? Math.max(46, anchorRect.bottom + 6)
       : Math.max(8, anchorRect.top - POPOVER_HEIGHT_ESTIMATE - 6)
-    : 86;
+    : 46;
   const right = anchorRect ? Math.max(16, window.innerWidth - anchorRect.right) : 16;
 
   const handleAction = (callback, e) => {
@@ -77,137 +84,126 @@ export const BrowserUtilitiesPopover = ({
     });
   };
 
-  // Comprehensive utility items registry with tags/keywords
-  const allUtilities = useMemo(() => [
+  // Commands registry (Regaarder intelligence & contextual actions only)
+  const allCommands = useMemo(() => [
     {
-      id: 'new-tab',
-      title: 'New Research Tab',
-      shortcut: '⌘T',
-      category: 'Tabs & Navigation',
-      keywords: ['tab', 'new tab', 'add tab', 'open tab', 'create tab', 'tabs'],
-      icon: <Plus size={15} className="text-violet-500 shrink-0" />,
-      action: onNewTab
+      id: 'regaarder-flows',
+      title: 'Regaarder Flows',
+      category: 'Workspace & Regaarder',
+      keywords: ['flow', 'automation', 'record', 'replay', 'sequence'],
+      icon: <BrowserFlowIcon size={16} className="text-violet-500 shrink-0" />,
+      action: onOpenFlows
     },
     {
-      id: 'close-tab',
-      title: 'Close Active Tab',
-      shortcut: '⌘W',
-      category: 'Tabs & Navigation',
-      keywords: ['tab', 'close tab', 'remove tab', 'delete tab', 'tabs'],
-      icon: <X size={15} className="text-rose-500 shrink-0" />,
-      action: onCloseTab
+      id: 'save-memory',
+      title: 'Save to Regaarder Memory',
+      category: 'Workspace & Regaarder',
+      keywords: ['memory', 'knowledge', 'save', 'ai', 'remember'],
+      icon: <MemoryIcon size={16} className="text-violet-500 shrink-0" />,
+      action: onSaveMemory
     },
     {
-      id: 'history',
-      title: 'Saved Tabs & History',
-      shortcut: '⌘H',
-      category: 'Tabs & Navigation',
-      keywords: ['tab', 'saved tabs', 'history', 'recent tabs', 'tabs', 'saved'],
-      icon: <History size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
-      action: onOpenHistory
+      id: 'summarize-page',
+      title: 'Summarize Page with AI',
+      category: 'Workspace & Regaarder',
+      keywords: ['summarize', 'ai', 'assistant', 'explain', 'page'],
+      icon: <AssistIcon size={16} className="text-violet-500 shrink-0" />,
+      action: onSummarizePage
     },
     {
       id: 'send-sheets',
       title: 'Send to Sheets',
       category: 'Export & Ingestion',
-      keywords: ['sheet', 'sheets', 'export', 'table', 'excel', 'csv', 'data', 'tab'],
-      icon: <SheetIcon size={15} className="text-emerald-500 shrink-0" />,
+      keywords: ['sheet', 'sheets', 'export', 'table', 'excel', 'data'],
+      icon: <SheetIcon size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
       action: onOpenSendToSheets
     },
     {
       id: 'send-compose',
       title: 'Send to Compose',
       category: 'Export & Ingestion',
-      keywords: ['compose', 'doc', 'document', 'export', 'text', 'notes'],
-      icon: <ComposeIcon size={15} className="text-sky-500 shrink-0" />,
+      keywords: ['compose', 'doc', 'document', 'export', 'text'],
+      icon: <ComposeIcon size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
       action: onOpenSendToCompose
     },
     {
       id: 'send-whiteboard',
       title: 'Send to Whiteboard',
       category: 'Export & Ingestion',
-      keywords: ['whiteboard', 'canvas', 'clip', 'draw', 'export', 'image'],
-      icon: <WhiteboardIcon size={15} className="text-amber-500 shrink-0" />,
+      keywords: ['whiteboard', 'canvas', 'clip', 'draw', 'image'],
+      icon: <WhiteboardIcon size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
       action: onSendWhiteboard
-    },
-    {
-      id: 'save-memory',
-      title: 'Save to Regaarder Memory',
-      category: 'Export & Ingestion',
-      keywords: ['memory', 'knowledge', 'save', 'ai', 'remember', 'node'],
-      icon: <MemoryIcon size={15} className="text-violet-500 shrink-0" />,
-      action: onSaveMemory
     },
     {
       id: 'find-page',
       title: 'Find in Page',
       shortcut: '⌘F',
-      category: 'Page & Browser Tools',
+      category: 'Contextual Actions',
       keywords: ['find', 'search', 'page', 'text', 'filter'],
-      icon: <Search size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
+      icon: <Search size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
       action: onFindInPage
     },
     {
-      id: 'bookmarks',
-      title: 'Bookmarks Manager',
-      shortcut: '⌘B',
-      category: 'Page & Browser Tools',
-      keywords: ['bookmark', 'bookmarks', 'favorite', 'saved', 'tab', 'tabs'],
-      icon: <Bookmark size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
-      action: onOpenBookmarks
-    },
-    {
-      id: 'downloads',
-      title: 'Downloads',
-      shortcut: '⌘J',
-      category: 'Page & Browser Tools',
-      keywords: ['download', 'downloads', 'files', 'saved'],
-      icon: <Download size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
-      action: onOpenDownloads
+      id: 'competitor-research',
+      title: 'Research Competitors Workflow',
+      category: 'Contextual Actions',
+      keywords: ['competitor', 'research', 'matrix', 'comparison'],
+      icon: <BrowserCompetitorsIcon size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
+      action: onOpenCompetitorWorkflow
     },
     {
       id: 'external-browser',
       title: 'Open in External Browser',
-      category: 'Page & Browser Tools',
-      keywords: ['external', 'chrome', 'browser', 'open', 'system', 'tab'],
-      icon: <ExternalLink size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
+      category: 'Contextual Actions',
+      keywords: ['external', 'chrome', 'browser', 'open', 'system'],
+      icon: <ExternalLink size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
       action: onOpenExternal
     },
     {
       id: 'print',
       title: 'Print Page...',
       shortcut: '⌘P',
-      category: 'Page & Browser Tools',
-      keywords: ['print', 'pdf', 'page', 'export', 'paper'],
-      icon: <Printer size={15} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
+      category: 'Contextual Actions',
+      keywords: ['print', 'pdf', 'page', 'paper'],
+      icon: <Printer size={16} className="text-slate-500 dark:text-zinc-400 shrink-0" />,
       action: onPrintPage
+    },
+    {
+      id: 'close-tab',
+      title: 'Close Active Tab',
+      shortcut: '⌘W',
+      category: 'Contextual Actions',
+      keywords: ['tab', 'close tab', 'remove tab'],
+      icon: <X size={16} className="text-rose-500 shrink-0" />,
+      isDestructive: true,
+      action: onCloseTab
     }
-  ], [onNewTab, onCloseTab, onOpenHistory, onOpenFontPopover, onOpenSendToSheets, onOpenSendToCompose, onSendWhiteboard, onSaveMemory, onFindInPage, onOpenBookmarks, onOpenDownloads, onOpenExternal, onPrintPage]);
+  ], [onOpenFlows, onSaveMemory, onSummarizePage, onOpenSendToSheets, onOpenSendToCompose, onSendWhiteboard, onFindInPage, onOpenCompetitorWorkflow, onOpenExternal, onPrintPage, onCloseTab]);
 
-  // Filter utilities based on search query
-  const filteredUtilities = useMemo(() => {
+  // Filter commands based on search query
+  const filteredCommands = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return allUtilities;
-    return allUtilities.filter((u) => {
+    if (!q) return allCommands;
+    return allCommands.filter((u) => {
       return (
         u.title.toLowerCase().includes(q) ||
         u.category.toLowerCase().includes(q) ||
         u.keywords.some((k) => k.toLowerCase().includes(q))
       );
     });
-  }, [allUtilities, searchQuery]);
+  }, [allCommands, searchQuery]);
 
   // Group items by category
-  const groupedUtilities = useMemo(() => {
+  const groupedCommands = useMemo(() => {
     const groups = {};
-    filteredUtilities.forEach((item) => {
+    filteredCommands.forEach((item) => {
       if (!groups[item.category]) {
         groups[item.category] = [];
       }
       groups[item.category].push(item);
     });
     return groups;
-  }, [filteredUtilities]);
+  }, [filteredCommands]);
 
   const content = (
     <div
@@ -218,21 +214,21 @@ export const BrowserUtilitiesPopover = ({
       style={isStandalone ? {} : { top: `${top}px`, right: `${Math.max(12, right)}px` }}
       className={`${
         isStandalone
-          ? 'relative z-[100000] w-full max-w-sm border border-slate-200/70 dark:border-zinc-800/80 shadow-2xl p-1.5'
-          : 'fixed z-[100000] w-[275px] max-h-[460px] border border-slate-200/70 dark:border-zinc-800/80 backdrop-blur-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] p-1.5 animate-in fade-in zoom-in-95 duration-150 flex flex-col'
-      } bg-white/90 dark:bg-[#1c1c1e]/90 rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden`}
+          ? 'relative z-[100000] w-full max-w-sm border border-slate-200/80 dark:border-zinc-800/80 shadow-2xl p-2'
+          : 'fixed z-[100000] w-[280px] max-h-[440px] border border-slate-200/80 dark:border-zinc-800/80 backdrop-blur-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12),0_2px_6px_rgba(0,0,0,0.04)] p-2 animate-in fade-in zoom-in-95 duration-150 flex flex-col'
+      } bg-white/95 dark:bg-[#1c1c1e]/95 rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden`}
     >
-      {/* Quick Utility Search / Filter Field */}
-      <div className="px-1 pt-1 pb-1.5 border-b border-slate-100 dark:border-zinc-800/80 shrink-0">
+      {/* Quick Commands Search Field */}
+      <div className="px-1 pt-0.5 pb-2 border-b border-slate-100 dark:border-zinc-800/60 shrink-0">
         <div className="relative flex items-center">
-          <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+          <Search size={14} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
           <input
             ref={searchInputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search utilities... (e.g. tab, sheets, print)"
-            className="w-full pl-8 pr-6 py-1.5 rounded-xl bg-slate-100/80 dark:bg-zinc-800/80 text-xs font-sans text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 outline-none border border-transparent focus:border-violet-500/40 transition-all"
+            placeholder="Search commands..."
+            className="w-full pl-8 pr-6 py-1.5 rounded-xl bg-slate-100/80 dark:bg-zinc-800/70 text-xs font-sans text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 outline-none border border-transparent focus:border-violet-500/40 transition-all"
           />
           {searchQuery && (
             <button
@@ -249,29 +245,28 @@ export const BrowserUtilitiesPopover = ({
         </div>
       </div>
 
-      {/* Utility Items Scroll Container */}
-      <div className="flex-1 overflow-y-auto thin-scrollbar pt-1 space-y-1.5">
-        {Object.keys(groupedUtilities).length === 0 ? (
+      {/* Commands Scroll Container */}
+      <div className="flex-1 overflow-y-auto thin-scrollbar pt-1.5 space-y-2">
+        {Object.keys(groupedCommands).length === 0 ? (
           <div className="p-4 text-center text-xs text-slate-400 dark:text-zinc-500">
-            No utilities matching &quot;{searchQuery}&quot;
+            No commands matching &quot;{searchQuery}&quot;
           </div>
         ) : (
-          Object.entries(groupedUtilities).map(([category, items], idx) => (
+          Object.entries(groupedCommands).map(([category, items], idx) => (
             <div key={category} className="px-1">
-              {idx > 0 && <div className="h-px bg-slate-200/60 dark:bg-zinc-800/80 my-1" />}
-              <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5">
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block px-2.5 py-0.5 mb-0.5">
                 {category}
               </span>
-              <div className="space-y-0.5 mt-0.5">
+              <div className="space-y-0.5">
                 {items.map((item) => (
                   <button
                     key={item.id}
                     type="button"
                     onPointerDown={(e) => handleAction(item.action, e)}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-colors cursor-pointer group ${
-                      item.isFeatured
-                        ? 'font-semibold text-slate-900 dark:text-zinc-50 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-300'
-                        : 'font-medium text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80'
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer group ${
+                      item.isDestructive
+                        ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+                        : 'text-slate-800 dark:text-zinc-200 hover:bg-slate-100/90 dark:hover:bg-zinc-800/80'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">

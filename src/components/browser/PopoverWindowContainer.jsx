@@ -114,7 +114,34 @@ export const PopoverWindowContainer = () => {
   };
 
   return (
-    <div className="w-screen h-screen min-h-screen bg-transparent text-slate-100 overflow-hidden flex items-start justify-center p-2 m-0 font-sans">
+    <div className="w-screen h-screen bg-transparent text-slate-100 overflow-hidden flex items-start justify-center p-1 m-0 font-sans">
+      <style>{`
+        ::-webkit-scrollbar-button,
+        *::-webkit-scrollbar-button,
+        ::-webkit-scrollbar-button:single-button,
+        ::-webkit-scrollbar-button:double-button,
+        ::-webkit-scrollbar-button:vertical,
+        ::-webkit-scrollbar-button:horizontal,
+        ::-webkit-scrollbar-button:vertical:decrement,
+        ::-webkit-scrollbar-button:vertical:increment,
+        ::-webkit-scrollbar-button:horizontal:decrement,
+        ::-webkit-scrollbar-button:horizontal:increment,
+        ::-webkit-scrollbar-button:start,
+        ::-webkit-scrollbar-button:end,
+        ::-webkit-scrollbar-button:start:decrement,
+        ::-webkit-scrollbar-button:end:increment {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+          max-width: 0 !important;
+          max-height: 0 !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+          background: transparent !important;
+          border: none !important;
+        }
+      `}</style>
       <div className="w-full h-full flex flex-col items-center justify-start bg-transparent">
         {popoverType === 'font' && (
           <BrowserFontPopover
@@ -174,9 +201,9 @@ export const PopoverWindowContainer = () => {
           <BrowserUtilitiesPopover
             isStandalone={true}
             onClose={handleClose}
-            onOpenFontPopover={() => {
-              setPopoverType('font');
-              window.electronAPI?.openPopover?.({ type: 'font', force: true });
+            onOpenFlows={() => {
+              setPopoverType('flows');
+              window.electronAPI?.openPopover?.({ type: 'flows', force: true });
             }}
             onOpenExternal={() => {
               window.electronAPI?.sendPopoverAction?.('openExternal');
@@ -198,28 +225,20 @@ export const PopoverWindowContainer = () => {
               window.electronAPI?.sendPopoverAction?.('saveMemory');
               handleClose();
             }}
+            onSummarizePage={() => {
+              setPopoverType('sidepanel');
+              window.electronAPI?.openPopover?.({ type: 'sidepanel', force: true });
+            }}
+            onOpenCompetitorWorkflow={() => {
+              window.electronAPI?.sendPopoverAction?.('openCompetitors');
+              handleClose();
+            }}
             onFindInPage={() => {
               window.electronAPI?.sendPopoverAction?.('findInPage');
               handleClose();
             }}
-            onNewTab={() => {
-              window.electronAPI?.sendPopoverAction?.('newTab');
-              handleClose();
-            }}
             onCloseTab={() => {
               window.electronAPI?.sendPopoverAction?.('closeTab');
-              handleClose();
-            }}
-            onOpenHistory={() => {
-              window.electronAPI?.sendPopoverAction?.('openHistory');
-              handleClose();
-            }}
-            onOpenDownloads={() => {
-              window.electronAPI?.sendPopoverAction?.('openDownloads');
-              handleClose();
-            }}
-            onOpenBookmarks={() => {
-              window.electronAPI?.sendPopoverAction?.('openBookmarks');
               handleClose();
             }}
             onPrintPage={() => {

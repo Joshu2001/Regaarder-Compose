@@ -256,6 +256,7 @@ export const BrowserToolbar = ({
           type="button"
           onPointerDown={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             onToggleBookmark();
           }}
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
@@ -268,40 +269,49 @@ export const BrowserToolbar = ({
           <BrowserBookmarkIcon size={16} filled={isBookmarked} />
         </button>
 
-        {/* Regaarder AI Button (Subtle purple tint surface in idle, rich purple when open) */}
+        {/* Regaarder AI & Commands Button (Neutral idle, subtle purple hover, rich purple open, restrained pulse when processing) */}
         <button
+          ref={utilitiesBtnRef}
           type="button"
           onPointerDown={(e) => {
             e.preventDefault();
-            onToggleSidePanel();
+            e.stopPropagation();
+            if (utilitiesBtnRef.current && onOpenUtilitiesPopover) {
+              onOpenUtilitiesPopover(utilitiesBtnRef.current.getBoundingClientRect());
+            } else {
+              onToggleSidePanel?.();
+            }
           }}
-          className={`flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
-            isSidePanelOpen
+          className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-medium transition-all cursor-pointer border ${
+            isUtilitiesPopoverOpen || isSidePanelOpen
               ? 'bg-violet-600 text-white border-violet-500 shadow-xs'
-              : 'bg-violet-500/10 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 hover:bg-violet-500/20 border-violet-500/20'
+              : isLoading
+              ? 'animate-pulse bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30'
+              : 'bg-slate-200/50 dark:bg-zinc-800/50 text-slate-700 dark:text-zinc-300 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300 border-slate-300/40 dark:border-zinc-700/40 hover:border-violet-500/30'
           }`}
-          title="Toggle Regaarder Research AI Assistant"
+          title="Regaarder Commands & Intelligence"
         >
-          <AgentsIcon size={15} className={isSidePanelOpen ? 'text-white' : 'text-violet-600 dark:text-violet-400'} />
-          <span className="hidden sm:inline">Research AI</span>
+          <AgentsIcon size={15} className={isUtilitiesPopoverOpen || isSidePanelOpen ? 'text-white' : 'text-violet-600 dark:text-violet-400'} />
+          <span className="hidden sm:inline font-semibold">Commands</span>
         </button>
 
-        {/* Overflow Menu (··· Primary Escape Hatch) */}
+        {/* Overflow Menu (··· Primary Browser & System Options) */}
         <button
           ref={overflowBtnRef}
           type="button"
           onPointerDown={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             if (overflowBtnRef.current && onOpenOverflowMenu) {
               onOpenOverflowMenu(overflowBtnRef.current.getBoundingClientRect());
             }
           }}
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
             isOverflowMenuOpen
-              ? 'bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/40'
+              ? 'bg-slate-300 dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 border border-slate-400/40 dark:border-zinc-600/40'
               : 'text-slate-600 dark:text-zinc-400 hover:bg-[#CBD1DC]/60 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 border border-transparent'
           }`}
-          title="More options (Flows, Utilities, Settings)"
+          title="More options (Browser & System Settings)"
         >
           <BrowserEllipsisIcon size={16} />
         </button>

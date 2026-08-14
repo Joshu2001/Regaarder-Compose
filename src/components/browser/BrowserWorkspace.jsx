@@ -953,22 +953,19 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         />
       )}
 
-      {/* Executive Browser Utilities Popover */}
+      {/* Executive Regaarder Commands Popover */}
       {utilitiesPopoverRect && (
         <BrowserUtilitiesPopover
           anchorRect={utilitiesPopoverRect}
           onClose={() => setUtilitiesPopoverRect(null)}
-          onOpenFontPopover={(rect) => {
-            setUtilitiesPopoverRect(null);
-            handleOpenFontPopoverAction(rect || utilitiesPopoverRect, true);
+          onOpenFlows={(rect) => {
+            handleOpenFlowsPopoverAction(rect || utilitiesPopoverRect, true);
           }}
           onOpenExternal={handleOpenExternal}
           onOpenSendToSheets={(rect) => {
-            setUtilitiesPopoverRect(null);
             handleOpenSendToSheetsPopoverAction(rect || utilitiesPopoverRect, true);
           }}
           onOpenSendToCompose={(rect) => {
-            setUtilitiesPopoverRect(null);
             handleOpenSendToComposePopoverAction(rect || utilitiesPopoverRect, true);
           }}
           onSendWhiteboard={() => {
@@ -977,20 +974,14 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
           onSaveMemory={() => {
             if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Memory`);
           }}
+          onSummarizePage={handleToggleSidePanelAction}
+          onOpenCompetitorWorkflow={() => {
+            setShowCompetitorWorkflow(true);
+          }}
           onFindInPage={() => {
             if (showToast) showToast('Opened Find in Page search');
           }}
-          onNewTab={() => handleNewTab(DEFAULT_RESEARCH_URL)}
           onCloseTab={() => handleCloseTab(activeTabId)}
-          onOpenHistory={() => {
-            handleNavigate('regaarder://saved');
-          }}
-          onOpenDownloads={() => {
-            if (showToast) showToast('Opened Downloads manager');
-          }}
-          onOpenBookmarks={() => {
-            handleNavigate('regaarder://saved');
-          }}
           onPrintPage={() => {
             window.print();
           }}
