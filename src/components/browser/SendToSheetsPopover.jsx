@@ -194,11 +194,11 @@ export const SendToSheetsPopover = ({
       className={`${
         isStandalone
           ? 'relative z-[100000] w-full max-w-md border border-white/10 shadow-2xl'
-          : 'fixed z-[100000] w-[420px] border border-white/10 shadow-2xl animate-in fade-in zoom-in-95 duration-150'
+          : 'fixed z-[100000] w-[420px] max-h-[85vh] flex flex-col border border-white/10 shadow-2xl animate-in fade-in zoom-in-95 duration-150'
       } bg-[#161822]/95 backdrop-blur-2xl rounded-2xl overflow-hidden font-sans text-slate-100 select-none`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 bg-white/[0.03] border-b border-white/[0.08]">
+      <div className="flex items-center justify-between px-4 py-3.5 bg-white/[0.03] border-b border-white/[0.08] shrink-0">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
             <SheetIcon size={16} />
@@ -222,7 +222,7 @@ export const SendToSheetsPopover = ({
       </div>
 
       {/* Body Content */}
-      <div className="p-4 space-y-4 max-h-[480px] overflow-y-auto no-scrollbar">
+      <div className="p-4 space-y-4 flex-1 overflow-y-auto max-h-[calc(85vh-120px)] regaarder-scrollbar">
         {phase === 'detecting' ? (
           <div className="flex flex-col items-center justify-center py-8 text-slate-400 text-xs space-y-2">
             <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />

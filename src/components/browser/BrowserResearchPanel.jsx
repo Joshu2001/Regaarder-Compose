@@ -79,23 +79,23 @@ import {
   TasksIcon
 } from '../RegaarderProductIcons';
 
-// Proprietary Apple-style Purple Ring Orb Icon matching Image 2
-export const PurpleRingIcon = ({ size = 20, className = "" }) => (
+// Proprietary Regaarder AI Icon matching Docs Prompt Input & Floating Icon
+export const RegaarderAiIcon = ({ size = 18, className = '', style = {} }) => (
   <svg
+    xmlns="http://www.w3.org/2000/svg"
     width={size}
     height={size}
     viewBox="0 0 24 24"
     fill="none"
     className={className}
+    style={style}
   >
-    <circle
-      cx="12"
-      cy="12"
-      r="7.5"
-      stroke="#8B5CF6"
-      strokeWidth="2.8"
-      fill="none"
+    <path
+      d="M12 3.75C7.44 3.75 3.75 7.44 3.75 12C3.75 16.56 7.44 20.25 12 20.25C16.56 20.25 20.25 16.56 20.25 12C20.25 9.1 18.75 6.55 16.4 5.2C14.05 3.85 11.15 3.9 8.85 5.3C6.55 6.7 5.25 9.25 5.35 12C5.5 15.65 8.45 18.55 12.1 18.55C14.55 18.55 16.75 17.15 17.85 15"
+      stroke="currentColor"
+      strokeWidth="1.8"
       strokeLinecap="round"
+      strokeLinejoin="round"
     />
   </svg>
 );
@@ -1853,12 +1853,12 @@ Always answer helpfully, clearly, and concisely.`;
       {/* 1. COMPACT TOP HEADER */}
       <div className="flex items-center justify-between px-3.5 py-2 border-b border-white/[0.08] bg-white/[0.02] shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          {/* Executive Purple Ring Icon matching Image 2 */}
+          {/* Executive Regaarder AI Icon matching Docs Prompt Bar & Floating Icon */}
           <div
-            className="w-7 h-7 rounded-lg bg-violet-500/15 ring-1 ring-violet-500/30 flex items-center justify-center shrink-0 shadow-inner"
+            className="w-7 h-7 rounded-lg bg-violet-50/80 dark:bg-violet-950/60 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 border border-violet-200/50 dark:border-violet-800/50 shadow-2xs"
             title="Regaarder Intelligence"
           >
-            <PurpleRingIcon size={16} />
+            <RegaarderAiIcon size={16} />
           </div>
           <span
             className={`w-2 h-2 rounded-full ${
@@ -3191,14 +3191,32 @@ Always answer helpfully, clearly, and concisely.`;
                       ref={slashMenuRef}
                       className="absolute left-2 bottom-full mb-2 w-72 bg-[#181A24]/98 backdrop-blur-xl border border-white/15 rounded-xl shadow-2xl z-50 overflow-hidden text-xs divide-y divide-white/[0.06] animate-in slide-in-from-bottom-2 duration-150"
                     >
-                      <div className="px-3 py-1.5 bg-white/[0.03] flex items-center justify-between text-[10px] text-slate-400 font-medium">
-                        <span className="flex items-center gap-1 font-semibold text-slate-200">
-                          <Sparkles size={11} className="text-violet-400" />
+                      <div className="px-3 py-2 bg-white/[0.02] flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                        <span className="flex items-center gap-1.5 font-semibold text-slate-200">
+                          <AgentsIcon size={13} className="text-violet-400" />
                           <span>Slash Commands</span>
                         </span>
                         <span className="font-mono text-[9px] text-slate-500">↑↓ to navigate, ↵ to run</span>
                       </div>
-                      <div className="max-h-56 overflow-y-auto p-1 space-y-0.5 regaarder-scrollbar">
+
+                      {/* Explicit Search Bar for Slash Commands */}
+                      <div className="p-2 border-b border-white/[0.06] bg-black/30">
+                        <div className="relative flex items-center">
+                          <Search size={11} className="absolute left-2.5 text-slate-400 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={slashFilter}
+                            onChange={(e) => {
+                              setSlashFilter(e.target.value.toLowerCase());
+                              setSlashSelectedIndex(0);
+                            }}
+                            placeholder="Search commands..."
+                            className="w-full pl-7 pr-2 py-1 rounded-md bg-white/[0.04] border border-white/[0.08] text-[10.5px] text-slate-100 placeholder-slate-500 focus:outline-none focus:border-violet-500/50"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="max-h-52 overflow-y-auto p-1 space-y-0.5 regaarder-scrollbar">
                         {SLASH_COMMANDS
                           .filter((cmd) =>
                             cmd.command.toLowerCase().includes(slashFilter) ||
@@ -3218,21 +3236,21 @@ Always answer helpfully, clearly, and concisely.`;
                                 onMouseEnter={() => setSlashSelectedIndex(cIdx)}
                                 className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-all cursor-pointer ${
                                   isSelected
-                                    ? 'bg-violet-600 text-white shadow-xs'
-                                    : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
+                                    ? 'bg-violet-500/20 text-violet-200 border border-violet-500/40 shadow-xs'
+                                    : 'text-slate-300 hover:bg-white/[0.04] hover:text-white border border-transparent'
                                 }`}
                               >
-                                <div className={`p-1 rounded-md shrink-0 ${isSelected ? 'bg-white/20 text-white' : 'bg-white/[0.06] text-violet-300'}`}>
+                                <div className={`p-1 rounded-md shrink-0 ${isSelected ? 'bg-violet-500/30 text-violet-300' : 'bg-white/[0.06] text-slate-400'}`}>
                                   <IconComp size={12} />
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center justify-between gap-1">
                                     <span className="font-semibold text-[11px] truncate">{cmd.label}</span>
-                                    <span className={`font-mono text-[9px] px-1 rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-white/[0.05] text-slate-400'}`}>
+                                    <span className={`font-mono text-[9px] px-1 rounded ${isSelected ? 'bg-violet-500/30 text-violet-200' : 'bg-white/[0.05] text-slate-400'}`}>
                                       {cmd.command}
                                     </span>
                                   </div>
-                                  <p className={`text-[9.5px] truncate ${isSelected ? 'text-violet-100' : 'text-slate-400'}`}>
+                                  <p className={`text-[9.5px] truncate ${isSelected ? 'text-violet-200/80' : 'text-slate-400'}`}>
                                     {cmd.desc}
                                   </p>
                                 </div>
