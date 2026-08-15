@@ -50945,9 +50945,149 @@ if (productMode === 'deck' || productMode === 'sheets') {
               showToast(`Switched to ${labelMap[mode] || mode}`);
             }}
             onExportToCompose={(payload) => {
-              const title = payload.destinationDoc || (payload.sourceTitle ? `Research: ${payload.sourceTitle}` : 'Research Document');
-              const textContent = payload.content || payload.snippet || 'Research Summary';
-              const htmlContent = `<h1>${title}</h1><p><em>Captured from: ${payload.sourceUrl || 'Web Research'}</em></p><hr/><div class="research-content" style="line-height:1.7;">${textContent.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br/>')}</div>`;
+              const title = payload.destinationDoc || (payload.sourceTitle ? `Research: ${payload.sourceTitle}` : 'Executive Research Brief');
+              const rawText = payload.content || payload.snippet || 'Research Summary';
+              const sourceUrl = payload.sourceUrl || '';
+              
+              let cleanDomain = 'Web Source';
+              try {
+                if (sourceUrl && sourceUrl.startsWith('http')) {
+                  const u = new URL(sourceUrl);
+                  cleanDomain = u.hostname.replace(/^www\./i, '');
+                }
+              } catch (e) {}
+
+              const sourceName = payload.sourceTitle || cleanDomain;
+              const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+              // Convert markdown inline tokens (bold, italic, code, [1] citations) into styled elements
+              const formatInline = (str) => {
+                return str
+                  .replace(/`([^`]+)`/g, '<code style="background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; color: #7c3aed;">$1</code>')
+                  .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                  .replace(/\[(\d+)\]/g, '<sup style="color: #7c3aed; font-weight: bold; font-family: monospace; font-size: 0.85em; margin-left: 2px;">[$1]</sup>');
+              };
+
+              // Parse sections, numbered takeaways, and bullets into executive layout
+              const lines = rawText.split(/\r?\n/);
+              const sections = [];
+              let currentParagraph = [];
+
+              const flushPara = () => {
+                if (currentParagraph.length > 0) {
+                  const text = currentParagraph.join(' ').trim();
+                  if (text) {
+                    if (/^(okay|here are|based on|let's dive|in summary)/i.test(text)) {
+                      sections.push(`<p style="font-size: 15px; line-height: 1.7; color: #475569; margin-bottom: 18px; font-style: italic;">${formatInline(text)}</p>`);
+                    } else {
+                      sections.push(`<p style="font-size: 15px; line-height: 1.8; color: #334155; margin-bottom: 16px;">${formatInline(text)}</p>`);
+                    }
+                  }
+                  currentParagraph = [];
+                }
+              };
+
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) {
+                  flushPara();
+                  continue;
+                }
+
+                const numMatch = line.match(/^(\d+)[\.\-]\s+(.+)/);
+                if (numMatch) {
+                  flushPara();
+                  const num = numMatch[1];
+                  const rest = numMatch[2];
+                  const boldMatch = rest.match(/^\*\*([^*]+)\*\*[:\s]*(.*)/);
+
+                  if (boldMatch) {
+                    const headingTitle = boldMatch[1];
+                    const bodyText = boldMatch[2];
+                    sections.push(`
+                      <div style="margin-bottom: 18px; padding: 16px 20px; background: #fafafa; border: 1px solid #f1f5f9; border-left: 4px solid #7c3aed; border-radius: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                          <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: #7c3aed; color: #ffffff; font-size: 12px; font-weight: bold; font-family: monospace;">${num}</span>
+                          <h3 style="font-size: 16px; font-weight: 700; color: #0f172a; margin: 0;">${headingTitle}</h3>
+                        </div>
+                        ${bodyText ? `<p style="font-size: 14.5px; line-height: 1.75; color: #334155; margin: 0;">${formatInline(bodyText)}</p>` : ''}
+                      </div>
+                    `);
+                  } else {
+                    sections.push(`
+                      <div style="margin-bottom: 18px; padding: 16px 20px; background: #fafafa; border: 1px solid #f1f5f9; border-left: 4px solid #7c3aed; border-radius: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                          <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: #7c3aed; color: #ffffff; font-size: 12px; font-weight: bold; font-family: monospace;">${num}</span>
+                          <h3 style="font-size: 16px; font-weight: 700; color: #0f172a; margin: 0;">Core Point ${num}</h3>
+                        </div>
+                        <p style="font-size: 14.5px; line-height: 1.75; color: #334155; margin: 0;">${formatInline(rest)}</p>
+                      </div>
+                    `);
+                  }
+                } else if (/^[•\-\*]\s+(.+)/.test(line)) {
+                  flushPara();
+                  const bulletText = line.replace(/^[•\-\*]\s+/, '');
+                  sections.push(`
+                    <div style="margin-bottom: 10px; padding: 12px 18px; background: #f8fafc; border-left: 3px solid #94a3b8; border-radius: 8px;">
+                      <p style="font-size: 14.5px; line-height: 1.7; color: #334155; margin: 0;">${formatInline(bulletText)}</p>
+                    </div>
+                  `);
+                } else {
+                  currentParagraph.push(line);
+                }
+              }
+              flushPara();
+
+              const htmlContent = `
+                <div class="executive-doc-brief" style="font-family: inherit; color: #1e293b; max-width: 100%;">
+                  <!-- Attribution Context Pill Banner -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+                    <div style="min-width: 0; flex: 1; padding-right: 12px;">
+                      <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 2px;">
+                        Captured Source Context
+                      </div>
+                      ${sourceUrl ? `
+                        <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: #7c3aed; text-decoration: none; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 100%;">
+                          <span>🌐 ${sourceName}</span>
+                          <span style="font-size: 11px; color: #94a3b8; font-weight: normal;">(${cleanDomain})</span>
+                        </a>
+                      ` : `
+                        <span style="font-size: 12.5px; font-weight: 600; color: #334155;">${sourceName}</span>
+                      `}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; shrink: 0;">
+                      <span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 8px; background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe;">
+                        Executive Brief
+                      </span>
+                      <span style="font-size: 11px; color: #94a3b8; font-family: monospace;">
+                        ${dateStr}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Document Header Title -->
+                  <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.02em; color: #0f172a; margin-bottom: 20px; line-height: 1.3;">
+                    ${title}
+                  </h1>
+
+                  <!-- Structured Content Body -->
+                  <div class="brief-body" style="margin-top: 16px;">
+                    ${sections.join('\n')}
+                  </div>
+
+                  <!-- Footnote Sources Attribution -->
+                  <div style="margin-top: 36px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 11.5px; color: #64748b;">
+                    <div style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; color: #475569;">
+                      Verified References & Sources
+                    </div>
+                    <div style="padding: 10px 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+                      <span>[1] ${sourceName} (${cleanDomain})</span>
+                      ${sourceUrl ? `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" style="color: #7c3aed; font-weight: 600; text-decoration: none;">View Original Page ↗</a>` : ''}
+                    </div>
+                  </div>
+                </div>
+              `.trim();
               
               const newDocId = `doc_${Date.now()}`;
               const newDoc = {
