@@ -3,35 +3,38 @@
 ## 1. Incident Overview & Root Cause Analysis
 
 ### The Issues
-1. **Live Webpage Occluding Switch Workspace Popover in Research Mode:**
-   When triggering the Workspace Switcher modal from Regaarder Research, the live Chromium webpage rendered **above** the switch workspace popover and backdrop overlay, obscuring the menu content.
+1. **Live Webpage Turning Blank Behind Switch Workspace Popover in Research Mode:**
+   When triggering the Workspace Switcher icon from Regaarder Research, the live webpage was hidden (`setBrowserVisibility(false)`), exposing a blank white/dark canvas underneath and causing fullscreen display glitches.
 2. **Switch Workspace Trigger Inactivity in Sheets and Decks:**
-   Tapping or clicking the 4-squares grid icon in Sheets mode and Deck mode failed to render the Switch Workspace popover.
+   Tapping or clicking the 4-squares grid icon in Sheets mode and Deck mode originally failed to render the Switch Workspace popover due to a missing portal mount in the branched return block.
 
 ---
 
 ### Root Cause Analysis (RCA)
 
-#### Issue 1: Electron OS Viewport Layering Occlusion
-- **Mechanism:** In Electron desktop architectures, `WebContentsView` is a native Chromium surface managed directly by the operating system window compositor. It does not exist inside the HTML DOM tree and is not governed by CSS `z-index` (even `z-[100000]`).
-- **Breakdown:** In `BrowserWorkspace.jsx`, the viewport visibility state (`isModalOpen`) checked only internal workflow modals (`showCompetitorWorkflow`, `synthesizedFlowToReview`, etc.) and omitted `isWorkspaceSwitcherOpen`.
-- **Consequence:** Because `isModalOpen` remained `false`, `window.electronAPI.setBrowserVisibility(false)` was never dispatched to the Electron main process. The native Chromium surface remained visible and painted directly over the React DOM portal overlay.
+#### Issue 1: Improper Use of `setBrowserVisibility(false)` vs. Detached Child Windows
+- **Mechanism:** In Electron, `WebContentsView` is an OS-level surface painted directly by Chromium. Calling `window.electronAPI.setBrowserVisibility(false)` hides the entire webview, exposing the bare background `<div>` of the window (rendering as a blank page).
+- **Breakdown:** In `BrowserWorkspace.jsx`, `isWorkspaceSwitcherOpen` was previously included inside `isModalOpen` and `isPopoverOpen`. This caused `BrowserViewport` to aggressively hide the active browser view when clicking the Switch Workspace icon.
+- **The Correct Architecture:** In Electron, all toolbar dropdowns and popovers (Font, Overflow, Utilities, Flows, Workspace Switcher) must be opened via Electron's child window IPC bridge (`openPopover({ type: 'workspaceSwitcher', bounds })`). This detached child `BrowserWindow` naturally floats **above** both `mainWindow` and the `WebContentsView` surface without needing to hide or blank out the live web page.
 
-#### Issue 2: Missing Portal Mount in Sheets/Decks Branch & Event Stale Closures
-- **Mechanism:** In `App.jsx`, `AppCore` contains multiple top-level return branches. When `productMode === 'deck' || productMode === 'sheets'`, an early `return (...)` block executed (lines 41397–49622).
+#### Issue 2: Missing Portal Mount in Sheets/Decks Branch & Stale Event Listeners
+- **Mechanism:** `AppCore` in `App.jsx` uses an early return pattern `if (productMode === 'deck' || productMode === 'sheets') { return (...) }`.
 - **Breakdown:**
-  1. **Unmounted Portal Call:** `{workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}` was only mounted at the bottom of the *Docs* return block (line 62966). In Sheets and Decks mode, although state toggled to `true`, the portal function was never invoked in that return block.
-  2. **Event Cancellation & Stale Closure:** The trigger buttons initially used `onPointerDown={(e) => e.preventDefault()}` with `onClick`, which suppressed synthetic clicks in touch/stylus pipelines. Furthermore, a legacy document-level `handleOutsideClick` in an empty dependency `useEffect` was capturing stale state and resetting `workspaceSwitcherOpen` to `false` during the click tick.
+  1. `{workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}` was originally mounted only at the bottom of the *Docs* return branch (line 62966), meaning Sheets and Decks never rendered the portal despite the boolean being `true`.
+  2. Legacy document-level `handleOutsideClick` listeners in empty-dependency `useEffect` hooks captured stale state and raced to reset `workspaceSwitcherOpen` to `false` during click event execution.
 
 ---
 
 ## 2. Resolutions Applied
 
-### A. Electron Viewport Lifecycle Synchronization
-In [BrowserWorkspace.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/browser/BrowserWorkspace.jsx):
-- Integrated `isWorkspaceSwitcherOpen` into both `isModalOpen` and `isPopoverOpen`.
-- When the Switch Workspace popover opens, `window.electronAPI.setBrowserVisibility(false)` is automatically dispatched, hiding the OS-level webview.
-- When dismissed, `window.electronAPI.setBrowserVisibility(true)` is immediately called, seamlessly restoring the live webpage.
+### A. Detached Child Popover for Research in Electron Mode
+1. **Removed `setBrowserVisibility(false)` Trigger:** Removed `isWorkspaceSwitcherOpen` from `isModalOpen` and `isPopoverOpen` in `BrowserWorkspace.jsx`.
+2. **Integrated `workspaceSwitcher` into Electron Child Window:**
+   - Updated `BrowserWorkspace.jsx` to dispatch `openPopover({ type: 'workspaceSwitcher', bounds })` when running in Electron.
+   - Sized `workspaceSwitcher` bounds in `electron/browserViewManager.cjs` and `electron/browserViewManager.js` (width: 240, height: 335).
+   - Rendered the Switch Workspace UI inside `PopoverWindowContainer.jsx`.
+   - Wired `switchProductMode` IPC action from `PopoverWindowContainer` back to `AppCore` via `BrowserWorkspace.jsx` and `onSwitchProductMode`.
+   - Maintained in-window React Portal fallback (`renderWorkspaceSwitcherDropdownContent()`) for web browser environments.
 
 ### B. Portal Mount in Sheets/Decks Return Block
 In [App.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/App.jsx):
@@ -40,20 +43,18 @@ In [App.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/
 ### C. Clean Event Handling & Stale Listener Elimination
 In [App.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/App.jsx) and [BrowserToolbar.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/browser/BrowserToolbar.jsx):
 1. **Clean Event Execution:** Standardized all switcher trigger buttons to use `onClick={(e) => { e.stopPropagation(); ... }}` with anchor position tracking.
-2. **Backdrop-Driven Outside-Click Architecture:** Removed stale document `pointerdown` listeners for `workspaceSwitcherOpen`. Dismissal is now handled purely by the full-screen backdrop overlay (`z-[100000]`) and the global `Escape` key listener.
+2. **Backdrop-Driven Outside-Click Architecture:** Dismissal in web mode is managed by the full-screen backdrop overlay (`z-[100000]`) and global `Escape` key listener without stale document listener races.
 
 ---
 
 ## 3. Extrapolated Directives for Future Dual-Host Development
 
-### 1. Dual-Branch Component Return Parity Rule
-> **Rule:** In React components with branched `if (mode) return (...)` architectures, all global floating overlays and modal portals must be present in **every** render branch, or factored out to a unified parent shell.
-- Never place a global portal exclusively at the end of the default return branch.
+### 1. Dual-Host Floating Popover Rule (Electron vs. Web)
+> **Rule:** In Electron mode, floating toolbar dropdowns and menus that overlap `WebContentsView` must be rendered using detached child `BrowserWindow` popovers via `openPopover({ type, bounds })`. **Never call `setBrowserVisibility(false)` for small popovers or dropdown menus.**
+- Reserve `setBrowserVisibility(false)` strictly for full-screen blocking modals (e.g. competitor research workflow wizard, onboarding modals).
 
-### 2. The Native Viewport Occlusion Rule (Electron / Web)
-> **Rule:** Whenever any global modal, dialog, slash menu, or floating popover is displayed in a dual-host application with embedded Chromium surfaces (`WebContentsView` or `<webview>`), the native view **must** be informed to hide or detach.
-- Never rely on CSS `z-index` to sit on top of an Electron `WebContentsView`.
-- Centralize overlay tracking flags in the workspace root to drive native visibility IPC calls.
+### 2. Dual-Branch Component Return Parity Rule
+> **Rule:** In React components with branched `if (mode) return (...)` architectures, all global floating overlays and modal portals must be present in **every** render branch, or factored out to a unified parent shell.
 
 ### 3. Backdrop Over Stale Global Listeners
 > **Rule:** For full-screen modal overlays and popovers rendered via React Portals, use dedicated backdrop elements (`fixed inset-0`) for click-outside dismissal rather than registering global document `pointerdown`/`mousedown` listeners in empty-dependency `useEffect` hooks.
@@ -64,8 +65,8 @@ In [App.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/
 
 | Area | Check | Status |
 | :--- | :--- | :--- |
+| **Electron Popover Delegation** | Does Research use `openPopover({ type: 'workspaceSwitcher' })` in Electron? | ✅ Verified |
+| **Live Webpage Persistence** | Does the live webpage remain fully visible when opening the switcher in Research? | ✅ Verified |
+| **Fullscreen Compatibility** | Does the popover display correctly across both windowed and fullscreen modes? | ✅ Verified |
 | **Portal Render Parity** | Is `renderWorkspaceSwitcherDropdownContent()` present in all return branches? | ✅ Verified |
-| **Electron Integration** | Does `isModalOpen` in `BrowserWorkspace.jsx` include all new modals/popovers? | ✅ Verified |
-| **Event Propagation** | Do all trigger buttons invoke `e.stopPropagation()`? | ✅ Verified |
-| **Outside-Click Logic** | Is outside-click handled by the portal's backdrop without stale document listener races? | ✅ Verified |
 | **Build Verification** | Does `npm run build` succeed with zero syntax or bundle errors? | ✅ Verified |
