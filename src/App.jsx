@@ -12664,10 +12664,9 @@ function AppCore() {
                     type="button"
                     onClick={() => {
                       setWorkspaceSwitcherOpen(false);
-                      requestAnimationFrame(() => {
-                        setProductMode(item.mode);
-                        showToast(`Switched to ${item.label}`);
-                      });
+                      setWorkspaceSwitcherAnchorRect(null);
+                      setProductMode(item.mode);
+                      showToast(`Switched to ${item.label}`);
                     }}
                     onPointerDown={(e) => e.preventDefault()}
                     className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-left select-none transition-all duration-150 w-full cursor-pointer ${

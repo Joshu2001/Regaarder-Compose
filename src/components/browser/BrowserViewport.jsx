@@ -57,16 +57,11 @@ export const BrowserViewport = ({
       }
     };
 
-    let timer = null;
     if (isResearchHome || isModalOpen || isPopoverOpen || isWorkspaceSwitcherOpen) {
       window.electronAPI.setBrowserVisibility(false);
     } else {
-      // Grace-period reveal (60ms) ensures React DOM overlays, popovers and animations have fully cleared the compositor buffer
-      timer = setTimeout(() => {
-        if (!containerRef.current || !window.electronAPI) return;
-        updateBounds();
-        window.electronAPI.setBrowserVisibility(true);
-      }, 60);
+      updateBounds();
+      window.electronAPI.setBrowserVisibility(true);
     }
 
     const resizeObserver = new ResizeObserver(() => {
@@ -82,7 +77,6 @@ export const BrowserViewport = ({
     window.addEventListener('resize', updateBounds);
 
     return () => {
-      if (timer) clearTimeout(timer);
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateBounds);
       if (isElectron && window.electronAPI?.setBrowserVisibility) {
