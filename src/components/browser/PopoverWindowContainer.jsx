@@ -419,6 +419,11 @@ export const PopoverWindowContainer = () => {
                 return null;
               }}
               onOpenSendToCompose={() => setPopoverType('sendToCompose')}
+              onDirectExportToCompose={(payload) => {
+                if (window.electronAPI?.sendPopoverAction) {
+                  window.electronAPI.sendPopoverAction('sendToCompose', payload);
+                }
+              }}
               onOpenSendToSheets={() => setPopoverType('sendToSheets')}
               onSaveToMemory={() => {}}
               onSendToWhiteboard={() => {}}

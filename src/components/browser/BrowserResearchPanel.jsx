@@ -147,6 +147,7 @@ export const BrowserResearchPanel = ({
   onExecuteElementAction,
   onCaptureScreenshot,
   onOpenSendToCompose,
+  onDirectExportToCompose,
   onOpenSendToSheets,
   onSaveToMemory,
   onSendToWhiteboard,
@@ -1134,14 +1135,18 @@ Always answer helpfully, clearly, and concisely.`;
     } else if (toolType === 'compose') {
       const exportText = contextText || chatMessages[msgIdx]?.text || (summary?.overview ? `Summary of ${activeTab?.title || 'Research'}:\n\n${summary.overview}` : 'Research Brief Document');
       const docTitle = `Research Brief: ${activeTab?.title ? activeTab.title.slice(0, 45) : 'Web Document'}`;
-      if (onDirectExportToCompose) {
-        onDirectExportToCompose({
-          destinationDoc: docTitle,
-          content: exportText,
-          snippet: exportText,
-          sourceUrl: activeTab?.url,
-          sourceTitle: activeTab?.title
-        });
+      const payload = {
+        destinationDoc: docTitle,
+        content: exportText,
+        snippet: exportText,
+        sourceUrl: activeTab?.url,
+        sourceTitle: activeTab?.title
+      };
+
+      if (typeof onDirectExportToCompose === 'function') {
+        onDirectExportToCompose(payload);
+      } else if (window.electronAPI?.sendPopoverAction) {
+        window.electronAPI.sendPopoverAction('sendToCompose', payload);
       } else if (onOpenSendToCompose) {
         onOpenSendToCompose({ bottom: 60, right: 300, content: exportText });
       }
