@@ -50924,6 +50924,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
               if (rect) setWorkspaceSwitcherAnchorRect(rect);
               setWorkspaceSwitcherOpen((prev) => !prev);
             }}
+            onSwitchProductMode={(mode) => {
+              setProductMode(mode);
+              const labelMap = { compose: 'Docs', sheets: 'Sheets', deck: 'Decks', room: 'Room', browser: 'Research' };
+              showToast(`Switched to ${labelMap[mode] || mode}`);
+            }}
             isWorkspaceSwitcherOpen={workspaceSwitcherOpen}
           />
         </div>

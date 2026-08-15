@@ -23,7 +23,7 @@ const BROWSER_FONT_SIZE_STORAGE_KEY = 'regaarder_browser_font_size_v1';
 const SIDE_PANEL_STORAGE_KEY = 'regaarder_side_panel_open_v1';
 const DEFAULT_RESEARCH_URL = 'regaarder://research';
 
-export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsDarkMode, isRightSideHovered = false, onOpenWorkspaceSwitcher, isWorkspaceSwitcherOpen }) => {
+export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsDarkMode, isRightSideHovered = false, onOpenWorkspaceSwitcher, isWorkspaceSwitcherOpen, onSwitchProductMode }) => {
   const isElectron = Boolean(window.electronAPI?.isElectron);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(() => {
     try {
@@ -281,6 +281,20 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     });
   }, [isElectron]);
 
+  const handleOpenWorkspaceSwitcherAction = useCallback((rect, forceOpen = false) => {
+    setFontPopoverRect(null);
+    setOverflowMenuRect(null);
+    setUtilitiesPopoverRect(null);
+    setFlowsPopoverRect(null);
+    setSendToSheetsPopoverRect(null);
+    setSendToComposePopoverRect(null);
+    if (isElectron && window.electronAPI?.openPopover) {
+      window.electronAPI.openPopover({ type: 'workspaceSwitcher', bounds: serializeRect(rect), force: forceOpen });
+    } else {
+      onOpenWorkspaceSwitcher?.(rect);
+    }
+  }, [isElectron, onOpenWorkspaceSwitcher]);
+
   useEffect(() => {
     const handleMainWindowPointerDown = (e) => {
       // Guard: bail if the event originated inside any open popover surface, side panel, or interactive button.
@@ -367,7 +381,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
   useEffect(() => {
     if (!isElectron || !window.electronAPI?.onPopoverAction) return;
 
-    const unsubscribe = window.electronAPI.onPopoverAction(({ action }) => {
+    const unsubscribe = window.electronAPI.onPopoverAction(({ action, payload }) => {
       if (action === 'newTab') {
         handleNewTab(DEFAULT_RESEARCH_URL);
       } else if (action === 'reloadHard') {
@@ -385,6 +399,13 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         }]);
         setActiveTabId('tab-1');
         if (showToast) showToast('Reset browser tabs workspace');
+      } else if (action === 'switchProductMode') {
+        const targetMode = payload?.mode || payload;
+        if (onSwitchProductMode) {
+          onSwitchProductMode(targetMode);
+        } else if (setProductMode) {
+          setProductMode(targetMode);
+        }
       } else if (action === 'openShortcuts') {
         if (showToast) showToast('Opened Keyboard Shortcuts guide');
       } else if (action === 'openHelp') {
@@ -413,7 +434,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
-  }, [isElectron, activeTab, activeTabId, showToast]);
+  }, [isElectron, activeTab, activeTabId, showToast, onSwitchProductMode, setProductMode]);
 
   // Persist tabs
   useEffect(() => {
@@ -743,8 +764,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     showCompetitorWorkflow ||
     synthesizedFlowToReview ||
     showFlowLibraryModal ||
-    activeExecutingFlow ||
-    isWorkspaceSwitcherOpen
+    activeExecutingFlow
   );
 
   const isPopoverOpen = !isElectron && Boolean(
@@ -753,8 +773,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     utilitiesPopoverRect ||
     flowsPopoverRect ||
     sendToSheetsPopoverRect ||
-    sendToComposePopoverRect ||
-    isWorkspaceSwitcherOpen
+    sendToComposePopoverRect
   );
 
   return (
@@ -805,7 +824,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         onOpenFlowsPopover={handleOpenFlowsPopoverAction}
         onOpenUtilitiesPopover={handleOpenUtilitiesPopoverAction}
         onOpenOverflowMenu={handleOpenOverflowMenuAction}
-        onOpenWorkspaceSwitcher={onOpenWorkspaceSwitcher}
+        onOpenWorkspaceSwitcher={handleOpenWorkspaceSwitcherAction}
         onSaveMemoryChip={() => {
           if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Memory`);
         }}

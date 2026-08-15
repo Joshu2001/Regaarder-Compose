@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { FileText, Table, Presentation, Video, Compass } from 'lucide-react';
 import BrowserFlowsPopover from './flows/BrowserFlowsPopover';
 import SendToSheetsPopover from './SendToSheetsPopover';
 import SendToComposePopover from './SendToComposePopover';
@@ -310,6 +311,58 @@ export const PopoverWindowContainer = () => {
             onClose={handleClose}
             onExecuteExport={handleClose}
           />
+        )}
+
+        {popoverType === 'workspaceSwitcher' && (
+          <div className="w-[220px] rounded-[22px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-3xl shadow-2xl p-2 font-sans overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex flex-col gap-1">
+              {[
+                { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: FileText },
+                { mode: 'sheets', label: 'Sheets', desc: 'Grid & Data Analysis', icon: Table },
+                { mode: 'deck', label: 'Decks', desc: 'Slide & Presentation', icon: Presentation },
+                { mode: 'room', label: 'Room', desc: 'Team Video & Meetings', icon: Video },
+                { mode: 'browser', label: 'Research', desc: 'AI Knowledge Browser', icon: Compass }
+              ].map((item) => {
+                const IconComponent = item.icon;
+                const isCurrent = item.mode === 'browser';
+                return (
+                  <button
+                    key={item.mode}
+                    type="button"
+                    onClick={() => {
+                      window.electronAPI?.sendPopoverAction?.('switchProductMode', { mode: item.mode });
+                      handleClose();
+                    }}
+                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-left select-none transition-all duration-150 w-full cursor-pointer ${
+                      isCurrent
+                        ? 'bg-[#7C5ACF]/[0.08] dark:bg-[#7C5ACF]/[0.16] shadow-xs'
+                        : 'bg-transparent text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-zinc-100 font-medium'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                      isCurrent 
+                        ? 'bg-[#7C5ACF]/[0.14] dark:bg-[#7C5ACF]/[0.22] text-[#7C5ACF] dark:text-[#8B6FD1]' 
+                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 group-hover:text-slate-800 dark:group-hover:text-zinc-200'
+                    }`}>
+                      <IconComponent size={18} strokeWidth={isCurrent ? 2 : 1.8} />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className={`text-[13.5px] leading-tight whitespace-nowrap ${
+                        isCurrent
+                          ? 'text-slate-900 dark:text-zinc-100 font-semibold'
+                          : 'text-slate-700 dark:text-zinc-300 font-medium group-hover:text-slate-900 dark:group-hover:text-zinc-100'
+                      }`}>
+                        {item.label}
+                      </span>
+                      <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal truncate mt-0.5">
+                        {item.desc}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {(popoverType === 'sidepanel' || popoverType === 'sidebar') && (

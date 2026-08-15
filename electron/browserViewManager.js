@@ -619,8 +619,8 @@ class BrowserViewManager {
     const mainBounds = this.mainWindow.getBounds();
 
     const isPanel = type === 'sidepanel' || type === 'sidebar';
-    const width = isPanel ? 380 : type === 'font' ? 340 : type === 'flows' ? 380 : type === 'overflow' ? 270 : type === 'utilities' ? 285 : 360;
-    const height = isPanel ? Math.max(400, mainBounds.height - 64) : type === 'font' ? 345 : type === 'flows' ? 390 : type === 'overflow' ? 375 : type === 'utilities' ? 430 : 380;
+    const width = isPanel ? 380 : type === 'font' ? 340 : type === 'flows' ? 380 : type === 'overflow' ? 270 : type === 'utilities' ? 285 : type === 'workspaceSwitcher' ? 240 : 360;
+    const height = isPanel ? Math.max(400, mainBounds.height - 64) : type === 'font' ? 345 : type === 'flows' ? 390 : type === 'overflow' ? 375 : type === 'utilities' ? 430 : type === 'workspaceSwitcher' ? 335 : 380;
 
     let relativeX = Math.round(bounds.left || bounds.x || 0);
     if (isPanel) {
