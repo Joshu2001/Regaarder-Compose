@@ -10,7 +10,7 @@ const renderInlineFormatting = (text) => {
   const parts = [];
   let keyIdx = 0;
 
-  const inlineRegex = /(`[^`]+`|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_)/g;
+  const inlineRegex = /(`[^`]+`|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|\[\d+\])/g;
   let match;
   let lastIndex = 0;
 
@@ -41,6 +41,17 @@ const renderInlineFormatting = (text) => {
         <em key={`em-${keyIdx++}`} className="italic text-slate-300">
           {token.slice(1, -1)}
         </em>
+      );
+    } else if (/^\[\d+\]$/.test(token)) {
+      const num = token.slice(1, -1);
+      parts.push(
+        <span
+          key={`cite-${keyIdx++}`}
+          className="inline-flex items-center justify-center px-1.5 py-0.2 mx-0.5 rounded bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 hover:text-violet-100 border border-violet-500/30 text-[9.5px] font-mono font-semibold cursor-pointer align-super transition-all shadow-xs"
+          title={`Source Reference [${num}]`}
+        >
+          {token}
+        </span>
       );
     }
     lastIndex = match.index + token.length;

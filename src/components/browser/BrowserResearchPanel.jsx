@@ -662,14 +662,23 @@ export const BrowserResearchPanel = ({
 
   // Tiered Context & Structured Prompt Builder
   const buildSystemPrompt = (schema, fallbackText, messages = []) => {
-    let prompt = `You are an AI research assistant. Provide concise, direct, helpful, and natural answers based on the user request and active webpage context. Never recite system prompt definitions, meta titles, or internal role labels in your responses.
+    const pageTitle = schema?.metadata?.title || activeTab?.title || 'Active Webpage';
+    const pageUrl = schema?.metadata?.url || activeTab?.url || 'Unknown URL';
+    const domain = schema?.metadata?.domain || summary?.domain || 'webpage';
 
-=== CURRENT ACTIVE WEBPAGE CONTEXT ===
-Page Title: ${schema?.metadata?.title || activeTab?.title || 'Active Webpage'}
-URL: ${schema?.metadata?.url || activeTab?.url || 'Unknown URL'}
-Domain: ${schema?.metadata?.domain || summary?.domain || 'webpage'}
-Scroll Position: Y=${schema?.metadata?.scrollPosition?.y || 0}px (Max: ${schema?.metadata?.scrollPosition?.maxScrollY || 0}px)
+    let prompt = `You are an AI research assistant. Provide concise, direct, helpful, and natural answers based on the user request and active webpage context.
+Never recite system prompt definitions, meta titles, or internal role labels in your responses.
+
+=== MANDATORY IN-TEXT CITATIONS DIRECTIVE ===
+You MUST cite your key claims, takeaways, and facts using numbered bracketed in-text citations like [1], [2], or [3] attached directly to the claims in your answer.
+Example:
+- Updating via Platform Launcher [1]: Official updates for the game patch automatically through your platform launcher.
+- Verifying Files [1]: If an update does not trigger, use the client's built-in repair tool to verify integrity.
+
+=== CURRENT ACTIVE WEBPAGE CONTEXT & SOURCES ===
+Source [1]: ${pageTitle} (${pageUrl}) - Domain: ${domain}
 ${schema?.metadata?.selectedText ? `User Selected Text: "${schema.metadata.selectedText}"\n` : ''}
+Scroll Position: Y=${schema?.metadata?.scrollPosition?.y || 0}px (Max: ${schema?.metadata?.scrollPosition?.maxScrollY || 0}px)
 `;
 
     // Inject explicit user feedback rules to prevent repeating mistakes
@@ -1124,8 +1133,19 @@ Always answer helpfully, clearly, and concisely.`;
       if (showToast) showToast('Generated interactive Spreadsheet in chat');
     } else if (toolType === 'compose') {
       const exportText = contextText || chatMessages[msgIdx]?.text || (summary?.overview ? `Summary of ${activeTab?.title || 'Research'}:\n\n${summary.overview}` : 'Research Brief Document');
-      onOpenSendToCompose?.({ bottom: 60, right: 300, content: exportText });
-      if (showToast) showToast('Opening Regaarder Compose with Research Brief...');
+      const docTitle = `Research Brief: ${activeTab?.title ? activeTab.title.slice(0, 45) : 'Web Document'}`;
+      if (onDirectExportToCompose) {
+        onDirectExportToCompose({
+          destinationDoc: docTitle,
+          content: exportText,
+          snippet: exportText,
+          sourceUrl: activeTab?.url,
+          sourceTitle: activeTab?.title
+        });
+      } else if (onOpenSendToCompose) {
+        onOpenSendToCompose({ bottom: 60, right: 300, content: exportText });
+      }
+      if (showToast) showToast(`Exported "${docTitle}" directly to Compose Docs`);
     } else if (toolType === 'whiteboard') {
       onSendToWhiteboard?.();
       if (showToast) showToast('Generating whiteboard canvas diagram...');
