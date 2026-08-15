@@ -14131,6 +14131,13 @@ function AppCore() {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
+  // Ensure Electron WebContentsView is hidden whenever navigating away from browser mode
+  useEffect(() => {
+    if (productMode !== 'browser' && window.electronAPI?.setBrowserVisibility) {
+      window.electronAPI.setBrowserVisibility(false);
+    }
+  }, [productMode]);
+
   // Auto-login on load
   useEffect(() => {
     const token = localStorage.getItem('rc.token');

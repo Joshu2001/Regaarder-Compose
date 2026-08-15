@@ -281,20 +281,6 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     });
   }, [isElectron]);
 
-  const handleOpenWorkspaceSwitcherAction = useCallback((rect, forceOpen = false) => {
-    setFontPopoverRect(null);
-    setOverflowMenuRect(null);
-    setUtilitiesPopoverRect(null);
-    setFlowsPopoverRect(null);
-    setSendToSheetsPopoverRect(null);
-    setSendToComposePopoverRect(null);
-    if (isElectron && window.electronAPI?.openPopover) {
-      window.electronAPI.openPopover({ type: 'workspaceSwitcher', bounds: serializeRect(rect), force: forceOpen });
-    } else {
-      onOpenWorkspaceSwitcher?.(rect);
-    }
-  }, [isElectron, onOpenWorkspaceSwitcher]);
-
   useEffect(() => {
     const handleMainWindowPointerDown = (e) => {
       // Guard: bail if the event originated inside any open popover surface, side panel, or interactive button.
@@ -824,7 +810,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         onOpenFlowsPopover={handleOpenFlowsPopoverAction}
         onOpenUtilitiesPopover={handleOpenUtilitiesPopoverAction}
         onOpenOverflowMenu={handleOpenOverflowMenuAction}
-        onOpenWorkspaceSwitcher={handleOpenWorkspaceSwitcherAction}
+        onOpenWorkspaceSwitcher={onOpenWorkspaceSwitcher}
         onSaveMemoryChip={() => {
           if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Memory`);
         }}
@@ -847,6 +833,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
             isRightSideHovered={false}
             isModalOpen={isModalOpen}
             isPopoverOpen={isPopoverOpen}
+            isWorkspaceSwitcherOpen={isWorkspaceSwitcherOpen}
             browserFont={browserFont}
             browserFontSize={browserFontSize}
             onNavigate={handleNavigate}
