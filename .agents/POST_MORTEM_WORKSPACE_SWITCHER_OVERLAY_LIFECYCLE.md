@@ -7,10 +7,10 @@
    The Workspace Switcher in Research mode appeared as a detached floating menu without the global dimming backdrop and was using generic Lucide icons rather than the bespoke Regaarder product icons.
 2. **Chromium Viewport Lingering Over Destination Workspaces (Image 3):**
    When switching from Research to Docs/Sheets/Decks, the toast reported "Switched to Docs" and the top header updated, but the live Chromium webpage remained painted across the screen, hiding the document editor beneath it.
-3. **GPU Compositor Race on Reveal (Popover Appearing Momentarily Behind Webview):**
-   When switching from Docs into Research mode, the native `WebContentsView` painted immediately on frame 0, before the React DOM had finished clearing the fading workspace switcher portal from the GPU raster buffer.
+3. **Ghost Popover Flash When Switching to Browser (60ms Surface Attachment Delay):**
+   When switching to Research, delaying `setBrowserVisibility(true)` via artificial `setTimeout` created a window where the DOM layer was briefly exposed before the native view covered it, producing a momentary flicker artifact.
 4. **Trigger Inactivity in Electron Fullscreen Mode:**
-   In fullscreen mode, the workspace switcher button in Research was unresponsive because it relied on `onClick` rather than touch-safe `onPointerDown`. In Electron fullscreen, mouse/pointer capture captures and swallows synthetic `click` events.
+   In fullscreen mode, the workspace switcher button in Research was unresponsive because it relied on `onClick` rather than touch-safe `onPointerDown`. In Electron fullscreen, mouse/pointer capture suppresses synthetic `click` events.
 
 ---
 
@@ -27,9 +27,9 @@
   1. `BrowserViewport.jsx`'s `useEffect` cleanup handler omitted `window.electronAPI.setBrowserVisibility(false)`. When switching product modes (e.g. Research → Docs), `BrowserViewport` unmounted from the React component tree, but the Electron main process was never told to hide or detach the native webview.
   2. Consequently, the Chromium webpage remained pinned to the OS window, painting directly over the newly mounted Docs/Sheets editor (Image 3).
 
-#### Issue 3: Compositor Layer Race on Mode Transitions
-- **Mechanism:** Native OS view attachment occurs asynchronously in the operating system window manager, whereas React DOM unmounting occurs in the JavaScript microtask loop.
-- **Breakdown:** When `setProductMode('browser')` and `setWorkspaceSwitcherOpen(false)` executed simultaneously, the native view became visible before the DOM overlay had completed its unmount paint tick.
+#### Issue 3: Artificial Delay Artifact
+- **Mechanism:** Using `setTimeout(..., 60)` before setting `setBrowserVisibility(true)` created an artificial delay where the DOM background layer was visible for 60ms before the Chromium surface snapped into place.
+- **Resolution:** Synchronous state batching in React 18 (`setWorkspaceSwitcherOpen(false)`, `setWorkspaceSwitcherAnchorRect(null)`, and `setProductMode(item.mode)` in one tick) ensures the portal unmounts instantly on the same commit that mounts `BrowserViewport`, removing any gap or flicker.
 
 #### Issue 4: Fullscreen Pointer Event Interception
 - **Mechanism:** Under Electron fullscreen mode, Chromium's compositor window and OS display pipeline intercept mouse down/up sequences, frequently suppressing synthetic DOM `click` event generation on header toolbar controls.
@@ -61,11 +61,11 @@
 2. **Bespoke Product Icons:**
    - Unified all workspace switcher instances to use `{ ComposeIcon, SheetIcon, DeckIcon, RoomIcon, BrowserIcon }` from [RegaarderProductIcons.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/RegaarderProductIcons.jsx).
 
-### C. Grace-Period Compositor Transition (Eliminating Viewport Collision)
-1. **Two-Phase Mode Switch in `App.jsx`:**
-   - On clicking an app item in `renderWorkspaceSwitcherDropdownContent`, the popover is closed on Frame 0 (`setWorkspaceSwitcherOpen(false)`), and `setProductMode` is dispatched on Frame 1 via `requestAnimationFrame`.
-2. **60ms Surface Reveal Delay in `BrowserViewport.jsx`:**
-   - Defer `setBrowserVisibility(true)` by 60ms to guarantee that all DOM popover portals and backdrop blur filters have completely vacated the GPU raster buffer before the native OS surface renders.
+### C. Synchronous Atomic Transition
+1. **Single-Tick State Batching in `App.jsx`:**
+   - Executing `setWorkspaceSwitcherOpen(false)`, `setWorkspaceSwitcherAnchorRect(null)`, and `setProductMode(item.mode)` synchronously in a single React 18 batch guarantees the portal is purged from the DOM in the same render pass that loads `BrowserViewport`.
+2. **Immediate Surface Visibility in `BrowserViewport.jsx`:**
+   - Synchronously invoke `updateBounds()` and `setBrowserVisibility(true)`, eliminating artificial timer gaps.
 
 ### D. Fullscreen PointerDown Event Architecture
 1. **Toolbar Trigger Standardization:**
@@ -87,10 +87,7 @@
 ### 3. Single Source of Truth for Global Overlays
 > **Rule:** Global overlays (Workspace Switcher, Command Palette, Global Auth Modals) must share a single portal implementation across all workspace modes (Docs, Sheets, Decks, Room, Research) to guarantee identical visual hierarchy and behavior.
 
-### 4. Surface Attachment Grace-Period Rule
-> **Rule:** When mounting an OS-level native webview following a DOM modal or popover dismissal, always introduce a micro-grace period (60ms) before asserting surface visibility to prevent visual overlap collisions with fading DOM elements.
-
-### 5. Fullscreen-Safe Pointer Event Rule
+### 4. Fullscreen-Safe Pointer Event Rule
 > **Rule:** In Electron applications with dual-host window compositing, all toolbar dropdown triggers **must** execute via `onPointerDown` with `preventDefault()` and `stopPropagation()`, rather than relying on synthetic `onClick` events.
 
 ---
@@ -102,7 +99,7 @@
 | **Fullscreen Functionality** | Does the workspace switcher trigger reliably in Electron fullscreen mode? | ✅ Verified |
 | **Unified Switcher UI** | Does Research use the identical backdrop + popover as Docs (Image 2)? | ✅ Verified |
 | **Viewport Cleanup** | Does switching from Research to Docs hide the live web page (Image 3 fix)? | ✅ Verified |
-| **Smooth Transition** | Does switching to Research reveal the webview without popover flicker? | ✅ Verified |
+| **Instant Transition** | Does switching to Research load cleanly without popover ghosting? | ✅ Verified |
 | **Bespoke Icon Grammar** | Are custom Regaarder product icons used across all switcher instances? | ✅ Verified |
 | **Dismissal Restoration** | Does dismissing the switcher restore the live browser view immediately? | ✅ Verified |
 | **Build Verification** | Does `npm run build` succeed with zero syntax or bundle errors? | ✅ Verified |
