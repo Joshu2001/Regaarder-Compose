@@ -662,8 +662,7 @@ export const BrowserResearchPanel = ({
 
   // Tiered Context & Structured Prompt Builder
   const buildSystemPrompt = (schema, fallbackText, messages = []) => {
-    let prompt = `You are the Regaarder Executive Browser Assistant & Browser Operating System Agent.
-You have direct real-time programmatic access to the active webpage that the user is currently viewing.
+    let prompt = `You are an AI research assistant. Provide concise, direct, helpful, and natural answers based on the user request and active webpage context. Never recite system prompt definitions, meta titles, or internal role labels in your responses.
 
 === CURRENT ACTIVE WEBPAGE CONTEXT ===
 Page Title: ${schema?.metadata?.title || activeTab?.title || 'Active Webpage'}
@@ -2203,7 +2202,7 @@ Always answer helpfully, clearly, and concisely.`;
                       <div className="relative max-w-[92%] flex flex-col min-w-0">
                         {/* Main Message Bubble */}
                         <div
-                          className={`px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed transition-all shadow-sm min-w-0 overflow-hidden break-words break-all [overflow-wrap:anywhere] ${
+                          className={`px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed transition-all shadow-sm min-w-0 overflow-hidden break-words [overflow-wrap:anywhere] ${
                             msg.sender === 'user'
                               ? 'bg-gradient-to-tr from-violet-700 to-violet-600 text-white select-text self-end'
                               : 'bg-white/[0.04] text-slate-100 border border-white/[0.08] backdrop-blur-md select-text self-start w-full'

@@ -414,6 +414,10 @@ export const BrowserWorkspace = ({
         } else if (setProductMode) {
           setProductMode(targetMode);
         }
+      } else if (action === 'sendToCompose') {
+        handleExecuteSendToCompose(payload || {});
+      } else if (action === 'sendToSheets') {
+        handleExecuteSendToSheets(payload || {});
       } else if (action === 'openShortcuts') {
         if (showToast) showToast('Opened Keyboard Shortcuts guide');
       } else if (action === 'openHelp') {

@@ -306,16 +306,28 @@ export const PopoverWindowContainer = () => {
         {popoverType === 'sendToSheets' && (
           <SendToSheetsPopover
             isStandalone={true}
+            activeTab={activeTab}
             onClose={handleClose}
-            onExecuteExport={handleClose}
+            onExecuteExport={(payload) => {
+              if (window.electronAPI?.sendPopoverAction) {
+                window.electronAPI.sendPopoverAction('sendToSheets', payload);
+              }
+              handleClose();
+            }}
           />
         )}
 
         {popoverType === 'sendToCompose' && (
           <SendToComposePopover
             isStandalone={true}
+            activeTab={activeTab}
             onClose={handleClose}
-            onExecuteExport={handleClose}
+            onExecuteExport={(payload) => {
+              if (window.electronAPI?.sendPopoverAction) {
+                window.electronAPI.sendPopoverAction('sendToCompose', payload);
+              }
+              handleClose();
+            }}
           />
         )}
 
