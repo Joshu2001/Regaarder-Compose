@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { FileText, Table, Presentation, Video, Compass } from 'lucide-react';
+import {
+  ComposeIcon,
+  SheetIcon,
+  DeckIcon,
+  RoomIcon,
+  BrowserIcon
+} from '../RegaarderProductIcons';
 import BrowserFlowsPopover from './flows/BrowserFlowsPopover';
 import SendToSheetsPopover from './SendToSheetsPopover';
 import SendToComposePopover from './SendToComposePopover';
@@ -314,14 +320,14 @@ export const PopoverWindowContainer = () => {
         )}
 
         {popoverType === 'workspaceSwitcher' && (
-          <div className="w-[220px] rounded-[22px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-3xl shadow-2xl p-2 font-sans overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="w-[220px] rounded-[22px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/85 dark:bg-[#1c1c1e]/85 backdrop-blur-3xl shadow-2xl p-2 font-sans overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="flex flex-col gap-1">
               {[
-                { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: FileText },
-                { mode: 'sheets', label: 'Sheets', desc: 'Grid & Data Analysis', icon: Table },
-                { mode: 'deck', label: 'Decks', desc: 'Slide & Presentation', icon: Presentation },
-                { mode: 'room', label: 'Room', desc: 'Team Video & Meetings', icon: Video },
-                { mode: 'browser', label: 'Research', desc: 'AI Knowledge Browser', icon: Compass }
+                { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: ComposeIcon },
+                { mode: 'sheets', label: 'Sheets', desc: 'Grid & Data Analysis', icon: SheetIcon },
+                { mode: 'deck', label: 'Decks', desc: 'Slide & Presentation', icon: DeckIcon },
+                { mode: 'room', label: 'Room', desc: 'Team Video & Meetings', icon: RoomIcon },
+                { mode: 'browser', label: 'Research', desc: 'AI Knowledge Browser', icon: BrowserIcon }
               ].map((item) => {
                 const IconComponent = item.icon;
                 const isCurrent = item.mode === 'browser';
