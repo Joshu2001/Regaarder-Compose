@@ -324,7 +324,8 @@ export const BrowserToolbar = ({
           ref={workspaceSwitcherBtnRef}
           type="button"
           data-workspace-switcher="true"
-          onClick={(e) => {
+          onPointerDown={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             const rect = workspaceSwitcherBtnRef.current?.getBoundingClientRect();
             onOpenWorkspaceSwitcher?.(rect);

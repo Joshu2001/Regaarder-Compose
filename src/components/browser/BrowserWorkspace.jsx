@@ -286,6 +286,7 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
       // Guard: bail if the event originated inside any open popover surface, side panel, or interactive button.
       if (e.target?.closest?.('button')) return;
       if (e.target?.closest?.('[data-popover]')) return;
+      if (e.target?.closest?.('[data-workspace-switcher]')) return;
       if (e.target?.closest?.('[data-side-panel]')) return;
       if (isElectron && window.electronAPI?.closePopover) {
         window.electronAPI.closePopover();
