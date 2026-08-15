@@ -339,6 +339,25 @@ export const BrowserToolbar = ({
         >
           <LayoutGrid size={16} />
         </button>
+
+        {/* Apple-Tier Regaarder AI Assistant Button (Top-Right Nav) */}
+        <button
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleSidePanel?.();
+          }}
+          className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+            isSidePanelOpen
+              ? 'bg-violet-600/15 text-violet-700 dark:text-violet-300 border-violet-500/50 shadow-xs ring-1 ring-violet-500/30'
+              : 'bg-white/70 dark:bg-zinc-800/70 text-slate-700 dark:text-zinc-200 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300 border-slate-300/70 dark:border-zinc-700/70 hover:border-violet-500/40'
+          }`}
+          title={isSidePanelOpen ? "Close AI Assistant" : "Open AI Assistant (Automate web tasks & scan history)"}
+        >
+          <AssistIcon size={14} className="text-violet-600 dark:text-violet-400" />
+          <span className="tracking-tight font-semibold">Assistant</span>
+        </button>
       </div>
     </div>
   );
