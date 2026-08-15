@@ -27,8 +27,20 @@ import {
   ShieldAlert,
   Wand2,
   Eye,
-  Compass
+  Compass,
+  Copy,
+  Trash2,
+  Edit3,
+  Square,
+  RotateCcw,
+  VolumeX,
+  Bookmark,
+  FileText,
+  Table,
+  Layout,
+  MessageSquarePlus
 } from 'lucide-react';
+import BrowserMarkdownRenderer from './BrowserMarkdownRenderer';
 import {
   BrowserCloseIcon,
   BrowserReloadIcon,
@@ -136,11 +148,40 @@ export const BrowserResearchPanel = ({
 
   // Chat & Stream States
   const [chatMessages, setChatMessages] = useState([]);
+  const [tabSessions, setTabSessions] = useState({});
   const [inputQuery, setInputQuery] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedTextContext, setSelectedTextContext] = useState('');
   const [summary, setSummary] = useState(null);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [copiedMessageIdx, setCopiedMessageIdx] = useState(null);
+  const [speakingMessageIdx, setSpeakingMessageIdx] = useState(null);
+  const prevTabKeyRef = useRef(null);
+
+  const currentTabKey = activeTab?.id || activeTab?.url || 'default_tab';
+
+  // Synchronize chat messages with active tab session to prevent context bleed
+  useEffect(() => {
+    if (!currentTabKey) return;
+
+    if (prevTabKeyRef.current && prevTabKeyRef.current !== currentTabKey) {
+      const prevKey = prevTabKeyRef.current;
+      setTabSessions((prev) => ({
+        ...prev,
+        [prevKey]: chatMessages
+      }));
+
+      // Load session for new tab
+      const nextMessages = tabSessions[currentTabKey] || [];
+      setChatMessages(nextMessages);
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        setSpeakingMessageIdx(null);
+      }
+    }
+    prevTabKeyRef.current = currentTabKey;
+  }, [currentTabKey]);
 
   // Agentic Action States
   const [activeTask, setActiveTask] = useState(null);
@@ -663,6 +704,89 @@ Always answer helpfully, clearly, and concisely.`;
     };
   }, [activeTab?.id, activeTab?.url]);
 
+  // Message & Session Management Actions
+  const handleStartNewChat = () => {
+    setChatMessages([]);
+    setTabSessions((prev) => ({
+      ...prev,
+      [currentTabKey]: []
+    }));
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setSpeakingMessageIdx(null);
+    }
+    if (showToast) showToast('Started new conversation for this page');
+  };
+
+  const handleToggleTTS = (text, idx) => {
+    if (!('speechSynthesis' in window)) {
+      if (showToast) showToast('Text-to-speech not supported');
+      return;
+    }
+    if (speakingMessageIdx === idx) {
+      window.speechSynthesis.cancel();
+      setSpeakingMessageIdx(null);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const cleanText = (text || '')
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/[\*\#\`\_•\-]/g, ' ')
+      .trim();
+    if (!cleanText) return;
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 1.0;
+    utterance.onend = () => setSpeakingMessageIdx(null);
+    utterance.onerror = () => setSpeakingMessageIdx(null);
+    setSpeakingMessageIdx(idx);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleCopyMessage = (text, idx) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedMessageIdx(idx);
+    if (showToast) showToast('Copied to clipboard');
+    setTimeout(() => setCopiedMessageIdx(null), 2000);
+  };
+
+  const handleEditUserPrompt = (text, idx) => {
+    setInputQuery(text || '');
+    setChatMessages((prev) => prev.filter((_, i) => i !== idx));
+    chatInputRef.current?.focus();
+    if (showToast) showToast('Prompt loaded for editing');
+  };
+
+  const handleDeleteMessage = (idx) => {
+    if (speakingMessageIdx === idx && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setSpeakingMessageIdx(null);
+    }
+    setChatMessages((prev) => prev.filter((_, i) => i !== idx));
+    if (showToast) showToast('Message removed');
+  };
+
+  const handleRegenerateResponse = (idx) => {
+    let userPrompt = '';
+    for (let i = idx - 1; i >= 0; i--) {
+      if (chatMessages[i]?.sender === 'user') {
+        userPrompt = chatMessages[i].text;
+        break;
+      }
+    }
+    if (!userPrompt) return;
+    setChatMessages((prev) => prev.filter((_, i) => i !== idx));
+    handleSendMessage(userPrompt);
+  };
+
+  const handleStopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setIsGenerating(false);
+    if (showToast) showToast('Generation halted');
+  };
+
   // Voice Dictation Controller
   const toggleVoiceDictation = () => {
     if (isRecordingVoice) {
@@ -1143,6 +1267,18 @@ Always answer helpfully, clearly, and concisely.`;
             type="button"
             onPointerDown={(e) => {
               e.preventDefault();
+              handleStartNewChat();
+            }}
+            className="p-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-white/[0.06] transition-all cursor-pointer"
+            title="New Chat (Clear thread for active page)"
+          >
+            <MessageSquarePlus size={14} />
+          </button>
+
+          <button
+            type="button"
+            onPointerDown={(e) => {
+              e.preventDefault();
               onClose();
             }}
             className="p-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-white/[0.06] transition-all cursor-pointer"
@@ -1270,160 +1406,304 @@ Always answer helpfully, clearly, and concisely.`;
                         </div>
                       </div>
                     ) : (
-                      <div
-                        className={`max-w-[88%] px-3.5 py-2 rounded-xl text-xs leading-relaxed ${
-                          msg.sender === 'user'
-                            ? 'bg-violet-600 text-white shadow-xs'
-                            : 'bg-white/[0.05] text-slate-100 border border-white/10'
-                        }`}
-                      >
-                        {msg.text}
-                        {msg.isStreaming && (
-                          <span className="inline-block w-1.5 h-3.5 bg-violet-400 ml-1 animate-pulse" />
-                        )}
+                      <div className="relative max-w-[92%] flex flex-col">
+                        {/* Main Message Bubble */}
+                        <div
+                          className={`px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed transition-all shadow-sm ${
+                            msg.sender === 'user'
+                              ? 'bg-gradient-to-tr from-violet-700 to-violet-600 text-white select-text self-end'
+                              : 'bg-white/[0.04] text-slate-100 border border-white/[0.08] backdrop-blur-md select-text self-start w-full'
+                          }`}
+                        >
+                          {msg.sender === 'user' ? (
+                            <div className="whitespace-pre-wrap font-normal text-slate-50 text-[12px]">{msg.text}</div>
+                          ) : (
+                            <BrowserMarkdownRenderer content={msg.text} />
+                          )}
 
-                        {msg.actionPlan && (
-                          <div className="w-full mt-2.5 rounded-xl bg-slate-900/90 border border-violet-500/30 overflow-hidden shadow-lg animate-in fade-in zoom-in-95 duration-150">
-                            {/* Plan Header */}
-                            <div className="px-3 py-2 bg-gradient-to-r from-violet-950/60 to-slate-900/90 border-b border-white/[0.08] flex items-center justify-between">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <Wand2 size={12} className="text-violet-400 shrink-0" />
-                                <span className="text-[11px] font-semibold text-slate-200 truncate">
-                                  {msg.actionPlan.plan || 'Browser Action Plan'}
+                          {msg.isStreaming && (
+                            <span className="inline-block w-1.5 h-3.5 bg-violet-400 ml-1 animate-pulse align-middle" />
+                          )}
+
+                          {msg.actionPlan && (
+                            <div className="w-full mt-2.5 rounded-xl bg-slate-900/90 border border-violet-500/30 overflow-hidden shadow-lg animate-in fade-in zoom-in-95 duration-150">
+                              {/* Plan Header */}
+                              <div className="px-3 py-2 bg-gradient-to-r from-violet-950/60 to-slate-900/90 border-b border-white/[0.08] flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <Wand2 size={12} className="text-violet-400 shrink-0" />
+                                  <span className="text-[11px] font-semibold text-slate-200 truncate">
+                                    {msg.actionPlan.plan || 'Browser Action Plan'}
+                                  </span>
+                                </div>
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[9px] font-medium tracking-wide uppercase font-mono shrink-0 ${
+                                    msg.actionPlan.risk === 'high'
+                                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  }`}
+                                >
+                                  {msg.actionPlan.risk === 'high' ? 'Approval Required' : 'Low Risk Plan'}
                                 </span>
                               </div>
-                              <span
-                                className={`px-1.5 py-0.5 rounded text-[9px] font-medium tracking-wide uppercase font-mono shrink-0 ${
-                                  msg.actionPlan.risk === 'high'
-                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                }`}
-                              >
-                                {msg.actionPlan.risk === 'high' ? 'Approval Required' : 'Low Risk Plan'}
-                              </span>
-                            </div>
 
-                            {/* Steps List */}
-                            <div className="p-2.5 space-y-1.5 bg-black/20">
-                              {msg.actionPlan.actions.map((act, actIdx) => (
-                                <div
-                                  key={act.id || actIdx}
-                                  className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[10.5px]"
-                                >
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <span className="w-4 h-4 rounded-full bg-white/[0.08] text-[9px] font-mono text-slate-400 flex items-center justify-center shrink-0">
-                                      {actIdx + 1}
-                                    </span>
-                                    <div className="truncate text-slate-300">
-                                      <span className="font-semibold text-violet-300 capitalize">{act.action}</span>
-                                      {act.elementId && (
-                                        <span className="ml-1 px-1 py-0.2 rounded bg-white/[0.08] text-[9px] font-mono text-slate-400">
-                                          {act.elementId}
+                              {/* Steps List */}
+                              <div className="p-2.5 space-y-1.5 bg-black/20">
+                                {msg.actionPlan.actions.map((act, actIdx) => (
+                                  <div
+                                    key={act.id || actIdx}
+                                    className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[10.5px]"
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="w-4 h-4 rounded-full bg-white/[0.08] text-[9px] font-mono text-slate-400 flex items-center justify-center shrink-0">
+                                        {actIdx + 1}
+                                      </span>
+                                      <div className="truncate text-slate-300">
+                                        <span className="font-semibold text-violet-300 capitalize">{act.action}</span>
+                                        {act.elementId && (
+                                          <span className="ml-1 px-1 py-0.2 rounded bg-white/[0.08] text-[9px] font-mono text-slate-400">
+                                            {act.elementId}
+                                          </span>
+                                        )}
+                                        {act.value && (
+                                          <span className="ml-1 text-slate-400 truncate">"{act.value}"</span>
+                                        )}
+                                        {act.description && !act.elementId && !act.value && (
+                                          <span className="ml-1 text-slate-400 truncate">{act.description}</span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div className="shrink-0 flex items-center">
+                                      {act.status === 'running' && (
+                                        <span className="flex items-center gap-1 text-[9.5px] text-violet-400 font-mono">
+                                          <RefreshCw size={10} className="animate-spin" />
+                                          <span>Running</span>
                                         </span>
                                       )}
-                                      {act.value && (
-                                        <span className="ml-1 text-slate-400 truncate">"{act.value}"</span>
+                                      {act.status === 'completed' && (
+                                        <span className="flex items-center gap-1 text-[9.5px] text-emerald-400 font-mono">
+                                          <CheckCircle2 size={11} />
+                                          <span>Done</span>
+                                        </span>
                                       )}
-                                      {act.description && !act.elementId && !act.value && (
-                                        <span className="ml-1 text-slate-400 truncate">{act.description}</span>
+                                      {act.status === 'failed' && (
+                                        <span className="flex items-center gap-1 text-[9.5px] text-rose-400 font-mono">
+                                          <AlertCircle size={11} />
+                                          <span>Failed</span>
+                                        </span>
+                                      )}
+                                      {(!act.status || act.status === 'idle') && (
+                                        <span className="flex items-center gap-1 text-[9.5px] text-slate-500 font-mono">
+                                          <Clock size={10} />
+                                          <span>Ready</span>
+                                        </span>
                                       )}
                                     </div>
                                   </div>
+                                ))}
+                              </div>
 
-                                  <div className="shrink-0 flex items-center">
-                                    {act.status === 'running' && (
-                                      <span className="flex items-center gap-1 text-[9.5px] text-violet-400 font-mono">
-                                        <RefreshCw size={10} className="animate-spin" />
-                                        <span>Running</span>
-                                      </span>
-                                    )}
-                                    {act.status === 'completed' && (
-                                      <span className="flex items-center gap-1 text-[9.5px] text-emerald-400 font-mono">
-                                        <CheckCircle2 size={11} />
-                                        <span>Done</span>
-                                      </span>
-                                    )}
-                                    {act.status === 'failed' && (
-                                      <span className="flex items-center gap-1 text-[9.5px] text-rose-400 font-mono">
-                                        <AlertCircle size={11} />
-                                        <span>Failed</span>
-                                      </span>
-                                    )}
-                                    {(!act.status || act.status === 'idle') && (
-                                      <span className="flex items-center gap-1 text-[9.5px] text-slate-500 font-mono">
-                                        <Clock size={10} />
-                                        <span>Ready</span>
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* Card Footer Controls */}
-                            <div className="px-3 py-2 bg-white/[0.02] border-t border-white/[0.06] flex items-center justify-between gap-2">
-                              {msg.actionPlan.status === 'ready' ? (
-                                <>
-                                  <button
-                                    type="button"
-                                    onPointerDown={(e) => {
-                                      e.preventDefault();
-                                      executeActionPlan(msg.actionPlan, idx);
-                                    }}
-                                    className="flex-1 py-1 px-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
-                                  >
-                                    <Play size={10} className="fill-current" />
-                                    <span>Approve & Execute</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onPointerDown={(e) => {
-                                      e.preventDefault();
-                                      setChatMessages((prev) => {
-                                        const copy = [...prev];
-                                        if (copy[idx]) {
-                                          copy[idx] = { ...copy[idx], actionPlan: undefined };
-                                        }
-                                        return copy;
-                                      });
-                                    }}
-                                    className="py-1 px-2.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-slate-400 hover:text-slate-200 text-[11px] font-medium transition-all cursor-pointer"
-                                  >
-                                    Dismiss
-                                  </button>
-                                </>
-                              ) : msg.actionPlan.status === 'executing' ? (
-                                <div className="w-full flex items-center justify-center gap-2 py-0.5 text-xs text-violet-300">
-                                  <RefreshCw size={12} className="animate-spin text-violet-400" />
-                                  <span className="text-[11px] font-medium">Executing action sequence...</span>
-                                </div>
-                              ) : (
-                                <div className="w-full flex items-center justify-between gap-2">
-                                  <span className="flex items-center gap-1 text-[10.5px] text-emerald-400 font-medium">
-                                    <CheckCircle2 size={12} />
-                                    <span>All actions verified on page</span>
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onPointerDown={(e) => {
-                                      e.preventDefault();
-                                      if (onRunFlowRequested) {
-                                        onRunFlowRequested({
-                                          id: `flow-${Date.now()}`,
-                                          title: msg.actionPlan.plan,
-                                          steps: msg.actionPlan.actions
+                              {/* Card Footer Controls */}
+                              <div className="px-3 py-2 bg-white/[0.02] border-t border-white/[0.06] flex items-center justify-between gap-2">
+                                {msg.actionPlan.status === 'ready' ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        executeActionPlan(msg.actionPlan, idx);
+                                      }}
+                                      className="flex-1 py-1 px-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                                    >
+                                      <Play size={10} className="fill-current" />
+                                      <span>Approve & Execute</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        setChatMessages((prev) => {
+                                          const copy = [...prev];
+                                          if (copy[idx]) {
+                                            copy[idx] = { ...copy[idx], actionPlan: undefined };
+                                          }
+                                          return copy;
                                         });
-                                      }
-                                      if (showToast) showToast('Saved action sequence to Regaarder Flows');
-                                    }}
-                                    className="px-2 py-0.5 rounded bg-white/[0.08] hover:bg-white/[0.14] text-[10px] font-medium text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-                                  >
-                                    <Plus size={10} />
-                                    <span>Save to Flows</span>
-                                  </button>
-                                </div>
-                              )}
+                                      }}
+                                      className="py-1 px-2.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-slate-400 hover:text-slate-200 text-[11px] font-medium transition-all cursor-pointer"
+                                    >
+                                      Dismiss
+                                    </button>
+                                  </>
+                                ) : msg.actionPlan.status === 'executing' ? (
+                                  <div className="w-full flex items-center justify-center gap-2 py-0.5 text-xs text-violet-300">
+                                    <RefreshCw size={12} className="animate-spin text-violet-400" />
+                                    <span className="text-[11px] font-medium">Executing action sequence...</span>
+                                  </div>
+                                ) : (
+                                  <div className="w-full flex items-center justify-between gap-2">
+                                    <span className="flex items-center gap-1 text-[10.5px] text-emerald-400 font-medium">
+                                      <CheckCircle2 size={12} />
+                                      <span>All actions verified on page</span>
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        if (onRunFlowRequested) {
+                                          onRunFlowRequested({
+                                            id: `flow-${Date.now()}`,
+                                            title: msg.actionPlan.plan,
+                                            steps: msg.actionPlan.actions
+                                          });
+                                        }
+                                        if (showToast) showToast('Saved action sequence to Regaarder Flows');
+                                      }}
+                                      className="px-2 py-0.5 rounded bg-white/[0.08] hover:bg-white/[0.14] text-[10px] font-medium text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                                    >
+                                      <Plus size={10} />
+                                      <span>Save to Flows</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
+                          )}
+                        </div>
+
+                        {/* Floating Executive Action Dock on Hover */}
+                        {!msg.isStreaming && !msg.isError && (
+                          <div
+                            className={`opacity-0 group-hover:opacity-100 transition-all duration-150 flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-lg bg-[#181A24]/90 border border-white/10 shadow-lg backdrop-blur-md z-10 ${
+                              msg.sender === 'user' ? 'self-end' : 'self-start'
+                            }`}
+                          >
+                            {/* Copy Action */}
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                handleCopyMessage(msg.text, idx);
+                              }}
+                              className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all cursor-pointer"
+                              title="Copy text"
+                            >
+                              {copiedMessageIdx === idx ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                            </button>
+
+                            {/* User-Specific Actions */}
+                            {msg.sender === 'user' && (
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  handleEditUserPrompt(msg.text, idx);
+                                }}
+                                className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all cursor-pointer"
+                                title="Edit prompt"
+                              >
+                                <Edit3 size={11} />
+                              </button>
+                            )}
+
+                            {/* Assistant-Specific Actions */}
+                            {msg.sender === 'agent' && (
+                              <>
+                                {/* Text-to-Speech Listen */}
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    handleToggleTTS(msg.text, idx);
+                                  }}
+                                  className={`p-1 rounded transition-all cursor-pointer ${
+                                    speakingMessageIdx === idx
+                                      ? 'text-violet-400 bg-violet-500/20'
+                                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/10'
+                                  }`}
+                                  title={speakingMessageIdx === idx ? 'Stop listening' : 'Listen to response'}
+                                >
+                                  {speakingMessageIdx === idx ? (
+                                    <VolumeX size={11} className="text-rose-400" />
+                                  ) : (
+                                    <Volume2 size={11} />
+                                  )}
+                                </button>
+
+                                {/* Regenerate */}
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    handleRegenerateResponse(idx);
+                                  }}
+                                  className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all cursor-pointer"
+                                  title="Regenerate response"
+                                >
+                                  <RotateCcw size={11} />
+                                </button>
+
+                                {/* Save to Memory */}
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    onSaveToMemory?.();
+                                    if (showToast) showToast('Saved response to Memory graph');
+                                  }}
+                                  className="p-1 rounded text-slate-400 hover:text-sky-300 hover:bg-sky-500/10 transition-all cursor-pointer"
+                                  title="Save to Memory"
+                                >
+                                  <Bookmark size={11} />
+                                </button>
+
+                                {/* Export to Compose */}
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    onOpenSendToCompose?.({ bottom: 60, right: 300 });
+                                  }}
+                                  className="p-1 rounded text-slate-400 hover:text-violet-300 hover:bg-violet-500/10 transition-all cursor-pointer"
+                                  title="Send to Compose"
+                                >
+                                  <FileText size={11} />
+                                </button>
+
+                                {/* Export to Sheets */}
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    onOpenSendToSheets?.({ bottom: 60, right: 300 });
+                                  }}
+                                  className="p-1 rounded text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-all cursor-pointer"
+                                  title="Export to Sheets"
+                                >
+                                  <Table size={11} />
+                                </button>
+                              </>
+                            )}
+
+                            {/* Delete Message */}
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                handleDeleteMessage(idx);
+                              }}
+                              className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all cursor-pointer"
+                              title="Delete message"
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Model Tag & Timestamp */}
+                        {msg.sender === 'agent' && !msg.isError && (
+                          <div className="flex items-center gap-1.5 mt-0.5 px-1 text-[9px] text-slate-500 font-mono">
+                            <span>{msg.modelTag || selectedModel.name}</span>
                           </div>
                         )}
                       </div>
@@ -1842,14 +2122,29 @@ Always answer helpfully, clearly, and concisely.`;
                       )}
                     </button>
 
-                    <button
-                      type="submit"
-                      disabled={!inputQuery.trim() || isGenerating}
-                      className="p-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-25 text-white transition-all cursor-pointer shrink-0"
-                      title="Send message"
-                    >
-                      <ArrowUp size={14} />
-                    </button>
+                    {isGenerating ? (
+                      <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          handleStopGeneration();
+                        }}
+                        className="px-2 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1 shrink-0 animate-pulse"
+                        title="Stop generation"
+                      >
+                        <Square size={10} className="fill-current" />
+                        <span>Stop</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={!inputQuery.trim()}
+                        className="p-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-25 text-white transition-all cursor-pointer shrink-0"
+                        title="Send message"
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </form>
