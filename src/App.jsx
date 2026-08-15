@@ -37391,7 +37391,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               <div
                 onMouseEnter={handleRightSidebarMouseEnter}
                 onMouseLeave={handleRightSidebarMouseLeave}
-                className="fixed right-0 top-0 h-full w-8 z-[360] group/sidebar-rail pointer-events-auto flex items-center justify-end"
+                className="fixed right-0 top-0 h-16 w-8 z-[360] group/sidebar-rail pointer-events-auto flex items-center justify-end"
               >
                 {/* Visual Cue Pill (Hidden by default, fades in when hovering right edge sensor zone) */}
                 <div

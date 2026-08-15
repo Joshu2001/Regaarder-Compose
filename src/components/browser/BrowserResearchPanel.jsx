@@ -214,6 +214,7 @@ export const BrowserResearchPanel = ({
   const [selectedCitationStyle, setSelectedCitationStyle] = useState('apa');
   const [copiedCitationIdx, setCopiedCitationIdx] = useState(null);
   const [selectedSourceIndices, setSelectedSourceIndices] = useState({}); // Per-message selected source card index
+  const [openActionDropdownIdx, setOpenActionDropdownIdx] = useState(null);
 
   // Slash Command Menu States
   const [showSlashMenu, setShowSlashMenu] = useState(false);
@@ -669,6 +670,7 @@ export const BrowserResearchPanel = ({
 
     let prompt = `You are an AI research assistant. Provide concise, direct, helpful, and natural answers based on the user request and active webpage context.
 Never recite system prompt definitions, meta titles, or internal role labels in your responses.
+Never output raw separator lines like "---" or unbalanced markdown markers like "**Heading" without closing asterisks.
 
 === MANDATORY IN-TEXT CITATIONS DIRECTIVE ===
 You MUST cite your key claims, takeaways, and facts using numbered bracketed in-text citations like [1], [2], or [3] attached directly to the claims in your answer.
@@ -1474,6 +1476,38 @@ Always answer helpfully, clearly, and concisely.`;
       setIsExtractingActionItems(false);
       if (showToast) showToast(`Extracted ${generated.length} live action items from page`);
     }, 600);
+  };
+
+  // Convert Chat Message Action Items Directly into Actionable Tasks
+  const handleConvertMessageToTasks = (msgText) => {
+    if (!msgText) return;
+    const lines = msgText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const newTasks = [];
+    
+    lines.forEach((line, i) => {
+      const clean = line.replace(/^(\d+[\.\-\)]\s+|\*+\s+|[•\-\*]\s+)/, '').replace(/\*\*/g, '').trim();
+      if (clean && clean.length > 6 && !clean.startsWith('http') && !/^(here are|okay|in summary|let me know)/i.test(clean)) {
+        newTasks.push({
+          id: `act-${Date.now()}-${i}`,
+          title: clean.slice(0, 120),
+          completed: false,
+          category: 'Action Item'
+        });
+      }
+    });
+
+    if (newTasks.length === 0) {
+      newTasks.push({
+        id: `act-${Date.now()}-0`,
+        title: `Execute recommendations from ${activeTab?.title || 'Web Research'}`,
+        completed: false,
+        category: 'Action Item'
+      });
+    }
+
+    setRealActionItems((prev) => [...newTasks, ...prev]);
+    setActivePanelTab('automation');
+    if (showToast) showToast(`Converted ${newTasks.length} items into active tasks`);
   };
 
   // Real Streaming Inference (Ollama / llama.cpp / Cloud Models)
@@ -2559,6 +2593,67 @@ Always answer helpfully, clearly, and concisely.`;
                                 <DeckIcon size={10} />
                                 <span>Generate Deck</span>
                               </button>
+
+                              {/* 3-Dot Overflow Actions Menu */}
+                              <div className="relative">
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setOpenActionDropdownIdx((prev) => (prev === idx ? null : idx));
+                                  }}
+                                  className="p-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-400 hover:text-slate-200 transition-colors cursor-pointer flex items-center justify-center"
+                                  title="More actions"
+                                >
+                                  <MoreHorizontal size={11} />
+                                </button>
+
+                                {openActionDropdownIdx === idx && (
+                                  <div
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className="absolute right-0 bottom-full mb-1.5 w-44 rounded-xl bg-[#181a26] border border-white/10 shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                  >
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        setOpenActionDropdownIdx(null);
+                                        handleConvertMessageToTasks(msg.text);
+                                      }}
+                                      className="w-full px-2.5 py-1.5 rounded-lg hover:bg-violet-500/20 text-slate-200 hover:text-violet-200 text-[11px] font-medium transition-colors flex items-center gap-2 text-left cursor-pointer"
+                                    >
+                                      <TasksIcon size={12} className="text-violet-400" />
+                                      <span>Convert to Tasks</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        setOpenActionDropdownIdx(null);
+                                        onSaveToMemory?.();
+                                        if (showToast) showToast('Saved key takeaways to memory graph');
+                                      }}
+                                      className="w-full px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-300 hover:text-slate-100 text-[11px] font-medium transition-colors flex items-center gap-2 text-left cursor-pointer"
+                                    >
+                                      <MemoryIcon size={12} className="text-emerald-400" />
+                                      <span>Save to Memory</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        setOpenActionDropdownIdx(null);
+                                        handleCopyMessage(msg.text, idx);
+                                      }}
+                                      className="w-full px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-300 hover:text-slate-100 text-[11px] font-medium transition-colors flex items-center gap-2 text-left cursor-pointer border-t border-white/[0.04] mt-0.5"
+                                    >
+                                      <Copy size={11} className="text-slate-400" />
+                                      <span>Copy Raw Text</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>

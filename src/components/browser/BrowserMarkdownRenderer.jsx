@@ -77,6 +77,18 @@ const normalizeTextStructure = (rawText) => {
   // Separate inlined bullet items e.g. "points: • Item" -> "points:\n\n• Item"
   str = str.replace(/([^\n])\s+([•\-\*])\s+/g, '$1\n\n- ');
   
+  // Fix unbalanced line-level bolding: "**Phase 1: Foundation\n" -> "**Phase 1: Foundation**\n"
+  str = str.split('\n').map((line) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('**') && (trimmed.match(/\*\*/g) || []).length === 1) {
+      return line + '**';
+    }
+    if (trimmed.endsWith('**') && (trimmed.match(/\*\*/g) || []).length === 1) {
+      return '**' + line;
+    }
+    return line;
+  }).join('\n');
+
   return str;
 };
 
@@ -134,6 +146,14 @@ export const BrowserMarkdownRenderer = ({ content }) => {
     if (!trimmed) {
       flushParagraph();
       flushList();
+      continue;
+    }
+
+    // Horizontal Rule (---, ***, ___)
+    if (/^(\-{3,}|\_{3,}|\*{3,})$/.test(trimmed)) {
+      flushParagraph();
+      flushList();
+      blocks.push({ type: 'hr' });
       continue;
     }
 
@@ -201,6 +221,9 @@ export const BrowserMarkdownRenderer = ({ content }) => {
   return (
     <div className="space-y-3 text-[12.5px] leading-relaxed text-slate-200 tracking-normal font-sans">
       {blocks.map((b, idx) => {
+        if (b.type === 'hr') {
+          return <hr key={idx} className="border-0 border-t border-white/[0.08] my-2.5" />;
+        }
         if (b.type === 'h1') {
           return (
             <h4 key={idx} className="text-sm font-semibold text-white mt-3 mb-1.5 tracking-tight border-b border-white/10 pb-1">
