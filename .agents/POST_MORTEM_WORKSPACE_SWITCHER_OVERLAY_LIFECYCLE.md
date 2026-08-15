@@ -2,71 +2,75 @@
 
 ## 1. Incident Overview & Root Cause Analysis
 
-### The Issues
-1. **Live Webpage Turning Blank Behind Switch Workspace Popover in Research Mode:**
-   When triggering the Workspace Switcher icon from Regaarder Research, the live webpage was hidden (`setBrowserVisibility(false)`), exposing a blank white/dark canvas underneath and causing fullscreen display glitches.
-2. **Switch Workspace Trigger Inactivity in Sheets and Decks:**
-   Tapping or clicking the 4-squares grid icon in Sheets mode and Deck mode originally failed to render the Switch Workspace popover due to a missing portal mount in the branched return block.
+### The Issues Observed
+1. **Divergent Popover Appearance & Missing Backdrop in Research Mode (Image 1 vs Image 2):**
+   The Workspace Switcher in Research mode appeared as a detached floating menu without the global dimming backdrop and was using generic Lucide icons rather than the bespoke Regaarder product icons.
+2. **Chromium Viewport Lingering Over Destination Workspaces (Image 3):**
+   When switching from Research to Docs/Sheets/Decks, the toast reported "Switched to Docs" and the top header updated, but the live Chromium webpage remained painted across the screen, hiding the document editor beneath it.
 
 ---
 
 ### Root Cause Analysis (RCA)
 
-#### Issue 1: Improper Use of `setBrowserVisibility(false)` vs. Detached Child Windows
-- **Mechanism:** In Electron, `WebContentsView` is an OS-level surface painted directly by Chromium. Calling `window.electronAPI.setBrowserVisibility(false)` hides the entire webview, exposing the bare background `<div>` of the window (rendering as a blank page).
-- **Breakdown:** In `BrowserWorkspace.jsx`, `isWorkspaceSwitcherOpen` was previously included inside `isModalOpen` and `isPopoverOpen`. This caused `BrowserViewport` to aggressively hide the active browser view when clicking the Switch Workspace icon.
-- **The Correct Architecture:** In Electron, all toolbar dropdowns and popovers (Font, Overflow, Utilities, Flows, Workspace Switcher) must be opened via Electron's child window IPC bridge (`openPopover({ type: 'workspaceSwitcher', bounds })`). This detached child `BrowserWindow` naturally floats **above** both `mainWindow` and the `WebContentsView` surface without needing to hide or blank out the live web page.
+#### Issue 1: Detached Window Anti-Pattern vs. Unified Portal Architecture
+- **Mechanism:** The workspace switcher in Regaarder is designed as a centralized executive portal (`renderWorkspaceSwitcherDropdownContent()`) with a full-screen ambient backdrop (`fixed inset-0 z-[100000] backdrop-blur-md`) and bespoke SVG product icons.
+- **Breakdown:** Attempting to render the switcher in a separate child Electron `BrowserWindow` bypassed the shared portal, broke the unified aesthetic (Image 2), and lacked the backdrop overlay.
+- **The Proper Pattern:** Research mode must invoke the identical `renderWorkspaceSwitcherDropdownContent()` portal as Docs, Sheets, and Decks. When the portal is open (`isWorkspaceSwitcherOpen === true`), Electron temporarily yields the display area (`setBrowserVisibility(false)`) so the backdrop and popover render cleanly. Upon dismissal or switching, the view state transitions seamlessly.
 
-#### Issue 2: Missing Portal Mount in Sheets/Decks Branch & Stale Event Listeners
-- **Mechanism:** `AppCore` in `App.jsx` uses an early return pattern `if (productMode === 'deck' || productMode === 'sheets') { return (...) }`.
-- **Breakdown:**
-  1. `{workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}` was originally mounted only at the bottom of the *Docs* return branch (line 62966), meaning Sheets and Decks never rendered the portal despite the boolean being `true`.
-  2. Legacy document-level `handleOutsideClick` listeners in empty-dependency `useEffect` hooks captured stale state and raced to reset `workspaceSwitcherOpen` to `false` during click event execution.
+#### Issue 2: Missing Viewport Unmount & Mode Switch Cleanup
+- **Mechanism:** In Electron desktop architectures, `WebContentsView` is an independent OS-level rendering surface attached to the main window.
+- **Breakdown:** 
+  1. `BrowserViewport.jsx`'s `useEffect` cleanup handler omitted `window.electronAPI.setBrowserVisibility(false)`. When switching product modes (e.g. Research → Docs), `BrowserViewport` unmounted from the React component tree, but the Electron main process was never told to hide or detach the native webview.
+  2. Consequently, the Chromium webpage remained pinned to the OS window, painting directly over the newly mounted Docs/Sheets editor (Image 3).
 
 ---
 
 ## 2. Resolutions Applied
 
-### A. Detached Child Popover for Research in Electron Mode
-1. **Removed `setBrowserVisibility(false)` Trigger:** Removed `isWorkspaceSwitcherOpen` from `isModalOpen` and `isPopoverOpen` in `BrowserWorkspace.jsx`.
-2. **Integrated `workspaceSwitcher` into Electron Child Window:**
-   - Updated `BrowserWorkspace.jsx` to dispatch `openPopover({ type: 'workspaceSwitcher', bounds })` when running in Electron.
-   - Sized `workspaceSwitcher` bounds in `electron/browserViewManager.cjs` and `electron/browserViewManager.js` (width: 240, height: 335).
-   - Rendered the Switch Workspace UI inside `PopoverWindowContainer.jsx`.
-   - Wired `switchProductMode` IPC action from `PopoverWindowContainer` back to `AppCore` via `BrowserWorkspace.jsx` and `onSwitchProductMode`.
-   - Maintained in-window React Portal fallback (`renderWorkspaceSwitcherDropdownContent()`) for web browser environments.
+### A. Viewport Unmount & Global Mode Cleanup (Fixing Image 3)
+1. **`BrowserViewport.jsx` Cleanup:**
+   - Added `window.electronAPI.setBrowserVisibility(false)` inside `BrowserViewport`'s `useEffect` return/cleanup function.
+   - When the user navigates away from Research, the OS webview is immediately and reliably hidden.
+2. **`App.jsx` Mode Guard:**
+   - Added a top-level `useEffect` in `AppCore`:
+     ```javascript
+     useEffect(() => {
+       if (productMode !== 'browser' && window.electronAPI?.setBrowserVisibility) {
+         window.electronAPI.setBrowserVisibility(false);
+       }
+     }, [productMode]);
+     ```
 
-### B. Portal Mount in Sheets/Decks Return Block
-In [App.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/App.jsx):
-- Mounted `{workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}` directly inside the `if (productMode === 'deck' || productMode === 'sheets')` return block right before its closing container.
-
-### C. Clean Event Handling & Stale Listener Elimination
-In [App.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/App.jsx) and [BrowserToolbar.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/browser/BrowserToolbar.jsx):
-1. **Clean Event Execution:** Standardized all switcher trigger buttons to use `onClick={(e) => { e.stopPropagation(); ... }}` with anchor position tracking.
-2. **Backdrop-Driven Outside-Click Architecture:** Dismissal in web mode is managed by the full-screen backdrop overlay (`z-[100000]`) and global `Escape` key listener without stale document listener races.
+### B. Restoring the Unified Workspace Switcher Portal (Fixing Image 1 & Matching Image 2)
+1. **Unified Portal Execution:**
+   - Reconnected `BrowserToolbar` in Research mode to invoke `onOpenWorkspaceSwitcher(rect)`.
+   - Wired `isWorkspaceSwitcherOpen` into `BrowserViewport.jsx` so `setBrowserVisibility(false)` is active while the switcher is open, allowing the full-screen backdrop and popover (Image 2) to render crisply.
+   - Restored instant visibility (`setBrowserVisibility(true)`) when the switcher is dismissed.
+2. **Bespoke Product Icons:**
+   - Unified all workspace switcher instances to use `{ ComposeIcon, SheetIcon, DeckIcon, RoomIcon, BrowserIcon }` from [RegaarderProductIcons.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/RegaarderProductIcons.jsx).
 
 ---
 
 ## 3. Extrapolated Directives for Future Dual-Host Development
 
-### 1. Dual-Host Floating Popover Rule (Electron vs. Web)
-> **Rule:** In Electron mode, floating toolbar dropdowns and menus that overlap `WebContentsView` must be rendered using detached child `BrowserWindow` popovers via `openPopover({ type, bounds })`. **Never call `setBrowserVisibility(false)` for small popovers or dropdown menus.**
-- Reserve `setBrowserVisibility(false)` strictly for full-screen blocking modals (e.g. competitor research workflow wizard, onboarding modals).
+### 1. Viewport Unmount Teardown Rule
+> **Rule:** Any React component hosting an external OS rendering surface (such as Electron `WebContentsView` or `<webview>`) **must** hide or detach that surface in its `useEffect` cleanup return.
+- Never assume unmounting the React container element will automatically hide the OS window surface.
 
-### 2. Dual-Branch Component Return Parity Rule
-> **Rule:** In React components with branched `if (mode) return (...)` architectures, all global floating overlays and modal portals must be present in **every** render branch, or factored out to a unified parent shell.
+### 2. Global Product Mode State Guards
+> **Rule:** Top-level application shells managing multi-workspace routing must explicitly enforce OS view detachment whenever transitioning to non-browser product modes (`productMode !== 'browser'`).
 
-### 3. Backdrop Over Stale Global Listeners
-> **Rule:** For full-screen modal overlays and popovers rendered via React Portals, use dedicated backdrop elements (`fixed inset-0`) for click-outside dismissal rather than registering global document `pointerdown`/`mousedown` listeners in empty-dependency `useEffect` hooks.
+### 3. Single Source of Truth for Global Overlays
+> **Rule:** Global overlays (Workspace Switcher, Command Palette, Global Auth Modals) must share a single portal implementation across all workspace modes (Docs, Sheets, Decks, Room, Research) to guarantee identical visual hierarchy and behavior.
 
 ---
 
-## 4. Prevention Checklist & Verification Matrix
+## 4. Verification Checklist
 
 | Area | Check | Status |
 | :--- | :--- | :--- |
-| **Electron Popover Delegation** | Does Research use `openPopover({ type: 'workspaceSwitcher' })` in Electron? | ✅ Verified |
-| **Live Webpage Persistence** | Does the live webpage remain fully visible when opening the switcher in Research? | ✅ Verified |
-| **Fullscreen Compatibility** | Does the popover display correctly across both windowed and fullscreen modes? | ✅ Verified |
-| **Portal Render Parity** | Is `renderWorkspaceSwitcherDropdownContent()` present in all return branches? | ✅ Verified |
+| **Unified Switcher UI** | Does Research use the identical backdrop + popover as Docs (Image 2)? | ✅ Verified |
+| **Viewport Cleanup** | Does switching from Research to Docs hide the live web page (Image 3 fix)? | ✅ Verified |
+| **Bespoke Icon Grammar** | Are custom Regaarder product icons used across all switcher instances? | ✅ Verified |
+| **Dismissal Restoration** | Does dismissing the switcher restore the live browser view immediately? | ✅ Verified |
 | **Build Verification** | Does `npm run build` succeed with zero syntax or bundle errors? | ✅ Verified |
