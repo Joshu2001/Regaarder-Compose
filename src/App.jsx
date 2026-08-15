@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 // Trigger Vercel Build Safely
 import { io } from 'socket.io-client';
 import katex from 'katex';
@@ -12663,30 +12663,16 @@ function AppCore() {
                     key={item.mode}
                     type="button"
                     onClick={() => {
-                      setWorkspaceSwitcherOpen(false);
-                      if (item.mode !== productMode) {
-                        if (item.mode === 'browser') {
-                          const maskRect = workspaceSwitcherAnchorRect
-                            ? {
-                                top: Math.min(window.innerHeight - 300, (workspaceSwitcherAnchorRect.bottom || 48) + 8),
-                                left: !isRightAnchored ? (workspaceSwitcherAnchorRect?.left ? Math.max(16, workspaceSwitcherAnchorRect.left) : 48) : undefined,
-                                right: isRightAnchored ? Math.max(16, window.innerWidth - workspaceSwitcherAnchorRect.right) : undefined,
-                              }
-                            : { top: 56, left: 48 };
-                          setBrowserSwitchMaskRect(maskRect);
-                          setWorkspaceSwitcherAnchorRect(null);
-                          setProductMode('browser');
-                          showToast(`Switched to Research`);
-                          setTimeout(() => {
-                            setBrowserSwitchMaskRect(null);
-                          }, 160);
-                        } else {
-                          setWorkspaceSwitcherAnchorRect(null);
-                          setProductMode(item.mode);
-                          showToast(`Switched to ${item.label}`);
-                        }
-                      } else {
+                      flushSync(() => {
+                        setWorkspaceSwitcherOpen(false);
                         setWorkspaceSwitcherAnchorRect(null);
+                      });
+                      if (window.electronAPI?.closePopover) {
+                        try { window.electronAPI.closePopover(); } catch (e) {}
+                      }
+                      if (item.mode !== productMode) {
+                        setProductMode(item.mode);
+                        showToast(`Switched to ${item.label}`);
                       }
                     }}
                     onPointerDown={(e) => e.preventDefault()}
@@ -12722,25 +12708,6 @@ function AppCore() {
           </div>
         </div>
       </>,
-      document.body
-    );
-  };
-
-  const renderBrowserSwitchMask = () => {
-    if (!browserSwitchMaskRect || typeof document === 'undefined') return null;
-    return createPortal(
-      <div
-        className="fixed z-[100005] pointer-events-none transition-opacity duration-150 animate-in fade-in"
-        style={{
-          top: `${browserSwitchMaskRect.top}px`,
-          ...(browserSwitchMaskRect.right !== undefined ? { right: `${browserSwitchMaskRect.right}px` } : {}),
-          ...(browserSwitchMaskRect.left !== undefined ? { left: `${browserSwitchMaskRect.left}px` } : {}),
-          width: '220px',
-          height: '240px'
-        }}
-      >
-        <div className="w-full h-full rounded-[22px] bg-white/40 dark:bg-[#1c1c1e]/40 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-lg" />
-      </div>,
       document.body
     );
   };
@@ -14155,7 +14122,6 @@ function AppCore() {
   const workspaceSwitcherRef = useRef(null);
   const [workspaceSwitcherOpen, setWorkspaceSwitcherOpen] = useState(false);
   const [workspaceSwitcherAnchorRect, setWorkspaceSwitcherAnchorRect] = useState(null);
-  const [browserSwitchMaskRect, setBrowserSwitchMaskRect] = useState(null);
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const stored = localStorage.getItem('rc.user');
@@ -49668,8 +49634,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {renderAuthModal()}
       {/* Global Workspace Switcher Popover */}
       {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
-      {/* Localized Browser Transition Blur Mask */}
-      {renderBrowserSwitchMask()}
       </div>
     );
   }
@@ -63022,8 +62986,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* Global Workspace Switcher Popover (Available across Docs, Sheets, Decks, Room, Research) */}
       {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
-      {/* Localized Browser Transition Blur Mask */}
-      {renderBrowserSwitchMask()}
     </div>
   );
 }
