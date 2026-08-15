@@ -50958,6 +50958,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 icon: 'FileText',
                 content: htmlContent,
                 bodyHtml: htmlContent,
+                isBlank: true,
                 pinned: false,
                 sheetsTitle: 'Untitled Sheet',
                 deckTitle: 'Untitled Deck'
@@ -50967,8 +50968,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
               setActiveDocId(newDocId);
               setDocTitle(title);
               setDocBodyHtml(htmlContent);
-              setIsBlankDocument(false);
+              setIsBlankDocument(true);
+              setActiveDocView('document');
               setProductMode('compose');
+              
+              // Direct synchronization with editor DOM
+              setTimeout(() => {
+                if (blankBodyRef.current) {
+                  blankBodyRef.current.innerHTML = htmlContent;
+                }
+              }, 50);
+
               showToast(`Exported "${title}" to Compose Docs`);
             }}
             isWorkspaceSwitcherOpen={workspaceSwitcherOpen}

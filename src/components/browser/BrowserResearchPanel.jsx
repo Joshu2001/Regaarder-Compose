@@ -1855,7 +1855,7 @@ Always answer helpfully, clearly, and concisely.`;
         <div className="flex items-center gap-2 min-w-0">
           {/* Executive Regaarder AI Icon matching Docs Prompt Bar & Floating Icon */}
           <div
-            className="w-7 h-7 rounded-lg bg-violet-50/80 dark:bg-violet-950/60 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 border border-violet-200/50 dark:border-violet-800/50 shadow-2xs"
+            className="w-7 h-7 rounded-lg bg-violet-500/15 ring-1 ring-violet-500/30 text-violet-400 flex items-center justify-center shrink-0 shadow-inner"
             title="Regaarder Intelligence"
           >
             <RegaarderAiIcon size={16} />

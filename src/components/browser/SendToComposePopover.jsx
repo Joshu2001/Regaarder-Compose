@@ -42,7 +42,16 @@ export const SendToComposePopover = ({
   }, [initialContent]);
 
   const handleExecute = () => {
-    const fullText = selectedSnippet || initialContent || activeTab?.title || 'Research Document Summary';
+    let fullText = selectedSnippet || initialContent;
+    if (!fullText) {
+      if (activeTab?.summary) {
+        fullText = activeTab.summary;
+      } else if (activeTab?.extractedText) {
+        fullText = activeTab.extractedText;
+      } else {
+        fullText = `Summary and insights captured from ${activeTab?.title || 'Web Research'}.\n\nSource URL: ${activeTab?.url || ''}`;
+      }
+    }
     const capturedPayload = {
       hasSelection,
       snippet: fullText,
