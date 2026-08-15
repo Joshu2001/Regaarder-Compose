@@ -9,6 +9,8 @@
    When switching from Research to Docs/Sheets/Decks, the toast reported "Switched to Docs" and the top header updated, but the live Chromium webpage remained painted across the screen, hiding the document editor beneath it.
 3. **GPU Compositor Race on Reveal (Popover Appearing Momentarily Behind Webview):**
    When switching from Docs into Research mode, the native `WebContentsView` painted immediately on frame 0, before the React DOM had finished clearing the fading workspace switcher portal from the GPU raster buffer.
+4. **Trigger Inactivity in Electron Fullscreen Mode:**
+   In fullscreen mode, the workspace switcher button in Research was unresponsive because it relied on `onClick` rather than touch-safe `onPointerDown`. In Electron fullscreen, mouse/pointer capture captures and swallows synthetic `click` events.
 
 ---
 
@@ -28,6 +30,10 @@
 #### Issue 3: Compositor Layer Race on Mode Transitions
 - **Mechanism:** Native OS view attachment occurs asynchronously in the operating system window manager, whereas React DOM unmounting occurs in the JavaScript microtask loop.
 - **Breakdown:** When `setProductMode('browser')` and `setWorkspaceSwitcherOpen(false)` executed simultaneously, the native view became visible before the DOM overlay had completed its unmount paint tick.
+
+#### Issue 4: Fullscreen Pointer Event Interception
+- **Mechanism:** Under Electron fullscreen mode, Chromium's compositor window and OS display pipeline intercept mouse down/up sequences, frequently suppressing synthetic DOM `click` event generation on header toolbar controls.
+- **Breakdown:** While other toolbar buttons (Commands, Overflow, Font) utilized `onPointerDown`, the Workspace Switcher button was bound to `onClick`, preventing execution in fullscreen.
 
 ---
 
@@ -61,6 +67,12 @@
 2. **60ms Surface Reveal Delay in `BrowserViewport.jsx`:**
    - Defer `setBrowserVisibility(true)` by 60ms to guarantee that all DOM popover portals and backdrop blur filters have completely vacated the GPU raster buffer before the native OS surface renders.
 
+### D. Fullscreen PointerDown Event Architecture
+1. **Toolbar Trigger Standardization:**
+   - Updated `workspaceSwitcherBtnRef` in `BrowserToolbar.jsx` to use `onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); onOpenWorkspaceSwitcher(rect); }}` matching all executive toolbar controls.
+2. **Backdrop Guard:**
+   - Added `[data-workspace-switcher]` guard in `BrowserWorkspace.jsx` `handleMainWindowPointerDown` to prevent accidental click-outside races.
+
 ---
 
 ## 3. Extrapolated Directives for Future Dual-Host Development
@@ -78,12 +90,16 @@
 ### 4. Surface Attachment Grace-Period Rule
 > **Rule:** When mounting an OS-level native webview following a DOM modal or popover dismissal, always introduce a micro-grace period (60ms) before asserting surface visibility to prevent visual overlap collisions with fading DOM elements.
 
+### 5. Fullscreen-Safe Pointer Event Rule
+> **Rule:** In Electron applications with dual-host window compositing, all toolbar dropdown triggers **must** execute via `onPointerDown` with `preventDefault()` and `stopPropagation()`, rather than relying on synthetic `onClick` events.
+
 ---
 
 ## 4. Verification Checklist
 
 | Area | Check | Status |
 | :--- | :--- | :--- |
+| **Fullscreen Functionality** | Does the workspace switcher trigger reliably in Electron fullscreen mode? | ✅ Verified |
 | **Unified Switcher UI** | Does Research use the identical backdrop + popover as Docs (Image 2)? | ✅ Verified |
 | **Viewport Cleanup** | Does switching from Research to Docs hide the live web page (Image 3 fix)? | ✅ Verified |
 | **Smooth Transition** | Does switching to Research reveal the webview without popover flicker? | ✅ Verified |
