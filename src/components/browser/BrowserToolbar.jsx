@@ -67,6 +67,7 @@ export const BrowserToolbar = ({
   const flowsBtnRef = useRef(null);
   const utilitiesBtnRef = useRef(null);
   const overflowBtnRef = useRef(null);
+  const workspaceSwitcherBtnRef = useRef(null);
 
   useEffect(() => {
     if (!isEditing) {
@@ -320,11 +321,13 @@ export const BrowserToolbar = ({
 
         {/* Switch Workspace App */}
         <button
+          ref={workspaceSwitcherBtnRef}
           type="button"
-          onPointerDown={(e) => {
-            e.preventDefault();
+          data-workspace-switcher="true"
+          onClick={(e) => {
             e.stopPropagation();
-            onOpenWorkspaceSwitcher?.();
+            const rect = workspaceSwitcherBtnRef.current?.getBoundingClientRect();
+            onOpenWorkspaceSwitcher?.(rect);
           }}
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
             isWorkspaceSwitcherOpen

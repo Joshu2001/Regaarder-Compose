@@ -743,7 +743,8 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     showCompetitorWorkflow ||
     synthesizedFlowToReview ||
     showFlowLibraryModal ||
-    activeExecutingFlow
+    activeExecutingFlow ||
+    isWorkspaceSwitcherOpen
   );
 
   const isPopoverOpen = !isElectron && Boolean(
@@ -752,7 +753,8 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     utilitiesPopoverRect ||
     flowsPopoverRect ||
     sendToSheetsPopoverRect ||
-    sendToComposePopoverRect
+    sendToComposePopoverRect ||
+    isWorkspaceSwitcherOpen
   );
 
   return (

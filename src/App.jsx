@@ -8567,9 +8567,6 @@ function AppCore() {
     };
 
     const handleOutsideClick = (e) => {
-      if (workspaceSwitcherRef.current && !workspaceSwitcherRef.current.contains(e.target)) {
-        setWorkspaceSwitcherOpen(false);
-      }
       if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) {
         setShareModalOpen(false);
       }
@@ -8680,6 +8677,7 @@ function AppCore() {
 
     const handleGlobalEscape = (e) => {
       if (e.key === 'Escape') {
+        setWorkspaceSwitcherOpen(false);
         if (slashMenuRef.current?.open) {
           setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
         }
@@ -12618,6 +12616,17 @@ function AppCore() {
 
   const renderWorkspaceSwitcherDropdownContent = () => {
     if (typeof document === 'undefined') return null;
+    const isRightAnchored = workspaceSwitcherAnchorRect && typeof window !== 'undefined' && (window.innerWidth - workspaceSwitcherAnchorRect.right < 300);
+    const topPos = workspaceSwitcherAnchorRect
+      ? Math.min(window.innerHeight - 300, (workspaceSwitcherAnchorRect.bottom || 48) + 8)
+      : 56;
+    const rightPos = isRightAnchored && workspaceSwitcherAnchorRect
+      ? Math.max(16, window.innerWidth - workspaceSwitcherAnchorRect.right)
+      : undefined;
+    const leftPos = !isRightAnchored
+      ? (workspaceSwitcherAnchorRect?.left ? Math.max(16, workspaceSwitcherAnchorRect.left) : 48)
+      : undefined;
+
     return createPortal(
       <>
         {/* Page dimming backdrop overlay */}
@@ -12629,10 +12638,16 @@ function AppCore() {
           }}
         />
         <div 
-          className="fixed left-12 top-14 z-[100001] cursor-default"
+          data-workspace-switcher-content="true"
+          className={`fixed z-[100001] cursor-default ${isRightAnchored ? 'origin-top-right' : 'origin-top-left'}`}
+          style={{
+            top: `${topPos}px`,
+            ...(rightPos !== undefined ? { right: `${rightPos}px` } : {}),
+            ...(leftPos !== undefined ? { left: `${leftPos}px` } : {})
+          }}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="w-[220px] rounded-[22px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/85 dark:bg-[#1c1c1e]/85 backdrop-blur-3xl shadow-2xl p-2 font-sans origin-top-left overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="w-[220px] rounded-[22px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/85 dark:bg-[#1c1c1e]/85 backdrop-blur-3xl shadow-2xl p-2 font-sans overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="flex flex-col gap-1">
               {[
                 { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: ComposeIcon },
@@ -12655,19 +12670,23 @@ function AppCore() {
                     onPointerDown={(e) => e.preventDefault()}
                     className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-left select-none transition-all duration-150 w-full cursor-pointer ${
                       isCurrent
-                        ? 'bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 font-semibold shadow-xs'
+                        ? 'bg-[#7C5ACF]/[0.08] dark:bg-[#7C5ACF]/[0.16] shadow-xs'
                         : 'bg-transparent text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-zinc-100 font-medium'
                     }`}
                   >
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                       isCurrent 
-                        ? 'bg-violet-600 text-white shadow-xs' 
+                        ? 'bg-[#7C5ACF]/[0.14] dark:bg-[#7C5ACF]/[0.22] text-[#7C5ACF] dark:text-[#8B6FD1]' 
                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 group-hover:text-slate-800 dark:group-hover:text-zinc-200'
                     }`}>
-                      <IconComponent size={18} strokeWidth={isCurrent ? 2.2 : 1.8} />
+                      <IconComponent size={18} strokeWidth={isCurrent ? 2 : 1.8} />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-[13.5px] font-semibold leading-tight whitespace-nowrap">
+                      <span className={`text-[13.5px] leading-tight whitespace-nowrap ${
+                        isCurrent
+                          ? 'text-slate-900 dark:text-zinc-100 font-semibold'
+                          : 'text-slate-700 dark:text-zinc-300 font-medium group-hover:text-slate-900 dark:group-hover:text-zinc-100'
+                      }`}>
                         {item.label}
                       </span>
                       <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal truncate mt-0.5">
@@ -14094,6 +14113,7 @@ function AppCore() {
   const [composeProfileMenuOpen, setComposeProfileMenuOpen] = useState(false);
   const workspaceSwitcherRef = useRef(null);
   const [workspaceSwitcherOpen, setWorkspaceSwitcherOpen] = useState(false);
+  const [workspaceSwitcherAnchorRect, setWorkspaceSwitcherAnchorRect] = useState(null);
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const stored = localStorage.getItem('rc.user');
@@ -41540,24 +41560,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </button>
 
               {/* App Switcher Button */}
-              <div
-                ref={workspaceSwitcherRef}
-                className="relative z-[360] flex items-center"
-              >
+              <div className="relative z-[360] flex items-center">
                 <button
                   type="button"
-                  onClick={() => setWorkspaceSwitcherOpen(!workspaceSwitcherOpen)}
-                  onPointerDown={(e) => e.preventDefault()}
-                  className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 ${
+                  data-workspace-switcher="true"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setWorkspaceSwitcherAnchorRect(rect);
+                    setWorkspaceSwitcherOpen((prev) => !prev);
+                  }}
+                  className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 cursor-pointer ${
                     workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
                   }`}
                   title="Switch Workspace App"
                 >
                   <LayoutGrid size={15} />
                 </button>
-
-                {/* Dropdown Menu */}
-                {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
               </div>
 
               {isSheetsMode ? (
@@ -49598,6 +49617,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
       {renderAuthModal()}
+      {/* Global Workspace Switcher Popover */}
+      {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
       </div>
     );
   }
@@ -50899,7 +50920,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
             isDarkMode={isDarkMode}
             setIsDarkMode={setIsDarkMode}
             isRightSideHovered={isRightSideHovered}
-            onOpenWorkspaceSwitcher={() => setWorkspaceSwitcherOpen(!workspaceSwitcherOpen)}
+            onOpenWorkspaceSwitcher={(rect) => {
+              if (rect) setWorkspaceSwitcherAnchorRect(rect);
+              setWorkspaceSwitcherOpen((prev) => !prev);
+            }}
             isWorkspaceSwitcherOpen={workspaceSwitcherOpen}
           />
         </div>
@@ -50934,24 +50958,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </button>
 
             {/* App Switcher Button */}
-            <div
-              ref={workspaceSwitcherRef}
-              className="relative z-[360] flex items-center"
-            >
+            <div className="relative z-[360] flex items-center">
               <button
                 type="button"
-                onClick={() => setWorkspaceSwitcherOpen(!workspaceSwitcherOpen)}
-                onPointerDown={(e) => e.preventDefault()}
-                className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 ${
+                data-workspace-switcher="true"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setWorkspaceSwitcherAnchorRect(rect);
+                  setWorkspaceSwitcherOpen((prev) => !prev);
+                }}
+                className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 cursor-pointer ${
                   workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
                 }`}
                 title="Switch Workspace App"
               >
                 <LayoutGrid size={15} />
               </button>
-
-              {/* Dropdown Menu */}
-              {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
             </div>
             {isUnsavedDraftVisible && (
               <>
@@ -62940,6 +62963,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
       )}
+
+      {/* Global Workspace Switcher Popover (Available across Docs, Sheets, Decks, Room, Research) */}
+      {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
     </div>
   );
 }

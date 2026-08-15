@@ -31126,11 +31126,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               }}
                               className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all ${
                                 isCurrent
-                                  ? 'outline outline-[1.5px] outline-violet-500 bg-violet-50/50 dark:bg-violet-950/20'
+                                  ? 'bg-[#7C5ACF]/[0.08] dark:bg-[#7C5ACF]/[0.16]'
                                   : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
                               }`}
                             >
-                              <div className={`p-1 rounded-md shrink-0 ${isCurrent ? 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                              <div className={`p-1 rounded-md shrink-0 ${isCurrent ? 'bg-[#7C5ACF]/[0.14] text-[#7C5ACF] dark:bg-[#7C5ACF]/[0.22] dark:text-[#8B6FD1]' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
                                 <IconComponent size={14} />
                               </div>
                               <div className="flex flex-col min-w-0">
@@ -38232,11 +38232,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             }}
                             className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all ${
                               isCurrent
-                                ? 'outline outline-[1.5px] outline-violet-500 bg-violet-50/50 dark:bg-violet-950/20'
+                                ? 'bg-[#7C5ACF]/[0.08] dark:bg-[#7C5ACF]/[0.16]'
                                 : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
                             }`}
                           >
-                            <div className={`p-1 rounded-md shrink-0 ${isCurrent ? 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                            <div className={`p-1 rounded-md shrink-0 ${isCurrent ? 'bg-[#7C5ACF]/[0.14] text-[#7C5ACF] dark:bg-[#7C5ACF]/[0.22] dark:text-[#8B6FD1]' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
                               <IconComponent size={14} />
                             </div>
                             <div className="flex flex-col min-w-0">
