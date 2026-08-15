@@ -19,7 +19,15 @@ import {
   FileCode,
   Terminal,
   Download,
-  HardDrive
+  HardDrive,
+  Play,
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+  ShieldAlert,
+  Wand2,
+  Eye,
+  Compass
 } from 'lucide-react';
 import {
   BrowserCloseIcon,
@@ -74,6 +82,9 @@ export const BrowserResearchPanel = ({
   activeTab,
   onClose,
   onExtractText,
+  onExtractPageSchema,
+  onExecuteElementAction,
+  onCaptureScreenshot,
   onOpenSendToCompose,
   onOpenSendToSheets,
   onSaveToMemory,
@@ -83,6 +94,7 @@ export const BrowserResearchPanel = ({
 }) => {
   // Navigation: 'chat' | 'automation' | 'memory'
   const [activePanelTab, setActivePanelTab] = useState('chat');
+  const [pageSchema, setPageSchema] = useState(null);
 
   // Progressive Disclosure States
   const [isBriefExpanded, setIsBriefExpanded] = useState(false);
@@ -409,10 +421,180 @@ export const BrowserResearchPanel = ({
     }
   };
 
+  // Tiered Context & Structured Prompt Builder
+  const buildSystemPrompt = (schema, fallbackText) => {
+    let prompt = `You are the Regaarder Executive Browser Assistant & Browser Operating System Agent.
+You have direct real-time programmatic access to the active webpage that the user is currently viewing.
+
+=== CURRENT ACTIVE WEBPAGE CONTEXT ===
+Page Title: ${schema?.metadata?.title || activeTab?.title || 'Active Webpage'}
+URL: ${schema?.metadata?.url || activeTab?.url || 'Unknown URL'}
+Domain: ${schema?.metadata?.domain || summary?.domain || 'webpage'}
+Scroll Position: Y=${schema?.metadata?.scrollPosition?.y || 0}px (Max: ${schema?.metadata?.scrollPosition?.maxScrollY || 0}px)
+${schema?.metadata?.selectedText ? `User Selected Text: "${schema.metadata.selectedText}"\n` : ''}
+`;
+
+    if (schema?.headings && schema.headings.length > 0) {
+      prompt += `Page Headings:\n${schema.headings.map((h) => `  - H${h.level}: ${h.text}`).join('\n')}\n\n`;
+    }
+
+    if (schema?.elements && schema.elements.length > 0) {
+      prompt += `Interactive Elements on Page (with Virtual IDs):\n`;
+      schema.elements.forEach((el) => {
+        let desc = `  - ID [${el.id}]: <${el.tag || el.role}> label="${el.label}"`;
+        if (el.value) desc += ` current_value="${el.value}"`;
+        if (el.options && el.options.length > 0) desc += ` options=[${el.options.slice(0, 8).join(', ')}]`;
+        if (!el.isVisible) desc += ` (offscreen/hidden)`;
+        prompt += desc + '\n';
+      });
+      prompt += '\n';
+    }
+
+    const textContent = (schema?.visibleTextSummary || fallbackText || '').slice(0, 3500);
+    if (textContent) {
+      prompt += `Visible Page Content:\n${textContent}\n\n`;
+    }
+
+    prompt += `=== CAPABILITIES & TOOL CALLING INSTRUCTIONS ===
+1. When the user asks questions or wants analysis, synthesize your answer directly using the page content and elements provided above.
+2. If the user asks you to interact with the page (e.g. click a button, fill in a form, select a dropdown, check a box, navigate, or scroll), you CAN execute actions.
+To execute actions, output a JSON action plan block formatted exactly like this:
+\`\`\`action
+{
+  "plan": "Brief 1-sentence explanation of what you are doing",
+  "risk": "low" | "high",
+  "actions": [
+    { "action": "fill", "elementId": "input_1", "value": "Alice", "description": "Fill Name" },
+    { "action": "select", "elementId": "sel_1", "value": "Option A", "description": "Select Category" },
+    { "action": "click", "elementId": "btn_2", "description": "Click Submit" },
+    { "action": "scroll", "options": { "direction": "down", "amount": 400 }, "description": "Scroll down" }
+  ]
+}
+\`\`\`
+Note: Mark "risk": "high" for form submissions, purchases, deletions, or irreversible actions so the user is prompted to approve before execution. Mark "risk": "low" for filling fields, focusing, or scrolling.
+Always answer helpfully, clearly, and concisely.`;
+
+    return prompt;
+  };
+
+  // Helper to parse action plans from model responses
+  const parseActionPlan = (rawText) => {
+    if (!rawText) return null;
+    const match = rawText.match(/```(?:action|json)?\s*([\s\S]*?)\s*```/);
+    if (match && match[1]) {
+      try {
+        const parsed = JSON.parse(match[1].trim());
+        if (parsed && (Array.isArray(parsed.actions) || parsed.action)) {
+          const actionList = Array.isArray(parsed.actions) ? parsed.actions : [parsed];
+          return {
+            plan: parsed.plan || 'Automated browser action plan',
+            risk: parsed.risk === 'high' ? 'high' : 'low',
+            status: 'ready',
+            actions: actionList.map((a, i) => ({
+              id: a.id || `act-${i + 1}`,
+              action: a.action || 'click',
+              elementId: a.elementId || a.target,
+              value: a.value,
+              options: a.options,
+              description: a.description || `${a.action || 'click'} ${a.elementId || ''}`,
+              status: 'idle'
+            })),
+            cleanText: rawText.replace(match[0], '').trim()
+          };
+        }
+      } catch (e) {}
+    }
+    return null;
+  };
+
+  // Action Plan Execution Engine
+  const executeActionPlan = async (actionPlan, messageIndex) => {
+    if (!actionPlan || !actionPlan.actions || !onExecuteElementAction) return;
+
+    setChatMessages((prev) => {
+      const copy = [...prev];
+      if (copy[messageIndex]?.actionPlan) {
+        copy[messageIndex] = {
+          ...copy[messageIndex],
+          actionPlan: {
+            ...copy[messageIndex].actionPlan,
+            status: 'executing'
+          }
+        };
+      }
+      return copy;
+    });
+
+    for (let i = 0; i < actionPlan.actions.length; i++) {
+      const step = actionPlan.actions[i];
+      setChatMessages((prev) => {
+        const copy = [...prev];
+        if (copy[messageIndex]?.actionPlan) {
+          const acts = [...copy[messageIndex].actionPlan.actions];
+          acts[i] = { ...acts[i], status: 'running' };
+          copy[messageIndex] = {
+            ...copy[messageIndex],
+            actionPlan: { ...copy[messageIndex].actionPlan, actions: acts }
+          };
+        }
+        return copy;
+      });
+
+      const res = await onExecuteElementAction({
+        action: step.action,
+        elementId: step.elementId,
+        value: step.value,
+        options: step.options
+      });
+
+      const isSuccess = res && res.success;
+
+      setChatMessages((prev) => {
+        const copy = [...prev];
+        if (copy[messageIndex]?.actionPlan) {
+          const acts = [...copy[messageIndex].actionPlan.actions];
+          acts[i] = { ...acts[i], status: isSuccess ? 'completed' : 'failed', error: res?.error };
+          copy[messageIndex] = {
+            ...copy[messageIndex],
+            actionPlan: { ...copy[messageIndex].actionPlan, actions: acts }
+          };
+        }
+        return copy;
+      });
+
+      await new Promise((r) => setTimeout(r, 400));
+    }
+
+    setChatMessages((prev) => {
+      const copy = [...prev];
+      if (copy[messageIndex]?.actionPlan) {
+        copy[messageIndex] = {
+          ...copy[messageIndex],
+          actionPlan: {
+            ...copy[messageIndex].actionPlan,
+            status: 'completed'
+          }
+        };
+      }
+      return copy;
+    });
+
+    if (showToast) showToast('Action sequence completed & verified');
+
+    // Refresh live schema
+    if (onExtractPageSchema) {
+      try {
+        const freshSchema = await onExtractPageSchema();
+        if (freshSchema) setPageSchema(freshSchema);
+      } catch (e) {}
+    }
+  };
+
   // Extract page context on active tab load
   useEffect(() => {
     if (!activeTab || activeTab.url === 'regaarder://research' || activeTab.url === 'regaarder://saved' || !activeTab.url) {
       setSummary(null);
+      setPageSchema(null);
       return;
     }
 
@@ -420,9 +602,6 @@ export const BrowserResearchPanel = ({
     const runExtraction = async () => {
       setIsExtracting(true);
       try {
-        const text = await onExtractText?.();
-        if (!isMounted) return;
-
         let domain = 'webpage';
         try {
           if (activeTab?.url && activeTab.url.startsWith('http')) {
@@ -434,21 +613,45 @@ export const BrowserResearchPanel = ({
           domain = 'webpage';
         }
 
+        let schema = null;
+        if (onExtractPageSchema) {
+          schema = await onExtractPageSchema();
+        }
+
+        let text = '';
+        if (schema?.visibleTextSummary) {
+          text = schema.visibleTextSummary;
+        } else if (onExtractText) {
+          text = await onExtractText();
+        }
+
+        if (!isMounted) return;
+
+        if (schema) {
+          setPageSchema(schema);
+        }
+
+        const elementsCount = schema?.elements?.length || 0;
         if (text && text.trim().length > 20) {
           setSummary({
             domain,
             overview: text.slice(0, 320).trim() + (text.length > 320 ? '...' : ''),
-            fullContext: text
+            fullContext: text,
+            elementsCount
           });
         } else {
           setSummary({
             domain,
-            overview: `Connected to ${activeTab.title || domain}. Full DOM context ready for local inference.`,
-            fullContext: ''
+            overview: `Connected to ${activeTab.title || domain}. ${elementsCount} interactive elements mapped & ready.`,
+            fullContext: '',
+            elementsCount
           });
         }
       } catch (err) {
-        if (isMounted) setSummary(null);
+        if (isMounted) {
+          setSummary(null);
+          setPageSchema(null);
+        }
       } finally {
         if (isMounted) setIsExtracting(false);
       }
@@ -523,6 +726,18 @@ export const BrowserResearchPanel = ({
     setChatMessages(updatedMessages);
     setIsGenerating(true);
 
+    // Ensure we have the latest page schema before sending
+    let currentSchema = pageSchema;
+    if (onExtractPageSchema) {
+      try {
+        const fresh = await onExtractPageSchema();
+        if (fresh) {
+          currentSchema = fresh;
+          setPageSchema(fresh);
+        }
+      } catch (e) {}
+    }
+
     const isLocal = selectedModel.isLocal && selectedModel.endpoint;
 
     if (isLocal) {
@@ -536,13 +751,15 @@ export const BrowserResearchPanel = ({
           ? `${cleanBase.replace(/\/v1$/, '')}/api/chat`
           : `${cleanBase.endsWith('/v1') ? cleanBase : cleanBase + '/v1'}/chat/completions`;
 
+        const systemMessageContent = buildSystemPrompt(currentSchema, summary?.fullContext);
+
         const requestBody = isOllama
           ? {
               model: selectedModel.id,
               messages: [
                 {
                   role: 'system',
-                  content: `You are the Regaarder Executive Browser Assistant. Active page domain: ${summary?.domain || 'webpage'}. Active page brief: ${summary?.overview || ''}. Answer user queries concisely and directly based on this page.`
+                  content: systemMessageContent
                 },
                 ...updatedMessages.map((m) => ({
                   role: m.sender === 'user' ? 'user' : 'assistant',
@@ -556,7 +773,7 @@ export const BrowserResearchPanel = ({
               messages: [
                 {
                   role: 'system',
-                  content: `You are the Regaarder Executive Browser Assistant. Active page domain: ${summary?.domain || 'webpage'}. Active page brief: ${summary?.overview || ''}. Ground answers strictly in page context.`
+                  content: systemMessageContent
                 },
                 ...updatedMessages.map((m) => ({
                   role: m.sender === 'user' ? 'user' : 'assistant',
@@ -606,7 +823,6 @@ export const BrowserResearchPanel = ({
               if (!trimmed) continue;
 
               if (isOllama) {
-                // Ollama returns JSON lines: {"message": {"content": "token"}, "done": false}
                 try {
                   const parsed = JSON.parse(trimmed);
                   const token = parsed.message?.content || '';
@@ -627,7 +843,6 @@ export const BrowserResearchPanel = ({
                   }
                 } catch (e) {}
               } else {
-                // OpenAI / llama.cpp SSE: data: {"choices":[{"delta":{"content":"token"}}]}
                 if (trimmed.startsWith('data: ')) {
                   const jsonStr = trimmed.replace(/^data:\s*/, '');
                   if (jsonStr === '[DONE]') {
@@ -655,14 +870,19 @@ export const BrowserResearchPanel = ({
           }
         }
 
-        // Finalize streaming
+        // Finalize streaming & parse action plan
+        const actionPlan = parseActionPlan(accumulatedReply);
+        let finalMessageIdx = -1;
+
         setChatMessages((prev) => {
           const copy = [...prev];
           const lastIdx = copy.length - 1;
+          finalMessageIdx = lastIdx;
           if (lastIdx >= 0 && copy[lastIdx].sender === 'agent') {
             copy[lastIdx] = {
               ...copy[lastIdx],
-              text: accumulatedReply || 'Inference completed.',
+              text: actionPlan?.cleanText || accumulatedReply || 'Execution completed.',
+              actionPlan: actionPlan || undefined,
               isStreaming: false
             };
           }
@@ -671,6 +891,12 @@ export const BrowserResearchPanel = ({
 
         setServerConnectionStatus('online');
         setIsGenerating(false);
+
+        // Auto-execute if low-risk
+        if (actionPlan && actionPlan.risk === 'low' && finalMessageIdx >= 0) {
+          executeActionPlan(actionPlan, finalMessageIdx);
+        }
+
         return;
       } catch (err) {
         setServerConnectionStatus('offline');
@@ -692,23 +918,72 @@ export const BrowserResearchPanel = ({
       }
     }
 
-    // Cloud Model Execution
+    // Cloud Model Execution with Intelligent Grounding & Actions
     setTimeout(() => {
-      let cloudReply = `Regarding **"${userText}"** on **${activeTab?.title || summary?.domain || 'webpage'}**:\n\n`;
-      if (selectedTextContext) {
-        cloudReply += `*Selection Context: "${selectedTextContext.slice(0, 70)}..."*\n\n`;
-      }
-      cloudReply += `Processed request using cloud engine **${selectedModel.name}**. DOM structure and context verified.`;
+      const lower = userText.toLowerCase();
+      const isActionRequest = lower.includes('click') || lower.includes('fill') || lower.includes('submit') || lower.includes('select') || lower.includes('scroll');
 
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          sender: 'agent',
-          text: cloudReply,
-          modelTag: selectedModel.name
+      let cloudReply = '';
+      let cloudActionPlan = null;
+
+      if (isActionRequest && currentSchema?.elements?.length > 0) {
+        const matchingElem = currentSchema.elements.find(
+          (el) =>
+            lower.includes(el.label.toLowerCase()) ||
+            lower.includes(el.id.toLowerCase()) ||
+            (lower.includes('submit') && (el.label.toLowerCase().includes('submit') || el.type === 'submit'))
+        ) || currentSchema.elements[0];
+
+        const isSubmit = matchingElem?.label.toLowerCase().includes('submit') || matchingElem?.type === 'submit';
+        const actionType = matchingElem?.tag === 'input' ? 'fill' : 'click';
+
+        cloudActionPlan = {
+          plan: `Execute ${actionType} on "${matchingElem?.label || matchingElem?.id}"`,
+          risk: isSubmit ? 'high' : 'low',
+          status: 'ready',
+          actions: [
+            {
+              id: 'act-1',
+              action: actionType,
+              elementId: matchingElem?.id,
+              value: actionType === 'fill' ? 'Sample Input' : undefined,
+              description: `${actionType === 'fill' ? 'Fill' : 'Click'} ${matchingElem?.label || matchingElem?.id}`,
+              status: 'idle'
+            }
+          ]
+        };
+        cloudReply = `I prepared an action plan to interact with **${matchingElem?.label || matchingElem?.id}** on this page.`;
+      } else {
+        cloudReply = `Analysis of **${activeTab?.title || currentSchema?.metadata?.title || summary?.domain || 'this page'}**:\n\n`;
+        if (currentSchema?.headings?.length > 0) {
+          cloudReply += `**Key Sections:**\n` + currentSchema.headings.slice(0, 4).map((h) => `• ${h.text}`).join('\n') + `\n\n`;
         }
-      ]);
+        if (currentSchema?.elements?.length > 0) {
+          cloudReply += `**Interactive Controls Found:** ${currentSchema.elements.length} mapped elements ready for automated action.\n\n`;
+        }
+        cloudReply += currentSchema?.visibleTextSummary ? `*Context Overview:* ${currentSchema.visibleTextSummary.slice(0, 240)}...` : `DOM structure verified.`;
+      }
+
+      let msgIdx = -1;
+      setChatMessages((prev) => {
+        const copy = [
+          ...prev,
+          {
+            sender: 'agent',
+            text: cloudReply,
+            actionPlan: cloudActionPlan || undefined,
+            modelTag: selectedModel.name
+          }
+        ];
+        msgIdx = copy.length - 1;
+        return copy;
+      });
+
       setIsGenerating(false);
+
+      if (cloudActionPlan && cloudActionPlan.risk === 'low' && msgIdx >= 0) {
+        executeActionPlan(cloudActionPlan, msgIdx);
+      }
     }, 500);
   };
 
@@ -1005,6 +1280,151 @@ export const BrowserResearchPanel = ({
                         {msg.text}
                         {msg.isStreaming && (
                           <span className="inline-block w-1.5 h-3.5 bg-violet-400 ml-1 animate-pulse" />
+                        )}
+
+                        {msg.actionPlan && (
+                          <div className="w-full mt-2.5 rounded-xl bg-slate-900/90 border border-violet-500/30 overflow-hidden shadow-lg animate-in fade-in zoom-in-95 duration-150">
+                            {/* Plan Header */}
+                            <div className="px-3 py-2 bg-gradient-to-r from-violet-950/60 to-slate-900/90 border-b border-white/[0.08] flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <Wand2 size={12} className="text-violet-400 shrink-0" />
+                                <span className="text-[11px] font-semibold text-slate-200 truncate">
+                                  {msg.actionPlan.plan || 'Browser Action Plan'}
+                                </span>
+                              </div>
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[9px] font-medium tracking-wide uppercase font-mono shrink-0 ${
+                                  msg.actionPlan.risk === 'high'
+                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                }`}
+                              >
+                                {msg.actionPlan.risk === 'high' ? 'Approval Required' : 'Low Risk Plan'}
+                              </span>
+                            </div>
+
+                            {/* Steps List */}
+                            <div className="p-2.5 space-y-1.5 bg-black/20">
+                              {msg.actionPlan.actions.map((act, actIdx) => (
+                                <div
+                                  key={act.id || actIdx}
+                                  className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[10.5px]"
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="w-4 h-4 rounded-full bg-white/[0.08] text-[9px] font-mono text-slate-400 flex items-center justify-center shrink-0">
+                                      {actIdx + 1}
+                                    </span>
+                                    <div className="truncate text-slate-300">
+                                      <span className="font-semibold text-violet-300 capitalize">{act.action}</span>
+                                      {act.elementId && (
+                                        <span className="ml-1 px-1 py-0.2 rounded bg-white/[0.08] text-[9px] font-mono text-slate-400">
+                                          {act.elementId}
+                                        </span>
+                                      )}
+                                      {act.value && (
+                                        <span className="ml-1 text-slate-400 truncate">"{act.value}"</span>
+                                      )}
+                                      {act.description && !act.elementId && !act.value && (
+                                        <span className="ml-1 text-slate-400 truncate">{act.description}</span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="shrink-0 flex items-center">
+                                    {act.status === 'running' && (
+                                      <span className="flex items-center gap-1 text-[9.5px] text-violet-400 font-mono">
+                                        <RefreshCw size={10} className="animate-spin" />
+                                        <span>Running</span>
+                                      </span>
+                                    )}
+                                    {act.status === 'completed' && (
+                                      <span className="flex items-center gap-1 text-[9.5px] text-emerald-400 font-mono">
+                                        <CheckCircle2 size={11} />
+                                        <span>Done</span>
+                                      </span>
+                                    )}
+                                    {act.status === 'failed' && (
+                                      <span className="flex items-center gap-1 text-[9.5px] text-rose-400 font-mono">
+                                        <AlertCircle size={11} />
+                                        <span>Failed</span>
+                                      </span>
+                                    )}
+                                    {(!act.status || act.status === 'idle') && (
+                                      <span className="flex items-center gap-1 text-[9.5px] text-slate-500 font-mono">
+                                        <Clock size={10} />
+                                        <span>Ready</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Card Footer Controls */}
+                            <div className="px-3 py-2 bg-white/[0.02] border-t border-white/[0.06] flex items-center justify-between gap-2">
+                              {msg.actionPlan.status === 'ready' ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onPointerDown={(e) => {
+                                      e.preventDefault();
+                                      executeActionPlan(msg.actionPlan, idx);
+                                    }}
+                                    className="flex-1 py-1 px-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                                  >
+                                    <Play size={10} className="fill-current" />
+                                    <span>Approve & Execute</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onPointerDown={(e) => {
+                                      e.preventDefault();
+                                      setChatMessages((prev) => {
+                                        const copy = [...prev];
+                                        if (copy[idx]) {
+                                          copy[idx] = { ...copy[idx], actionPlan: undefined };
+                                        }
+                                        return copy;
+                                      });
+                                    }}
+                                    className="py-1 px-2.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-slate-400 hover:text-slate-200 text-[11px] font-medium transition-all cursor-pointer"
+                                  >
+                                    Dismiss
+                                  </button>
+                                </>
+                              ) : msg.actionPlan.status === 'executing' ? (
+                                <div className="w-full flex items-center justify-center gap-2 py-0.5 text-xs text-violet-300">
+                                  <RefreshCw size={12} className="animate-spin text-violet-400" />
+                                  <span className="text-[11px] font-medium">Executing action sequence...</span>
+                                </div>
+                              ) : (
+                                <div className="w-full flex items-center justify-between gap-2">
+                                  <span className="flex items-center gap-1 text-[10.5px] text-emerald-400 font-medium">
+                                    <CheckCircle2 size={12} />
+                                    <span>All actions verified on page</span>
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onPointerDown={(e) => {
+                                      e.preventDefault();
+                                      if (onRunFlowRequested) {
+                                        onRunFlowRequested({
+                                          id: `flow-${Date.now()}`,
+                                          title: msg.actionPlan.plan,
+                                          steps: msg.actionPlan.actions
+                                        });
+                                      }
+                                      if (showToast) showToast('Saved action sequence to Regaarder Flows');
+                                    }}
+                                    className="px-2 py-0.5 rounded bg-white/[0.08] hover:bg-white/[0.14] text-[10px] font-medium text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                                  >
+                                    <Plus size={10} />
+                                    <span>Save to Flows</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
                     )}

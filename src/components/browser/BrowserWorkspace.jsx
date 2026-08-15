@@ -704,6 +704,34 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     return `Sample research context from ${activeTab?.title || activeTab?.url || 'webpage'}. Regaarder AI automatically ingests live webpage documents, tables, and notes.`;
   };
 
+  const handleExtractPageSchema = async () => {
+    if (isElectron && window.electronAPI?.extractPageSchema) {
+      const result = await window.electronAPI.extractPageSchema(activeTabId);
+      if (result.success && result.schema) {
+        return result.schema;
+      }
+    }
+    return null;
+  };
+
+  const handleExecuteElementAction = async (actionPayload) => {
+    if (isElectron && window.electronAPI?.executeElementAction) {
+      return await window.electronAPI.executeElementAction({
+        tabId: activeTabId,
+        ...actionPayload
+      });
+    }
+    return { success: false, error: 'Browser API not available in web preview' };
+  };
+
+  const handleCaptureScreenshot = async () => {
+    if (isElectron && window.electronAPI?.captureTabScreenshot) {
+      const res = await window.electronAPI.captureTabScreenshot(activeTabId);
+      if (res.success && res.dataUrl) return res.dataUrl;
+    }
+    return null;
+  };
+
   // Contextual Action: Send to Sheets Execution & Undo System
   const handleExecuteSendToSheets = (payload) => {
     const { destinationSheet, tableData } = payload;
@@ -851,6 +879,9 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
               activeTab={activeTab}
               onClose={() => setIsSidePanelOpen(false)}
               onExtractText={handleExtractText}
+              onExtractPageSchema={handleExtractPageSchema}
+              onExecuteElementAction={handleExecuteElementAction}
+              onCaptureScreenshot={handleCaptureScreenshot}
               onOpenSendToCompose={(rect) => {
                 handleOpenSendToComposePopoverAction(rect || { bottom: 60, right: 300 });
               }}

@@ -366,6 +366,249 @@ class BrowserViewManager {
     }
   }
 
+  async extractPageSchema(tabId) {
+    const tabState = this.tabs.get(tabId);
+    if (!tabState) return { success: false, error: 'Tab not found' };
+    try {
+      const script = `
+        (() => {
+          try {
+            const interactiveSelector = 'button, a, input, select, textarea, [role="button"], [role="link"], [role="checkbox"], [role="menuitem"], [role="tab"], [tabindex]:not([tabindex="-1"])';
+            const allNodes = Array.from(document.querySelectorAll(interactiveSelector));
+            
+            let idCounter = 1;
+            const elements = [];
+            const vw = window.innerWidth || document.documentElement.clientWidth;
+            const vh = window.innerHeight || document.documentElement.clientHeight;
+
+            for (const node of allNodes) {
+              const rect = node.getBoundingClientRect();
+              const style = window.getComputedStyle(node);
+              const isVisible = (
+                style.display !== 'none' &&
+                style.visibility !== 'hidden' &&
+                style.opacity !== '0' &&
+                rect.width > 0 &&
+                rect.height > 0 &&
+                rect.top < vh && rect.bottom > 0 &&
+                rect.left < vw && rect.right > 0
+              );
+
+              let tag = node.tagName.toLowerCase();
+              let role = node.getAttribute('role') || tag;
+              let type = node.getAttribute('type') || '';
+              let prefix = 'elem';
+              if (tag === 'button' || role === 'button') prefix = 'btn';
+              else if (tag === 'input' || tag === 'textarea') prefix = type === 'checkbox' ? 'chk' : (type === 'radio' ? 'rad' : 'input');
+              else if (tag === 'select') prefix = 'sel';
+              else if (tag === 'a') prefix = 'link';
+
+              const virtualId = \`\${prefix}_\${idCounter++}\`;
+              node.setAttribute('data-regaarder-id', virtualId);
+
+              let label = (
+                node.getAttribute('aria-label') ||
+                node.getAttribute('placeholder') ||
+                node.innerText ||
+                node.value ||
+                node.getAttribute('title') ||
+                node.getAttribute('name') ||
+                ''
+              ).trim().replace(/\\s+/g, ' ').slice(0, 80);
+
+              let options = undefined;
+              if (tag === 'select') {
+                options = Array.from(node.querySelectorAll('option')).map(o => o.text.trim()).filter(Boolean).slice(0, 20);
+              }
+
+              if (isVisible || elements.length < 80) {
+                elements.push({
+                  id: virtualId,
+                  tag,
+                  role,
+                  type: type || undefined,
+                  label: label || '(unlabeled)',
+                  value: (tag === 'input' || tag === 'textarea') ? node.value : undefined,
+                  options,
+                  isVisible,
+                  isEnabled: !node.disabled && !node.getAttribute('aria-disabled'),
+                  bounds: {
+                    x: Math.round(rect.x),
+                    y: Math.round(rect.y),
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height)
+                  }
+                });
+              }
+            }
+
+            const headingNodes = Array.from(document.querySelectorAll('h1, h2, h3, [role="heading"]'));
+            const headings = headingNodes.map(h => ({
+              level: parseInt(h.tagName.replace('H', '') || '2', 10) || 2,
+              text: (h.innerText || '').trim().replace(/\\s+/g, ' ').slice(0, 120)
+            })).filter(h => h.text.length > 0).slice(0, 15);
+
+            const bodyText = (document.body?.innerText || '').replace(/\\s+/g, ' ').slice(0, 4000);
+
+            return {
+              success: true,
+              schema: {
+                metadata: {
+                  title: document.title || '',
+                  url: window.location.href,
+                  domain: window.location.hostname,
+                  scrollPosition: {
+                    x: Math.round(window.scrollX || window.pageXOffset || 0),
+                    y: Math.round(window.scrollY || window.pageYOffset || 0),
+                    maxScrollY: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) - window.innerHeight
+                  },
+                  selectedText: window.getSelection() ? window.getSelection().toString().trim() : ''
+                },
+                headings,
+                elements: elements.slice(0, 60),
+                visibleTextSummary: bodyText
+              }
+            };
+          } catch (err) {
+            return { success: false, error: err.message };
+          }
+        })()
+      `;
+      const res = await tabState.view.webContents.executeJavaScript(script);
+      return res || { success: false, error: 'Failed to extract schema' };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  async executeElementAction(tabId, payload) {
+    const tabState = this.tabs.get(tabId);
+    if (!tabState) return { success: false, error: 'Tab not found' };
+    try {
+      const { action, elementId, value, options } = payload || {};
+      const script = `
+        (() => {
+          try {
+            const action = ${JSON.stringify(action)};
+            const elementId = ${JSON.stringify(elementId)};
+            const value = ${JSON.stringify(value)};
+
+            if (action === 'scroll') {
+              const dir = ${JSON.stringify(options?.direction || 'down')};
+              const amount = ${JSON.stringify(options?.amount || 400)};
+              if (dir === 'top') window.scrollTo({ top: 0, behavior: 'smooth' });
+              else if (dir === 'bottom') window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+              else if (dir === 'up') window.scrollBy({ top: -amount, behavior: 'smooth' });
+              else window.scrollBy({ top: amount, behavior: 'smooth' });
+              return { success: true, action: 'scroll', executed: true };
+            }
+
+            if (action === 'navigate') {
+              if (value) {
+                window.location.href = value;
+                return { success: true, action: 'navigate', url: value };
+              }
+              return { success: false, error: 'No URL provided' };
+            }
+
+            if (action === 'goBack') {
+              window.history.back();
+              return { success: true, action: 'goBack' };
+            }
+
+            if (!elementId) {
+              return { success: false, error: 'No elementId specified' };
+            }
+
+            const target = document.querySelector(\`[data-regaarder-id="\${elementId}"]\`);
+            if (!target) {
+              return { success: false, error: \`Element with ID \${elementId} not found on page\` };
+            }
+
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            if (action === 'click') {
+              target.focus();
+              target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+              target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+              target.click();
+              return { success: true, action: 'click', elementId, label: target.innerText || target.getAttribute('aria-label') || target.value };
+            }
+
+            if (action === 'type' || action === 'fill') {
+              target.focus();
+              if (typeof target.value !== 'undefined') {
+                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                  target instanceof HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype,
+                  'value'
+                )?.set;
+                if (nativeInputValueSetter) {
+                  nativeInputValueSetter.call(target, value || '');
+                } else {
+                  target.value = value || '';
+                }
+                target.dispatchEvent(new Event('input', { bubbles: true }));
+                target.dispatchEvent(new Event('change', { bubbles: true }));
+              } else if (target.isContentEditable) {
+                target.innerText = value || '';
+                target.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+              return { success: true, action: 'fill', elementId, value };
+            }
+
+            if (action === 'select') {
+              if (target.tagName.toLowerCase() === 'select') {
+                const opts = Array.from(target.options);
+                const matched = opts.find(o => o.value === value || o.text.trim().toLowerCase() === String(value).trim().toLowerCase());
+                if (matched) {
+                  target.value = matched.value;
+                  target.dispatchEvent(new Event('change', { bubbles: true }));
+                  return { success: true, action: 'select', elementId, selected: matched.text };
+                }
+              }
+              return { success: false, error: 'Select element option not matched' };
+            }
+
+            if (action === 'checkbox' || action === 'toggle') {
+              if (target.type === 'checkbox' || target.getAttribute('role') === 'checkbox') {
+                target.checked = typeof value === 'boolean' ? value : !target.checked;
+                target.dispatchEvent(new Event('change', { bubbles: true }));
+                return { success: true, action: 'toggle', elementId, checked: target.checked };
+              }
+              target.click();
+              return { success: true, action: 'toggle', elementId };
+            }
+
+            if (action === 'focus') {
+              target.focus();
+              return { success: true, action: 'focus', elementId };
+            }
+
+            return { success: false, error: \`Unknown action: \${action}\` };
+          } catch (err) {
+            return { success: false, error: err.message };
+          }
+        })()
+      `;
+      const res = await tabState.view.webContents.executeJavaScript(script);
+      return res || { success: false, error: 'Execution failed' };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  async captureTabScreenshot(tabId) {
+    const tabState = this.tabs.get(tabId);
+    if (!tabState) return { success: false, error: 'Tab not found' };
+    try {
+      const image = await tabState.view.webContents.capturePage();
+      const dataUrl = image.toDataURL();
+      return { success: true, dataUrl };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
   setFontZoom(font, size) {
     if (font !== undefined && font !== null) this.currentFont = font;
     if (size !== undefined && size !== null) this.currentFontSize = Number(size);

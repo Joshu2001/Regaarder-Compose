@@ -141,6 +141,28 @@ ipcMain.handle('browser:extract-page-text', async (event, { tabId }) => {
   return { success: false, error: 'Browser manager not initialized' };
 });
 
+ipcMain.handle('browser:extract-page-schema', async (event, { tabId }) => {
+  if (browserViewManager) {
+    return await browserViewManager.extractPageSchema(tabId);
+  }
+  return { success: false, error: 'Browser manager not initialized' };
+});
+
+ipcMain.handle('browser:execute-element-action', async (event, params) => {
+  if (browserViewManager) {
+    const { tabId, ...payload } = params || {};
+    return await browserViewManager.executeElementAction(tabId, payload);
+  }
+  return { success: false, error: 'Browser manager not initialized' };
+});
+
+ipcMain.handle('browser:capture-screenshot', async (event, { tabId }) => {
+  if (browserViewManager) {
+    return await browserViewManager.captureTabScreenshot(tabId);
+  }
+  return { success: false, error: 'Browser manager not initialized' };
+});
+
 ipcMain.handle('browser:set-font-zoom', async (event, { font, size }) => {
   if (browserViewManager) {
     browserViewManager.setFontZoom(font, size);

@@ -383,6 +383,29 @@ export const PopoverWindowContainer = () => {
                 }
                 return 'Page context from active tab';
               }}
+              onExtractPageSchema={async () => {
+                if (window.electronAPI?.extractPageSchema && activeTab?.tabId) {
+                  const res = await window.electronAPI.extractPageSchema(activeTab.tabId);
+                  return res?.schema || null;
+                }
+                return null;
+              }}
+              onExecuteElementAction={async (payload) => {
+                if (window.electronAPI?.executeElementAction && activeTab?.tabId) {
+                  return await window.electronAPI.executeElementAction({
+                    tabId: activeTab.tabId,
+                    ...payload
+                  });
+                }
+                return { success: false, error: 'Unavailable' };
+              }}
+              onCaptureScreenshot={async () => {
+                if (window.electronAPI?.captureTabScreenshot && activeTab?.tabId) {
+                  const res = await window.electronAPI.captureTabScreenshot(activeTab.tabId);
+                  return res?.dataUrl || null;
+                }
+                return null;
+              }}
               onOpenSendToCompose={() => setPopoverType('sendToCompose')}
               onOpenSendToSheets={() => setPopoverType('sendToSheets')}
               onSaveToMemory={() => {}}
