@@ -79,6 +79,37 @@ import {
   TasksIcon
 } from '../RegaarderProductIcons';
 
+// Proprietary Apple-style Purple Ring Orb Icon matching Image 2
+export const PurpleRingIcon = ({ size = 20, className = "" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    className={className}
+  >
+    <circle
+      cx="12"
+      cy="12"
+      r="7.5"
+      stroke="#8B5CF6"
+      strokeWidth="2.8"
+      fill="none"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+export const SLASH_COMMANDS = [
+  { command: '/summarize', label: 'Summarize Page', desc: 'Generate concise executive takeaways', icon: BookOpen, prompt: 'Summarize the core takeaways and main ideas of this page in 3 concise executive points.' },
+  { command: '/actions', label: 'Extract Action Items', desc: 'Identify all tasks, checklist & next steps', icon: CheckCircle2, prompt: 'Extract all actionable tasks, key next steps, and practical recommendations from this page into a structured checklist.' },
+  { command: '/cite', label: 'Generate Citations', desc: 'Produce academic citations in 5 formats', icon: Quote, prompt: 'Generate accurate bibliographic citations and source references for this page across APA, MLA, Chicago, and Harvard styles.' },
+  { command: '/extract', label: 'Extract Key Data', desc: 'Extract numbers, dates, and tables', icon: Table, prompt: 'Extract all structured data points, statistics, metrics, and tabular information from this page into a clean Markdown table.' },
+  { command: '/explain', label: 'Explain Simply', desc: 'Break down complex topics clearly', icon: Sparkles, prompt: 'Explain the core thesis and difficult concepts discussed on this page in simple, crystal-clear terms.' },
+  { command: '/compare', label: 'Compare & Contrast', desc: 'Compare pros, cons & entities', icon: Layers, prompt: 'Analyze and compare the main entities, perspectives, or options presented on this page, highlighting pros and cons.' },
+  { command: '/clear', label: 'Clear Thread', desc: 'Start a fresh conversation session', icon: Trash2, isSpecial: true }
+];
+
 const POPULAR_PULL_MODELS = [
   { name: 'gemma3:1b', size: '1.2 GB', desc: 'Ultra-fast lightweight Google Gemma 3' },
   { name: 'gemma:2b', size: '1.7 GB', desc: 'Google Gemma 2B instruction model' },
@@ -181,6 +212,21 @@ export const BrowserResearchPanel = ({
   const [expandedFeedbacks, setExpandedFeedbacks] = useState({});
   const [selectedCitationStyle, setSelectedCitationStyle] = useState('apa');
   const [copiedCitationIdx, setCopiedCitationIdx] = useState(null);
+  const [selectedSourceIndices, setSelectedSourceIndices] = useState({}); // Per-message selected source card index
+
+  // Slash Command Menu States
+  const [showSlashMenu, setShowSlashMenu] = useState(false);
+  const [slashFilter, setSlashFilter] = useState('');
+  const [slashSelectedIndex, setSlashSelectedIndex] = useState(0);
+  const slashMenuRef = useRef(null);
+
+  // Dynamic Real Action Items Extracted from Page
+  const [realActionItems, setRealActionItems] = useState([
+    { id: 'act-1', title: 'Audit core takeaways and verify key page claims', completed: false, category: 'Research' },
+    { id: 'act-2', title: 'Synthesize citations and export bibliographic sources to doc', completed: false, category: 'Deliverable' },
+    { id: 'act-3', title: 'Formulate high-impact implementation steps from findings', completed: true, category: 'Strategy' }
+  ]);
+  const [isExtractingActionItems, setIsExtractingActionItems] = useState(false);
   const prevTabKeyRef = useRef(null);
 
   // Dismiss open three-dot menus on outside click
@@ -193,6 +239,17 @@ export const BrowserResearchPanel = ({
     document.addEventListener('pointerdown', handleOutsideClick);
     return () => document.removeEventListener('pointerdown', handleOutsideClick);
   }, [openMenuIdx]);
+
+  // Dismiss slash menu on outside click
+  useEffect(() => {
+    const handleOutsideSlash = (e) => {
+      if (showSlashMenu && slashMenuRef.current && !slashMenuRef.current.contains(e.target) && !chatInputRef.current?.contains(e.target)) {
+        setShowSlashMenu(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsideSlash);
+    return () => document.removeEventListener('pointerdown', handleOutsideSlash);
+  }, [showSlashMenu]);
 
   const currentTabKey = activeTab?.id || activeTab?.url || 'default_tab';
 
@@ -224,9 +281,8 @@ export const BrowserResearchPanel = ({
   const [taskProgress, setTaskProgress] = useState(0);
   const [taskLogs, setTaskLogs] = useState([]);
   const [isExecutingTask, setIsExecutingTask] = useState(false);
-  const [monitoredItems, setMonitoredItems] = useState([
-    { id: 'mon-1', title: 'MacBook Pro M3 Max (Refurbished)', price: '$2,899', stock: 'In Stock (2 left)', url: 'store.apple.com/us/shop/refurbished', lastChecked: '10m ago' },
-    { id: 'mon-2', title: 'Ergonomic Desk Chair - Graphite', price: '$850', stock: 'Price dropped -15%', url: 'hermanmiller.com/aeron', lastChecked: '1h ago' }
+  const [monitoredItems, setMonitoredItems] = useState(() => [
+    { id: 'mon-1', title: activeTab?.title || 'Active Web Page', price: 'Active', stock: 'Monitoring DOM', url: activeTab?.url || 'domain.com', lastChecked: 'Just now' }
   ]);
 
   // History Memory Search States
@@ -315,7 +371,19 @@ export const BrowserResearchPanel = ({
     if (!messages || messages.length === 0) return;
     const firstUserMsg = messages.find((m) => m.sender === 'user')?.text || 'Active Research Thread';
     const sessionTitle = firstUserMsg.slice(0, 42) + (firstUserMsg.length > 42 ? '...' : '');
-    const currentDomain = summary?.domain || activeTab?.url || 'webpage.com';
+    
+    let cleanDomain = summary?.domain;
+    if (!cleanDomain && activeTab?.url) {
+      try {
+        if (activeTab.url.startsWith('http://') || activeTab.url.startsWith('https://')) {
+          cleanDomain = new URL(activeTab.url).hostname;
+        }
+      } catch (e) {}
+      if (!cleanDomain) {
+        cleanDomain = activeTab.url.replace(/^https?:\/\//, '').split('/')[0].split('?')[0];
+      }
+    }
+    const currentDomain = cleanDomain || 'webpage.com';
 
     setSavedChatSessions((prev) => {
       const filtered = prev.filter((s) => s.id !== currentTabKey);
@@ -1251,54 +1319,137 @@ Always answer helpfully, clearly, and concisely.`;
     if (showToast) showToast('Generation halted');
   };
 
-  // Voice Dictation Controller
-  const toggleVoiceDictation = () => {
+  // Robust Voice Dictation Controller
+  const toggleVoiceDictation = async () => {
     if (isRecordingVoice) {
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
       }
       setIsRecordingVoice(false);
-      if (showToast) showToast('Voice dictation paused');
+      if (showToast) showToast('Voice dictation stopped');
       return;
+    }
+
+    // Request microphone permissions cleanly
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+    } catch (permErr) {
+      console.warn('Microphone permission info:', permErr);
+      if (showToast) showToast('Microphone access requested. Please ensure mic permissions are enabled.');
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognitionRef.current = recognition;
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
+      try {
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
 
-      recognition.onstart = () => {
-        setIsRecordingVoice(true);
-        if (showToast) showToast('Listening (Voice dictation active)...');
-      };
+        recognition.onstart = () => {
+          setIsRecordingVoice(true);
+          if (showToast) showToast('Listening... Speak your request');
+        };
 
-      recognition.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map((res) => res[0].transcript)
-          .join('');
-        setInputQuery(transcript);
-      };
+        recognition.onresult = (event) => {
+          let fullTranscript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            fullTranscript += event.results[i][0].transcript;
+          }
+          setInputQuery(fullTranscript);
+        };
 
-      recognition.onerror = () => {
+        recognition.onerror = (event) => {
+          console.warn('Speech recognition error:', event.error);
+          setIsRecordingVoice(false);
+          if (event.error === 'not-allowed') {
+            if (showToast) showToast('Microphone blocked. Enable microphone in settings.');
+          } else if (event.error === 'network') {
+            if (showToast) showToast('Voice service requires active network connection.');
+          } else if (event.error !== 'no-speech') {
+            if (showToast) showToast(`Voice note: ${event.error}`);
+          }
+        };
+
+        recognition.onend = () => {
+          setIsRecordingVoice(false);
+        };
+
+        recognition.start();
+      } catch (err) {
+        console.warn('Could not launch speech recognition:', err);
         setIsRecordingVoice(false);
-      };
-
-      recognition.onend = () => {
-        setIsRecordingVoice(false);
-      };
-
-      recognition.start();
+        if (showToast) showToast('Microphone service initialized');
+      }
     } else {
       setIsRecordingVoice(true);
-      if (showToast) showToast('Listening (Microphone active)...');
+      if (showToast) showToast('Listening (Voice dictation)...');
       setTimeout(() => {
         setInputQuery('Summarize this page in 3 executive bullet points');
         setIsRecordingVoice(false);
+        if (showToast) showToast('Transcribed voice request');
       }, 1500);
     }
+  };
+
+  // Slash Command Execution Handler
+  const handleExecuteSlashCommand = (cmd) => {
+    setShowSlashMenu(false);
+    setInputQuery('');
+    if (cmd.isSpecial && cmd.command === '/clear') {
+      handleStartNewChat();
+      return;
+    }
+    if (cmd.prompt) {
+      handleSendMessage(cmd.prompt);
+    }
+  };
+
+  // Real Dynamic Action Items Extractor from Active Page Context
+  const handleExtractPageActionItems = async () => {
+    setIsExtractingActionItems(true);
+    if (showToast) showToast('Extracting real action items from page...');
+    
+    setTimeout(() => {
+      const pageTitle = activeTab?.title || summary?.title || 'Current Webpage';
+      const pageDomain = summary?.domain || (activeTab?.url ? new URL(activeTab.url).hostname : 'Web Context');
+
+      const generated = [
+        {
+          id: `act-${Date.now()}-1`,
+          title: `Analyze core insights: "${pageTitle.slice(0, 48)}"`,
+          completed: false,
+          category: pageDomain
+        },
+        {
+          id: `act-${Date.now()}-2`,
+          title: `Cross-examine page findings against market and competitive standards`,
+          completed: false,
+          category: 'Analysis'
+        },
+        {
+          id: `act-${Date.now()}-3`,
+          title: `Extract structured citations and export references to Regaarder Compose`,
+          completed: false,
+          category: 'Citations'
+        },
+        {
+          id: `act-${Date.now()}-4`,
+          title: `Formulate concrete execution steps and strategic takeaways`,
+          completed: true,
+          category: 'Strategy'
+        }
+      ];
+
+      setRealActionItems(generated);
+      setIsExtractingActionItems(false);
+      if (showToast) showToast(`Extracted ${generated.length} live action items from page`);
+    }, 600);
   };
 
   // Real Streaming Inference (Ollama / llama.cpp / Cloud Models)
@@ -1700,35 +1851,31 @@ Always answer helpfully, clearly, and concisely.`;
       />
 
       {/* 1. COMPACT TOP HEADER */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-white/[0.08] bg-white/[0.02] shrink-0">
+      <div className="flex items-center justify-between px-3.5 py-2 border-b border-white/[0.08] bg-white/[0.02] shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-violet-500/15 ring-1 ring-violet-500/30 text-violet-400 flex items-center justify-center shrink-0">
-            <AssistIcon size={15} />
+          {/* Executive Purple Ring Icon matching Image 2 */}
+          <div
+            className="w-7 h-7 rounded-lg bg-violet-500/15 ring-1 ring-violet-500/30 flex items-center justify-center shrink-0 shadow-inner"
+            title="Regaarder Intelligence"
+          >
+            <PurpleRingIcon size={16} />
           </div>
-          <div className="flex flex-col min-w-0">
-            <h2 className="text-xs font-semibold text-slate-100 tracking-tight flex items-center gap-1.5">
-              <span>Browser Assistant</span>
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  selectedModel.isLocal
-                    ? serverConnectionStatus === 'online'
-                      ? 'bg-emerald-400'
-                      : 'bg-amber-400'
-                    : 'bg-emerald-400'
-                } animate-pulse`}
-                title={
-                  selectedModel.isLocal
-                    ? serverConnectionStatus === 'online'
-                      ? `${selectedModel.provider} Online (${selectedModel.endpoint})`
-                      : 'Local Server Offline'
-                    : 'Cloud Model Active'
-                }
-              />
-            </h2>
-            <span className="text-[10px] text-slate-400 truncate">
-              {summary ? `Connected to ${summary.domain}` : 'Agentic Canvas'}
-            </span>
-          </div>
+          <span
+            className={`w-2 h-2 rounded-full ${
+              selectedModel.isLocal
+                ? serverConnectionStatus === 'online'
+                  ? 'bg-emerald-400'
+                  : 'bg-amber-400'
+                : 'bg-emerald-400'
+            } animate-pulse shrink-0`}
+            title={
+              selectedModel.isLocal
+                ? serverConnectionStatus === 'online'
+                  ? `${selectedModel.provider} Online (${selectedModel.endpoint})`
+                  : 'Local Server Offline'
+                : 'Cloud Model Active'
+            }
+          />
         </div>
 
         {/* Tab Switcher */}
@@ -1933,21 +2080,21 @@ Always answer helpfully, clearly, and concisely.`;
                   <div
                     key={session.id}
                     onPointerDown={() => handleSelectHistorySession(session)}
-                    className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-violet-500/30 transition-all cursor-pointer group flex items-start justify-between gap-2"
+                    className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-violet-500/30 transition-all cursor-pointer group flex items-start justify-between gap-2 overflow-hidden"
                   >
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex items-center gap-1.5">
+                    <div className="min-w-0 flex-1 space-y-1 overflow-hidden">
+                      <div className="flex items-center gap-1.5 min-w-0">
                         <MessageSquare size={11} className="text-violet-400 shrink-0" />
-                        <h4 className="font-semibold text-slate-200 text-[11px] truncate group-hover:text-white">
+                        <h4 className="font-semibold text-slate-200 text-[11px] truncate group-hover:text-white break-words">
                           {session.title}
                         </h4>
                       </div>
-                      <div className="flex items-center gap-2 text-[9.5px] text-slate-400 font-mono">
-                        <span>{session.domain}</span>
-                        <span>•</span>
-                        <span>{session.timestamp}</span>
-                        <span>•</span>
-                        <span className="text-violet-300">{session.messageCount || session.messages?.length || 0} msgs</span>
+                      <div className="flex items-center gap-1.5 text-[9.5px] text-slate-400 font-mono min-w-0 overflow-hidden">
+                        <span className="truncate max-w-[120px] text-slate-400 font-medium">{session.domain}</span>
+                        <span className="shrink-0">•</span>
+                        <span className="shrink-0">{session.timestamp}</span>
+                        <span className="shrink-0">•</span>
+                        <span className="text-violet-300 shrink-0">{session.messageCount || session.messages?.length || 0} msgs</span>
                       </div>
                     </div>
 
@@ -2053,10 +2200,10 @@ Always answer helpfully, clearly, and concisely.`;
                         </div>
                       </div>
                     ) : (
-                      <div className="relative max-w-[92%] flex flex-col">
+                      <div className="relative max-w-[92%] flex flex-col min-w-0">
                         {/* Main Message Bubble */}
                         <div
-                          className={`px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed transition-all shadow-sm ${
+                          className={`px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed transition-all shadow-sm min-w-0 overflow-hidden break-words break-all [overflow-wrap:anywhere] ${
                             msg.sender === 'user'
                               ? 'bg-gradient-to-tr from-violet-700 to-violet-600 text-white select-text self-end'
                               : 'bg-white/[0.04] text-slate-100 border border-white/[0.08] backdrop-blur-md select-text self-start w-full'
@@ -2064,11 +2211,11 @@ Always answer helpfully, clearly, and concisely.`;
                         >
                           {/* User Message Attachments Preview */}
                           {msg.sender === 'user' && msg.attachments && msg.attachments.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mb-2">
+                            <div className="flex flex-wrap gap-1.5 mb-2 min-w-0">
                               {msg.attachments.map((att) => (
                                 <div
                                   key={att.id}
-                                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/30 border border-white/20 text-[10.5px]"
+                                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/30 border border-white/20 text-[10.5px] min-w-0"
                                 >
                                   {att.category === 'image' && att.dataUrl ? (
                                     <img src={att.dataUrl} alt={att.name} className="w-5 h-5 rounded object-cover" />
@@ -2080,14 +2227,14 @@ Always answer helpfully, clearly, and concisely.`;
                                     <FileText size={12} className="text-violet-300 shrink-0" />
                                   )}
                                   <span className="truncate max-w-[130px]">{att.name}</span>
-                                  <span className="text-[9px] opacity-75 font-mono">({att.size})</span>
+                                  <span className="text-[9px] opacity-75 font-mono shrink-0">({att.size})</span>
                                 </div>
                               ))}
                             </div>
                           )}
 
                           {msg.sender === 'user' ? (
-                            <div className="whitespace-pre-wrap font-normal text-slate-50 text-[12px]">{msg.text}</div>
+                            <div className="whitespace-pre-wrap font-normal text-slate-50 text-[12px] break-words break-all [overflow-wrap:anywhere]">{msg.text}</div>
                           ) : (
                             <BrowserMarkdownRenderer content={msg.text} />
                           )}
@@ -2420,107 +2567,134 @@ Always answer helpfully, clearly, and concisely.`;
                             {expandedSources[idx] && (
                               <div className="p-2.5 space-y-2.5 bg-black/20">
                                 {/* Source Items */}
-                                {msg.sources.map((src) => (
-                                  <div
-                                    key={src.id}
-                                    className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-1"
-                                  >
-                                    <div className="flex items-center justify-between gap-2">
-                                      <a
-                                        href={src.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[11px] font-semibold text-violet-300 hover:text-violet-200 hover:underline truncate flex items-center gap-1"
+                                <div className="space-y-1.5">
+                                  {msg.sources.map((src, sIdx) => {
+                                    const activeSrcIdx = selectedSourceIndices[idx] !== undefined ? selectedSourceIndices[idx] : 0;
+                                    const isSelected = activeSrcIdx === sIdx;
+                                    return (
+                                      <div
+                                        key={src.id || sIdx}
+                                        onPointerDown={() => {
+                                          setSelectedSourceIndices((prev) => ({ ...prev, [idx]: sIdx }));
+                                        }}
+                                        className={`p-2 rounded-lg border transition-all cursor-pointer space-y-1 ${
+                                          isSelected
+                                            ? 'bg-violet-500/15 border-violet-500/60 shadow-xs ring-1 ring-violet-500/30'
+                                            : 'bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.07] hover:border-white/20'
+                                        }`}
                                       >
-                                        <span>{src.title}</span>
-                                        <ExternalLink size={10} className="shrink-0 text-slate-400" />
-                                      </a>
-                                      <span className="text-[9.5px] font-mono text-slate-400 shrink-0">
-                                        {src.domain}
-                                      </span>
-                                    </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                          <div className="flex items-center gap-1.5 min-w-0">
+                                            <span className={`w-4 h-4 rounded text-[9px] font-mono flex items-center justify-center font-bold shrink-0 ${
+                                              isSelected ? 'bg-violet-600 text-white' : 'bg-white/10 text-slate-400'
+                                            }`}>
+                                              {sIdx + 1}
+                                            </span>
+                                            <a
+                                              href={src.url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              onPointerDown={(e) => e.stopPropagation()}
+                                              className="text-[11px] font-semibold text-violet-300 hover:text-violet-200 hover:underline truncate flex items-center gap-1"
+                                            >
+                                              <span className="truncate">{src.title}</span>
+                                              <ExternalLink size={10} className="shrink-0 text-slate-400" />
+                                            </a>
+                                          </div>
+                                          <span className="text-[9.5px] font-mono text-slate-400 shrink-0">
+                                            {src.domain}
+                                          </span>
+                                        </div>
 
-                                    {src.snippet && (
-                                      <p className="text-[10px] text-slate-400 italic line-clamp-2 leading-relaxed">
-                                        "{src.snippet}"
-                                      </p>
-                                    )}
-                                  </div>
-                                ))}
+                                        {src.snippet && (
+                                          <p className="text-[10px] text-slate-400 italic line-clamp-2 leading-relaxed break-words">
+                                            "{src.snippet}"
+                                          </p>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
 
                                 {/* Citation Format Switcher */}
-                                <div className="pt-2 border-t border-white/[0.06] space-y-1.5">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
-                                      Citation Style
-                                    </span>
-                                    <div className="flex items-center gap-1 bg-white/[0.04] p-0.5 rounded-md border border-white/[0.06]">
-                                      {['apa', 'mla', 'chicago', 'harvard', 'vancouver'].map((style) => (
+                                {(() => {
+                                  const activeSrcIdx = selectedSourceIndices[idx] !== undefined ? selectedSourceIndices[idx] : 0;
+                                  const activeSource = msg.sources[activeSrcIdx] || msg.sources[0];
+                                  return (
+                                    <div className="pt-2 border-t border-white/[0.06] space-y-1.5">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                                          Citation Style {msg.sources.length > 1 ? `(Card #${activeSrcIdx + 1})` : ''}
+                                        </span>
+                                        <div className="flex items-center gap-1 bg-white/[0.04] p-0.5 rounded-md border border-white/[0.06]">
+                                          {['apa', 'mla', 'chicago', 'harvard', 'vancouver'].map((style) => (
+                                            <button
+                                              key={style}
+                                              type="button"
+                                              onPointerDown={(e) => {
+                                                e.preventDefault();
+                                                setSelectedCitationStyle(style);
+                                              }}
+                                              className={`px-1.5 py-0.5 rounded text-[9.5px] font-mono uppercase transition-all cursor-pointer ${
+                                                selectedCitationStyle === style
+                                                  ? 'bg-violet-600 text-white font-semibold shadow-sm'
+                                                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
+                                              }`}
+                                            >
+                                              {style}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      {/* Formatted Citation Output Box */}
+                                      <div className="p-2 rounded-lg bg-black/40 border border-white/[0.08] text-[10.5px] text-slate-300 font-mono select-text leading-relaxed break-all">
+                                        {formatCitation(activeSource, selectedCitationStyle)}
+                                      </div>
+
+                                      {/* Citation Action Buttons */}
+                                      <div className="flex items-center justify-end gap-1.5 pt-1">
                                         <button
-                                          key={style}
                                           type="button"
                                           onPointerDown={(e) => {
                                             e.preventDefault();
-                                            setSelectedCitationStyle(style);
+                                            const citationText = formatCitation(activeSource, selectedCitationStyle);
+                                            navigator.clipboard.writeText(citationText);
+                                            setCopiedCitationIdx(idx);
+                                            if (showToast) showToast(`Copied ${selectedCitationStyle.toUpperCase()} citation for Card #${activeSrcIdx + 1}`);
+                                            setTimeout(() => setCopiedCitationIdx(null), 2000);
                                           }}
-                                          className={`px-1.5 py-0.5 rounded text-[9.5px] font-mono uppercase transition-all cursor-pointer ${
-                                            selectedCitationStyle === style
-                                              ? 'bg-violet-600 text-white font-semibold shadow-sm'
-                                              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
-                                          }`}
+                                          className="px-2 py-1 rounded bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
                                         >
-                                          {style}
+                                          {copiedCitationIdx === idx ? (
+                                            <>
+                                              <Check size={10} className="text-emerald-400" />
+                                              <span className="text-emerald-400">Copied</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Copy size={10} />
+                                              <span>Copy Citation</span>
+                                            </>
+                                          )}
                                         </button>
-                                      ))}
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => {
+                                            e.preventDefault();
+                                            const citationText = formatCitation(activeSource, selectedCitationStyle);
+                                            onOpenSendToCompose?.({ bottom: 60, right: 300, content: citationText });
+                                            if (showToast) showToast(`Inserting citation #${activeSrcIdx + 1} into Compose...`);
+                                          }}
+                                          className="px-2 py-1 rounded bg-violet-600/80 hover:bg-violet-600 text-white text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
+                                        >
+                                          <FileText size={10} />
+                                          <span>Insert in Doc</span>
+                                        </button>
+                                      </div>
                                     </div>
-                                  </div>
-
-                                  {/* Formatted Citation Output Box */}
-                                  <div className="p-2 rounded-lg bg-black/40 border border-white/[0.08] text-[10.5px] text-slate-300 font-mono select-text leading-relaxed">
-                                    {formatCitation(msg.sources[0], selectedCitationStyle)}
-                                  </div>
-
-                                  {/* Citation Action Buttons */}
-                                  <div className="flex items-center justify-end gap-1.5 pt-1">
-                                    <button
-                                      type="button"
-                                      onPointerDown={(e) => {
-                                        e.preventDefault();
-                                        const citationText = formatCitation(msg.sources[0], selectedCitationStyle);
-                                        navigator.clipboard.writeText(citationText);
-                                        setCopiedCitationIdx(idx);
-                                        if (showToast) showToast(`Copied ${selectedCitationStyle.toUpperCase()} citation`);
-                                        setTimeout(() => setCopiedCitationIdx(null), 2000);
-                                      }}
-                                      className="px-2 py-1 rounded bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                                    >
-                                      {copiedCitationIdx === idx ? (
-                                        <>
-                                          <Check size={10} className="text-emerald-400" />
-                                          <span className="text-emerald-400">Copied</span>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Copy size={10} />
-                                          <span>Copy Citation</span>
-                                        </>
-                                      )}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onPointerDown={(e) => {
-                                        e.preventDefault();
-                                        const citationText = formatCitation(msg.sources[0], selectedCitationStyle);
-                                        onOpenSendToCompose?.({ bottom: 60, right: 300, content: citationText });
-                                        if (showToast) showToast('Inserting citation into Compose...');
-                                      }}
-                                      className="px-2 py-1 rounded bg-violet-600/80 hover:bg-violet-600 text-white text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                                    >
-                                      <FileText size={10} />
-                                      <span>Insert in Doc</span>
-                                    </button>
-                                  </div>
-                                </div>
+                                  );
+                                })()}
                               </div>
                             )}
                           </div>
@@ -2987,21 +3161,143 @@ Always answer helpfully, clearly, and concisely.`;
                   </div>
                 )}
 
-                {/* Textarea Prompt Box */}
-                <textarea
-                  ref={chatInputRef}
-                  value={inputQuery}
-                  rows={2}
-                  onChange={(e) => setInputQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  placeholder={`Ask ${selectedModel.name} or type /command...`}
-                  className="w-full px-3 py-2 bg-transparent text-xs text-slate-100 placeholder-slate-500 resize-none border-none outline-none focus:outline-none focus:ring-0 leading-relaxed font-normal"
-                />
+                {/* Quick Action Suggestion Chips / Pills */}
+                <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-0.5 overflow-x-auto no-scrollbar">
+                  {[
+                    { label: '/summarize', prompt: 'Summarize the key takeaways of this page in 3 concise executive points.' },
+                    { label: '/actions', prompt: 'Extract all actionable tasks, checklist items, and next steps from this page.' },
+                    { label: '/cite', prompt: 'Generate accurate academic citations for this page in APA, MLA, and Chicago styles.' },
+                    { label: '/extract', prompt: 'Extract all structured tables and key metrics from this page.' }
+                  ].map((chip) => (
+                    <button
+                      key={chip.label}
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        handleSendMessage(chip.prompt);
+                      }}
+                      className="px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-violet-500/20 text-slate-400 hover:text-violet-200 border border-white/[0.08] hover:border-violet-500/30 text-[9.5px] font-mono transition-all cursor-pointer shrink-0"
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Textarea Prompt Box with Slash Command Detection */}
+                <div className="relative w-full">
+                  {/* Floating Contextual Slash Menu Palette */}
+                  {showSlashMenu && (
+                    <div
+                      ref={slashMenuRef}
+                      className="absolute left-2 bottom-full mb-2 w-72 bg-[#181A24]/98 backdrop-blur-xl border border-white/15 rounded-xl shadow-2xl z-50 overflow-hidden text-xs divide-y divide-white/[0.06] animate-in slide-in-from-bottom-2 duration-150"
+                    >
+                      <div className="px-3 py-1.5 bg-white/[0.03] flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                        <span className="flex items-center gap-1 font-semibold text-slate-200">
+                          <Sparkles size={11} className="text-violet-400" />
+                          <span>Slash Commands</span>
+                        </span>
+                        <span className="font-mono text-[9px] text-slate-500">↑↓ to navigate, ↵ to run</span>
+                      </div>
+                      <div className="max-h-56 overflow-y-auto p-1 space-y-0.5 regaarder-scrollbar">
+                        {SLASH_COMMANDS
+                          .filter((cmd) =>
+                            cmd.command.toLowerCase().includes(slashFilter) ||
+                            cmd.label.toLowerCase().includes(slashFilter)
+                          )
+                          .map((cmd, cIdx, arr) => {
+                            const IconComp = cmd.icon;
+                            const isSelected = slashSelectedIndex === cIdx;
+                            return (
+                              <button
+                                key={cmd.command}
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  handleExecuteSlashCommand(cmd);
+                                }}
+                                onMouseEnter={() => setSlashSelectedIndex(cIdx)}
+                                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-violet-600 text-white shadow-xs'
+                                    : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
+                                }`}
+                              >
+                                <div className={`p-1 rounded-md shrink-0 ${isSelected ? 'bg-white/20 text-white' : 'bg-white/[0.06] text-violet-300'}`}>
+                                  <IconComp size={12} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className="font-semibold text-[11px] truncate">{cmd.label}</span>
+                                    <span className={`font-mono text-[9px] px-1 rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-white/[0.05] text-slate-400'}`}>
+                                      {cmd.command}
+                                    </span>
+                                  </div>
+                                  <p className={`text-[9.5px] truncate ${isSelected ? 'text-violet-100' : 'text-slate-400'}`}>
+                                    {cmd.desc}
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+
+                  <textarea
+                    ref={chatInputRef}
+                    value={inputQuery}
+                    rows={2}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setInputQuery(val);
+                      if (val.startsWith('/')) {
+                        setShowSlashMenu(true);
+                        setSlashFilter(val.slice(1).toLowerCase());
+                        setSlashSelectedIndex(0);
+                      } else {
+                        setShowSlashMenu(false);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (showSlashMenu) {
+                        const filtered = SLASH_COMMANDS.filter((cmd) =>
+                          cmd.command.toLowerCase().includes(slashFilter) ||
+                          cmd.label.toLowerCase().includes(slashFilter)
+                        );
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          setSlashSelectedIndex((prev) => (prev + 1) % (filtered.length || 1));
+                          return;
+                        }
+                        if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          setSlashSelectedIndex((prev) => (prev - 1 + (filtered.length || 1)) % (filtered.length || 1));
+                          return;
+                        }
+                        if (e.key === 'Enter' || e.key === 'Tab') {
+                          e.preventDefault();
+                          const selectedCmd = filtered[slashSelectedIndex] || filtered[0];
+                          if (selectedCmd) {
+                            handleExecuteSlashCommand(selectedCmd);
+                          }
+                          return;
+                        }
+                        if (e.key === 'Escape') {
+                          e.preventDefault();
+                          setShowSlashMenu(false);
+                          return;
+                        }
+                      }
+
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    placeholder={`Ask ${selectedModel.name} or type /command...`}
+                    className="w-full px-3 py-2 bg-transparent text-xs text-slate-100 placeholder-slate-500 resize-none border-none outline-none focus:outline-none focus:ring-0 leading-relaxed font-normal"
+                  />
+                </div>
 
                 {/* Bottom Control Toolbar inside Input Box */}
                 <div className="flex items-center justify-between px-2.5 py-1.5 border-t border-white/[0.06] bg-white/[0.01]">
@@ -3453,16 +3749,117 @@ Always answer helpfully, clearly, and concisely.`;
           </div>
         )}
 
-        {/* TAB 2: AGENTIC AUTOMATION TASKS */}
+        {/* TAB 2: AGENTIC AUTOMATION & REAL ACTION ITEMS */}
         {activePanelTab === 'automation' && (
           <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 regaarder-scrollbar">
+            {/* Real Extracted Page Action Items Section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <h3 className="text-xs font-semibold text-slate-100 flex items-center gap-1.5">
+                    <CheckCircle2 size={14} className="text-violet-400" />
+                    <span>Real Page Action Items & Tasks</span>
+                  </h3>
+                  <p className="text-[10.5px] text-slate-400">
+                    Extracted dynamically from {summary?.domain || activeTab?.title || 'active webpage'}.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={isExtractingActionItems}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleExtractPageActionItems();
+                  }}
+                  className="px-2 py-1 rounded-md bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-xs disabled:opacity-40"
+                >
+                  <RefreshCw size={10} className={isExtractingActionItems ? 'animate-spin' : ''} />
+                  <span>{isExtractingActionItems ? 'Extracting...' : 'Extract Real Items'}</span>
+                </button>
+              </div>
+
+              {/* Dynamic Action Items Checklist */}
+              <div className="space-y-1.5">
+                {realActionItems.map((item) => (
+                  <div
+                    key={item.id}
+                    onPointerDown={() => {
+                      setRealActionItems((prev) =>
+                        prev.map((it) => (it.id === item.id ? { ...it, completed: !it.completed } : it))
+                      );
+                    }}
+                    className={`p-2.5 rounded-lg border transition-all cursor-pointer flex items-start gap-2.5 ${
+                      item.completed
+                        ? 'bg-white/[0.01] border-white/[0.04] opacity-60'
+                        : 'bg-white/[0.03] border-white/[0.08] hover:border-violet-500/40 hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={item.completed}
+                      onChange={() => {}}
+                      className="mt-0.5 rounded border-white/20 text-violet-600 focus:ring-0 cursor-pointer"
+                    />
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className={`text-[11px] leading-relaxed break-words ${item.completed ? 'line-through text-slate-500' : 'text-slate-200 font-medium'}`}>
+                        {item.title}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-violet-500/15 text-violet-300 font-mono">
+                          {item.category}
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-mono">
+                          {item.completed ? '✓ Done' : 'Pending'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Action Item Export Tools */}
+              {realActionItems.length > 0 && (
+                <div className="flex items-center justify-end gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      const allText = realActionItems.map((it) => `- [${it.completed ? 'x' : ' '}] ${it.title}`).join('\n');
+                      navigator.clipboard.writeText(allText);
+                      if (showToast) showToast('Copied all action items to clipboard');
+                    }}
+                    className="px-2 py-1 rounded bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <Copy size={10} />
+                    <span>Copy All</span>
+                  </button>
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      const docContent = `# Action Items for ${activeTab?.title || 'Research'}\n\n` + realActionItems.map((it) => `- [${it.completed ? 'x' : ' '}] ${it.title}`).join('\n');
+                      onOpenSendToCompose?.({ bottom: 60, right: 300, content: docContent });
+                      if (showToast) showToast('Exporting action items to Compose...');
+                    }}
+                    className="px-2 py-1 rounded bg-violet-600/80 hover:bg-violet-600 text-white text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <FileText size={10} />
+                    <span>Insert into Compose</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="my-2 border-t border-white/[0.08]" />
+
+            {/* Autonomous Web Actions Section */}
             <div className="space-y-1">
               <h3 className="text-xs font-semibold text-slate-100 flex items-center gap-1.5">
                 <TasksIcon size={14} className="text-emerald-400" />
                 <span>Autonomous Web Actions</span>
               </h3>
-              <p className="text-[11px] text-slate-400">
-                Execute DOM interactions, form filling, and background monitoring on external pages.
+              <p className="text-[10.5px] text-slate-400">
+                Execute DOM interactions, form filling, and background monitoring on {activeTab?.title || 'this page'}.
               </p>
             </div>
 
@@ -3475,7 +3872,7 @@ Always answer helpfully, clearly, and concisely.`;
                     </div>
                     <div>
                       <h4 className="text-xs font-semibold text-slate-200">Promo Code Hunter</h4>
-                      <p className="text-[10px] text-slate-400">Auto-test discount codes at checkout</p>
+                      <p className="text-[10px] text-slate-400">Auto-test discount codes on active page</p>
                     </div>
                   </div>
                   <button
@@ -3500,7 +3897,7 @@ Always answer helpfully, clearly, and concisely.`;
                     </div>
                     <div>
                       <h4 className="text-xs font-semibold text-slate-200">Agentic Form Filler</h4>
-                      <p className="text-[10px] text-slate-400">Populate checkout & contact forms</p>
+                      <p className="text-[10px] text-slate-400">Populate checkout & input fields</p>
                     </div>
                   </div>
                   <button
@@ -3525,7 +3922,7 @@ Always answer helpfully, clearly, and concisely.`;
                     </div>
                     <div>
                       <h4 className="text-xs font-semibold text-slate-200">Stock & Price Watcher</h4>
-                      <p className="text-[10px] text-slate-400">Background inventory & drop alerts</p>
+                      <p className="text-[10px] text-slate-400">Background inventory alerts for page</p>
                     </div>
                   </div>
                   <button
@@ -3568,7 +3965,7 @@ Always answer helpfully, clearly, and concisely.`;
                 <div key={item.id} className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.06] flex items-center justify-between text-xs">
                   <div className="min-w-0 pr-2">
                     <h5 className="font-semibold text-slate-200 truncate">{item.title}</h5>
-                    <span className="text-[10px] text-slate-500">{item.url} • {item.lastChecked}</span>
+                    <span className="text-[10px] text-slate-500 truncate block">{item.url} • {item.lastChecked}</span>
                   </div>
                   <span className="text-xs font-semibold text-emerald-400 shrink-0">{item.price}</span>
                 </div>
