@@ -17,7 +17,9 @@ import {
   RefreshCw,
   AlertCircle,
   FileCode,
-  Terminal
+  Terminal,
+  Download,
+  HardDrive
 } from 'lucide-react';
 import {
   BrowserCloseIcon,
@@ -39,10 +41,12 @@ import {
   TasksIcon
 } from '../RegaarderProductIcons';
 
-const DEFAULT_ENDPOINTS = [
-  { name: 'llama.cpp Server', url: 'http://localhost:8080/v1', defaultPort: '8080' },
-  { name: 'Ollama Daemon', url: 'http://localhost:11434/v1', defaultPort: '11434' },
-  { name: 'LM Studio API', url: 'http://localhost:1234/v1', defaultPort: '1234' }
+const POPULAR_PULL_MODELS = [
+  { name: 'gemma3:1b', size: '1.2 GB', desc: 'Ultra-fast lightweight Google Gemma 3' },
+  { name: 'gemma:2b', size: '1.7 GB', desc: 'Google Gemma 2B instruction model' },
+  { name: 'llama3.2:1b', size: '1.3 GB', desc: 'Meta Llama 3.2 compact edge model' },
+  { name: 'llama3.2:3b', size: '2.0 GB', desc: 'Meta Llama 3.2 fast reasoning model' },
+  { name: 'qwen2.5:1.5b', size: '1.0 GB', desc: 'High speed multilingual agentic model' }
 ];
 
 const CLOUD_FALLBACK_MODELS = [
@@ -84,11 +88,11 @@ export const BrowserResearchPanel = ({
   const [isBriefExpanded, setIsBriefExpanded] = useState(false);
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
   const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
-  const [showGgufConfigModal, setShowGgufConfigModal] = useState(false);
+  const [showPullDrawer, setShowPullDrawer] = useState(false);
 
   // Local Server & GGUF Configuration States
   const [customEndpoint, setCustomEndpoint] = useState(() => {
-    return localStorage.getItem('regaarder_llama_endpoint') || 'http://localhost:8080/v1';
+    return localStorage.getItem('regaarder_llama_endpoint') || 'http://127.0.0.1:11434';
   });
   const [localGgufPath, setLocalGgufPath] = useState(() => {
     return localStorage.getItem('regaarder_gguf_model_path') || '';
@@ -96,17 +100,22 @@ export const BrowserResearchPanel = ({
   const [detectedLocalModels, setDetectedLocalModels] = useState([]);
   const [isScanningServer, setIsScanningServer] = useState(false);
   const [serverConnectionStatus, setServerConnectionStatus] = useState('checking'); // 'online' | 'offline' | 'checking'
-  const [serverErrorDetails, setServerErrorDetails] = useState('');
+  const [detectedProvider, setDetectedProvider] = useState('Ollama / llama.cpp');
 
-  // Selected Active Model
+  // Model Pulling States
+  const [pullModelInput, setPullModelInput] = useState('');
+  const [isPullingModel, setIsPullingModel] = useState(false);
+  const [pullProgressText, setPullProgressText] = useState('');
+
+  // Selected Active Model (Defaults to Ollama gemma3:1b or first detected)
   const [selectedModel, setSelectedModel] = useState({
-    id: 'local-active-model',
-    name: 'Llama 3 (Local GGUF)',
-    provider: 'llama.cpp',
-    endpoint: customEndpoint,
-    tag: 'Local GGUF',
+    id: 'gemma3:1b',
+    name: 'gemma3:1b',
+    provider: 'Ollama',
+    endpoint: 'http://127.0.0.1:11434',
+    tag: 'Local Ollama',
     isLocal: true,
-    description: 'Direct llama.cpp / GGUF local model execution'
+    description: 'Direct Ollama on-device inference'
   });
 
   // Voice Dictation States
@@ -195,56 +204,86 @@ export const BrowserResearchPanel = ({
     return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, []);
 
-  // Real Dynamic Detection of Running Local llama.cpp / Ollama Models
-  const detectLocalModels = useCallback(async (targetEndpoint = customEndpoint) => {
+  // Real Multi-Port Auto-Scanner (Ollama: 11434, llama.cpp: 8080, LM Studio: 1234)
+  const detectLocalModels = useCallback(async () => {
     setIsScanningServer(true);
     setServerConnectionStatus('checking');
-    setServerErrorDetails('');
 
-    const cleanBase = targetEndpoint.replace(/\/+$/, '');
-    const endpointsToTry = [
-      `${cleanBase}/models`,
-      `${cleanBase.replace(/\/v1$/, '')}/v1/models`,
-      `${cleanBase.replace(/\/v1$/, '')}/api/tags`
+    // 1. Try Native Electron IPC Bridge (Bypasses CORS completely on Windows/Mac)
+    if (window.electronAPI?.listLocalModels) {
+      try {
+        const result = await window.electronAPI.listLocalModels();
+        if (result && result.success && result.models.length > 0) {
+          setDetectedLocalModels(result.models);
+          setDetectedProvider(result.provider || 'Ollama');
+          setCustomEndpoint(result.activeEndpoint || 'http://127.0.0.1:11434');
+          setServerConnectionStatus('online');
+
+          // Auto-select gemma3:1b if present, or first model
+          const gemmaModel = result.models.find(m => /gemma/i.test(m.name));
+          setSelectedModel(gemmaModel || result.models[0]);
+          setIsScanningServer(false);
+          if (showToast) showToast(`Found ${result.models.length} local model(s) on ${result.provider}`);
+          return;
+        }
+      } catch (e) {
+        console.warn('Electron IPC model scan failed, falling back to direct fetch probes...', e);
+      }
+    }
+
+    // 2. Multi-port Direct Fetch Probes (Web / fallback)
+    const endpointsToProbe = [
+      { url: 'http://127.0.0.1:11434/api/tags', provider: 'Ollama', base: 'http://127.0.0.1:11434' },
+      { url: 'http://localhost:11434/api/tags', provider: 'Ollama', base: 'http://localhost:11434' },
+      { url: 'http://127.0.0.1:8080/v1/models', provider: 'llama.cpp', base: 'http://127.0.0.1:8080/v1' },
+      { url: 'http://localhost:8080/v1/models', provider: 'llama.cpp', base: 'http://localhost:8080/v1' },
+      { url: 'http://127.0.0.1:1234/v1/models', provider: 'LM Studio', base: 'http://127.0.0.1:1234/v1' }
     ];
 
     let foundModels = [];
+    let activeBase = 'http://127.0.0.1:11434';
+    let matchedProvider = 'Ollama';
     let isConnected = false;
 
-    for (const url of endpointsToTry) {
+    for (const probe of endpointsToProbe) {
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 2500);
-        const res = await fetch(url, { signal: controller.signal });
+        const timeout = setTimeout(() => controller.abort(), 1800);
+        const res = await fetch(probe.url, { signal: controller.signal });
         clearTimeout(timeout);
 
         if (res.ok) {
           isConnected = true;
+          activeBase = probe.base;
+          matchedProvider = probe.provider;
           const data = await res.json();
-          if (data.data && Array.isArray(data.data)) {
-            // OpenAI / llama.cpp format
-            foundModels = data.data.map((m) => ({
-              id: m.id,
-              name: m.id.replace(/\.gguf$/i, '').replace(/^models\//, ''),
-              provider: 'llama.cpp',
-              endpoint: cleanBase,
-              tag: 'Local Active',
-              isLocal: true,
-              description: `Served locally on ${cleanBase}`
-            }));
-          } else if (data.models && Array.isArray(data.models)) {
-            // Ollama format
-            foundModels = data.models.map((m) => ({
+
+          if (data.models && Array.isArray(data.models)) {
+            // Ollama JSON format
+            foundModels = data.models.map(m => ({
               id: m.name,
               name: m.name,
               provider: 'Ollama',
-              endpoint: `${cleanBase.replace(/\/v1$/, '')}/v1`,
+              endpoint: probe.base,
               tag: 'Local Ollama',
               isLocal: true,
-              description: `Size: ${(m.size / (1024 * 1024 * 1024)).toFixed(1)} GB`
+              sizeGB: m.size ? (m.size / (1024 * 1024 * 1024)).toFixed(1) : null,
+              description: `Ollama (${m.size ? (m.size / (1024 * 1024 * 1024)).toFixed(1) + ' GB' : 'active'})`
             }));
+            break;
+          } else if (data.data && Array.isArray(data.data)) {
+            // llama.cpp / OpenAI format
+            foundModels = data.data.map(m => ({
+              id: m.id,
+              name: m.id.replace(/\.gguf$/i, '').replace(/^models\//, ''),
+              provider: probe.provider,
+              endpoint: probe.base,
+              tag: 'Local GGUF',
+              isLocal: true,
+              description: `Served on ${probe.base}`
+            }));
+            break;
           }
-          break;
         }
       } catch (e) {
         // Continue to next probe
@@ -253,37 +292,100 @@ export const BrowserResearchPanel = ({
 
     setIsScanningServer(false);
 
-    if (isConnected) {
+    if (isConnected && foundModels.length > 0) {
       setServerConnectionStatus('online');
-      if (foundModels.length > 0) {
-        setDetectedLocalModels(foundModels);
-        setSelectedModel(foundModels[0]);
-        if (showToast) showToast(`Detected ${foundModels.length} local model(s) on ${cleanBase}`);
-      } else {
-        // Server is online but has no model list route
-        const defaultModel = {
-          id: 'default',
-          name: localGgufPath ? localGgufPath.split(/[/\\]/).pop().replace(/\.gguf$/i, '') : 'Local Llama GGUF',
-          provider: 'llama.cpp',
-          endpoint: cleanBase,
-          tag: 'Local GGUF',
-          isLocal: true,
-          description: `Loaded at ${cleanBase}`
-        };
-        setDetectedLocalModels([defaultModel]);
-        setSelectedModel(defaultModel);
-        if (showToast) showToast(`Connected to local server at ${cleanBase}`);
-      }
+      setDetectedLocalModels(foundModels);
+      setDetectedProvider(matchedProvider);
+      setCustomEndpoint(activeBase);
+      const gemma = foundModels.find(m => /gemma/i.test(m.name));
+      setSelectedModel(gemma || foundModels[0]);
+      if (showToast) showToast(`Detected ${foundModels.length} model(s) on ${matchedProvider}`);
+    } else if (isConnected) {
+      setServerConnectionStatus('online');
+      const fallbackActive = {
+        id: 'gemma3:1b',
+        name: 'gemma3:1b',
+        provider: matchedProvider,
+        endpoint: activeBase,
+        tag: 'Local Active',
+        isLocal: true,
+        description: `Running on ${activeBase}`
+      };
+      setDetectedLocalModels([fallbackActive]);
+      setSelectedModel(fallbackActive);
     } else {
       setServerConnectionStatus('offline');
-      setServerErrorDetails(`Could not reach server at ${cleanBase}. Ensure llama-server is running.`);
+      // If user had local GGUF path, keep it
+      if (localGgufPath) {
+        const fileModel = {
+          id: localGgufPath.split(/[/\\]/).pop(),
+          name: localGgufPath.split(/[/\\]/).pop().replace(/\.gguf$/i, ''),
+          provider: 'Local Disk',
+          endpoint: 'http://127.0.0.1:8080/v1',
+          tag: 'GGUF File',
+          isLocal: true,
+          description: localGgufPath
+        };
+        setDetectedLocalModels([fileModel]);
+        setSelectedModel(fileModel);
+      }
     }
-  }, [customEndpoint, localGgufPath, showToast]);
+  }, [localGgufPath, showToast]);
 
   // Initial Scan on Mount
   useEffect(() => {
-    detectLocalModels(customEndpoint);
+    detectLocalModels();
   }, []);
+
+  // 1-Click Pull / Download Model Handler (Ollama / Local)
+  const handlePullModel = async (modelToPull) => {
+    const target = modelToPull || pullModelInput.trim();
+    if (!target) return;
+
+    setIsPullingModel(true);
+    setPullProgressText(`Connecting to Ollama to pull ${target}...`);
+
+    if (window.electronAPI?.pullLocalModel) {
+      try {
+        const res = await window.electronAPI.pullLocalModel({ modelName: target, endpoint: customEndpoint });
+        if (res.success) {
+          setPullProgressText(`✓ Successfully downloaded ${target}`);
+          if (showToast) showToast(`Downloaded ${target} successfully`);
+          setTimeout(() => {
+            setIsPullingModel(false);
+            detectLocalModels();
+          }, 1000);
+          return;
+        }
+      } catch (e) {
+        // Fallback to fetch
+      }
+    }
+
+    try {
+      const res = await fetch(`${customEndpoint.replace(/\/v1$/, '')}/api/pull`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: target, stream: false })
+      });
+
+      if (res.ok) {
+        setPullProgressText(`✓ Successfully downloaded ${target}`);
+        if (showToast) showToast(`Downloaded ${target} successfully`);
+        setTimeout(() => {
+          setIsPullingModel(false);
+          detectLocalModels();
+        }, 1000);
+      } else {
+        const errText = await res.text();
+        setPullProgressText(`Error: ${errText || 'Failed to pull'}`);
+        setIsPullingModel(false);
+      }
+    } catch (err) {
+      setPullProgressText(`Ollama daemon offline on ${customEndpoint}. Run 'ollama serve'.`);
+      setIsPullingModel(false);
+    }
+  };
 
   // Handle GGUF file input selection
   const handleSelectGgufFile = (e) => {
@@ -408,7 +510,7 @@ export const BrowserResearchPanel = ({
     }
   };
 
-  // Real Streaming Inference against Local llama.cpp / Cloud Models (Zero Fakes)
+  // Real Streaming Inference (Ollama / llama.cpp / Cloud Models)
   const handleSendMessage = async (textToSend) => {
     const userText = textToSend || inputQuery.trim();
     if (!userText) return;
@@ -424,55 +526,69 @@ export const BrowserResearchPanel = ({
     const isLocal = selectedModel.isLocal && selectedModel.endpoint;
 
     if (isLocal) {
-      // Direct Real Inference Call to llama.cpp / Ollama Endpoint
       try {
         abortControllerRef.current = new AbortController();
-        const cleanEndpoint = selectedModel.endpoint.replace(/\/+$/, '');
-        const targetUrl = cleanEndpoint.endsWith('/v1')
-          ? `${cleanEndpoint}/chat/completions`
-          : `${cleanEndpoint}/v1/chat/completions`;
+        const cleanBase = selectedModel.endpoint.replace(/\/+$/, '');
 
-        const requestBody = {
-          model: selectedModel.id || 'default',
-          messages: [
-            {
-              role: 'system',
-              content: `You are the Regaarder Executive Browser Assistant. Active page domain: ${summary?.domain || 'webpage'}. Active page overview: ${summary?.overview || ''}. Answer user instructions with high clarity and conciseness grounded in this active page.`
-            },
-            ...updatedMessages.map((m) => ({
-              role: m.sender === 'user' ? 'user' : 'assistant',
-              content: m.text
-            }))
-          ],
-          stream: true,
-          temperature: 0.7
-        };
+        // Choose between Ollama native /api/chat or OpenAI-compatible /v1/chat/completions
+        const isOllama = selectedModel.provider === 'Ollama' || cleanBase.includes('11434');
+        const targetUrl = isOllama
+          ? `${cleanBase.replace(/\/v1$/, '')}/api/chat`
+          : `${cleanBase.endsWith('/v1') ? cleanBase : cleanBase + '/v1'}/chat/completions`;
+
+        const requestBody = isOllama
+          ? {
+              model: selectedModel.id,
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are the Regaarder Executive Browser Assistant. Active page domain: ${summary?.domain || 'webpage'}. Active page brief: ${summary?.overview || ''}. Answer user queries concisely and directly based on this page.`
+                },
+                ...updatedMessages.map((m) => ({
+                  role: m.sender === 'user' ? 'user' : 'assistant',
+                  content: m.text
+                }))
+              ],
+              stream: true
+            }
+          : {
+              model: selectedModel.id || 'default',
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are the Regaarder Executive Browser Assistant. Active page domain: ${summary?.domain || 'webpage'}. Active page brief: ${summary?.overview || ''}. Ground answers strictly in page context.`
+                },
+                ...updatedMessages.map((m) => ({
+                  role: m.sender === 'user' ? 'user' : 'assistant',
+                  content: m.text
+                }))
+              ],
+              stream: true,
+              temperature: 0.7
+            };
 
         const response = await fetch(targetUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody),
           signal: abortControllerRef.current.signal
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        // Real Server-Sent Events (SSE) Streaming Reader
+        // Real Streaming Token Reader
         const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
         let accumulatedReply = '';
 
-        // Add empty agent message to receive stream
         setChatMessages((prev) => [
           ...prev,
           {
             sender: 'agent',
             text: '',
-            modelTag: selectedModel.name,
+            modelTag: `${selectedModel.name} (${selectedModel.provider})`,
             isStreaming: true
           }
         ]);
@@ -487,32 +603,52 @@ export const BrowserResearchPanel = ({
 
             for (const line of lines) {
               const trimmed = line.trim();
-              if (trimmed.startsWith('data: ')) {
-                const jsonStr = trimmed.replace(/^data:\s*/, '');
-                if (jsonStr === '[DONE]') {
-                  done = true;
-                  break;
-                }
+              if (!trimmed) continue;
+
+              if (isOllama) {
+                // Ollama returns JSON lines: {"message": {"content": "token"}, "done": false}
                 try {
-                  const parsed = JSON.parse(jsonStr);
-                  const token = parsed.choices?.[0]?.delta?.content || '';
+                  const parsed = JSON.parse(trimmed);
+                  const token = parsed.message?.content || '';
                   if (token) {
                     accumulatedReply += token;
                     setChatMessages((prev) => {
                       const copy = [...prev];
                       const lastIdx = copy.length - 1;
                       if (lastIdx >= 0 && copy[lastIdx].sender === 'agent') {
-                        copy[lastIdx] = {
-                          ...copy[lastIdx],
-                          text: accumulatedReply,
-                          isStreaming: true
-                        };
+                        copy[lastIdx] = { ...copy[lastIdx], text: accumulatedReply, isStreaming: true };
                       }
                       return copy;
                     });
                   }
-                } catch (e) {
-                  // Ignore partial SSE chunk parse error
+                  if (parsed.done) {
+                    done = true;
+                    break;
+                  }
+                } catch (e) {}
+              } else {
+                // OpenAI / llama.cpp SSE: data: {"choices":[{"delta":{"content":"token"}}]}
+                if (trimmed.startsWith('data: ')) {
+                  const jsonStr = trimmed.replace(/^data:\s*/, '');
+                  if (jsonStr === '[DONE]') {
+                    done = true;
+                    break;
+                  }
+                  try {
+                    const parsed = JSON.parse(jsonStr);
+                    const token = parsed.choices?.[0]?.delta?.content || '';
+                    if (token) {
+                      accumulatedReply += token;
+                      setChatMessages((prev) => {
+                        const copy = [...prev];
+                        const lastIdx = copy.length - 1;
+                        if (lastIdx >= 0 && copy[lastIdx].sender === 'agent') {
+                          copy[lastIdx] = { ...copy[lastIdx], text: accumulatedReply, isStreaming: true };
+                        }
+                        return copy;
+                      });
+                    }
+                  } catch (e) {}
                 }
               }
             }
@@ -537,7 +673,6 @@ export const BrowserResearchPanel = ({
         setIsGenerating(false);
         return;
       } catch (err) {
-        // Real connection error handling (NO FAKE PLACEHOLDERS)
         setServerConnectionStatus('offline');
         setChatMessages((prev) => [
           ...prev,
@@ -546,8 +681,10 @@ export const BrowserResearchPanel = ({
             text: '',
             isError: true,
             modelTag: selectedModel.name,
-            errorMessage: `Unable to connect to local llama.cpp endpoint at ${selectedModel.endpoint}.`,
-            suggestedCommand: `llama-server -m "${localGgufPath || 'path/to/model.gguf'}" --port 8080 -c 4096`
+            errorMessage: `Unable to connect to local ${selectedModel.provider} endpoint at ${selectedModel.endpoint}.`,
+            suggestedCommand: selectedModel.provider === 'Ollama'
+              ? `ollama run ${selectedModel.id || 'gemma3:1b'}`
+              : `llama-server -m "${localGgufPath || 'path/to/model.gguf'}" --port 8080 -c 4096`
           }
         ]);
         setIsGenerating(false);
@@ -668,8 +805,8 @@ export const BrowserResearchPanel = ({
                 title={
                   selectedModel.isLocal
                     ? serverConnectionStatus === 'online'
-                      ? `llama.cpp Server Online (${selectedModel.endpoint})`
-                      : 'llama.cpp Server Offline'
+                      ? `${selectedModel.provider} Online (${selectedModel.endpoint})`
+                      : 'Local Server Offline'
                     : 'Cloud Model Active'
                 }
               />
@@ -789,7 +926,7 @@ export const BrowserResearchPanel = ({
                   <div className="space-y-1">
                     <h3 className="text-xs font-semibold text-slate-200">How can I help with this page?</h3>
                     <p className="text-[11px] text-slate-400 max-w-[240px]">
-                      Ask anything, dictate by voice, or trigger automated agentic workflows.
+                      Ask anything, dictate by voice, or run on-device with <strong>{selectedModel.name}</strong>.
                     </p>
                   </div>
 
@@ -822,7 +959,7 @@ export const BrowserResearchPanel = ({
                       <div className="max-w-[92%] p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-2">
                         <div className="flex items-center gap-1.5 font-semibold text-amber-300">
                           <AlertCircle size={14} className="shrink-0" />
-                          <span>Local llama.cpp Server Offline</span>
+                          <span>{selectedModel.provider} Server Offline</span>
                         </div>
                         <p className="text-[11px] text-slate-300 leading-relaxed font-normal">
                           {msg.errorMessage}
@@ -837,12 +974,12 @@ export const BrowserResearchPanel = ({
                             type="button"
                             onPointerDown={(e) => {
                               e.preventDefault();
-                              detectLocalModels(selectedModel.endpoint);
+                              detectLocalModels();
                             }}
                             className="px-2 py-1 rounded bg-amber-600/60 hover:bg-amber-600 text-white text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1"
                           >
                             <RefreshCw size={10} />
-                            <span>Retry Connection</span>
+                            <span>Scan Ollama & llama.cpp</span>
                           </button>
                           <button
                             type="button"
@@ -906,7 +1043,7 @@ export const BrowserResearchPanel = ({
               </div>
             )}
 
-            {/* 4. EXPANSIVE PROMPT INPUT CONTAINER WITH VOICE & REAL MODEL PICKER */}
+            {/* 4. EXPANSIVE PROMPT INPUT CONTAINER WITH VOICE & REAL OLLAMA / GGUF MODEL PICKER */}
             <div className="p-3 border-t border-white/[0.08] bg-white/[0.02] shrink-0 space-y-2">
               <form
                 onSubmit={(e) => {
@@ -927,7 +1064,7 @@ export const BrowserResearchPanel = ({
                       handleSendMessage();
                     }
                   }}
-                  placeholder="Ask assistant or type /command..."
+                  placeholder={`Ask ${selectedModel.name} or type /command...`}
                   className="w-full px-3 py-2 bg-transparent text-xs text-slate-100 placeholder-slate-500 resize-none border-none outline-none focus:outline-none focus:ring-0 leading-relaxed font-normal"
                 />
 
@@ -1023,7 +1160,7 @@ export const BrowserResearchPanel = ({
                           setIsModelPickerOpen((prev) => !prev);
                         }}
                         className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/[0.05] hover:bg-white/10 text-[10.5px] font-medium text-slate-300 hover:text-white transition-all cursor-pointer border border-white/[0.06]"
-                        title="Select Model or Load Local GGUF"
+                        title="Select Local Ollama / llama.cpp or Cloud Model"
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
@@ -1040,7 +1177,7 @@ export const BrowserResearchPanel = ({
 
                       {/* Model Selector Popover Dropdown */}
                       {isModelPickerOpen && (
-                        <div className="absolute left-0 bottom-8 mb-1 w-72 p-2 bg-[#181A24] border border-white/15 rounded-xl shadow-2xl z-50 animate-in zoom-in-95 duration-150 font-sans text-xs space-y-2">
+                        <div className="absolute left-0 bottom-8 mb-1 w-80 p-2.5 bg-[#181A24] border border-white/15 rounded-xl shadow-2xl z-50 animate-in zoom-in-95 duration-150 font-sans text-xs space-y-2.5">
                           <div className="flex items-center justify-between px-1">
                             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                               Inference Engine
@@ -1049,57 +1186,145 @@ export const BrowserResearchPanel = ({
                               type="button"
                               onPointerDown={(e) => {
                                 e.preventDefault();
-                                detectLocalModels(customEndpoint);
+                                detectLocalModels();
                               }}
-                              className="text-[9px] text-violet-400 hover:text-violet-300 flex items-center gap-1 font-medium cursor-pointer"
+                              className="text-[10px] text-violet-400 hover:text-violet-300 flex items-center gap-1 font-semibold cursor-pointer"
                             >
-                              <RefreshCw size={9} className={isScanningServer ? 'animate-spin' : ''} />
-                              <span>Rescan Server</span>
+                              <RefreshCw size={10} className={isScanningServer ? 'animate-spin' : ''} />
+                              <span>Rescan All (Ollama & llama.cpp)</span>
                             </button>
                           </div>
 
                           {/* Detected Local Models Section */}
                           <div className="space-y-1">
-                            <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-500 px-1 block">
-                              Local Models (llama.cpp / Ollama)
-                            </span>
+                            <div className="flex items-center justify-between px-1">
+                              <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+                                Local Models ({detectedLocalModels.length})
+                              </span>
+                              <span className="text-[9px] text-emerald-400 font-mono">
+                                {serverConnectionStatus === 'online' ? `● ${detectedProvider} Online` : '● Offline'}
+                              </span>
+                            </div>
 
                             {detectedLocalModels.length > 0 ? (
-                              detectedLocalModels.map((model) => (
-                                <button
-                                  key={model.id}
-                                  type="button"
-                                  onPointerDown={(e) => {
-                                    e.preventDefault();
-                                    setSelectedModel(model);
-                                    setIsModelPickerOpen(false);
-                                    if (showToast) showToast(`Active model: ${model.name}`);
-                                  }}
-                                  className={`w-full flex items-start justify-between p-2 rounded-lg text-left transition-all cursor-pointer ${
-                                    selectedModel.id === model.id
-                                      ? 'bg-violet-600/20 border border-violet-500/40 text-white'
-                                      : 'hover:bg-white/[0.05] border border-transparent text-slate-300'
-                                  }`}
-                                >
-                                  <div className="space-y-0.5 min-w-0 pr-2">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="font-semibold text-[11px] truncate">{model.name}</span>
-                                      <span className="text-[9px] px-1 rounded bg-white/10 text-emerald-400 font-mono">
-                                        {model.tag}
-                                      </span>
+                              <div className="max-h-40 overflow-y-auto space-y-1 pr-0.5 regaarder-scrollbar">
+                                {detectedLocalModels.map((model) => (
+                                  <button
+                                    key={model.id}
+                                    type="button"
+                                    onPointerDown={(e) => {
+                                      e.preventDefault();
+                                      setSelectedModel(model);
+                                      setIsModelPickerOpen(false);
+                                      if (showToast) showToast(`Active model: ${model.name}`);
+                                    }}
+                                    className={`w-full flex items-start justify-between p-2 rounded-lg text-left transition-all cursor-pointer ${
+                                      selectedModel.id === model.id
+                                        ? 'bg-violet-600/25 border border-violet-500/50 text-white shadow-2xs'
+                                        : 'hover:bg-white/[0.05] border border-transparent text-slate-300'
+                                    }`}
+                                  >
+                                    <div className="space-y-0.5 min-w-0 pr-2">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="font-semibold text-[11px] truncate text-slate-100">{model.name}</span>
+                                        <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/15 text-emerald-300 font-mono border border-emerald-500/30">
+                                          {model.tag || model.provider}
+                                        </span>
+                                      </div>
+                                      <p className="text-[10px] text-slate-400 truncate">{model.description}</p>
                                     </div>
-                                    <p className="text-[10px] text-slate-400 truncate">{model.description}</p>
-                                  </div>
-                                  {selectedModel.id === model.id && (
-                                    <Check size={13} className="text-violet-400 shrink-0 mt-0.5" />
-                                  )}
-                                </button>
-                              ))
+                                    {selectedModel.id === model.id && (
+                                      <Check size={13} className="text-violet-400 shrink-0 mt-0.5" />
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
                             ) : (
-                              <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.06] text-[10px] text-slate-400 space-y-1">
-                                <span>No running model detected at {customEndpoint}</span>
+                              <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06] text-[10px] text-slate-400 space-y-1">
+                                <span>No active Ollama/llama models detected on ports 11434 / 8080.</span>
                               </div>
                             )}
+
+                            {/* 1-Click Pull / Download Model Accordion Trigger */}
+                            <div className="pt-1">
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setShowPullDrawer((prev) => !prev);
+                                }}
+                                className="w-full flex items-center justify-between p-2 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20 text-sky-200 transition-all text-left cursor-pointer"
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <Download size={13} className="text-sky-400" />
+                                  <span className="text-[11px] font-semibold">1-Click Download Model to Machine</span>
+                                </div>
+                                <span className="text-[9px] font-mono text-sky-400">
+                                  {showPullDrawer ? 'Hide ▲' : 'Pull ▼'}
+                                </span>
+                              </button>
+
+                              {/* Pull Drawer */}
+                              {showPullDrawer && (
+                                <div className="mt-1.5 p-2 rounded-lg bg-black/50 border border-sky-500/20 space-y-2 animate-in fade-in duration-150">
+                                  <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 block">
+                                    Popular Fast Edge Models
+                                  </span>
+                                  <div className="grid grid-cols-1 gap-1">
+                                    {POPULAR_PULL_MODELS.map((item) => (
+                                      <div
+                                        key={item.name}
+                                        className="flex items-center justify-between p-1.5 rounded bg-white/[0.03] hover:bg-white/[0.07] text-[10px]"
+                                      >
+                                        <div className="min-w-0 pr-1">
+                                          <strong className="text-slate-200 block truncate">{item.name}</strong>
+                                          <span className="text-[9px] text-slate-500">{item.size} • {item.desc}</span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          disabled={isPullingModel}
+                                          onPointerDown={(e) => {
+                                            e.preventDefault();
+                                            handlePullModel(item.name);
+                                          }}
+                                          className="px-2 py-0.5 rounded bg-sky-600 hover:bg-sky-500 text-white font-semibold transition-colors cursor-pointer disabled:opacity-40 shrink-0"
+                                        >
+                                          {isPullingModel ? '...' : 'Download'}
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Custom model name pull input */}
+                                  <div className="flex items-center gap-1 pt-1">
+                                    <input
+                                      type="text"
+                                      value={pullModelInput}
+                                      onChange={(e) => setPullModelInput(e.target.value)}
+                                      placeholder="e.g. gemma3:1b or mistral"
+                                      className="flex-1 px-2 py-1 rounded bg-white/10 text-[10px] text-slate-100 border-none outline-none"
+                                    />
+                                    <button
+                                      type="button"
+                                      disabled={!pullModelInput.trim() || isPullingModel}
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        handlePullModel();
+                                      }}
+                                      className="px-2 py-1 rounded bg-sky-600 hover:bg-sky-500 text-white font-semibold text-[10px] cursor-pointer disabled:opacity-30"
+                                    >
+                                      Pull
+                                    </button>
+                                  </div>
+
+                                  {pullProgressText && (
+                                    <div className="p-1.5 rounded bg-sky-950/40 border border-sky-500/30 text-[9.5px] font-mono text-sky-300">
+                                      {pullProgressText}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
 
                             {/* Direct GGUF File Picker Button */}
                             <button
@@ -1110,17 +1335,17 @@ export const BrowserResearchPanel = ({
                               }}
                               className="w-full flex items-center justify-between p-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] border border-dashed border-white/20 text-slate-300 hover:text-white transition-all text-left cursor-pointer"
                             >
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5">
                                 <FolderOpen size={13} className="text-amber-400" />
-                                <span className="text-[11px] font-medium">Browse Local .GGUF File...</span>
+                                <span className="text-[11px] font-medium">Browse Local .GGUF File on Disk...</span>
                               </div>
-                              <span className="text-[9px] text-slate-500 font-mono">Disk Picker</span>
+                              <span className="text-[9px] text-slate-500 font-mono">Pick File</span>
                             </button>
                           </div>
 
                           {/* Cloud Models Section */}
-                          <div className="space-y-1 pt-1 border-t border-white/[0.06]">
-                            <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-500 px-1 block">
+                          <div className="space-y-1 pt-1.5 border-t border-white/[0.06]">
+                            <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 px-1 block">
                               Cloud Engines
                             </span>
                             {CLOUD_FALLBACK_MODELS.map((model) => (
@@ -1155,27 +1380,17 @@ export const BrowserResearchPanel = ({
                           </div>
 
                           {/* Endpoint Setting & Status Footer */}
-                          <div className="p-2 rounded-lg bg-black/50 border border-white/[0.06] text-[10px] font-mono text-slate-400 space-y-1.5">
+                          <div className="p-2 rounded-lg bg-black/50 border border-white/[0.06] text-[10px] font-mono text-slate-400 space-y-1">
                             <div className="flex items-center justify-between">
-                              <span>Endpoint:</span>
-                              <input
-                                type="text"
-                                value={customEndpoint}
-                                onChange={(e) => setCustomEndpoint(e.target.value)}
-                                className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] text-slate-200 border-none outline-none w-32 font-mono"
-                              />
+                              <span>Active Endpoint:</span>
+                              <span className="text-slate-200 font-semibold">{customEndpoint}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span>Server Status:</span>
+                              <span>Status:</span>
                               <span className={serverConnectionStatus === 'online' ? 'text-emerald-400' : 'text-amber-400'}>
-                                {serverConnectionStatus === 'online' ? '● Online (Direct SSE)' : '● Offline / Waiting'}
+                                {serverConnectionStatus === 'online' ? '● Online (Direct SSE)' : '● Offline'}
                               </span>
                             </div>
-                            {localGgufPath && (
-                              <div className="truncate text-[9px] text-slate-500 pt-0.5">
-                                GGUF: {localGgufPath}
-                              </div>
-                            )}
                           </div>
                         </div>
                       )}

@@ -58,5 +58,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = () => callback();
     ipcRenderer.on('browser:esc-pressed', handler);
     return () => ipcRenderer.removeListener('browser:esc-pressed', handler);
-  }
+  },
+
+  // Native Local AI & Ollama Bridge
+  listLocalModels: (params) => ipcRenderer.invoke('localAI:list-models', params),
+  pullLocalModel: (params) => ipcRenderer.invoke('localAI:pull-model', params)
 });
+

@@ -171,6 +171,87 @@ ipcMain.handle('browser:send-input-event', async (event, { tabId, inputEvent }) 
   }
 });
 
+// Native Local AI & Ollama Bridge (Bypasses browser CORS on Windows/macOS)
+ipcMain.handle('localAI:list-models', async (event, { endpoints } = {}) => {
+  const targetEndpoints = endpoints && endpoints.length > 0 ? endpoints : [
+    'http://127.0.0.1:11434/api/tags',
+    'http://localhost:11434/api/tags',
+    'http://127.0.0.1:8080/v1/models',
+    'http://localhost:8080/v1/models',
+    'http://127.0.0.1:1234/v1/models'
+  ];
+
+  let discoveredModels = [];
+  let activeEndpoint = null;
+  let provider = null;
+
+  for (const ep of targetEndpoints) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch(ep, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.models && Array.isArray(data.models)) {
+          activeEndpoint = ep.replace(/\/api\/tags$/, '');
+          provider = 'Ollama';
+          discoveredModels = data.models.map(m => ({
+            id: m.name,
+            name: m.name,
+            provider: 'Ollama',
+            endpoint: activeEndpoint,
+            tag: 'Local Ollama',
+            isLocal: true,
+            sizeGB: m.size ? (m.size / (1024 * 1024 * 1024)).toFixed(1) : null,
+            description: `Ollama model (${m.size ? (m.size / (1024 * 1024 * 1024)).toFixed(1) + ' GB' : 'active'})`
+          }));
+          break;
+        } else if (data.data && Array.isArray(data.data)) {
+          activeEndpoint = ep.replace(/\/models$/, '');
+          provider = 'llama.cpp';
+          discoveredModels = data.data.map(m => ({
+            id: m.id,
+            name: m.id.replace(/\.gguf$/i, '').replace(/^models\//, ''),
+            provider: 'llama.cpp',
+            endpoint: activeEndpoint,
+            tag: 'Local GGUF',
+            isLocal: true,
+            description: `Served on ${activeEndpoint}`
+          }));
+          break;
+        }
+      }
+    } catch (e) {}
+  }
+
+  return {
+    success: discoveredModels.length > 0,
+    models: discoveredModels,
+    activeEndpoint,
+    provider
+  };
+});
+
+ipcMain.handle('localAI:pull-model', async (event, { modelName, endpoint = 'http://127.0.0.1:11434' }) => {
+  try {
+    const cleanUrl = `${endpoint.replace(/\/+$/, '')}/api/pull`;
+    const res = await fetch(cleanUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: modelName, stream: false })
+    });
+    if (res.ok) {
+      return { success: true, message: `Successfully pulled ${modelName}` };
+    }
+    const errText = await res.text();
+    return { success: false, error: errText };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
 app.whenReady().then(() => {
   createWindow();
 
