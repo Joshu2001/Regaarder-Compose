@@ -50944,6 +50944,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
               const labelMap = { compose: 'Docs', sheets: 'Sheets', deck: 'Decks', room: 'Room', browser: 'Research' };
               showToast(`Switched to ${labelMap[mode] || mode}`);
             }}
+            onExportToCompose={(payload) => {
+              const title = payload.destinationDoc || (payload.sourceTitle ? `Research: ${payload.sourceTitle}` : 'Research Document');
+              const textContent = payload.content || payload.snippet || 'Research Summary';
+              const htmlContent = `<h1>${title}</h1><p><em>Captured from: ${payload.sourceUrl || 'Web Research'}</em></p><hr/><div class="research-content" style="line-height:1.7;">${textContent.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br/>')}</div>`;
+              
+              const newDocId = `doc_${Date.now()}`;
+              const newDoc = {
+                id: newDocId,
+                title: title,
+                lastModified: 'Just now',
+                category: 'Research',
+                icon: 'FileText',
+                content: htmlContent,
+                bodyHtml: htmlContent,
+                pinned: false,
+                sheetsTitle: 'Untitled Sheet',
+                deckTitle: 'Untitled Deck'
+              };
+
+              setDocuments((prev) => [...prev, newDoc]);
+              setActiveDocId(newDocId);
+              setDocTitle(title);
+              setDocBodyHtml(htmlContent);
+              setIsBlankDocument(false);
+              setProductMode('compose');
+              showToast(`Exported "${title}" to Compose Docs`);
+            }}
             isWorkspaceSwitcherOpen={workspaceSwitcherOpen}
           />
         </div>

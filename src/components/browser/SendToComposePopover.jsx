@@ -11,6 +11,7 @@ export const SendToComposePopover = ({
   anchorRect,
   activeTab,
   activeDocTitle = 'Untitled Document',
+  initialContent = '',
   isStandalone = false,
   onClose,
   onExecuteExport,
@@ -18,7 +19,7 @@ export const SendToComposePopover = ({
 }) => {
   const [hasSelection, setHasSelection] = useState(false);
   const [selectionWordCount, setSelectionWordCount] = useState(0);
-  const [selectedSnippet, setSelectedSnippet] = useState('');
+  const [selectedSnippet, setSelectedSnippet] = useState(initialContent || '');
 
   // Mode & Capture options
   const [textFormatMode, setTextFormatMode] = useState('text'); // 'text', 'quote', 'summarize'
@@ -32,14 +33,20 @@ export const SendToComposePopover = ({
     if (sel && sel.length > 0) {
       setHasSelection(true);
       setSelectionWordCount(sel.split(/\s+/).length);
-      setSelectedSnippet(sel.slice(0, 140));
+      setSelectedSnippet(sel.slice(0, 500));
+    } else if (initialContent) {
+      setHasSelection(true);
+      setSelectionWordCount(initialContent.split(/\s+/).length);
+      setSelectedSnippet(initialContent.slice(0, 500));
     }
-  }, []);
+  }, [initialContent]);
 
   const handleExecute = () => {
+    const fullText = selectedSnippet || initialContent || activeTab?.title || 'Research Document Summary';
     const capturedPayload = {
       hasSelection,
-      snippet: selectedSnippet,
+      snippet: fullText,
+      content: fullText,
       formatMode: hasSelection ? textFormatMode : noSelectionMode,
       destinationDoc,
       sourceUrl: activeTab?.url,

@@ -23,8 +23,19 @@ const BROWSER_FONT_SIZE_STORAGE_KEY = 'regaarder_browser_font_size_v1';
 const SIDE_PANEL_STORAGE_KEY = 'regaarder_side_panel_open_v1';
 const DEFAULT_RESEARCH_URL = 'regaarder://research';
 
-export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsDarkMode, isRightSideHovered = false, onOpenWorkspaceSwitcher, isWorkspaceSwitcherOpen, onSwitchProductMode }) => {
+export const BrowserWorkspace = ({
+  showToast,
+  setProductMode,
+  isDarkMode,
+  setIsDarkMode,
+  isRightSideHovered = false,
+  onOpenWorkspaceSwitcher,
+  isWorkspaceSwitcherOpen,
+  onSwitchProductMode,
+  onExportToCompose
+}) => {
   const isElectron = Boolean(window.electronAPI?.isElectron);
+  const [composeInitialContent, setComposeInitialContent] = useState('');
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(() => {
     try {
       const saved = localStorage.getItem(SIDE_PANEL_STORAGE_KEY);
@@ -266,11 +277,21 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     });
   }, [isElectron]);
 
-  const handleOpenSendToComposePopoverAction = useCallback((rect, forceOpen = false) => {
+  const handleOpenSendToComposePopoverAction = useCallback((rectOrOpts, forceOpen = false) => {
     setFontPopoverRect(null);
     setOverflowMenuRect(null);
     setFlowsPopoverRect(null);
     setSendToSheetsPopoverRect(null);
+
+    const rect = rectOrOpts && (rectOrOpts.bottom !== undefined || rectOrOpts.top !== undefined)
+      ? rectOrOpts
+      : (rectOrOpts?.rect || { bottom: 60, right: 300 });
+
+    const content = rectOrOpts?.content || rectOrOpts?.snippet || '';
+    if (content) {
+      setComposeInitialContent(content);
+    }
+
     if (isElectron && window.electronAPI?.openPopover) {
       window.electronAPI.openPopover({ type: 'sendToCompose', bounds: serializeRect(rect), force: forceOpen });
     } else {
@@ -754,20 +775,52 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
     }
   };
 
-  // Contextual Action: Send to Compose Execution & Undo System
+  // Contextual Action: Send to Compose Execution & Direct Pipeline System
   const handleExecuteSendToCompose = (payload) => {
-    const { destinationDoc } = payload;
-    const msg = `Added to ${destinationDoc}`;
+    const { destinationDoc, snippet, content } = payload;
+    const exportText = content || snippet || composeInitialContent || (activeTab?.title ? `Summary of ${activeTab.title}` : 'Research Brief Content');
+    const docTitle = destinationDoc || (activeTab?.title ? `Research — ${activeTab.title.slice(0, 30)}` : 'Research Notes');
+    const msg = `Exported to ${docTitle}`;
 
     globalActivityObserver.record({
       type: 'send_to_compose',
       target: 'Compose',
-      destination: destinationDoc
+      destination: docTitle,
+      content: exportText
     });
     setRecordedActionCount((prev) => prev + 1);
 
+    if (onExportToCompose) {
+      onExportToCompose({
+        ...payload,
+        destinationDoc: docTitle,
+        content: exportText,
+        snippet: exportText
+      });
+    } else {
+      try {
+        const stored = JSON.parse(localStorage.getItem('regaarder_compose_docs') || '[]');
+        const newDoc = {
+          id: `doc_${Date.now()}`,
+          title: docTitle,
+          content: exportText,
+          updatedAt: new Date().toISOString(),
+          tags: ['Research', 'Browser Capture']
+        };
+        stored.unshift(newDoc);
+        localStorage.setItem('regaarder_compose_docs', JSON.stringify(stored));
+        localStorage.setItem('regaarder_active_doc_id', newDoc.id);
+      } catch (e) {}
+    }
+
+    if (onSwitchProductMode) {
+      onSwitchProductMode('compose');
+    } else if (setProductMode) {
+      setProductMode('compose');
+    }
+
     const undoAction = () => {
-      if (showToast) showToast(`Reverted content export to ${destinationDoc}`);
+      if (showToast) showToast(`Reverted content export to ${docTitle}`);
     };
 
     if (showToast) {
@@ -882,8 +935,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
               onExtractPageSchema={handleExtractPageSchema}
               onExecuteElementAction={handleExecuteElementAction}
               onCaptureScreenshot={handleCaptureScreenshot}
-              onOpenSendToCompose={(rect) => {
-                handleOpenSendToComposePopoverAction(rect || { bottom: 60, right: 300 });
+              onOpenSendToCompose={(rectOrOpts) => {
+                handleOpenSendToComposePopoverAction(rectOrOpts || { bottom: 60, right: 300 });
+              }}
+              onDirectExportToCompose={(payload) => {
+                handleExecuteSendToCompose(payload);
               }}
               onOpenSendToSheets={(rect) => {
                 handleOpenSendToSheetsPopoverAction(rect || { bottom: 60, right: 300 });
@@ -1001,7 +1057,11 @@ export const BrowserWorkspace = ({ showToast, setProductMode, isDarkMode, setIsD
         <SendToComposePopover
           anchorRect={sendToComposePopoverRect}
           activeTab={activeTab}
-          onClose={() => setSendToComposePopoverRect(null)}
+          initialContent={composeInitialContent}
+          onClose={() => {
+            setSendToComposePopoverRect(null);
+            setComposeInitialContent('');
+          }}
           onExecuteExport={handleExecuteSendToCompose}
           showToast={showToast}
         />

@@ -279,6 +279,37 @@ export const BrowserResearchPanel = ({
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [capabilityWarning, setCapabilityWarning] = useState(null);
 
+  // User-Protected Global AI Action Undo History Stack
+  const [aiUndoHistory, setAiUndoHistory] = useState([]);
+
+  const recordAiActionSnapshot = useCallback((description) => {
+    setAiUndoHistory((prev) => [
+      {
+        id: `undo-${Date.now()}`,
+        description: description || 'AI action execution',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        snapshot: {
+          chatMessages: JSON.parse(JSON.stringify(chatMessages)),
+          attachedFiles: JSON.parse(JSON.stringify(attachedFiles)),
+          monitoredItems: JSON.parse(JSON.stringify(monitoredItems))
+        }
+      },
+      ...prev
+    ].slice(0, 20));
+  }, [chatMessages, attachedFiles, monitoredItems]);
+
+  const handleUndoLastAiAction = useCallback(() => {
+    if (aiUndoHistory.length === 0) return;
+    const [lastAction, ...remaining] = aiUndoHistory;
+    if (lastAction?.snapshot) {
+      if (lastAction.snapshot.chatMessages) setChatMessages(lastAction.snapshot.chatMessages);
+      if (lastAction.snapshot.attachedFiles) setAttachedFiles(lastAction.snapshot.attachedFiles);
+      if (lastAction.snapshot.monitoredItems) setMonitoredItems(lastAction.snapshot.monitoredItems);
+      setAiUndoHistory(remaining);
+      if (showToast) showToast(`Undid AI Action: ${lastAction.description}`);
+    }
+  }, [aiUndoHistory, showToast]);
+
   // Synchronize and persist chat sessions to LocalStorage
   const persistCurrentChatSession = useCallback((messages) => {
     if (!messages || messages.length === 0) return;
@@ -997,8 +1028,10 @@ Always answer helpfully, clearly, and concisely.`;
     return sources;
   };
 
-  // Workspace Tool Execution Handler
+  // Workspace Tool Execution Handler with Automatic Snapshot Recording
   const handleExecuteQuickTool = (toolType, contextText, msgIdx) => {
+    recordAiActionSnapshot(`Generate ${toolType.toUpperCase()} action`);
+
     if (toolType === 'sheet') {
       const sheetPayload = {
         tool: 'workspace_create_sheet',
@@ -1023,8 +1056,9 @@ Always answer helpfully, clearly, and concisely.`;
       });
       if (showToast) showToast('Generated interactive Spreadsheet in chat');
     } else if (toolType === 'compose') {
-      onOpenSendToCompose?.({ bottom: 60, right: 300 });
-      if (showToast) showToast('Opening Regaarder Compose to build Research Brief...');
+      const exportText = contextText || chatMessages[msgIdx]?.text || (summary?.overview ? `Summary of ${activeTab?.title || 'Research'}:\n\n${summary.overview}` : 'Research Brief Document');
+      onOpenSendToCompose?.({ bottom: 60, right: 300, content: exportText });
+      if (showToast) showToast('Opening Regaarder Compose with Research Brief...');
     } else if (toolType === 'whiteboard') {
       onSendToWhiteboard?.();
       if (showToast) showToast('Generating whiteboard canvas diagram...');
@@ -1744,6 +1778,22 @@ Always answer helpfully, clearly, and concisely.`;
             </button>
           </div>
 
+          {/* User-Protected Global AI Action Undo Button */}
+          {aiUndoHistory.length > 0 && (
+            <button
+              type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                handleUndoLastAiAction();
+              }}
+              className="px-2 py-1 rounded-md bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[10px] font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-xs animate-in fade-in duration-150"
+              title={`Undo AI Action: "${aiUndoHistory[0]?.description}"`}
+            >
+              <RotateCcw size={11} className="text-amber-400" />
+              <span>Undo AI</span>
+            </button>
+          )}
+
           <button
             type="button"
             onPointerDown={(e) => {
@@ -2460,7 +2510,8 @@ Always answer helpfully, clearly, and concisely.`;
                                       type="button"
                                       onPointerDown={(e) => {
                                         e.preventDefault();
-                                        onOpenSendToCompose?.({ bottom: 60, right: 300 });
+                                        const citationText = formatCitation(msg.sources[0], selectedCitationStyle);
+                                        onOpenSendToCompose?.({ bottom: 60, right: 300, content: citationText });
                                         if (showToast) showToast('Inserting citation into Compose...');
                                       }}
                                       className="px-2 py-1 rounded bg-violet-600/80 hover:bg-violet-600 text-white text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
@@ -2733,7 +2784,7 @@ Always answer helpfully, clearly, and concisely.`;
                                         type="button"
                                         onPointerDown={(e) => {
                                           e.preventDefault();
-                                          onOpenSendToCompose?.({ bottom: 60, right: 300 });
+                                          onOpenSendToCompose?.({ bottom: 60, right: 300, content: msg.text });
                                           setOpenMenuIdx(null);
                                           if (showToast) showToast('Exporting response to Compose...');
                                         }}
@@ -3048,7 +3099,8 @@ Always answer helpfully, clearly, and concisely.`;
                             onPointerDown={(e) => {
                               e.preventDefault();
                               setIsPlusMenuOpen(false);
-                              onOpenSendToCompose?.({ bottom: 60, right: 300 });
+                              const overviewText = summary?.overview ? `Executive Summary of ${activeTab?.title || 'Page'}:\n\n${summary.overview}` : (activeTab?.title || 'Research Note');
+                              onOpenSendToCompose?.({ bottom: 60, right: 300, content: overviewText });
                             }}
                             className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-violet-500/15 text-slate-300 hover:text-violet-200 transition-colors text-left cursor-pointer"
                           >
