@@ -1089,15 +1089,17 @@ Scroll Position: Y=${schema?.metadata?.scrollPosition?.y || 0}px (Max: ${schema?
     }
 
     if (schema?.elements && schema.elements.length > 0) {
-      prompt += `Interactive Elements on Page (with Virtual IDs):\n`;
-      schema.elements.forEach((el) => {
-        let desc = `  - ID [${el.id}]: <${el.tag || el.role}> label="${el.label}"`;
-        if (el.value) desc += ` current_value="${el.value}"`;
-        if (el.options && el.options.length > 0) desc += ` options=[${el.options.slice(0, 8).join(', ')}]`;
-        if (!el.isVisible) desc += ` (offscreen/hidden)`;
-        prompt += desc + '\n';
-      });
-      prompt += '\n';
+      const visibleElements = schema.elements
+        .filter((el) => el.label && el.label.trim() && el.label !== '(unlabeled)' && !/^[0-9a-f]{16,}$/i.test(el.label))
+        .slice(0, 15);
+
+      if (visibleElements.length > 0) {
+        prompt += `Key Page Interactive Elements (for internal action planning only):\n`;
+        visibleElements.forEach((el) => {
+          prompt += `  - [${el.id}] "${el.label}" (${el.tag || el.role})\n`;
+        });
+        prompt += `\n`;
+      }
     }
 
     const textContent = (schema?.visibleTextSummary || fallbackText || '').slice(0, 3500);
@@ -1105,9 +1107,11 @@ Scroll Position: Y=${schema?.metadata?.scrollPosition?.y || 0}px (Max: ${schema?
       prompt += `Visible Page Content:\n${textContent}\n\n`;
     }
 
-    prompt += `=== CAPABILITIES & TOOL CALLING INSTRUCTIONS ===
-1. When the user asks questions or wants analysis, synthesize your answer directly using the page content and elements provided above.
-2. If the user asks you to interact with the page (e.g. click a button, fill in a form, select a dropdown, check a box, navigate, or scroll), output a JSON action plan:
+    prompt += `=== CAPABILITIES & RESPONSE RULES ===
+1. CRITICAL: NEVER output raw element IDs, HTML tags, or element list dumps (e.g. "[input5]: <textarea>") in your chat answers.
+2. Always explain steps in natural, human-friendly terms (e.g. "To access filters, click on the **Tools** button in the search toolbar, then select your desired time range.").
+3. When the user asks questions or wants analysis, synthesize your answer directly using the page content.
+4. If the user asks you to interact with the page (e.g. click a button, fill in a form, select a dropdown, check a box, navigate, or scroll), output a JSON action plan:
 \`\`\`action
 {
   "plan": "Brief 1-sentence explanation of what you are doing",
