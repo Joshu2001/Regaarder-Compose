@@ -699,7 +699,9 @@ export const BrowserResearchPanel = ({
 
   // 1-Click Pull / Download Model Handler (Ollama / Local)
   const handlePullModel = async (modelToPull) => {
-    const target = modelToPull || pullModelInput.trim();
+    const rawTarget = modelToPull || pullModelInput.trim();
+    if (!rawTarget) return;
+    const target = rawTarget.replace(/^ollama\s+(run|pull)\s+/i, '').replace(/['"]/g, '').trim();
     if (!target) return;
 
     setIsPullingModel(true);
@@ -2748,10 +2750,64 @@ Always answer helpfully, clearly, and concisely.`;
                           {msg.errorMessage}
                         </p>
                         {msg.suggestedCommand && (
-                          <div className="p-2 rounded bg-black/50 border border-white/10 font-mono text-[10px] text-slate-300 select-text">
-                            <span className="text-violet-400">$ </span>{msg.suggestedCommand}
+                          <div className="flex items-center justify-between p-2 rounded bg-black/50 border border-white/10 font-mono text-[10px] text-slate-300 select-text">
+                            <span className="truncate"><span className="text-violet-400">$ </span>{msg.suggestedCommand}</span>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                navigator.clipboard.writeText(msg.suggestedCommand);
+                                if (showToast) showToast('Copied CLI command');
+                              }}
+                              className="ml-2 px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-[9px] font-sans flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+                              title="Copy command to clipboard"
+                            >
+                              <Copy size={10} />
+                              <span>Copy</span>
+                            </button>
                           </div>
                         )}
+
+                        {/* Interactive Paste & 1-Click Pull Box */}
+                        <div className="space-y-1.5 pt-0.5">
+                          <span className="text-[9.5px] font-semibold text-slate-400 block uppercase tracking-wider">
+                            Paste or Type Model to Download:
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={pullModelInput}
+                              onChange={(e) => setPullModelInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && pullModelInput.trim() && !isPullingModel) {
+                                  e.preventDefault();
+                                  handlePullModel(pullModelInput);
+                                }
+                              }}
+                              placeholder="e.g. functiongemma or ollama run mistral"
+                              className="flex-1 px-2.5 py-1 rounded-lg bg-black/60 border border-white/15 text-[10.5px] text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-400 font-mono"
+                            />
+                            <button
+                              type="button"
+                              disabled={isPullingModel || !pullModelInput.trim()}
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                handlePullModel(pullModelInput);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors shrink-0 shadow-sm"
+                            >
+                              <Download size={11} className={isPullingModel ? 'animate-bounce' : ''} />
+                              <span>{isPullingModel ? 'Downloading...' : 'Pull & Run'}</span>
+                            </button>
+                          </div>
+
+                          {pullProgressText && (
+                            <div className="p-2 rounded-lg bg-sky-950/40 border border-sky-500/30 text-[10px] font-mono text-sky-300">
+                              {pullProgressText}
+                            </div>
+                          )}
+                        </div>
+
                         <div className="flex items-center gap-2 pt-1">
                           <button
                             type="button"
