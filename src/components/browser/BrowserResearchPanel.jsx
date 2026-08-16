@@ -189,11 +189,11 @@ export const formatContentWithLens = (text, lensKey) => {
 };
 
 const POPULAR_PULL_MODELS = [
-  { name: 'gemma3:1b', size: '1.2 GB', desc: 'Ultra-fast lightweight Google Gemma 3' },
-  { name: 'gemma:2b', size: '1.7 GB', desc: 'Google Gemma 2B instruction model' },
-  { name: 'llama3.2:1b', size: '1.3 GB', desc: 'Meta Llama 3.2 compact edge model' },
-  { name: 'llama3.2:3b', size: '2.0 GB', desc: 'Meta Llama 3.2 fast reasoning model' },
-  { name: 'qwen2.5:1.5b', size: '1.0 GB', desc: 'High speed multilingual agentic model' }
+  { name: 'qwen2.5:0.5b', size: '390 MB', desc: 'Best ultra-lightweight general chat & reasoning' },
+  { name: 'smollm2:360m', size: '270 MB', desc: 'HuggingFace ultra-compact conversational model' },
+  { name: 'qwen2.5:1.5b', size: '980 MB', desc: 'General conversational model (NOT coder)' },
+  { name: 'llama3.2:1b', size: '1.3 GB', desc: 'Meta Llama 3.2 compact edge instruction model' },
+  { name: 'gemma3:1b', size: '1.2 GB', desc: 'Google Gemma 3 fast multilingual model' }
 ];
 
 const CLOUD_FALLBACK_MODELS = [
