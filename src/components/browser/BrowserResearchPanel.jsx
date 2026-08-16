@@ -5,6 +5,8 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Cpu,
   Sparkles,
   Server,
