@@ -192,37 +192,40 @@ export const BrowserViewport = ({
             }
           `}</style>
 
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ animation: '__regaarder_viewport_shimmer 2.5s ease-in-out infinite' }}>
+          <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style={{ animation: '__regaarder_viewport_shimmer 2.5s ease-in-out infinite' }}>
             <defs>
               <linearGradient id="__regaarder_vp_snake_grad__" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor={broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'} />
-                <stop offset="50%" stopColor={broadcastEffect.mode === 'recording' ? '#F43F5E' : '#38BDF8'} />
-                <stop offset="100%" stopColor={broadcastEffect.mode === 'recording' ? '#FDA4AF' : '#EC4899'} />
+                <stop offset="35%" stopColor={broadcastEffect.mode === 'recording' ? '#F43F5E' : '#38BDF8'} />
+                <stop offset="70%" stopColor={broadcastEffect.mode === 'recording' ? '#FDA4AF' : '#EC4899'} />
+                <stop offset="100%" stopColor={broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'} />
               </linearGradient>
             </defs>
             {/* Base track border */}
             <rect
               x="2"
               y="2"
-              width="calc(100% - 4px)"
-              height="calc(100% - 4px)"
+              width="996"
+              height="996"
               fill="none"
               stroke={broadcastEffect.mode === 'recording' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(139, 92, 246, 0.25)'}
               strokeWidth="2"
+              vectorEffect="non-scaling-stroke"
             />
             {/* Running Neon Snake Stroke */}
             <rect
               x="2"
               y="2"
-              width="calc(100% - 4px)"
-              height="calc(100% - 4px)"
+              width="996"
+              height="996"
               fill="none"
               stroke="url(#__regaarder_vp_snake_grad__)"
-              strokeWidth="3.5"
+              strokeWidth="4"
               strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
               pathLength="100"
               strokeDasharray="24 76"
-              style={{ animation: '__regaarder_viewport_snake_crawl 3.2s linear infinite' }}
+              style={{ animation: '__regaarder_viewport_snake_crawl 2.8s linear infinite' }}
             />
           </svg>
 

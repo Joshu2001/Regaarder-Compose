@@ -860,30 +860,31 @@ class BrowserViewManager {
           \`;
 
           container.innerHTML = \`
-            <svg style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; animation: __regaarder_shimmer 2.5s ease-in-out infinite;">
+            <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; animation: __regaarder_shimmer 2.5s ease-in-out infinite;">
               <defs>
                 <linearGradient id="__regaarder_snake_grad__" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stop-color="${c1}" />
-                  <stop offset="50%" stop-color="${c2}" />
-                  <stop offset="100%" stop-color="${c3}" />
+                  <stop offset="35%" stop-color="${c2}" />
+                  <stop offset="70%" stop-color="${c3}" />
+                  <stop offset="100%" stop-color="${c1}" />
                 </linearGradient>
               </defs>
               <!-- Base perimeter track -->
-              <rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="0" fill="none" stroke="${bgBorder}" stroke-width="2" />
+              <rect x="2" y="2" width="996" height="996" fill="none" stroke="${bgBorder}" stroke-width="2" vector-effect="non-scaling-stroke" />
               <!-- Running Neon Snake with Glowing Laser Head -->
               <rect
                 x="2"
                 y="2"
-                width="calc(100% - 4px)"
-                height="calc(100% - 4px)"
-                rx="0"
+                width="996"
+                height="996"
                 fill="none"
                 stroke="url(#__regaarder_snake_grad__)"
-                stroke-width="3.5"
+                stroke-width="4"
                 stroke-linecap="round"
+                vector-effect="non-scaling-stroke"
                 pathLength="100"
                 stroke-dasharray="24 76"
-                style="animation: __regaarder_snake_crawl 3.2s linear infinite;"
+                style="animation: __regaarder_snake_crawl 2.8s linear infinite;"
               />
             </svg>
 
