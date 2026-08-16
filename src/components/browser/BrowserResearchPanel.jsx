@@ -149,6 +149,9 @@ export const BrowserResearchPanel = ({
   onOpenSendToCompose,
   onDirectExportToCompose,
   onOpenSendToSheets,
+  onDirectExportToSheets,
+  onDirectExportToDeck,
+  onDirectExportToWhiteboard,
   onSaveToMemory,
   onSendToWhiteboard,
   onRunFlowRequested,
@@ -196,9 +199,27 @@ export const BrowserResearchPanel = ({
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const recognitionRef = useRef(null);
 
-  // Chat & Stream States
-  const [chatMessages, setChatMessages] = useState([]);
-  const [tabSessions, setTabSessions] = useState({});
+  // Chat & Stream States with automatic device/localStorage persistence
+  const [tabSessions, setTabSessions] = useState(() => {
+    try {
+      const stored = localStorage.getItem('regaarder_browser_tab_sessions');
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return {};
+  });
+  const [chatMessages, setChatMessages] = useState(() => {
+    try {
+      const initialKey = activeTab?.id || activeTab?.url || 'default_tab';
+      const storedSessions = localStorage.getItem('regaarder_browser_tab_sessions');
+      if (storedSessions) {
+        const parsed = JSON.parse(storedSessions);
+        if (parsed[initialKey] && parsed[initialKey].length > 0) {
+          return parsed[initialKey];
+        }
+      }
+    } catch (e) {}
+    return [];
+  });
   const [inputQuery, setInputQuery] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedTextContext, setSelectedTextContext] = useState('');
@@ -215,6 +236,8 @@ export const BrowserResearchPanel = ({
   const [copiedCitationIdx, setCopiedCitationIdx] = useState(null);
   const [selectedSourceIndices, setSelectedSourceIndices] = useState({}); // Per-message selected source card index
   const [openActionDropdownIdx, setOpenActionDropdownIdx] = useState(null);
+  const [clarifyingDropdownMsgIdx, setClarifyingDropdownMsgIdx] = useState(null); // Per-message clarifying lens selector
+  const [selectedLensPerMsg, setSelectedLensPerMsg] = useState({}); // Stores chosen lens per message index
 
   // Slash Command Menu States
   const [showSlashMenu, setShowSlashMenu] = useState(false);
@@ -223,11 +246,7 @@ export const BrowserResearchPanel = ({
   const slashMenuRef = useRef(null);
 
   // Dynamic Real Action Items Extracted from Page
-  const [realActionItems, setRealActionItems] = useState([
-    { id: 'act-1', title: 'Audit core takeaways and verify key page claims', completed: false, category: 'Research' },
-    { id: 'act-2', title: 'Synthesize citations and export bibliographic sources to doc', completed: false, category: 'Deliverable' },
-    { id: 'act-3', title: 'Formulate high-impact implementation steps from findings', completed: true, category: 'Strategy' }
-  ]);
+  const [realActionItems, setRealActionItems] = useState([]);
   const [isExtractingActionItems, setIsExtractingActionItems] = useState(false);
   const prevTabKeyRef = useRef(null);
 
@@ -255,7 +274,16 @@ export const BrowserResearchPanel = ({
 
   const currentTabKey = activeTab?.id || activeTab?.url || 'default_tab';
 
-  // Synchronize chat messages with active tab session to prevent context bleed
+  // Persist tabSessions dictionary to localStorage
+  useEffect(() => {
+    try {
+      if (tabSessions && Object.keys(tabSessions).length > 0) {
+        localStorage.setItem('regaarder_browser_tab_sessions', JSON.stringify(tabSessions));
+      }
+    } catch (e) {}
+  }, [tabSessions]);
+
+  // Synchronize chat messages with active tab session to prevent context bleed & maintain device storage
   useEffect(() => {
     if (!currentTabKey) return;
 
@@ -266,13 +294,19 @@ export const BrowserResearchPanel = ({
         [prevKey]: chatMessages
       }));
 
-      // Load session for new tab
+      // Load session for new tab from stored state
       const nextMessages = tabSessions[currentTabKey] || [];
       setChatMessages(nextMessages);
 
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         setSpeakingMessageIdx(null);
+      }
+    } else if (!prevTabKeyRef.current) {
+      // Initial mount: load active tab messages if available
+      const savedMessages = tabSessions[currentTabKey] || [];
+      if (savedMessages.length > 0 && chatMessages.length === 0) {
+        setChatMessages(savedMessages);
       }
     }
     prevTabKeyRef.current = currentTabKey;
@@ -283,17 +317,11 @@ export const BrowserResearchPanel = ({
   const [taskProgress, setTaskProgress] = useState(0);
   const [taskLogs, setTaskLogs] = useState([]);
   const [isExecutingTask, setIsExecutingTask] = useState(false);
-  const [monitoredItems, setMonitoredItems] = useState(() => [
-    { id: 'mon-1', title: activeTab?.title || 'Active Web Page', price: 'Active', stock: 'Monitoring DOM', url: activeTab?.url || 'domain.com', lastChecked: 'Just now' }
-  ]);
+  const [monitoredItems, setMonitoredItems] = useState([]);
 
   // History Memory Search States
   const [historySearchQuery, setHistorySearchQuery] = useState('');
-  const [historyResults, setHistoryResults] = useState([
-    { id: 'h1', title: 'Q3 Enterprise SaaS Benchmark Report 2026', domain: 'bessemer.com', visitedDate: 'Yesterday, 4:15 PM', snippet: 'Rule of 40 median hit 42% in Q3; AI-native ACVs grew 2.3x YoY.' },
-    { id: 'h2', title: 'Stripe API Webhooks & Idempotency Best Practices', domain: 'docs.stripe.com', visitedDate: '2 days ago', snippet: 'Header idempotency-key ensures safe automated retry execution without duplicate charges.' },
-    { id: 'h3', title: 'Apple SF Symbols & Human Interface Guidelines', domain: 'developer.apple.com', visitedDate: 'Aug 12, 2026', snippet: 'Hierarchy, optical alignment, and progressive disclosure patterns across macOS.' }
-  ]);
+  const [historyResults, setHistoryResults] = useState([]);
 
   const chatInputRef = useRef(null);
   const chatScrollRef = useRef(null);
@@ -303,7 +331,7 @@ export const BrowserResearchPanel = ({
   const mediaFileInputRef = useRef(null);
   const abortControllerRef = useRef(null);
 
-  // Chat History Drawer States
+  // Chat History Drawer States — zero placeholders, loaded purely from device
   const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
   const [chatHistorySearchQuery, setChatHistorySearchQuery] = useState('');
   const [savedChatSessions, setSavedChatSessions] = useState(() => {
@@ -311,26 +339,7 @@ export const BrowserResearchPanel = ({
       const stored = localStorage.getItem('regaarder_browser_chat_history');
       if (stored) return JSON.parse(stored);
     } catch (e) {}
-    return [
-      {
-        id: 'sess-1',
-        title: 'Top Software Companies by Market Cap',
-        domain: 'google.com',
-        timestamp: '10m ago',
-        messageCount: 4,
-        messages: [
-          { sender: 'user', text: 'top 10 500 most profitable software companies' },
-          {
-            sender: 'agent',
-            text: 'Microsoft leads globally with $3.15T market capitalization, followed by Apple and Alphabet. I have extracted the key players and their valuation profiles.',
-            sources: [
-              { id: 'src-1', index: 1, title: 'Top 10 Most Profitable Software Leaders', domain: 'google.com', url: 'https://google.com', snippet: 'Microsoft, Alphabet, Apple, Oracle, Palantir ranking.', timestamp: '10m ago' },
-              { id: 'src-2', index: 2, title: 'Companies Market Cap Software Index', domain: 'companiesmarketcap.com', url: 'https://companiesmarketcap.com', snippet: 'Live enterprise market capitalization metrics.', timestamp: '10m ago' }
-            ]
-          }
-        ]
-      }
-    ];
+    return [];
   });
 
   // Multimodal File Uploads & Capability States
@@ -414,6 +423,17 @@ export const BrowserResearchPanel = ({
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [chatMessages, isGenerating]);
+
+  // Continuously sync active messages to tab sessions and localStorage
+  useEffect(() => {
+    if (chatMessages && chatMessages.length > 0 && currentTabKey) {
+      setTabSessions((prev) => ({
+        ...prev,
+        [currentTabKey]: chatMessages
+      }));
+      persistCurrentChatSession(chatMessages);
+    }
+  }, [chatMessages, currentTabKey, persistCurrentChatSession]);
 
   // Check selection context
   useEffect(() => {
@@ -1107,25 +1127,204 @@ Always answer helpfully, clearly, and concisely.`;
     return sources;
   };
 
+  // ── Dynamic Text Extractors ────────────────────────────────────────────────
+
+  /**
+   * Extracts a 2D data matrix from unstructured LLM text.
+   * Parses numbered lists, markdown tables, and key: value pairs into rows.
+   */
+  const extractMatrixFromText = (rawText, sourceTitle) => {
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    const rows = [];
+
+    // Attempt to parse markdown tables first (| col | col | pattern)
+    const tableLines = lines.filter(l => l.startsWith('|') && l.endsWith('|'));
+    if (tableLines.length >= 2) {
+      const headerLine = tableLines[0];
+      const dataLines = tableLines.slice(2); // skip separator row
+      const columns = headerLine.split('|').map(c => c.trim()).filter(Boolean);
+      dataLines.forEach((line, idx) => {
+        const cells = line.split('|').map(c => c.trim()).filter(Boolean);
+        if (cells.length > 0) rows.push([String(idx + 1), ...cells]);
+      });
+      if (rows.length > 0) {
+        return {
+          title: `Data Matrix — ${sourceTitle || 'Research Export'}`,
+          columns: ['#', ...columns],
+          rows
+        };
+      }
+    }
+
+    // Attempt numbered list: "1. **Heading:** Description" or "1. Item - detail"
+    const numberedRegex = /^(\d+)[.)]\s+(?:\*{1,2}([^*:]+)\*{0,2}[:\s–-]*)?(.+)?$/;
+    const boldLabelRegex = /\*{1,2}([^*]+)\*{1,2}[:\s–-]+(.+)/;
+
+    lines.forEach((line) => {
+      const numMatch = line.match(numberedRegex);
+      if (numMatch) {
+        const rank = numMatch[1];
+        let heading = (numMatch[2] || '').trim();
+        let description = (numMatch[3] || '').trim();
+
+        // Try to split heading from description if heading is empty
+        if (!heading && description) {
+          const boldMatch = description.match(boldLabelRegex);
+          if (boldMatch) {
+            heading = boldMatch[1].trim();
+            description = boldMatch[2].trim();
+          } else {
+            heading = description.slice(0, 40);
+            description = description.slice(40) || '—';
+          }
+        }
+
+        // Extract domain if URL or parenthetical present
+        const domainMatch = (description || heading).match(/\(([^)]+\.[a-z]{2,}[^)]*)\)/i) ||
+          (description || heading).match(/https?:\/\/([a-zA-Z0-9.-]+)/);
+        const domain = domainMatch ? domainMatch[1].replace(/^www\./, '') : '—';
+
+        rows.push([rank, heading || '—', description || '—', domain, 'Extracted']);
+      }
+    });
+
+    // Fallback: key: value pairs
+    if (rows.length === 0) {
+      lines.forEach((line, idx) => {
+        const kvMatch = line.match(/^([^:]{3,40}):\s+(.{3,})$/);
+        if (kvMatch) {
+          rows.push([String(idx + 1), kvMatch[1].trim(), kvMatch[2].trim(), '—', 'Parsed']);
+        }
+      });
+    }
+
+    // Last resort: chunk plain paragraphs into rows
+    if (rows.length === 0) {
+      const chunks = rawText.match(/.{1,120}/g) || [];
+      chunks.slice(0, 10).forEach((chunk, idx) => {
+        rows.push([String(idx + 1), `Point ${idx + 1}`, chunk.trim(), '—', 'Raw']);
+      });
+    }
+
+    return {
+      title: `Data Matrix — ${sourceTitle || 'Research Export'}`,
+      columns: ['#', 'Entity / Topic', 'Description', 'Source', 'Status'],
+      rows: rows.slice(0, 20)
+    };
+  };
+
+  /**
+   * Synthesizes a slide deck from unstructured LLM text.
+   * Groups content by headings, numbered sections, or sentence clusters.
+   */
+  const extractDeckFromText = (rawText, sourceTitle) => {
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    const slides = [];
+
+    // Detect heading lines: markdown ## or bold **Title**
+    const headingRegex = /^#{1,3}\s+(.+)$|^\*{1,2}([^*]+)\*{1,2}$/;
+    let currentSlide = null;
+
+    lines.forEach((line) => {
+      const headingMatch = line.match(headingRegex);
+      if (headingMatch && (headingMatch[1] || headingMatch[2])) {
+        if (currentSlide && currentSlide.bullets.length > 0) slides.push(currentSlide);
+        currentSlide = {
+          title: (headingMatch[1] || headingMatch[2]).replace(/\*+/g, '').trim(),
+          bullets: []
+        };
+      } else if (currentSlide) {
+        const cleaned = line.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '').replace(/\*+/g, '').trim();
+        if (cleaned.length > 10) currentSlide.bullets.push(cleaned.slice(0, 120));
+      } else {
+        // Auto-start first slide from plain text
+        currentSlide = { title: `${sourceTitle || 'Overview'} — Key Insights`, bullets: [] };
+        const cleaned = line.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '').replace(/\*+/g, '').trim();
+        if (cleaned.length > 10) currentSlide.bullets.push(cleaned.slice(0, 120));
+      }
+    });
+    if (currentSlide && currentSlide.bullets.length > 0) slides.push(currentSlide);
+
+    // Fallback: split text into 3 logical thirds
+    if (slides.length === 0) {
+      const sentences = rawText.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 20);
+      const chunkSize = Math.ceil(sentences.length / 3) || 1;
+      const labels = ['Executive Overview', 'Core Findings', 'Recommendations'];
+      for (let i = 0; i < 3; i++) {
+        const chunk = sentences.slice(i * chunkSize, (i + 1) * chunkSize);
+        if (chunk.length > 0) {
+          slides.push({ title: labels[i], bullets: chunk.slice(0, 5).map(s => s.trim().slice(0, 120)) });
+        }
+      }
+    }
+
+    // Clamp to max 8 slides, max 6 bullets each
+    return {
+      title: `${sourceTitle || 'Research Deck'} — Executive Presentation`,
+      slides: slides.slice(0, 8).map(s => ({
+        ...s,
+        bullets: s.bullets.slice(0, 6)
+      }))
+    };
+  };
+
+  /**
+   * Extracts a flowchart/node graph from LLM text for Whiteboard canvas.
+   * Builds connected cards from numbered steps, headings, or key phrases.
+   */
+  const extractWhiteboardFromText = (rawText, sourceTitle) => {
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    const nodes = [];
+    const stepRegex = /^(?:\d+[.)]\s+|\*+\s+|-\s+)?(?:\*{1,2}([^*]+)\*{0,2}[:\s–-]*)(.+)?$/;
+
+    lines.forEach((line) => {
+      const isHeading = /^#{1,3}\s+/.test(line) || /^\*{1,2}[^*]+\*{1,2}$/.test(line);
+      if (isHeading) {
+        const title = line.replace(/^#+\s+/, '').replace(/\*+/g, '').trim();
+        nodes.push({ title, description: '' });
+      } else {
+        const match = line.match(stepRegex);
+        if (match) {
+          const title = (match[1] || '').trim() || line.slice(0, 40).replace(/\*+/g, '');
+          const description = (match[2] || '').trim() || line.slice(40, 140).replace(/\*+/g, '');
+          if (title || description) {
+            nodes.push({ title: title || `Step ${nodes.length + 1}`, description });
+          }
+        }
+      }
+    });
+
+    if (nodes.length === 0) {
+      const sentences = rawText.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 15).slice(0, 8);
+      sentences.forEach((s, idx) => {
+        nodes.push({ title: `Node ${idx + 1}`, description: s.trim().slice(0, 120) });
+      });
+    }
+
+    return {
+      title: `${sourceTitle || 'Concept Map'} — Whiteboard`,
+      nodes: nodes.slice(0, 12)
+    };
+  };
+
   // Workspace Tool Execution Handler with Automatic Snapshot Recording
   const handleExecuteQuickTool = (toolType, contextText, msgIdx) => {
     recordAiActionSnapshot(`Generate ${toolType.toUpperCase()} action`);
 
+    const sourceText = contextText || chatMessages[msgIdx]?.text || '';
+    const sourceTitle = activeTab?.title ? activeTab.title.slice(0, 50) : 'Research';
+
     if (toolType === 'sheet') {
+      const matrix = extractMatrixFromText(sourceText, sourceTitle);
       const sheetPayload = {
         tool: 'workspace_create_sheet',
         parameters: {
-          title: `Extracted Data — ${activeTab?.title || 'Web Matrix'}`,
-          columns: ['Rank', 'Item / Entity', 'Primary Metric', 'Domain / Source', 'Status'],
-          data: [
-            ['1', 'Top Entity Alpha', '$3.15T', summary?.domain || 'google.com', 'Verified'],
-            ['2', 'Entity Beta', '$2.98T', 'finance.yahoo.com', 'Audited'],
-            ['3', 'Entity Gamma', '$2.10T', 'bloomberg.com', 'Active'],
-            ['4', 'Entity Delta', '$450B', 'investopedia.com', 'Estimated'],
-            ['5', 'Entity Epsilon', '$140B', 'sec.gov', 'Indexed']
-          ]
+          title: matrix.title,
+          columns: matrix.columns,
+          data: matrix.rows
         }
       };
+
       setChatMessages((prev) => {
         const copy = [...prev];
         if (copy[msgIdx]) {
@@ -1133,10 +1332,23 @@ Always answer helpfully, clearly, and concisely.`;
         }
         return copy;
       });
-      if (showToast) showToast('Generated interactive Spreadsheet in chat');
+
+      // Direct export to Sheets workspace
+      if (typeof onDirectExportToSheets === 'function') {
+        onDirectExportToSheets({
+          title: matrix.title,
+          columns: matrix.columns,
+          rows: matrix.rows,
+          sourceUrl: activeTab?.url,
+          sourceTitle: activeTab?.title
+        });
+      }
+
+      if (showToast) showToast(`Built "${matrix.title}" — ${matrix.rows.length} rows extracted`);
+
     } else if (toolType === 'compose') {
-      const exportText = contextText || chatMessages[msgIdx]?.text || (summary?.overview ? `Summary of ${activeTab?.title || 'Research'}:\n\n${summary.overview}` : 'Research Brief Document');
-      const docTitle = `Research Brief: ${activeTab?.title ? activeTab.title.slice(0, 45) : 'Web Document'}`;
+      const exportText = sourceText || (summary?.overview ? `Summary of ${sourceTitle}:\n\n${summary.overview}` : 'Research Brief Document');
+      const docTitle = `Research Brief: ${sourceTitle.slice(0, 45)}`;
       const payload = {
         destinationDoc: docTitle,
         content: exportText,
@@ -1153,21 +1365,17 @@ Always answer helpfully, clearly, and concisely.`;
         onOpenSendToCompose({ bottom: 60, right: 300, content: exportText });
       }
       if (showToast) showToast(`Exported "${docTitle}" directly to Compose Docs`);
-    } else if (toolType === 'whiteboard') {
-      onSendToWhiteboard?.();
-      if (showToast) showToast('Generating whiteboard canvas diagram...');
+
     } else if (toolType === 'deck') {
+      const deck = extractDeckFromText(sourceText, sourceTitle);
       const deckPayload = {
         tool: 'workspace_create_deck',
         parameters: {
-          title: `Executive Presentation: ${activeTab?.title || 'Web Overview'}`,
-          slides: [
-            { title: 'Executive Overview', bullets: ['Key market positioning', 'Macro trend analysis', 'Operational metrics'] },
-            { title: 'Empirical Findings', bullets: ['Historical milestones', 'Financial valuation trajectory', 'Comparative advantages'] },
-            { title: 'Strategic Recommendations', bullets: ['Actionable next steps', 'Risk mitigation factors', 'Timeline projection'] }
-          ]
+          title: deck.title,
+          slides: deck.slides
         }
       };
+
       setChatMessages((prev) => {
         const copy = [...prev];
         if (copy[msgIdx]) {
@@ -1175,9 +1383,38 @@ Always answer helpfully, clearly, and concisely.`;
         }
         return copy;
       });
-      if (showToast) showToast('Generated Slide Deck in chat');
+
+      // Direct export to Decks workspace
+      if (typeof onDirectExportToDeck === 'function') {
+        onDirectExportToDeck({
+          title: deck.title,
+          slides: deck.slides,
+          sourceUrl: activeTab?.url,
+          sourceTitle: activeTab?.title
+        });
+      }
+
+      if (showToast) showToast(`Generated "${deck.slides.length}-slide deck" — opening in Decks`);
+
+    } else if (toolType === 'whiteboard') {
+      const wb = extractWhiteboardFromText(sourceText, sourceTitle);
+
+      // Direct export to Whiteboard workspace
+      if (typeof onDirectExportToWhiteboard === 'function') {
+        onDirectExportToWhiteboard({
+          title: wb.title,
+          nodes: wb.nodes,
+          sourceUrl: activeTab?.url,
+          sourceTitle: activeTab?.title
+        });
+      } else {
+        onSendToWhiteboard?.();
+      }
+
+      if (showToast) showToast(`Generated "${wb.nodes.length}-node diagram" on Whiteboard canvas`);
     }
   };
+
 
   // Multimodal File Attachment Handler
   const handleMediaFilesSelected = (e) => {
@@ -2324,8 +2561,18 @@ Always answer helpfully, clearly, and concisely.`;
                                       type="button"
                                       onPointerDown={(e) => {
                                         e.preventDefault();
-                                        onOpenSendToSheets?.({ bottom: 60, right: 300 });
-                                        if (showToast) showToast('Opening in Regaarder Sheets...');
+                                        const payload = {
+                                          title: msg.toolCall.parameters?.title || `Data — ${activeTab?.title || 'Research'}`,
+                                          columns: msg.toolCall.parameters?.columns || ['Item', 'Details', 'Source'],
+                                          rows: msg.toolCall.parameters?.data || [],
+                                          sourceUrl: activeTab?.url,
+                                          sourceTitle: activeTab?.title
+                                        };
+                                        if (typeof onDirectExportToSheets === 'function') {
+                                          onDirectExportToSheets(payload);
+                                        } else {
+                                          onOpenSendToSheets?.({ bottom: 60, right: 300 });
+                                        }
                                       }}
                                       className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[10.5px] font-medium flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
                                     >
@@ -2375,10 +2622,29 @@ Always answer helpfully, clearly, and concisely.`;
                                       <span className="font-semibold text-slate-100 text-[11.5px]">
                                         {msg.toolCall.parameters?.title || 'Slide Deck Presentation'}
                                       </span>
+                                      <span className="px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-300 text-[9.5px] font-mono">
+                                        {msg.toolCall.parameters?.slides?.length || 3} Slides
+                                      </span>
                                     </div>
-                                    <span className="px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-300 text-[9.5px] font-mono">
-                                      {msg.toolCall.parameters?.slides?.length || 3} Slides
-                                    </span>
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        const payload = {
+                                          title: msg.toolCall.parameters?.title || `Deck — ${activeTab?.title || 'Research'}`,
+                                          slides: msg.toolCall.parameters?.slides || [],
+                                          sourceUrl: activeTab?.url,
+                                          sourceTitle: activeTab?.title
+                                        };
+                                        if (typeof onDirectExportToDeck === 'function') {
+                                          onDirectExportToDeck(payload);
+                                        }
+                                      }}
+                                      className="px-2.5 py-1 rounded-md bg-sky-600 hover:bg-sky-500 text-white text-[10.5px] font-medium flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                                    >
+                                      <ExternalLink size={11} />
+                                      <span>Open in Decks</span>
+                                    </button>
                                   </div>
                                   <div className="space-y-1.5">
                                     {(msg.toolCall.parameters?.slides || []).map((slide, sIdx) => (
@@ -2544,118 +2810,215 @@ Always answer helpfully, clearly, and concisely.`;
                           )}
 
                           {/* CONTEXTUAL ONE-TAP TOOL ACTION CHIPS */}
-                          {msg.sender === 'agent' && !msg.isStreaming && !msg.isError && (
-                            <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2 border-t border-white/[0.06]">
-                              <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
-                                Actions:
-                              </span>
-                              <button
-                                type="button"
-                                onPointerDown={(e) => {
-                                  e.preventDefault();
-                                  handleExecuteQuickTool('sheet', msg.text, idx);
-                                }}
-                                className="px-2 py-0.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 text-emerald-300 text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                              >
-                                <SheetIcon size={10} />
-                                <span>Convert to Sheet</span>
-                              </button>
-                              <button
-                                type="button"
-                                onPointerDown={(e) => {
-                                  e.preventDefault();
-                                  handleExecuteQuickTool('compose', msg.text, idx);
-                                }}
-                                className="px-2 py-0.5 rounded-md bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/25 text-violet-300 text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                              >
-                                <ComposeIcon size={10} />
-                                <span>Create Doc Brief</span>
-                              </button>
-                              <button
-                                type="button"
-                                onPointerDown={(e) => {
-                                  e.preventDefault();
-                                  handleExecuteQuickTool('whiteboard', msg.text, idx);
-                                }}
-                                className="px-2 py-0.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 text-amber-300 text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                              >
-                                <WhiteboardIcon size={10} />
-                                <span>Diagram to Canvas</span>
-                              </button>
-                              <button
-                                type="button"
-                                onPointerDown={(e) => {
-                                  e.preventDefault();
-                                  handleExecuteQuickTool('deck', msg.text, idx);
-                                }}
-                                className="px-2 py-0.5 rounded-md bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/25 text-sky-300 text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                              >
-                                <DeckIcon size={10} />
-                                <span>Generate Deck</span>
-                              </button>
+                          {msg.sender === 'agent' && !msg.isStreaming && !msg.isError && (() => {
+                            const LENSES = [
+                              { key: 'executive', label: 'Executive Overview', icon: '🎯' },
+                              { key: 'technical', label: 'Technical Breakdown', icon: '⚙️' },
+                              { key: 'checklist', label: 'Actionable Checklist', icon: '✅' },
+                              { key: 'matrix', label: 'Competitive Matrix', icon: '📊' },
+                            ];
 
-                              {/* 3-Dot Overflow Actions Menu */}
-                              <div className="relative">
-                                <button
-                                  type="button"
-                                  onPointerDown={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setOpenActionDropdownIdx((prev) => (prev === idx ? null : idx));
-                                  }}
-                                  className="p-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-400 hover:text-slate-200 transition-colors cursor-pointer flex items-center justify-center"
-                                  title="More actions"
-                                >
-                                  <MoreHorizontal size={11} />
-                                </button>
+                            const activeLens = selectedLensPerMsg[idx] || null;
+                            const isClarifyOpen = clarifyingDropdownMsgIdx === idx;
 
-                                {openActionDropdownIdx === idx && (
-                                  <div
-                                    onPointerDown={(e) => e.stopPropagation()}
-                                    className="absolute right-0 bottom-full mb-1.5 w-44 rounded-xl bg-[#181a26] border border-white/10 shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
-                                  >
+                            /**
+                             * Augments raw message text with the selected lens framing.
+                             * The LLM-extracted text is re-prefixed so the dynamic parsers
+                             * pick up the correct structural pattern.
+                             */
+                            const getLensText = (text) => {
+                              if (!activeLens) return text;
+                              const prefixMap = {
+                                executive: `# Executive Overview\n${text}`,
+                                technical: `# Technical Breakdown\n${text}`,
+                                checklist: text.split('\n').filter(Boolean).map((l, i) => `${i + 1}. ${l.replace(/^[-*•]\s*/, '').replace(/^\d+[.)]\s*/, '')}`).join('\n'),
+                                matrix: text,
+                              };
+                              return prefixMap[activeLens] || text;
+                            };
+
+                            return (
+                              <div className="flex flex-col gap-1.5 mt-2.5 pt-2 border-t border-white/[0.06]">
+                                {/* Top row: label + lens selector */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">Actions:</span>
+
+                                  {/* Clarifying Lens Selector */}
+                                  <div className="relative">
                                     <button
                                       type="button"
                                       onPointerDown={(e) => {
                                         e.preventDefault();
+                                        setClarifyingDropdownMsgIdx((prev) => (prev === idx ? null : idx));
                                         setOpenActionDropdownIdx(null);
-                                        handleConvertMessageToTasks(msg.text);
                                       }}
-                                      className="w-full px-2.5 py-1.5 rounded-lg hover:bg-violet-500/20 text-slate-200 hover:text-violet-200 text-[11px] font-medium transition-colors flex items-center gap-2 text-left cursor-pointer"
+                                      className={`px-2 py-0.5 rounded-md border text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                                        activeLens
+                                          ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
+                                          : 'bg-white/[0.04] border-white/[0.10] text-slate-400 hover:text-slate-200 hover:bg-white/[0.08]'
+                                      }`}
                                     >
-                                      <TasksIcon size={12} className="text-violet-400" />
-                                      <span>Convert to Tasks</span>
+                                      <span>{activeLens ? LENSES.find(l => l.key === activeLens)?.icon : '🔍'}</span>
+                                      <span>{activeLens ? LENSES.find(l => l.key === activeLens)?.label : 'Select Lens'}</span>
+                                      <ChevronDown size={9} className="opacity-60" />
                                     </button>
-                                    <button
-                                      type="button"
-                                      onPointerDown={(e) => {
-                                        e.preventDefault();
-                                        setOpenActionDropdownIdx(null);
-                                        onSaveToMemory?.();
-                                        if (showToast) showToast('Saved key takeaways to memory graph');
-                                      }}
-                                      className="w-full px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-300 hover:text-slate-100 text-[11px] font-medium transition-colors flex items-center gap-2 text-left cursor-pointer"
-                                    >
-                                      <MemoryIcon size={12} className="text-emerald-400" />
-                                      <span>Save to Memory</span>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onPointerDown={(e) => {
-                                        e.preventDefault();
-                                        setOpenActionDropdownIdx(null);
-                                        handleCopyMessage(msg.text, idx);
-                                      }}
-                                      className="w-full px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-300 hover:text-slate-100 text-[11px] font-medium transition-colors flex items-center gap-2 text-left cursor-pointer border-t border-white/[0.04] mt-0.5"
-                                    >
-                                      <Copy size={11} className="text-slate-400" />
-                                      <span>Copy Raw Text</span>
-                                    </button>
+
+                                    {isClarifyOpen && (
+                                      <div
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                        className="absolute left-0 bottom-full mb-1.5 w-48 rounded-xl bg-[#181a26] border border-white/10 shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                      >
+                                        <p className="px-2.5 py-1 text-[9.5px] font-semibold uppercase tracking-widest text-slate-500">Extraction Lens</p>
+                                        {LENSES.map((lens) => (
+                                          <button
+                                            key={lens.key}
+                                            type="button"
+                                            onPointerDown={(e) => {
+                                              e.preventDefault();
+                                              setSelectedLensPerMsg((prev) => ({ ...prev, [idx]: lens.key }));
+                                              setClarifyingDropdownMsgIdx(null);
+                                            }}
+                                            className={`w-full px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors flex items-center gap-2 text-left cursor-pointer ${
+                                              activeLens === lens.key
+                                                ? 'bg-indigo-500/25 text-indigo-200'
+                                                : 'hover:bg-white/[0.06] text-slate-300 hover:text-slate-100'
+                                            }`}
+                                          >
+                                            <span>{lens.icon}</span>
+                                            <span>{lens.label}</span>
+                                          </button>
+                                        ))}
+                                        {activeLens && (
+                                          <button
+                                            type="button"
+                                            onPointerDown={(e) => {
+                                              e.preventDefault();
+                                              setSelectedLensPerMsg((prev) => { const n = { ...prev }; delete n[idx]; return n; });
+                                              setClarifyingDropdownMsgIdx(null);
+                                            }}
+                                            className="w-full mt-0.5 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.04] text-slate-500 hover:text-slate-400 text-[10px] flex items-center gap-1.5 border-t border-white/[0.05] cursor-pointer"
+                                          >
+                                            <X size={10} /> Clear lens
+                                          </button>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
-                                )}
+                                </div>
+
+                                {/* Action chips row */}
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onPointerDown={(e) => {
+                                      e.preventDefault();
+                                      handleExecuteQuickTool('sheet', getLensText(msg.text), idx);
+                                    }}
+                                    className="px-2 py-0.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 text-emerald-300 text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
+                                  >
+                                    <SheetIcon size={10} />
+                                    <span>Convert to Sheet</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onPointerDown={(e) => {
+                                      e.preventDefault();
+                                      handleExecuteQuickTool('compose', getLensText(msg.text), idx);
+                                    }}
+                                    className="px-2 py-0.5 rounded-md bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/25 text-violet-300 text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
+                                  >
+                                    <ComposeIcon size={10} />
+                                    <span>Create Doc Brief</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onPointerDown={(e) => {
+                                      e.preventDefault();
+                                      handleExecuteQuickTool('whiteboard', getLensText(msg.text), idx);
+                                    }}
+                                    className="px-2 py-0.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 text-amber-300 text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
+                                  >
+                                    <WhiteboardIcon size={10} />
+                                    <span>Diagram to Canvas</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onPointerDown={(e) => {
+                                      e.preventDefault();
+                                      handleExecuteQuickTool('deck', getLensText(msg.text), idx);
+                                    }}
+                                    className="px-2 py-0.5 rounded-md bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/25 text-sky-300 text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
+                                  >
+                                    <DeckIcon size={10} />
+                                    <span>Generate Deck</span>
+                                  </button>
+
+                                  {/* 3-Dot Overflow Actions Menu */}
+                                  <div className="relative">
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setOpenActionDropdownIdx((prev) => (prev === idx ? null : idx));
+                                        setClarifyingDropdownMsgIdx(null);
+                                      }}
+                                      className="p-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-400 hover:text-slate-200 transition-colors cursor-pointer flex items-center justify-center"
+                                      title="More actions"
+                                    >
+                                      <MoreHorizontal size={11} />
+                                    </button>
+
+                                    {openActionDropdownIdx === idx && (
+                                      <div
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                        className="absolute right-0 bottom-full mb-1.5 w-44 rounded-xl bg-[#181a26] border border-white/10 shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                      >
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => {
+                                            e.preventDefault();
+                                            setOpenActionDropdownIdx(null);
+                                            handleConvertMessageToTasks(msg.text);
+                                          }}
+                                          className="w-full px-2.5 py-1.5 rounded-lg hover:bg-violet-500/20 text-slate-200 hover:text-violet-200 text-[11px] font-medium transition-colors flex items-center gap-2 text-left cursor-pointer"
+                                        >
+                                          <TasksIcon size={12} className="text-violet-400" />
+                                          <span>Convert to Tasks</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => {
+                                            e.preventDefault();
+                                            setOpenActionDropdownIdx(null);
+                                            onSaveToMemory?.();
+                                            if (showToast) showToast('Saved key takeaways to memory graph');
+                                          }}
+                                          className="w-full px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-300 hover:text-slate-100 text-[11px] font-medium transition-colors flex items-center gap-2 text-left cursor-pointer"
+                                        >
+                                          <MemoryIcon size={12} className="text-emerald-400" />
+                                          <span>Save to Memory</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => {
+                                            e.preventDefault();
+                                            setOpenActionDropdownIdx(null);
+                                            handleCopyMessage(msg.text, idx);
+                                          }}
+                                          className="w-full px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-300 hover:text-slate-100 text-[11px] font-medium transition-colors flex items-center gap-2 text-left cursor-pointer border-t border-white/[0.04] mt-0.5"
+                                        >
+                                          <Copy size={11} className="text-slate-400" />
+                                          <span>Copy Raw Text</span>
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            );
+                          })()}
+
                         </div>
 
                         {/* Structured Citations & Sources Card */}
@@ -3915,44 +4278,67 @@ Always answer helpfully, clearly, and concisely.`;
                 </button>
               </div>
 
-              {/* Dynamic Action Items Checklist */}
-              <div className="space-y-1.5">
-                {realActionItems.map((item) => (
-                  <div
-                    key={item.id}
-                    onPointerDown={() => {
-                      setRealActionItems((prev) =>
-                        prev.map((it) => (it.id === item.id ? { ...it, completed: !it.completed } : it))
-                      );
-                    }}
-                    className={`p-2.5 rounded-lg border transition-all cursor-pointer flex items-start gap-2.5 ${
-                      item.completed
-                        ? 'bg-white/[0.01] border-white/[0.04] opacity-60'
-                        : 'bg-white/[0.03] border-white/[0.08] hover:border-violet-500/40 hover:bg-white/[0.05]'
-                    }`}
+              {/* Dynamic Action Items Checklist — or Apple-style empty state */}
+              {realActionItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center text-center py-8 px-4 space-y-3">
+                  <div className="w-11 h-11 rounded-2xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center shadow-inner">
+                    <CheckCircle2 size={18} className="text-slate-500" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11.5px] font-semibold text-slate-300">No tasks extracted yet</p>
+                    <p className="text-[10.5px] text-slate-500 leading-relaxed max-w-[200px]">
+                      Hit <span className="text-slate-400 font-medium">Extract Real Items</span> to pull action items directly from the current page.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isExtractingActionItems}
+                    onPointerDown={(e) => { e.preventDefault(); handleExtractPageActionItems(); }}
+                    className="px-3 py-1.5 rounded-lg bg-violet-600/80 hover:bg-violet-600 text-white text-[10.5px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-40"
                   >
-                    <input
-                      type="checkbox"
-                      checked={item.completed}
-                      onChange={() => {}}
-                      className="mt-0.5 rounded border-white/20 text-violet-600 focus:ring-0 cursor-pointer"
-                    />
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      <p className={`text-[11px] leading-relaxed break-words ${item.completed ? 'line-through text-slate-500' : 'text-slate-200 font-medium'}`}>
-                        {item.title}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-violet-500/15 text-violet-300 font-mono">
-                          {item.category}
-                        </span>
-                        <span className="text-[9px] text-slate-500 font-mono">
-                          {item.completed ? '✓ Done' : 'Pending'}
-                        </span>
+                    <RefreshCw size={10} className={isExtractingActionItems ? 'animate-spin' : ''} />
+                    <span>{isExtractingActionItems ? 'Extracting…' : 'Extract from Page'}</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {realActionItems.map((item) => (
+                    <div
+                      key={item.id}
+                      onPointerDown={() => {
+                        setRealActionItems((prev) =>
+                          prev.map((it) => (it.id === item.id ? { ...it, completed: !it.completed } : it))
+                        );
+                      }}
+                      className={`p-2.5 rounded-lg border transition-all cursor-pointer flex items-start gap-2.5 ${
+                        item.completed
+                          ? 'bg-white/[0.01] border-white/[0.04] opacity-60'
+                          : 'bg-white/[0.03] border-white/[0.08] hover:border-violet-500/40 hover:bg-white/[0.05]'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={item.completed}
+                        onChange={() => {}}
+                        className="mt-0.5 rounded border-white/20 text-violet-600 focus:ring-0 cursor-pointer"
+                      />
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <p className={`text-[11px] leading-relaxed break-words ${item.completed ? 'line-through text-slate-500' : 'text-slate-200 font-medium'}`}>
+                          {item.title}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-violet-500/15 text-violet-300 font-mono">
+                            {item.category}
+                          </span>
+                          <span className="text-[9px] text-slate-500 font-mono">
+                            {item.completed ? '✓ Done' : 'Pending'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               {/* Action Item Export Tools */}
               {realActionItems.length > 0 && (
@@ -4113,49 +4499,77 @@ Always answer helpfully, clearly, and concisely.`;
 
         {/* TAB 3: PERSONAL MEMORY RETRIEVAL */}
         {activePanelTab === 'memory' && (
-          <div className="flex-1 overflow-y-auto p-3.5 space-y-3 regaarder-scrollbar">
-            <div className="space-y-1">
-              <h3 className="text-xs font-semibold text-slate-100 flex items-center gap-1.5">
-                <MemoryIcon size={14} className="text-sky-400" />
-                <span>Personal Memory & History Retrieval</span>
-              </h3>
-              <p className="text-[11px] text-slate-400">
-                Scan browsing history using natural language to retrieve answers from past pages.
-              </p>
+          <div className="flex-1 flex flex-col min-h-0 overflow-y-auto p-3.5 space-y-3 regaarder-scrollbar">
+
+            {/* Search Input */}
+            <div className="relative">
+              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <input
+                type="text"
+                value={historySearchQuery}
+                onChange={(e) => setHistorySearchQuery(e.target.value)}
+                placeholder='Search memory… e.g. "SaaS rule of 40 from yesterday"'
+                className="w-full pl-8 pr-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-[11.5px] text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500/50 transition-all"
+              />
             </div>
 
-            <input
-              type="text"
-              value={historySearchQuery}
-              onChange={(e) => setHistorySearchQuery(e.target.value)}
-              placeholder='e.g. "What was the SaaS rule of 40 metric from yesterday?"'
-              className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500/60 transition-all"
-            />
-
-            <div className="space-y-2">
-              {historyResults.map((item) => (
-                <div key={item.id} className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.08] space-y-1">
-                  <div className="flex items-center justify-between">
-                    <h5 className="text-xs font-semibold text-slate-200 truncate pr-2">{item.title}</h5>
-                    <span className="text-[10px] text-sky-400 font-mono shrink-0">{item.visitedDate}</span>
-                  </div>
-                  <p className="text-[11px] text-slate-300 leading-relaxed">{item.snippet}</p>
-                  <div className="flex items-center justify-between pt-1 text-[10px] text-slate-500">
-                    <span>{item.domain}</span>
-                    <button
-                      type="button"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        if (showToast) showToast(`Restored context for ${item.title}`);
-                      }}
-                      className="text-sky-400 hover:text-sky-300 font-medium cursor-pointer"
-                    >
-                      Jump to page →
-                    </button>
-                  </div>
+            {/* Results or Empty State */}
+            {historyResults.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center py-10 px-4 space-y-4">
+                <div className="w-12 h-12 rounded-[18px] bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shadow-inner">
+                  <MemoryIcon size={20} className="text-slate-600" />
                 </div>
-              ))}
-            </div>
+                <div className="space-y-1.5">
+                  <p className="text-[12px] font-semibold text-slate-300">No memory yet</p>
+                  <p className="text-[10.5px] text-slate-500 leading-relaxed max-w-[210px]">
+                    Pages you visit are indexed here. Ask a natural language question to retrieve insights from your browsing history.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1.5 w-full max-w-[220px]">
+                  {['What did I read about AI yesterday?', 'Last pricing page I visited', 'Research from last week'].map((hint) => (
+                    <button
+                      key={hint}
+                      type="button"
+                      onPointerDown={(e) => { e.preventDefault(); setHistorySearchQuery(hint); }}
+                      className="w-full px-3 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] text-[10.5px] text-slate-400 hover:text-slate-200 text-left transition-all cursor-pointer"
+                    >
+                      {hint}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {historyResults
+                  .filter((item) =>
+                    !historySearchQuery ||
+                    item.title.toLowerCase().includes(historySearchQuery.toLowerCase()) ||
+                    item.snippet?.toLowerCase().includes(historySearchQuery.toLowerCase())
+                  )
+                  .map((item) => (
+                    <div key={item.id} className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.07] space-y-1.5 hover:border-sky-500/30 hover:bg-white/[0.05] transition-all group">
+                      <div className="flex items-start justify-between gap-2">
+                        <h5 className="text-[11.5px] font-semibold text-slate-200 leading-snug">{item.title}</h5>
+                        <span className="text-[9.5px] text-sky-400/80 font-mono shrink-0 pt-0.5">{item.visitedDate}</span>
+                      </div>
+                      <p className="text-[10.5px] text-slate-400 leading-relaxed">{item.snippet}</p>
+                      <div className="flex items-center justify-between pt-0.5">
+                        <span className="text-[9.5px] text-slate-600 font-mono">{item.domain}</span>
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            if (showToast) showToast(`Restored context for ${item.title}`);
+                          }}
+                          className="text-[10px] text-sky-400 hover:text-sky-300 font-medium cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          Jump to page →
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         )}
 

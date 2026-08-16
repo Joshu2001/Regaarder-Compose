@@ -19348,8 +19348,20 @@ function AppCore() {
     setManageenDropColumnId(null);
   };
 
-  // Conversational state with pre-loaded AI response cards
-  const [chatMessages, setChatMessages] = useState([]);
+  // Conversational state with pre-loaded AI response cards and device/localStorage persistence
+  const [chatMessages, setChatMessages] = useState(() => {
+    try {
+      const stored = localStorage.getItem('rc.ai_chat_messages');
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rc.ai_chat_messages', JSON.stringify(chatMessages));
+    } catch (e) {}
+  }, [chatMessages]);
 
   // Handle status cycle on initiatives
   const toggleStatus = (id) => {
@@ -28980,7 +28992,14 @@ Rules:
         ...target,
         title: isCurrent ? docTitle : target.title,
         subtitle: isCurrent ? docSubtitle : target.subtitle,
-        bodyHtml: isCurrent ? sanitizeHtmlForExport(blankBodyRef.current?.innerHTML || target.bodyHtml) : sanitizeHtmlForExport(target.bodyHtml)
+        bodyHtml: isCurrent ? sanitizeHtmlForExport(blankBodyRef.current?.innerHTML || target.bodyHtml) : sanitizeHtmlForExport(target.bodyHtml),
+        sheetsTitle: isCurrent ? sheetsTitle : target.sheetsTitle,
+        sheetsData: isCurrent ? sheetsData : target.sheetsData,
+        sheetGrids: isCurrent ? sheetGrids : target.sheetGrids,
+        activeSheetId: isCurrent ? activeSheetId : target.activeSheetId,
+        deckTitle: isCurrent ? deckTitle : target.deckTitle,
+        deckSlidesData: isCurrent ? deckSlidesData : target.deckSlidesData,
+        activeDeckSlideId: isCurrent ? activeDeckSlideId : target.activeDeckSlideId,
       };
     }
     return fallback;
@@ -51120,6 +51139,213 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }, 50);
 
               showToast(`Exported "${title}" to Compose Docs`);
+            }}
+            onExportToSheets={(payload) => {
+              const title = payload.title || (payload.sourceTitle ? `Data: ${payload.sourceTitle}` : 'Web Extracted Matrix');
+              const columns = payload.columns || ['#', 'Entity / Topic', 'Description', 'Source', 'Status'];
+              const dataRows = payload.rows || payload.data || [];
+
+              const sheetId = 1;
+              const newDocId = Date.now();
+
+              // Build the 2D cell matrix that the Sheets grid renderer expects.
+              // Row 0 = bold header row; rows 1..n = data rows padded to column count.
+              const colCount = Math.max(columns.length, 5);
+              const headerRow = [...columns, ...Array(Math.max(0, colCount - columns.length)).fill('')];
+              const bodyRows = dataRows.map((row) => {
+                const cells = Array.isArray(row) ? row : Object.values(row);
+                return [...cells, ...Array(Math.max(0, colCount - cells.length)).fill('')].map(String);
+              });
+
+              const allCellRows = [headerRow.map(String), ...bodyRows];
+              const rowCount = Math.max(allCellRows.length + 4, 22); // pad to at least 22 rows
+              const paddedCells = [
+                ...allCellRows,
+                ...Array(Math.max(0, rowCount - allCellRows.length)).fill(Array(colCount).fill(''))
+              ];
+
+              // Header row formatting — bold
+              const formats = Array.from({ length: rowCount }, (_, r) =>
+                Array(colCount).fill(r === 0 ? { bold: true, bg: '#f0f4ff', border: true } : null)
+              );
+
+              const newSheetsData = [{ id: sheetId, title: 'Sheet 1', subtitle: 'Extracted from Browser Research' }];
+              const newSheetGrids = {
+                [sheetId]: { rows: rowCount, cols: colCount, cells: paddedCells, formats }
+              };
+
+              const newDoc = {
+                id: newDocId,
+                mode: 'sheets',
+                title: title,
+                subtitle: '',
+                initiatives: [],
+                appendedSections: [],
+                isBlank: false,
+                bodyHtml: '',
+                pinned: false,
+                sheetsTitle: title,
+                sheetsData: newSheetsData,
+                sheetGrids: newSheetGrids,
+                activeSheetId: sheetId,
+                deckTitle: 'Untitled Deck',
+                deckSlidesData: [{ id: 1, section: 'Opening', title: 'Title Slide', headline: '', blurb: '', designPresetKey: 'blank', presetKey: 'blank', accent: 'from-indigo-500 to-violet-500', visualType: 'hero statement', layoutStyle: 'Title Slide', motionCue: 'Soft fade and stagger reveal', keyMetric: '', speakerNotes: '', footer: '' }],
+                activeDeckSlideId: 1,
+              };
+
+              setDocuments((prev) => [...prev, newDoc]);
+              setActiveDocId(newDocId);
+              setDocTitle(title);
+              setSheetsTitle(title);
+              setSheetsData(newSheetsData);
+              setSheetGrids(newSheetGrids);
+              setActiveSheetId(sheetId);
+              setProductMode('sheets');
+              showToast(`"${title}" exported — ${dataRows.length} rows in Sheets`);
+            }}
+            onExportToDeck={(payload) => {
+              const title = payload.title || 'Executive Presentation';
+              const rawSlides = payload.slides || [];
+              const sectionLabels = ['Opening', 'Overview', 'Analysis', 'Data', 'Strategy', 'Conclusion', 'Appendix', 'Q&A'];
+              const accentPalette = [
+                'from-violet-500 to-indigo-500',
+                'from-sky-500 to-cyan-400',
+                'from-emerald-500 to-teal-400',
+                'from-rose-500 to-pink-400',
+                'from-amber-500 to-orange-400',
+                'from-indigo-500 to-blue-400',
+              ];
+
+              const slidesData = rawSlides.map((s, i) => ({
+                id: i + 1,
+                section: sectionLabels[i] || `Section ${i + 1}`,
+                title: s.title || `Slide ${i + 1}`,
+                headline: s.title || `Slide ${i + 1}`,
+                blurb: Array.isArray(s.bullets) ? `• ${s.bullets.join('\n• ')}` : (s.blurb || ''),
+                bullets: Array.isArray(s.bullets) ? s.bullets : [],
+                designPresetKey: i === 0 ? 'bold' : 'editorial',
+                presetKey: i === 0 ? 'bold' : 'editorial',
+                accent: accentPalette[i % accentPalette.length],
+                visualType: i === 0 ? 'hero statement' : 'bullets',
+                layoutStyle: i === 0 ? 'Title Slide' : 'Bullets & Statement',
+                motionCue: 'Soft fade and stagger reveal',
+                keyMetric: '',
+                speakerNotes: Array.isArray(s.bullets) ? s.bullets.join(' ') : '',
+                footer: payload.sourceTitle || ''
+              }));
+
+              // Always start with a title slide if extraction yielded none
+              const finalSlides = slidesData.length > 0 ? slidesData : [{
+                id: 1,
+                section: 'Opening',
+                title,
+                headline: title,
+                blurb: `Research export from ${payload.sourceTitle || 'Browser Agent'}`,
+                bullets: [],
+                designPresetKey: 'bold',
+                presetKey: 'bold',
+                accent: 'from-violet-500 to-indigo-500',
+                visualType: 'hero statement',
+                layoutStyle: 'Title Slide',
+                motionCue: 'Soft fade and stagger reveal',
+                keyMetric: '',
+                speakerNotes: '',
+                footer: ''
+              }];
+
+              const newDocId = Date.now();
+              const newDoc = {
+                id: newDocId,
+                mode: 'deck',
+                title: title,
+                subtitle: '',
+                initiatives: [],
+                appendedSections: [],
+                isBlank: false,
+                bodyHtml: '',
+                pinned: false,
+                sheetsTitle: 'Untitled Sheet',
+                sheetsData: [{ id: 1, title: 'Sheet 1', subtitle: '' }],
+                sheetGrids: { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } },
+                activeSheetId: 1,
+                deckTitle: title,
+                deckSlidesData: finalSlides,
+                activeDeckSlideId: 1,
+              };
+
+              setDocuments((prev) => [...prev, newDoc]);
+              setActiveDocId(newDocId);
+              setDocTitle(title);
+              setDeckTitle(title);
+              setActiveDeckTitle(title);
+              setDeckSlidesData(finalSlides);
+              setActiveDeckSlideId(1);
+              setProductMode('deck');
+              showToast(`"${title}" — ${finalSlides.length} slides generated in Decks`);
+            }}
+            onExportToWhiteboard={(payload) => {
+              const nodes = payload?.nodes || [];
+              const sourceTitle = payload?.title || payload?.sourceTitle || 'Research Canvas';
+
+              // Whiteboard only understands 'sticky', 'text', and 'image' widget types.
+              // Build a title header widget + individual sticky notes per node.
+              const STICKY_COLORS = ['#fde68a', '#bbf7d0', '#fbcfe8', '#c4b5fd', '#bfdbfe', '#fed7aa'];
+              const COLS = 3;
+              const STICKY_W = 210;
+              const STICKY_H = 130;
+              const GAP_X = 36;
+              const GAP_Y = 36;
+              const ORIGIN_X = 60;
+              const ORIGIN_Y = 160;
+
+              const titleWidget = {
+                id: `wb-title-${Date.now()}`,
+                type: 'text',
+                x: ORIGIN_X,
+                y: 40,
+                width: COLS * (STICKY_W + GAP_X) - GAP_X,
+                height: 80,
+                text: sourceTitle,
+                fontFamily: 'Calibri',
+                fontSize: 18,
+                isBold: true,
+                isItalic: false,
+                isUnderline: false,
+                textAlign: 'left',
+                textColor: '#111827',
+                highlightColor: '#ffffff',
+                opacity: 100,
+                hasList: false,
+                listType: 'bullet',
+                linkedUrl: payload?.sourceUrl || ''
+              };
+
+              const stickyWidgets = nodes.slice(0, 12).map((node, i) => ({
+                id: `wb-node-${Date.now()}-${i}`,
+                type: 'sticky',
+                x: ORIGIN_X + (i % COLS) * (STICKY_W + GAP_X),
+                y: ORIGIN_Y + Math.floor(i / COLS) * (STICKY_H + GAP_Y),
+                width: STICKY_W,
+                height: STICKY_H,
+                color: STICKY_COLORS[i % STICKY_COLORS.length],
+                text: `${node.title || `Step ${i + 1}`}${node.description ? `\n${node.description}` : ''}`,
+                fontFamily: 'Calibri',
+                fontSize: 12,
+                isBold: false,
+                isItalic: false,
+                isUnderline: false,
+                textAlign: 'left',
+                textColor: '#1f2937',
+                highlightColor: 'transparent',
+                opacity: 100,
+                hasList: false,
+                listType: 'bullet',
+                linkedUrl: ''
+              }));
+
+              setWhiteboardWidgets([titleWidget, ...stickyWidgets]);
+              setProductMode('whiteboard');
+              showToast(`${stickyWidgets.length}-node diagram exported to Whiteboard canvas`);
             }}
             isWorkspaceSwitcherOpen={workspaceSwitcherOpen}
           />

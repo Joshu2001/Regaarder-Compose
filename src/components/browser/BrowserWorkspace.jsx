@@ -32,7 +32,10 @@ export const BrowserWorkspace = ({
   onOpenWorkspaceSwitcher,
   isWorkspaceSwitcherOpen,
   onSwitchProductMode,
-  onExportToCompose
+  onExportToCompose,
+  onExportToSheets,
+  onExportToDeck,
+  onExportToWhiteboard
 }) => {
   const isElectron = Boolean(window.electronAPI?.isElectron);
   const [composeInitialContent, setComposeInitialContent] = useState('');
@@ -757,11 +760,13 @@ export const BrowserWorkspace = ({
     return null;
   };
 
-  // Contextual Action: Send to Sheets Execution & Undo System
+  // Contextual Action: Send to Sheets — handles both the popover path (destinationSheet/tableData)
+  // and the direct dynamic-parser path (title/columns/rows from BrowserResearchPanel).
   const handleExecuteSendToSheets = (payload) => {
-    const { destinationSheet, tableData } = payload;
-    const count = tableData.rows ? tableData.rows.length : 24;
-    const msg = `${count} rows added to ${destinationSheet}`;
+    // Legacy popover path
+    const destinationSheet = payload.destinationSheet || payload.title || 'Sheets';
+    const tableData = payload.tableData || { rows: payload.rows || payload.data || [] };
+    const count = tableData.rows ? tableData.rows.length : 0;
 
     globalActivityObserver.record({
       type: 'send_to_sheets',
@@ -770,13 +775,21 @@ export const BrowserWorkspace = ({
     });
     setRecordedActionCount((prev) => prev + 1);
 
+    // Direct export to App-level Sheets workspace
+    if (onExportToSheets) {
+      onExportToSheets(payload);
+    }
+    if (onSwitchProductMode) {
+      onSwitchProductMode('sheets');
+    } else if (setProductMode) {
+      setProductMode('sheets');
+    }
+
+    const msg = `${count > 0 ? `${count} rows` : 'Data'} exported to ${destinationSheet}`;
     const undoAction = () => {
       if (showToast) showToast(`Reverted data export to ${destinationSheet}`);
     };
-
-    if (showToast) {
-      showToast(msg, undoAction);
-    }
+    if (showToast) showToast(msg, undoAction);
   };
 
   // Contextual Action: Send to Compose Execution & Direct Pipeline System
@@ -830,6 +843,32 @@ export const BrowserWorkspace = ({
     if (showToast) {
       showToast(msg, undoAction);
     }
+  };
+
+
+
+  const handleExecuteSendToDeck = (payload) => {
+    if (onExportToDeck) {
+      onExportToDeck(payload);
+    }
+    if (onSwitchProductMode) {
+      onSwitchProductMode('deck');
+    } else if (setProductMode) {
+      setProductMode('deck');
+    }
+    if (showToast) showToast(`Generated presentation "${payload.title || 'Deck'}" in Decks`);
+  };
+
+  const handleExecuteSendToWhiteboard = (payload) => {
+    if (onExportToWhiteboard) {
+      onExportToWhiteboard(payload);
+    }
+    if (onSwitchProductMode) {
+      onSwitchProductMode('whiteboard');
+    } else if (setProductMode) {
+      setProductMode('whiteboard');
+    }
+    if (showToast) showToast(`Generated interactive flowchart on Whiteboard canvas`);
   };
 
   const isModalOpen = Boolean(
@@ -948,11 +987,27 @@ export const BrowserWorkspace = ({
               onOpenSendToSheets={(rect) => {
                 handleOpenSendToSheetsPopoverAction(rect || { bottom: 60, right: 300 });
               }}
+              onDirectExportToSheets={(payload) => {
+                handleExecuteSendToSheets(payload);
+              }}
+              onDirectExportToDeck={(payload) => {
+                handleExecuteSendToDeck(payload);
+              }}
+              onDirectExportToWhiteboard={(payload) => {
+                handleExecuteSendToWhiteboard(payload);
+              }}
               onSaveToMemory={() => {
                 if (showToast) showToast(`Saved knowledge node for ${activeTab?.title || activeTab?.url} to Memory`);
               }}
               onSendToWhiteboard={() => {
-                if (showToast) showToast('Clipped visual layout to Whiteboard canvas');
+                handleExecuteSendToWhiteboard({
+                  title: `Diagram: ${activeTab?.title || 'Web Context'}`,
+                  nodes: [
+                    { title: 'Source Overview', description: `Captured from ${activeTab?.title || 'Web Research'}` },
+                    { title: 'Core Mechanics', description: 'Interactive element extraction and synthesis' },
+                    { title: 'Execution Steps', description: 'Deploy action plan and track milestones' }
+                  ]
+                });
               }}
               onRunFlowRequested={(flow, initialInputs) => {
                 setActiveExecutingFlow({ flow, initialInputs });
