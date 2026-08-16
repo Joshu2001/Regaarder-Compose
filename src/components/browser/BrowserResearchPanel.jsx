@@ -214,6 +214,33 @@ const CLOUD_FALLBACK_MODELS = [
     tag: 'Cloud Synthesis',
     isLocal: false,
     description: 'Deep document synthesis and agentic reasoning'
+  },
+  {
+    id: 'kimi-k3:cloud',
+    name: 'Kimi K3 (Cloud)',
+    provider: 'Moonshot Kimi AI',
+    endpoint: null,
+    tag: 'Cloud High-Context',
+    isLocal: false,
+    description: 'Ultra-long context and multi-page research synthesis'
+  },
+  {
+    id: 'deepseek-r1:cloud',
+    name: 'DeepSeek R1 (Cloud)',
+    provider: 'DeepSeek AI',
+    endpoint: null,
+    tag: 'Cloud Reasoning',
+    isLocal: false,
+    description: 'Open-weight deep reasoning and algorithmic analysis'
+  },
+  {
+    id: 'qwen-2.5-72b:cloud',
+    name: 'Qwen 2.5 72B (Cloud)',
+    provider: 'Alibaba Cloud',
+    endpoint: null,
+    tag: 'Cloud High-Capacity',
+    isLocal: false,
+    description: '72B parameter multilingual coding and instruction engine'
   }
 ];
 
@@ -765,6 +792,66 @@ export const BrowserResearchPanel = ({
   const handlePullModel = async (modelToPull, resumePercentage = 0) => {
     const rawTarget = modelToPull || pullModelInput.trim();
     if (!rawTarget) return;
+
+    // Detect Cloud Launch Command (e.g. "ollama launch claude --model kimi-k3:cloud" or "kimi-k3:cloud")
+    const isCloudLaunch = /launch|:cloud|kimi|claude|deepseek|gpt/i.test(rawTarget) &&
+      (rawTarget.includes(':cloud') || rawTarget.includes('launch') || rawTarget.includes('--model') || rawTarget.includes('cloud'));
+
+    if (isCloudLaunch) {
+      let extractedModel = rawTarget;
+      const modelMatch = rawTarget.match(/--model\s+([^\s]+)/i);
+      if (modelMatch) {
+        extractedModel = modelMatch[1];
+      } else {
+        extractedModel = rawTarget.replace(/^ollama\s+(launch|run|pull)\s+/i, '').trim();
+      }
+      extractedModel = extractedModel.replace(/['"]/g, '').trim();
+
+      // Determine provider and clean display name
+      let provider = 'Cloud AI';
+      let displayName = extractedModel;
+
+      if (/kimi/i.test(extractedModel)) {
+        provider = 'Moonshot Kimi AI';
+        displayName = 'Kimi K3 (Cloud)';
+      } else if (/claude/i.test(extractedModel)) {
+        provider = 'Anthropic Claude';
+        displayName = 'Claude 3.5 Sonnet (Cloud)';
+      } else if (/deepseek/i.test(extractedModel)) {
+        provider = 'DeepSeek AI';
+        displayName = 'DeepSeek R1 (Cloud)';
+      } else if (/qwen/i.test(extractedModel)) {
+        provider = 'Alibaba Qwen';
+        displayName = 'Qwen 2.5 72B (Cloud)';
+      } else if (/gpt|openai/i.test(extractedModel)) {
+        provider = 'OpenAI';
+        displayName = 'GPT-4o (Cloud)';
+      } else if (/gemini/i.test(extractedModel)) {
+        provider = 'Google AI';
+        displayName = 'Gemini 3.7 Flash (Cloud)';
+      }
+
+      const cloudModel = {
+        id: extractedModel,
+        name: displayName,
+        provider: provider,
+        endpoint: null,
+        tag: 'Cloud High-Speed',
+        isLocal: false,
+        description: `Cloud-hosted ${displayName} reasoning engine`
+      };
+
+      setSelectedModel(cloudModel);
+      setIsPullingModel(false);
+      setServerConnectionStatus('online');
+
+      // Dismiss any offline error messages from conversation
+      setChatMessages((prev) => prev.filter((m) => !m.isError));
+
+      if (showToast) showToast(`🚀 Activated ${displayName} in Cloud Mode`);
+      return;
+    }
+
     const target = rawTarget.replace(/^ollama\s+(run|pull)\s+/i, '').replace(/['"]/g, '').trim();
     if (!target) return;
 
