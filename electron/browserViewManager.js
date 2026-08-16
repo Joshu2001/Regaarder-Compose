@@ -816,6 +816,7 @@ class BrowserViewManager {
     const c1 = mode === 'recording' ? '#EF4444' : '#8B5CF6';
     const c2 = mode === 'recording' ? '#F43F5E' : '#38BDF8';
     const c3 = mode === 'recording' ? '#FDA4AF' : '#EC4899';
+    const bgBorder = mode === 'recording' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(139, 92, 246, 0.25)';
 
     const script = `
       (() => {
@@ -831,13 +832,17 @@ class BrowserViewManager {
           const styleEl = document.createElement('style');
           styleEl.id = '__regaarder_snake_keyframes__';
           styleEl.textContent = \`
-            @keyframes __regaarder_snake_spin {
-              0% { transform: translate(-50%, -50%) rotate(0deg); }
-              100% { transform: translate(-50%, -50%) rotate(360deg); }
+            @keyframes __regaarder_snake_crawl {
+              0% { stroke-dashoffset: 0; }
+              100% { stroke-dashoffset: -100; }
             }
             @keyframes __regaarder_pill_pulse {
               0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
               50% { opacity: 0.9; transform: translateX(-50%) scale(0.97); }
+            }
+            @keyframes __regaarder_shimmer {
+              0%, 100% { filter: drop-shadow(0 0 6px ${c1}) drop-shadow(0 0 16px ${c2}); }
+              50% { filter: drop-shadow(0 0 10px ${c3}) drop-shadow(0 0 24px ${c1}); }
             }
           \`;
           if (!document.getElementById('__regaarder_snake_keyframes__')) {
@@ -854,66 +859,63 @@ class BrowserViewManager {
             overflow: hidden;
           \`;
 
-          const beam = document.createElement('div');
-          beam.style.cssText = \`
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 250vw;
-            height: 250vh;
-            background: conic-gradient(
-              from 0deg at 50% 50%,
-              transparent 0deg,
-              ${c1} 30deg,
-              ${c2} 60deg,
-              ${c3} 90deg,
-              transparent 120deg,
-              transparent 360deg
-            );
-            animation: __regaarder_snake_spin 4s linear infinite;
-            filter: drop-shadow(0 0 16px ${c1});
+          container.innerHTML = \`
+            <svg style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; animation: __regaarder_shimmer 2.5s ease-in-out infinite;">
+              <defs>
+                <linearGradient id="__regaarder_snake_grad__" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="${c1}" />
+                  <stop offset="50%" stop-color="${c2}" />
+                  <stop offset="100%" stop-color="${c3}" />
+                </linearGradient>
+              </defs>
+              <!-- Base perimeter track -->
+              <rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="0" fill="none" stroke="${bgBorder}" stroke-width="2" />
+              <!-- Running Neon Snake with Glowing Laser Head -->
+              <rect
+                x="2"
+                y="2"
+                width="calc(100% - 4px)"
+                height="calc(100% - 4px)"
+                rx="0"
+                fill="none"
+                stroke="url(#__regaarder_snake_grad__)"
+                stroke-width="3.5"
+                stroke-linecap="round"
+                pathLength="100"
+                stroke-dasharray="24 76"
+                style="animation: __regaarder_snake_crawl 3.2s linear infinite;"
+              />
+            </svg>
+
+            <!-- Top Floating Apple-Style Badge -->
+            <div style="
+              position: absolute;
+              top: 14px;
+              left: 50%;
+              transform: translateX(-50%);
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              padding: 5px 14px;
+              border-radius: 9999px;
+              background: rgba(15, 16, 26, 0.92);
+              backdrop-filter: blur(20px);
+              -webkit-backdrop-filter: blur(20px);
+              border: 1px solid rgba(255, 255, 255, 0.15);
+              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px ${c1}55;
+              color: #FFFFFF;
+              font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, sans-serif;
+              font-size: 11px;
+              font-weight: 600;
+              letter-spacing: 0.04em;
+              animation: __regaarder_pill_pulse 2s ease-in-out infinite;
+            ">
+              <span style="width: 7px; height: 7px; border-radius: 50%; background: ${c1}; box-shadow: 0 0 8px ${c1};"></span>
+              <span>\${${JSON.stringify(label)}}</span>
+            </div>
           \`;
 
-          const innerMask = document.createElement('div');
-          innerMask.style.cssText = \`
-            position: absolute;
-            inset: 3px;
-            background: transparent;
-            border-radius: 8px;
-            box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.2), inset 0 0 20px rgba(0,0,0,0.1);
-          \`;
-
-          const pill = document.createElement('div');
-          pill.style.cssText = \`
-            position: absolute;
-            top: 14px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 12px;
-            border-radius: 9999px;
-            background: rgba(15, 16, 26, 0.9);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 16px ${c1}44;
-            color: #FFFFFF;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, sans-serif;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 0.04em;
-            animation: __regaarder_pill_pulse 2s ease-in-out infinite;
-          \`;
-
-          pill.innerHTML = '<span style="width: 7px; height: 7px; border-radius: 50%; background: ' + ${JSON.stringify(c1)} + '; box-shadow: 0 0 8px ' + ${JSON.stringify(c1)} + ';"></span><span>' + ${JSON.stringify(label)} + '</span>';
-
-          container.appendChild(beam);
-          container.appendChild(innerMask);
-          container.appendChild(pill);
           document.body.appendChild(container);
-
           return { success: true, active: true };
         } catch (e) {
           return { success: false, error: e.message };

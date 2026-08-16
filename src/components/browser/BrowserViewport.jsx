@@ -178,34 +178,53 @@ export const BrowserViewport = ({
       {broadcastEffect?.active && (
         <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
           <style>{`
-            @keyframes __regaarder_viewport_snake {
-              0% { transform: translate(-50%, -50%) rotate(0deg); }
-              100% { transform: translate(-50%, -50%) rotate(360deg); }
+            @keyframes __regaarder_viewport_snake_crawl {
+              0% { stroke-dashoffset: 0; }
+              100% { stroke-dashoffset: -100; }
             }
             @keyframes __regaarder_viewport_pulse {
               0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
               50% { transform: translateX(-50%) scale(0.97); opacity: 0.9; }
             }
+            @keyframes __regaarder_viewport_shimmer {
+              0%, 100% { filter: drop-shadow(0 0 6px ${broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'}) drop-shadow(0 0 16px ${broadcastEffect.mode === 'recording' ? '#F43F5E' : '#38BDF8'}); }
+              50% { filter: drop-shadow(0 0 10px ${broadcastEffect.mode === 'recording' ? '#FDA4AF' : '#EC4899'}) drop-shadow(0 0 24px ${broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'}); }
+            }
           `}</style>
 
-          {/* Rotating Conic Gradient Beam */}
-          <div
-            className="absolute top-1/2 left-1/2 w-[250vw] h-[250vh]"
-            style={{
-              background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg, ${
-                broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'
-              } 30deg, ${
-                broadcastEffect.mode === 'recording' ? '#F43F5E' : '#38BDF8'
-              } 60deg, ${
-                broadcastEffect.mode === 'recording' ? '#FDA4AF' : '#EC4899'
-              } 90deg, transparent 120deg, transparent 360deg)`,
-              animation: '__regaarder_viewport_snake 3.8s linear infinite',
-              filter: `drop-shadow(0 0 16px ${broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'})`
-            }}
-          />
-
-          {/* Inner Mask that leaves the entire middle crystal clear with a 3px border frame */}
-          <div className="absolute inset-[3px] rounded-none bg-transparent shadow-[inset_0_0_0_1.5px_rgba(255,255,255,0.2),inset_0_0_24px_rgba(0,0,0,0.15)]" />
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ animation: '__regaarder_viewport_shimmer 2.5s ease-in-out infinite' }}>
+            <defs>
+              <linearGradient id="__regaarder_vp_snake_grad__" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'} />
+                <stop offset="50%" stopColor={broadcastEffect.mode === 'recording' ? '#F43F5E' : '#38BDF8'} />
+                <stop offset="100%" stopColor={broadcastEffect.mode === 'recording' ? '#FDA4AF' : '#EC4899'} />
+              </linearGradient>
+            </defs>
+            {/* Base track border */}
+            <rect
+              x="2"
+              y="2"
+              width="calc(100% - 4px)"
+              height="calc(100% - 4px)"
+              fill="none"
+              stroke={broadcastEffect.mode === 'recording' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(139, 92, 246, 0.25)'}
+              strokeWidth="2"
+            />
+            {/* Running Neon Snake Stroke */}
+            <rect
+              x="2"
+              y="2"
+              width="calc(100% - 4px)"
+              height="calc(100% - 4px)"
+              fill="none"
+              stroke="url(#__regaarder_vp_snake_grad__)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              pathLength="100"
+              strokeDasharray="24 76"
+              style={{ animation: '__regaarder_viewport_snake_crawl 3.2s linear infinite' }}
+            />
+          </svg>
 
           {/* Top Apple-Style Status Pill */}
           <div

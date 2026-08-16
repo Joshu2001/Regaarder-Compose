@@ -2422,6 +2422,28 @@ Always answer helpfully, clearly, and concisely.`;
   // Live Video Tutorial Recorder (Phase 2)
   const handleRecordVideoTutorial = async (planOrSteps, customTitle) => {
     if (isRecordingTutorial) return;
+
+    let steps = [];
+    if (activeSpotlightTour?.steps?.length > 0) {
+      steps = activeSpotlightTour.steps;
+    } else if (planOrSteps && planOrSteps.actions) {
+      steps = planOrSteps.actions;
+    } else if (Array.isArray(planOrSteps) && planOrSteps.length > 0) {
+      steps = planOrSteps;
+    }
+
+    if (!steps || steps.length === 0) {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          sender: 'agent',
+          text: `What walkthrough would you like me to record on **${summary?.domain || 'this page'}**?\n\nType your request in the prompt box (e.g., *"How to search directions"* or *"Show me where the tools menu is"*), or click **[Spotlight Tour]** to preview the exact steps before recording.`
+        }
+      ]);
+      if (showToast) showToast('Please provide a goal prompt or start a Spotlight Tour first');
+      return;
+    }
+
     setIsRecordingTutorial(true);
     if (showToast) showToast('Recording live video tutorial...');
 
@@ -2438,31 +2460,6 @@ Always answer helpfully, clearly, and concisely.`;
     }
 
     try {
-      let steps = [];
-      if (activeSpotlightTour?.steps?.length > 0) {
-        steps = activeSpotlightTour.steps;
-      } else if (planOrSteps && planOrSteps.actions) {
-        steps = planOrSteps.actions;
-      } else if (Array.isArray(planOrSteps) && planOrSteps.length > 0) {
-        steps = planOrSteps;
-      } else if (pageSchema?.elements && pageSchema.elements.length > 0) {
-        const visibleEls = pageSchema.elements.filter((el) => el.label && el.label !== '(unlabeled)').slice(0, 4);
-        steps = visibleEls.map((el, i) => ({
-          id: `step-${i + 1}`,
-          action: el.tag === 'input' ? 'fill' : 'click',
-          elementId: el.id,
-          label: el.label,
-          description: `Interact with "${el.label}"`
-        }));
-      }
-
-      if (steps.length === 0) {
-        steps = [
-          { id: 's-1', action: 'highlight', label: 'Primary Page Section', description: 'Overview and main search results' },
-          { id: 's-2', action: 'click', label: 'Interactive Navigation', description: 'Explore tools and filter dropdowns' }
-        ];
-      }
-
       // Initialize high-res recording canvas
       const canvas = document.createElement('canvas');
       canvas.width = 1280;
