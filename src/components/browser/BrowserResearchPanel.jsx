@@ -1127,29 +1127,140 @@ Always answer helpfully, clearly, and concisely.`;
     return sources;
   };
 
+  // ── Executive Title & Content Sanitizer Pipeline ──────────────────────────
+
+  /**
+   * Cleans raw user prompts, typos, and search queries into executive-grade Title Case.
+   * Strips prefixes like "what are the", trailing single-char typos, and standardizes acronyms.
+   */
+  const cleanAndBeautifyTitle = (rawTitle, fallback = 'Research Synthesis') => {
+    if (!rawTitle || typeof rawTitle !== 'string') return fallback;
+
+    let cleaned = rawTitle.trim();
+
+    // Strip search engine & site branding suffixes
+    cleaned = cleaned.replace(/\s*[-–|•]\s*(Google Search|Bing|Yahoo|Wikipedia|DuckDuckGo|Brave Search|Home|Overview|Login|Dashboard).*$/i, '');
+    cleaned = cleaned.replace(/\s*[-–|•]\s*([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/i, '');
+
+    // Strip markdown symbols
+    cleaned = cleaned.replace(/[*_~`#]+/g, '').trim();
+
+    // Strip conversational question prefixes
+    const prefixRegex = /^(?:what (?:are|is)(?: the)?|can you (?:tell me about|summarize|give me|explain)|how (?:to|do|does|can)|why (?:is|are|do|does)|tell me about|give me a summary of|overview of|summary of|search for|find out about|look up|research on|details on|deep dive into)\s+/i;
+    cleaned = cleaned.replace(prefixRegex, '');
+
+    // Strip trailing single characters or orphan typos (e.g. "in ai b" -> "in AI")
+    cleaned = cleaned.replace(/\s+[a-zA-Z]$/, '');
+
+    // Lexicon of common typo corrections and industry standard acronyms
+    const wordReplacements = {
+      "worsd'ds": "World's",
+      "worsds": "Worlds",
+      "worls": "World",
+      "world'ds": "World's",
+      "chanllenges": "Challenges",
+      "challeges": "Challenges",
+      "challanges": "Challenges",
+      "ai": "AI",
+      "ml": "ML",
+      "llm": "LLM",
+      "llms": "LLMs",
+      "api": "API",
+      "apis": "APIs",
+      "ui": "UI",
+      "ux": "UX",
+      "saas": "SaaS",
+      "b2b": "B2B",
+      "b2c": "B2C",
+      "roi": "ROI",
+      "kpi": "KPI",
+      "kpis": "KPIs",
+      "arr": "ARR",
+      "mrr": "MRR"
+    };
+
+    const words = cleaned.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return fallback;
+
+    const titleWords = words.map((word, idx) => {
+      const lower = word.toLowerCase().replace(/[^a-z0-9']/g, '');
+      const rawLower = word.toLowerCase();
+
+      if (wordReplacements[rawLower]) return wordReplacements[rawLower];
+      if (wordReplacements[lower]) return wordReplacements[lower];
+
+      const minorWords = ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'by', 'with', 'in', 'of'];
+      if (idx > 0 && minorWords.includes(lower)) {
+        return lower;
+      }
+
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    });
+
+    const result = titleWords.join(' ').trim();
+    return result.length > 2 ? result : fallback;
+  };
+
+  /**
+   * Strips conversational chatter (intros, pleasantries, outro questions) from LLM replies.
+   */
+  const cleanConversationalPreamble = (text) => {
+    if (!text || typeof text !== 'string') return '';
+    let cleaned = text.trim();
+
+    // Strip leading conversational phrases
+    const preambleRegex = /^(?:okay,?|sure,?|certainly,?|absolutely,?|here (?:is|are|'s)(?: a| the)?|i(?:'ve| have)? (?:read|analyzed|reviewed|examined|gathered|synthesized|summarized|looked at)|based on (?:the|our|your)?|according to (?:the|this)?|let me (?:provide|break down|share|summarize)|below (?:is|are)|following is)[^.:\n]*[.:\n]+\s*/i;
+    cleaned = cleaned.replace(preambleRegex, '');
+
+    // Strip trailing conversational sign-offs
+    const outroRegex = /(?:\n+)?(?:is there anything (?:else|more)|let me know if|hope this helps|feel free to ask|would you like (?:me to|any)|if you need (?:more|any)|shall i proceed).*$/i;
+    cleaned = cleaned.replace(outroRegex, '');
+
+    return cleaned.trim();
+  };
+
+  /**
+   * Strips raw markdown syntax (**bold**, _italic_, `code`, # headers) to produce clean plain text.
+   */
+  const cleanMarkdownFormatting = (text) => {
+    if (!text || typeof text !== 'string') return '';
+    return text
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/__([^_]+)__/g, '$1')
+      .replace(/_([^_]+)_/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/^#+\s*/gm, '')
+      .replace(/\*+/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   // ── Dynamic Text Extractors ────────────────────────────────────────────────
 
   /**
    * Extracts a 2D data matrix from unstructured LLM text.
-   * Parses numbered lists, markdown tables, and key: value pairs into rows.
+   * Parses numbered lists, markdown tables, and key: value pairs into clean rows.
    */
   const extractMatrixFromText = (rawText, sourceTitle) => {
-    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    const sanitizedText = cleanConversationalPreamble(rawText);
+    const lines = sanitizedText.split('\n').map(l => l.trim()).filter(Boolean);
     const rows = [];
+    const prettyTitle = cleanAndBeautifyTitle(sourceTitle);
 
     // Attempt to parse markdown tables first (| col | col | pattern)
     const tableLines = lines.filter(l => l.startsWith('|') && l.endsWith('|'));
     if (tableLines.length >= 2) {
       const headerLine = tableLines[0];
       const dataLines = tableLines.slice(2); // skip separator row
-      const columns = headerLine.split('|').map(c => c.trim()).filter(Boolean);
+      const columns = headerLine.split('|').map(c => cleanMarkdownFormatting(c.trim())).filter(Boolean);
       dataLines.forEach((line, idx) => {
-        const cells = line.split('|').map(c => c.trim()).filter(Boolean);
+        const cells = line.split('|').map(c => cleanMarkdownFormatting(c.trim())).filter(Boolean);
         if (cells.length > 0) rows.push([String(idx + 1), ...cells]);
       });
       if (rows.length > 0) {
         return {
-          title: `Data Matrix — ${sourceTitle || 'Research Export'}`,
+          title: `Data Matrix — ${prettyTitle}`,
           columns: ['#', ...columns],
           rows
         };
@@ -1184,7 +1295,13 @@ Always answer helpfully, clearly, and concisely.`;
           (description || heading).match(/https?:\/\/([a-zA-Z0-9.-]+)/);
         const domain = domainMatch ? domainMatch[1].replace(/^www\./, '') : '—';
 
-        rows.push([rank, heading || '—', description || '—', domain, 'Extracted']);
+        rows.push([
+          rank,
+          cleanMarkdownFormatting(heading) || '—',
+          cleanMarkdownFormatting(description) || '—',
+          domain,
+          'Extracted'
+        ]);
       }
     });
 
@@ -1193,21 +1310,27 @@ Always answer helpfully, clearly, and concisely.`;
       lines.forEach((line, idx) => {
         const kvMatch = line.match(/^([^:]{3,40}):\s+(.{3,})$/);
         if (kvMatch) {
-          rows.push([String(idx + 1), kvMatch[1].trim(), kvMatch[2].trim(), '—', 'Parsed']);
+          rows.push([
+            String(idx + 1),
+            cleanMarkdownFormatting(kvMatch[1]),
+            cleanMarkdownFormatting(kvMatch[2]),
+            '—',
+            'Parsed'
+          ]);
         }
       });
     }
 
     // Last resort: chunk plain paragraphs into rows
     if (rows.length === 0) {
-      const chunks = rawText.match(/.{1,120}/g) || [];
+      const chunks = sanitizedText.match(/.{1,120}/g) || [];
       chunks.slice(0, 10).forEach((chunk, idx) => {
-        rows.push([String(idx + 1), `Point ${idx + 1}`, chunk.trim(), '—', 'Raw']);
+        rows.push([String(idx + 1), `Point ${idx + 1}`, cleanMarkdownFormatting(chunk), '—', 'Raw']);
       });
     }
 
     return {
-      title: `Data Matrix — ${sourceTitle || 'Research Export'}`,
+      title: `Data Matrix — ${prettyTitle}`,
       columns: ['#', 'Entity / Topic', 'Description', 'Source', 'Status'],
       rows: rows.slice(0, 20)
     };
@@ -1215,11 +1338,13 @@ Always answer helpfully, clearly, and concisely.`;
 
   /**
    * Synthesizes a slide deck from unstructured LLM text.
-   * Groups content by headings, numbered sections, or sentence clusters.
+   * Strips conversational filler and groups content into clean, executive slide cards.
    */
   const extractDeckFromText = (rawText, sourceTitle) => {
-    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    const sanitizedText = cleanConversationalPreamble(rawText);
+    const lines = sanitizedText.split('\n').map(l => l.trim()).filter(Boolean);
     const slides = [];
+    const prettyTitle = cleanAndBeautifyTitle(sourceTitle);
 
     // Detect heading lines: markdown ## or bold **Title**
     const headingRegex = /^#{1,3}\s+(.+)$|^\*{1,2}([^*]+)\*{1,2}$/;
@@ -1230,37 +1355,40 @@ Always answer helpfully, clearly, and concisely.`;
       if (headingMatch && (headingMatch[1] || headingMatch[2])) {
         if (currentSlide && currentSlide.bullets.length > 0) slides.push(currentSlide);
         currentSlide = {
-          title: (headingMatch[1] || headingMatch[2]).replace(/\*+/g, '').trim(),
+          title: cleanAndBeautifyTitle(cleanMarkdownFormatting(headingMatch[1] || headingMatch[2])),
           bullets: []
         };
       } else if (currentSlide) {
-        const cleaned = line.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '').replace(/\*+/g, '').trim();
-        if (cleaned.length > 10) currentSlide.bullets.push(cleaned.slice(0, 120));
+        const cleaned = cleanMarkdownFormatting(line.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, ''));
+        if (cleaned.length > 8) currentSlide.bullets.push(cleaned.slice(0, 140));
       } else {
-        // Auto-start first slide from plain text
-        currentSlide = { title: `${sourceTitle || 'Overview'} — Key Insights`, bullets: [] };
-        const cleaned = line.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '').replace(/\*+/g, '').trim();
-        if (cleaned.length > 10) currentSlide.bullets.push(cleaned.slice(0, 120));
+        // Auto-start first slide from clean title
+        currentSlide = { title: `${prettyTitle} — Key Insights`, bullets: [] };
+        const cleaned = cleanMarkdownFormatting(line.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, ''));
+        if (cleaned.length > 8) currentSlide.bullets.push(cleaned.slice(0, 140));
       }
     });
     if (currentSlide && currentSlide.bullets.length > 0) slides.push(currentSlide);
 
     // Fallback: split text into 3 logical thirds
     if (slides.length === 0) {
-      const sentences = rawText.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 20);
+      const sentences = sanitizedText.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 15);
       const chunkSize = Math.ceil(sentences.length / 3) || 1;
-      const labels = ['Executive Overview', 'Core Findings', 'Recommendations'];
+      const labels = ['Executive Overview', 'Core Findings', 'Strategic Recommendations'];
       for (let i = 0; i < 3; i++) {
         const chunk = sentences.slice(i * chunkSize, (i + 1) * chunkSize);
         if (chunk.length > 0) {
-          slides.push({ title: labels[i], bullets: chunk.slice(0, 5).map(s => s.trim().slice(0, 120)) });
+          slides.push({
+            title: labels[i],
+            bullets: chunk.slice(0, 5).map(s => cleanMarkdownFormatting(s).slice(0, 140))
+          });
         }
       }
     }
 
     // Clamp to max 8 slides, max 6 bullets each
     return {
-      title: `${sourceTitle || 'Research Deck'} — Executive Presentation`,
+      title: `${prettyTitle} — Executive Presentation`,
       slides: slides.slice(0, 8).map(s => ({
         ...s,
         bullets: s.bullets.slice(0, 6)
@@ -1273,36 +1401,38 @@ Always answer helpfully, clearly, and concisely.`;
    * Builds connected cards from numbered steps, headings, or key phrases.
    */
   const extractWhiteboardFromText = (rawText, sourceTitle) => {
-    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    const sanitizedText = cleanConversationalPreamble(rawText);
+    const lines = sanitizedText.split('\n').map(l => l.trim()).filter(Boolean);
     const nodes = [];
+    const prettyTitle = cleanAndBeautifyTitle(sourceTitle);
     const stepRegex = /^(?:\d+[.)]\s+|\*+\s+|-\s+)?(?:\*{1,2}([^*]+)\*{0,2}[:\s–-]*)(.+)?$/;
 
     lines.forEach((line) => {
       const isHeading = /^#{1,3}\s+/.test(line) || /^\*{1,2}[^*]+\*{1,2}$/.test(line);
       if (isHeading) {
-        const title = line.replace(/^#+\s+/, '').replace(/\*+/g, '').trim();
-        nodes.push({ title, description: '' });
+        const title = cleanMarkdownFormatting(line.replace(/^#+\s+/, ''));
+        nodes.push({ title: cleanAndBeautifyTitle(title), description: '' });
       } else {
         const match = line.match(stepRegex);
         if (match) {
-          const title = (match[1] || '').trim() || line.slice(0, 40).replace(/\*+/g, '');
-          const description = (match[2] || '').trim() || line.slice(40, 140).replace(/\*+/g, '');
+          const title = cleanMarkdownFormatting((match[1] || '').trim() || line.slice(0, 40));
+          const description = cleanMarkdownFormatting((match[2] || '').trim() || line.slice(40, 140));
           if (title || description) {
-            nodes.push({ title: title || `Step ${nodes.length + 1}`, description });
+            nodes.push({ title: cleanAndBeautifyTitle(title) || `Step ${nodes.length + 1}`, description });
           }
         }
       }
     });
 
     if (nodes.length === 0) {
-      const sentences = rawText.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 15).slice(0, 8);
+      const sentences = sanitizedText.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 15).slice(0, 8);
       sentences.forEach((s, idx) => {
-        nodes.push({ title: `Node ${idx + 1}`, description: s.trim().slice(0, 120) });
+        nodes.push({ title: `Node ${idx + 1}`, description: cleanMarkdownFormatting(s).slice(0, 120) });
       });
     }
 
     return {
-      title: `${sourceTitle || 'Concept Map'} — Whiteboard`,
+      title: `${prettyTitle} — Whiteboard`,
       nodes: nodes.slice(0, 12)
     };
   };
@@ -1312,7 +1442,8 @@ Always answer helpfully, clearly, and concisely.`;
     recordAiActionSnapshot(`Generate ${toolType.toUpperCase()} action`);
 
     const sourceText = contextText || chatMessages[msgIdx]?.text || '';
-    const sourceTitle = activeTab?.title ? activeTab.title.slice(0, 50) : 'Research';
+    const rawSourceTitle = activeTab?.title || (summary?.domain ? `Research — ${summary.domain}` : 'Research Synthesis');
+    const sourceTitle = cleanAndBeautifyTitle(rawSourceTitle);
 
     if (toolType === 'sheet') {
       const matrix = extractMatrixFromText(sourceText, sourceTitle);
@@ -1340,21 +1471,22 @@ Always answer helpfully, clearly, and concisely.`;
           columns: matrix.columns,
           rows: matrix.rows,
           sourceUrl: activeTab?.url,
-          sourceTitle: activeTab?.title
+          sourceTitle: sourceTitle
         });
       }
 
       if (showToast) showToast(`Built "${matrix.title}" — ${matrix.rows.length} rows extracted`);
 
     } else if (toolType === 'compose') {
-      const exportText = sourceText || (summary?.overview ? `Summary of ${sourceTitle}:\n\n${summary.overview}` : 'Research Brief Document');
+      const cleanedBody = cleanConversationalPreamble(sourceText);
+      const exportText = cleanedBody || (summary?.overview ? `Summary of ${sourceTitle}:\n\n${summary.overview}` : 'Research Brief Document');
       const docTitle = `Research Brief: ${sourceTitle.slice(0, 45)}`;
       const payload = {
         destinationDoc: docTitle,
         content: exportText,
         snippet: exportText,
         sourceUrl: activeTab?.url,
-        sourceTitle: activeTab?.title
+        sourceTitle: sourceTitle
       };
 
       if (typeof onDirectExportToCompose === 'function') {
@@ -1390,7 +1522,7 @@ Always answer helpfully, clearly, and concisely.`;
           title: deck.title,
           slides: deck.slides,
           sourceUrl: activeTab?.url,
-          sourceTitle: activeTab?.title
+          sourceTitle: sourceTitle
         });
       }
 
@@ -1405,7 +1537,7 @@ Always answer helpfully, clearly, and concisely.`;
           title: wb.title,
           nodes: wb.nodes,
           sourceUrl: activeTab?.url,
-          sourceTitle: activeTab?.title
+          sourceTitle: sourceTitle
         });
       } else {
         onSendToWhiteboard?.();

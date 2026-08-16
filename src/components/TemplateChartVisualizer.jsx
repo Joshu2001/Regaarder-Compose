@@ -76,7 +76,8 @@ export const extractTemplateChartData = (grid, selectedColIdxOverride = null) =>
     }
   }
 
-  // 3. Find all numerical columns
+  // 3. Find all numerical columns (deprioritizing index/ID/# columns)
+  const isIndexHeader = (h) => /^(#|id|rank|no|no\.|index|row|num|item)$/i.test(String(h || '').trim());
   const dataCols = [];
   for (let c = 0; c < colsCount; c++) {
     if (c === labelColIdx) continue;
@@ -95,9 +96,13 @@ export const extractTemplateChartData = (grid, selectedColIdxOverride = null) =>
     }
   }
 
+  // Filter out pure row-index columns unless no other numerical columns exist
+  const meaningfulDataCols = dataCols.filter(c => !isIndexHeader(headers[c]));
+  const candidateDataCols = meaningfulDataCols.length > 0 ? meaningfulDataCols : dataCols;
+
   const activeDataColIdx = (selectedColIdxOverride !== null && selectedColIdxOverride !== undefined)
     ? selectedColIdxOverride
-    : (dataCols.length > 0 ? dataCols[0] : (labelColIdx === 0 ? 1 : 0));
+    : (candidateDataCols.length > 0 ? candidateDataCols[0] : (labelColIdx === 0 ? 1 : 0));
 
   // 4. Extract labels and multi-series values dynamically
   const labels = [];
