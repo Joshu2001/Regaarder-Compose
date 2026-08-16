@@ -1240,13 +1240,60 @@ Always answer helpfully, clearly, and concisely.`;
 
   /**
    * Extracts a 2D data matrix from unstructured LLM text.
-   * Parses numbered lists, markdown tables, and key: value pairs into clean rows.
+   * Resolves real source URLs & domain names for every row and generates hyperlink metadata.
    */
-  const extractMatrixFromText = (rawText, sourceTitle) => {
+  const extractMatrixFromText = (rawText, sourceTitle, msgSources = [], defaultUrl = '', defaultDomain = '') => {
     const sanitizedText = cleanConversationalPreamble(rawText);
     const lines = sanitizedText.split('\n').map(l => l.trim()).filter(Boolean);
     const rows = [];
+    const rowLinks = [];
     const prettyTitle = cleanAndBeautifyTitle(sourceTitle);
+
+    const resolveRowSource = (idx, lineText = '') => {
+      // 1. Direct inline URL in line text
+      const urlMatch = lineText.match(/https?:\/\/[^\s)\]]+/);
+      if (urlMatch) {
+        const directUrl = urlMatch[0];
+        try {
+          const directDomain = new URL(directUrl).hostname.replace(/^www\./, '');
+          return { url: directUrl, domain: directDomain };
+        } catch (e) {
+          return { url: directUrl, domain: 'Source' };
+        }
+      }
+
+      // 2. Parenthetical domain e.g. (nature.com)
+      const domainMatch = lineText.match(/\(([^)]+\.[a-z]{2,}[^)]*)\)/i);
+      if (domainMatch) {
+        const domainText = domainMatch[1].replace(/^www\./, '').trim();
+        const url = domainText.startsWith('http') ? domainText : `https://${domainText}`;
+        return { url, domain: domainText };
+      }
+
+      // 3. Message sources list
+      if (msgSources && msgSources[idx] && (msgSources[idx].url || msgSources[idx].domain)) {
+        const s = msgSources[idx];
+        const url = s.url || defaultUrl;
+        let domain = s.domain;
+        if (!domain && url) {
+          try { domain = new URL(url).hostname.replace(/^www\./, ''); } catch (e) {}
+        }
+        return { url: url || defaultUrl, domain: domain || defaultDomain || 'Source' };
+      }
+
+      // 4. Fallback to first message source or active tab URL
+      const firstSource = msgSources && msgSources[0];
+      const fallbackUrl = firstSource?.url || defaultUrl;
+      let fallbackDomain = firstSource?.domain || defaultDomain;
+      if (!fallbackDomain && fallbackUrl) {
+        try { fallbackDomain = new URL(fallbackUrl).hostname.replace(/^www\./, ''); } catch (e) {}
+      }
+
+      return {
+        url: fallbackUrl || '',
+        domain: fallbackDomain || 'Source'
+      };
+    };
 
     // Attempt to parse markdown tables first (| col | col | pattern)
     const tableLines = lines.filter(l => l.startsWith('|') && l.endsWith('|'));
@@ -1256,13 +1303,18 @@ Always answer helpfully, clearly, and concisely.`;
       const columns = headerLine.split('|').map(c => cleanMarkdownFormatting(c.trim())).filter(Boolean);
       dataLines.forEach((line, idx) => {
         const cells = line.split('|').map(c => cleanMarkdownFormatting(c.trim())).filter(Boolean);
-        if (cells.length > 0) rows.push([String(idx + 1), ...cells]);
+        if (cells.length > 0) {
+          const { url: rowUrl } = resolveRowSource(idx, line);
+          rows.push([String(idx + 1), ...cells]);
+          rowLinks.push(rowUrl);
+        }
       });
       if (rows.length > 0) {
         return {
           title: `Data Matrix — ${prettyTitle}`,
           columns: ['#', ...columns],
-          rows
+          rows,
+          rowLinks
         };
       }
     }
@@ -1290,18 +1342,16 @@ Always answer helpfully, clearly, and concisely.`;
           }
         }
 
-        // Extract domain if URL or parenthetical present
-        const domainMatch = (description || heading).match(/\(([^)]+\.[a-z]{2,}[^)]*)\)/i) ||
-          (description || heading).match(/https?:\/\/([a-zA-Z0-9.-]+)/);
-        const domain = domainMatch ? domainMatch[1].replace(/^www\./, '') : '—';
+        const { url: rowUrl, domain: rowDomain } = resolveRowSource(rows.length, line);
 
         rows.push([
           rank,
           cleanMarkdownFormatting(heading) || '—',
           cleanMarkdownFormatting(description) || '—',
-          domain,
+          rowDomain,
           'Extracted'
         ]);
+        rowLinks.push(rowUrl);
       }
     });
 
@@ -1310,13 +1360,15 @@ Always answer helpfully, clearly, and concisely.`;
       lines.forEach((line, idx) => {
         const kvMatch = line.match(/^([^:]{3,40}):\s+(.{3,})$/);
         if (kvMatch) {
+          const { url: rowUrl, domain: rowDomain } = resolveRowSource(idx, line);
           rows.push([
             String(idx + 1),
             cleanMarkdownFormatting(kvMatch[1]),
             cleanMarkdownFormatting(kvMatch[2]),
-            '—',
+            rowDomain,
             'Parsed'
           ]);
+          rowLinks.push(rowUrl);
         }
       });
     }
@@ -1325,14 +1377,17 @@ Always answer helpfully, clearly, and concisely.`;
     if (rows.length === 0) {
       const chunks = sanitizedText.match(/.{1,120}/g) || [];
       chunks.slice(0, 10).forEach((chunk, idx) => {
-        rows.push([String(idx + 1), `Point ${idx + 1}`, cleanMarkdownFormatting(chunk), '—', 'Raw']);
+        const { url: rowUrl, domain: rowDomain } = resolveRowSource(idx, chunk);
+        rows.push([String(idx + 1), `Point ${idx + 1}`, cleanMarkdownFormatting(chunk), rowDomain, 'Raw']);
+        rowLinks.push(rowUrl);
       });
     }
 
     return {
       title: `Data Matrix — ${prettyTitle}`,
       columns: ['#', 'Entity / Topic', 'Description', 'Source', 'Status'],
-      rows: rows.slice(0, 20)
+      rows: rows.slice(0, 20),
+      rowLinks: rowLinks.slice(0, 20)
     };
   };
 
@@ -1441,18 +1496,26 @@ Always answer helpfully, clearly, and concisely.`;
   const handleExecuteQuickTool = (toolType, contextText, msgIdx) => {
     recordAiActionSnapshot(`Generate ${toolType.toUpperCase()} action`);
 
-    const sourceText = contextText || chatMessages[msgIdx]?.text || '';
+    const msg = chatMessages[msgIdx];
+    const msgSources = msg?.sources || [];
+    const sourceText = contextText || msg?.text || '';
     const rawSourceTitle = activeTab?.title || (summary?.domain ? `Research — ${summary.domain}` : 'Research Synthesis');
     const sourceTitle = cleanAndBeautifyTitle(rawSourceTitle);
+    const defaultUrl = activeTab?.url || '';
+    let defaultDomain = summary?.domain || '';
+    if (!defaultDomain && defaultUrl) {
+      try { defaultDomain = new URL(defaultUrl).hostname.replace(/^www\./, ''); } catch (e) {}
+    }
 
     if (toolType === 'sheet') {
-      const matrix = extractMatrixFromText(sourceText, sourceTitle);
+      const matrix = extractMatrixFromText(sourceText, sourceTitle, msgSources, defaultUrl, defaultDomain);
       const sheetPayload = {
         tool: 'workspace_create_sheet',
         parameters: {
           title: matrix.title,
           columns: matrix.columns,
-          data: matrix.rows
+          data: matrix.rows,
+          rowLinks: matrix.rowLinks
         }
       };
 
@@ -1464,18 +1527,19 @@ Always answer helpfully, clearly, and concisely.`;
         return copy;
       });
 
-      // Direct export to Sheets workspace
+      // Direct export to Sheets workspace with full hyperlink metadata
       if (typeof onDirectExportToSheets === 'function') {
         onDirectExportToSheets({
           title: matrix.title,
           columns: matrix.columns,
           rows: matrix.rows,
-          sourceUrl: activeTab?.url,
+          rowLinks: matrix.rowLinks,
+          sourceUrl: defaultUrl,
           sourceTitle: sourceTitle
         });
       }
 
-      if (showToast) showToast(`Built "${matrix.title}" — ${matrix.rows.length} rows extracted`);
+      if (showToast) showToast(`Built "${matrix.title}" — ${matrix.rows.length} rows extracted with sources`);
 
     } else if (toolType === 'compose') {
       const cleanedBody = cleanConversationalPreamble(sourceText);

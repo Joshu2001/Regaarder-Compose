@@ -51164,10 +51164,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 ...Array(Math.max(0, rowCount - allCellRows.length)).fill(Array(colCount).fill(''))
               ];
 
-              // Header row formatting — bold
-              const formats = Array.from({ length: rowCount }, (_, r) =>
-                Array(colCount).fill(r === 0 ? { bold: true, bg: '#f0f4ff', border: true } : null)
-              );
+              // Find Source / Domain column index for hyperlinking
+              const sourceColIdx = columns.findIndex(c => /source|domain|url|link|reference|ref/i.test(String(c)));
+
+              // Header row formatting — bold & light tint; Data rows formatting — hyperlinks on source column
+              const formats = Array.from({ length: rowCount }, (_, r) => {
+                if (r === 0) {
+                  return Array(colCount).fill({ bold: true, bg: '#f0f4ff', border: true });
+                }
+                const rowFmt = Array(colCount).fill(null);
+                if (r < allCellRows.length && sourceColIdx !== -1) {
+                  const rowUrl = (payload.rowLinks && payload.rowLinks[r - 1]) || payload.sourceUrl;
+                  if (rowUrl) {
+                    rowFmt[sourceColIdx] = {
+                      link: rowUrl,
+                      color: '#2563eb',
+                      underline: true
+                    };
+                  }
+                }
+                return rowFmt;
+              });
 
               const newSheetsData = [{ id: sheetId, title: 'Sheet 1', subtitle: 'Extracted from Browser Research' }];
               const newSheetGrids = {
