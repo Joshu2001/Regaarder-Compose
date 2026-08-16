@@ -264,6 +264,7 @@ export const BrowserResearchPanel = ({
   onSaveToMemory,
   onSendToWhiteboard,
   onRunFlowRequested,
+  onBroadcastEffectChange,
   showToast
 }) => {
   // Navigation: 'chat' | 'automation' | 'memory'
@@ -1189,6 +1190,8 @@ Always answer helpfully, clearly, and concisely.`;
   const executeActionPlan = async (actionPlan, messageIndex) => {
     if (!actionPlan || !actionPlan.actions || !onExecuteElementAction) return;
 
+    onBroadcastEffectChange?.({ active: true, mode: 'executing', label: 'AI LIVE AGENT EXECUTING' });
+
     setChatMessages((prev) => {
       const copy = [...prev];
       if (copy[messageIndex]?.actionPlan) {
@@ -1240,8 +1243,10 @@ Always answer helpfully, clearly, and concisely.`;
         return copy;
       });
 
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 600));
     }
+
+    onBroadcastEffectChange?.({ active: false });
 
     setChatMessages((prev) => {
       const copy = [...prev];
@@ -2306,6 +2311,7 @@ Always answer helpfully, clearly, and concisely.`;
     };
 
     setActiveSpotlightTour(tour);
+    onBroadcastEffectChange?.({ active: true, mode: 'executing', label: 'AI SPOTLIGHT TOUR' });
     if (showToast) showToast(`Started Spotlight Tour: Step 1 of ${steps.length}`);
 
     // Highlight first target element on page if supported
@@ -2406,6 +2412,7 @@ Always answer helpfully, clearly, and concisely.`;
       tourAutoPlayTimerRef.current = null;
     }
     setActiveSpotlightTour(null);
+    onBroadcastEffectChange?.({ active: false });
     if (window.electronAPI?.setLiveBroadcastEffect) {
       window.electronAPI.setLiveBroadcastEffect({ active: false });
     }
@@ -2417,6 +2424,8 @@ Always answer helpfully, clearly, and concisely.`;
     if (isRecordingTutorial) return;
     setIsRecordingTutorial(true);
     if (showToast) showToast('Recording live video tutorial...');
+
+    onBroadcastEffectChange?.({ active: true, mode: 'recording', label: 'LIVE TUTORIAL CAPTURE' });
 
     const targetTabId = activeTab?.tabId || activeTab?.id;
     if (window.electronAPI?.setLiveBroadcastEffect) {
@@ -2544,6 +2553,7 @@ Always answer helpfully, clearly, and concisely.`;
       if (showToast) showToast('Video recording completed');
     } finally {
       setIsRecordingTutorial(false);
+      onBroadcastEffectChange?.({ active: false });
       if (window.electronAPI?.setLiveBroadcastEffect) {
         window.electronAPI.setLiveBroadcastEffect({ tabId: targetTabId, active: false });
       }

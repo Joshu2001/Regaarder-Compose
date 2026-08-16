@@ -30,6 +30,7 @@ export const BrowserViewport = ({
   isWorkspaceSwitcherOpen = false,
   browserFont = 'System Default',
   browserFontSize = 100,
+  broadcastEffect = null,
   onNavigate,
   onLaunchCompetitorWorkflow,
   onToggleSidePanel,
@@ -170,6 +171,56 @@ export const BrowserViewport = ({
               onError={() => setIframeError(true)}
             />
           )}
+        </div>
+      )}
+
+      {/* RUNNING NEON SNAKE BORDER BEAM AROUND THE WEBPAGE VIEWPORT */}
+      {broadcastEffect?.active && (
+        <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+          <style>{`
+            @keyframes __regaarder_viewport_snake {
+              0% { transform: translate(-50%, -50%) rotate(0deg); }
+              100% { transform: translate(-50%, -50%) rotate(360deg); }
+            }
+            @keyframes __regaarder_viewport_pulse {
+              0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
+              50% { transform: translateX(-50%) scale(0.97); opacity: 0.9; }
+            }
+          `}</style>
+
+          {/* Rotating Conic Gradient Beam */}
+          <div
+            className="absolute top-1/2 left-1/2 w-[250vw] h-[250vh]"
+            style={{
+              background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg, ${
+                broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'
+              } 30deg, ${
+                broadcastEffect.mode === 'recording' ? '#F43F5E' : '#38BDF8'
+              } 60deg, ${
+                broadcastEffect.mode === 'recording' ? '#FDA4AF' : '#EC4899'
+              } 90deg, transparent 120deg, transparent 360deg)`,
+              animation: '__regaarder_viewport_snake 3.8s linear infinite',
+              filter: `drop-shadow(0 0 16px ${broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'})`
+            }}
+          />
+
+          {/* Inner Mask that leaves the entire middle crystal clear with a 3px border frame */}
+          <div className="absolute inset-[3px] rounded-none bg-transparent shadow-[inset_0_0_0_1.5px_rgba(255,255,255,0.2),inset_0_0_24px_rgba(0,0,0,0.15)]" />
+
+          {/* Top Apple-Style Status Pill */}
+          <div
+            className="absolute top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0F101A]/90 backdrop-blur-2xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_16px_rgba(139,92,246,0.25)] text-white text-[11px] font-semibold tracking-wide"
+            style={{ animation: '__regaarder_viewport_pulse 2s ease-in-out infinite' }}
+          >
+            <span
+              className="w-2 h-2 rounded-full animate-ping"
+              style={{
+                backgroundColor: broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6',
+                boxShadow: `0 0 8px ${broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'}`
+              }}
+            />
+            <span>{broadcastEffect.label || (broadcastEffect.mode === 'recording' ? 'LIVE VIDEO TUTORIAL RECORDING' : 'AI LIVE AGENT ACTIVE')}</span>
+          </div>
         </div>
       )}
     </div>

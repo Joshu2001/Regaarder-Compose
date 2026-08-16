@@ -142,6 +142,7 @@ export const BrowserWorkspace = ({
   const [synthesizedFlowToReview, setSynthesizedFlowToReview] = useState(null);
   const [showFlowLibraryModal, setShowFlowLibraryModal] = useState(false);
   const [activeExecutingFlow, setActiveExecutingFlow] = useState(null);
+  const [broadcastEffect, setBroadcastEffect] = useState(null);
 
   const serializeRect = (rect) => {
     if (!rect) return null;
@@ -961,6 +962,7 @@ export const BrowserWorkspace = ({
             isWorkspaceSwitcherOpen={isWorkspaceSwitcherOpen}
             browserFont={browserFont}
             browserFontSize={browserFontSize}
+            broadcastEffect={broadcastEffect}
             onNavigate={handleNavigate}
             onLaunchCompetitorWorkflow={() => setShowCompetitorWorkflow(true)}
             onToggleSidePanel={handleToggleSidePanelAction}
@@ -978,6 +980,7 @@ export const BrowserWorkspace = ({
               onExtractPageSchema={handleExtractPageSchema}
               onExecuteElementAction={handleExecuteElementAction}
               onCaptureScreenshot={handleCaptureScreenshot}
+              onBroadcastEffectChange={setBroadcastEffect}
               onOpenSendToCompose={(rectOrOpts) => {
                 handleOpenSendToComposePopoverAction(rectOrOpts || { bottom: 60, right: 300 });
               }}
