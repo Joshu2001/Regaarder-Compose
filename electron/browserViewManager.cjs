@@ -421,6 +421,15 @@ class BrowserViewManager {
                 options = Array.from(node.querySelectorAll('option')).map(o => o.text.trim()).filter(Boolean).slice(0, 20);
               }
 
+              let parentMenu = undefined;
+              const menuContainer = node.closest('g-menu, [role="menu"], g-popup, .dropdown, [aria-haspopup], [role="menubar"], ul, nav');
+              if (menuContainer) {
+                const prevTrigger = menuContainer.previousElementSibling || menuContainer.parentElement?.querySelector('button, [role="button"], a');
+                if (prevTrigger) {
+                  parentMenu = (prevTrigger.innerText || prevTrigger.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 30);
+                }
+              }
+
               if (isVisible || elements.length < 80) {
                 elements.push({
                   id: virtualId,
@@ -428,6 +437,7 @@ class BrowserViewManager {
                   role,
                   type: type || undefined,
                   label: label || '(unlabeled)',
+                  parentMenu: parentMenu || undefined,
                   value: (tag === 'input' || tag === 'textarea') ? node.value : undefined,
                   options,
                   isVisible,
@@ -615,7 +625,7 @@ class BrowserViewManager {
                 align-items: center;
                 gap: 5px;
               \`;
-              badge.innerHTML = \`<span style="color: #a78bfa;">🎯</span><span>\${labelText}</span>\`;
+              badge.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg><span>${labelText}</span>`;
               beacon.appendChild(badge);
 
               if (!document.getElementById('__regaarder_spotlight_styles__')) {

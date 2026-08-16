@@ -1091,12 +1091,13 @@ Scroll Position: Y=${schema?.metadata?.scrollPosition?.y || 0}px (Max: ${schema?
     if (schema?.elements && schema.elements.length > 0) {
       const visibleElements = schema.elements
         .filter((el) => el.label && el.label.trim() && el.label !== '(unlabeled)' && !/^[0-9a-f]{16,}$/i.test(el.label))
-        .slice(0, 15);
+        .slice(0, 20);
 
       if (visibleElements.length > 0) {
         prompt += `Key Page Interactive Elements (for internal action planning only):\n`;
         visibleElements.forEach((el) => {
-          prompt += `  - [${el.id}] "${el.label}" (${el.tag || el.role})\n`;
+          const parentInfo = el.parentMenu ? ` [Inside "${el.parentMenu}" dropdown/menu]` : '';
+          prompt += `  - [${el.id}] "${el.label}" (${el.tag || el.role})${parentInfo}\n`;
         });
         prompt += `\n`;
       }
@@ -1108,10 +1109,11 @@ Scroll Position: Y=${schema?.metadata?.scrollPosition?.y || 0}px (Max: ${schema?
     }
 
     prompt += `=== CAPABILITIES & RESPONSE RULES ===
-1. CRITICAL: NEVER output raw element IDs, HTML tags, or element list dumps (e.g. "[input5]: <textarea>") in your chat answers.
-2. Always explain steps in natural, human-friendly terms (e.g. "To access filters, click on the **Tools** button in the search toolbar, then select your desired time range.").
-3. When the user asks questions or wants analysis, synthesize your answer directly using the page content.
-4. If the user asks you to interact with the page (e.g. click a button, fill in a form, select a dropdown, check a box, navigate, or scroll), output a JSON action plan:
+1. CRITICAL ZERO-EMOJI DIRECTIVE: NEVER use emojis (e.g. 😊, 🎯, 👍, 🗺️) in your chat answers or responses under any circumstance.
+2. CRITICAL: NEVER output raw element IDs, HTML tags, or element list dumps (e.g. "[input5]: <textarea>") in your chat answers.
+3. Always explain steps in natural, accurate human terms. When an item is inside a dropdown (e.g. "Maps" inside the "More" dropdown), guide the user step-by-step: first click the parent dropdown ("More"), then click the target option ("Maps").
+4. When the user asks questions or wants analysis, synthesize your answer directly using the page content.
+5. If the user asks you to interact with the page (e.g. click a button, fill in a form, select a dropdown, check a box, navigate, or scroll), output a JSON action plan:
 \`\`\`action
 {
   "plan": "Brief 1-sentence explanation of what you are doing",
@@ -2230,7 +2232,7 @@ Always answer helpfully, clearly, and concisely.`;
   };
 
   // Live Interactive Spotlight Tour Management
-  const handleStartSpotlightTour = async (planOrSteps, customTitle) => {
+  const handleStartSpotlightTour = async (planOrSteps, customTitle, userIntent) => {
     let steps = [];
     if (planOrSteps && planOrSteps.actions) {
       steps = planOrSteps.actions.map((act, i) => ({
@@ -2244,14 +2246,56 @@ Always answer helpfully, clearly, and concisely.`;
     } else if (Array.isArray(planOrSteps) && planOrSteps.length > 0) {
       steps = planOrSteps;
     } else if (pageSchema?.elements && pageSchema.elements.length > 0) {
-      steps = pageSchema.elements.slice(0, 5).map((el, i) => ({
-        id: `step-${i + 1}`,
-        action: el.tag === 'input' ? 'fill' : 'click',
-        elementId: el.id,
-        label: el.label || el.tag || `Element ${i + 1}`,
-        description: el.tag === 'input' ? `Enter input in "${el.label || el.id}"` : `Click "${el.label || el.id}"`,
-        value: el.tag === 'input' ? 'Sample Query' : undefined
-      }));
+      const intentLower = String(userIntent || inputPrompt || '').toLowerCase();
+      const allEls = pageSchema.elements.filter((el) => el.label && el.label !== '(unlabeled)');
+
+      // 1. Keyword search inside available page elements
+      const matchedEl = allEls.find((el) => {
+        const lbl = el.label.toLowerCase();
+        return intentLower && (lbl.includes(intentLower) || intentLower.includes(lbl));
+      });
+
+      if (matchedEl) {
+        const parentMenuName = matchedEl.parentMenu || (['maps', 'books', 'short videos', 'web', 'shopping', 'finance'].includes(matchedEl.label.toLowerCase()) ? 'More' : null);
+        const parentEl = parentMenuName ? allEls.find((el) => el.label.toLowerCase().includes(parentMenuName.toLowerCase())) : null;
+
+        if (parentEl && parentEl.id !== matchedEl.id) {
+          steps.push({
+            id: 'step-1',
+            action: 'click',
+            elementId: parentEl.id,
+            label: parentEl.label,
+            description: `Click "${parentEl.label}" on navigation bar`
+          });
+          steps.push({
+            id: 'step-2',
+            action: 'click',
+            elementId: matchedEl.id,
+            label: matchedEl.label,
+            description: `Select "${matchedEl.label}" from dropdown`
+          });
+        } else {
+          steps.push({
+            id: 'step-1',
+            action: 'click',
+            elementId: matchedEl.id,
+            label: matchedEl.label,
+            description: `Click "${matchedEl.label}"`
+          });
+        }
+      } else {
+        // Build an executive sequence of primary toolbar navigation options
+        const primaryNav = allEls.filter((el) => ['tools', 'all', 'images', 'videos', 'news', 'more', 'search'].some((k) => el.label.toLowerCase().includes(k))).slice(0, 5);
+        const sourceList = primaryNav.length >= 2 ? primaryNav : allEls.slice(0, 5);
+        steps = sourceList.map((el, i) => ({
+          id: `step-${i + 1}`,
+          action: el.tag === 'input' ? 'fill' : 'click',
+          elementId: el.id,
+          label: el.label || `Step ${i + 1}`,
+          description: el.tag === 'input' ? `Enter search query in "${el.label}"` : `Click "${el.label}" navigation option`,
+          value: el.tag === 'input' ? 'Search Query' : undefined
+        }));
+      }
     } else {
       steps = [
         { id: 'step-1', action: 'highlight', elementId: 'hdr-1', label: 'Page Header & Search Context', description: 'Review the primary search results and query parameters.' },
@@ -2269,7 +2313,7 @@ Always answer helpfully, clearly, and concisely.`;
     };
 
     setActiveSpotlightTour(tour);
-    if (showToast) showToast(`🎯 Started Spotlight Tour: Step 1 of ${steps.length}`);
+    if (showToast) showToast(`Started Spotlight Tour: Step 1 of ${steps.length}`);
 
     // Highlight first target element on page if supported
     if (steps[0]?.elementId && onExecuteElementAction) {
