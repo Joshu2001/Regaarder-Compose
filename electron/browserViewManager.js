@@ -527,6 +527,99 @@ class BrowserViewManager {
 
             target.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
+            // Inject Live Visual Spotlight Beacon Overlay on Web Page
+            try {
+              const existingBeacon = document.getElementById('__regaarder_spotlight_beacon__');
+              if (existingBeacon) existingBeacon.remove();
+
+              const rect = target.getBoundingClientRect();
+              const scrollX = window.scrollX || window.pageXOffset || 0;
+              const scrollY = window.scrollY || window.pageYOffset || 0;
+
+              const beacon = document.createElement('div');
+              beacon.id = '__regaarder_spotlight_beacon__';
+              beacon.style.cssText = \`
+                position: absolute;
+                left: \${rect.left + scrollX - 4}px;
+                top: \${rect.top + scrollY - 4}px;
+                width: \${Math.max(24, rect.width + 8)}px;
+                height: \${Math.max(24, rect.height + 8)}px;
+                border-radius: 8px;
+                border: 2px solid #8b5cf6;
+                box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.4), 0 0 32px rgba(139, 92, 246, 0.7);
+                pointer-events: none;
+                z-index: 2147483647;
+                transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                animation: __regaarder_pulse 1.8s infinite;
+              \`;
+
+              const labelText = (target.innerText?.trim()?.slice(0, 36) || target.getAttribute('aria-label') || target.getAttribute('placeholder') || target.tagName).replace(/[<>]/g, '');
+              const badge = document.createElement('div');
+              badge.style.cssText = \`
+                position: absolute;
+                top: -30px;
+                left: 0;
+                background: rgba(15, 16, 26, 0.95);
+                backdrop-filter: blur(12px);
+                color: #f8fafc;
+                border: 1px solid rgba(139, 92, 246, 0.7);
+                border-radius: 6px;
+                padding: 3px 8px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 11px;
+                font-weight: 600;
+                white-space: nowrap;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+                display: flex;
+                align-items: center;
+                gap: 5px;
+              \`;
+              badge.innerHTML = \`<span style="color: #a78bfa;">🎯</span><span>\${labelText}</span>\`;
+              beacon.appendChild(badge);
+
+              if (!document.getElementById('__regaarder_spotlight_styles__')) {
+                const styleTag = document.createElement('style');
+                styleTag.id = '__regaarder_spotlight_styles__';
+                styleTag.innerHTML = \`
+                  @keyframes __regaarder_pulse {
+                    0% { box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.7), 0 0 16px rgba(139, 92, 246, 0.5); }
+                    50% { box-shadow: 0 0 0 9px rgba(139, 92, 246, 0.25), 0 0 40px rgba(139, 92, 246, 0.8); }
+                    100% { box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.7), 0 0 16px rgba(139, 92, 246, 0.5); }
+                  }
+                  @keyframes __regaarder_click_ripple {
+                    0% { transform: scale(0.2); opacity: 1; }
+                    100% { transform: scale(2.4); opacity: 0; }
+                  }
+                \`;
+                document.head.appendChild(styleTag);
+              }
+
+              document.body.appendChild(beacon);
+
+              if (action === 'click') {
+                const ripple = document.createElement('div');
+                ripple.style.cssText = \`
+                  position: absolute;
+                  left: \${rect.left + scrollX + rect.width / 2 - 20}px;
+                  top: \${rect.top + scrollY + rect.height / 2 - 20}px;
+                  width: 40px;
+                  height: 40px;
+                  border-radius: 50%;
+                  background: rgba(139, 92, 246, 0.8);
+                  box-shadow: 0 0 24px #8b5cf6;
+                  pointer-events: none;
+                  z-index: 2147483647;
+                  animation: __regaarder_click_ripple 0.6s ease-out forwards;
+                \`;
+                document.body.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 700);
+              }
+
+              setTimeout(() => {
+                if (beacon && beacon.parentNode) beacon.remove();
+              }, 8000);
+            } catch (e) {}
+
             if (action === 'click') {
               target.focus();
               target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
@@ -579,9 +672,9 @@ class BrowserViewManager {
               return { success: true, action: 'toggle', elementId };
             }
 
-            if (action === 'focus') {
+            if (action === 'focus' || action === 'highlight') {
               target.focus();
-              return { success: true, action: 'focus', elementId };
+              return { success: true, action: action, elementId };
             }
 
             return { success: false, error: \`Unknown action: \${action}\` };
