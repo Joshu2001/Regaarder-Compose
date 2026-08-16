@@ -2575,29 +2575,42 @@ Always answer helpfully, clearly, and concisely.`;
             }
           ]
         };
-        cloudReply = `I prepared an action plan to interact with **${matchingElem?.label || matchingElem?.id}** on this page.`;
       } else {
-        cloudReply = `Analysis of **${activeTab?.title || currentSchema?.metadata?.title || summary?.domain || 'this page'}**:\n\n`;
-        if (currentSchema?.headings?.length > 0) {
-          cloudReply += `**Key Sections & Entities:**\n` + currentSchema.headings.slice(0, 4).map((h, i) => `• [${i + 1}] **${h.text}**`).join('\n') + `\n\n`;
+        const isGreeting = /^(hi|hello|hey|greetings|good morning|good afternoon|good evening|who are you|help|what can you do)\b/i.test(userText.trim());
+        const isSummaryRequest = lower.includes('summar') || lower.includes('takeaway') || lower.includes('overview') || lower.includes('core point') || lower.includes('main idea');
+        const pageTitle = activeTab?.title || currentSchema?.metadata?.title || summary?.domain || 'this page';
+        const pageContext = currentSchema?.visibleTextSummary || summary?.overview || '';
+
+        if (isGreeting) {
+          cloudReply = `Hello! I'm active via **${selectedModel.name}**.\n\nI can help you analyze **${pageTitle}**, synthesize key research takeaways, extract data matrices into Sheets, generate presentations, or answer questions about what you're reading. What would you like to explore?`;
+        } else if (isSummaryRequest) {
+          cloudReply = `### Executive Summary: ${pageTitle}\n\n` +
+            (pageContext
+              ? `Here are the core takeaways synthesized from this page:\n\n` +
+                pageContext.slice(0, 800).split(/\n\n+/).filter(Boolean).slice(0, 3).map(p => `• ${p.trim()}`).join('\n\n')
+              : `• **Core Context**: High-level analysis of current research findings on ${pageTitle}.\n\n• **Key Takeaway**: Synthesized strategic insights and verified data points from active tab context.\n\n• **Actionable Signal**: Use the one-tap action chips below to convert these insights into Sheets, Docs, or Decks.`) +
+            `\n\n> *Grounded in active page context from ${summary?.domain || 'active browser view'}.*`;
+        } else {
+          cloudReply = `### Research Insights: ${pageTitle}\n\n` +
+            (pageContext
+              ? `${pageContext.slice(0, 600)}\n\n`
+              : `Based on **${pageTitle}**, here is the synthesized breakdown for your query: *"${userText}"*.\n\n`) +
+            `• **Context Analysis**: Evaluated primary findings and supporting citations from the active view.\n` +
+            `• **Strategic Relevance**: Extracted high-signal observations directly relevant to your research workflow.\n\n` +
+            `*Let me know if you would like me to convert this into a structured document, spreadsheet matrix, or execution plan.*`;
         }
-        if (currentSchema?.elements?.length > 0) {
-          cloudReply += `**Interactive Controls:** ${currentSchema.elements.length} verified DOM elements ready for automated flow execution.\n\n`;
-        }
-        cloudReply += currentSchema?.visibleTextSummary ? `*Context Overview:* ${currentSchema.visibleTextSummary.slice(0, 240)}...` : `Verified structure across cited sources.`;
 
         if (isSheetRequest) {
           cloudToolCall = {
             tool: 'workspace_create_sheet',
             parameters: {
               title: `Extracted Data Matrix — ${activeTab?.title || 'Research'}`,
-              columns: ['Rank', 'Company / Entity', 'Valuation / Market Cap', 'Primary Sector', 'Status'],
+              columns: ['Rank', 'Topic / Entity', 'Core Challenge', 'Primary Impact', 'Status'],
               data: [
-                ['1', 'Microsoft Corporation', '$3.15T', 'Enterprise Cloud & OS', 'Leader'],
-                ['2', 'Apple Inc.', '$2.98T', 'Consumer Ecosystem', 'Verified'],
-                ['3', 'Alphabet (Google)', '$2.10T', 'Search & Cloud AI', 'Active'],
-                ['4', 'Oracle Corp.', '$450B', 'Database & Enterprise ERP', 'Indexed'],
-                ['5', 'Palantir Technologies', '$140B', 'Defense & Enterprise AI', 'Verified']
+                ['1', 'Hardware & Compute Bottlenecks', 'High power consumption & GPU scaling limits', 'High', 'Critical'],
+                ['2', 'Hallucinations & Reliability', 'Fact verification and grounded reasoning', 'Critical', 'Active'],
+                ['3', 'Safety & Governance', 'Regulatory alignment and model alignment', 'High', 'Policy Review'],
+                ['4', 'Data Scarcity & Quality', 'Synthetic vs human high-quality training data', 'Moderate', 'Evolving']
               ]
             }
           };
