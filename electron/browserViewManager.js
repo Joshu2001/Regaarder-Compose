@@ -532,7 +532,7 @@ class BrowserViewManager {
 
             let target = document.querySelector(\`[data-regaarder-id="\${elementId}"]\`);
             if (!target) {
-              const allCandidates = Array.from(document.querySelectorAll('button, a, input, textarea, select, [role="button"], [tabindex], div'));
+              const allCandidates = Array.from(document.querySelectorAll('button, a, input, textarea, select, [role="button"], [tabindex], div, span, a'));
               const searchKey = String(elementId).toLowerCase();
               target = allCandidates.find((el) => {
                 const text = (el.innerText || el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.id || '').trim().toLowerCase();
@@ -544,11 +544,36 @@ class BrowserViewManager {
               return { success: false, error: \`Element with ID \${elementId} not found on page\` };
             }
 
+            // Check if element is collapsed inside a parent dropdown/menu
+            let rect = target.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0 || (rect.left === 0 && rect.top === 0)) {
+              const menuContainer = target.closest('g-menu, [role="menu"], g-popup, .dropdown, [aria-haspopup], ul, nav');
+              const parentTrigger = menuContainer ? (menuContainer.previousElementSibling || menuContainer.parentElement?.querySelector('button, [role="button"], a') || document.querySelector('button[aria-haspopup="true"], div[role="button"][aria-haspopup="true"]')) : null;
+              if (parentTrigger && typeof parentTrigger.click === 'function') {
+                try {
+                  parentTrigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+                  parentTrigger.click();
+                } catch (e) {}
+              }
+              rect = target.getBoundingClientRect();
+            }
+
+            // Robust non-zero coordinate fallback
+            let anchorEl = target;
+            while (anchorEl && (rect.width === 0 || rect.height === 0 || (rect.left === 0 && rect.top === 0)) && anchorEl.parentElement && anchorEl.parentElement !== document.body) {
+              anchorEl = anchorEl.parentElement;
+              rect = anchorEl.getBoundingClientRect();
+            }
+
+            if (rect.width === 0 || rect.height === 0) {
+              const defaultBtn = document.querySelector('button, [role="button"], input, a');
+              if (defaultBtn) rect = defaultBtn.getBoundingClientRect();
+            }
+
             target.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             // Inject Live Gliding Visual AI Cursor & Spotlight Aura
             try {
-              const rect = target.getBoundingClientRect();
               const scrollX = window.scrollX || window.pageXOffset || 0;
               const scrollY = window.scrollY || window.pageYOffset || 0;
 
@@ -578,8 +603,8 @@ class BrowserViewManager {
                 document.body.appendChild(cursor);
               }
 
-              const targetX = Math.round(rect.left + rect.width / 2);
-              const targetY = Math.round(rect.top + rect.height / 2);
+              const targetX = Math.max(12, Math.round(rect.left + Math.max(16, rect.width) / 2));
+              const targetY = Math.max(12, Math.round(rect.top + Math.max(16, rect.height) / 2));
               cursor.style.transform = \`translate(\${targetX}px, \${targetY}px) scale(1)\`;
               cursor.style.opacity = '1';
 
@@ -593,7 +618,7 @@ class BrowserViewManager {
                 position: absolute;
                 left: \${rect.left + scrollX - 4}px;
                 top: \${rect.top + scrollY - 4}px;
-                width: \${Math.max(24, rect.width + 8)}px;
+                width: \${Math.max(28, rect.width + 8)}px;
                 height: \${Math.max(24, rect.height + 8)}px;
                 border-radius: 8px;
                 border: 2px solid #8b5cf6;

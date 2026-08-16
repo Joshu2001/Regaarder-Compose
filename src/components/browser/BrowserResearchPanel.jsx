@@ -3092,110 +3092,115 @@ Always answer helpfully, clearly, and concisely.`;
 
       {/* 3. MAIN FULL-HEIGHT VIEWPORT CANVAS */}
       <div className="flex-1 flex flex-col min-h-0 relative">
-        {/* LIVE INTERACTIVE SPOTLIGHT TOUR HUD */}
+        {/* APPLE-TIER DYNAMIC ISLAND SPOTLIGHT TOUR HUD */}
         {activeSpotlightTour && (
-          <div className="mx-3 mt-2 mb-1 p-2.5 rounded-2xl bg-[#141522]/95 backdrop-blur-2xl border border-violet-500/40 shadow-[0_8px_32px_rgba(139,92,246,0.25)] flex flex-col gap-2 z-20 animate-in slide-in-from-top-3 duration-200 text-xs">
-            {/* Tour Top Banner */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-violet-600/30 border border-violet-500/50 flex items-center justify-center text-violet-300 shrink-0 shadow-sm">
-                  <Compass size={13} className="animate-spin" style={{ animationDuration: '8s' }} />
+          <div className="sticky top-2 z-30 mx-2.5 mb-1 px-3 py-2 rounded-xl bg-[#121320]/95 backdrop-blur-2xl border border-violet-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.45),0_0_20px_rgba(139,92,246,0.18)] flex items-center justify-between gap-2.5 animate-in fade-in slide-in-from-top-2 duration-200">
+            {/* Left: Step Info & Title */}
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="w-5 h-5 rounded-md bg-violet-500/20 border border-violet-500/40 flex items-center justify-center text-violet-300 shrink-0">
+                <Compass size={11} className="animate-spin" style={{ animationDuration: '8s' }} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 leading-tight">
+                  <span className="font-semibold text-slate-100 text-[11px] truncate">
+                    {activeSpotlightTour.steps[activeSpotlightTour.currentStep]?.description || activeSpotlightTour.title}
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded-full bg-violet-500/20 text-violet-300 font-mono text-[8.5px] shrink-0 font-medium">
+                    {activeSpotlightTour.currentStep + 1}/{activeSpotlightTour.steps.length}
+                  </span>
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-slate-100 text-[11px] truncate">{activeSpotlightTour.title}</span>
-                    <span className="px-1.5 py-0.2 rounded-full bg-violet-500/20 text-violet-300 font-mono text-[9px]">
-                      Step {activeSpotlightTour.currentStep + 1} of {activeSpotlightTour.steps.length}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-400 truncate">
-                    {activeSpotlightTour.steps[activeSpotlightTour.currentStep]?.description || 'Follow interactive steps on live page'}
-                  </p>
+                {/* Micro segmented step indicator */}
+                <div className="flex items-center gap-1 mt-1">
+                  {activeSpotlightTour.steps.map((_, sIdx) => (
+                    <div
+                      key={sIdx}
+                      className={`h-0.5 rounded-full transition-all duration-300 ${
+                        sIdx === activeSpotlightTour.currentStep
+                          ? 'w-4 bg-gradient-to-r from-violet-400 to-sky-400'
+                          : sIdx < activeSpotlightTour.currentStep
+                          ? 'w-1.5 bg-violet-500/70'
+                          : 'w-1.5 bg-white/10'
+                      }`}
+                    />
+                  ))}
                 </div>
               </div>
+            </div>
 
+            {/* Right: Micro Apple-Style Pill Action Controls */}
+            <div className="flex items-center gap-1 shrink-0">
+              {/* Prev Button */}
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  handlePrevTourStep();
+                }}
+                disabled={activeSpotlightTour.currentStep === 0}
+                className="w-6 h-6 rounded-md bg-white/[0.05] hover:bg-white/[0.1] disabled:opacity-30 disabled:pointer-events-none text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-white/[0.08]"
+                title="Previous Step"
+              >
+                <ChevronLeft size={12} />
+              </button>
+
+              {/* Next Button */}
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  handleNextTourStep();
+                }}
+                disabled={activeSpotlightTour.currentStep >= activeSpotlightTour.steps.length - 1}
+                className="w-6 h-6 rounded-md bg-white/[0.05] hover:bg-white/[0.1] disabled:opacity-30 disabled:pointer-events-none text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-white/[0.08]"
+                title="Next Step"
+              >
+                <ChevronRight size={12} />
+              </button>
+
+              {/* Auto-Play Toggle */}
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  handleToggleAutoPlayTour();
+                }}
+                className={`h-6 px-2 rounded-md text-[9.5px] font-medium transition-colors cursor-pointer flex items-center gap-1 border ${
+                  activeSpotlightTour.isAutoPlaying
+                    ? 'bg-amber-500/20 text-amber-200 border-amber-500/40'
+                    : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border-white/[0.08]'
+                }`}
+                title={activeSpotlightTour.isAutoPlaying ? 'Pause Auto-Play' : 'Auto-Play Walkthrough'}
+              >
+                {activeSpotlightTour.isAutoPlaying ? <Pause size={9} /> : <Play size={9} />}
+                <span>{activeSpotlightTour.isAutoPlaying ? 'Pause' : 'Play'}</span>
+              </button>
+
+              {/* Execute Step Button */}
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  handleExecuteCurrentTourStep();
+                }}
+                className="h-6 px-2 rounded-md bg-violet-600 hover:bg-violet-500 text-white text-[9.5px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-sm border border-violet-400/40"
+                title="Execute active step on webpage"
+              >
+                <Play size={8} className="fill-current" />
+                <span>Execute</span>
+              </button>
+
+              {/* Dismiss Button */}
               <button
                 type="button"
                 onPointerDown={(e) => {
                   e.preventDefault();
                   handleExitSpotlightTour();
                 }}
-                className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
-                title="Exit Spotlight Tour"
+                className="w-6 h-6 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center ml-0.5"
+                title="Close Spotlight Tour"
               >
-                <X size={12} />
+                <X size={11} />
               </button>
-            </div>
-
-            {/* Tour Step Progress Bar */}
-            <div className="h-1 w-full bg-white/[0.06] rounded-full overflow-hidden flex gap-0.5">
-              {activeSpotlightTour.steps.map((_, sIdx) => (
-                <div
-                  key={sIdx}
-                  className={`h-full flex-1 rounded-full transition-all duration-300 ${
-                    sIdx === activeSpotlightTour.currentStep
-                      ? 'bg-gradient-to-r from-violet-500 to-sky-400'
-                      : sIdx < activeSpotlightTour.currentStep
-                      ? 'bg-violet-600/60'
-                      : 'bg-white/[0.08]'
-                  }`}
-                />
-              ))}
-            </div>
-
-            {/* Tour Interactive Controls */}
-            <div className="flex items-center justify-between pt-0.5">
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    handlePrevTourStep();
-                  }}
-                  className="px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white text-[10px] font-medium transition-colors cursor-pointer border border-white/[0.06]"
-                >
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    handleNextTourStep();
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.14] text-slate-200 hover:text-white text-[10px] font-medium transition-colors cursor-pointer border border-white/[0.08]"
-                >
-                  Next Step
-                </button>
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    handleToggleAutoPlayTour();
-                  }}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1 border ${
-                    activeSpotlightTour.isAutoPlaying
-                      ? 'bg-amber-500/20 text-amber-200 border-amber-500/40'
-                      : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.06]'
-                  }`}
-                >
-                  {activeSpotlightTour.isAutoPlaying ? <Pause size={10} /> : <Play size={10} />}
-                  <span>{activeSpotlightTour.isAutoPlaying ? 'Pause Tour' : 'Auto-Play'}</span>
-                </button>
-                <button
-                  type="button"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    handleExecuteCurrentTourStep();
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
-                >
-                  <Play size={9} className="fill-current" />
-                  <span>Execute Step</span>
-                </button>
-              </div>
             </div>
           </div>
         )}
