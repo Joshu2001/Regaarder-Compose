@@ -2882,7 +2882,7 @@ Always answer helpfully, clearly, and concisely.`;
       )}
 
       {/* 3. MAIN FULL-HEIGHT VIEWPORT CANVAS */}
-      <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 relative">
         {/* OVERLAY: CONVERSATION HISTORY DRAWER */}
         {showHistoryDrawer && (
           <div className="absolute inset-0 bg-[#0F1017]/95 backdrop-blur-xl z-30 flex flex-col animate-in fade-in slide-in-from-top-2 duration-150 font-sans text-xs">
@@ -4680,7 +4680,7 @@ Always answer helpfully, clearly, and concisely.`;
 
                       {/* Model Selector Popover Dropdown */}
                       {isModelPickerOpen && (
-                        <div className="absolute left-0 bottom-8 mb-1 w-80 p-2.5 bg-[#181A24] border border-white/15 rounded-xl shadow-2xl z-50 animate-in zoom-in-95 duration-150 font-sans text-xs space-y-2.5">
+                        <div className="absolute left-0 bottom-9 mb-1 w-80 max-h-[65vh] overflow-y-auto regaarder-scrollbar p-2.5 bg-[#141520]/95 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl z-[100] animate-in zoom-in-95 duration-150 font-sans text-xs space-y-2.5">
                           <div className="flex items-center justify-between px-1">
                             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                               Inference Engine
