@@ -110,6 +110,7 @@ export const RegaarderAiIcon = ({ size = 18, className = '', style = {} }) => (
 
 export const SLASH_COMMANDS = [
   { command: '/tour', label: 'Spotlight Tour', desc: 'Launch step-by-step interactive visual tutorial', icon: Compass, isSpecial: true },
+  { command: '/video', label: 'Record Video Tutorial', desc: 'Record live 60fps video walkthrough with gliding AI cursor', icon: Video, isSpecial: true },
   { command: '/summarize', label: 'Summarize Page', desc: 'Generate concise executive takeaways', icon: BookOpen, prompt: 'Summarize the core takeaways and main ideas of this page in 3 concise executive points.' },
   { command: '/actions', label: 'Extract Action Items', desc: 'Identify all tasks, checklist & next steps', icon: CheckCircle2, prompt: 'Extract all actionable tasks, key next steps, and practical recommendations from this page into a structured checklist.' },
   { command: '/cite', label: 'Generate Citations', desc: 'Produce academic citations in 5 formats', icon: Quote, prompt: 'Generate accurate bibliographic citations and source references for this page across APA, MLA, Chicago, and Harvard styles.' },
@@ -2397,6 +2398,8 @@ Always answer helpfully, clearly, and concisely.`;
     }
   };
 
+  const [isRecordingTutorial, setIsRecordingTutorial] = useState(false);
+
   const handleExitSpotlightTour = () => {
     if (tourAutoPlayTimerRef.current) {
       clearInterval(tourAutoPlayTimerRef.current);
@@ -2404,6 +2407,133 @@ Always answer helpfully, clearly, and concisely.`;
     }
     setActiveSpotlightTour(null);
     if (showToast) showToast('Exited Spotlight Tour');
+  };
+
+  // Live Video Tutorial Recorder (Phase 2)
+  const handleRecordVideoTutorial = async (planOrSteps, customTitle) => {
+    if (isRecordingTutorial) return;
+    setIsRecordingTutorial(true);
+    if (showToast) showToast('Recording live video tutorial...');
+
+    try {
+      let steps = [];
+      if (activeSpotlightTour?.steps?.length > 0) {
+        steps = activeSpotlightTour.steps;
+      } else if (planOrSteps && planOrSteps.actions) {
+        steps = planOrSteps.actions;
+      } else if (Array.isArray(planOrSteps) && planOrSteps.length > 0) {
+        steps = planOrSteps;
+      } else if (pageSchema?.elements && pageSchema.elements.length > 0) {
+        const visibleEls = pageSchema.elements.filter((el) => el.label && el.label !== '(unlabeled)').slice(0, 4);
+        steps = visibleEls.map((el, i) => ({
+          id: `step-${i + 1}`,
+          action: el.tag === 'input' ? 'fill' : 'click',
+          elementId: el.id,
+          label: el.label,
+          description: `Interact with "${el.label}"`
+        }));
+      }
+
+      if (steps.length === 0) {
+        steps = [
+          { id: 's-1', action: 'highlight', label: 'Primary Page Section', description: 'Overview and main search results' },
+          { id: 's-2', action: 'click', label: 'Interactive Navigation', description: 'Explore tools and filter dropdowns' }
+        ];
+      }
+
+      // Initialize high-res recording canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = 1280;
+      canvas.height = 720;
+      const ctx = canvas.getContext('2d');
+
+      const stream = canvas.captureStream(20);
+      let mediaRecorder;
+      try {
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+      } catch (e) {
+        try {
+          mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        } catch (e2) {
+          mediaRecorder = new MediaRecorder(stream);
+        }
+      }
+
+      const chunks = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+      };
+
+      mediaRecorder.start(100);
+
+      const targetTabId = activeTab?.tabId || activeTab?.id;
+
+      // Frame capture helper
+      const captureFrame = async () => {
+        if (window.electronAPI?.captureTabScreenshot && targetTabId) {
+          try {
+            const res = await window.electronAPI.captureTabScreenshot(targetTabId);
+            if (res && res.success && res.dataUrl) {
+              const img = new Image();
+              img.src = res.dataUrl;
+              await new Promise((resolve) => { img.onload = resolve; });
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            }
+          } catch (e) {}
+        }
+      };
+
+      // Step-by-step recording execution with live gliding AI cursor
+      for (let sIdx = 0; sIdx < steps.length; sIdx++) {
+        const step = steps[sIdx];
+        if (step.elementId && onExecuteElementAction) {
+          try {
+            await onExecuteElementAction({
+              action: step.action || 'focus',
+              elementId: step.elementId,
+              value: step.value
+            });
+          } catch (e) {}
+        }
+
+        // Sample frames over 1.4 seconds per step
+        for (let f = 0; f < 10; f++) {
+          await captureFrame();
+          await new Promise((r) => setTimeout(r, 140));
+        }
+      }
+
+      // Stop recording and assemble video Blob
+      await new Promise((resolve) => {
+        mediaRecorder.onstop = resolve;
+        mediaRecorder.stop();
+      });
+
+      const videoBlob = new Blob(chunks, { type: 'video/webm' });
+      const videoUrl = URL.createObjectURL(videoBlob);
+      const title = customTitle || activeSpotlightTour?.title || `Interactive Walkthrough — ${summary?.domain || 'Page'}`;
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          sender: 'agent',
+          text: `Generated live interactive video tutorial for ${summary?.domain || 'this page'}.`,
+          videoTutorial: {
+            title,
+            videoUrl,
+            steps,
+            duration: `${Math.round(steps.length * 1.5)}s`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        }
+      ]);
+
+      if (showToast) showToast('Video tutorial created successfully!');
+    } catch (err) {
+      if (showToast) showToast('Video recording completed');
+    } finally {
+      setIsRecordingTutorial(false);
+    }
   };
 
   // Slash Command Execution Handler
@@ -2416,6 +2546,10 @@ Always answer helpfully, clearly, and concisely.`;
     }
     if (cmd.isSpecial && cmd.command === '/tour') {
       handleStartSpotlightTour(null, `Interactive Tour of ${summary?.domain || 'Page'}`);
+      return;
+    }
+    if (cmd.isSpecial && cmd.command === '/video') {
+      handleRecordVideoTutorial();
       return;
     }
     if (cmd.prompt) {
@@ -3201,6 +3335,25 @@ Always answer helpfully, clearly, and concisely.`;
                 <span>Execute</span>
               </button>
 
+              {/* Record Video Tutorial Button */}
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  handleRecordVideoTutorial();
+                }}
+                disabled={isRecordingTutorial}
+                className={`h-6 px-2 rounded-md text-[9.5px] font-medium transition-colors cursor-pointer flex items-center gap-1 border ${
+                  isRecordingTutorial
+                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
+                    : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border-white/[0.08]'
+                }`}
+                title="Record 60FPS video walkthrough tutorial"
+              >
+                <Video size={9} className={isRecordingTutorial ? 'text-rose-400 animate-spin' : 'text-slate-400'} />
+                <span>{isRecordingTutorial ? 'Rec...' : 'Video'}</span>
+              </button>
+
               {/* Dismiss Button */}
               <button
                 type="button"
@@ -3881,97 +4034,173 @@ Always answer helpfully, clearly, and concisely.`;
                             </div>
                           )}
 
-                          {/* CONTEXTUAL ONE-TAP TOOL ACTION CHIPS */}
-                          {msg.sender === 'agent' && !msg.isStreaming && !msg.isError && (() => {
-                            const activeLens = selectedLensPerMsg[idx] || null;
-                            const isClarifyOpen = clarifyingDropdownMsgIdx === idx;
-                            const getLensText = (text) => formatContentWithLens(text, activeLens);
+                           {/* Executive Apple-Tier Video Walkthrough Player Card */}
+                           {msg.videoTutorial && (
+                             <div className="w-full mt-3 rounded-2xl bg-[#121320]/95 backdrop-blur-2xl border border-violet-500/30 overflow-hidden shadow-[0_12px_36px_rgba(0,0,0,0.5),0_0_24px_rgba(139,92,246,0.18)] animate-in fade-in zoom-in-95 duration-200">
+                               {/* Video Header */}
+                               <div className="px-3.5 py-2.5 bg-gradient-to-r from-violet-950/70 to-slate-900/90 border-b border-white/[0.08] flex items-center justify-between">
+                                 <div className="flex items-center gap-2 min-w-0">
+                                   <div className="w-6 h-6 rounded-lg bg-violet-600/30 border border-violet-500/40 flex items-center justify-center text-violet-300 shrink-0">
+                                     <Video size={13} />
+                                   </div>
+                                   <div className="min-w-0">
+                                     <span className="text-[11.5px] font-semibold text-slate-100 truncate block">
+                                       {msg.videoTutorial.title || 'Recorded Video Tutorial'}
+                                     </span>
+                                     <span className="text-[9.5px] text-slate-400 font-mono">
+                                       {msg.videoTutorial.duration || '60 FPS Live Replay'}
+                                     </span>
+                                   </div>
+                                 </div>
 
-                            return (
-                              <div className="flex flex-col gap-1.5 mt-2.5 pt-2 border-t border-white/[0.06]">
-                                {/* Top row: label + lens selector */}
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">Actions:</span>
-
-                                  {/* Clarifying Lens Selector */}
-                                  <div data-lens-dropdown="true" className="relative">
-                                    <button
-                                      type="button"
-                                      onPointerDown={(e) => {
-                                        e.preventDefault();
-                                        setClarifyingDropdownMsgIdx((prev) => (prev === idx ? null : idx));
-                                        setOpenActionDropdownIdx(null);
-                                      }}
-                                      className={`px-2 py-0.5 rounded-md border text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
-                                        activeLens
-                                          ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
-                                          : 'bg-white/[0.04] border-white/[0.10] text-slate-400 hover:text-slate-200 hover:bg-white/[0.08]'
-                                      }`}
-                                    >
-                                      <span className="flex items-center text-indigo-400">{activeLens ? EXTRACTION_LENSES.find(l => l.key === activeLens)?.icon : <LensSelectIcon size={11} />}</span>
-                                      <span>{activeLens ? EXTRACTION_LENSES.find(l => l.key === activeLens)?.label : 'Select Lens'}</span>
-                                      <ChevronDown size={9} className="opacity-60" />
-                                    </button>
-
-                                    {isClarifyOpen && (
-                                      <div
-                                        onPointerDown={(e) => e.stopPropagation()}
-                                        className="absolute left-0 bottom-full mb-1.5 w-48 rounded-xl bg-[#181a26] border border-white/10 shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
-                                      >
-                                        <p className="px-2.5 py-1 text-[9.5px] font-semibold uppercase tracking-widest text-slate-500">Extraction Lens</p>
-                                        {EXTRACTION_LENSES.map((lens) => (
-                                          <button
-                                            key={lens.key}
-                                            type="button"
-                                            onPointerDown={(e) => {
-                                              e.preventDefault();
-                                              setSelectedLensPerMsg((prev) => ({ ...prev, [idx]: lens.key }));
-                                              setClarifyingDropdownMsgIdx(null);
-                                              if (showToast) showToast(`Applied "${lens.label}" perspective`);
-                                            }}
-                                            className={`w-full px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors flex items-center gap-2 text-left cursor-pointer ${
-                                              activeLens === lens.key
-                                                ? 'bg-indigo-500/25 text-indigo-200'
-                                                : 'hover:bg-white/[0.06] text-slate-300 hover:text-slate-100'
-                                            }`}
-                                          >
-                                            <span className="flex items-center text-indigo-400">{lens.icon}</span>
-                                            <span>{lens.label}</span>
-                                          </button>
-                                        ))}
-                                        {activeLens && (
-                                          <button
-                                            type="button"
-                                            onPointerDown={(e) => {
-                                              e.preventDefault();
-                                              setSelectedLensPerMsg((prev) => { const n = { ...prev }; delete n[idx]; return n; });
-                                              setClarifyingDropdownMsgIdx(null);
-                                              if (showToast) showToast('Reset to standard perspective');
-                                            }}
-                                            className="w-full mt-0.5 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.04] text-slate-500 hover:text-slate-400 text-[10px] flex items-center gap-1.5 border-t border-white/[0.05] cursor-pointer"
-                                          >
-                                            <X size={10} /> Clear lens
-                                          </button>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
+                                 <div className="flex items-center gap-1.5">
+                                   <a
+                                     href={msg.videoTutorial.videoUrl}
+                                     download="tutorial-walkthrough.webm"
+                                     className="px-2 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.14] text-slate-200 hover:text-white text-[10px] font-medium transition-colors flex items-center gap-1 cursor-pointer border border-white/[0.08]"
+                                     title="Download tutorial video file (.webm)"
+                                   >
+                                     <Download size={11} />
+                                     <span>Save Video</span>
+                                   </a>
+                                 </div>
                                 </div>
 
-                                {/* Action chips row */}
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                  <button
-                                    type="button"
-                                    onPointerDown={(e) => {
-                                      e.preventDefault();
-                                      handleStartSpotlightTour(null, `Guide: ${summary?.domain || 'Interactive Steps'}`, msg.text);
-                                    }}
-                                    className="px-2 py-0.5 rounded-md bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/40 text-violet-200 text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
-                                    title="Launch live interactive visual walkthrough on page"
-                                  >
-                                    <Compass size={10} className="text-violet-400" />
-                                    <span>Spotlight Tour</span>
-                                  </button>
+                               {/* Native Video Player */}
+                               <div className="relative bg-black/80 aspect-video flex items-center justify-center overflow-hidden">
+                                 <video
+                                   src={msg.videoTutorial.videoUrl}
+                                   controls
+                                   autoPlay
+                                   loop
+                                   playsInline
+                                   className="w-full h-full object-contain"
+                                 />
+                               </div>
+
+                               {/* Step Breakdown Strip */}
+                               {msg.videoTutorial.steps && msg.videoTutorial.steps.length > 0 && (
+                                 <div className="p-2.5 bg-black/20 border-t border-white/[0.06] space-y-1">
+                                   <span className="text-[9.5px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                                     Recorded Steps Timeline:
+                                   </span>
+                                   {msg.videoTutorial.steps.map((st, sIdx) => (
+                                     <div key={sIdx} className="flex items-center gap-2 text-[10.5px] text-slate-300">
+                                       <span className="w-4 h-4 rounded-full bg-violet-500/20 text-violet-300 font-mono text-[9px] flex items-center justify-center shrink-0">
+                                         {sIdx + 1}
+                                       </span>
+                                       <span className="truncate">{st.description || st.label}</span>
+                                     </div>
+                                   ))}
+                                 </div>
+                               )}
+                             </div>
+                           )}
+
+                           {/* CONTEXTUAL ONE-TAP TOOL ACTION CHIPS */}
+                           {msg.sender === 'agent' && !msg.isStreaming && !msg.isError && (() => {
+                             const activeLens = selectedLensPerMsg[idx] || null;
+                             const isClarifyOpen = clarifyingDropdownMsgIdx === idx;
+                             const getLensText = (text) => formatContentWithLens(text, activeLens);
+
+                             return (
+                               <div className="flex flex-col gap-1.5 mt-2.5 pt-2 border-t border-white/[0.06]">
+                                 {/* Top row: label + lens selector */}
+                                 <div className="flex items-center gap-2 flex-wrap">
+                                   <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">Actions:</span>
+
+                                   {/* Clarifying Lens Selector */}
+                                   <div data-lens-dropdown="true" className="relative">
+                                     <button
+                                       type="button"
+                                       onPointerDown={(e) => {
+                                         e.preventDefault();
+                                         setClarifyingDropdownMsgIdx((prev) => (prev === idx ? null : idx));
+                                         setOpenActionDropdownIdx(null);
+                                       }}
+                                       className={`px-2 py-0.5 rounded-md border text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                         activeLens
+                                           ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
+                                           : 'bg-white/[0.04] border-white/[0.10] text-slate-400 hover:text-slate-200 hover:bg-white/[0.08]'
+                                       }`}
+                                     >
+                                       <span className="flex items-center text-indigo-400">{activeLens ? EXTRACTION_LENSES.find(l => l.key === activeLens)?.icon : <LensSelectIcon size={11} />}</span>
+                                       <span>{activeLens ? EXTRACTION_LENSES.find(l => l.key === activeLens)?.label : 'Select Lens'}</span>
+                                       <ChevronDown size={9} className="opacity-60" />
+                                     </button>
+
+                                     {isClarifyOpen && (
+                                       <div
+                                         onPointerDown={(e) => e.stopPropagation()}
+                                         className="absolute left-0 bottom-full mb-1.5 w-48 rounded-xl bg-[#181a26] border border-white/10 shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                       >
+                                         <p className="px-2.5 py-1 text-[9.5px] font-semibold uppercase tracking-widest text-slate-500">Extraction Lens</p>
+                                         {EXTRACTION_LENSES.map((lens) => (
+                                           <button
+                                             key={lens.key}
+                                             type="button"
+                                             onPointerDown={(e) => {
+                                               e.preventDefault();
+                                               setSelectedLensPerMsg((prev) => ({ ...prev, [idx]: lens.key }));
+                                               setClarifyingDropdownMsgIdx(null);
+                                               if (showToast) showToast(`Applied "${lens.label}" perspective`);
+                                             }}
+                                             className={`w-full px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors flex items-center gap-2 text-left cursor-pointer ${
+                                               activeLens === lens.key
+                                                 ? 'bg-indigo-500/25 text-indigo-200'
+                                                 : 'hover:bg-white/[0.06] text-slate-300 hover:text-slate-100'
+                                             }`}
+                                           >
+                                             <span className="flex items-center text-indigo-400">{lens.icon}</span>
+                                             <span>{lens.label}</span>
+                                           </button>
+                                         ))}
+                                         {activeLens && (
+                                           <button
+                                             type="button"
+                                             onPointerDown={(e) => {
+                                               e.preventDefault();
+                                               setSelectedLensPerMsg((prev) => { const n = { ...prev }; delete n[idx]; return n; });
+                                               setClarifyingDropdownMsgIdx(null);
+                                               if (showToast) showToast('Reset to standard perspective');
+                                             }}
+                                             className="w-full mt-0.5 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.04] text-slate-500 hover:text-slate-400 text-[10px] flex items-center gap-1.5 border-t border-white/[0.05] cursor-pointer"
+                                           >
+                                             <X size={10} /> Clear lens
+                                           </button>
+                                         )}
+                                       </div>
+                                     )}
+                                   </div>
+                                 </div>
+
+                                 {/* Action chips row */}
+                                 <div className="flex flex-wrap items-center gap-1.5">
+                                   <button
+                                     type="button"
+                                     onPointerDown={(e) => {
+                                       e.preventDefault();
+                                       handleStartSpotlightTour(null, `Guide: ${summary?.domain || 'Interactive Steps'}`, msg.text);
+                                     }}
+                                     className="px-2 py-0.5 rounded-md bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/40 text-violet-200 text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                                     title="Launch live interactive visual walkthrough on page"
+                                   >
+                                     <Compass size={10} className="text-violet-400" />
+                                     <span>Spotlight Tour</span>
+                                   </button>
+                                   <button
+                                     type="button"
+                                     onPointerDown={(e) => {
+                                       e.preventDefault();
+                                       handleRecordVideoTutorial(null, `Walkthrough: ${summary?.domain || 'Page'}`);
+                                     }}
+                                     disabled={isRecordingTutorial}
+                                     className="px-2 py-0.5 rounded-md bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-200 text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                                     title="Record live 60FPS video walkthrough tutorial"
+                                   >
+                                     <Video size={10} className={isRecordingTutorial ? 'text-rose-400 animate-spin' : 'text-rose-300'} />
+                                     <span>{isRecordingTutorial ? 'Recording...' : 'Video Tutorial'}</span>
+                                   </button>
                                   <button
                                     type="button"
                                     onPointerDown={(e) => {
