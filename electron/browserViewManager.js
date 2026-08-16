@@ -680,10 +680,19 @@ class BrowserViewManager {
             } catch (e) {}
 
             if (action === 'click') {
+              const evtOpts = { bubbles: true, cancelable: true, view: window };
               target.focus();
-              target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-              target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+              try { target.dispatchEvent(new PointerEvent('pointerover', evtOpts)); } catch (e) {}
+              try { target.dispatchEvent(new MouseEvent('mouseover', evtOpts)); } catch (e) {}
+              try { target.dispatchEvent(new PointerEvent('pointerdown', evtOpts)); } catch (e) {}
+              try { target.dispatchEvent(new MouseEvent('mousedown', evtOpts)); } catch (e) {}
+              try { target.dispatchEvent(new PointerEvent('pointerup', evtOpts)); } catch (e) {}
+              try { target.dispatchEvent(new MouseEvent('mouseup', evtOpts)); } catch (e) {}
               target.click();
+              try {
+                target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+                target.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+              } catch (e) {}
               return { success: true, action: 'click', elementId, label: target.innerText || target.getAttribute('aria-label') || target.value };
             }
 

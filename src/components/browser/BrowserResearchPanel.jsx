@@ -2715,6 +2715,11 @@ Always answer helpfully, clearly, and concisely.`;
         // Auto-execute if low-risk
         if (actionPlan && actionPlan.risk === 'low' && finalMessageIdx >= 0) {
           executeActionPlan(actionPlan, finalMessageIdx);
+        } else {
+          const isNavigationOrGuide = /how\s*to|where\s*is|find|show\s*me|guide|navigate|access|step/i.test(userText) || /(?:^|\n)\s*(?:\d+\.|\(\d+\)|Step\s*\d+)/i.test(accumulatedReply);
+          if (isNavigationOrGuide) {
+            handleStartSpotlightTour(null, `Guide for ${summary?.domain || 'Page'}`, userText);
+          }
         }
 
         return;
@@ -2839,6 +2844,11 @@ Always answer helpfully, clearly, and concisely.`;
 
       if (cloudActionPlan && cloudActionPlan.risk === 'low' && msgIdx >= 0) {
         executeActionPlan(cloudActionPlan, msgIdx);
+      } else {
+        const isNavigationOrGuide = /how\s*to|where\s*is|find|show\s*me|guide|navigate|access|step/i.test(userText) || /(?:^|\n)\s*(?:\d+\.|\(\d+\)|Step\s*\d+)/i.test(cloudReply);
+        if (isNavigationOrGuide) {
+          handleStartSpotlightTour(null, `Guide for ${summary?.domain || 'Page'}`, userText);
+        }
       }
     }, 500);
   };
