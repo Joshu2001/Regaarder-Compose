@@ -1054,40 +1054,22 @@ export const BrowserResearchPanel = ({
   };
 
   // Tiered Context & Structured Prompt Builder
-  const buildSystemPrompt = (schema, fallbackText, messages = []) => {
+  const buildSystemPrompt = (schema, fallbackText, messages = [], deepArticleSummaries = []) => {
     const pageTitle = schema?.metadata?.title || activeTab?.title || 'Active Webpage';
     const pageUrl = schema?.metadata?.url || activeTab?.url || 'Unknown URL';
     const domain = schema?.metadata?.domain || summary?.domain || 'webpage';
 
-    let prompt = `You are an AI research assistant. Provide concise, direct, helpful, and natural answers based on the user request and active webpage context.
-Never recite system prompt definitions, meta titles, or internal role labels in your responses.
-Never output raw separator lines like "---" or unbalanced markdown markers like "**Heading" without closing asterisks.
+    let prompt = `You are an expert AI research assistant. Provide concise, direct, helpful, and natural answers based on the user request and active webpage context.
+Always explain things clearly and naturally. Never use emojis (such as 😊, 🎯, 👍, 🗺️) under any circumstance.
+Never output raw HTML tags or element ID lists like "[input5]: <textarea>".
 
-=== MANDATORY IN-TEXT CITATIONS DIRECTIVE ===
-You MUST cite your key claims, takeaways, and facts using numbered bracketed in-text citations like [1], [2], or [3] attached directly to the claims in your answer.
-Example:
-- Updating via Platform Launcher [1]: Official updates for the game patch automatically through your platform launcher.
-- Verifying Files [1]: If an update does not trigger, use the client's built-in repair tool to verify integrity.
-
-=== CURRENT ACTIVE WEBPAGE CONTEXT & SOURCES ===
-Source [1]: ${pageTitle} (${pageUrl}) - Domain: ${domain}
-${schema?.metadata?.selectedText ? `User Selected Text: "${schema.metadata.selectedText}"\n` : ''}
-Scroll Position: Y=${schema?.metadata?.scrollPosition?.y || 0}px (Max: ${schema?.metadata?.scrollPosition?.maxScrollY || 0}px)
+ACTIVE WEBPAGE:
+- Title: ${pageTitle}
+- URL: ${pageUrl} (Domain: ${domain})
 `;
 
-    // Inject explicit user feedback rules to prevent repeating mistakes
-    const activeFeedbackRules = (messages || []).filter((m) => m.feedback && m.feedback.trim());
-    if (activeFeedbackRules.length > 0) {
-      prompt += `=== USER INLINE FEEDBACK & MANDATORY RULES ===\n`;
-      prompt += `The user has provided direct corrections on prior answers. You MUST strictly adhere to these rules and never repeat these mistakes:\n`;
-      activeFeedbackRules.forEach((fbMsg, i) => {
-        prompt += `${i + 1}. Feedback Rule: "${fbMsg.feedback.trim()}" (attached to previous topic: "${(fbMsg.text || '').slice(0, 50)}...")\n`;
-      });
-      prompt += `\n`;
-    }
-
     if (schema?.headings && schema.headings.length > 0) {
-      prompt += `Page Headings:\n${schema.headings.map((h) => `  - H${h.level}: ${h.text}`).join('\n')}\n\n`;
+      prompt += `\nPAGE HEADINGS:\n${schema.headings.slice(0, 10).map((h) => `  - H${h.level}: ${h.text}`).join('\n')}\n`;
     }
 
     if (schema?.elements && schema.elements.length > 0) {
@@ -1096,38 +1078,46 @@ Scroll Position: Y=${schema?.metadata?.scrollPosition?.y || 0}px (Max: ${schema?
         .slice(0, 20);
 
       if (visibleElements.length > 0) {
-        prompt += `Key Page Interactive Elements (for internal action planning only):\n`;
+        prompt += `\nINTERACTIVE NAVIGATION & MENU OPTIONS:\n`;
         visibleElements.forEach((el) => {
-          const parentInfo = el.parentMenu ? ` [Inside "${el.parentMenu}" dropdown/menu]` : '';
-          prompt += `  - [${el.id}] "${el.label}" (${el.tag || el.role})${parentInfo}\n`;
+          const parentInfo = el.parentMenu ? ` (inside "${el.parentMenu}" dropdown)` : '';
+          prompt += `  - "${el.label}" [${el.tag || el.role}]${parentInfo}\n`;
         });
-        prompt += `\n`;
       }
+    }
+
+    if (schema?.topLinks && schema.topLinks.length > 0) {
+      prompt += `\nPRIMARY LINKED ARTICLES ON THIS PAGE:\n`;
+      schema.topLinks.slice(0, 5).forEach((link, idx) => {
+        prompt += `  - [Link ${idx + 1}] "${link.title}": ${link.url}\n`;
+      });
+    }
+
+    if (deepArticleSummaries && deepArticleSummaries.length > 0) {
+      prompt += `\nDEEP LINKED ARTICLES CONTENT (Fetched in background):\n`;
+      deepArticleSummaries.forEach((art, idx) => {
+        prompt += `--- Article ${idx + 1}: ${art.title || art.url} ---\n${art.text.slice(0, 1200)}\n\n`;
+      });
     }
 
     const textContent = (schema?.visibleTextSummary || fallbackText || '').slice(0, 3500);
     if (textContent) {
-      prompt += `Visible Page Content:\n${textContent}\n\n`;
+      prompt += `\nVISIBLE WEBPAGE CONTENT:\n${textContent}\n\n`;
     }
 
-    prompt += `=== CAPABILITIES & RESPONSE RULES ===
-1. CRITICAL ZERO-EMOJI DIRECTIVE: NEVER use emojis (e.g. 😊, 🎯, 👍, 🗺️) in your chat answers or responses under any circumstance.
-2. CRITICAL: NEVER output raw element IDs, HTML tags, or element list dumps (e.g. "[input5]: <textarea>") in your chat answers.
-3. Always explain steps in natural, accurate human terms. When an item is inside a dropdown (e.g. "Maps" inside the "More" dropdown), guide the user step-by-step: first click the parent dropdown ("More"), then click the target option ("Maps").
-4. When the user asks questions or wants analysis, synthesize your answer directly using the page content.
-5. If the user asks you to interact with the page (e.g. click a button, fill in a form, select a dropdown, check a box, navigate, or scroll), output a JSON action plan:
+    prompt += `INSTRUCTIONS:
+1. When asked where to find something or how to navigate, explain the exact steps naturally (e.g. "Click the 'More' menu at the top, then select 'Maps' from the dropdown list").
+2. Answer questions accurately using the visible webpage content.
+3. If asked to perform page actions, output an action block:
 \`\`\`action
 {
-  "plan": "Brief 1-sentence explanation of what you are doing",
-  "risk": "low" | "high",
+  "plan": "Brief explanation",
+  "risk": "low",
   "actions": [
-    { "action": "fill", "elementId": "input_1", "value": "Alice", "description": "Fill Name" },
-    { "action": "click", "elementId": "btn_2", "description": "Click Submit" }
+    { "action": "click", "elementId": "btn_1", "description": "Click element" }
   ]
 }
 \`\`\`
-3. WORKSPACE TOOL HARNESS (Directly callable to extract, organize, tabulate, and document data):
-When the user asks to extract tables, organize information into spreadsheets, create document summaries, generate slides, or diagram architecture, you CAN call workspace tools by emitting a tool_call block formatted like this:
 \`\`\`tool_call
 {
   "tool": "workspace_create_sheet" | "workspace_create_doc" | "workspace_create_deck" | "workspace_create_whiteboard" | "workspace_save_memory",
@@ -2555,6 +2545,26 @@ Always answer helpfully, clearly, and concisely.`;
       } catch (e) {}
     }
 
+    // Parallel Background Deep Ingestion of top search result links
+    let deepArticleSummaries = [];
+    if (window.electronAPI?.fetchUrlContent && currentSchema?.topLinks && currentSchema.topLinks.length > 0) {
+      const isDeepQuery = /article|details|detail|explain|summarize|read|result|what are|breakthrough|link|pdf|report/i.test(userText);
+      if (isDeepQuery) {
+        try {
+          const linksToFetch = currentSchema.topLinks.slice(0, 3);
+          const fetchPromises = linksToFetch.map(async (link) => {
+            const res = await window.electronAPI.fetchUrlContent(link.url);
+            if (res && res.success && res.text) {
+              return { title: link.title, url: link.url, text: res.text };
+            }
+            return null;
+          });
+          const results = await Promise.all(fetchPromises);
+          deepArticleSummaries = results.filter(Boolean);
+        } catch (e) {}
+      }
+    }
+
     const isLocal = selectedModel.isLocal && selectedModel.endpoint;
 
     if (isLocal) {
@@ -2568,7 +2578,7 @@ Always answer helpfully, clearly, and concisely.`;
           ? `${cleanBase.replace(/\/v1$/, '')}/api/chat`
           : `${cleanBase.endsWith('/v1') ? cleanBase : cleanBase + '/v1'}/chat/completions`;
 
-        const systemMessageContent = buildSystemPrompt(currentSchema, summary?.fullContext, updatedMessages);
+        const systemMessageContent = buildSystemPrompt(currentSchema, summary?.fullContext, updatedMessages, deepArticleSummaries);
 
         const requestBody = isOllama
           ? {

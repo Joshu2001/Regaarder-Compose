@@ -26,11 +26,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('browser:tab-updated', handler);
   },
   
-  // Safe AI extraction & agentic action bridge pipeline
   extractPageText: (tabId) => ipcRenderer.invoke('browser:extract-page-text', { tabId }),
   extractPageSchema: (tabId) => ipcRenderer.invoke('browser:extract-page-schema', { tabId }),
   executeElementAction: (params) => ipcRenderer.invoke('browser:execute-element-action', params),
   captureTabScreenshot: (tabId) => ipcRenderer.invoke('browser:capture-screenshot', { tabId }),
+  fetchUrlContent: (url) => ipcRenderer.invoke('browser:fetch-url-content', { url }),
 
   // Browser Font & Zoom Customization
   setFontZoom: (params) => ipcRenderer.invoke('browser:set-font-zoom', params),

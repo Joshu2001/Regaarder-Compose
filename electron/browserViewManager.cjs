@@ -458,7 +458,19 @@ class BrowserViewManager {
               text: (h.innerText || '').trim().replace(/\\s+/g, ' ').slice(0, 120)
             })).filter(h => h.text.length > 0).slice(0, 15);
 
-            const bodyText = (document.body?.innerText || '').replace(/\\s+/g, ' ').slice(0, 4000);
+            const bodyText = (document.body?.innerText || '').replace(/\s+/g, ' ').slice(0, 4000);
+
+            // Extract primary article links on search/feed pages
+            const linkNodes = Array.from(document.querySelectorAll('a[href]'));
+            const topLinks = [];
+            for (const a of linkNodes) {
+              const href = a.href;
+              const text = (a.innerText || a.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ');
+              if (href && href.startsWith('http') && !href.includes('google.com/search') && !href.includes('google.com/url') && text.length > 5 && !topLinks.some(l => l.url === href)) {
+                topLinks.push({ title: text.slice(0, 80), url: href });
+                if (topLinks.length >= 6) break;
+              }
+            }
 
             return {
               success: true,
@@ -476,6 +488,7 @@ class BrowserViewManager {
                 },
                 headings,
                 elements: elements.slice(0, 60),
+                topLinks,
                 visibleTextSummary: bodyText
               }
             };

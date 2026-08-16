@@ -177,6 +177,24 @@ ipcMain.handle('browser:capture-screenshot', async (event, { tabId }) => {
   return { success: false, error: 'Browser manager not initialized' };
 });
 
+ipcMain.handle('browser:fetch-url-content', async (event, { url }) => {
+  try {
+    const { net } = require('electron');
+    const res = await net.fetch(url);
+    const html = await res.text();
+    const cleanText = html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 5000);
+    return { success: true, text: cleanText, url };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
 ipcMain.handle('browser:set-font-zoom', async (event, { font, size }) => {
   if (browserViewManager) {
     browserViewManager.setFontZoom(font, size);
