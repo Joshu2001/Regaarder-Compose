@@ -389,31 +389,35 @@ export const PopoverWindowContainer = () => {
               activeTab={activeTab}
               onClose={handleClose}
               onExtractText={async () => {
-                if (window.electronAPI?.extractPageText && activeTab?.tabId) {
-                  const res = await window.electronAPI.extractPageText(activeTab.tabId);
+                const targetTabId = activeTab?.tabId || activeTab?.id;
+                if (window.electronAPI?.extractPageText && targetTabId) {
+                  const res = await window.electronAPI.extractPageText(targetTabId);
                   return res?.text || '';
                 }
                 return 'Page context from active tab';
               }}
               onExtractPageSchema={async () => {
-                if (window.electronAPI?.extractPageSchema && activeTab?.tabId) {
-                  const res = await window.electronAPI.extractPageSchema(activeTab.tabId);
+                const targetTabId = activeTab?.tabId || activeTab?.id;
+                if (window.electronAPI?.extractPageSchema && targetTabId) {
+                  const res = await window.electronAPI.extractPageSchema(targetTabId);
                   return res?.schema || null;
                 }
                 return null;
               }}
               onExecuteElementAction={async (payload) => {
-                if (window.electronAPI?.executeElementAction && activeTab?.tabId) {
+                const targetTabId = activeTab?.tabId || activeTab?.id;
+                if (window.electronAPI?.executeElementAction && targetTabId) {
                   return await window.electronAPI.executeElementAction({
-                    tabId: activeTab.tabId,
+                    tabId: targetTabId,
                     ...payload
                   });
                 }
                 return { success: false, error: 'Unavailable' };
               }}
               onCaptureScreenshot={async () => {
-                if (window.electronAPI?.captureTabScreenshot && activeTab?.tabId) {
-                  const res = await window.electronAPI.captureTabScreenshot(activeTab.tabId);
+                const targetTabId = activeTab?.tabId || activeTab?.id;
+                if (window.electronAPI?.captureTabScreenshot && targetTabId) {
+                  const res = await window.electronAPI.captureTabScreenshot(targetTabId);
                   return res?.dataUrl || null;
                 }
                 return null;
