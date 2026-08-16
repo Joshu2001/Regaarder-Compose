@@ -520,21 +520,62 @@ class BrowserViewManager {
               return { success: false, error: 'No elementId specified' };
             }
 
-            const target = document.querySelector(\`[data-regaarder-id="\${elementId}"]\`);
+            let target = document.querySelector(\`[data-regaarder-id="\${elementId}"]\`);
+            if (!target) {
+              const allCandidates = Array.from(document.querySelectorAll('button, a, input, textarea, select, [role="button"], [tabindex], div'));
+              const searchKey = String(elementId).toLowerCase();
+              target = allCandidates.find((el) => {
+                const text = (el.innerText || el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.id || '').trim().toLowerCase();
+                return text && (text.includes(searchKey) || searchKey.includes(text));
+              }) || allCandidates[0];
+            }
+
             if (!target) {
               return { success: false, error: \`Element with ID \${elementId} not found on page\` };
             }
 
             target.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            // Inject Live Visual Spotlight Beacon Overlay on Web Page
+            // Inject Live Gliding Visual AI Cursor & Spotlight Aura
             try {
-              const existingBeacon = document.getElementById('__regaarder_spotlight_beacon__');
-              if (existingBeacon) existingBeacon.remove();
-
               const rect = target.getBoundingClientRect();
               const scrollX = window.scrollX || window.pageXOffset || 0;
               const scrollY = window.scrollY || window.pageYOffset || 0;
+
+              // 1. Live Gliding AI Cursor
+              let cursor = document.getElementById('__regaarder_ai_cursor__');
+              if (!cursor) {
+                cursor = document.createElement('div');
+                cursor.id = '__regaarder_ai_cursor__';
+                cursor.style.cssText = \`
+                  position: fixed;
+                  left: 0;
+                  top: 0;
+                  width: 26px;
+                  height: 26px;
+                  pointer-events: none;
+                  z-index: 2147483647;
+                  transform: translate(50vw, 50vh);
+                  transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+                  filter: drop-shadow(0 4px 12px rgba(139, 92, 246, 0.6));
+                \`;
+                cursor.innerHTML = \`
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 3L18 13L11.5 14L8.5 20.5L4 3Z" fill="#8B5CF6" stroke="#FFFFFF" stroke-width="1.6" stroke-linejoin="round"/>
+                    <circle cx="4" cy="3" r="2.5" fill="#FFFFFF"/>
+                  </svg>
+                \`;
+                document.body.appendChild(cursor);
+              }
+
+              const targetX = Math.round(rect.left + rect.width / 2);
+              const targetY = Math.round(rect.top + rect.height / 2);
+              cursor.style.transform = \`translate(\${targetX}px, \${targetY}px) scale(1)\`;
+              cursor.style.opacity = '1';
+
+              // 2. Spotlight Beacon & Floating Badge
+              const existingBeacon = document.getElementById('__regaarder_spotlight_beacon__');
+              if (existingBeacon) existingBeacon.remove();
 
               const beacon = document.createElement('div');
               beacon.id = '__regaarder_spotlight_beacon__';
@@ -548,7 +589,7 @@ class BrowserViewManager {
                 border: 2px solid #8b5cf6;
                 box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.4), 0 0 32px rgba(139, 92, 246, 0.7);
                 pointer-events: none;
-                z-index: 2147483647;
+                z-index: 2147483646;
                 transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
                 animation: __regaarder_pulse 1.8s infinite;
               \`;
@@ -597,6 +638,13 @@ class BrowserViewManager {
               document.body.appendChild(beacon);
 
               if (action === 'click') {
+                setTimeout(() => {
+                  if (cursor) cursor.style.transform = \`translate(\${targetX}px, \${targetY}px) scale(0.85)\`;
+                  setTimeout(() => {
+                    if (cursor) cursor.style.transform = \`translate(\${targetX}px, \${targetY}px) scale(1)\`;
+                  }, 140);
+                }, 180);
+
                 const ripple = document.createElement('div');
                 ripple.style.cssText = \`
                   position: absolute;
@@ -617,7 +665,8 @@ class BrowserViewManager {
 
               setTimeout(() => {
                 if (beacon && beacon.parentNode) beacon.remove();
-              }, 8000);
+                if (cursor) cursor.style.opacity = '0';
+              }, 6000);
             } catch (e) {}
 
             if (action === 'click') {
