@@ -107,6 +107,7 @@ export const RegaarderAiIcon = ({ size = 18, className = '', style = {} }) => (
 );
 
 export const SLASH_COMMANDS = [
+  { command: '/tour', label: 'Spotlight Tour', desc: 'Launch step-by-step interactive visual tutorial', icon: Compass, isSpecial: true },
   { command: '/summarize', label: 'Summarize Page', desc: 'Generate concise executive takeaways', icon: BookOpen, prompt: 'Summarize the core takeaways and main ideas of this page in 3 concise executive points.' },
   { command: '/actions', label: 'Extract Action Items', desc: 'Identify all tasks, checklist & next steps', icon: CheckCircle2, prompt: 'Extract all actionable tasks, key next steps, and practical recommendations from this page into a structured checklist.' },
   { command: '/cite', label: 'Generate Citations', desc: 'Produce academic citations in 5 formats', icon: Quote, prompt: 'Generate accurate bibliographic citations and source references for this page across APA, MLA, Chicago, and Harvard styles.' },
@@ -367,6 +368,11 @@ export const BrowserResearchPanel = ({
   const [realActionItems, setRealActionItems] = useState([]);
   const [isExtractingActionItems, setIsExtractingActionItems] = useState(false);
   const prevTabKeyRef = useRef(null);
+
+  // Live Interactive Spotlight Tour State & Controllers
+  const [activeSpotlightTour, setActiveSpotlightTour] = useState(null);
+  // Schema: { title: string, steps: [{ id, action, label, description, elementId, value }], currentStep: number, isAutoPlaying: boolean }
+  const tourAutoPlayTimerRef = useRef(null);
 
   // Unified outside-click dismissal for all floating menus, lens selectors, and toolbars
   useEffect(() => {
@@ -2219,12 +2225,157 @@ Always answer helpfully, clearly, and concisely.`;
     }
   };
 
+  // Live Interactive Spotlight Tour Management
+  const handleStartSpotlightTour = async (planOrSteps, customTitle) => {
+    let steps = [];
+    if (planOrSteps && planOrSteps.actions) {
+      steps = planOrSteps.actions.map((act, i) => ({
+        id: act.id || `step-${i + 1}`,
+        action: act.action || 'click',
+        elementId: act.elementId,
+        label: act.description || act.value || `Step ${i + 1}`,
+        description: act.description || `Interact with element #${act.elementId}`,
+        value: act.value
+      }));
+    } else if (Array.isArray(planOrSteps) && planOrSteps.length > 0) {
+      steps = planOrSteps;
+    } else if (pageSchema?.elements && pageSchema.elements.length > 0) {
+      steps = pageSchema.elements.slice(0, 5).map((el, i) => ({
+        id: `step-${i + 1}`,
+        action: el.tag === 'input' ? 'fill' : 'click',
+        elementId: el.id,
+        label: el.label || el.tag || `Element ${i + 1}`,
+        description: el.tag === 'input' ? `Enter input in "${el.label || el.id}"` : `Click "${el.label || el.id}"`,
+        value: el.tag === 'input' ? 'Sample Query' : undefined
+      }));
+    } else {
+      steps = [
+        { id: 'step-1', action: 'highlight', elementId: 'hdr-1', label: 'Page Header & Search Context', description: 'Review the primary search results and query parameters.' },
+        { id: 'step-2', action: 'click', elementId: 'btn-filters', label: 'Refine Filters & Tools', description: 'Click to open advanced date ranges and content filters.' },
+        { id: 'step-3', action: 'highlight', elementId: 'res-1', label: 'Primary AI Findings', description: 'Examine key findings and structured takeaways on this topic.' }
+      ];
+    }
+
+    const title = customTitle || planOrSteps?.plan || 'Interactive Page Spotlight Tour';
+    const tour = {
+      title,
+      steps,
+      currentStep: 0,
+      isAutoPlaying: false
+    };
+
+    setActiveSpotlightTour(tour);
+    if (showToast) showToast(`🎯 Started Spotlight Tour: Step 1 of ${steps.length}`);
+
+    // Highlight first target element on page if supported
+    if (steps[0]?.elementId && onExecuteElementAction) {
+      try {
+        await onExecuteElementAction({
+          action: 'focus',
+          elementId: steps[0].elementId
+        });
+      } catch (e) {}
+    }
+  };
+
+  const handleNextTourStep = async () => {
+    if (!activeSpotlightTour) return;
+    const nextIdx = (activeSpotlightTour.currentStep + 1) % activeSpotlightTour.steps.length;
+    setActiveSpotlightTour((prev) => ({
+      ...prev,
+      currentStep: nextIdx
+    }));
+
+    const step = activeSpotlightTour.steps[nextIdx];
+    if (step?.elementId && onExecuteElementAction) {
+      try {
+        await onExecuteElementAction({
+          action: 'focus',
+          elementId: step.elementId
+        });
+      } catch (e) {}
+    }
+  };
+
+  const handlePrevTourStep = async () => {
+    if (!activeSpotlightTour) return;
+    const prevIdx = activeSpotlightTour.currentStep === 0
+      ? activeSpotlightTour.steps.length - 1
+      : activeSpotlightTour.currentStep - 1;
+
+    setActiveSpotlightTour((prev) => ({
+      ...prev,
+      currentStep: prevIdx
+    }));
+
+    const step = activeSpotlightTour.steps[prevIdx];
+    if (step?.elementId && onExecuteElementAction) {
+      try {
+        await onExecuteElementAction({
+          action: 'focus',
+          elementId: step.elementId
+        });
+      } catch (e) {}
+    }
+  };
+
+  const handleExecuteCurrentTourStep = async () => {
+    if (!activeSpotlightTour) return;
+    const step = activeSpotlightTour.steps[activeSpotlightTour.currentStep];
+    if (!step) return;
+
+    if (onExecuteElementAction && step.elementId) {
+      if (showToast) showToast(`Executing: ${step.label}`);
+      try {
+        await onExecuteElementAction({
+          action: step.action || 'click',
+          elementId: step.elementId,
+          value: step.value
+        });
+      } catch (e) {}
+    } else {
+      if (showToast) showToast(`Demonstrating step: ${step.label}`);
+    }
+  };
+
+  const handleToggleAutoPlayTour = () => {
+    if (!activeSpotlightTour) return;
+    if (activeSpotlightTour.isAutoPlaying) {
+      if (tourAutoPlayTimerRef.current) {
+        clearInterval(tourAutoPlayTimerRef.current);
+        tourAutoPlayTimerRef.current = null;
+      }
+      setActiveSpotlightTour((prev) => ({ ...prev, isAutoPlaying: false }));
+      if (showToast) showToast('Spotlight Tour auto-play paused');
+    } else {
+      setActiveSpotlightTour((prev) => ({ ...prev, isAutoPlaying: true }));
+      if (showToast) showToast('Auto-playing Spotlight Tour...');
+      if (tourAutoPlayTimerRef.current) clearInterval(tourAutoPlayTimerRef.current);
+      tourAutoPlayTimerRef.current = setInterval(() => {
+        handleNextTourStep();
+      }, 2800);
+    }
+  };
+
+  const handleExitSpotlightTour = () => {
+    if (tourAutoPlayTimerRef.current) {
+      clearInterval(tourAutoPlayTimerRef.current);
+      tourAutoPlayTimerRef.current = null;
+    }
+    setActiveSpotlightTour(null);
+    if (showToast) showToast('Exited Spotlight Tour');
+  };
+
   // Slash Command Execution Handler
   const handleExecuteSlashCommand = (cmd) => {
     setShowSlashMenu(false);
     setInputQuery('');
     if (cmd.isSpecial && cmd.command === '/clear') {
       handleStartNewChat();
+      return;
+    }
+    if (cmd.isSpecial && cmd.command === '/tour') {
+      handleStartSpotlightTour(null, `Interactive Tour of ${summary?.domain || 'Page'}`);
       return;
     }
     if (cmd.prompt) {
@@ -2883,6 +3034,114 @@ Always answer helpfully, clearly, and concisely.`;
 
       {/* 3. MAIN FULL-HEIGHT VIEWPORT CANVAS */}
       <div className="flex-1 flex flex-col min-h-0 relative">
+        {/* LIVE INTERACTIVE SPOTLIGHT TOUR HUD */}
+        {activeSpotlightTour && (
+          <div className="mx-3 mt-2 mb-1 p-2.5 rounded-2xl bg-[#141522]/95 backdrop-blur-2xl border border-violet-500/40 shadow-[0_8px_32px_rgba(139,92,246,0.25)] flex flex-col gap-2 z-20 animate-in slide-in-from-top-3 duration-200 text-xs">
+            {/* Tour Top Banner */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-6 h-6 rounded-lg bg-violet-600/30 border border-violet-500/50 flex items-center justify-center text-violet-300 shrink-0 shadow-sm">
+                  <Compass size={13} className="animate-spin" style={{ animationDuration: '8s' }} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-slate-100 text-[11px] truncate">{activeSpotlightTour.title}</span>
+                    <span className="px-1.5 py-0.2 rounded-full bg-violet-500/20 text-violet-300 font-mono text-[9px]">
+                      Step {activeSpotlightTour.currentStep + 1} of {activeSpotlightTour.steps.length}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 truncate">
+                    {activeSpotlightTour.steps[activeSpotlightTour.currentStep]?.description || 'Follow interactive steps on live page'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  handleExitSpotlightTour();
+                }}
+                className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                title="Exit Spotlight Tour"
+              >
+                <X size={12} />
+              </button>
+            </div>
+
+            {/* Tour Step Progress Bar */}
+            <div className="h-1 w-full bg-white/[0.06] rounded-full overflow-hidden flex gap-0.5">
+              {activeSpotlightTour.steps.map((_, sIdx) => (
+                <div
+                  key={sIdx}
+                  className={`h-full flex-1 rounded-full transition-all duration-300 ${
+                    sIdx === activeSpotlightTour.currentStep
+                      ? 'bg-gradient-to-r from-violet-500 to-sky-400'
+                      : sIdx < activeSpotlightTour.currentStep
+                      ? 'bg-violet-600/60'
+                      : 'bg-white/[0.08]'
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Tour Interactive Controls */}
+            <div className="flex items-center justify-between pt-0.5">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handlePrevTourStep();
+                  }}
+                  className="px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white text-[10px] font-medium transition-colors cursor-pointer border border-white/[0.06]"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleNextTourStep();
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.14] text-slate-200 hover:text-white text-[10px] font-medium transition-colors cursor-pointer border border-white/[0.08]"
+                >
+                  Next Step
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleToggleAutoPlayTour();
+                  }}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1 border ${
+                    activeSpotlightTour.isAutoPlaying
+                      ? 'bg-amber-500/20 text-amber-200 border-amber-500/40'
+                      : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border-white/[0.06]'
+                  }`}
+                >
+                  {activeSpotlightTour.isAutoPlaying ? <Pause size={10} /> : <Play size={10} />}
+                  <span>{activeSpotlightTour.isAutoPlaying ? 'Pause Tour' : 'Auto-Play'}</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleExecuteCurrentTourStep();
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                >
+                  <Play size={9} className="fill-current" />
+                  <span>Execute Step</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* OVERLAY: CONVERSATION HISTORY DRAWER */}
         {showHistoryDrawer && (
           <div className="absolute inset-0 bg-[#0F1017]/95 backdrop-blur-xl z-30 flex flex-col animate-in fade-in slide-in-from-top-2 duration-150 font-sans text-xs">
@@ -3481,7 +3740,19 @@ Always answer helpfully, clearly, and concisely.`;
                                       className="flex-1 py-1 px-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
                                     >
                                       <Play size={10} className="fill-current" />
-                                      <span>Approve & Execute</span>
+                                      <span>Execute</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        handleStartSpotlightTour(msg.actionPlan);
+                                      }}
+                                      className="py-1 px-2.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.14] text-violet-300 hover:text-violet-200 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-violet-500/30"
+                                      title="Launch interactive visual tour on page"
+                                    >
+                                      <Compass size={11} />
+                                      <span>Spotlight Tour</span>
                                     </button>
                                     <button
                                       type="button"
@@ -4352,6 +4623,7 @@ Always answer helpfully, clearly, and concisely.`;
                 {/* Quick Action Suggestion Chips / Pills */}
                 <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-0.5 overflow-x-auto no-scrollbar">
                   {[
+                    { label: '/tour', isSpecialTour: true },
                     { label: '/summarize', prompt: 'Summarize the key takeaways of this page in 3 concise executive points.' },
                     { label: '/actions', prompt: 'Extract all actionable tasks, checklist items, and next steps from this page.' },
                     { label: '/cite', prompt: 'Generate accurate academic citations for this page in APA, MLA, and Chicago styles.' },
@@ -4362,7 +4634,11 @@ Always answer helpfully, clearly, and concisely.`;
                       type="button"
                       onPointerDown={(e) => {
                         e.preventDefault();
-                        handleSendMessage(chip.prompt);
+                        if (chip.isSpecialTour) {
+                          handleStartSpotlightTour(null, `Tour of ${summary?.domain || 'Page'}`);
+                        } else {
+                          handleSendMessage(chip.prompt);
+                        }
                       }}
                       className="px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-violet-500/20 text-slate-400 hover:text-violet-200 border border-white/[0.08] hover:border-violet-500/30 text-[9.5px] font-mono transition-all cursor-pointer shrink-0"
                     >
