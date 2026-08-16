@@ -65,7 +65,12 @@ import {
   BrowserForwardIcon,
   BrowserCheckIcon,
   BrowserExternalIcon,
-  BrowserBookmarkIcon
+  BrowserBookmarkIcon,
+  BrowserCompetitorsIcon,
+  PageContextIcon,
+  LensExecutiveIcon,
+  LensTechnicalIcon,
+  LensSelectIcon
 } from './RegaarderBrowserIcons';
 import {
   AgentsIcon,
@@ -109,6 +114,78 @@ export const SLASH_COMMANDS = [
   { command: '/compare', label: 'Compare & Contrast', desc: 'Compare pros, cons & entities', icon: Layers, prompt: 'Analyze and compare the main entities, perspectives, or options presented on this page, highlighting pros and cons.' },
   { command: '/clear', label: 'Clear Thread', desc: 'Start a fresh conversation session', icon: Trash2, isSpecial: true }
 ];
+
+export const EXTRACTION_LENSES = [
+  { key: 'executive', label: 'Executive Overview', icon: <LensExecutiveIcon size={11} /> },
+  { key: 'technical', label: 'Technical Breakdown', icon: <LensTechnicalIcon size={11} /> },
+  { key: 'checklist', label: 'Actionable Checklist', icon: <TasksIcon size={11} strokeWidth={1.5} /> },
+  { key: 'matrix', label: 'Competitive Matrix', icon: <BrowserCompetitorsIcon size={11} /> },
+];
+
+export const formatContentWithLens = (text, lensKey) => {
+  if (!text || !lensKey) return text;
+  const rawLines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+  if (lensKey === 'executive') {
+    const keyBullets = rawLines
+      .filter((l) => !l.startsWith('#') && l.length > 8)
+      .slice(0, 5)
+      .map((l) => l.replace(/^[-*•\d+.)\s]+/, '').trim());
+
+    if (keyBullets.length === 0) return `# Executive Overview\n\n${text}`;
+    return `### Strategic Executive Overview\n\n${keyBullets.map((b) => `• **${b.split(':')[0].replace(/\*\*/g, '')}**: ${b.includes(':') ? b.substring(b.indexOf(':') + 1).trim() : b}`).join('\n\n')}\n\n> **Executive Signal**: Strategic takeaway synthesized for immediate decision-making.`;
+  }
+
+  if (lensKey === 'technical') {
+    const points = rawLines
+      .filter((l) => !l.startsWith('#') && l.length > 8)
+      .slice(0, 6)
+      .map((l) => l.replace(/^[-*•\d+.)\s]+/, '').trim());
+
+    if (points.length === 0) return `# Technical Breakdown\n\n${text}`;
+    return `### Technical Architecture & Systems Breakdown\n\n` +
+      `| Architectural Layer | Technical Specification & Implementation |\n` +
+      `| :--- | :--- |\n` +
+      points.map((p, i) => {
+        const parts = p.split(/[:—–-]/);
+        const name = parts.length > 1 ? parts[0].replace(/\*\*/g, '').trim() : `Layer ${i + 1}`;
+        const desc = parts.length > 1 ? parts.slice(1).join(':').trim() : p;
+        return `| **${name}** | ${desc} |`;
+      }).join('\n');
+  }
+
+  if (lensKey === 'checklist') {
+    const tasks = rawLines
+      .filter((l) => !l.startsWith('#') && !l.startsWith('|') && l.length > 8)
+      .map((l) => l.replace(/^[-*•\d+.)\s]+/, '').replace(/^\[[ x]\]\s*/i, '').trim());
+
+    if (tasks.length === 0) return `# Actionable Checklist\n\n- [ ] Review ${text.slice(0, 60)}...`;
+    return `### Actionable Checklist & Execution Steps\n\n` +
+      tasks.map((t, i) => `- [ ] **Step ${i + 1}**: ${t}`).join('\n') +
+      `\n\n*Tip: Use "Convert to Tasks" below to track these items in your active workflow.*`;
+  }
+
+  if (lensKey === 'matrix') {
+    const items = rawLines
+      .filter((l) => !l.startsWith('#') && l.length > 8)
+      .slice(0, 6)
+      .map((l) => l.replace(/^[-*•\d+.)\s]+/, '').trim());
+
+    if (items.length === 0) return text;
+    return `### Competitive & Strategic Evaluation Matrix\n\n` +
+      `| Dimension / Metric | Finding & Status | Strategic Impact |\n` +
+      `| :--- | :--- | :--- |\n` +
+      items.map((item, i) => {
+        const parts = item.split(/[:—–-]/);
+        const param = parts.length > 1 ? parts[0].replace(/\*\*/g, '').trim() : `Dimension ${i + 1}`;
+        const details = parts.length > 1 ? parts.slice(1).join(':').trim() : item;
+        const impact = i % 2 === 0 ? 'High Priority' : 'Strategic Advantage';
+        return `| **${param}** | ${details} | ${impact} |`;
+      }).join('\n');
+  }
+
+  return text;
+};
 
 const POPULAR_PULL_MODELS = [
   { name: 'gemma3:1b', size: '1.2 GB', desc: 'Ultra-fast lightweight Google Gemma 3' },
@@ -250,27 +327,37 @@ export const BrowserResearchPanel = ({
   const [isExtractingActionItems, setIsExtractingActionItems] = useState(false);
   const prevTabKeyRef = useRef(null);
 
-  // Dismiss open three-dot menus on outside click
+  // Unified outside-click dismissal for all floating menus, lens selectors, and toolbars
   useEffect(() => {
     const handleOutsideClick = (e) => {
+      // 1. Message three-dot action dropdowns
+      if (openActionDropdownIdx !== null && !e.target.closest('[data-action-dropdown="true"]')) {
+        setOpenActionDropdownIdx(null);
+      }
+      // 2. Message clarifying extraction lens dropdown
+      if (clarifyingDropdownMsgIdx !== null && !e.target.closest('[data-lens-dropdown="true"]')) {
+        setClarifyingDropdownMsgIdx(null);
+      }
+      // 3. Message overflow context menu
       if (openMenuIdx !== null && !e.target.closest('[data-message-menu="true"]')) {
         setOpenMenuIdx(null);
       }
-    };
-    document.addEventListener('pointerdown', handleOutsideClick);
-    return () => document.removeEventListener('pointerdown', handleOutsideClick);
-  }, [openMenuIdx]);
-
-  // Dismiss slash menu on outside click
-  useEffect(() => {
-    const handleOutsideSlash = (e) => {
+      // 4. Model picker dropdown
+      if (isModelPickerOpen && modelPickerRef.current && !modelPickerRef.current.contains(e.target)) {
+        setIsModelPickerOpen(false);
+      }
+      // 5. Plus attachments menu
+      if (isPlusMenuOpen && plusMenuRef.current && !plusMenuRef.current.contains(e.target)) {
+        setIsPlusMenuOpen(false);
+      }
+      // 6. Slash commands menu
       if (showSlashMenu && slashMenuRef.current && !slashMenuRef.current.contains(e.target) && !chatInputRef.current?.contains(e.target)) {
         setShowSlashMenu(false);
       }
     };
-    document.addEventListener('pointerdown', handleOutsideSlash);
-    return () => document.removeEventListener('pointerdown', handleOutsideSlash);
-  }, [showSlashMenu]);
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+  }, [openActionDropdownIdx, clarifyingDropdownMsgIdx, openMenuIdx, isModelPickerOpen, isPlusMenuOpen, showSlashMenu]);
 
   const currentTabKey = activeTab?.id || activeTab?.url || 'default_tab';
 
@@ -2445,7 +2532,7 @@ Always answer helpfully, clearly, and concisely.`;
             }`}
             title="Chat History & Past Conversations"
           >
-            <History size={14} />
+            <History size={14} strokeWidth={1.5} />
           </button>
 
           <button
@@ -2457,7 +2544,7 @@ Always answer helpfully, clearly, and concisely.`;
             className="p-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-white/[0.06] transition-all cursor-pointer"
             title="New Chat (Clear thread for active page)"
           >
-            <MessageSquarePlus size={14} />
+            <MessageSquarePlus size={14} strokeWidth={1.5} />
           </button>
 
           <button
@@ -2487,7 +2574,7 @@ Always answer helpfully, clearly, and concisely.`;
               className="w-full flex items-center justify-between px-2.5 py-1.5 text-[10px] font-medium text-slate-400 hover:text-slate-200 cursor-pointer"
             >
               <div className="flex items-center gap-1.5 truncate">
-                <Sparkles size={11} className="text-violet-400 shrink-0" />
+                <PageContextIcon size={11} className="text-violet-400 shrink-0" />
                 <span className="truncate">Page Context: <strong className="text-slate-200">{summary.domain}</strong></span>
               </div>
               <span className="text-[9px] text-slate-500 font-mono flex items-center gap-1 shrink-0">
@@ -2724,10 +2811,37 @@ Always answer helpfully, clearly, and concisely.`;
                             </div>
                           )}
 
+                          {/* Active Lens Indicator Badge */}
+                          {msg.sender !== 'user' && selectedLensPerMsg[idx] && (
+                            <div className="flex items-center justify-between px-2.5 py-1 mb-2.5 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-[10.5px] text-indigo-200 animate-in fade-in duration-150">
+                              <span className="flex items-center gap-1.5 font-medium">
+                                <span className="text-indigo-400 flex items-center">{EXTRACTION_LENSES.find((l) => l.key === selectedLensPerMsg[idx])?.icon}</span>
+                                <span>Viewing through <strong>{EXTRACTION_LENSES.find((l) => l.key === selectedLensPerMsg[idx])?.label}</strong> lens</span>
+                              </span>
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setSelectedLensPerMsg((prev) => {
+                                    const n = { ...prev };
+                                    delete n[idx];
+                                    return n;
+                                  });
+                                  if (showToast) showToast('Reset to standard perspective');
+                                }}
+                                className="text-indigo-300 hover:text-white px-1.5 py-0.5 rounded hover:bg-white/10 flex items-center gap-1 cursor-pointer transition-colors"
+                                title="Reset to Original Perspective"
+                              >
+                                <X size={10} />
+                                <span className="text-[9.5px]">Reset</span>
+                              </button>
+                            </div>
+                          )}
+
                           {msg.sender === 'user' ? (
                             <div className="whitespace-pre-wrap font-normal text-slate-50 text-[12px] break-words break-all [overflow-wrap:anywhere]">{msg.text}</div>
                           ) : (
-                            <BrowserMarkdownRenderer content={msg.text} />
+                            <BrowserMarkdownRenderer content={selectedLensPerMsg[idx] ? formatContentWithLens(msg.text, selectedLensPerMsg[idx]) : msg.text} />
                           )}
 
                           {msg.isStreaming && (
@@ -3007,31 +3121,9 @@ Always answer helpfully, clearly, and concisely.`;
 
                           {/* CONTEXTUAL ONE-TAP TOOL ACTION CHIPS */}
                           {msg.sender === 'agent' && !msg.isStreaming && !msg.isError && (() => {
-                            const LENSES = [
-                              { key: 'executive', label: 'Executive Overview', icon: '🎯' },
-                              { key: 'technical', label: 'Technical Breakdown', icon: '⚙️' },
-                              { key: 'checklist', label: 'Actionable Checklist', icon: '✅' },
-                              { key: 'matrix', label: 'Competitive Matrix', icon: '📊' },
-                            ];
-
                             const activeLens = selectedLensPerMsg[idx] || null;
                             const isClarifyOpen = clarifyingDropdownMsgIdx === idx;
-
-                            /**
-                             * Augments raw message text with the selected lens framing.
-                             * The LLM-extracted text is re-prefixed so the dynamic parsers
-                             * pick up the correct structural pattern.
-                             */
-                            const getLensText = (text) => {
-                              if (!activeLens) return text;
-                              const prefixMap = {
-                                executive: `# Executive Overview\n${text}`,
-                                technical: `# Technical Breakdown\n${text}`,
-                                checklist: text.split('\n').filter(Boolean).map((l, i) => `${i + 1}. ${l.replace(/^[-*•]\s*/, '').replace(/^\d+[.)]\s*/, '')}`).join('\n'),
-                                matrix: text,
-                              };
-                              return prefixMap[activeLens] || text;
-                            };
+                            const getLensText = (text) => formatContentWithLens(text, activeLens);
 
                             return (
                               <div className="flex flex-col gap-1.5 mt-2.5 pt-2 border-t border-white/[0.06]">
@@ -3040,7 +3132,7 @@ Always answer helpfully, clearly, and concisely.`;
                                   <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">Actions:</span>
 
                                   {/* Clarifying Lens Selector */}
-                                  <div className="relative">
+                                  <div data-lens-dropdown="true" className="relative">
                                     <button
                                       type="button"
                                       onPointerDown={(e) => {
@@ -3048,14 +3140,14 @@ Always answer helpfully, clearly, and concisely.`;
                                         setClarifyingDropdownMsgIdx((prev) => (prev === idx ? null : idx));
                                         setOpenActionDropdownIdx(null);
                                       }}
-                                      className={`px-2 py-0.5 rounded-md border text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                                      className={`px-2 py-0.5 rounded-md border text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                                         activeLens
                                           ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
                                           : 'bg-white/[0.04] border-white/[0.10] text-slate-400 hover:text-slate-200 hover:bg-white/[0.08]'
                                       }`}
                                     >
-                                      <span>{activeLens ? LENSES.find(l => l.key === activeLens)?.icon : '🔍'}</span>
-                                      <span>{activeLens ? LENSES.find(l => l.key === activeLens)?.label : 'Select Lens'}</span>
+                                      <span className="flex items-center text-indigo-400">{activeLens ? EXTRACTION_LENSES.find(l => l.key === activeLens)?.icon : <LensSelectIcon size={11} />}</span>
+                                      <span>{activeLens ? EXTRACTION_LENSES.find(l => l.key === activeLens)?.label : 'Select Lens'}</span>
                                       <ChevronDown size={9} className="opacity-60" />
                                     </button>
 
@@ -3065,7 +3157,7 @@ Always answer helpfully, clearly, and concisely.`;
                                         className="absolute left-0 bottom-full mb-1.5 w-48 rounded-xl bg-[#181a26] border border-white/10 shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
                                       >
                                         <p className="px-2.5 py-1 text-[9.5px] font-semibold uppercase tracking-widest text-slate-500">Extraction Lens</p>
-                                        {LENSES.map((lens) => (
+                                        {EXTRACTION_LENSES.map((lens) => (
                                           <button
                                             key={lens.key}
                                             type="button"
@@ -3073,6 +3165,7 @@ Always answer helpfully, clearly, and concisely.`;
                                               e.preventDefault();
                                               setSelectedLensPerMsg((prev) => ({ ...prev, [idx]: lens.key }));
                                               setClarifyingDropdownMsgIdx(null);
+                                              if (showToast) showToast(`Applied "${lens.label}" perspective`);
                                             }}
                                             className={`w-full px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors flex items-center gap-2 text-left cursor-pointer ${
                                               activeLens === lens.key
@@ -3080,7 +3173,7 @@ Always answer helpfully, clearly, and concisely.`;
                                                 : 'hover:bg-white/[0.06] text-slate-300 hover:text-slate-100'
                                             }`}
                                           >
-                                            <span>{lens.icon}</span>
+                                            <span className="flex items-center text-indigo-400">{lens.icon}</span>
                                             <span>{lens.label}</span>
                                           </button>
                                         ))}
@@ -3091,6 +3184,7 @@ Always answer helpfully, clearly, and concisely.`;
                                               e.preventDefault();
                                               setSelectedLensPerMsg((prev) => { const n = { ...prev }; delete n[idx]; return n; });
                                               setClarifyingDropdownMsgIdx(null);
+                                              if (showToast) showToast('Reset to standard perspective');
                                             }}
                                             className="w-full mt-0.5 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.04] text-slate-500 hover:text-slate-400 text-[10px] flex items-center gap-1.5 border-t border-white/[0.05] cursor-pointer"
                                           >
@@ -3150,7 +3244,7 @@ Always answer helpfully, clearly, and concisely.`;
                                   </button>
 
                                   {/* 3-Dot Overflow Actions Menu */}
-                                  <div className="relative">
+                                  <div data-action-dropdown="true" className="relative">
                                     <button
                                       type="button"
                                       onPointerDown={(e) => {

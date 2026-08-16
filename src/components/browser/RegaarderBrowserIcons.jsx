@@ -396,6 +396,122 @@ export const BrowserPrintIcon = ({ size = 16, className = '', strokeWidth = 1.5,
   </svg>
 );
 
+// 20. PAGE CONTEXT ICON: Regaarder custom "AI is reading this page" glyph
+// Metaphor: A rounded document frame (structured page) with an inward AI scan arc
+// sweeping from the top-right corner toward a filled focal node at center —
+// communicating "AI has parsed and understood this page context".
+export const PageContextIcon = ({ size = 16, className = '', strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Rounded document outer frame */}
+    <rect x="4" y="3" width="12" height="16" rx="2" />
+    {/* Page content lines — structural document strokes */}
+    <line x1="7" y1="8" x2="13" y2="8" />
+    <line x1="7" y1="11" x2="13" y2="11" />
+    <line x1="7" y1="14" x2="10.5" y2="14" />
+    {/* AI scan arc: sweeps inward from top-right toward the focal node */}
+    <path d="M18 5.5 A7 7 0 0 1 11.5 13" opacity="0.55" />
+    {/* Regaarder focal intelligence node — the AI "lock-on" point */}
+    <circle cx="11.5" cy="13" r="1.1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+// 21. LENS: EXECUTIVE OVERVIEW — Precision reticle / strategic lock-on
+// Metaphor: Two concentric circles with four cardinal tick marks and a Regaarder
+// focal node at center — "lock onto the executive signal within the noise."
+export const LensExecutiveIcon = ({ size = 12, className = '', strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Outer reticle ring */}
+    <circle cx="12" cy="12" r="8" />
+    {/* Inner precision ring */}
+    <circle cx="12" cy="12" r="4" />
+    {/* Four cardinal tick marks */}
+    <line x1="12" y1="4" x2="12" y2="8" />
+    <line x1="12" y1="16" x2="12" y2="20" />
+    <line x1="4" y1="12" x2="8" y2="12" />
+    <line x1="16" y1="12" x2="20" y2="12" />
+    {/* Regaarder focal lock-on node */}
+    <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+// 22. LENS: TECHNICAL BREAKDOWN — Layered architecture stack
+// Metaphor: Three stacked horizontal planes (layers) with connecting vertical pillars —
+// "peel back the technical layers; understand the structural architecture."
+export const LensTechnicalIcon = ({ size = 12, className = '', strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Top layer plane */}
+    <rect x="4.5" y="4.5" width="15" height="4" rx="1" />
+    {/* Middle layer plane */}
+    <rect x="4.5" y="10" width="15" height="4" rx="1" />
+    {/* Bottom layer plane */}
+    <rect x="4.5" y="15.5" width="15" height="4" rx="1" />
+    {/* Left connecting pillar */}
+    <line x1="8" y1="8.5" x2="8" y2="10" />
+    {/* Right connecting pillar */}
+    <line x1="16" y1="8.5" x2="16" y2="10" />
+    <line x1="8" y1="14" x2="8" y2="15.5" />
+    <line x1="16" y1="14" x2="16" y2="15.5" />
+  </svg>
+);
+
+// 23. LENS: SELECT LENS (idle / fallback state)
+// Metaphor: A magnifier ring with a precision focal node and crisp handle —
+// "activate your analysis lens; choose how to read this content."
+export const LensSelectIcon = ({ size = 12, className = '', strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Lens body ring */}
+    <circle cx="10.5" cy="10.5" r="6.5" />
+    {/* Handle */}
+    <line x1="15.5" y1="15.5" x2="20.5" y2="20.5" />
+    {/* Regaarder focal node at center of lens */}
+    <circle cx="10.5" cy="10.5" r="1.1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 // Export map for easy lookup
 export const RegaarderBrowserIconMap = {
   Home: BrowserHomeIcon,
@@ -416,7 +532,11 @@ export const RegaarderBrowserIconMap = {
   Record: BrowserRecordIcon,
   Ellipsis: BrowserEllipsisIcon,
   Utilities: BrowserUtilitiesIcon,
-  Print: BrowserPrintIcon
+  Print: BrowserPrintIcon,
+  PageContext: PageContextIcon,
+  LensExecutive: LensExecutiveIcon,
+  LensTechnical: LensTechnicalIcon,
+  LensSelect: LensSelectIcon
 };
 
 export default RegaarderBrowserIconMap;

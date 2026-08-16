@@ -425,10 +425,39 @@ export const PopoverWindowContainer = () => {
                 }
               }}
               onOpenSendToSheets={() => setPopoverType('sendToSheets')}
-              onSaveToMemory={() => {}}
-              onSendToWhiteboard={() => {}}
-              onRunFlowRequested={() => {}}
-              showToast={() => {}}
+              onDirectExportToSheets={(payload) => {
+                if (window.electronAPI?.sendPopoverAction) {
+                  window.electronAPI.sendPopoverAction('sendToSheets', payload);
+                }
+              }}
+              onDirectExportToDeck={(payload) => {
+                if (window.electronAPI?.sendPopoverAction) {
+                  window.electronAPI.sendPopoverAction('sendToDeck', payload);
+                }
+              }}
+              onDirectExportToWhiteboard={(payload) => {
+                if (window.electronAPI?.sendPopoverAction) {
+                  window.electronAPI.sendPopoverAction('sendToWhiteboard', payload);
+                }
+              }}
+              onSaveToMemory={(node) => {
+                if (window.electronAPI?.sendPopoverAction) {
+                  window.electronAPI.sendPopoverAction('saveToMemory', node);
+                }
+              }}
+              onSendToWhiteboard={(data) => {
+                if (window.electronAPI?.sendPopoverAction) {
+                  window.electronAPI.sendPopoverAction('sendToWhiteboard', data);
+                }
+              }}
+              onRunFlowRequested={(flow, initialInputs) => {
+                if (window.electronAPI?.sendPopoverAction) {
+                  window.electronAPI.sendPopoverAction('runFlow', { flow, initialInputs });
+                }
+              }}
+              showToast={(msg) => {
+                console.log('[Popover Toast]:', msg);
+              }}
             />
           </div>
         )}
