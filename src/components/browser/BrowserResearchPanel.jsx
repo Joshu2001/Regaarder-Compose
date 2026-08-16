@@ -2406,6 +2406,9 @@ Always answer helpfully, clearly, and concisely.`;
       tourAutoPlayTimerRef.current = null;
     }
     setActiveSpotlightTour(null);
+    if (window.electronAPI?.setLiveBroadcastEffect) {
+      window.electronAPI.setLiveBroadcastEffect({ active: false });
+    }
     if (showToast) showToast('Exited Spotlight Tour');
   };
 
@@ -2414,6 +2417,16 @@ Always answer helpfully, clearly, and concisely.`;
     if (isRecordingTutorial) return;
     setIsRecordingTutorial(true);
     if (showToast) showToast('Recording live video tutorial...');
+
+    const targetTabId = activeTab?.tabId || activeTab?.id;
+    if (window.electronAPI?.setLiveBroadcastEffect) {
+      window.electronAPI.setLiveBroadcastEffect({
+        tabId: targetTabId,
+        active: true,
+        mode: 'recording',
+        label: 'LIVE TUTORIAL CAPTURE'
+      });
+    }
 
     try {
       let steps = [];
@@ -2465,8 +2478,6 @@ Always answer helpfully, clearly, and concisely.`;
       };
 
       mediaRecorder.start(100);
-
-      const targetTabId = activeTab?.tabId || activeTab?.id;
 
       // Frame capture helper
       const captureFrame = async () => {
@@ -2533,6 +2544,9 @@ Always answer helpfully, clearly, and concisely.`;
       if (showToast) showToast('Video recording completed');
     } finally {
       setIsRecordingTutorial(false);
+      if (window.electronAPI?.setLiveBroadcastEffect) {
+        window.electronAPI.setLiveBroadcastEffect({ tabId: targetTabId, active: false });
+      }
     }
   };
 

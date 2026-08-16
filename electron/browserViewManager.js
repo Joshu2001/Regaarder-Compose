@@ -808,6 +808,126 @@ class BrowserViewManager {
     }
   }
 
+  async setLiveBroadcastEffect(tabId, params = {}) {
+    const { active = true, mode = 'executing', label = 'AI LIVE AGENT' } = params;
+    const tabState = this.tabs.get(tabId);
+    if (!tabState) return { success: false, error: 'Tab not found' };
+
+    const c1 = mode === 'recording' ? '#EF4444' : '#8B5CF6';
+    const c2 = mode === 'recording' ? '#F43F5E' : '#38BDF8';
+    const c3 = mode === 'recording' ? '#FDA4AF' : '#EC4899';
+
+    const script = `
+      (() => {
+        try {
+          const existing = document.getElementById('__regaarder_live_border_beam__');
+          if (!${Boolean(active)}) {
+            if (existing) existing.remove();
+            return { success: true, active: false };
+          }
+
+          if (existing) existing.remove();
+
+          const styleEl = document.createElement('style');
+          styleEl.id = '__regaarder_snake_keyframes__';
+          styleEl.textContent = \`
+            @keyframes __regaarder_snake_spin {
+              0% { transform: translate(-50%, -50%) rotate(0deg); }
+              100% { transform: translate(-50%, -50%) rotate(360deg); }
+            }
+            @keyframes __regaarder_pill_pulse {
+              0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+              50% { opacity: 0.9; transform: translateX(-50%) scale(0.97); }
+            }
+          \`;
+          if (!document.getElementById('__regaarder_snake_keyframes__')) {
+            document.head.appendChild(styleEl);
+          }
+
+          const container = document.createElement('div');
+          container.id = '__regaarder_live_border_beam__';
+          container.style.cssText = \`
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 2147483645;
+            overflow: hidden;
+          \`;
+
+          const beam = document.createElement('div');
+          beam.style.cssText = \`
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 250vw;
+            height: 250vh;
+            background: conic-gradient(
+              from 0deg at 50% 50%,
+              transparent 0deg,
+              ${c1} 30deg,
+              ${c2} 60deg,
+              ${c3} 90deg,
+              transparent 120deg,
+              transparent 360deg
+            );
+            animation: __regaarder_snake_spin 4s linear infinite;
+            filter: drop-shadow(0 0 16px ${c1});
+          \`;
+
+          const innerMask = document.createElement('div');
+          innerMask.style.cssText = \`
+            position: absolute;
+            inset: 3px;
+            background: transparent;
+            border-radius: 8px;
+            box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.2), inset 0 0 20px rgba(0,0,0,0.1);
+          \`;
+
+          const pill = document.createElement('div');
+          pill.style.cssText = \`
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 9999px;
+            background: rgba(15, 16, 26, 0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 16px ${c1}44;
+            color: #FFFFFF;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            animation: __regaarder_pill_pulse 2s ease-in-out infinite;
+          \`;
+
+          pill.innerHTML = '<span style="width: 7px; height: 7px; border-radius: 50%; background: ' + ${JSON.stringify(c1)} + '; box-shadow: 0 0 8px ' + ${JSON.stringify(c1)} + ';"></span><span>' + ${JSON.stringify(label)} + '</span>';
+
+          container.appendChild(beam);
+          container.appendChild(innerMask);
+          container.appendChild(pill);
+          document.body.appendChild(container);
+
+          return { success: true, active: true };
+        } catch (e) {
+          return { success: false, error: e.message };
+        }
+      })()
+    `;
+
+    try {
+      return await tabState.view.webContents.executeJavaScript(script);
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
   setFontZoom(font, size) {
     if (font !== undefined && font !== null) this.currentFont = font;
     if (size !== undefined && size !== null) this.currentFontSize = Number(size);

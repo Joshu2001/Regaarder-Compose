@@ -195,6 +195,15 @@ ipcMain.handle('browser:fetch-url-content', async (event, { url }) => {
   }
 });
 
+ipcMain.handle('browser:set-live-broadcast-effect', async (event, params) => {
+  if (browserViewManager) {
+    const { tabId, ...rest } = params || {};
+    const targetId = tabId || browserViewManager.activeTabId;
+    return await browserViewManager.setLiveBroadcastEffect(targetId, rest);
+  }
+  return { success: false, error: 'Browser manager not initialized' };
+});
+
 ipcMain.handle('browser:set-font-zoom', async (event, { font, size }) => {
   if (browserViewManager) {
     browserViewManager.setFontZoom(font, size);
