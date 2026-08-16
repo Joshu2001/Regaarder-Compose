@@ -3952,6 +3952,18 @@ Always answer helpfully, clearly, and concisely.`;
                                     type="button"
                                     onPointerDown={(e) => {
                                       e.preventDefault();
+                                      handleStartSpotlightTour(null, `Guide: ${summary?.domain || 'Interactive Steps'}`, msg.text);
+                                    }}
+                                    className="px-2 py-0.5 rounded-md bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/40 text-violet-200 text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                                    title="Launch live interactive visual walkthrough on page"
+                                  >
+                                    <Compass size={10} className="text-violet-400" />
+                                    <span>Spotlight Tour</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onPointerDown={(e) => {
+                                      e.preventDefault();
                                       handleExecuteQuickTool('sheet', getLensText(msg.text), idx);
                                     }}
                                     className="px-2 py-0.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 text-emerald-300 text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
