@@ -24,7 +24,7 @@ import {
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
-  , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
+  , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, MapPin, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
 , Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
@@ -47460,6 +47460,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       </div>
                                       <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
                                       <div className="flex items-center gap-1.5">
+                                        <span>Icons:</span>
+                                        {[
+                                          { k: 'mail', I: Mail, l: 'Mail' },
+                                          { k: 'globe', I: Globe, l: 'Web' },
+                                          { k: 'map-pin', I: MapPin, l: 'Pin' },
+                                          { k: 'phone', I: Phone, l: 'Phone' },
+                                          { k: 'sparkles', I: Sparkles, l: 'AI' },
+                                          { k: 'zap', I: Zap, l: 'Zap' },
+                                          { k: 'star', I: Star, l: 'Star' }
+                                        ].map((opt) => (
+                                          <button key={opt.k} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, `${deckSelection.id}_icon`, opt.k); showToast(`Icon: ${opt.l}`); }} className="p-1 rounded hover:bg-slate-200 dark:hover:bg-zinc-700 hover:text-[#7C4DFF]" title={opt.l}>
+                                            <opt.I size={12} />
+                                          </button>
+                                        ))}
+                                      </div>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <div className="flex items-center gap-1.5">
                                         <span>Color:</span>
                                         {['rgba(255,255,255,0.2)', '#00f0ff', '#7C4DFF', '#ec4899', '#10b981', '#f59e0b'].map((c) => (
                                           <button key={c} type="button" onClick={() => updateDeckSlideField(activeDeckSlide?.id, `${deckSelection.id}_bg`, c)} className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-zinc-600 hover:scale-110" style={{ backgroundColor: c }} />
@@ -48511,8 +48528,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                color: '#ffffff',
-                                                fontSize: `${Math.round(size * 0.52)}px`
+                                                color: '#ffffff'
                                               };
                                               if (shape === 'rounded-square') return { ...base, borderRadius: '6px' };
                                               if (shape === 'square') return { ...base, borderRadius: '0px' };
@@ -48538,13 +48554,56 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#0f172a'
                                             ];
 
-                                            const EMOJI_OPTIONS = [
-                                              '✉', '📧', '🌐', '📍', '📞', '⚡', '🚀', '✨', 
-                                              '💡', '🎯', '💎', '🔥', '🏆', '📈', '💻', '📱', '🔗', '⭐'
+                                            // Curated Vector Icons (Executive Tier)
+                                            const VECTOR_ICON_OPTIONS = [
+                                              { key: 'mail', label: 'Email / Mail', icon: Mail },
+                                              { key: 'globe', label: 'Web / Globe', icon: Globe },
+                                              { key: 'map-pin', label: 'Location / Pin', icon: MapPin },
+                                              { key: 'phone', label: 'Phone', icon: Phone },
+                                              { key: 'link', label: 'Link', icon: LinkIcon },
+                                              { key: 'at-sign', label: 'Social / User', icon: AtSign },
+                                              { key: 'sparkles', label: 'Sparkles / AI', icon: Sparkles },
+                                              { key: 'star', label: 'Star', icon: Star },
+                                              { key: 'zap', label: 'Zap / Speed', icon: Zap },
+                                              { key: 'compass', label: 'Compass', icon: Compass },
+                                              { key: 'send', label: 'Send', icon: Send },
+                                              { key: 'shield', label: 'Shield', icon: Shield },
+                                              { key: 'check', label: 'Checkmark', icon: Check },
+                                              { key: 'layers', label: 'Layers', icon: Layers },
+                                              { key: 'cpu', label: 'Tech / CPU', icon: Cpu }
                                             ];
 
+                                            // Helper to render crisp vector icon
+                                            const renderShapeVectorIcon = (rawKey, size, isDiamond = false) => {
+                                              const iconSize = Math.max(10, Math.round(size * 0.52));
+                                              const key = (rawKey || '').toLowerCase();
+
+                                              let IconComp = Mail;
+                                              if (key === 'globe' || key === '🌐' || key === 'web') IconComp = Globe;
+                                              else if (key === 'map-pin' || key === 'mappin' || key === '📍' || key === 'location' || key === 'pin') IconComp = MapPin;
+                                              else if (key === 'phone' || key === '📞') IconComp = Phone;
+                                              else if (key === 'link' || key === '🔗') IconComp = LinkIcon;
+                                              else if (key === 'at-sign' || key === 'atsign' || key === '@') IconComp = AtSign;
+                                              else if (key === 'sparkles' || key === '✨') IconComp = Sparkles;
+                                              else if (key === 'star' || key === '⭐') IconComp = Star;
+                                              else if (key === 'zap' || key === '⚡') IconComp = Zap;
+                                              else if (key === 'compass') IconComp = Compass;
+                                              else if (key === 'send' || key === '🚀') IconComp = Send;
+                                              else if (key === 'shield') IconComp = Shield;
+                                              else if (key === 'check') IconComp = Check;
+                                              else if (key === 'layers') IconComp = Layers;
+                                              else if (key === 'cpu' || key === '💻') IconComp = Cpu;
+                                              else if (key === 'mail' || key === '✉' || key === '📧') IconComp = Mail;
+
+                                              return (
+                                                <span style={{ transform: isDiamond ? 'rotate(-45deg)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                  <IconComp size={iconSize} strokeWidth={2} />
+                                                </span>
+                                              );
+                                            };
+
                                             // Render individual badge helper
-                                            const renderInteractiveBadge = (bId, defaultIcon, defaultEmailField) => {
+                                            const renderInteractiveBadge = (bId, defaultIconKey) => {
                                               const bHidden = activeDeckSlide?.[bId + '_hidden'];
                                               if (bHidden) return null;
                                               const bSelected = deckSelection.type === 'badge' && deckSelection.id === bId;
@@ -48552,7 +48611,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               const bY = activeDeckSlide?.[bId + '_posY'] || 0;
                                               const bSize = activeDeckSlide?.[bId + '_size'] || 20;
                                               const bBg = activeDeckSlide?.[bId + '_bg'] || 'rgba(255,255,255,0.18)';
-                                              const bIcon = activeDeckSlide?.[bId + '_icon'] || defaultIcon;
+                                              const bIconKey = activeDeckSlide?.[bId + '_icon'] || defaultIconKey;
                                               const bShape = activeDeckSlide?.[bId + '_shape'] || 'circle';
 
                                               return (
@@ -48581,11 +48640,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     transition: deckBadgeDrag.isDragging ? 'none' : 'transform 120ms ease-out'
                                                   }}
                                                 >
-                                                  {/* The Geometric Shape Element */}
+                                                  {/* The Geometric Shape Element with Crisp Vector Icon */}
                                                   <div style={getShapeStyle(bShape, bBg, bSize)}>
-                                                    <span style={{ transform: bShape === 'diamond' ? 'rotate(-45deg)' : 'none' }}>
-                                                      {bIcon}
-                                                    </span>
+                                                    {renderShapeVectorIcon(bIconKey, bSize, bShape === 'diamond')}
                                                   </div>
 
                                                   {/* Selection Bounding Corner Handles & Floating Contextual Toolbar */}
@@ -48662,21 +48719,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                                         <div className="w-px h-3 bg-white/20 mx-0.5" />
 
-                                                        {/* Icon / Emoji Popover */}
+                                                        {/* Crisp Vector Icon Popover */}
                                                         <div className="relative">
                                                           <button 
                                                             type="button" 
                                                             onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === bId + '_icon' ? null : bId + '_icon'); }}
-                                                            className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-xs cursor-pointer"
-                                                            title="Change Icon / Emoji"
+                                                            className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-xs cursor-pointer flex items-center gap-1"
+                                                            title="Change Vector Icon"
                                                           >
-                                                            {bIcon}
+                                                            {renderShapeVectorIcon(bIconKey, 14)}
                                                           </button>
                                                           {deckFloatingMenuOpen === bId + '_icon' && (
-                                                            <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-6 gap-1 text-base">
-                                                              {EMOJI_OPTIONS.map((ic) => (
-                                                                <button key={ic} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, `${bId}_icon`, ic); setDeckFloatingMenuOpen(null); }} className="hover:bg-white/10 p-1 rounded text-center cursor-pointer">{ic}</button>
-                                                              ))}
+                                                            <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-52 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5 text-zinc-200">
+                                                              {VECTOR_ICON_OPTIONS.map((opt) => {
+                                                                const IconElement = opt.icon;
+                                                                return (
+                                                                  <button 
+                                                                    key={opt.key} 
+                                                                    type="button" 
+                                                                    onClick={() => { 
+                                                                      updateDeckSlideField(activeDeckSlide?.id, `${bId}_icon`, opt.key); 
+                                                                      setDeckFloatingMenuOpen(null); 
+                                                                      showToast(`Icon set to ${opt.label}`);
+                                                                    }} 
+                                                                    className="hover:bg-white/15 p-1.5 rounded flex items-center justify-center cursor-pointer transition-colors"
+                                                                    title={opt.label}
+                                                                  >
+                                                                    <IconElement size={14} />
+                                                                  </button>
+                                                                );
+                                                              })}
                                                             </div>
                                                           )}
                                                         </div>
@@ -48846,7 +48918,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 <div className="grid grid-cols-3 gap-2 text-[11px] font-medium text-slate-300">
                                                   {/* Column 1: Website / Email */}
                                                   <div className="flex items-center gap-2 relative">
-                                                    {renderInteractiveBadge('badge1', '✉', 'footerEmail')}
+                                                    {renderInteractiveBadge('badge1', 'mail')}
                                                     <span 
                                                       contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                       suppressContentEditableWarning
@@ -48859,7 +48931,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                                   {/* Column 2: Web / Contact */}
                                                   <div className="flex items-center gap-2 relative">
-                                                    {renderInteractiveBadge('badge2', '🌐', 'footerWeb')}
+                                                    {renderInteractiveBadge('badge2', 'globe')}
                                                     <span 
                                                       contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                       suppressContentEditableWarning
@@ -48872,7 +48944,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                                   {/* Column 3: Location / Map */}
                                                   <div className="flex items-center gap-2 relative">
-                                                    {renderInteractiveBadge('badge3', '📍', 'footerLocation')}
+                                                    {renderInteractiveBadge('badge3', 'map-pin')}
                                                     <span 
                                                       contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                       suppressContentEditableWarning
