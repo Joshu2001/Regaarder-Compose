@@ -12254,6 +12254,8 @@ const DEFAULT_DECK_SLIDES = [
   const [deckVectorDrag, setDeckVectorDrag] = useState({ isDragging: false, startX: 0, startY: 0, origX: 0, origY: 0 });
   const [deckPillDrag, setDeckPillDrag] = useState({ isDragging: false, startX: 0, startY: 0, origX: 0, origY: 0 });
   const [deckResizeDrag, setDeckResizeDrag] = useState({ isResizing: false, handle: null, startX: 0, startY: 0, initW: 0, initH: 0, initX: 0, initY: 0, target: null });
+  const [deckBadgeDrag, setDeckBadgeDrag] = useState({ isDragging: false, badgeId: null, startX: 0, startY: 0, origX: 0, origY: 0 });
+  const [deckLineDrag, setDeckLineDrag] = useState({ isDragging: false, startY: 0, origY: 0 });
   const [deckFloatingMenuOpen, setDeckFloatingMenuOpen] = useState(null);
   const [deckSemanticStyle, setDeckSemanticStyle] = useState('Title');
   const [deckTextFont, setDeckTextFont] = useState('Inter');
@@ -31252,6 +31254,47 @@ Respond with a JSON array of slide objects matching the schema.`;
     };
   }, [deckResizeDrag, activeDeckSlide?.id]);
 
+    // Badge dragging lifecycle listener
+  useEffect(() => {
+    if (!deckBadgeDrag.isDragging || !deckBadgeDrag.badgeId) return;
+    const handlePointerMove = (e) => {
+      const dx = e.clientX - deckBadgeDrag.startX;
+      const dy = e.clientY - deckBadgeDrag.startY;
+      const nextX = Math.round(deckBadgeDrag.origX + dx);
+      const nextY = Math.round(deckBadgeDrag.origY + dy);
+      updateDeckSlideField(activeDeckSlide?.id, `${deckBadgeDrag.badgeId}_posX`, nextX);
+      updateDeckSlideField(activeDeckSlide?.id, `${deckBadgeDrag.badgeId}_posY`, nextY);
+    };
+    const handlePointerUp = () => {
+      setDeckBadgeDrag((prev) => ({ ...prev, isDragging: false, badgeId: null }));
+    };
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [deckBadgeDrag, activeDeckSlide?.id]);
+
+  // Line dragging lifecycle listener
+  useEffect(() => {
+    if (!deckLineDrag.isDragging) return;
+    const handlePointerMove = (e) => {
+      const dy = e.clientY - deckLineDrag.startY;
+      const nextY = Math.round(deckLineDrag.origY + dy);
+      updateDeckSlideField(activeDeckSlide?.id, 'footerLinePosY', nextY);
+    };
+    const handlePointerUp = () => {
+      setDeckLineDrag((prev) => ({ ...prev, isDragging: false }));
+    };
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [deckLineDrag, activeDeckSlide?.id]);
+
     // Vector mesh dragging lifecycle listener
   useEffect(() => {
     if (!deckVectorDrag.isDragging) return;
@@ -46512,7 +46555,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             
                             {/* ── CREATE TAB (Default Active Tab with Dynamic Contextual Toolbar) ── */}
                             {deckToolbarTab === 'Create' && (
-                              <div className="w-full flex items-center justify-between gap-3 overflow-visible relative py-0.5">
+                              <div className="w-full flex flex-col gap-1">
+                                <div className="w-full flex items-center justify-between gap-3 overflow-visible relative py-0.5">
                                 {/* Always keep presentation title selector and plus button on the left */}
                                 <div className="flex items-center gap-2 shrink-0">
                                   {/* Active Presentation Title Selector */}
@@ -47360,6 +47404,112 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
                                       );
                                     })
+                                  )}
+                                </div>
+                              </div>
+
+                                {/* ── DOCX-STYLE CONTEXTUAL SECONDARY TOOLBAR STRIP ── */}
+                                <div className="w-full flex items-center justify-between gap-2 px-2.5 py-1 mt-1 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/50 dark:border-zinc-800 text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 animate-in fade-in slide-in-from-top-1 duration-150 overflow-x-auto no-scrollbar">
+                                  {deckSelection.type === 'line' ? (
+                                    /* Secondary Line Inspector */
+                                    <div className="flex items-center gap-3">
+                                      <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5"><Minus size={12} className="text-[#7C4DFF]" /> Divider Line</span>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <div className="flex items-center gap-1.5">
+                                        <span>Color:</span>
+                                        {['rgba(255,255,255,0.2)', '#00f0ff', '#a855f7', '#ec4899', '#ffffff', '#f59e0b'].map((c) => (
+                                          <button key={c} type="button" onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'footerLineColor', c)} className="w-4 h-4 rounded-full border border-slate-300 dark:border-zinc-600 hover:scale-110 transition-transform" style={{ backgroundColor: c }} />
+                                        ))}
+                                      </div>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <div className="flex items-center gap-1.5">
+                                        <span>Thickness:</span>
+                                        {[1, 2, 3, 4].map((t) => (
+                                          <button key={t} type="button" onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'footerLineThickness', t)} className="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-700 hover:bg-violet-100 font-mono text-[10px]">{t}px</button>
+                                        ))}
+                                      </div>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <button type="button" onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'footerLinePosY', 0)} className="hover:text-slate-900 dark:hover:text-white flex items-center gap-1"><RotateCcw size={11} /> Reset Pos</button>
+                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'footerLineHidden', true); setDeckSelection({ type: 'none', id: null }); }} className="text-rose-500 hover:text-rose-600 flex items-center gap-1 ml-2"><Trash2 size={11} /> Delete Line</button>
+                                    </div>
+                                  ) : deckSelection.type === 'badge' ? (
+                                    /* Secondary Badge Inspector */
+                                    <div className="flex items-center gap-3">
+                                      <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5"><Sparkles size={12} className="text-[#7C4DFF]" /> Contact Circle Icon</span>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <div className="flex items-center gap-1.5">
+                                        <span>Quick Icons:</span>
+                                        {['✉', '🌐', '📍', '📞', '⚡', '🚀', '✨', '💡'].map((ic) => (
+                                          <button key={ic} type="button" onClick={() => updateDeckSlideField(activeDeckSlide?.id, `${deckSelection.id}_icon`, ic)} className="hover:scale-110 px-1 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-700">{ic}</button>
+                                        ))}
+                                      </div>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <div className="flex items-center gap-1.5">
+                                        <span>Size:</span>
+                                        {[16, 20, 24, 28].map((s) => (
+                                          <button key={s} type="button" onClick={() => updateDeckSlideField(activeDeckSlide?.id, `${deckSelection.id}_size`, s)} className="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-700 font-mono text-[10px]">{s}px</button>
+                                        ))}
+                                      </div>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, `${deckSelection.id}_hidden`, true); setDeckSelection({ type: 'none', id: null }); }} className="text-rose-500 hover:text-rose-600 flex items-center gap-1"><Trash2 size={11} /> Delete Badge</button>
+                                    </div>
+                                  ) : deckSelection.type === 'pill' ? (
+                                    /* Secondary Pill Inspector */
+                                    <div className="flex items-center gap-3">
+                                      <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5"><Palette size={12} className="text-[#7C4DFF]" /> Pill Shape Gradient</span>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <div className="flex items-center gap-1.5">
+                                        <span>Gradients:</span>
+                                        {[
+                                          { name: 'Dark Cyber', val: 'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)' },
+                                          { name: 'Royal Indigo', val: 'linear-gradient(135deg, #4f46e5, #7c3aed)' },
+                                          { name: 'Electric Cyan', val: 'linear-gradient(135deg, #06b6d4, #3b82f6)' },
+                                          { name: 'Laser Rose', val: 'linear-gradient(135deg, #f43f5e, #ec4899)' },
+                                          { name: 'Emerald', val: 'linear-gradient(135deg, #059669, #10b981)' }
+                                        ].map((g) => (
+                                          <button key={g.name} type="button" onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'pillGradient', g.val)} className="w-4 h-4 rounded-full border border-slate-300 dark:border-zinc-600 hover:scale-110 transition-transform" style={{ background: g.val }} title={g.name} />
+                                        ))}
+                                      </div>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillPosX', 0); updateDeckSlideField(activeDeckSlide?.id, 'pillPosY', 0); updateDeckSlideField(activeDeckSlide?.id, 'pillWidth', 220); showToast('Pill reset'); }} className="hover:text-slate-900 dark:hover:text-white flex items-center gap-1"><RotateCcw size={11} /> Reset Pos</button>
+                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillHidden', true); setDeckSelection({ type: 'none', id: null }); }} className="text-rose-500 hover:text-rose-600 flex items-center gap-1"><Trash2 size={11} /> Delete Shape</button>
+                                    </div>
+                                  ) : deckSelection.type === 'vector' ? (
+                                    /* Secondary Vector Mesh Inspector */
+                                    <div className="flex items-center gap-3">
+                                      <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5"><RegaarderVectorIcon size={12} className="text-[#00f0ff]" /> Vector Wave Glow</span>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <div className="flex items-center gap-1.5">
+                                        <span>Primary:</span>
+                                        {['#00f0ff', '#3b82f6', '#7c4dff', '#a855f7', '#ec4899', '#10b981', '#ffffff'].map((c) => (
+                                          <button key={c} type="button" onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', c)} className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-zinc-600 hover:scale-110" style={{ backgroundColor: c }} />
+                                        ))}
+                                      </div>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <div className="flex items-center gap-1.5">
+                                        <span>Secondary:</span>
+                                        {['#a855f7', '#ec4899', '#00f0ff', '#0ea5e9', '#10b981', '#ffffff'].map((c) => (
+                                          <button key={c} type="button" onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', c)} className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-zinc-600 hover:scale-110" style={{ backgroundColor: c }} />
+                                        ))}
+                                      </div>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', 0); updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', 0); updateDeckSlideField(activeDeckSlide?.id, 'vectorWidth', 580); updateDeckSlideField(activeDeckSlide?.id, 'vectorHeight', 420); showToast('Vector mesh reset'); }} className="hover:text-slate-900 dark:hover:text-white flex items-center gap-1"><RotateCcw size={11} /> Reset Bounds</button>
+                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', true); setDeckSelection({ type: 'none', id: null }); }} className="text-rose-500 hover:text-rose-600 flex items-center gap-1"><Trash2 size={11} /> Delete Mesh</button>
+                                    </div>
+                                  ) : (
+                                    /* Default General Slide Quick Bar (Like in docx write mode) */
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex items-center gap-1">
+                                        <button type="button" onClick={() => { setDeckTextBold(prev => !prev); }} className="px-2 py-0.5 rounded hover:bg-slate-200/70 dark:hover:bg-zinc-700 font-bold">B</button>
+                                        <button type="button" onClick={() => { setDeckTextItalic(prev => !prev); }} className="px-2 py-0.5 rounded hover:bg-slate-200/70 dark:hover:bg-zinc-700 italic">I</button>
+                                        <button type="button" onClick={() => { setDeckTextUnderline(prev => !prev); }} className="px-2 py-0.5 rounded hover:bg-slate-200/70 dark:hover:bg-zinc-700 underline">U</button>
+                                        <button type="button" onClick={() => { setDeckTextStrike(prev => !prev); }} className="px-2 py-0.5 rounded hover:bg-slate-200/70 dark:hover:bg-zinc-700 line-through">S</button>
+                                      </div>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <div className="flex items-center gap-1 text-slate-500 text-xs">
+                                        <span>Tap any text, wave, divider line, or circle badge on the slide to edit directly</span>
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -48326,50 +48476,352 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             })()}
                                           </div>
 
-                                          {/* Bottom Row: 3-column Contact Info Metadata */}
-                                          <div className="grid grid-cols-3 gap-2 pt-4 border-t border-white/10 text-[11px] font-medium text-slate-300 pointer-events-auto">
-                                            <div className="flex items-center gap-1.5">
-                                              <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0 text-[10px]">
-                                                ✉
-                                              </div>
-                                              <span 
-                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                                suppressContentEditableWarning
-                                                onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footerEmail', e.currentTarget.textContent || '')}
-                                                className="outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 truncate cursor-text"
-                                              >
-                                                {activeDeckSlide?.footerEmail || 'www.reallygreatsite.com'}
-                                              </span>
-                                            </div>
+                                          {/* Bottom Row: Interactive Editable Divider Line & Contact Badges */}
+                                          {(() => {
+                                            const isLineHidden = activeDeckSlide?.footerLineHidden;
+                                            const isLineSelected = deckSelection.type === 'line';
+                                            const lineY = activeDeckSlide?.footerLinePosY || 0;
+                                            const lineColor = activeDeckSlide?.footerLineColor || 'rgba(255,255,255,0.15)';
+                                            const lineThick = activeDeckSlide?.footerLineThickness || 1;
+                                            const lineStyle = activeDeckSlide?.footerLineStyle || 'solid';
+                                            const lineWidth = activeDeckSlide?.footerLineWidth || 100;
 
-                                            <div className="flex items-center gap-1.5">
-                                              <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0 text-[10px]">
-                                                🌐
-                                              </div>
-                                              <span 
-                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                                suppressContentEditableWarning
-                                                onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footerWeb', e.currentTarget.textContent || '')}
-                                                className="outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 truncate cursor-text"
-                                              >
-                                                {activeDeckSlide?.footerWeb || 'hello@reallygreatsite.com'}
-                                              </span>
-                                            </div>
+                                            // Badge 1 Config
+                                            const b1Hidden = activeDeckSlide?.badge1_hidden;
+                                            const b1Selected = deckSelection.type === 'badge' && deckSelection.id === 'badge1';
+                                            const b1X = activeDeckSlide?.badge1_posX || 0;
+                                            const b1Y = activeDeckSlide?.badge1_posY || 0;
+                                            const b1Size = activeDeckSlide?.badge1_size || 20;
+                                            const b1Bg = activeDeckSlide?.badge1_bg || 'rgba(255,255,255,0.18)';
+                                            const b1Icon = activeDeckSlide?.badge1_icon || '✉';
 
-                                            <div className="flex items-center gap-1.5">
-                                              <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0 text-[10px]">
-                                                📍
+                                            // Badge 2 Config
+                                            const b2Hidden = activeDeckSlide?.badge2_hidden;
+                                            const b2Selected = deckSelection.type === 'badge' && deckSelection.id === 'badge2';
+                                            const b2X = activeDeckSlide?.badge2_posX || 0;
+                                            const b2Y = activeDeckSlide?.badge2_posY || 0;
+                                            const b2Size = activeDeckSlide?.badge2_size || 20;
+                                            const b2Bg = activeDeckSlide?.badge2_bg || 'rgba(255,255,255,0.18)';
+                                            const b2Icon = activeDeckSlide?.badge2_icon || '🌐';
+
+                                            // Badge 3 Config
+                                            const b3Hidden = activeDeckSlide?.badge3_hidden;
+                                            const b3Selected = deckSelection.type === 'badge' && deckSelection.id === 'badge3';
+                                            const b3X = activeDeckSlide?.badge3_posX || 0;
+                                            const b3Y = activeDeckSlide?.badge3_posY || 0;
+                                            const b3Size = activeDeckSlide?.badge3_size || 20;
+                                            const b3Bg = activeDeckSlide?.badge3_bg || 'rgba(255,255,255,0.18)';
+                                            const b3Icon = activeDeckSlide?.badge3_icon || '📍';
+
+                                            return (
+                                              <div className="flex flex-col gap-3 relative pointer-events-auto select-none mt-auto">
+                                                {/* Interactive Horizontal Divider Line */}
+                                                {!isLineHidden && (
+                                                  <div 
+                                                    onPointerDown={(e) => {
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'line', id: 'footer-divider' });
+                                                      setDeckLineDrag({
+                                                        isDragging: true,
+                                                        startY: e.clientY,
+                                                        origY: lineY
+                                                      });
+                                                    }}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'line', id: 'footer-divider' });
+                                                    }}
+                                                    className={`relative w-full py-2 cursor-ns-resize group transition-all ${
+                                                      isLineSelected ? 'outline outline-1 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/20 rounded-sm' : 'hover:outline-1 hover:outline-dashed hover:outline-white/30'
+                                                    }`}
+                                                    style={{
+                                                      transform: `translateY(${lineY}px)`,
+                                                      transition: deckLineDrag.isDragging ? 'none' : 'transform 120ms ease-out'
+                                                    }}
+                                                  >
+                                                    {/* Selection Handles & Floating Mini-Toolbar for Line */}
+                                                    {isLineSelected && (
+                                                      <>
+                                                        <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border border-[#7C4DFF] rounded-full shadow-md z-30 pointer-events-none" />
+                                                        <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border border-[#7C4DFF] rounded-full shadow-md z-30 pointer-events-none" />
+                                                        
+                                                        {/* Floating Contextual Line Toolbar */}
+                                                        <div className="absolute -top-9 left-4 px-2.5 py-1 rounded-full bg-zinc-900/90 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/15 whitespace-nowrap pointer-events-auto">
+                                                          <Minus size={11} className="text-violet-400" />
+                                                          <span>Divider Line</span>
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                          
+                                                          {/* Line Color Picker Popover */}
+                                                          <div className="relative">
+                                                            <button
+                                                              type="button"
+                                                              onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'lineColor' ? null : 'lineColor'); }}
+                                                              className="w-4 h-4 rounded-full border border-white/40 shadow-xs hover:scale-110 transition-transform cursor-pointer"
+                                                              style={{ backgroundColor: lineColor.includes('rgba') ? '#ffffff' : lineColor }}
+                                                              title="Line Color"
+                                                            />
+                                                            {deckFloatingMenuOpen === 'lineColor' && (
+                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-6 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5">
+                                                                {['rgba(255,255,255,0.2)', '#00f0ff', '#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ffffff', '#64748b', 'rgba(124,77,255,0.6)'].map((hex) => (
+                                                                  <button key={hex} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'footerLineColor', hex); setDeckFloatingMenuOpen(null); }} className="w-6 h-6 rounded-md border border-white/20 hover:scale-110 transition-transform" style={{ backgroundColor: hex }} />
+                                                                ))}
+                                                              </div>
+                                                            )}
+                                                          </div>
+
+                                                          {/* Line Thickness */}
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              const nextT = lineThick >= 4 ? 1 : lineThick + 1;
+                                                              updateDeckSlideField(activeDeckSlide?.id, 'footerLineThickness', nextT);
+                                                              showToast(`Line thickness: ${nextT}px`);
+                                                            }}
+                                                            className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] font-mono cursor-pointer"
+                                                            title="Toggle Thickness"
+                                                          >
+                                                            {lineThick}px
+                                                          </button>
+
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+
+                                                          {/* Reset Line Pos */}
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'footerLinePosY', 0); showToast('Line position reset'); }}
+                                                            className="p-1 hover:bg-white/10 rounded text-zinc-300 hover:text-white"
+                                                            title="Reset position"
+                                                          >
+                                                            <RotateCcw size={11} />
+                                                          </button>
+
+                                                          {/* Delete Line */}
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'footerLineHidden', true); setDeckSelection({ type: 'none', id: null }); showToast('Divider line removed'); }}
+                                                            className="p-1 hover:bg-rose-500/30 text-zinc-400 hover:text-rose-300 rounded transition-colors"
+                                                            title="Delete Line"
+                                                          >
+                                                            <Trash2 size={11} />
+                                                          </button>
+                                                        </div>
+                                                      </>
+                                                    )}
+
+                                                    {/* Actual Rendered Divider Line Bar */}
+                                                    <div 
+                                                      className="w-full transition-all" 
+                                                      style={{
+                                                        height: `${lineThick}px`,
+                                                        backgroundColor: lineColor,
+                                                        borderStyle: lineStyle,
+                                                        width: `${lineWidth}%`
+                                                      }}
+                                                    />
+                                                  </div>
+                                                )}
+
+                                                {/* 3 Contact Info Metadata Columns */}
+                                                <div className="grid grid-cols-3 gap-2 text-[11px] font-medium text-slate-300">
+                                                  {/* Column 1: Website / Email */}
+                                                  <div className="flex items-center gap-2 relative">
+                                                    {!b1Hidden && (
+                                                      <div 
+                                                        onPointerDown={(e) => {
+                                                          e.stopPropagation();
+                                                          setDeckSelection({ type: 'badge', id: 'badge1' });
+                                                          setDeckBadgeDrag({
+                                                            isDragging: true,
+                                                            badgeId: 'badge1',
+                                                            startX: e.clientX,
+                                                            startY: e.clientY,
+                                                            origX: b1X,
+                                                            origY: b1Y
+                                                          });
+                                                        }}
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          setDeckSelection({ type: 'badge', id: 'badge1' });
+                                                        }}
+                                                        className={`relative rounded-full flex items-center justify-center text-white shrink-0 cursor-grab active:cursor-grabbing transition-all ${
+                                                          b1Selected ? 'outline outline-1 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 shadow-md' : 'hover:scale-110'
+                                                        }`}
+                                                        style={{
+                                                          width: `${b1Size}px`,
+                                                          height: `${b1Size}px`,
+                                                          backgroundColor: b1Bg,
+                                                          transform: `translate(${b1X}px, ${b1Y}px)`,
+                                                          fontSize: `${Math.round(b1Size * 0.55)}px`
+                                                        }}
+                                                      >
+                                                        {b1Icon}
+
+                                                        {/* Badge 1 Floating Popover */}
+                                                        {b1Selected && (
+                                                          <div className="absolute -top-11 left-0 px-2.5 py-1 rounded-full bg-zinc-900/90 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/15 whitespace-nowrap pointer-events-auto">
+                                                            <span>Icon/Emoji:</span>
+                                                            <div className="relative">
+                                                              <button type="button" onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'b1Icon' ? null : 'b1Icon'); }} className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-xs">
+                                                                {b1Icon}
+                                                              </button>
+                                                              {deckFloatingMenuOpen === 'b1Icon' && (
+                                                                <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5 text-base">
+                                                                  {['✉', '📧', '🌐', '📍', '📞', '⚡', '🚀', '✨', '💡', '🎯', '💎', '🔥', '🏆', '📈', '💻'].map((ic) => (
+                                                                    <button key={ic} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'badge1_icon', ic); setDeckFloatingMenuOpen(null); }} className="hover:bg-white/10 p-1 rounded text-center">{ic}</button>
+                                                                  ))}
+                                                                </div>
+                                                              )}
+                                                            </div>
+                                                            <button type="button" onClick={(e) => { e.stopPropagation(); const nextS = b1Size >= 28 ? 16 : b1Size + 4; updateDeckSlideField(activeDeckSlide?.id, 'badge1_size', nextS); }} className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] font-mono">{b1Size}px</button>
+                                                            <button type="button" onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'badge1_hidden', true); setDeckSelection({ type: 'none', id: null }); }} className="p-1 hover:bg-rose-500/30 text-zinc-400 hover:text-rose-300 rounded"><Trash2 size={11} /></button>
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    )}
+                                                    <span 
+                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                      suppressContentEditableWarning
+                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footerEmail', e.currentTarget.textContent || '')}
+                                                      className="outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 truncate cursor-text"
+                                                    >
+                                                      {activeDeckSlide?.footerEmail || 'www.reallygreatsite.com'}
+                                                    </span>
+                                                  </div>
+
+                                                  {/* Column 2: Web / Contact */}
+                                                  <div className="flex items-center gap-2 relative">
+                                                    {!b2Hidden && (
+                                                      <div 
+                                                        onPointerDown={(e) => {
+                                                          e.stopPropagation();
+                                                          setDeckSelection({ type: 'badge', id: 'badge2' });
+                                                          setDeckBadgeDrag({
+                                                            isDragging: true,
+                                                            badgeId: 'badge2',
+                                                            startX: e.clientX,
+                                                            startY: e.clientY,
+                                                            origX: b2X,
+                                                            origY: b2Y
+                                                          });
+                                                        }}
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          setDeckSelection({ type: 'badge', id: 'badge2' });
+                                                        }}
+                                                        className={`relative rounded-full flex items-center justify-center text-white shrink-0 cursor-grab active:cursor-grabbing transition-all ${
+                                                          b2Selected ? 'outline outline-1 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 shadow-md' : 'hover:scale-110'
+                                                        }`}
+                                                        style={{
+                                                          width: `${b2Size}px`,
+                                                          height: `${b2Size}px`,
+                                                          backgroundColor: b2Bg,
+                                                          transform: `translate(${b2X}px, ${b2Y}px)`,
+                                                          fontSize: `${Math.round(b2Size * 0.55)}px`
+                                                        }}
+                                                      >
+                                                        {b2Icon}
+
+                                                        {/* Badge 2 Floating Popover */}
+                                                        {b2Selected && (
+                                                          <div className="absolute -top-11 left-0 px-2.5 py-1 rounded-full bg-zinc-900/90 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/15 whitespace-nowrap pointer-events-auto">
+                                                            <span>Icon/Emoji:</span>
+                                                            <div className="relative">
+                                                              <button type="button" onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'b2Icon' ? null : 'b2Icon'); }} className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-xs">
+                                                                {b2Icon}
+                                                              </button>
+                                                              {deckFloatingMenuOpen === 'b2Icon' && (
+                                                                <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5 text-base">
+                                                                  {['🌐', '✉', '📧', '📍', '📞', '⚡', '🚀', '✨', '💡', '🎯', '💎', '🔥', '🏆', '📈', '💻'].map((ic) => (
+                                                                    <button key={ic} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'badge2_icon', ic); setDeckFloatingMenuOpen(null); }} className="hover:bg-white/10 p-1 rounded text-center">{ic}</button>
+                                                                  ))}
+                                                                </div>
+                                                              )}
+                                                            </div>
+                                                            <button type="button" onClick={(e) => { e.stopPropagation(); const nextS = b2Size >= 28 ? 16 : b2Size + 4; updateDeckSlideField(activeDeckSlide?.id, 'badge2_size', nextS); }} className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] font-mono">{b2Size}px</button>
+                                                            <button type="button" onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'badge2_hidden', true); setDeckSelection({ type: 'none', id: null }); }} className="p-1 hover:bg-rose-500/30 text-zinc-400 hover:text-rose-300 rounded"><Trash2 size={11} /></button>
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    )}
+                                                    <span 
+                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                      suppressContentEditableWarning
+                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footerWeb', e.currentTarget.textContent || '')}
+                                                      className="outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 truncate cursor-text"
+                                                    >
+                                                      {activeDeckSlide?.footerWeb || 'hello@reallygreatsite.com'}
+                                                    </span>
+                                                  </div>
+
+                                                  {/* Column 3: Location / Map */}
+                                                  <div className="flex items-center gap-2 relative">
+                                                    {!b3Hidden && (
+                                                      <div 
+                                                        onPointerDown={(e) => {
+                                                          e.stopPropagation();
+                                                          setDeckSelection({ type: 'badge', id: 'badge3' });
+                                                          setDeckBadgeDrag({
+                                                            isDragging: true,
+                                                            badgeId: 'badge3',
+                                                            startX: e.clientX,
+                                                            startY: e.clientY,
+                                                            origX: b3X,
+                                                            origY: b3Y
+                                                          });
+                                                        }}
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          setDeckSelection({ type: 'badge', id: 'badge3' });
+                                                        }}
+                                                        className={`relative rounded-full flex items-center justify-center text-white shrink-0 cursor-grab active:cursor-grabbing transition-all ${
+                                                          b3Selected ? 'outline outline-1 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 shadow-md' : 'hover:scale-110'
+                                                        }`}
+                                                        style={{
+                                                          width: `${b3Size}px`,
+                                                          height: `${b3Size}px`,
+                                                          backgroundColor: b3Bg,
+                                                          transform: `translate(${b3X}px, ${b3Y}px)`,
+                                                          fontSize: `${Math.round(b3Size * 0.55)}px`
+                                                        }}
+                                                      >
+                                                        {b3Icon}
+
+                                                        {/* Badge 3 Floating Popover */}
+                                                        {b3Selected && (
+                                                          <div className="absolute -top-11 left-0 px-2.5 py-1 rounded-full bg-zinc-900/90 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/15 whitespace-nowrap pointer-events-auto">
+                                                            <span>Icon/Emoji:</span>
+                                                            <div className="relative">
+                                                              <button type="button" onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'b3Icon' ? null : 'b3Icon'); }} className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-xs">
+                                                                {b3Icon}
+                                                              </button>
+                                                              {deckFloatingMenuOpen === 'b3Icon' && (
+                                                                <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5 text-base">
+                                                                  {['📍', '🌐', '✉', '📧', '📞', '⚡', '🚀', '✨', '💡', '🎯', '💎', '🔥', '🏆', '📈', '💻'].map((ic) => (
+                                                                    <button key={ic} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'badge3_icon', ic); setDeckFloatingMenuOpen(null); }} className="hover:bg-white/10 p-1 rounded text-center">{ic}</button>
+                                                                  ))}
+                                                                </div>
+                                                              )}
+                                                            </div>
+                                                            <button type="button" onClick={(e) => { e.stopPropagation(); const nextS = b3Size >= 28 ? 16 : b3Size + 4; updateDeckSlideField(activeDeckSlide?.id, 'badge3_size', nextS); }} className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] font-mono">{b3Size}px</button>
+                                                            <button type="button" onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'badge3_hidden', true); setDeckSelection({ type: 'none', id: null }); }} className="p-1 hover:bg-rose-500/30 text-zinc-400 hover:text-rose-300 rounded"><Trash2 size={11} /></button>
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    )}
+                                                    <span 
+                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                      suppressContentEditableWarning
+                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footerLocation', e.currentTarget.textContent || '')}
+                                                      className="outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 truncate cursor-text"
+                                                    >
+                                                      {activeDeckSlide?.footerLocation || '123 Anywhere Street'}
+                                                    </span>
+                                                  </div>
+                                                </div>
                                               </div>
-                                              <span 
-                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                                suppressContentEditableWarning
-                                                onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footerLocation', e.currentTarget.textContent || '')}
-                                                className="outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 truncate cursor-text"
-                                              >
-                                                {activeDeckSlide?.footerLocation || '123 Anywhere Street'}
-                                              </span>
-                                            </div>
-                                          </div>
+                                            );
+                                          })()}
                                         </div>
                                       ) : layout === 'Text & List' ? (
                                         <div className="flex flex-col gap-3 max-w-[85%] pointer-events-auto">
