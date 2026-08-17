@@ -1110,31 +1110,43 @@ ACTIVE WEBPAGE:
     }
 
     prompt += `INSTRUCTIONS:
-1. When asked where to find something or how to navigate, explain the exact steps naturally (e.g. "Click the 'More' menu at the top, then select 'Maps' from the dropdown list").
-2. Answer questions accurately using the visible webpage content.
-3. If asked to perform page actions, output an action block:
+1. Answer questions accurately using the visible webpage content.
+2. If asked to search, navigate, or click, output an action block using ONLY valid browser verbs: ["navigate", "click", "fill", "scroll"].
+NEVER output abstract cognitive verbs like "search", "summarize", or "analyze" as an action.
+
+### POSITIVE ACTION PLAN EXAMPLE:
 \`\`\`action
 {
-  "plan": "Brief explanation",
+  "plan": "Search Google for latest sports news",
   "risk": "low",
   "actions": [
-    { "action": "click", "elementId": "btn_1", "description": "Click element" }
+    { "action": "navigate", "url": "https://www.google.com/search?q=latest+sports+news", "description": "Open sports news search" }
   ]
 }
 \`\`\`
-\`\`\`tool_call
+
+### FORBIDDEN FORMAT (NEVER DO THIS):
+DO NOT output: {"actions": [{"action": "search", "query": "..."}, {"action": "summarize"}]}`;
+
+    // Strict Tool Gating: Only expose workspace tool call format if user explicitly asked for workspace items
+    const isExplicitWorkspaceRequest = /create\s*(?:a\s*)?(?:sheet|table|spreadsheet|document|deck|slide|whiteboard)|export\s*to\s*sheet/i.test(
+      messages[messages.length - 1]?.text || ''
+    );
+
+    if (isExplicitWorkspaceRequest) {
+      prompt += `\n\`\`\`tool_call
 {
-  "tool": "workspace_create_sheet" | "workspace_create_doc" | "workspace_create_deck" | "workspace_create_whiteboard" | "workspace_save_memory",
+  "tool": "workspace_create_sheet" | "workspace_create_doc" | "workspace_create_deck",
   "parameters": {
     "title": "Document or Sheet Title",
     "columns": ["Col A", "Col B", "Col C"],
-    "data": [["Val 1", "Val 2", "Val 3"]],
-    "content": "Rich markdown text...",
-    "slides": [{ "title": "Slide 1", "bullets": ["Point 1", "Point 2"] }]
+    "data": [["Val 1", "Val 2", "Val 3"]]
   }
 }
-\`\`\`
-Always answer helpfully, clearly, and concisely.`;
+\`\`\`\n`;
+    }
+
+    prompt += `\nAlways answer helpfully, clearly, and concisely. Never output fake knowledge cutoff disclaimers or conversational filler.`;
 
     return prompt;
   };
@@ -1166,20 +1178,56 @@ Always answer helpfully, clearly, and concisely.`;
       try {
         const parsed = JSON.parse(match[1].trim());
         if (parsed && (Array.isArray(parsed.actions) || parsed.action)) {
-          const actionList = Array.isArray(parsed.actions) ? parsed.actions : [parsed];
-          return {
-            plan: parsed.plan || 'Automated browser action plan',
-            risk: parsed.risk === 'high' ? 'high' : 'low',
-            status: 'ready',
-            actions: actionList.map((a, i) => ({
+          const rawList = Array.isArray(parsed.actions) ? parsed.actions : [parsed];
+          const sanitizedActions = [];
+
+          rawList.forEach((a, i) => {
+            const actType = (a.action || '').toLowerCase().trim();
+
+            // Sanitize cognitive 'search' intent into executable browser navigate
+            if (actType === 'search' || a.query) {
+              const query = a.query || a.value || a.description || 'latest search';
+              sanitizedActions.push({
+                id: a.id || `act-${i + 1}`,
+                action: 'navigate',
+                url: `https://www.google.com/search?q=${encodeURIComponent(query)}`,
+                description: `Navigate & search for "${query}"`,
+                status: 'idle'
+              });
+              return;
+            }
+
+            // Sanitize cognitive 'summarize' / 'analyze' intent (non-interactive step)
+            if (actType === 'summarize' || actType === 'analyze') {
+              return; // Summarization happens on extracted page content, not as a DOM click
+            }
+
+            // Normal browser actions (click, fill, navigate, scroll)
+            sanitizedActions.push({
               id: a.id || `act-${i + 1}`,
               action: a.action || 'click',
               elementId: a.elementId || a.target,
               value: a.value,
+              url: a.url,
               options: a.options,
-              description: a.description || `${a.action || 'click'} ${a.elementId || ''}`,
+              description: a.description || `${a.action || 'click'} ${a.elementId || a.url || ''}`,
               status: 'idle'
-            })),
+            });
+          });
+
+          return {
+            plan: parsed.plan || 'Automated browser action plan',
+            risk: parsed.risk === 'high' ? 'high' : 'low',
+            status: 'ready',
+            actions: sanitizedActions.length > 0 ? sanitizedActions : [
+              {
+                id: 'act-1',
+                action: 'navigate',
+                url: 'https://www.google.com',
+                description: 'Open Google Search',
+                status: 'idle'
+              }
+            ],
             cleanText: rawText.replace(match[0], '').trim()
           };
         }
@@ -1190,7 +1238,7 @@ Always answer helpfully, clearly, and concisely.`;
 
   // Action Plan Execution Engine
   const executeActionPlan = async (actionPlan, messageIndex) => {
-    if (!actionPlan || !actionPlan.actions || !onExecuteElementAction) return;
+    if (!actionPlan || !actionPlan.actions) return;
 
     onBroadcastEffectChange?.({ active: true, mode: 'executing', label: 'AI LIVE AGENT EXECUTING' });
 
@@ -1223,12 +1271,19 @@ Always answer helpfully, clearly, and concisely.`;
         return copy;
       });
 
-      const res = await onExecuteElementAction({
-        action: step.action,
-        elementId: step.elementId,
-        value: step.value,
-        options: step.options
-      });
+      let res = { success: false };
+
+      if (step.action === 'navigate' && step.url && onNavigateUrl) {
+        onNavigateUrl(step.url);
+        res = { success: true };
+      } else if (onExecuteElementAction) {
+        res = await onExecuteElementAction({
+          action: step.action,
+          elementId: step.elementId,
+          value: step.value,
+          options: step.options
+        });
+      }
 
       const isSuccess = res && res.success;
 
@@ -2245,15 +2300,31 @@ Always answer helpfully, clearly, and concisely.`;
   // Step Extraction Helper for Spotlight Tours and Video Recordings
   const buildSpotlightSteps = (planOrSteps, customTitle, userIntent) => {
     let steps = [];
-    if (planOrSteps && planOrSteps.actions && Array.isArray(planOrSteps.actions) && planOrSteps.actions.length > 0) {
-      steps = planOrSteps.actions.map((act, i) => ({
-        id: act.id || `step-${i + 1}`,
-        action: act.action || 'click',
-        elementId: act.elementId,
-        label: act.description || act.value || `Step ${i + 1}`,
-        description: act.description || `Interact with element #${act.elementId}`,
-        value: act.value
-      }));
+    if (planOrSteps?.actions && Array.isArray(planOrSteps.actions)) {
+      const rawSteps = planOrSteps.actions.map((act, i) => {
+        let label = act.description || act.label || `Step ${i + 1}`;
+        // Clean raw URLs in scroll labels
+        if (label.toLowerCase().startsWith('scroll') && label.includes('http')) {
+          label = 'Scroll search results';
+        }
+        return {
+          id: act.id || `step-${i + 1}`,
+          action: act.action || 'click',
+          elementId: act.elementId,
+          url: act.url,
+          label,
+          description: act.description || `Interact with element #${act.elementId || act.url || ''}`,
+          value: act.value
+        };
+      });
+
+      // Deduplicate consecutive identical scroll steps
+      steps = rawSteps.filter((s, idx) => {
+        if (s.action === 'scroll' && idx > 0 && rawSteps[idx - 1].action === 'scroll') {
+          return false;
+        }
+        return true;
+      });
     } else if (Array.isArray(planOrSteps) && planOrSteps.length > 0) {
       steps = planOrSteps;
     } else if (!userIntent && activeSpotlightTour?.steps?.length > 0) {
@@ -2386,6 +2457,12 @@ Always answer helpfully, clearly, and concisely.`;
     if (!activeSpotlightTour) return;
     const step = activeSpotlightTour.steps[activeSpotlightTour.currentStep];
     if (!step) return;
+
+    if (step.action === 'navigate' && step.url && onNavigateUrl) {
+      if (showToast) showToast(`Navigating: ${step.label || step.url}`);
+      onNavigateUrl(step.url);
+      return;
+    }
 
     if (onExecuteElementAction && step.elementId) {
       if (showToast) showToast(`Executing: ${step.label}`);
@@ -2722,6 +2799,19 @@ Always answer helpfully, clearly, and concisely.`;
     setChatMessages(updatedMessages);
     persistCurrentChatSession(updatedMessages);
     setIsGenerating(true);
+
+    // Proactive Intent-to-Navigation Gating:
+    // If the user asks to search Google or web and we are on an internal dashboard/homepage, navigate immediately
+    const isGoogleSearchIntent = /(?:search\s+(?:on\s+)?google|google\s+search|search\s+web\s+for|look\s+up\s+on\s+google)/i.test(userText);
+    const isInternalPage = !activeTab?.url || activeTab.url.includes('localhost') || activeTab.url.includes('about:blank') || activeTab.url.includes('regaarder');
+    
+    if (isGoogleSearchIntent && isInternalPage && onNavigateUrl) {
+      const match = userText.match(/(?:search\s+(?:on\s+)?google\s+(?:for\s+)?|search\s+for\s+|search\s+)(.*)/i);
+      const query = match ? match[1].replace(/^(?:'|")(.*)(?:'|")$/, '$1').trim() : userText;
+      const targetSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(query || 'TypeScript documentation')}`;
+      if (showToast) showToast('Navigating to Google Search...');
+      onNavigateUrl(targetSearchUrl);
+    }
 
     // Ensure we have the latest page schema before sending
     let currentSchema = pageSchema;
