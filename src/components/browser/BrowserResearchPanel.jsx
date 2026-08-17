@@ -2587,17 +2587,37 @@ DO NOT output: {"actions": [{"action": "search", "query": "..."}, {"action": "su
         }
       };
 
-      // Step-by-step recording execution with live gliding AI cursor
+      // Step-by-step recording execution with live gliding AI cursor & real browser actions
       for (let sIdx = 0; sIdx < steps.length; sIdx++) {
         const step = steps[sIdx];
         setActiveSpotlightTour((prev) => (prev ? { ...prev, currentStep: sIdx } : prev));
-        if (step.elementId && onExecuteElementAction) {
+
+        // 1. Handle Navigation actions
+        if (step.action === 'navigate' && step.url && onNavigateUrl) {
+          onNavigateUrl(step.url);
+          // Wait for new page load before capturing frames
+          await new Promise((r) => setTimeout(r, 1200));
+        }
+        // 2. Handle Scroll actions
+        else if (step.action === 'scroll' && onExecuteElementAction) {
           try {
             await onExecuteElementAction({
-              action: step.action || 'focus',
+              action: 'scroll',
+              direction: 'down',
+              amount: 450
+            });
+            await new Promise((r) => setTimeout(r, 400));
+          } catch (e) {}
+        }
+        // 3. Handle Element Click/Focus/Fill actions
+        else if (step.elementId && onExecuteElementAction) {
+          try {
+            await onExecuteElementAction({
+              action: step.action || 'click',
               elementId: step.elementId,
               value: step.value
             });
+            await new Promise((r) => setTimeout(r, 300));
           } catch (e) {}
         }
 
