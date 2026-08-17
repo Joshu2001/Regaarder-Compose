@@ -344,6 +344,8 @@ export const BrowserResearchPanel = ({
     return [];
   });
   const [inputQuery, setInputQuery] = useState('');
+  const [activePromptMode, setActivePromptMode] = useState(null); // 'tour' | 'video' | null
+  const textareaRef = useRef(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedTextContext, setSelectedTextContext] = useState('');
   const [summary, setSummary] = useState(null);
@@ -2658,6 +2660,8 @@ Always answer helpfully, clearly, and concisely.`;
     if (!rawUserText && attachedFiles.length === 0) return;
 
     const userText = rawUserText || (attachedFiles.length > 0 ? `Analyze attached file(s): ${attachedFiles.map((f) => f.name).join(', ')}` : '');
+    const modeToRun = activePromptMode;
+    setActivePromptMode(null);
 
     if (!textToSend) setInputQuery('');
     setIsPlusMenuOpen(false);
@@ -2879,8 +2883,12 @@ Always answer helpfully, clearly, and concisely.`;
         setServerConnectionStatus('online');
         setIsGenerating(false);
 
-        // Auto-execute if low-risk
-        if (actionPlan && actionPlan.risk === 'low' && finalMessageIdx >= 0) {
+        // Auto-execute if video/tour mode or low-risk action plan
+        if (modeToRun === 'video') {
+          handleRecordVideoTutorial(actionPlan, `Tutorial: ${userText.slice(0, 36)}`);
+        } else if (modeToRun === 'tour') {
+          handleStartSpotlightTour(actionPlan, `Spotlight Tour: ${userText.slice(0, 36)}`, userText);
+        } else if (actionPlan && actionPlan.risk === 'low' && finalMessageIdx >= 0) {
           executeActionPlan(actionPlan, finalMessageIdx);
         } else {
           const isNavigationOrGuide = /how\s*to|where\s*is|find|show\s*me|guide|navigate|access|step/i.test(userText) || /(?:^|\n)\s*(?:\d+\.|\(\d+\)|Step\s*\d+)/i.test(accumulatedReply);
@@ -3009,7 +3017,11 @@ Always answer helpfully, clearly, and concisely.`;
 
       setIsGenerating(false);
 
-      if (cloudActionPlan && cloudActionPlan.risk === 'low' && msgIdx >= 0) {
+      if (modeToRun === 'video') {
+        handleRecordVideoTutorial(cloudActionPlan, `Tutorial: ${userText.slice(0, 36)}`);
+      } else if (modeToRun === 'tour') {
+        handleStartSpotlightTour(cloudActionPlan, `Spotlight Tour: ${userText.slice(0, 36)}`, userText);
+      } else if (cloudActionPlan && cloudActionPlan.risk === 'low' && msgIdx >= 0) {
         executeActionPlan(cloudActionPlan, msgIdx);
       } else {
         const isNavigationOrGuide = /how\s*to|where\s*is|find|show\s*me|guide|navigate|access|step/i.test(userText) || /(?:^|\n)\s*(?:\d+\.|\(\d+\)|Step\s*\d+)/i.test(cloudReply);
@@ -4201,9 +4213,19 @@ Always answer helpfully, clearly, and concisely.`;
                                      type="button"
                                      onPointerDown={(e) => {
                                        e.preventDefault();
-                                       handleStartSpotlightTour(null, `Guide: ${summary?.domain || 'Interactive Steps'}`, msg.text);
+                                       if (msg.actionPlan?.actions?.length > 0) {
+                                         handleStartSpotlightTour(msg.actionPlan, `Guide: ${summary?.domain || 'Interactive Steps'}`, msg.text);
+                                       } else {
+                                         setActivePromptMode((prev) => (prev === 'tour' ? null : 'tour'));
+                                         textareaRef.current?.focus();
+                                         if (showToast) showToast('Spotlight Tour mode armed — type your request');
+                                       }
                                      }}
-                                     className="px-2 py-0.5 rounded-md bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/40 text-violet-200 text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                                     className={`px-2 py-0.5 rounded-md border text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-sm ${
+                                       activePromptMode === 'tour'
+                                         ? 'bg-violet-600/30 border-violet-400 text-violet-100 shadow-[0_0_10px_rgba(139,92,246,0.5)] ring-1 ring-violet-400/40'
+                                         : 'bg-violet-600/20 hover:bg-violet-600/30 border-violet-500/40 text-violet-200'
+                                     }`}
                                      title="Launch live interactive visual walkthrough on page"
                                    >
                                      <Compass size={10} className="text-violet-400" />
@@ -4213,10 +4235,20 @@ Always answer helpfully, clearly, and concisely.`;
                                      type="button"
                                      onPointerDown={(e) => {
                                        e.preventDefault();
-                                       handleRecordVideoTutorial(null, `Walkthrough: ${summary?.domain || 'Page'}`);
+                                       if (msg.actionPlan?.actions?.length > 0) {
+                                         handleRecordVideoTutorial(msg.actionPlan, `Walkthrough: ${summary?.domain || 'Page'}`);
+                                       } else {
+                                         setActivePromptMode((prev) => (prev === 'video' ? null : 'video'));
+                                         textareaRef.current?.focus();
+                                         if (showToast) showToast('Video Tutorial mode armed — type your request');
+                                       }
                                      }}
                                      disabled={isRecordingTutorial}
-                                     className="px-2 py-0.5 rounded-md bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-200 text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                                     className={`px-2 py-0.5 rounded-md border text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-sm ${
+                                       activePromptMode === 'video'
+                                         ? 'bg-rose-500/30 border-rose-400 text-rose-100 shadow-[0_0_10px_rgba(244,63,94,0.5)] ring-1 ring-rose-400/40'
+                                         : 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/30 text-rose-200'
+                                     }`}
                                      title="Record live 60FPS video walkthrough tutorial"
                                    >
                                      <Video size={10} className={isRecordingTutorial ? 'text-rose-400 animate-spin' : 'text-rose-300'} />
@@ -4959,8 +4991,45 @@ Always answer helpfully, clearly, and concisely.`;
 
                 {/* Quick Action Suggestion Chips / Pills */}
                 <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-0.5 overflow-x-auto no-scrollbar">
+                  {/* /tour Mode Pill */}
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      setActivePromptMode((prev) => (prev === 'tour' ? null : 'tour'));
+                      chatInputRef.current?.focus();
+                    }}
+                    className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-mono transition-all cursor-pointer shrink-0 border flex items-center gap-1 ${
+                      activePromptMode === 'tour'
+                        ? 'bg-violet-600/35 border-violet-400 text-violet-100 shadow-[0_0_12px_rgba(139,92,246,0.6)] font-semibold scale-105 ring-1 ring-violet-400/50'
+                        : 'bg-white/[0.04] hover:bg-violet-500/20 text-slate-400 hover:text-violet-200 border-white/[0.08] hover:border-violet-500/30'
+                    }`}
+                    title="Toggle Interactive Spotlight Tour Mode"
+                  >
+                    <Compass size={9} className={activePromptMode === 'tour' ? 'text-violet-300' : 'text-slate-400'} />
+                    <span>/tour</span>
+                  </button>
+
+                  {/* /video Mode Pill */}
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      setActivePromptMode((prev) => (prev === 'video' ? null : 'video'));
+                      chatInputRef.current?.focus();
+                    }}
+                    className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-mono transition-all cursor-pointer shrink-0 border flex items-center gap-1 ${
+                      activePromptMode === 'video'
+                        ? 'bg-rose-500/35 border-rose-400 text-rose-100 shadow-[0_0_12px_rgba(244,63,94,0.6)] font-semibold scale-105 ring-1 ring-rose-400/50'
+                        : 'bg-white/[0.04] hover:bg-rose-500/20 text-slate-400 hover:text-rose-200 border-white/[0.08] hover:border-rose-500/30'
+                    }`}
+                    title="Toggle Live Video Tutorial Recording Mode"
+                  >
+                    <Video size={9} className={activePromptMode === 'video' ? 'text-rose-300' : 'text-slate-400'} />
+                    <span>/video</span>
+                  </button>
+
                   {[
-                    { label: '/tour', isSpecialTour: true },
                     { label: '/summarize', prompt: 'Summarize the key takeaways of this page in 3 concise executive points.' },
                     { label: '/actions', prompt: 'Extract all actionable tasks, checklist items, and next steps from this page.' },
                     { label: '/cite', prompt: 'Generate accurate academic citations for this page in APA, MLA, and Chicago styles.' },
@@ -4971,11 +5040,7 @@ Always answer helpfully, clearly, and concisely.`;
                       type="button"
                       onPointerDown={(e) => {
                         e.preventDefault();
-                        if (chip.isSpecialTour) {
-                          handleStartSpotlightTour(null, `Tour of ${summary?.domain || 'Page'}`);
-                        } else {
-                          handleSendMessage(chip.prompt);
-                        }
+                        handleSendMessage(chip.prompt);
                       }}
                       className="px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-violet-500/20 text-slate-400 hover:text-violet-200 border border-white/[0.08] hover:border-violet-500/30 text-[9.5px] font-mono transition-all cursor-pointer shrink-0"
                     >
@@ -5113,7 +5178,13 @@ Always answer helpfully, clearly, and concisely.`;
                         handleSendMessage();
                       }
                     }}
-                    placeholder={`Ask ${selectedModel.name} or type /command...`}
+                    placeholder={
+                      activePromptMode === 'tour'
+                        ? `Tour mode: What would you like to find on ${summary?.domain || 'this page'}?`
+                        : activePromptMode === 'video'
+                        ? `Video mode: What tutorial should I record on ${summary?.domain || 'this page'}?`
+                        : `Ask ${selectedModel.name} or type /command...`
+                    }
                     className="w-full px-3 py-2 bg-transparent text-xs text-slate-100 placeholder-slate-500 resize-none border-none outline-none focus:outline-none focus:ring-0 leading-relaxed font-normal"
                   />
                 </div>
