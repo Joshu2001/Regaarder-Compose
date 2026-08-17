@@ -1348,6 +1348,16 @@ Always answer helpfully, clearly, and concisely.`;
     };
   }, [activeTab?.id, activeTab?.url]);
 
+  // Reset spotlight tour & live indicators when switching tabs
+  useEffect(() => {
+    setActiveSpotlightTour(null);
+    setIsRecordingTutorial(false);
+    onBroadcastEffectChange?.({ active: false });
+    if (window.electronAPI?.setLiveBroadcastEffect) {
+      window.electronAPI.setLiveBroadcastEffect({ active: false });
+    }
+  }, [activeTab?.id]);
+
   // Message & Session Management Actions
   const handleStartNewChat = () => {
     setChatMessages([]);
@@ -2246,17 +2256,19 @@ Always answer helpfully, clearly, and concisely.`;
       }));
     } else if (Array.isArray(planOrSteps) && planOrSteps.length > 0) {
       steps = planOrSteps;
-    } else if (activeSpotlightTour?.steps?.length > 0) {
+    } else if (!userIntent && activeSpotlightTour?.steps?.length > 0) {
       steps = activeSpotlightTour.steps;
     } else if (pageSchema?.elements && pageSchema.elements.length > 0) {
-      const intentLower = String(userIntent || inputQuery || '').toLowerCase();
+      const intentLower = String(userIntent || '').toLowerCase();
       const allEls = pageSchema.elements.filter((el) => el.label && el.label !== '(unlabeled)');
 
-      // Keyword match
-      const matchedEls = allEls.filter((el) => {
-        const lbl = el.label.toLowerCase();
-        return intentLower && (lbl.includes(intentLower) || intentLower.includes(lbl) || intentLower.split(/\s+/).some((w) => w.length > 2 && lbl.includes(w)));
-      });
+      // Keyword match on active page elements
+      const matchedEls = intentLower
+        ? allEls.filter((el) => {
+            const lbl = el.label.toLowerCase();
+            return lbl.includes(intentLower) || intentLower.includes(lbl) || intentLower.split(/\s+/).some((w) => w.length > 2 && lbl.includes(w));
+          })
+        : [];
 
       if (matchedEls.length > 0) {
         matchedEls.slice(0, 4).forEach((matchedEl, i) => {
@@ -2280,8 +2292,8 @@ Always answer helpfully, clearly, and concisely.`;
           });
         });
       } else {
-        // Fallback to top toolbar/navigation items
-        const primaryNav = allEls.filter((el) => ['transit', 'directions', 'tools', 'search', 'explore', 'more', 'layers', 'saved', 'all', 'menu'].some((k) => el.label.toLowerCase().includes(k))).slice(0, 4);
+        // Fallback to top toolbar/navigation items on the active page
+        const primaryNav = allEls.filter((el) => ['transit', 'directions', 'tools', 'search', 'explore', 'more', 'layers', 'saved', 'all', 'menu', 'images', 'news'].some((k) => el.label.toLowerCase().includes(k))).slice(0, 4);
         const sourceList = primaryNav.length >= 1 ? primaryNav : allEls.slice(0, 4);
         steps = sourceList.map((el, i) => ({
           id: `step-${i + 1}`,
@@ -2294,13 +2306,12 @@ Always answer helpfully, clearly, and concisely.`;
       }
     } else {
       steps = [
-        { id: 'step-1', action: 'highlight', elementId: 'hdr-1', label: 'Page Header & Search Context', description: 'Review the primary search results and query parameters.' },
-        { id: 'step-2', action: 'click', elementId: 'btn-filters', label: 'Refine Filters & Tools', description: 'Click to open advanced date ranges and content filters.' },
-        { id: 'step-3', action: 'highlight', elementId: 'res-1', label: 'Primary AI Findings', description: 'Examine key findings and structured takeaways on this topic.' }
+        { id: 'step-1', action: 'highlight', elementId: 'hdr-1', label: `${activeTab?.title || 'Page'} Overview`, description: 'Review the primary search results and query parameters.' },
+        { id: 'step-2', action: 'click', elementId: 'btn-filters', label: 'Explore Key Options', description: 'Click to explore content and available details.' }
       ];
     }
 
-    const title = customTitle || planOrSteps?.plan || (userIntent ? `Walkthrough: ${userIntent.slice(0, 36)}` : `Tour of ${summary?.domain || 'Page'}`);
+    const title = customTitle || planOrSteps?.plan || (userIntent ? `Walkthrough: ${userIntent.slice(0, 36)}` : `Tour of ${summary?.domain || activeTab?.title || 'Page'}`);
     return { title, steps };
   };
 
