@@ -187,18 +187,18 @@ export const BrowserViewport = ({
               50% { transform: translateX(-50%) scale(0.97); opacity: 0.9; }
             }
             @keyframes __regaarder_viewport_shimmer {
-              0%, 100% { filter: drop-shadow(0 0 6px ${broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'}) drop-shadow(0 0 16px ${broadcastEffect.mode === 'recording' ? '#F43F5E' : '#38BDF8'}); }
-              50% { filter: drop-shadow(0 0 10px ${broadcastEffect.mode === 'recording' ? '#FDA4AF' : '#EC4899'}) drop-shadow(0 0 24px ${broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'}); }
+              0%, 100% { filter: drop-shadow(0 0 6px #8B5CF6) drop-shadow(0 0 16px #A855F7); }
+              50% { filter: drop-shadow(0 0 10px #C084FC) drop-shadow(0 0 24px #8B5CF6); }
             }
           `}</style>
 
           <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style={{ animation: '__regaarder_viewport_shimmer 2.5s ease-in-out infinite' }}>
             <defs>
               <linearGradient id="__regaarder_vp_snake_grad__" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor={broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'} />
-                <stop offset="35%" stopColor={broadcastEffect.mode === 'recording' ? '#F43F5E' : '#38BDF8'} />
-                <stop offset="70%" stopColor={broadcastEffect.mode === 'recording' ? '#FDA4AF' : '#EC4899'} />
-                <stop offset="100%" stopColor={broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'} />
+                <stop offset="0%" stopColor="#8B5CF6" />
+                <stop offset="35%" stopColor="#A855F7" />
+                <stop offset="70%" stopColor="#C084FC" />
+                <stop offset="100%" stopColor="#8B5CF6" />
               </linearGradient>
             </defs>
             {/* Base track border */}
@@ -208,7 +208,7 @@ export const BrowserViewport = ({
               width="996"
               height="996"
               fill="none"
-              stroke={broadcastEffect.mode === 'recording' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(139, 92, 246, 0.25)'}
+              stroke="rgba(139, 92, 246, 0.28)"
               strokeWidth="2"
               vectorEffect="non-scaling-stroke"
             />

@@ -4106,15 +4106,15 @@ Always answer helpfully, clearly, and concisely.`;
                                    </div>
                                  </div>
 
-                                 <div className="flex items-center gap-1.5">
+                                 <div className="flex items-center gap-1.5 shrink-0">
                                    <a
                                      href={msg.videoTutorial.videoUrl}
                                      download="tutorial-walkthrough.webm"
-                                     className="px-2 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.14] text-slate-200 hover:text-white text-[10px] font-medium transition-colors flex items-center gap-1 cursor-pointer border border-white/[0.08]"
-                                     title="Download tutorial video file (.webm)"
+                                     className="px-2.5 py-1 rounded-full bg-violet-600/25 hover:bg-violet-600/40 text-violet-200 hover:text-white text-[10.5px] font-medium transition-all flex items-center gap-1.5 cursor-pointer border border-violet-500/35 hover:border-violet-400 shadow-xs"
+                                     title="Save tutorial video file (.webm)"
                                    >
-                                     <Download size={11} />
-                                     <span>Save Video</span>
+                                     <Download size={11} className="text-violet-300" />
+                                     <span>Save</span>
                                    </a>
                                  </div>
                                 </div>

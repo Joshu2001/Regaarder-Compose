@@ -813,10 +813,10 @@ class BrowserViewManager {
     const tabState = this.tabs.get(tabId);
     if (!tabState) return { success: false, error: 'Tab not found' };
 
-    const c1 = mode === 'recording' ? '#EF4444' : '#8B5CF6';
-    const c2 = mode === 'recording' ? '#F43F5E' : '#38BDF8';
-    const c3 = mode === 'recording' ? '#FDA4AF' : '#EC4899';
-    const bgBorder = mode === 'recording' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(139, 92, 246, 0.25)';
+    const c1 = '#8B5CF6'; // Violet
+    const c2 = '#A855F7'; // Electric Purple
+    const c3 = '#C084FC'; // Shimmer Lavender
+    const bgBorder = 'rgba(139, 92, 246, 0.28)';
 
     const script = `
       (() => {
