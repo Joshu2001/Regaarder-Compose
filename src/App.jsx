@@ -48,6 +48,16 @@ import BrowserWorkspace from './components/browser/BrowserWorkspace';
 import PopoverWindowContainer from './components/browser/PopoverWindowContainer';
 import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 import HelpSupportPanel from './components/HelpSupportPanel';
+
+const RegaarderVectorIcon = ({ size = 13, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <path d="M 3 19 C 7 19, 9 5, 14 5 C 18 5, 20 12, 22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <path d="M 2 14 C 6 14, 8 9, 13 9 C 17 9, 19 16, 21 16" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.6" strokeLinecap="round" />
+    <circle cx="14" cy="5" r="2" fill="currentColor" />
+    <circle cx="3" cy="19" r="1.5" fill="currentColor" fillOpacity="0.7" />
+  </svg>
+);
+
 import TemplateChartVisualizer, { extractTemplateChartData } from './components/TemplateChartVisualizer';
 import CitationPopover from './components/CitationPopover';
 import ContextSourcePreviewModal from './components/ContextSourcePreviewModal';
