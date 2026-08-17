@@ -1170,13 +1170,37 @@ DO NOT output: {"actions": [{"action": "search", "query": "..."}, {"action": "su
     return null;
   };
 
-  // Helper to parse action plans from model responses
+  // Helper to parse action plans from model responses with fault-tolerant JSON auto-repair
   const parseActionPlan = (rawText) => {
     if (!rawText) return null;
-    const match = rawText.match(/```(?:action|json)?\s*([\s\S]*?)\s*```/);
+    const match = rawText.match(/```(?:action|json)?\s*([\s\S]*?)(?:```|$)/);
     if (match && match[1]) {
+      let jsonCandidate = match[1].trim();
+
+      // Auto-repair truncated JSON from micro models (e.g. 0.5B cutting off mid-JSON)
+      if (!jsonCandidate.endsWith('}')) {
+        if (jsonCandidate.includes('"actions": [') && !jsonCandidate.includes(']')) {
+          jsonCandidate += '\n  ]\n}';
+        } else {
+          jsonCandidate += '\n}';
+        }
+      }
+
       try {
-        const parsed = JSON.parse(match[1].trim());
+        let parsed = null;
+        try {
+          parsed = JSON.parse(jsonCandidate);
+        } catch (initialErr) {
+          // Second-pass regex extraction if strict JSON.parse fails on unescaped strings
+          const navMatch = jsonCandidate.match(/"action":\s*"navigate",\s*"url":\s*"([^"]+)"/);
+          if (navMatch) {
+            parsed = {
+              plan: 'Navigate to target URL',
+              risk: 'low',
+              actions: [{ action: 'navigate', url: navMatch[1], description: 'Navigate' }]
+            };
+          }
+        }
         if (parsed && (Array.isArray(parsed.actions) || parsed.action)) {
           const rawList = Array.isArray(parsed.actions) ? parsed.actions : [parsed];
           const sanitizedActions = [];

@@ -800,7 +800,19 @@ class BrowserViewManager {
     const tabState = this.tabs.get(tabId);
     if (!tabState) return { success: false, error: 'Tab not found' };
     try {
-      const image = await tabState.view.webContents.capturePage();
+      const wc = tabState.view.webContents;
+      if (wc.isLoading()) {
+        await new Promise((resolve) => {
+          const onStop = () => {
+            wc.removeListener('did-stop-loading', onStop);
+            resolve();
+          };
+          wc.once('did-stop-loading', onStop);
+          setTimeout(resolve, 1500); // 1.5s fallback
+        });
+      }
+
+      const image = await wc.capturePage();
       const dataUrl = image.toDataURL();
       return { success: true, dataUrl };
     } catch (e) {
