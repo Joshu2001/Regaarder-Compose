@@ -28770,14 +28770,14 @@ Rules:
     openCreationPicker();
   };
 
-  const createRoomExperience = () => {
+  const createRoomExperience = (code) => {
     enterFullscreen();
     setIsDocumentImmersive(true);
     setCreationPickerOpen(false);
     setProductMode('room');
     setRightSidebarOpen(false);
     setLeftSidebarOpen(false);
-    startMeetingNow(generateRoomCode());
+    startMeetingNow(code || generateRoomCode());
   };
 
   const createDmExperience = () => {
@@ -51205,7 +51205,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 if (action.type === 'schedule') {
                   setIsScheduleSessionModalOpen(true);
                 } else {
-                  createRoomExperience();
+                  createRoomExperience(action.code);
                 }
               }
             }} 

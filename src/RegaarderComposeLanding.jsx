@@ -16,6 +16,7 @@ import {
 } from "./components/RegaarderProductIcons";
 
 import RegaarderBrandIcon from "./components/RegaarderBrandIcon";
+import LegalPolicyModal from "./components/LegalPolicyModal";
 
 const products = [
   { title: "Compose", description: "Write and edit documents", icon: ComposeIcon },
@@ -31,6 +32,7 @@ const products = [
 export default function RegaarderComposeLanding({ onLaunch }) {
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const [legalModalTab, setLegalModalTab] = useState(null);
 
   const ITEMS_PER_PAGE = 8;
   const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
@@ -112,17 +114,42 @@ export default function RegaarderComposeLanding({ onLaunch }) {
             </div>
           )}
 
-          {/* Footer with Terms of Service & Legal */}
+          {/* Footer with Terms of Service, Privacy Policy & Legal */}
           <div className="mt-16 flex items-center gap-6 text-xs text-slate-400 select-none">
-            <a href="#/terms" onClick={(e) => { e.preventDefault(); alert("Terms of Service"); }} className="hover:text-slate-600 transition-colors">Terms of Service</a>
+            <button
+              type="button"
+              onClick={() => setLegalModalTab("terms")}
+              className="hover:text-slate-700 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-normal"
+            >
+              Terms of Service
+            </button>
             <span className="w-1 h-1 rounded-full bg-slate-300" />
-            <a href="#/privacy" onClick={(e) => { e.preventDefault(); alert("Privacy Policy"); }} className="hover:text-slate-600 transition-colors">Privacy Policy</a>
+            <button
+              type="button"
+              onClick={() => setLegalModalTab("privacy")}
+              className="hover:text-slate-700 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-normal"
+            >
+              Privacy Policy
+            </button>
             <span className="w-1 h-1 rounded-full bg-slate-300" />
-            <a href="#/legal" onClick={(e) => { e.preventDefault(); alert("Legal Notices"); }} className="hover:text-slate-600 transition-colors">Legal</a>
+            <button
+              type="button"
+              onClick={() => setLegalModalTab("legal")}
+              className="hover:text-slate-700 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-normal"
+            >
+              Legal
+            </button>
           </div>
 
         </div>
       </div>
+
+      {/* Legal & Policy Dialog */}
+      <LegalPolicyModal
+        isOpen={Boolean(legalModalTab)}
+        initialTab={legalModalTab || "terms"}
+        onClose={() => setLegalModalTab(null)}
+      />
 
 
 

@@ -91,8 +91,9 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [roomAIModal.isOpen]);
 
-  const handleLaunch = () => {
-    onLaunch?.({ type: 'action', name: 'Room' });
+  const handleLaunch = (code) => {
+    const targetCode = typeof code === 'string' && code.trim().length > 0 ? code.trim() : (meetingCode.trim() || undefined);
+    onLaunch?.({ type: 'action', name: 'Room', code: targetCode });
   };
 
   const handleSchedule = () => {
