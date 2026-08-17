@@ -3049,11 +3049,14 @@ DO NOT output: {"actions": [{"action": "search", "query": "..."}, {"action": "su
         setIsGenerating(false);
 
         // Auto-execute if video/tour mode or low-risk action plan
-        if (modeToRun === 'video') {
+        const isVideoRequested = modeToRun === 'video' || /video|tutorial|record/i.test(userText);
+        const isTourRequested = modeToRun === 'tour' || /tour|spotlight|walkthrough/i.test(userText);
+
+        if (isVideoRequested) {
           handleRecordVideoTutorial(actionPlan, `Tutorial: ${userText.slice(0, 36)}`, userText);
-        } else if (modeToRun === 'tour') {
+        } else if (isTourRequested) {
           handleStartSpotlightTour(actionPlan, `Spotlight Tour: ${userText.slice(0, 36)}`, userText);
-        } else if (actionPlan && actionPlan.risk === 'low' && finalMessageIdx >= 0) {
+        } else if (actionPlan && finalMessageIdx >= 0) {
           executeActionPlan(actionPlan, finalMessageIdx);
         } else {
           const isNavigationOrGuide = /how\s*to|where\s*is|find|show\s*me|guide|navigate|access|step/i.test(userText) || /(?:^|\n)\s*(?:\d+\.|\(\d+\)|Step\s*\d+)/i.test(accumulatedReply);
