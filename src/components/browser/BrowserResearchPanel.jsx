@@ -2446,7 +2446,7 @@ Always answer helpfully, clearly, and concisely.`;
       isAutoPlaying: true
     });
 
-    onBroadcastEffectChange?.({ active: true, mode: 'recording', label: 'LIVE TUTORIAL CAPTURE' });
+    onBroadcastEffectChange?.({ active: true, mode: 'recording', label: 'Recording Tutorial' });
 
     const targetTabId = activeTab?.tabId || activeTab?.id;
     if (window.electronAPI?.setLiveBroadcastEffect) {
@@ -2454,7 +2454,7 @@ Always answer helpfully, clearly, and concisely.`;
         tabId: targetTabId,
         active: true,
         mode: 'recording',
-        label: 'LIVE TUTORIAL CAPTURE'
+        label: 'Recording Tutorial'
       });
     }
 
@@ -2665,23 +2665,23 @@ Always answer helpfully, clearly, and concisely.`;
 
     // Keep glowing perimeter effect active immediately
     if (modeToRun === 'video') {
-      onBroadcastEffectChange?.({ active: true, mode: 'recording', label: 'LIVE TUTORIAL CAPTURE' });
+      onBroadcastEffectChange?.({ active: true, mode: 'recording', label: 'Recording Tutorial' });
       if (window.electronAPI?.setLiveBroadcastEffect) {
         window.electronAPI.setLiveBroadcastEffect({
           tabId: activeTab?.tabId || activeTab?.id,
           active: true,
           mode: 'recording',
-          label: 'LIVE TUTORIAL CAPTURE'
+          label: 'Recording Tutorial'
         });
       }
     } else if (modeToRun === 'tour') {
-      onBroadcastEffectChange?.({ active: true, mode: 'executing', label: 'AI SPOTLIGHT TOUR' });
+      onBroadcastEffectChange?.({ active: true, mode: 'executing', label: 'Interactive Tour' });
       if (window.electronAPI?.setLiveBroadcastEffect) {
         window.electronAPI.setLiveBroadcastEffect({
           tabId: activeTab?.tabId || activeTab?.id,
           active: true,
           mode: 'executing',
-          label: 'AI SPOTLIGHT TOUR'
+          label: 'Interactive Tour'
         });
       }
     }

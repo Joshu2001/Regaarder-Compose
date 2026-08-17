@@ -813,10 +813,12 @@ class BrowserViewManager {
     const tabState = this.tabs.get(tabId);
     if (!tabState) return { success: false, error: 'Tab not found' };
 
-    const c1 = '#8B5CF6'; // Violet
+    const c1 = '#8B5CF6'; // Violet Accent
     const c2 = '#A855F7'; // Electric Purple
-    const c3 = '#C084FC'; // Shimmer Lavender
-    const bgBorder = 'rgba(139, 92, 246, 0.28)';
+    const c3 = '#7C3AED'; // Deep Violet
+    const bgBorder = 'rgba(139, 92, 246, 0.25)';
+
+    const displayLabel = label.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
     const script = `
       (() => {
@@ -838,7 +840,7 @@ class BrowserViewManager {
             }
             @keyframes __regaarder_pill_pulse {
               0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
-              50% { opacity: 0.9; transform: translateX(-50%) scale(0.97); }
+              50% { opacity: 0.92; transform: translateX(-50%) scale(0.98); }
             }
             @keyframes __regaarder_shimmer {
               0%, 100% { filter: drop-shadow(0 0 6px ${c1}) drop-shadow(0 0 16px ${c2}); }
@@ -864,8 +866,8 @@ class BrowserViewManager {
               <defs>
                 <linearGradient id="__regaarder_snake_grad__" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stop-color="${c1}" />
-                  <stop offset="35%" stop-color="${c2}" />
-                  <stop offset="70%" stop-color="${c3}" />
+                  <stop offset="40%" stop-color="${c2}" />
+                  <stop offset="80%" stop-color="${c3}" />
                   <stop offset="100%" stop-color="${c1}" />
                 </linearGradient>
               </defs>
@@ -888,7 +890,7 @@ class BrowserViewManager {
               />
             </svg>
 
-            <!-- Top Floating Apple-Style Badge -->
+            <!-- Top Floating Apple-Style Dynamic HUD Pill -->
             <div style="
               position: absolute;
               top: 14px;
@@ -896,23 +898,23 @@ class BrowserViewManager {
               transform: translateX(-50%);
               display: flex;
               align-items: center;
-              gap: 6px;
+              gap: 7px;
               padding: 5px 14px;
               border-radius: 9999px;
-              background: rgba(15, 16, 26, 0.92);
-              backdrop-filter: blur(20px);
-              -webkit-backdrop-filter: blur(20px);
-              border: 1px solid rgba(255, 255, 255, 0.15);
-              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px ${c1}55;
+              background: rgba(18, 19, 28, 0.85);
+              backdrop-filter: blur(24px);
+              -webkit-backdrop-filter: blur(24px);
+              border: 1px solid rgba(255, 255, 255, 0.12);
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 14px rgba(139, 92, 246, 0.25);
               color: #FFFFFF;
               font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, sans-serif;
               font-size: 11px;
-              font-weight: 600;
-              letter-spacing: 0.04em;
-              animation: __regaarder_pill_pulse 2s ease-in-out infinite;
+              font-weight: 500;
+              letter-spacing: -0.01em;
+              animation: __regaarder_pill_pulse 2.2s ease-in-out infinite;
             ">
-              <span style="width: 7px; height: 7px; border-radius: 50%; background: ${c1}; box-shadow: 0 0 8px ${c1};"></span>
-              <span>\${${JSON.stringify(label)}}</span>
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: #A855F7; box-shadow: 0 0 8px #A855F7;"></span>
+              <span style="color: rgba(255, 255, 255, 0.95); font-weight: 500;">${displayLabel}</span>
             </div>
           \`;
 

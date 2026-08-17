@@ -229,19 +229,19 @@ export const BrowserViewport = ({
             />
           </svg>
 
-          {/* Top Apple-Style Status Pill */}
+          {/* Top Apple-Style Dynamic HUD Pill */}
           <div
-            className="absolute top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0F101A]/90 backdrop-blur-2xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_16px_rgba(139,92,246,0.25)] text-white text-[11px] font-semibold tracking-wide"
-            style={{ animation: '__regaarder_viewport_pulse 2s ease-in-out infinite' }}
+            className="absolute top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#12131C]/85 backdrop-blur-2xl border border-white/12 shadow-[0_4px_20px_rgba(0,0,0,0.35),0_0_14px_rgba(139,92,246,0.25)] text-white text-[11px] font-medium tracking-tight"
+            style={{ animation: '__regaarder_viewport_pulse 2.2s ease-in-out infinite' }}
           >
             <span
-              className="w-2 h-2 rounded-full animate-ping"
+              className="w-1.5 h-1.5 rounded-full"
               style={{
-                backgroundColor: broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6',
-                boxShadow: `0 0 8px ${broadcastEffect.mode === 'recording' ? '#EF4444' : '#8B5CF6'}`
+                backgroundColor: '#A855F7',
+                boxShadow: '0 0 8px #A855F7'
               }}
             />
-            <span>{broadcastEffect.label || (broadcastEffect.mode === 'recording' ? 'LIVE VIDEO TUTORIAL RECORDING' : 'AI LIVE AGENT ACTIVE')}</span>
+            <span className="text-white/95">{broadcastEffect.label ? broadcastEffect.label.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) : (broadcastEffect.mode === 'recording' ? 'Recording Tutorial' : 'Interactive Tour')}</span>
           </div>
         </div>
       )}
