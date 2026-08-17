@@ -36,7 +36,16 @@ Never transform the instruction phrase itself.
 If command says translate to a language, translate selected_text first; if missing, use full_document.
 Return strict JSON only matching schema.`;
 
-const resolveApiKey = () => {
+const resolveApiKey = (req, body) => {
+  const customKey = String(
+    body?.apiKey ||
+    req?.headers?.['x-gemini-api-key'] ||
+    req?.headers?.['x-api-key'] ||
+    ''
+  ).trim();
+  if (customKey) {
+    return { apiKey: customKey, envKeyName: 'Client-Provided Key' };
+  }
   for (const keyName of ENV_KEY_CANDIDATES) {
     const value = String(process.env[keyName] || '').trim();
     if (value) {
@@ -102,7 +111,7 @@ const resolveModelCandidates = async (apiKey, options = {}) => {
       ? payload.models
           .filter((model) => Array.isArray(model?.supportedGenerationMethods) && model.supportedGenerationMethods.includes('generateContent'))
           .map((model) => String(model?.name || '').replace(/^models\//, '').trim())
-            .filter((name) => name.startsWith('gemini-2.5'))
+          .filter((name) => name.startsWith('gemini-'))
       : [];
 
     const candidateSet = new Set([...dynamic, ...FALLBACK_MODELS]);
@@ -157,49 +166,36 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  const { apiKey, envKeyName } = resolveApiKey();
+  const body = readBody(req);
+  const { apiKey, envKeyName } = resolveApiKey(req, body);
   if (!apiKey) {
     return res.status(500).json({
       ok: false,
-      error: `Server is missing ${ENV_KEY_CANDIDATES.join(' or ')}. Set one of them in Vercel Project Settings -> Environment Variables.`,
+      error: `Gemini API key is missing. Please configure your API key in Settings -> AI & API Keys or set ${ENV_KEY_CANDIDATES.join(' or ')} on the server.`,
     });
-  }
-
-  const body = readBody(req);
-  const task = String(body?.task || '').toLowerCase();
-  
-  let attachments = normalizeAttachments(body?.attachments);
-  if (task === 'transcription' && body?.audio && attachments.length === 0) {
-    attachments = [{
-      name: 'audio.webm',
-      mimeType: 'audio/webm',
-      data: String(body.audio)
-    }];
   }
 
   const legacyPrompt = buildLegacyComposePrompt(body);
   const isLegacyComposeMode = Boolean(legacyPrompt);
 
-  let userPrompt = String(body?.userPrompt || '').trim() || legacyPrompt || '';
-  if (!userPrompt && task === 'transcription') {
-    userPrompt = 'Transcribe this audio accurately. If the audio is silent or contains no speech, respond with exactly: [SILENCE]';
-  }
-
-  let systemPrompt = String(body?.systemPrompt || '').trim() || (isLegacyComposeMode ? COMPOSE_AGENT_SYSTEM_PROMPT : '');
-  if (!systemPrompt && task === 'transcription') {
-    systemPrompt = 'You are an expert audio transcription tool. Output only clean text with proper capitalization and punctuation. If there is no speech in the audio, respond with exactly: [SILENCE].';
-  }
-
+  const userPrompt = String(body?.userPrompt || '').trim() || legacyPrompt || '';
+  const systemPrompt = String(body?.systemPrompt || '').trim() || (isLegacyComposeMode ? COMPOSE_AGENT_SYSTEM_PROMPT : '');
   const schema = body?.schema || (isLegacyComposeMode ? COMPOSE_AGENT_SCHEMA : undefined);
+  const attachments = normalizeAttachments(body?.attachments);
 
   if (!userPrompt) {
     return res.status(400).json({ ok: false, error: 'Missing userPrompt' });
   }
 
-  const modelCandidates = await resolveModelCandidates(apiKey, {
+  const userSelectedModel = String(body?.model || '').trim();
+  const baseCandidates = await resolveModelCandidates(apiKey, {
     attachments,
     task: String(body?.task || '').toLowerCase(),
   });
+  const modelCandidates = userSelectedModel
+    ? [userSelectedModel, ...baseCandidates.filter((m) => m !== userSelectedModel)]
+    : baseCandidates;
+
   let lastError = 'No Gemini model could generate a response.';
 
   for (const modelName of modelCandidates) {

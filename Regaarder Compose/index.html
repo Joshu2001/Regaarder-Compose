@@ -43,6 +43,24 @@
 	</script>
 </head>
 <body>
+	<div id="regaarder-initial-splash" style="position:fixed;inset:0;background:#ffffff;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif;user-select:none;">
+		<img src="/regaarder-logo.png" alt="Regaarder Logo" style="width:120px;height:auto;max-height:120px;object-fit:contain;margin-bottom:28px;filter:drop-shadow(0 10px 25px rgba(124, 58, 237, 0.18));" />
+		<div style="font-size:22px;font-weight:700;color:#0f172a;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+			Regaarder
+			<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;padding:2px 8px;border-radius:6px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;">Compose</span>
+		</div>
+		<div style="font-size:13px;font-weight:500;color:#94a3b8;margin-bottom:32px;">One workspace for all your office needs</div>
+		<div style="width:180px;height:4px;background:#f1f5f9;border-radius:9999px;overflow:hidden;position:relative;">
+			<div style="height:100%;width:30%;background:linear-gradient(90deg,#f97316 0%,#ec4899 50%,#8b5cf6 100%);border-radius:9999px;animation:initialProgress 3s ease-in-out forwards;"></div>
+		</div>
+		<style>
+			@keyframes initialProgress {
+				0% { width: 0%; }
+				50% { width: 60%; }
+				100% { width: 100%; }
+			}
+		</style>
+	</div>
 	<div id="root"></div>
 	<script type="module" src="/src/main.jsx"></script>
 </body>

@@ -7087,6 +7087,32 @@ function AppCore() {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState('account');
+  const [aiProviderConfig, setAiProviderConfig] = useState(() => {
+    try {
+      const saved = localStorage.getItem('regaarder_ai_config');
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return {
+      provider: 'gemini',
+      geminiApiKey: '',
+      claudeApiKey: '',
+      geminiModel: 'gemini-2.5-flash',
+      claudeModel: 'claude-3-7-sonnet-20250219',
+    };
+  });
+  const [aiKeyStatus, setAiKeyStatus] = useState({ testing: false, message: '', usable: null });
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [showClaudeKey, setShowClaudeKey] = useState(false);
+
+  const saveAiProviderConfig = (updates) => {
+    setAiProviderConfig((prev) => {
+      const next = { ...prev, ...updates };
+      try {
+        localStorage.setItem('regaarder_ai_config', JSON.stringify(next));
+      } catch (_) {}
+      return next;
+    });
+  };
   const [imageToolbar, setImageToolbar] = useState({ open: false, top: 0, left: 0, node: null });
   const [tableToolbar, setTableToolbar] = useState({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
   const [tableColorPickerOpen, setTableColorPickerOpen] = useState(false);
@@ -20766,21 +20792,36 @@ function AppCore() {
     return `Source materials to ground the response in:\n${blocks.join('\n\n')}`;
   };
 
-  async function callGemini({ userPrompt, systemPrompt, schema, attachments = [] }) {
+  async function callGemini({ userPrompt, systemPrompt, schema, attachments = [], customModel, customApiKey, customProvider }) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000);
     try {
       setLastAiError('');
+      const provider = customProvider || aiProviderConfig?.provider || 'gemini';
+      const isClaude = provider === 'claude' || provider === 'anthropic';
+      const endpoint = isClaude ? '/api/claude' : '/api/gemini';
+      const apiKey = customApiKey || (isClaude ? aiProviderConfig?.claudeApiKey : aiProviderConfig?.geminiApiKey) || '';
+      const model = customModel || (isClaude ? aiProviderConfig?.claudeModel : aiProviderConfig?.geminiModel) || '';
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (apiKey) {
+        if (isClaude) {
+          headers['x-anthropic-api-key'] = apiKey;
+        } else {
+          headers['x-gemini-api-key'] = apiKey;
+        }
+      }
+
       const encodedAttachments = await encodePromptAttachments(attachments);
-      const response = await fetch('/api/gemini', {
+      const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           userPrompt,
           systemPrompt,
           schema,
+          model: model || undefined,
+          apiKey: apiKey || undefined,
           attachments: encodedAttachments,
         }),
         signal: controller.signal,
@@ -20796,7 +20837,7 @@ function AppCore() {
 
       const text = String(payload?.text || '').trim();
       if (!text) {
-        const reason = 'Gemini returned an empty response.';
+        const reason = `${isClaude ? 'Claude' : 'Gemini'} returned an empty response.`;
         setLastAiError(reason);
         return { error: reason };
       }
@@ -20807,7 +20848,7 @@ function AppCore() {
 
       const parsed = payload?.parsed || parseJsonSafely(text);
       if (!parsed) {
-        const reason = 'Gemini returned invalid JSON for the requested schema.';
+        const reason = `${isClaude ? 'Claude' : 'Gemini'} returned invalid JSON for the requested schema.`;
         setLastAiError(reason);
         return { error: reason };
       }
@@ -20822,32 +20863,49 @@ function AppCore() {
       const isTimeout = _error.name === 'AbortError';
       const reason = isTimeout 
         ? 'AI request timed out after 45 seconds.' 
-        : 'Failed to reach /api/gemini. In local development, run via `vercel dev` or deploy to Vercel.';
+        : 'Failed to reach AI backend. In local development, run via `vercel dev` or deploy to Vercel.';
       setLastAiError(reason);
       return { error: reason };
     }
   };
 
-  const checkAiBackendStatus = async () => {
+  const checkAiBackendStatus = async (providerOverride, keyOverride) => {
     try {
+      const activeProvider = providerOverride || aiProviderConfig?.provider || 'gemini';
+      const activeKey = keyOverride !== undefined ? keyOverride : (activeProvider === 'claude' ? aiProviderConfig?.claudeApiKey : aiProviderConfig?.geminiApiKey);
+      
+      setAiKeyStatus({ testing: true, message: `Testing connection to ${activeProvider === 'claude' ? 'Claude' : 'Gemini'}...`, usable: null });
       setAiBackendStatus({ state: 'checking', message: 'Checking backend status...' });
-      const response = await fetch('/api/ai-status');
+
+      const response = await fetch(`/api/ai-status?provider=${encodeURIComponent(activeProvider)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: activeProvider,
+          apiKey: activeKey || undefined,
+        })
+      });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload?.ok) {
         const reason = payload?.error || `HTTP ${response.status}`;
         setAiBackendStatus({ state: 'error', message: reason });
+        setAiKeyStatus({ testing: false, message: reason, usable: false });
         return;
       }
 
       if (payload.configured && payload.usable) {
-        setAiBackendStatus({ state: 'ok', message: payload.reason || 'Backend key is configured and usable.' });
+        setAiBackendStatus({ state: 'ok', message: payload.reason || 'AI key is configured and usable.' });
+        setAiKeyStatus({ testing: false, message: payload.reason || 'Connected successfully!', usable: true });
       } else if (payload.configured) {
-        setAiBackendStatus({ state: 'error', message: payload.reason || 'Backend key is present but not usable.' });
+        setAiBackendStatus({ state: 'error', message: payload.reason || 'AI key is present but not usable.' });
+        setAiKeyStatus({ testing: false, message: payload.reason || 'Invalid API key or model access restricted.', usable: false });
       } else {
-        setAiBackendStatus({ state: 'error', message: payload.reason || 'Backend is running, but GEMINI_API_KEY or VITE_GEMINI_DEMO_API_KEY is missing.' });
+        setAiBackendStatus({ state: 'error', message: payload.reason || 'API key is missing.' });
+        setAiKeyStatus({ testing: false, message: payload.reason || 'API key is missing.', usable: false });
       }
     } catch (_error) {
       setAiBackendStatus({ state: 'error', message: 'Could not reach /api/ai-status. Use `vercel dev` locally or deploy to Vercel.' });
+      setAiKeyStatus({ testing: false, message: 'Could not reach backend status endpoint.', usable: false });
     }
   };
 
@@ -49392,6 +49450,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="flex flex-col gap-1.5 flex-1">
                 <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Account</button>
                 <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Personalization</button>
+                <button onClick={() => setSettingsTab('ai_models')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'ai_models' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>AI & API Keys</button>
                 <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>General</button>
               </div>
             </div>
@@ -49576,6 +49635,211 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           />
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {settingsTab === 'ai_models' && (
+                <div className="max-w-[540px]">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-zinc-100 tracking-tight">AI & API Keys</h2>
+                    <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800">
+                      Browser-Stored
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-slate-500 dark:text-zinc-400 mb-6 leading-relaxed">
+                    Provide your own API keys to run Gemini or Claude directly from your browser. Keys are securely stored in your local browser storage.
+                  </p>
+
+                  {/* Active AI Provider Switcher */}
+                  <div className="mb-6 p-1 bg-slate-100 dark:bg-zinc-800 rounded-xl flex items-center gap-1 border border-slate-200/80 dark:border-zinc-700">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        saveAiProviderConfig({ provider: 'gemini' });
+                        checkAiBackendStatus('gemini');
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${aiProviderConfig.provider === 'gemini' ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'}`}
+                    >
+                      <Sparkles size={14} className={aiProviderConfig.provider === 'gemini' ? 'text-violet-600' : 'text-slate-400'} />
+                      Google Gemini
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        saveAiProviderConfig({ provider: 'claude' });
+                        checkAiBackendStatus('claude');
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${aiProviderConfig.provider === 'claude' ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'}`}
+                    >
+                      <Cpu size={14} className={aiProviderConfig.provider === 'claude' ? 'text-amber-600' : 'text-slate-400'} />
+                      Anthropic Claude
+                    </button>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Google Gemini Configuration Card */}
+                    <div className={`p-5 rounded-2xl border transition-all ${aiProviderConfig.provider === 'gemini' ? 'bg-white dark:bg-zinc-900/90 border-violet-200 dark:border-violet-900/60 shadow-sm' : 'bg-slate-50/50 dark:bg-zinc-900/30 border-slate-200 dark:border-zinc-800 opacity-70'}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-violet-100 dark:bg-violet-950 flex items-center justify-center text-violet-600 dark:text-violet-400">
+                            <Sparkles size={13} />
+                          </div>
+                          <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Google Gemini API Key</h3>
+                        </div>
+                        {aiProviderConfig.geminiApiKey ? (
+                          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 size={12} /> Key Saved
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-medium text-slate-400">Optional (Uses server key if empty)</span>
+                        )}
+                      </div>
+
+                      <div className="relative mb-3">
+                        <input
+                          type={showGeminiKey ? 'text' : 'password'}
+                          value={aiProviderConfig.geminiApiKey || ''}
+                          onChange={(e) => saveAiProviderConfig({ geminiApiKey: e.target.value.trim() })}
+                          placeholder="Paste Gemini API Key (AIzaSy...)"
+                          className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 pr-20 text-[13px] font-mono text-slate-800 dark:text-zinc-100 placeholder-slate-400 outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all"
+                        />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowGeminiKey(!showGeminiKey)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors"
+                            title={showGeminiKey ? 'Hide key' : 'Show key'}
+                          >
+                            {showGeminiKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          {aiProviderConfig.geminiApiKey && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                saveAiProviderConfig({ geminiApiKey: '' });
+                                showToast('Gemini API key cleared');
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                              title="Clear Key"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Gemini Model Selector */}
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <label className="text-[12px] font-medium text-slate-600 dark:text-zinc-400">Gemini Model:</label>
+                        <select
+                          value={aiProviderConfig.geminiModel || 'gemini-2.5-flash'}
+                          onChange={(e) => saveAiProviderConfig({ geminiModel: e.target.value })}
+                          className="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-500"
+                        >
+                          <option value="gemini-2.5-flash">gemini-2.5-flash (Fast & Recommended)</option>
+                          <option value="gemini-2.5-pro">gemini-2.5-pro (Deep Reasoning)</option>
+                          <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                          <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Anthropic Claude Configuration Card */}
+                    <div className={`p-5 rounded-2xl border transition-all ${aiProviderConfig.provider === 'claude' ? 'bg-white dark:bg-zinc-900/90 border-amber-200 dark:border-amber-900/60 shadow-sm' : 'bg-slate-50/50 dark:bg-zinc-900/30 border-slate-200 dark:border-zinc-800 opacity-70'}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-950 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                            <Cpu size={13} />
+                          </div>
+                          <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Anthropic Claude API Key</h3>
+                        </div>
+                        {aiProviderConfig.claudeApiKey ? (
+                          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 size={12} /> Key Saved
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-medium text-slate-400">Optional</span>
+                        )}
+                      </div>
+
+                      <div className="relative mb-3">
+                        <input
+                          type={showClaudeKey ? 'text' : 'password'}
+                          value={aiProviderConfig.claudeApiKey || ''}
+                          onChange={(e) => saveAiProviderConfig({ claudeApiKey: e.target.value.trim() })}
+                          placeholder="Paste Claude API Key (sk-ant-api03-...)"
+                          className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 pr-20 text-[13px] font-mono text-slate-800 dark:text-zinc-100 placeholder-slate-400 outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                        />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowClaudeKey(!showClaudeKey)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors"
+                            title={showClaudeKey ? 'Hide key' : 'Show key'}
+                          >
+                            {showClaudeKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          {aiProviderConfig.claudeApiKey && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                saveAiProviderConfig({ claudeApiKey: '' });
+                                showToast('Claude API key cleared');
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                              title="Clear Key"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Claude Model Selector */}
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <label className="text-[12px] font-medium text-slate-600 dark:text-zinc-400">Claude Model:</label>
+                        <select
+                          value={aiProviderConfig.claudeModel || 'claude-3-7-sonnet-20250219'}
+                          onChange={(e) => saveAiProviderConfig({ claudeModel: e.target.value })}
+                          className="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-amber-500"
+                        >
+                          <option value="claude-3-7-sonnet-20250219">claude-3-7-sonnet (Hybrid Reasoning)</option>
+                          <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet (Intelligent)</option>
+                          <option value="claude-3-5-haiku-20241022">claude-3-5-haiku (Fast)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Test Connection & Verification Card */}
+                    <div className="p-4 bg-slate-50 dark:bg-zinc-950 rounded-2xl border border-slate-200/80 dark:border-zinc-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[12px] font-semibold text-slate-700 dark:text-zinc-300">
+                          Active: <span className="font-bold text-violet-600 dark:text-violet-400">{aiProviderConfig.provider === 'claude' ? 'Anthropic Claude' : 'Google Gemini'}</span>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={aiKeyStatus.testing}
+                          onClick={() => checkAiBackendStatus()}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition-all shadow-xs disabled:opacity-50"
+                        >
+                          {aiKeyStatus.testing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                          Test Connection
+                        </button>
+                      </div>
+
+                      {aiKeyStatus.message && (
+                        <div className={`text-[12px] p-2.5 rounded-xl border flex items-start gap-2 ${aiKeyStatus.usable === true ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' : aiKeyStatus.usable === false ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800' : 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800'}`}>
+                          {aiKeyStatus.usable === true ? (
+                            <CheckCircle2 size={15} className="shrink-0 mt-0.5" />
+                          ) : aiKeyStatus.usable === false ? (
+                            <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                          ) : (
+                            <Loader2 size={15} className="shrink-0 mt-0.5 animate-spin" />
+                          )}
+                          <span className="leading-snug">{aiKeyStatus.message}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

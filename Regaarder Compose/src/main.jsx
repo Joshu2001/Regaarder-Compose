@@ -1,8 +1,25 @@
-﻿import React from 'react'
+import React, { useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './styles.css'
 import Analytics from './Analytics.jsx'
+import SplashScreen from './components/SplashScreen.jsx'
+
+function Root() {
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    const el = document.getElementById('regaarder-initial-splash');
+    if (el) el.remove();
+  }, []);
+
+  return (
+    <>
+      {loading && <SplashScreen durationMs={3000} onFinish={() => setLoading(false)} />}
+      <App />
+    </>
+  );
+}
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
@@ -16,7 +33,8 @@ if (pathname === '/analytics') {
 } else {
   root.render(
     <React.StrictMode>
-      <App />
+      <Root />
     </React.StrictMode>,
   );
 }
+

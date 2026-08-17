@@ -1,29 +1,31 @@
 import React, { useState } from "react";
 import {
-  FileText,
-  MonitorPlay,
-  Table,
-  Video,
-  Shapes,
-  Calendar,
-  Users,
-  CheckSquare,
-  Plus,
   ChevronRight,
   ChevronLeft,
-  X,
-  Brain
+  X
 } from "lucide-react";
+import {
+  ComposeIcon,
+  DeckIcon,
+  SheetIcon,
+  RoomIcon,
+  WhiteboardIcon,
+  ScheduleIcon,
+  MemoryIcon,
+  TasksIcon
+} from "./components/RegaarderProductIcons";
+
+import RegaarderBrandIcon from "./components/RegaarderBrandIcon";
 
 const products = [
-  { title: "Compose", description: "Write and edit documents", icon: FileText },
-  { title: "Deck", description: "Create presentations", icon: MonitorPlay },
-  { title: "Sheet", description: "Manage spreadsheets", icon: Table },
-  { title: "Room", description: "Host meetings", icon: Video },
-  { title: "Whiteboard", description: "Brainstorm ideas", icon: Shapes },
-  { title: "Schedule", description: "Manage calendar", icon: Calendar },
-  { title: "Memory", description: "Access memories", icon: Brain },
-  { title: "Tasks", description: "Track to-dos", icon: CheckSquare },
+  { title: "Compose", description: "Write and edit documents", icon: ComposeIcon },
+  { title: "Deck", description: "Create presentations", icon: DeckIcon },
+  { title: "Sheet", description: "Manage spreadsheets", icon: SheetIcon },
+  { title: "Room", description: "Host meetings", icon: RoomIcon },
+  { title: "Whiteboard", description: "Brainstorm ideas", icon: WhiteboardIcon },
+  { title: "Schedule", description: "Manage calendar", icon: ScheduleIcon },
+  { title: "Memory", description: "Access memories", icon: MemoryIcon },
+  { title: "Tasks", description: "Track to-dos", icon: TasksIcon },
 ];
 
 export default function RegaarderComposeLanding({ onLaunch }) {
@@ -48,15 +50,12 @@ export default function RegaarderComposeLanding({ onLaunch }) {
       </div>
 
       <div className="w-full h-full flex flex-col items-center justify-center p-8 overflow-y-auto thin-scrollbar relative z-10">
-        <div className="w-full max-w-[800px] mx-auto flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="w-full max-w-[800px] mx-auto flex flex-col items-center transition-all duration-700 ease-out">
           
           {/* Header */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 animate-in fade-in slide-in-from-bottom-3 duration-500">
             <div className="flex justify-center mb-6">
-              {/* Abstract Heart/Logo placeholder matching Image 2 */}
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 shadow-lg flex items-center justify-center shadow-pink-500/30 transform rotate-12">
-                <div className="w-6 h-6 bg-white rounded-full opacity-20 -translate-x-1 -translate-y-1" />
-              </div>
+              <RegaarderBrandIcon size={48} className="hover:scale-105 transition-transform duration-300" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 mb-4">
               One workspace for all your office needs.
@@ -72,7 +71,8 @@ export default function RegaarderComposeLanding({ onLaunch }) {
               <button
                 key={idx}
                 onClick={() => onLaunch?.({ type: 'action', name: product.title })}
-                className="flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-md border border-slate-200/50 rounded-2xl p-6 hover:bg-white hover:border-violet-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group shadow-sm"
+                style={{ animationDelay: `${idx * 40}ms` }}
+                className="flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-md border border-slate-200/50 rounded-2xl p-6 hover:bg-white hover:border-violet-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both"
               >
                 <div className="text-slate-600 group-hover:text-violet-600 transition-colors">
                   <product.icon size={26} strokeWidth={1.5} />

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './styles.css'
@@ -42,6 +42,19 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+import SplashScreen from './components/SplashScreen.jsx'
+
+function RootApp() {
+  const [loading, setLoading] = useState(true);
+
+  return (
+    <>
+      {loading && <SplashScreen durationMs={3000} onFinish={() => setLoading(false)} />}
+      <App />
+    </>
+  );
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
 
@@ -57,7 +70,7 @@ if (pathname === '/analytics') {
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
-        <App />
+        <RootApp />
       </ErrorBoundary>
     </React.StrictMode>,
   );
