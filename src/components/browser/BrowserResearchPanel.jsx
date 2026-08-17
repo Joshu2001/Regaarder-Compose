@@ -2232,9 +2232,10 @@ Always answer helpfully, clearly, and concisely.`;
   };
 
   // Live Interactive Spotlight Tour Management
-  const handleStartSpotlightTour = async (planOrSteps, customTitle, userIntent) => {
+  // Step Extraction Helper for Spotlight Tours and Video Recordings
+  const buildSpotlightSteps = (planOrSteps, customTitle, userIntent) => {
     let steps = [];
-    if (planOrSteps && planOrSteps.actions) {
+    if (planOrSteps && planOrSteps.actions && Array.isArray(planOrSteps.actions) && planOrSteps.actions.length > 0) {
       steps = planOrSteps.actions.map((act, i) => ({
         id: act.id || `step-${i + 1}`,
         action: act.action || 'click',
@@ -2245,54 +2246,49 @@ Always answer helpfully, clearly, and concisely.`;
       }));
     } else if (Array.isArray(planOrSteps) && planOrSteps.length > 0) {
       steps = planOrSteps;
+    } else if (activeSpotlightTour?.steps?.length > 0) {
+      steps = activeSpotlightTour.steps;
     } else if (pageSchema?.elements && pageSchema.elements.length > 0) {
-      const intentLower = String(userIntent || inputPrompt || '').toLowerCase();
+      const intentLower = String(userIntent || inputQuery || '').toLowerCase();
       const allEls = pageSchema.elements.filter((el) => el.label && el.label !== '(unlabeled)');
 
-      // 1. Keyword search inside available page elements
-      const matchedEl = allEls.find((el) => {
+      // Keyword match
+      const matchedEls = allEls.filter((el) => {
         const lbl = el.label.toLowerCase();
-        return intentLower && (lbl.includes(intentLower) || intentLower.includes(lbl));
+        return intentLower && (lbl.includes(intentLower) || intentLower.includes(lbl) || intentLower.split(/\s+/).some((w) => w.length > 2 && lbl.includes(w)));
       });
 
-      if (matchedEl) {
-        const parentMenuName = matchedEl.parentMenu || (['maps', 'books', 'short videos', 'web', 'shopping', 'finance'].includes(matchedEl.label.toLowerCase()) ? 'More' : null);
-        const parentEl = parentMenuName ? allEls.find((el) => el.label.toLowerCase().includes(parentMenuName.toLowerCase())) : null;
-
-        if (parentEl && parentEl.id !== matchedEl.id) {
+      if (matchedEls.length > 0) {
+        matchedEls.slice(0, 4).forEach((matchedEl, i) => {
+          const parentMenuName = matchedEl.parentMenu || (['maps', 'books', 'short videos', 'web', 'shopping', 'finance'].includes(matchedEl.label.toLowerCase()) ? 'More' : null);
+          const parentEl = parentMenuName ? allEls.find((el) => el.label.toLowerCase().includes(parentMenuName.toLowerCase())) : null;
+          if (parentEl && parentEl.id !== matchedEl.id && i === 0) {
+            steps.push({
+              id: 'step-parent',
+              action: 'click',
+              elementId: parentEl.id,
+              label: parentEl.label,
+              description: `Click "${parentEl.label}" on navigation bar`
+            });
+          }
           steps.push({
-            id: 'step-1',
-            action: 'click',
-            elementId: parentEl.id,
-            label: parentEl.label,
-            description: `Click "${parentEl.label}" on navigation bar`
-          });
-          steps.push({
-            id: 'step-2',
-            action: 'click',
+            id: `step-${i + 1}`,
+            action: matchedEl.tag === 'input' ? 'fill' : 'click',
             elementId: matchedEl.id,
             label: matchedEl.label,
-            description: `Select "${matchedEl.label}" from dropdown`
+            description: matchedEl.tag === 'input' ? `Enter input in "${matchedEl.label}"` : `Click "${matchedEl.label}"`
           });
-        } else {
-          steps.push({
-            id: 'step-1',
-            action: 'click',
-            elementId: matchedEl.id,
-            label: matchedEl.label,
-            description: `Click "${matchedEl.label}"`
-          });
-        }
+        });
       } else {
-        // Build an executive sequence of primary toolbar navigation options
-        const primaryNav = allEls.filter((el) => ['tools', 'all', 'images', 'videos', 'news', 'more', 'search'].some((k) => el.label.toLowerCase().includes(k))).slice(0, 5);
-        const sourceList = primaryNav.length >= 2 ? primaryNav : allEls.slice(0, 5);
+        // Fallback to top toolbar/navigation items
+        const primaryNav = allEls.filter((el) => ['transit', 'directions', 'tools', 'search', 'explore', 'more', 'layers', 'saved', 'all', 'menu'].some((k) => el.label.toLowerCase().includes(k))).slice(0, 4);
+        const sourceList = primaryNav.length >= 1 ? primaryNav : allEls.slice(0, 4);
         steps = sourceList.map((el, i) => ({
           id: `step-${i + 1}`,
           action: el.tag === 'input' ? 'fill' : 'click',
           elementId: el.id,
           label: el.label || `Step ${i + 1}`,
-          description: el.tag === 'input' ? `Enter search query in "${el.label}"` : `Click "${el.label}" navigation option`,
+          description: el.tag === 'input' ? `Enter query in "${el.label}"` : `Click "${el.label}"`,
           value: el.tag === 'input' ? 'Search Query' : undefined
         }));
       }
@@ -2304,7 +2300,14 @@ Always answer helpfully, clearly, and concisely.`;
       ];
     }
 
-    const title = customTitle || planOrSteps?.plan || 'Interactive Page Spotlight Tour';
+    const title = customTitle || planOrSteps?.plan || (userIntent ? `Walkthrough: ${userIntent.slice(0, 36)}` : `Tour of ${summary?.domain || 'Page'}`);
+    return { title, steps };
+  };
+
+  // Live Interactive Spotlight Tour Management
+  const handleStartSpotlightTour = async (planOrSteps, customTitle, userIntent) => {
+    const { title, steps } = buildSpotlightSteps(planOrSteps, customTitle, userIntent);
+
     const tour = {
       title,
       steps,
@@ -2422,32 +2425,26 @@ Always answer helpfully, clearly, and concisely.`;
   };
 
   // Live Video Tutorial Recorder (Phase 2)
-  const handleRecordVideoTutorial = async (planOrSteps, customTitle) => {
+  const handleRecordVideoTutorial = async (planOrSteps, customTitle, userIntent) => {
     if (isRecordingTutorial) return;
 
-    let steps = [];
-    if (activeSpotlightTour?.steps?.length > 0) {
-      steps = activeSpotlightTour.steps;
-    } else if (planOrSteps && planOrSteps.actions) {
-      steps = planOrSteps.actions;
-    } else if (Array.isArray(planOrSteps) && planOrSteps.length > 0) {
-      steps = planOrSteps;
-    }
+    const { title, steps } = buildSpotlightSteps(planOrSteps, customTitle, userIntent);
 
     if (!steps || steps.length === 0) {
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          sender: 'agent',
-          text: `What walkthrough would you like me to record on **${summary?.domain || 'this page'}**?\n\nType your request in the prompt box (e.g., *"How to search directions"* or *"Show me where the tools menu is"*), or click **[Spotlight Tour]** to preview the exact steps before recording.`
-        }
-      ]);
-      if (showToast) showToast('Please provide a goal prompt or start a Spotlight Tour first');
+      if (showToast) showToast('Unable to detect interactive elements on page for recording');
       return;
     }
 
     setIsRecordingTutorial(true);
     if (showToast) showToast('Recording live video tutorial...');
+
+    // Automatically initialize Spotlight Tour alongside recording so steps are visible
+    setActiveSpotlightTour({
+      title,
+      steps,
+      currentStep: 0,
+      isAutoPlaying: true
+    });
 
     onBroadcastEffectChange?.({ active: true, mode: 'recording', label: 'LIVE TUTORIAL CAPTURE' });
 
@@ -2505,6 +2502,7 @@ Always answer helpfully, clearly, and concisely.`;
       // Step-by-step recording execution with live gliding AI cursor
       for (let sIdx = 0; sIdx < steps.length; sIdx++) {
         const step = steps[sIdx];
+        setActiveSpotlightTour((prev) => (prev ? { ...prev, currentStep: sIdx } : prev));
         if (step.elementId && onExecuteElementAction) {
           try {
             await onExecuteElementAction({
@@ -2530,7 +2528,6 @@ Always answer helpfully, clearly, and concisely.`;
 
       const videoBlob = new Blob(chunks, { type: 'video/webm' });
       const videoUrl = URL.createObjectURL(videoBlob);
-      const title = customTitle || activeSpotlightTour?.title || `Interactive Walkthrough — ${summary?.domain || 'Page'}`;
 
       setChatMessages((prev) => [
         ...prev,
@@ -2665,6 +2662,29 @@ Always answer helpfully, clearly, and concisely.`;
 
     if (!textToSend) setInputQuery('');
     setIsPlusMenuOpen(false);
+
+    // Keep glowing perimeter effect active immediately
+    if (modeToRun === 'video') {
+      onBroadcastEffectChange?.({ active: true, mode: 'recording', label: 'LIVE TUTORIAL CAPTURE' });
+      if (window.electronAPI?.setLiveBroadcastEffect) {
+        window.electronAPI.setLiveBroadcastEffect({
+          tabId: activeTab?.tabId || activeTab?.id,
+          active: true,
+          mode: 'recording',
+          label: 'LIVE TUTORIAL CAPTURE'
+        });
+      }
+    } else if (modeToRun === 'tour') {
+      onBroadcastEffectChange?.({ active: true, mode: 'executing', label: 'AI SPOTLIGHT TOUR' });
+      if (window.electronAPI?.setLiveBroadcastEffect) {
+        window.electronAPI.setLiveBroadcastEffect({
+          tabId: activeTab?.tabId || activeTab?.id,
+          active: true,
+          mode: 'executing',
+          label: 'AI SPOTLIGHT TOUR'
+        });
+      }
+    }
 
     // Build context with attached files if present
     let promptWithAttachments = userText;
@@ -2885,7 +2905,7 @@ Always answer helpfully, clearly, and concisely.`;
 
         // Auto-execute if video/tour mode or low-risk action plan
         if (modeToRun === 'video') {
-          handleRecordVideoTutorial(actionPlan, `Tutorial: ${userText.slice(0, 36)}`);
+          handleRecordVideoTutorial(actionPlan, `Tutorial: ${userText.slice(0, 36)}`, userText);
         } else if (modeToRun === 'tour') {
           handleStartSpotlightTour(actionPlan, `Spotlight Tour: ${userText.slice(0, 36)}`, userText);
         } else if (actionPlan && actionPlan.risk === 'low' && finalMessageIdx >= 0) {
@@ -3018,7 +3038,7 @@ Always answer helpfully, clearly, and concisely.`;
       setIsGenerating(false);
 
       if (modeToRun === 'video') {
-        handleRecordVideoTutorial(cloudActionPlan, `Tutorial: ${userText.slice(0, 36)}`);
+        handleRecordVideoTutorial(cloudActionPlan, `Tutorial: ${userText.slice(0, 36)}`, userText);
       } else if (modeToRun === 'tour') {
         handleStartSpotlightTour(cloudActionPlan, `Spotlight Tour: ${userText.slice(0, 36)}`, userText);
       } else if (cloudActionPlan && cloudActionPlan.risk === 'low' && msgIdx >= 0) {
