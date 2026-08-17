@@ -373,6 +373,22 @@ const DECK_THEME_OPTIONS = [
 
 const DECK_LAYOUT_OPTIONS = [
   { 
+    key: 'Startup Pitch Deck', 
+    name: 'Startup Pitch Deck',
+    desc: 'Cover with title, presenter & footer',
+    visualType: 'startup cover',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col p-0.5 justify-between shrink-0">
+        <div className="w-1/3 h-0.5 bg-cyan-400 rounded-xs" />
+        <div className="w-3/4 h-1.5 bg-white rounded-xs" />
+        <div className="w-full flex justify-between">
+          <div className="w-1/4 h-0.5 bg-violet-400 rounded-xs" />
+          <div className="w-1/4 h-0.5 bg-violet-400 rounded-xs" />
+        </div>
+      </div>
+    )
+  },
+  { 
     key: 'Title Slide', 
     name: 'Title Slide',
     desc: 'Headline & subtitle cover',
@@ -8786,9 +8802,32 @@ function AppCore() {
   const [deckAnimationPreset, setDeckAnimationPreset] = useState('Soft fade and stagger reveal');
   const [deckAnimationSpeed, setDeckAnimationSpeed] = useState('0.5s');
   const [selectedBrandKit, setSelectedBrandKit] = useState(DECK_BRAND_KITS[0]);
-  const [deckSlidesData, setDeckSlidesData] = useState([
-    { id: 1, section: 'Opening', title: 'Title Slide', headline: '', blurb: '', designPresetKey: 'blank', presetKey: 'blank', accent: 'from-indigo-500 to-violet-500', visualType: 'hero statement', layoutStyle: 'Title Slide', motionCue: 'Soft fade and stagger reveal', keyMetric: '', speakerNotes: '', footer: '' }
-  ]);
+const DEFAULT_DECK_SLIDES = [
+  {
+    id: 1,
+    section: 'Opening',
+    title: 'Startup Pitch Deck',
+    tagline: 'Ingoude Company',
+    headline: 'STARTUP\nPITCH DECK',
+    presenter: 'PRESENT BY NEIL TRAN',
+    footerEmail: 'www.reallygreatsite.com',
+    footerWeb: 'hello@reallygreatsite.com',
+    footerLocation: '123 Anywhere Street',
+    backgroundColor: '#05070B',
+    vectorWaveStyle: 'dual-mesh',
+    vectorWaveHue: 'neon-cyan-purple',
+    designPresetKey: 'midnight-slate',
+    presetKey: 'midnight-slate',
+    accent: 'from-indigo-500 to-violet-500',
+    visualType: 'startup cover',
+    layoutStyle: 'Startup Pitch Deck',
+    motionCue: 'Whip Slide (Fast In)',
+    keyMetric: '',
+    speakerNotes: 'Welcome investors to the Ingoude Company startup pitch deck presentation.',
+    footer: 'Ingoude Company'
+  }
+];
+  const [deckSlidesData, setDeckSlidesData] = useState(DEFAULT_DECK_SLIDES);
   const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
   const [whiteboardTool, setWhiteboardTool] = useState('pen');
@@ -12202,6 +12241,9 @@ function AppCore() {
   const [deckToolbarTab, setDeckToolbarTab] = useState('Create');
   const [isDeckToolbarCollapsed, setIsDeckToolbarCollapsed] = useState(false);
   const [deckSelection, setDeckSelection] = useState({ type: 'none', id: null });
+  const [deckVectorDrag, setDeckVectorDrag] = useState({ isDragging: false, startX: 0, startY: 0, origX: 0, origY: 0 });
+  const [deckPillDrag, setDeckPillDrag] = useState({ isDragging: false, startX: 0, startY: 0, origX: 0, origY: 0 });
+  const [deckFloatingMenuOpen, setDeckFloatingMenuOpen] = useState(null);
   const [deckSemanticStyle, setDeckSemanticStyle] = useState('Title');
   const [deckTextFont, setDeckTextFont] = useState('Inter');
   const [deckTextSize, setDeckTextSize] = useState(24);
@@ -27762,9 +27804,21 @@ Rules:
 
   useEffect(() => {
     if (!deckActiveToolbarMenu) return;
-    const handleOutsideClick = () => setDeckActiveToolbarMenu(null);
-    document.addEventListener('click', handleOutsideClick);
-    return () => document.removeEventListener('click', handleOutsideClick);
+    const handleOutsideClick = (e) => {
+      if (e.target && e.target.closest && e.target.closest('[data-deck-toolbar-menu]')) {
+        return;
+      }
+      setDeckActiveToolbarMenu(null);
+    };
+    const timer = setTimeout(() => {
+      document.addEventListener('pointerdown', handleOutsideClick);
+      document.addEventListener('click', handleOutsideClick);
+    }, 10);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('pointerdown', handleOutsideClick);
+      document.removeEventListener('click', handleOutsideClick);
+    };
   }, [deckActiveToolbarMenu]);
 
   // Ensure only one of the left or right side panels is open at a time.
@@ -28428,7 +28482,7 @@ Rules:
   const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
     const initialSheetsData = [{ id: 1, title: 'Sheet 1', subtitle: '' }];
     const initialSheetGrids = { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } };
-    const initialDeckSlidesData = [{ id: 1, section: 'Opening', title: 'Title Slide', headline: '', blurb: '', designPresetKey: 'blank', presetKey: 'blank', accent: 'from-indigo-500 to-violet-500', visualType: 'hero statement', layoutStyle: 'Title Slide', motionCue: 'Soft fade and stagger reveal', keyMetric: '', speakerNotes: '', footer: '' }];
+    const initialDeckSlidesData = JSON.parse(JSON.stringify(DEFAULT_DECK_SLIDES));
 
     const currentWorkspaceMode = (activeRightTab === 'whiteboard' || productMode === 'whiteboard') ? 'whiteboard' : (productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose');
     const defaultTitleForMode = initialTitle || (currentWorkspaceMode === 'sheets' ? 'Untitled Sheet' : currentWorkspaceMode === 'deck' ? 'Untitled Deck' : currentWorkspaceMode === 'whiteboard' ? 'Untitled Whiteboard' : '');
@@ -28569,7 +28623,7 @@ Rules:
     setCreationPickerOpen(false);
     setProductMode('deck');
     setDeckTitle('Untitled deck');
-    setDeckSlidesData([{ id: 1, section: 'Opening', title: 'Title Slide', headline: '', blurb: '', designPresetKey: 'blank', presetKey: 'blank', accent: 'from-indigo-500 to-violet-500', visualType: 'hero statement', layoutStyle: 'Title Slide', motionCue: 'Soft fade and stagger reveal', keyMetric: '', speakerNotes: '', footer: '' }]);
+    setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_DECK_SLIDES)));
     setActiveDeckSlideId(1);
     setDeckZoomLevel(100);
     setDeckToolbarFont('Inter');
@@ -28770,14 +28824,14 @@ Rules:
     openCreationPicker();
   };
 
-  const createRoomExperience = (code) => {
+  const createRoomExperience = () => {
     enterFullscreen();
     setIsDocumentImmersive(true);
     setCreationPickerOpen(false);
     setProductMode('room');
     setRightSidebarOpen(false);
     setLeftSidebarOpen(false);
-    startMeetingNow(code || generateRoomCode());
+    startMeetingNow(generateRoomCode());
   };
 
   const createDmExperience = () => {
@@ -31117,6 +31171,50 @@ Respond with a JSON array of slide objects matching the schema.`;
     }));
   };
 
+  // Pill badge dragging lifecycle listener
+  useEffect(() => {
+    if (!deckPillDrag.isDragging) return;
+    const handlePointerMove = (e) => {
+      const dx = e.clientX - deckPillDrag.startX;
+      const dy = e.clientY - deckPillDrag.startY;
+      const nextX = Math.round(deckPillDrag.origX + dx);
+      const nextY = Math.round(deckPillDrag.origY + dy);
+      updateDeckSlideField(activeDeckSlide?.id, 'pillPosX', nextX);
+      updateDeckSlideField(activeDeckSlide?.id, 'pillPosY', nextY);
+    };
+    const handlePointerUp = () => {
+      setDeckPillDrag((prev) => ({ ...prev, isDragging: false }));
+    };
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [deckPillDrag.isDragging, deckPillDrag.startX, deckPillDrag.startY, deckPillDrag.origX, deckPillDrag.origY, activeDeckSlide?.id]);
+
+    // Vector mesh dragging lifecycle listener
+  useEffect(() => {
+    if (!deckVectorDrag.isDragging) return;
+    const handlePointerMove = (e) => {
+      const dx = e.clientX - deckVectorDrag.startX;
+      const dy = e.clientY - deckVectorDrag.startY;
+      const nextX = Math.round(deckVectorDrag.origX + dx);
+      const nextY = Math.round(deckVectorDrag.origY + dy);
+      updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', nextX);
+      updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', nextY);
+    };
+    const handlePointerUp = () => {
+      setDeckVectorDrag((prev) => ({ ...prev, isDragging: false }));
+    };
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [deckVectorDrag.isDragging, deckVectorDrag.startX, deckVectorDrag.startY, deckVectorDrag.origX, deckVectorDrag.origY, activeDeckSlide?.id]);
+
   const generateOriginalDeckDesign = () => {
     if (!activeDeckSlide?.id) {
       return;
@@ -32682,6 +32780,26 @@ Respond with a JSON array of slide objects matching the schema.`;
     .replace(/'/g, '&#39;');
 
   const buildDeckPreviewDataUri = (slide) => {
+    if (slide?.layoutStyle === 'Startup Pitch Deck' || slide?.backgroundColor === '#05070B') {
+      const tagline = escapeSvgText(slide?.tagline || 'Ingoude Company');
+      const headline = escapeSvgText(slide?.headline || 'STARTUP\nPITCH DECK').replace(/\n/g, ' ');
+      const presenter = escapeSvgText(slide?.presenter || 'PRESENT BY NEIL TRAN');
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+        <rect width="320" height="192" rx="14" fill="#05070B"/>
+        <path d="M 120 192 C 180 130, 240 80, 320 100" stroke="#00f0ff" stroke-width="2" opacity="0.6" fill="none" />
+        <path d="M 80 192 C 150 110, 220 50, 320 70" stroke="#a855f7" stroke-width="1.5" opacity="0.5" fill="none" />
+        <text x="14" y="24" font-size="8" font-family="Inter, sans-serif" fill="#94a3b8" font-style="italic">${tagline}</text>
+        <text x="14" y="80" font-size="16" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900" letter-spacing="1">STARTUP</text>
+        <text x="14" y="102" font-size="16" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900" letter-spacing="1">PITCH DECK</text>
+        <rect x="14" y="118" width="130" height="14" rx="7" fill="rgba(255,255,255,0.12)"/>
+        <text x="20" y="128" font-size="6.5" font-family="Inter, sans-serif" fill="#e2e8f0" font-weight="700" letter-spacing="1">${presenter}</text>
+        <line x1="14" y1="165" x2="306" y2="165" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
+        <text x="14" y="178" font-size="6" font-family="Inter, sans-serif" fill="#64748b">www.reallygreatsite.com</text>
+        <text x="120" y="178" font-size="6" font-family="Inter, sans-serif" fill="#64748b">hello@reallygreatsite.com</text>
+        <text x="225" y="178" font-size="6" font-family="Inter, sans-serif" fill="#64748b">123 Anywhere Street</text>
+      </svg>`;
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
     const title = escapeSvgText(slide?.title || 'Untitled Slide');
     const subtitle = escapeSvgText(slide?.subtitle || '');
     const gradientMap = {
@@ -46290,7 +46408,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     <div className="flex-1 flex flex-col min-w-0 relative z-10">
                       {/* Floating Sub-header Toolbar */}
-                      <div className="mx-4 mt-2 mb-1.5 w-[calc(100%-2rem)] p-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-2 z-30 shrink-0 transition-all duration-200">
+                      <div className="mx-4 mt-2 mb-1.5 w-[calc(100%-2rem)] p-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-2 z-30 shrink-0 transition-all duration-200 overflow-visible relative">
                         {/* Top Row: Navigation Tabs & Collapse/Expand Toggle */}
                         <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
                           {/* Apple Segmented Control Track */}
@@ -46335,7 +46453,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             
                             {/* ── CREATE TAB (Default Active Tab with Dynamic Contextual Toolbar) ── */}
                             {deckToolbarTab === 'Create' && (
-                              <div className="w-full flex items-center justify-between gap-3 overflow-x-auto no-scrollbar py-0.5">
+                              <div className="w-full flex items-center justify-between gap-3 overflow-visible relative py-0.5">
                                 {/* Always keep presentation title selector and plus button on the left */}
                                 <div className="flex items-center gap-2 shrink-0">
                                   {/* Active Presentation Title Selector */}
@@ -46414,7 +46532,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 </div>
 
                                 {/* Dynamic Contextual Controls Based on deckSelection.type */}
-                                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                                <div className="flex items-center gap-1.5 overflow-visible relative py-0.5">
                                   {deckSelection.type === 'text' ? (
                                     /* ── TEXT OBJECT SELECTED / EDITING CONTEXTUAL TOOLBAR ── */
                                     <>
@@ -46775,6 +46893,184 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         <span>AI Slide Enhancer</span>
                                       </button>
                                     </>
+                                  ) : deckSelection.type === 'vector' ? (
+                                    /* ── VECTOR MESH SELECTION CONTEXTUAL TOOLBAR ── */
+                                    <>
+                                      {/* Primary Glow Color Dropdown */}
+                                      <div data-deck-toolbar-menu="true" className="relative shrink-0">
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => e.stopPropagation()}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeckActiveToolbarMenu((prev) => (prev === 'vectorColor1' ? null : 'vectorColor1'));
+                                          }}
+                                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/70 cursor-pointer shadow-2xs"
+                                        >
+                                          <div className="w-3.5 h-3.5 rounded-full border border-white/60 shadow-2xs shrink-0" style={{ backgroundColor: activeDeckSlide?.vectorColor1 || '#00f0ff' }} />
+                                          <span>Primary Glow</span>
+                                          <ChevronDown size={10} className="text-gray-400" />
+                                        </button>
+                                        {deckActiveToolbarMenu === 'vectorColor1' && (
+                                          <div onClick={(e) => e.stopPropagation()} className="absolute top-8 left-0 z-[999] w-56 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.18)] p-3 flex flex-col gap-2">
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Primary Beam Swatches</span>
+                                            <div className="grid grid-cols-5 gap-1.5">
+                                              {['#00f0ff', '#3b82f6', '#7c4dff', '#a855f7', '#ec4899', '#f43f5e', '#10b981', '#f59e0b', '#ffffff', '#64748b'].map((c) => (
+                                                <button
+                                                  key={c}
+                                                  type="button"
+                                                  onClick={() => {
+                                                    updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', c);
+                                                    setDeckActiveToolbarMenu(null);
+                                                    showToast(`Vector glow updated to ${c}`);
+                                                  }}
+                                                  className="w-7 h-7 rounded-lg border border-slate-200/80 shadow-2xs hover:scale-110 transition-transform cursor-pointer"
+                                                  style={{ backgroundColor: c }}
+                                                />
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Secondary Accent Color Dropdown */}
+                                      <div data-deck-toolbar-menu="true" className="relative shrink-0">
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => e.stopPropagation()}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeckActiveToolbarMenu((prev) => (prev === 'vectorColor2' ? null : 'vectorColor2'));
+                                          }}
+                                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/70 cursor-pointer shadow-2xs"
+                                        >
+                                          <div className="w-3.5 h-3.5 rounded-full border border-white/60 shadow-2xs shrink-0" style={{ backgroundColor: activeDeckSlide?.vectorColor2 || '#a855f7' }} />
+                                          <span>Secondary Beam</span>
+                                          <ChevronDown size={10} className="text-gray-400" />
+                                        </button>
+                                        {deckActiveToolbarMenu === 'vectorColor2' && (
+                                          <div onClick={(e) => e.stopPropagation()} className="absolute top-8 left-0 z-[999] w-56 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.18)] p-3 flex flex-col gap-2">
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Secondary Accent Swatches</span>
+                                            <div className="grid grid-cols-5 gap-1.5">
+                                              {['#a855f7', '#7c3aed', '#ec4899', '#d946ef', '#00f0ff', '#0ea5e9', '#10b981', '#eab308', '#ffffff', '#334155'].map((c) => (
+                                                <button
+                                                  key={c}
+                                                  type="button"
+                                                  onClick={() => {
+                                                    updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', c);
+                                                    setDeckActiveToolbarMenu(null);
+                                                    showToast(`Secondary beam updated to ${c}`);
+                                                  }}
+                                                  className="w-7 h-7 rounded-lg border border-slate-200/80 shadow-2xs hover:scale-110 transition-transform cursor-pointer"
+                                                  style={{ backgroundColor: c }}
+                                                />
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Wave Mesh Style Preset Dropdown */}
+                                      <div data-deck-toolbar-menu="true" className="relative shrink-0">
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => e.stopPropagation()}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeckActiveToolbarMenu((prev) => (prev === 'vectorStyle' ? null : 'vectorStyle'));
+                                          }}
+                                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/70 cursor-pointer shadow-2xs"
+                                        >
+                                          <Sparkles size={13} className="text-violet-500" />
+                                          <span>Preset</span>
+                                          <ChevronDown size={10} className="text-gray-400" />
+                                        </button>
+                                        {deckActiveToolbarMenu === 'vectorStyle' && (
+                                          <div onClick={(e) => e.stopPropagation()} className="absolute top-8 left-0 z-[999] w-52 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-lg p-1.5">
+                                            {[
+                                              { label: 'Dual-Mesh Cyan & Purple', c1: '#00f0ff', c2: '#a855f7' },
+                                              { label: 'Electric Cyber Blue', c1: '#00f0ff', c2: '#3b82f6' },
+                                              { label: 'Sunset Laser Neon', c1: '#f59e0b', c2: '#ec4899' },
+                                              { label: 'Emerald Aurora Beam', c1: '#10b981', c2: '#00f0ff' },
+                                              { label: 'Executive Obsidian Silver', c1: '#e2e8f0', c2: '#64748b' }
+                                            ].map((preset) => (
+                                              <button
+                                                key={preset.label}
+                                                type="button"
+                                                onClick={() => {
+                                                  updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', preset.c1);
+                                                  updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', preset.c2);
+                                                  setDeckActiveToolbarMenu(null);
+                                                  showToast(`Applied ${preset.label}`);
+                                                }}
+                                                className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/50 rounded-lg flex items-center gap-2"
+                                              >
+                                                <div className="w-3 h-3 rounded-full shrink-0" style={{ background: `linear-gradient(135deg, ${preset.c1}, ${preset.c2})` }} />
+                                                <span>{preset.label}</span>
+                                              </button>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Opacity Dropdown */}
+                                      <div data-deck-toolbar-menu="true" className="relative shrink-0">
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => e.stopPropagation()}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeckActiveToolbarMenu((prev) => (prev === 'vectorOpacity' ? null : 'vectorOpacity'));
+                                          }}
+                                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/70 cursor-pointer shadow-2xs"
+                                        >
+                                          <Sliders size={13} className="text-emerald-500" />
+                                          <span>Glow: {Math.round((activeDeckSlide?.vectorOpacity ?? 0.8) * 100)}%</span>
+                                          <ChevronDown size={10} className="text-gray-400" />
+                                        </button>
+                                        {deckActiveToolbarMenu === 'vectorOpacity' && (
+                                          <div onClick={(e) => e.stopPropagation()} className="absolute top-8 left-0 z-[999] w-36 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-lg p-1.5">
+                                            {[1.0, 0.8, 0.6, 0.4, 0.2].map((op) => (
+                                              <button
+                                                key={op}
+                                                type="button"
+                                                onClick={() => {
+                                                  updateDeckSlideField(activeDeckSlide?.id, 'vectorOpacity', op);
+                                                  setDeckActiveToolbarMenu(null);
+                                                  showToast(`Vector glow set to ${Math.round(op * 100)}%`);
+                                                }}
+                                                className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/50 rounded-lg"
+                                              >
+                                                {Math.round(op * 100)}% Intensity
+                                              </button>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Reset Drag Position Button */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', 0);
+                                          updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', 0);
+                                          showToast('Vector mesh position reset');
+                                        }}
+                                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/70 shrink-0 cursor-pointer"
+                                        title="Reset to default position"
+                                      >
+                                        <RotateCcw size={12} /> Reset Pos
+                                      </button>
+
+                                      {/* Deselect / Done Button */}
+                                      <button
+                                        type="button"
+                                        onClick={() => setDeckSelection({ type: 'none', id: null })}
+                                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 text-white shrink-0 cursor-pointer shadow-xs"
+                                      >
+                                        Done
+                                      </button>
+                                    </>
                                   ) : deckSelection.type === 'image' ? (
                                     /* ── IMAGE SELECTION CONTEXTUAL TOOLBAR ── */
                                     <>
@@ -46799,51 +47095,149 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       <button type="button" onClick={() => showToast('AI generated data insights for chart')} className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-600 text-white shadow-2xs hover:bg-purple-700 shrink-0"><Bot size={13} /> AI Insights</button>
                                     </>
                                   ) : (
-                                    /* ── DEFAULT CREATE STATE (Primary Controls: Theme, Layout, Insert, AI) ── */
+                                    /* ── DEFAULT CREATE STATE ── */
                                     [
                                       { 
-                                        label: 'Theme', 
-                                        icon: Sparkles,
-                                        menuItems: ['Aurora', 'Minimal Dark', 'Sunset Glow', 'Oceanic', 'Cyberpunk', 'Classic White'],
+                                        label: 'Headings', 
+                                        icon: Heading1,
+                                        menuItems: ['Startup Deck Title (H1)', 'Slide Section (H2)', 'Key Subtitle (H3)', 'Tagline / Badge', 'Metadata / Caption'],
                                         onSelect: (item) => {
-                                          setRightSidebarOpen(true);
-                                          setDeckContextRailTab('Design');
-                                          showToast(`Theme changed to ${item}`);
+                                          if (item.includes('Startup Deck Title') || item.includes('H1')) {
+                                            updateDeckSlideField(activeDeckSlide?.id, 'layoutStyle', 'Startup Pitch Deck');
+                                            updateDeckSlideField(activeDeckSlide?.id, 'headline', 'STARTUP\nPITCH DECK');
+                                          } else if (item.includes('Tagline')) {
+                                            updateDeckSlideField(activeDeckSlide?.id, 'tagline', 'Ingoude Company');
+                                          }
+                                          showToast(`Applied heading style: ${item}`);
                                         }
                                       },
                                       { 
-                                        label: 'Layout', 
-                                        icon: LayoutGrid,
-                                        menuItems: ['Title Slide', 'Title & Content', 'Two Columns', 'Section Header', 'Big Number', 'Key Metric', 'Quote Slide', 'Cinematic Split', 'Blank Slide'],
+                                        label: 'Font Style', 
+                                        icon: Type,
+                                        menuItems: ['Inter Display (Default)', 'Montserrat Extra Bold', 'Outfit Modern', 'Syne Tech Bold', 'Cinzel Serif Italic', 'JetBrains Monospace'],
                                         onSelect: (item) => {
-                                          updateDeckSlideField(activeDeckSlide?.id, 'layoutStyle', item);
-                                          setRightSidebarOpen(true);
-                                          setDeckContextRailTab('Design');
-                                          showToast(`Layout set to ${item}`);
+                                          const fontMap = {
+                                            'Inter Display (Default)': 'Inter, sans-serif',
+                                            'Montserrat Extra Bold': 'Montserrat, sans-serif',
+                                            'Outfit Modern': 'Outfit, sans-serif',
+                                            'Syne Tech Bold': 'Syne, sans-serif',
+                                            'Cinzel Serif Italic': 'Cinzel, serif',
+                                            'JetBrains Monospace': 'JetBrains Mono, monospace'
+                                          };
+                                          setDeckTextFont(fontMap[item] || 'Inter, sans-serif');
+                                          showToast(`Font style updated to ${item}`);
                                         }
                                       },
                                       { 
-                                        label: 'Insert', 
-                                        icon: Plus,
-                                        menuItems: ['Text Box', 'Heading', 'Image / Media', 'Shape / Icon', 'Chart / Table', 'Code Block'],
-                                        onSelect: (item) => {
-                                          showToast(`Inserted ${item}`);
-                                        }
-                                      },
-                                      { 
-                                        label: 'AI', 
-                                        icon: Bot,
-                                        menuItems: ['Improve slide layout', 'Generate slide content', 'Auto-retheme presentation', 'Summarize key points', 'Make More Visual'],
-                                        onSelect: (item) => {
-                                          showToast(`AI Action: ${item}`);
-                                        }
-                                      }
-                                    ].map((btn) => {
+                                         label: 'Animation', 
+                                         icon: Wand2,
+                                         menuItems: ['Whip Slide (Fast In)', 'Zoom & Glow Entrance', 'Shake & Vibrate', 'Smooth Float Ambient Loop', 'Stagger Text Reveal'],
+                                         onSelect: (item) => {
+                                           updateDeckSlideField(activeDeckSlide?.id, 'motionCue', item);
+                                           showToast(`Animation entrance set to: ${item}`);
+                                         }
+                                       },
+                                       { 
+                                         label: 'Styles', 
+                                         icon: Palette,
+                                         menuItems: ['Deep Cyber Glow (#05070B)', 'Aurora Gradient Wave', 'Midnight Slate Clean', 'Neon Electric Cyan', 'Minimalist Mono Dark'],
+                                         onSelect: (item) => {
+                                           if (item.includes('Deep Cyber Glow')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'backgroundColor', '#05070B');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'neon-cyan-purple');
+                                           } else if (item.includes('Neon Electric Cyan')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'backgroundColor', '#030D1B');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'electric-cyan');
+                                           } else if (item.includes('Aurora Gradient Wave')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'backgroundColor', '#0A081E');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'aurora-mesh');
+                                           } else if (item.includes('Midnight Slate Clean')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'backgroundColor', '#0F172A');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'subtle-slate');
+                                           } else if (item.includes('Minimalist Mono Dark')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'backgroundColor', '#000000');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'mono-silver');
+                                           }
+                                           showToast(`Slide style set to ${item}`);
+                                         }
+                                       },
+                                       { 
+                                         label: 'Vector & Wave', 
+                                         icon: Sparkles,
+                                         menuItems: ['Dual-Mesh (Cyan & Purple)', 'Electric Cyan Wave', 'Neon Cyan & Purple Glow', 'Bottom-Left Wave Accent', 'Dual Warp Light Beams'],
+                                         onSelect: (item) => {
+                                           if (item.includes('Dual-Mesh') || item.includes('Dual Warp')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'dual-mesh');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'neon-cyan-purple');
+                                           } else if (item.includes('Electric Cyan')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'electric-cyan');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'electric-cyan');
+                                           } else if (item.includes('Neon Cyan & Purple')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'dual-mesh');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'neon-cyan-purple');
+                                           } else {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'subtle-arc');
+                                           }
+                                           showToast(`Vector wave style set to: ${item}`);
+                                         }
+                                       },
+                                       { 
+                                         label: 'Layout', 
+                                         icon: LayoutGrid,
+                                         menuItems: ['Startup Pitch Deck', 'Title Slide', 'Title & Content', 'Two Columns', 'Section Header', 'Big Number', 'Key Metric', 'Quote Slide', 'Cinematic Split', 'Blank Slide'],
+                                         onSelect: (item) => {
+                                           updateDeckSlideField(activeDeckSlide?.id, 'layoutStyle', item);
+                                           if (item === 'Startup Pitch Deck') {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'backgroundColor', '#05070B');
+                                           }
+                                           setRightSidebarOpen(true);
+                                           setDeckContextRailTab('Design');
+                                           showToast(`Layout set to ${item}`);
+                                         }
+                                       },
+                                       { 
+                                         label: 'Insert', 
+                                         icon: Plus,
+                                         menuItems: ['Presenter Pill Badge', 'Gradient Pill Shape', 'Text Box (Multi-line)', 'Heading H1', 'Glow Vector Wave', 'Footer Contact Trio', 'Image / Media', 'Chart / Table'],
+                                         onSelect: (item) => {
+                                           if (item.includes('Presenter Pill')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'presenter', 'PRESENT BY NEIL TRAN');
+                                           } else if (item.includes('Footer Contact Trio')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'footerEmail', 'www.reallygreatsite.com');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'footerWeb', 'hello@reallygreatsite.com');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'footerLocation', '123 Anywhere Street');
+                                           }
+                                           showToast(`Inserted ${item}`);
+                                         }
+                                       },
+                                       { 
+                                         label: 'AI', 
+                                         icon: Bot,
+                                         menuItems: ['Auto-Design Slide 1 Cover', 'Improve typography hierarchy', 'Generate slide content', 'Auto-retheme presentation', 'Make More Visual'],
+                                         onSelect: (item) => {
+                                           if (item.includes('Slide 1 Cover')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'layoutStyle', 'Startup Pitch Deck');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'backgroundColor', '#05070B');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'tagline', 'Ingoude Company');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'headline', 'STARTUP\nPITCH DECK');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'presenter', 'PRESENT BY NEIL TRAN');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'footerEmail', 'www.reallygreatsite.com');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'footerWeb', 'hello@reallygreatsite.com');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'footerLocation', '123 Anywhere Street');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'dual-mesh');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'neon-cyan-purple');
+                                           }
+                                           showToast(`AI Action: ${item}`);
+                                         }
+                                       },].map((btn) => {
                                       const isOpen = deckActiveToolbarMenu === btn.label;
                                       return (
-                                        <div key={btn.label} className="relative shrink-0">
+                                        <div key={btn.label} data-deck-toolbar-menu="true" className="relative shrink-0">
                                           <button
                                             type="button"
+                                            onPointerDown={(e) => {
+                                              e.stopPropagation();
+                                            }}
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               setDeckActiveToolbarMenu((prev) => (prev === btn.label ? null : btn.label));
@@ -47190,6 +47584,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               return (
                                 <div 
                                   ref={deckCanvasPreviewRef}
+                                  onClick={(e) => {
+                                    if (e.target === e.currentTarget || e.target.getAttribute('data-canvas-bg')) {
+                                      setDeckSelection({ type: 'none', id: null });
+                                      setDeckFloatingMenuOpen(null);
+                                    }
+                                  }}
+                                  data-canvas-bg="true"
                                   className={`aspect-[16/9] ${customBg ? '' : (currentPresetObj.background || 'bg-white')} rounded-[24px] md:rounded-[36px] shadow-[0_20px_50px_-10px_rgba(15,23,42,0.12)] border border-gray-150 relative overflow-hidden flex flex-col justify-between p-[32px] md:p-[48px] select-text mx-auto my-auto transition-all duration-300`}
                                   style={{ 
                                     width: 'min(100%, 820px)',
@@ -47201,28 +47602,168 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     fontFamily: selectedBrandKit?.font || 'inherit'
                                   }}
                                 >
-                                  {/* Background spline wave decoration */}
-                                  <div className="absolute inset-0 pointer-events-none select-none z-0 opacity-60">
-                                    <svg className="absolute bottom-0 right-0 w-[65%] h-[90%] overflow-visible" viewBox="0 0 900 650" fill="none">
-                                      <defs>
-                                        <linearGradient id="waveGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-                                          <stop offset="0%" stopColor={brandColor} stopOpacity="0.02" />
-                                          <stop offset="50%" stopColor={brandColor} stopOpacity="0.12" />
-                                          <stop offset="100%" stopColor={brandColor} stopOpacity="0.25" />
-                                        </linearGradient>
-                                      </defs>
-                                      {Array.from({ length: 60 }).map((_, i) => {
-                                        const ratio = i / 60;
-                                        const offset = ratio * 160;
-                                        const opacity = 0.02 + (1 - ratio) * 0.12;
-                                        const thickness = 0.4 + ratio * 1.2;
-                                        const d = `M ${220 + offset * 1.4} 650 C ${380 + Math.sin(ratio * Math.PI) * 80} ${520 - ratio * 180}, ${600 + Math.cos(ratio * Math.PI) * 100} ${280 - ratio * 110}, 950 ${300 + ratio * 210}`;
-                                        return (
-                                          <path key={i} d={d} stroke="url(#waveGrad)" strokeWidth={thickness} opacity={opacity} fill="none" />
-                                        );
-                                      })}
-                                    </svg>
-                                  </div>
+                                  {/* Interactive Draggable Background spline wave decoration */}
+                                  {(() => {
+                                    const isVectorSelected = deckSelection.type === 'vector';
+                                    const isHidden = activeDeckSlide?.vectorHidden;
+                                    if (isHidden) return null;
+                                    const vX = activeDeckSlide?.vectorPosX || 0;
+                                    const vY = activeDeckSlide?.vectorPosY || 0;
+                                    const c1 = activeDeckSlide?.vectorColor1 || '#00f0ff';
+                                    const c2 = activeDeckSlide?.vectorColor2 || '#a855f7';
+                                    const opVal = activeDeckSlide?.vectorOpacity ?? 0.75;
+
+                                    return (
+                                      <div 
+                                        className="absolute inset-0 pointer-events-none select-none z-[5]"
+                                      >
+                                        {/* Draggable Vector Mesh Container */}
+                                        <div
+                                          onPointerDown={(e) => {
+                                            e.stopPropagation();
+                                            setDeckSelection({ type: 'vector', id: 'vector-mesh' });
+                                            setDeckVectorDrag({
+                                              isDragging: true,
+                                              startX: e.clientX,
+                                              startY: e.clientY,
+                                              origX: vX,
+                                              origY: vY
+                                            });
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeckSelection({ type: 'vector', id: 'vector-mesh' });
+                                          }}
+                                          className={`absolute bottom-0 right-0 w-[72%] h-[95%] pointer-events-auto cursor-grab active:cursor-grabbing group transition-all ${
+                                            isVectorSelected 
+                                              ? 'border border-[#7C4DFF] shadow-[0_0_15px_rgba(124,77,255,0.2)] rounded-xl' 
+                                              : 'hover:border hover:border-[#7C4DFF]/40 rounded-xl'
+                                          }`}
+                                          style={{
+                                            transform: `translate(${vX}px, ${vY}px)`,
+                                            opacity: opVal,
+                                            transition: deckVectorDrag.isDragging ? 'none' : 'transform 120ms ease-out, opacity 200ms ease'
+                                          }}
+                                        >
+                                          {/* Sleek Apple-Style Selection Handles & Floating Mini Contextual Toolbar */}
+                                          {isVectorSelected && (
+                                            <>
+                                              {/* 4 Sleek Corner Anchor Square Dots */}
+                                              <div className="absolute -top-1 -left-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs z-30 pointer-events-none" />
+                                              <div className="absolute -top-1 -right-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs z-30 pointer-events-none" />
+                                              <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs z-30 pointer-events-none" />
+                                              <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs z-30 pointer-events-none" />
+                                              
+                                              {/* Floating Contextual Pill Badge - Smoothly floating */}
+                                              <div className="absolute -top-9 left-2 px-2.5 py-1 rounded-full bg-zinc-900/90 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-xl flex items-center gap-1.5 z-40 border border-white/15 pointer-events-auto transition-transform duration-300 ease-out">
+                                                <Sparkles size={11} className="text-[#00f0ff]" />
+                                                <span>Vector Mesh</span>
+                                                <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                
+                                                {/* Color 1 Quick Swatch Picker */}
+                                                <div className="relative">
+                                                  <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'vColor1' ? null : 'vColor1'); }}
+                                                    className="w-4 h-4 rounded-full border border-white/40 shadow-xs hover:scale-110 transition-transform cursor-pointer"
+                                                    style={{ backgroundColor: c1 }}
+                                                    title="Primary Beam Color"
+                                                  />
+                                                  {deckFloatingMenuOpen === 'vColor1' && (
+                                                    <div onClick={(e) => e.stopPropagation()} className="absolute bottom-6 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5">
+                                                      {['#00f0ff', '#3b82f6', '#7c4dff', '#a855f7', '#ec4899', '#f43f5e', '#10b981', '#f59e0b', '#ffffff', '#64748b'].map((hex) => (
+                                                        <button key={hex} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', hex); setDeckFloatingMenuOpen(null); }} className="w-6 h-6 rounded-md border border-white/20 hover:scale-110 transition-transform" style={{ backgroundColor: hex }} />
+                                                      ))}
+                                                    </div>
+                                                  )}
+                                                </div>
+
+                                                {/* Color 2 Quick Swatch Picker */}
+                                                <div className="relative">
+                                                  <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'vColor2' ? null : 'vColor2'); }}
+                                                    className="w-4 h-4 rounded-full border border-white/40 shadow-xs hover:scale-110 transition-transform cursor-pointer"
+                                                    style={{ backgroundColor: c2 }}
+                                                    title="Secondary Accent Color"
+                                                  />
+                                                  {deckFloatingMenuOpen === 'vColor2' && (
+                                                    <div onClick={(e) => e.stopPropagation()} className="absolute bottom-6 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5">
+                                                      {['#a855f7', '#7c3aed', '#ec4899', '#d946ef', '#00f0ff', '#0ea5e9', '#10b981', '#eab308', '#ffffff', '#334155'].map((hex) => (
+                                                        <button key={hex} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', hex); setDeckFloatingMenuOpen(null); }} className="w-6 h-6 rounded-md border border-white/20 hover:scale-110 transition-transform" style={{ backgroundColor: hex }} />
+                                                      ))}
+                                                    </div>
+                                                  )}
+                                                </div>
+
+                                                <div className="w-px h-3 bg-white/20 mx-0.5" />
+
+                                                {/* More Options Dropdown (...) */}
+                                                <div className="relative">
+                                                  <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'vMore' ? null : 'vMore'); }}
+                                                    className="p-1 hover:bg-white/10 rounded-md text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                                                    title="More actions"
+                                                  >
+                                                    <MoreHorizontal size={12} />
+                                                  </button>
+                                                  {deckFloatingMenuOpen === 'vMore' && (
+                                                    <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-40 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-0.5 text-xs text-zinc-200">
+                                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', (vX || 0) + 20); updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', (vY || 0) + 20); setDeckFloatingMenuOpen(null); showToast('Duplicated vector position'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-1.5"><Copy size={11} /> Duplicate</button>
+                                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', 0); updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', 0); setDeckFloatingMenuOpen(null); showToast('Position reset'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-1.5"><RotateCcw size={11} /> Reset Pos</button>
+                                                      <div className="h-px bg-white/10 my-0.5" />
+                                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', true); setDeckSelection({ type: 'none', id: null }); showToast('Vector mesh deleted'); }} className="w-full text-left px-2 py-1 hover:bg-rose-500/20 text-rose-400 rounded-md flex items-center gap-1.5"><Trash2 size={11} /> Delete Mesh</button>
+                                                    </div>
+                                                  )}
+                                                </div>
+
+                                                {/* Quick Delete */}
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', true); setDeckSelection({ type: 'none', id: null }); showToast('Vector mesh removed'); }}
+                                                  className="p-1 hover:bg-rose-500/30 text-zinc-400 hover:text-rose-300 rounded-md transition-colors cursor-pointer"
+                                                  title="Delete vector mesh"
+                                                >
+                                                  <Trash2 size={11} />
+                                                </button>
+                                              </div>
+                                            </>
+                                          )}
+
+                                          <svg className="w-full h-full overflow-visible pointer-events-none" viewBox="0 0 900 650" fill="none">
+                                            <defs>
+                                              <linearGradient id="dynWaveGrad1" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                <stop offset="0%" stopColor={c1} stopOpacity="0.05" />
+                                                <stop offset="50%" stopColor={c1} stopOpacity="0.45" />
+                                                <stop offset="100%" stopColor={c1} stopOpacity="0.85" />
+                                              </linearGradient>
+                                              <linearGradient id="dynWaveGrad2" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                <stop offset="0%" stopColor={c2} stopOpacity="0.05" />
+                                                <stop offset="50%" stopColor={c2} stopOpacity="0.35" />
+                                                <stop offset="100%" stopColor={c2} stopOpacity="0.75" />
+                                              </linearGradient>
+                                            </defs>
+                                            {/* Dual-Mesh Vector Beams */}
+                                            {Array.from({ length: 45 }).map((_, i) => {
+                                              const ratio = i / 45;
+                                              const offset = ratio * 180;
+                                              const opacity = 0.05 + (1 - ratio) * 0.35;
+                                              const thickness = 0.6 + ratio * 1.5;
+                                              const d1 = `M ${140 + offset * 1.6} 650 C ${320 + Math.sin(ratio * Math.PI) * 110} ${500 - ratio * 200}, ${580 + Math.cos(ratio * Math.PI) * 120} ${240 - ratio * 130}, 950 ${260 + ratio * 230}`;
+                                              const d2 = `M ${80 + offset * 1.4} 650 C ${280 + Math.cos(ratio * Math.PI) * 90} ${460 - ratio * 170}, ${520 + Math.sin(ratio * Math.PI) * 100} ${200 - ratio * 110}, 950 ${340 + ratio * 210}`;
+                                              return (
+                                                <g key={i}>
+                                                  <path d={d1} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />
+                                                  <path d={d2} stroke="url(#dynWaveGrad2)" strokeWidth={thickness * 0.85} opacity={opacity * 0.8} fill="none" />
+                                                </g>
+                                              );
+                                            })}
+                                          </svg>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
 
                                   {/* Main Slide Content */}
                                   <div className="flex flex-col h-full justify-between relative z-10 pointer-events-none">
@@ -47299,14 +47840,225 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {resolvedDeckSlideDesign.blurb}
                                             </p>
                                           </div>
-                                          <div className={`aspect-[4/3] rounded-2xl border flex flex-col items-center justify-center p-4 shadow-sm ${
-                                            isDarkTheme ? 'bg-white/10 border-white/20 text-white' : 'bg-violet-50/80 border-violet-100 text-violet-900'
-                                          }`}>
+                                          <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/5 border border-white/10 text-center">
                                             <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 shadow-xs" style={{ backgroundColor: brandColor, color: '#FFFFFF' }}>
                                               <Sparkles size={20} />
                                             </div>
                                             <span className="text-xs font-bold">{resolvedDeckSlideDesign.visualType || 'Visual Stage'}</span>
                                             <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
+                                          </div>
+                                        </div>
+                                      ) : layout === 'Startup Pitch Deck' ? (
+                                        /* ── STARTUP PITCH DECK COVER TEMPLATE (REVERSE-ENGINEERED SLIDE 1) ── */
+                                        <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none">
+                                          {/* Top Row: Company Tagline / Subtitle */}
+                                          <div className="flex items-center justify-between">
+                                            <div 
+                                              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                              suppressContentEditableWarning
+                                              onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '')}
+                                              className="text-[13px] italic font-normal tracking-wide text-slate-300 outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text"
+                                            >
+                                              {activeDeckSlide?.tagline || 'Ingoude Company'}
+                                            </div>
+                                          </div>
+
+                                          {/* Center Area: Big Bold Title & Presenter Pill */}
+                                          <div className="flex flex-col gap-4 my-auto max-w-[62%] pointer-events-auto">
+                                            <h1
+                                              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                              suppressContentEditableWarning
+                                              onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
+                                              className="text-[44px] leading-[1.02] font-[900] tracking-tight text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text whitespace-pre-line font-sans"
+                                            >
+                                              {activeDeckSlide?.headline || 'STARTUP\nPITCH DECK'}
+                                            </h1>
+
+                                            {/* Presenter Pill Badge (Interactive Draggable Shape Object) */}
+                                            {(() => {
+                                              const isPillSelected = deckSelection.type === 'pill';
+                                              const isPillHidden = activeDeckSlide?.pillHidden;
+                                              if (isPillHidden) return null;
+                                              const pX = activeDeckSlide?.pillPosX || 0;
+                                              const pY = activeDeckSlide?.pillPosY || 0;
+                                              const pillGradient = activeDeckSlide?.pillGradient || 'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)';
+
+                                              return (
+                                                <div 
+                                                  className="relative inline-flex self-start pointer-events-auto select-none"
+                                                  style={{
+                                                    transform: `translate(${pX}px, ${pY}px)`,
+                                                    transition: deckPillDrag.isDragging ? 'none' : 'transform 120ms ease-out'
+                                                  }}
+                                                >
+                                                  {/* Pill Shape Box */}
+                                                  <div
+                                                    onPointerDown={(e) => {
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'pill', id: 'presenter-pill' });
+                                                      setDeckPillDrag({
+                                                        isDragging: true,
+                                                        startX: e.clientX,
+                                                        startY: e.clientY,
+                                                        origX: pX,
+                                                        origY: pY
+                                                      });
+                                                    }}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'pill', id: 'presenter-pill' });
+                                                    }}
+                                                    className={`relative inline-flex items-center px-4 py-1.5 rounded-full border border-white/20 shadow-md cursor-grab active:cursor-grabbing transition-all ${
+                                                      isPillSelected 
+                                                        ? 'outline outline-1 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 shadow-[0_0_15px_rgba(124,77,255,0.3)]' 
+                                                        : 'hover:border-white/40'
+                                                    }`}
+                                                    style={{
+                                                      background: pillGradient
+                                                    }}
+                                                  >
+                                                    {/* Sleek Selection Handles */}
+                                                    {isPillSelected && (
+                                                      <>
+                                                        <div className="absolute -top-1 -left-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs pointer-events-none" />
+                                                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs pointer-events-none" />
+                                                        <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs pointer-events-none" />
+                                                        <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs pointer-events-none" />
+                                                        
+                                                        {/* Floating Contextual Toolbar above Pill Badge */}
+                                                        <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/90 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/15 whitespace-nowrap pointer-events-auto">
+                                                          <Palette size={11} className="text-violet-400" />
+                                                          <span>Pill Gradient</span>
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                          
+                                                          {/* Gradient Presets Popover */}
+                                                          <div className="relative">
+                                                            <button
+                                                              type="button"
+                                                              onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pillGrad' ? null : 'pillGrad'); }}
+                                                              className="w-4 h-4 rounded-full border border-white/40 shadow-xs hover:scale-110 transition-transform cursor-pointer"
+                                                              style={{ background: pillGradient }}
+                                                              title="Gradient Style"
+                                                            />
+                                                            {deckFloatingMenuOpen === 'pillGrad' && (
+                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-6 left-0 z-[999] w-52 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 flex flex-col gap-1 text-xs">
+                                                                {[
+                                                                  { name: 'Dark Cyber Glow', val: 'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)' },
+                                                                  { name: 'Royal Indigo Purple', val: 'linear-gradient(135deg, #4f46e5, #7c3aed)' },
+                                                                  { name: 'Electric Cyan Beams', val: 'linear-gradient(135deg, #06b6d4, #3b82f6)' },
+                                                                  { name: 'Laser Rose Glow', val: 'linear-gradient(135deg, #f43f5e, #ec4899)' },
+                                                                  { name: 'Emerald Trust', val: 'linear-gradient(135deg, #059669, #10b981)' },
+                                                                  { name: 'Obsidian Minimal', val: 'linear-gradient(135deg, #1e293b, #0f172a)' },
+                                                                ].map((g) => (
+                                                                  <button
+                                                                    key={g.name}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                      updateDeckSlideField(activeDeckSlide?.id, 'pillGradient', g.val);
+                                                                      setDeckFloatingMenuOpen(null);
+                                                                      showToast(`Pill gradient: ${g.name}`);
+                                                                    }}
+                                                                    className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-2 text-zinc-200"
+                                                                  >
+                                                                    <div className="w-3.5 h-3.5 rounded-full shrink-0 border border-white/20" style={{ background: g.val }} />
+                                                                    <span>{g.name}</span>
+                                                                  </button>
+                                                                ))}
+                                                              </div>
+                                                            )}
+                                                          </div>
+
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+
+                                                          {/* More Options */}
+                                                          <div className="relative">
+                                                            <button
+                                                              type="button"
+                                                              onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pillMore' ? null : 'pillMore'); }}
+                                                              className="p-1 hover:bg-white/10 rounded-md text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                                                            >
+                                                              <MoreHorizontal size={12} />
+                                                            </button>
+                                                            {deckFloatingMenuOpen === 'pillMore' && (
+                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-40 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-0.5 text-xs text-zinc-200">
+                                                                <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillPosX', (pX || 0) + 15); updateDeckSlideField(activeDeckSlide?.id, 'pillPosY', (pY || 0) + 15); setDeckFloatingMenuOpen(null); showToast('Pill duplicated'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-1.5"><Copy size={11} /> Duplicate</button>
+                                                                <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillPosX', 0); updateDeckSlideField(activeDeckSlide?.id, 'pillPosY', 0); setDeckFloatingMenuOpen(null); showToast('Position reset'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-1.5"><RotateCcw size={11} /> Reset Pos</button>
+                                                                <div className="h-px bg-white/10 my-0.5" />
+                                                                <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillHidden', true); setDeckSelection({ type: 'none', id: null }); showToast('Pill badge removed'); }} className="w-full text-left px-2 py-1 hover:bg-rose-500/20 text-rose-400 rounded-md flex items-center gap-1.5"><Trash2 size={11} /> Delete Shape</button>
+                                                              </div>
+                                                            )}
+                                                          </div>
+
+                                                          {/* Delete Pill */}
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'pillHidden', true); setDeckSelection({ type: 'none', id: null }); showToast('Pill shape removed'); }}
+                                                            className="p-1 hover:bg-rose-500/30 text-zinc-400 hover:text-rose-300 rounded-md transition-colors cursor-pointer"
+                                                            title="Delete pill badge"
+                                                          >
+                                                            <Trash2 size={11} />
+                                                          </button>
+                                                        </div>
+                                                      </>
+                                                    )}
+
+                                                    <span 
+                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                      suppressContentEditableWarning
+                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'presenter', e.currentTarget.textContent || '')}
+                                                      className="text-[11px] font-bold tracking-[0.2em] text-slate-200 uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text"
+                                                    >
+                                                      {activeDeckSlide?.presenter || 'PRESENT BY NEIL TRAN'}
+                                                    </span>
+                                                  </div>
+                                                </div>
+                                              );
+                                            })()}
+                                          </div>
+
+                                          {/* Bottom Row: 3-column Contact Info Metadata */}
+                                          <div className="grid grid-cols-3 gap-2 pt-4 border-t border-white/10 text-[11px] font-medium text-slate-300 pointer-events-auto">
+                                            <div className="flex items-center gap-1.5">
+                                              <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0 text-[10px]">
+                                                ✉
+                                              </div>
+                                              <span 
+                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                suppressContentEditableWarning
+                                                onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footerEmail', e.currentTarget.textContent || '')}
+                                                className="outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 truncate cursor-text"
+                                              >
+                                                {activeDeckSlide?.footerEmail || 'www.reallygreatsite.com'}
+                                              </span>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5">
+                                              <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0 text-[10px]">
+                                                🌐
+                                              </div>
+                                              <span 
+                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                suppressContentEditableWarning
+                                                onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footerWeb', e.currentTarget.textContent || '')}
+                                                className="outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 truncate cursor-text"
+                                              >
+                                                {activeDeckSlide?.footerWeb || 'hello@reallygreatsite.com'}
+                                              </span>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5">
+                                              <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0 text-[10px]">
+                                                📍
+                                              </div>
+                                              <span 
+                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                suppressContentEditableWarning
+                                                onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footerLocation', e.currentTarget.textContent || '')}
+                                                className="outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 truncate cursor-text"
+                                              >
+                                                {activeDeckSlide?.footerLocation || '123 Anywhere Street'}
+                                              </span>
+                                            </div>
                                           </div>
                                         </div>
                                       ) : layout === 'Text & List' ? (
@@ -51205,7 +51957,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 if (action.type === 'schedule') {
                   setIsScheduleSessionModalOpen(true);
                 } else {
-                  createRoomExperience(action.code);
+                  createRoomExperience();
                 }
               }
             }} 
