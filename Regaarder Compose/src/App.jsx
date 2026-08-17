@@ -12243,6 +12243,7 @@ const DEFAULT_DECK_SLIDES = [
   const [deckSelection, setDeckSelection] = useState({ type: 'none', id: null });
   const [deckVectorDrag, setDeckVectorDrag] = useState({ isDragging: false, startX: 0, startY: 0, origX: 0, origY: 0 });
   const [deckPillDrag, setDeckPillDrag] = useState({ isDragging: false, startX: 0, startY: 0, origX: 0, origY: 0 });
+  const [deckResizeDrag, setDeckResizeDrag] = useState({ isResizing: false, handle: null, startX: 0, startY: 0, initW: 0, initH: 0, initX: 0, initY: 0, target: null });
   const [deckFloatingMenuOpen, setDeckFloatingMenuOpen] = useState(null);
   const [deckSemanticStyle, setDeckSemanticStyle] = useState('Title');
   const [deckTextFont, setDeckTextFont] = useState('Inter');
@@ -31193,6 +31194,54 @@ Respond with a JSON array of slide objects matching the schema.`;
     };
   }, [deckPillDrag.isDragging, deckPillDrag.startX, deckPillDrag.startY, deckPillDrag.origX, deckPillDrag.origY, activeDeckSlide?.id]);
 
+    // Object edge and corner resizing lifecycle listener
+  useEffect(() => {
+    if (!deckResizeDrag.isResizing) return;
+    const handlePointerMove = (e) => {
+      const dx = e.clientX - deckResizeDrag.startX;
+      const dy = e.clientY - deckResizeDrag.startY;
+      const { handle, initW, initH, initX, initY, target } = deckResizeDrag;
+      
+      let newW = initW;
+      let newH = initH;
+      let newX = initX;
+      let newY = initY;
+
+      if (handle.includes('right')) newW = Math.max(120, Math.min(850, initW + dx));
+      if (handle.includes('left')) {
+        const deltaW = Math.min(initW - 120, dx);
+        newW = initW - deltaW;
+        newX = initX + deltaW;
+      }
+      if (handle.includes('bottom')) newH = Math.max(80, Math.min(650, initH + dy));
+      if (handle.includes('top')) {
+        const deltaH = Math.min(initH - 80, dy);
+        newH = initH - deltaH;
+        newY = initY + deltaH;
+      }
+
+      if (target === 'vector') {
+        updateDeckSlideField(activeDeckSlide?.id, 'vectorWidth', Math.round(newW));
+        updateDeckSlideField(activeDeckSlide?.id, 'vectorHeight', Math.round(newH));
+        updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', Math.round(newX));
+        updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', Math.round(newY));
+      } else if (target === 'pill') {
+        updateDeckSlideField(activeDeckSlide?.id, 'pillWidth', Math.round(newW));
+        updateDeckSlideField(activeDeckSlide?.id, 'pillPosX', Math.round(newX));
+        updateDeckSlideField(activeDeckSlide?.id, 'pillPosY', Math.round(newY));
+      }
+    };
+    const handlePointerUp = () => {
+      setDeckResizeDrag((prev) => ({ ...prev, isResizing: false }));
+    };
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [deckResizeDrag, activeDeckSlide?.id]);
+
     // Vector mesh dragging lifecycle listener
   useEffect(() => {
     if (!deckVectorDrag.isDragging) return;
@@ -47163,22 +47212,34 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        },
                                        { 
                                          label: 'Vector & Wave', 
-                                         icon: Sparkles,
+                                         icon: RegaarderVectorIcon,
                                          menuItems: ['Dual-Mesh (Cyan & Purple)', 'Electric Cyan Wave', 'Neon Cyan & Purple Glow', 'Bottom-Left Wave Accent', 'Dual Warp Light Beams'],
                                          onSelect: (item) => {
-                                           if (item.includes('Dual-Mesh') || item.includes('Dual Warp')) {
+                                           updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', false);
+                                           if (item.includes('Dual-Mesh')) {
                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'dual-mesh');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'neon-cyan-purple');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#00f0ff');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#a855f7');
                                            } else if (item.includes('Electric Cyan')) {
                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'electric-cyan');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'electric-cyan');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#00f0ff');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#38bdf8');
                                            } else if (item.includes('Neon Cyan & Purple')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'dual-mesh');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'neon-cyan-purple');
-                                           } else {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'subtle-arc');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'neon-cyan-purple');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#00f0ff');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#d946ef');
+                                           } else if (item.includes('Bottom-Left')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'bottom-left-wave');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#38bdf8');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#818cf8');
+                                           } else if (item.includes('Dual Warp')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'dual-warp');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#00f0ff');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#ec4899');
                                            }
-                                           showToast(`Vector wave style set to: ${item}`);
+                                           updateDeckSlideField(activeDeckSlide?.id, 'vectorOpacity', 0.85);
+                                           setDeckSelection({ type: 'vector', id: 'vector-mesh' });
+                                           showToast(`Added & selected: ${item}`);
                                          }
                                        },
                                        { 
@@ -47200,14 +47261,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                          icon: Plus,
                                          menuItems: ['Presenter Pill Badge', 'Gradient Pill Shape', 'Text Box (Multi-line)', 'Heading H1', 'Glow Vector Wave', 'Footer Contact Trio', 'Image / Media', 'Chart / Table'],
                                          onSelect: (item) => {
-                                           if (item.includes('Presenter Pill')) {
+                                           if (item.includes('Presenter Pill') || item.includes('Gradient Pill Shape')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'pillHidden', false);
                                              updateDeckSlideField(activeDeckSlide?.id, 'presenter', 'PRESENT BY NEIL TRAN');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'pillGradient', 'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)');
+                                             setDeckSelection({ type: 'pill', id: 'presenter-pill' });
+                                           } else if (item.includes('Glow Vector Wave')) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', false);
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'dual-mesh');
+                                             setDeckSelection({ type: 'vector', id: 'vector-mesh' });
                                            } else if (item.includes('Footer Contact Trio')) {
                                              updateDeckSlideField(activeDeckSlide?.id, 'footerEmail', 'www.reallygreatsite.com');
                                              updateDeckSlideField(activeDeckSlide?.id, 'footerWeb', 'hello@reallygreatsite.com');
                                              updateDeckSlideField(activeDeckSlide?.id, 'footerLocation', '123 Anywhere Street');
                                            }
-                                           showToast(`Inserted ${item}`);
+                                           showToast(`Inserted & selected ${item}`);
                                          }
                                        },
                                        { 
@@ -47602,24 +47670,29 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     fontFamily: selectedBrandKit?.font || 'inherit'
                                   }}
                                 >
-                                  {/* Interactive Draggable Background spline wave decoration */}
+                                  {/* Interactive Draggable & Resizable Background spline wave decoration */}
                                   {(() => {
                                     const isVectorSelected = deckSelection.type === 'vector';
                                     const isHidden = activeDeckSlide?.vectorHidden;
                                     if (isHidden) return null;
                                     const vX = activeDeckSlide?.vectorPosX || 0;
                                     const vY = activeDeckSlide?.vectorPosY || 0;
+                                    const vW = activeDeckSlide?.vectorWidth || 580;
+                                    const vH = activeDeckSlide?.vectorHeight || 420;
+                                    const waveStyle = activeDeckSlide?.vectorWaveStyle || 'dual-mesh';
                                     const c1 = activeDeckSlide?.vectorColor1 || '#00f0ff';
                                     const c2 = activeDeckSlide?.vectorColor2 || '#a855f7';
-                                    const opVal = activeDeckSlide?.vectorOpacity ?? 0.75;
+                                    const opVal = activeDeckSlide?.vectorOpacity ?? 0.85;
 
                                     return (
                                       <div 
                                         className="absolute inset-0 pointer-events-none select-none z-[5]"
                                       >
-                                        {/* Draggable Vector Mesh Container */}
+                                        {/* Draggable & Resizable Vector Mesh Container */}
                                         <div
                                           onPointerDown={(e) => {
+                                            // Only drag if not clicking a resize handle
+                                            if (e.target.getAttribute('data-resize-handle')) return;
                                             e.stopPropagation();
                                             setDeckSelection({ type: 'vector', id: 'vector-mesh' });
                                             setDeckVectorDrag({
@@ -47634,29 +47707,177 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             e.stopPropagation();
                                             setDeckSelection({ type: 'vector', id: 'vector-mesh' });
                                           }}
-                                          className={`absolute bottom-0 right-0 w-[72%] h-[95%] pointer-events-auto cursor-grab active:cursor-grabbing group transition-all ${
+                                          className={`absolute bottom-0 right-0 pointer-events-auto cursor-grab active:cursor-grabbing group transition-all ${
                                             isVectorSelected 
-                                              ? 'border border-[#7C4DFF] shadow-[0_0_15px_rgba(124,77,255,0.2)] rounded-xl' 
+                                              ? 'border border-[#7C4DFF] shadow-[0_0_15px_rgba(124,77,255,0.25)] rounded-xl ring-1 ring-[#7C4DFF]/30' 
                                               : 'hover:border hover:border-[#7C4DFF]/40 rounded-xl'
                                           }`}
                                           style={{
+                                            width: `${vW}px`,
+                                            height: `${vH}px`,
                                             transform: `translate(${vX}px, ${vY}px)`,
                                             opacity: opVal,
-                                            transition: deckVectorDrag.isDragging ? 'none' : 'transform 120ms ease-out, opacity 200ms ease'
+                                            transition: deckVectorDrag.isDragging || deckResizeDrag.isResizing ? 'none' : 'transform 120ms ease-out, width 100ms ease-out, height 100ms ease-out, opacity 200ms ease'
                                           }}
                                         >
-                                          {/* Sleek Apple-Style Selection Handles & Floating Mini Contextual Toolbar */}
+                                          {/* Sleek Apple-Style Selection & Resize Handles & Floating Mini Contextual Toolbar */}
                                           {isVectorSelected && (
                                             <>
-                                              {/* 4 Sleek Corner Anchor Square Dots */}
-                                              <div className="absolute -top-1 -left-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs z-30 pointer-events-none" />
-                                              <div className="absolute -top-1 -right-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs z-30 pointer-events-none" />
-                                              <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs z-30 pointer-events-none" />
-                                              <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs z-30 pointer-events-none" />
+                                              {/* 4 Corner Resize Handles */}
+                                              <div 
+                                                data-resize-handle="true"
+                                                onPointerDown={(e) => {
+                                                  e.stopPropagation();
+                                                  setDeckResizeDrag({
+                                                    isResizing: true,
+                                                    handle: 'top-left',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    initW: vW,
+                                                    initH: vH,
+                                                    initX: vX,
+                                                    initY: vY,
+                                                    target: 'vector'
+                                                  });
+                                                }}
+                                                className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nwse-resize hover:scale-125 transition-transform" 
+                                                title="Resize Top-Left"
+                                              />
+                                              <div 
+                                                data-resize-handle="true"
+                                                onPointerDown={(e) => {
+                                                  e.stopPropagation();
+                                                  setDeckResizeDrag({
+                                                    isResizing: true,
+                                                    handle: 'top-right',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    initW: vW,
+                                                    initH: vH,
+                                                    initX: vX,
+                                                    initY: vY,
+                                                    target: 'vector'
+                                                  });
+                                                }}
+                                                className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nesw-resize hover:scale-125 transition-transform" 
+                                                title="Resize Top-Right"
+                                              />
+                                              <div 
+                                                data-resize-handle="true"
+                                                onPointerDown={(e) => {
+                                                  e.stopPropagation();
+                                                  setDeckResizeDrag({
+                                                    isResizing: true,
+                                                    handle: 'bottom-left',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    initW: vW,
+                                                    initH: vH,
+                                                    initX: vX,
+                                                    initY: vY,
+                                                    target: 'vector'
+                                                  });
+                                                }}
+                                                className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nesw-resize hover:scale-125 transition-transform" 
+                                                title="Resize Bottom-Left"
+                                              />
+                                              <div 
+                                                data-resize-handle="true"
+                                                onPointerDown={(e) => {
+                                                  e.stopPropagation();
+                                                  setDeckResizeDrag({
+                                                    isResizing: true,
+                                                    handle: 'bottom-right',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    initW: vW,
+                                                    initH: vH,
+                                                    initX: vX,
+                                                    initY: vY,
+                                                    target: 'vector'
+                                                  });
+                                                }}
+                                                className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nwse-resize hover:scale-125 transition-transform" 
+                                                title="Resize Bottom-Right"
+                                              />
+
+                                              {/* 4 Edge Midpoint Resize Handles */}
+                                              <div 
+                                                data-resize-handle="true"
+                                                onPointerDown={(e) => {
+                                                  e.stopPropagation();
+                                                  setDeckResizeDrag({
+                                                    isResizing: true,
+                                                    handle: 'top',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    initW: vW,
+                                                    initH: vH,
+                                                    initX: vX,
+                                                    initY: vY,
+                                                    target: 'vector'
+                                                  });
+                                                }}
+                                                className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs z-30 cursor-ns-resize hover:scale-110 transition-transform" 
+                                              />
+                                              <div 
+                                                data-resize-handle="true"
+                                                onPointerDown={(e) => {
+                                                  e.stopPropagation();
+                                                  setDeckResizeDrag({
+                                                    isResizing: true,
+                                                    handle: 'bottom',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    initW: vW,
+                                                    initH: vH,
+                                                    initX: vX,
+                                                    initY: vY,
+                                                    target: 'vector'
+                                                  });
+                                                }}
+                                                className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs z-30 cursor-ns-resize hover:scale-110 transition-transform" 
+                                              />
+                                              <div 
+                                                data-resize-handle="true"
+                                                onPointerDown={(e) => {
+                                                  e.stopPropagation();
+                                                  setDeckResizeDrag({
+                                                    isResizing: true,
+                                                    handle: 'left',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    initW: vW,
+                                                    initH: vH,
+                                                    initX: vX,
+                                                    initY: vY,
+                                                    target: 'vector'
+                                                  });
+                                                }}
+                                                className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2 h-4 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs z-30 cursor-ew-resize hover:scale-110 transition-transform" 
+                                              />
+                                              <div 
+                                                data-resize-handle="true"
+                                                onPointerDown={(e) => {
+                                                  e.stopPropagation();
+                                                  setDeckResizeDrag({
+                                                    isResizing: true,
+                                                    handle: 'right',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    initW: vW,
+                                                    initH: vH,
+                                                    initX: vX,
+                                                    initY: vY,
+                                                    target: 'vector'
+                                                  });
+                                                }}
+                                                className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2 h-4 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs z-30 cursor-ew-resize hover:scale-110 transition-transform" 
+                                              />
                                               
-                                              {/* Floating Contextual Pill Badge - Smoothly floating */}
+                                              {/* Floating Contextual Pill Badge with Custom Regaarder Vector Icon */}
                                               <div className="absolute -top-9 left-2 px-2.5 py-1 rounded-full bg-zinc-900/90 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-xl flex items-center gap-1.5 z-40 border border-white/15 pointer-events-auto transition-transform duration-300 ease-out">
-                                                <Sparkles size={11} className="text-[#00f0ff]" />
+                                                <RegaarderVectorIcon size={12} className="text-[#00f0ff]" />
                                                 <span>Vector Mesh</span>
                                                 <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                 
@@ -47709,9 +47930,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     <MoreHorizontal size={12} />
                                                   </button>
                                                   {deckFloatingMenuOpen === 'vMore' && (
-                                                    <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-40 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-0.5 text-xs text-zinc-200">
+                                                    <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-44 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-0.5 text-xs text-zinc-200">
                                                       <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', (vX || 0) + 20); updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', (vY || 0) + 20); setDeckFloatingMenuOpen(null); showToast('Duplicated vector position'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-1.5"><Copy size={11} /> Duplicate</button>
-                                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', 0); updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', 0); setDeckFloatingMenuOpen(null); showToast('Position reset'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-1.5"><RotateCcw size={11} /> Reset Pos</button>
+                                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', 0); updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', 0); updateDeckSlideField(activeDeckSlide?.id, 'vectorWidth', 580); updateDeckSlideField(activeDeckSlide?.id, 'vectorHeight', 420); setDeckFloatingMenuOpen(null); showToast('Reset position & size'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-1.5"><RotateCcw size={11} /> Reset Bounds</button>
                                                       <div className="h-px bg-white/10 my-0.5" />
                                                       <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', true); setDeckSelection({ type: 'none', id: null }); showToast('Vector mesh deleted'); }} className="w-full text-left px-2 py-1 hover:bg-rose-500/20 text-rose-400 rounded-md flex items-center gap-1.5"><Trash2 size={11} /> Delete Mesh</button>
                                                     </div>
@@ -47731,34 +47952,78 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             </>
                                           )}
 
+                                          {/* Multi-Style Mathematical Wave Vector SVG */}
                                           <svg className="w-full h-full overflow-visible pointer-events-none" viewBox="0 0 900 650" fill="none">
                                             <defs>
                                               <linearGradient id="dynWaveGrad1" x1="0%" y1="100%" x2="100%" y2="0%">
                                                 <stop offset="0%" stopColor={c1} stopOpacity="0.05" />
-                                                <stop offset="50%" stopColor={c1} stopOpacity="0.45" />
-                                                <stop offset="100%" stopColor={c1} stopOpacity="0.85" />
+                                                <stop offset="50%" stopColor={c1} stopOpacity="0.5" />
+                                                <stop offset="100%" stopColor={c1} stopOpacity="0.9" />
                                               </linearGradient>
                                               <linearGradient id="dynWaveGrad2" x1="0%" y1="100%" x2="100%" y2="0%">
                                                 <stop offset="0%" stopColor={c2} stopOpacity="0.05" />
-                                                <stop offset="50%" stopColor={c2} stopOpacity="0.35" />
-                                                <stop offset="100%" stopColor={c2} stopOpacity="0.75" />
+                                                <stop offset="50%" stopColor={c2} stopOpacity="0.4" />
+                                                <stop offset="100%" stopColor={c2} stopOpacity="0.8" />
                                               </linearGradient>
                                             </defs>
-                                            {/* Dual-Mesh Vector Beams */}
-                                            {Array.from({ length: 45 }).map((_, i) => {
-                                              const ratio = i / 45;
-                                              const offset = ratio * 180;
-                                              const opacity = 0.05 + (1 - ratio) * 0.35;
-                                              const thickness = 0.6 + ratio * 1.5;
-                                              const d1 = `M ${140 + offset * 1.6} 650 C ${320 + Math.sin(ratio * Math.PI) * 110} ${500 - ratio * 200}, ${580 + Math.cos(ratio * Math.PI) * 120} ${240 - ratio * 130}, 950 ${260 + ratio * 230}`;
-                                              const d2 = `M ${80 + offset * 1.4} 650 C ${280 + Math.cos(ratio * Math.PI) * 90} ${460 - ratio * 170}, ${520 + Math.sin(ratio * Math.PI) * 100} ${200 - ratio * 110}, 950 ${340 + ratio * 210}`;
-                                              return (
-                                                <g key={i}>
-                                                  <path d={d1} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />
-                                                  <path d={d2} stroke="url(#dynWaveGrad2)" strokeWidth={thickness * 0.85} opacity={opacity * 0.8} fill="none" />
-                                                </g>
-                                              );
-                                            })}
+                                            {waveStyle === 'electric-cyan' ? (
+                                              /* Electric Cyan Ribbon */
+                                              Array.from({ length: 32 }).map((_, i) => {
+                                                const ratio = i / 32;
+                                                const offset = ratio * 140;
+                                                const opacity = 0.08 + (1 - ratio) * 0.45;
+                                                const thickness = 0.8 + ratio * 2;
+                                                const d = `M ${100 + offset * 1.8} 650 C ${280 + Math.sin(ratio * Math.PI) * 140} ${480 - ratio * 220}, ${540 + Math.cos(ratio * Math.PI) * 130} ${220 - ratio * 140}, 950 ${240 + ratio * 200}`;
+                                                return <path key={i} d={d} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />;
+                                              })
+                                            ) : waveStyle === 'bottom-left-wave' ? (
+                                              /* Bottom-Left Ascending Accent */
+                                              Array.from({ length: 38 }).map((_, i) => {
+                                                const ratio = i / 38;
+                                                const offset = ratio * 160;
+                                                const opacity = 0.06 + (1 - ratio) * 0.38;
+                                                const thickness = 0.7 + ratio * 1.6;
+                                                const d = `M 0 ${400 + offset * 1.2} C ${240 + Math.cos(ratio * Math.PI) * 120} ${250 - ratio * 120}, ${520 + Math.sin(ratio * Math.PI) * 140} ${180 + ratio * 100}, 900 ${120 + offset * 1.5}`;
+                                                return (
+                                                  <g key={i}>
+                                                    <path d={d} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />
+                                                    <path d={d} stroke="url(#dynWaveGrad2)" strokeWidth={thickness * 0.7} opacity={opacity * 0.7} fill="none" />
+                                                  </g>
+                                                );
+                                              })
+                                            ) : waveStyle === 'dual-warp' ? (
+                                              /* Dual Warp Light Beams */
+                                              Array.from({ length: 40 }).map((_, i) => {
+                                                const ratio = i / 40;
+                                                const offset = ratio * 200;
+                                                const opacity = 0.05 + (1 - ratio) * 0.4;
+                                                const thickness = 0.6 + ratio * 1.8;
+                                                const d1 = `M ${50 + offset * 2} 650 C ${240 + offset} 400, ${600 - offset * 0.8} 260, 950 ${180 + offset * 1.5}`;
+                                                const d2 = `M ${120 + offset * 1.6} 650 C ${350} ${520 - ratio * 200}, ${650} ${280 - ratio * 150}, 950 ${320 + ratio * 180}`;
+                                                return (
+                                                  <g key={i}>
+                                                    <path d={d1} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />
+                                                    <path d={d2} stroke="url(#dynWaveGrad2)" strokeWidth={thickness * 0.8} opacity={opacity * 0.8} fill="none" />
+                                                  </g>
+                                                );
+                                              })
+                                            ) : (
+                                              /* Dual-Mesh Cybernetic Lattice (Default & Neon Cyan Purple) */
+                                              Array.from({ length: 45 }).map((_, i) => {
+                                                const ratio = i / 45;
+                                                const offset = ratio * 180;
+                                                const opacity = 0.05 + (1 - ratio) * 0.35;
+                                                const thickness = 0.6 + ratio * 1.5;
+                                                const d1 = `M ${140 + offset * 1.6} 650 C ${320 + Math.sin(ratio * Math.PI) * 110} ${500 - ratio * 200}, ${580 + Math.cos(ratio * Math.PI) * 120} ${240 - ratio * 130}, 950 ${260 + ratio * 230}`;
+                                                const d2 = `M ${80 + offset * 1.4} 650 C ${280 + Math.cos(ratio * Math.PI) * 90} ${460 - ratio * 170}, ${520 + Math.sin(ratio * Math.PI) * 100} ${200 - ratio * 110}, 950 ${340 + ratio * 210}`;
+                                                return (
+                                                  <g key={i}>
+                                                    <path d={d1} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />
+                                                    <path d={d2} stroke="url(#dynWaveGrad2)" strokeWidth={thickness * 0.85} opacity={opacity * 0.8} fill="none" />
+                                                  </g>
+                                                );
+                                              })
+                                            )}
                                           </svg>
                                         </div>
                                       </div>
@@ -47874,13 +48139,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {activeDeckSlide?.headline || 'STARTUP\nPITCH DECK'}
                                             </h1>
 
-                                            {/* Presenter Pill Badge (Interactive Draggable Shape Object) */}
+                                            {/* Presenter Pill Badge (Interactive Draggable & Resizable Shape Object) */}
                                             {(() => {
                                               const isPillSelected = deckSelection.type === 'pill';
                                               const isPillHidden = activeDeckSlide?.pillHidden;
                                               if (isPillHidden) return null;
                                               const pX = activeDeckSlide?.pillPosX || 0;
                                               const pY = activeDeckSlide?.pillPosY || 0;
+                                              const pW = activeDeckSlide?.pillWidth || 220;
                                               const pillGradient = activeDeckSlide?.pillGradient || 'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)';
 
                                               return (
@@ -47888,12 +48154,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   className="relative inline-flex self-start pointer-events-auto select-none"
                                                   style={{
                                                     transform: `translate(${pX}px, ${pY}px)`,
-                                                    transition: deckPillDrag.isDragging ? 'none' : 'transform 120ms ease-out'
+                                                    transition: deckPillDrag.isDragging || deckResizeDrag.isResizing ? 'none' : 'transform 120ms ease-out'
                                                   }}
                                                 >
                                                   {/* Pill Shape Box */}
                                                   <div
                                                     onPointerDown={(e) => {
+                                                      if (e.target.getAttribute('data-resize-handle')) return;
                                                       e.stopPropagation();
                                                       setDeckSelection({ type: 'pill', id: 'presenter-pill' });
                                                       setDeckPillDrag({
@@ -47908,22 +48175,55 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       e.stopPropagation();
                                                       setDeckSelection({ type: 'pill', id: 'presenter-pill' });
                                                     }}
-                                                    className={`relative inline-flex items-center px-4 py-1.5 rounded-full border border-white/20 shadow-md cursor-grab active:cursor-grabbing transition-all ${
+                                                    className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-white/20 shadow-md cursor-grab active:cursor-grabbing transition-all ${
                                                       isPillSelected 
                                                         ? 'outline outline-1 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 shadow-[0_0_15px_rgba(124,77,255,0.3)]' 
                                                         : 'hover:border-white/40'
                                                     }`}
                                                     style={{
+                                                      minWidth: `${pW}px`,
                                                       background: pillGradient
                                                     }}
                                                   >
-                                                    {/* Sleek Selection Handles */}
+                                                    {/* Sleek Selection & Resize Handles */}
                                                     {isPillSelected && (
                                                       <>
-                                                        <div className="absolute -top-1 -left-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs pointer-events-none" />
-                                                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs pointer-events-none" />
-                                                        <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs pointer-events-none" />
-                                                        <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs pointer-events-none" />
+                                                        <div 
+                                                          data-resize-handle="true"
+                                                          onPointerDown={(e) => {
+                                                            e.stopPropagation();
+                                                            setDeckResizeDrag({
+                                                              isResizing: true,
+                                                              handle: 'left',
+                                                              startX: e.clientX,
+                                                              startY: e.clientY,
+                                                              initW: pW,
+                                                              initH: 36,
+                                                              initX: pX,
+                                                              initY: pY,
+                                                              target: 'pill'
+                                                            });
+                                                          }}
+                                                          className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2 h-3.5 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs cursor-ew-resize hover:scale-125 transition-transform" 
+                                                        />
+                                                        <div 
+                                                          data-resize-handle="true"
+                                                          onPointerDown={(e) => {
+                                                            e.stopPropagation();
+                                                            setDeckResizeDrag({
+                                                              isResizing: true,
+                                                              handle: 'right',
+                                                              startX: e.clientX,
+                                                              startY: e.clientY,
+                                                              initW: pW,
+                                                              initH: 36,
+                                                              initX: pX,
+                                                              initY: pY,
+                                                              target: 'pill'
+                                                            });
+                                                          }}
+                                                          className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2 h-3.5 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs cursor-ew-resize hover:scale-125 transition-transform" 
+                                                        />
                                                         
                                                         {/* Floating Contextual Toolbar above Pill Badge */}
                                                         <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/90 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/15 whitespace-nowrap pointer-events-auto">
@@ -47982,7 +48282,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                             {deckFloatingMenuOpen === 'pillMore' && (
                                                               <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-40 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-0.5 text-xs text-zinc-200">
                                                                 <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillPosX', (pX || 0) + 15); updateDeckSlideField(activeDeckSlide?.id, 'pillPosY', (pY || 0) + 15); setDeckFloatingMenuOpen(null); showToast('Pill duplicated'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-1.5"><Copy size={11} /> Duplicate</button>
-                                                                <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillPosX', 0); updateDeckSlideField(activeDeckSlide?.id, 'pillPosY', 0); setDeckFloatingMenuOpen(null); showToast('Position reset'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-1.5"><RotateCcw size={11} /> Reset Pos</button>
+                                                                <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillPosX', 0); updateDeckSlideField(activeDeckSlide?.id, 'pillPosY', 0); updateDeckSlideField(activeDeckSlide?.id, 'pillWidth', 220); setDeckFloatingMenuOpen(null); showToast('Position & width reset'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-1.5"><RotateCcw size={11} /> Reset Pos</button>
                                                                 <div className="h-px bg-white/10 my-0.5" />
                                                                 <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillHidden', true); setDeckSelection({ type: 'none', id: null }); showToast('Pill badge removed'); }} className="w-full text-left px-2 py-1 hover:bg-rose-500/20 text-rose-400 rounded-md flex items-center gap-1.5"><Trash2 size={11} /> Delete Shape</button>
                                                               </div>
