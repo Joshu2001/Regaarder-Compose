@@ -31191,7 +31191,18 @@ Respond with a JSON array of slide objects matching the schema.`;
   const exportActiveSheetToPDF = () => exportActiveSheetFormat('PDF');
   const exportActiveSheetToJSON = () => exportActiveSheetFormat('JSON');
 
-  const isSheetsMode = productMode === 'sheets';
+  // Auto-save deckSlidesData to localStorage and document
+  useEffect(() => {
+    if (!deckSlidesData || !deckSlidesData.length) return;
+    try {
+      localStorage.setItem('rc.deckSlidesData', JSON.stringify(deckSlidesData));
+      if (activeDocId) {
+        saveDocumentLocally({ silent: true, trackAction: false });
+      }
+    } catch (_e) {}
+  }, [deckSlidesData, activeDocId]);
+
+    const isSheetsMode = productMode === 'sheets';
   const updateDeckSlideField = (slideId, field, value) => {
     markUserHasEdited();
     setDeckSlidesData((prev) => prev.map((slide) => {
@@ -47536,6 +47547,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5"><RegaarderVectorIcon size={12} className="text-[#00f0ff]" /> Vector Wave Glow</span>
                                       <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
                                       <div className="flex items-center gap-1.5">
+                                        <span>Glow Saturation:</span>
+                                        {[
+                                          { id: 'ultra-radiant', label: 'Ultra Radiant' },
+                                          { id: 'neon-bloom', label: 'Neon Bloom' },
+                                          { id: 'electric-high', label: 'Electric High' },
+                                          { id: 'soft-ambient', label: 'Soft' }
+                                        ].map((g) => (
+                                          <button key={g.id} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorGlow', g.id); showToast(`Glow: ${g.label}`); }} className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 text-[10px] font-semibold">{g.label}</button>
+                                        ))}
+                                      </div>
+                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
+                                      <div className="flex items-center gap-1.5">
                                         <span>Primary:</span>
                                         {['#00f0ff', '#3b82f6', '#7c4dff', '#a855f7', '#ec4899', '#10b981', '#ffffff'].map((c) => (
                                           <button key={c} type="button" onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', c)} className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-zinc-600 hover:scale-110" style={{ backgroundColor: c }} />
@@ -48168,8 +48191,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             </>
                                           )}
 
-                                          {/* Multi-Style Mathematical Wave Vector SVG */}
-                                          <svg className="w-full h-full overflow-visible pointer-events-none" viewBox="0 0 900 650" fill="none">
+                                          {/* Multi-Style Mathematical Wave Vector SVG with Luminescence Glow & Saturation */}
+                                          <svg 
+                                            className="w-full h-full overflow-visible pointer-events-none transition-all duration-300" 
+                                            viewBox="0 0 900 650" 
+                                            fill="none"
+                                            style={{ filter: glowFilter }}
+                                          >
                                             <defs>
                                               <linearGradient id="dynWaveGrad1" x1="0%" y1="100%" x2="100%" y2="0%">
                                                 <stop offset="0%" stopColor={c1} stopOpacity="0.05" />
@@ -48332,13 +48360,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       ) : layout === 'Startup Pitch Deck' ? (
                                         /* ── STARTUP PITCH DECK COVER TEMPLATE (REVERSE-ENGINEERED SLIDE 1) ── */
                                         <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none">
-                                          {/* Top Row: Company Tagline / Subtitle */}
-                                          <div className="flex items-center justify-between">
+                                          {/* Top Row: Company Tagline / Subtitle (Fully Editable) */}
+                                          <div className="flex items-center justify-between pointer-events-auto select-auto z-20">
                                             <div 
                                               contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                               suppressContentEditableWarning
-                                              onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '')}
-                                              className="text-[13px] italic font-normal tracking-wide text-slate-300 outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text"
+                                              onBlur={(e) => {
+                                                updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '');
+                                                showToast('Tagline saved');
+                                              }}
+                                              className="text-[13px] italic font-normal tracking-wide text-slate-300 outline-none hover:ring-1 hover:ring-violet-500/50 focus:ring-2 focus:ring-[#7C4DFF] rounded px-1.5 py-0.5 cursor-text transition-all bg-transparent hover:bg-white/5"
                                             >
                                               {activeDeckSlide?.tagline || 'Ingoude Company'}
                                             </div>
@@ -48355,7 +48386,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {activeDeckSlide?.headline || 'STARTUP\nPITCH DECK'}
                                             </h1>
 
-                                            {/* Presenter Pill Badge (Interactive Draggable & Resizable Shape Object) */}
+                                            {/* Presenter Pill Badge (Interactive Draggable & Resizable Shape with Shimmer Effects) */}
                                             {(() => {
                                               const isPillSelected = deckSelection.type === 'pill';
                                               const isPillHidden = activeDeckSlide?.pillHidden;
@@ -48364,6 +48395,52 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               const pY = activeDeckSlide?.pillPosY || 0;
                                               const pW = activeDeckSlide?.pillWidth || 220;
                                               const pillGradient = activeDeckSlide?.pillGradient || 'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)';
+                                              const pillShape = activeDeckSlide?.pillShape || 'pill';
+                                              const pillBorderEffect = activeDeckSlide?.pillBorderEffect || 'shimmer';
+                                              const pillBorderWidth = activeDeckSlide?.pillBorderWidth || 2;
+
+                                              // Compute dynamic Shimmer / Glow Border Styling
+                                              const getPillBorderStyles = () => {
+                                                const base = {
+                                                  minWidth: `${pW}px`,
+                                                  background: pillGradient,
+                                                  borderRadius: pillShape === 'square' ? '4px' : pillShape === 'rounded-square' ? '12px' : '9999px'
+                                                };
+
+                                                if (pillBorderEffect === 'shimmer') {
+                                                  return {
+                                                    ...base,
+                                                    border: `${pillBorderWidth}px solid rgba(0, 240, 255, 0.6)`,
+                                                    boxShadow: '0 0 25px rgba(0, 240, 255, 0.45), 0 0 50px rgba(217, 70, 239, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.15)'
+                                                  };
+                                                }
+                                                if (pillBorderEffect === 'neon-glow') {
+                                                  return {
+                                                    ...base,
+                                                    border: `${pillBorderWidth}px solid #a855f7`,
+                                                    boxShadow: '0 0 30px rgba(168, 85, 247, 0.6), 0 0 12px rgba(0, 240, 255, 0.8)'
+                                                  };
+                                                }
+                                                if (pillBorderEffect === 'pulsing-aura') {
+                                                  return {
+                                                    ...base,
+                                                    border: `${pillBorderWidth}px solid #ec4899`,
+                                                    boxShadow: '0 0 35px rgba(236, 72, 153, 0.55), inset 0 0 20px rgba(124, 77, 255, 0.4)'
+                                                  };
+                                                }
+                                                if (pillBorderEffect === 'glass-frost') {
+                                                  return {
+                                                    ...base,
+                                                    border: `${pillBorderWidth}px solid rgba(255, 255, 255, 0.4)`,
+                                                    backdropFilter: 'blur(20px)',
+                                                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.37)'
+                                                  };
+                                                }
+                                                return {
+                                                  ...base,
+                                                  border: `${pillBorderWidth}px solid rgba(255, 255, 255, 0.2)`
+                                                };
+                                              };
 
                                               return (
                                                 <div 
@@ -48391,91 +48468,116 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       e.stopPropagation();
                                                       setDeckSelection({ type: 'pill', id: 'presenter-pill' });
                                                     }}
-                                                    className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full border border-white/20 shadow-md cursor-grab active:cursor-grabbing transition-all ${
+                                                    className={`relative inline-flex items-center justify-center px-4 py-1.5 cursor-grab active:cursor-grabbing transition-all ${
                                                       isPillSelected 
-                                                        ? 'outline outline-1 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 shadow-[0_0_15px_rgba(124,77,255,0.3)]' 
-                                                        : 'hover:border-white/40'
+                                                        ? 'outline outline-1 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-2xl' 
+                                                        : 'hover:scale-[1.02]'
                                                     }`}
-                                                    style={{
-                                                      minWidth: `${pW}px`,
-                                                      background: pillGradient
-                                                    }}
+                                                    style={getPillBorderStyles()}
                                                   >
                                                     {/* Sleek Selection & Resize Handles */}
                                                     {isPillSelected && (
                                                       <>
-                                                        <div 
-                                                          data-resize-handle="true"
-                                                          onPointerDown={(e) => {
-                                                            e.stopPropagation();
-                                                            setDeckResizeDrag({
-                                                              isResizing: true,
-                                                              handle: 'left',
-                                                              startX: e.clientX,
-                                                              startY: e.clientY,
-                                                              initW: pW,
-                                                              initH: 36,
-                                                              initX: pX,
-                                                              initY: pY,
-                                                              target: 'pill'
-                                                            });
-                                                          }}
-                                                          className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2 h-3.5 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs cursor-ew-resize hover:scale-125 transition-transform" 
-                                                        />
-                                                        <div 
-                                                          data-resize-handle="true"
-                                                          onPointerDown={(e) => {
-                                                            e.stopPropagation();
-                                                            setDeckResizeDrag({
-                                                              isResizing: true,
-                                                              handle: 'right',
-                                                              startX: e.clientX,
-                                                              startY: e.clientY,
-                                                              initW: pW,
-                                                              initH: 36,
-                                                              initX: pX,
-                                                              initY: pY,
-                                                              target: 'pill'
-                                                            });
-                                                          }}
-                                                          className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2 h-3.5 bg-white border border-[#7C4DFF] rounded-[2px] shadow-xs cursor-ew-resize hover:scale-125 transition-transform" 
-                                                        />
-                                                        
-                                                        {/* Floating Contextual Toolbar above Pill Badge */}
-                                                        <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/90 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/15 whitespace-nowrap pointer-events-auto">
-                                                          <Palette size={11} className="text-violet-400" />
-                                                          <span>Pill Gradient</span>
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'nw', startX: e.clientX, startY: e.clientY, initW: pW, initH: 36, initX: pX, initY: pY, target: 'pill' }); }} className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'ne', startX: e.clientX, startY: e.clientY, initW: pW, initH: 36, initX: pX, initY: pY, target: 'pill' }); }} className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nesw-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'sw', startX: e.clientX, startY: e.clientY, initW: pW, initH: 36, initX: pX, initY: pY, target: 'pill' }); }} className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nesw-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'se', startX: e.clientX, startY: e.clientY, initW: pW, initH: 36, initX: pX, initY: pY, target: 'pill' }); }} className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'e', startX: e.clientX, startY: e.clientY, initW: pW, initH: 36, initX: pX, initY: pY, target: 'pill' }); }} className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-2 h-3 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ew-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'w', startX: e.clientX, startY: e.clientY, initW: pW, initH: 36, initX: pX, initY: pY, target: 'pill' }); }} className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-2 h-3 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ew-resize z-40 hover:scale-125 transition-transform" />
+
+                                                        {/* Floating Mini Contextual Inspector */}
+                                                        <div className="absolute -top-11 left-0 px-3 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[11px] font-semibold tracking-wide shadow-2xl flex items-center gap-2 z-50 border border-white/15 whitespace-nowrap pointer-events-auto">
+                                                          {/* Shape Morphing Popover */}
+                                                          <div className="relative">
+                                                            <button
+                                                              type="button"
+                                                              onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pillShape' ? null : 'pillShape'); }}
+                                                              className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-xs flex items-center gap-1 cursor-pointer"
+                                                            >
+                                                              <Shapes size={11} className="text-cyan-400" />
+                                                              <span className="capitalize">{pillShape}</span>
+                                                            </button>
+                                                            {deckFloatingMenuOpen === 'pillShape' && (
+                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-36 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1 flex flex-col gap-0.5 text-xs text-zinc-200">
+                                                                {[
+                                                                  { id: 'pill', name: 'Pill Shape' },
+                                                                  { id: 'rounded-square', name: 'Rounded Rect' },
+                                                                  { id: 'square', name: 'Square Box' }
+                                                                ].map((sh) => (
+                                                                  <button key={sh.id} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillShape', sh.id); setDeckFloatingMenuOpen(null); showToast(`Shape: ${sh.name}`); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded flex items-center gap-1.5">{sh.name}</button>
+                                                                ))}
+                                                              </div>
+                                                            )}
+                                                          </div>
+
                                                           <div className="w-px h-3 bg-white/20 mx-0.5" />
-                                                          
-                                                          {/* Gradient Presets Popover */}
+
+                                                          {/* Shimmer & Glow Border Effects Popover */}
+                                                          <div className="relative">
+                                                            <button
+                                                              type="button"
+                                                              onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pillEffect' ? null : 'pillEffect'); }}
+                                                              className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs flex items-center gap-1 cursor-pointer"
+                                                              title="Shimmer & Glow Effects"
+                                                            >
+                                                              <Zap size={11} />
+                                                              <span className="capitalize">{pillBorderEffect}</span>
+                                                            </button>
+                                                            {deckFloatingMenuOpen === 'pillEffect' && (
+                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 text-xs text-zinc-200">
+                                                                {[
+                                                                  { id: 'shimmer', name: 'Shimmer Glow (Image 3 Style)', desc: 'Radiant cyan & magenta glow' },
+                                                                  { id: 'neon-glow', name: 'Electric Neon Rim', desc: 'High-intensity purple aura' },
+                                                                  { id: 'pulsing-aura', name: 'Pulsing Laser Aura', desc: 'Laser rose glow' },
+                                                                  { id: 'glass-frost', name: 'Frosted Glass Apple', desc: 'Sleek translucent frost' },
+                                                                  { id: 'solid', name: 'Classic Solid Border', desc: 'Clean border outline' }
+                                                                ].map((eff) => (
+                                                                  <button key={eff.id} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillBorderEffect', eff.id); setDeckFloatingMenuOpen(null); showToast(`Effect: ${eff.name}`); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded flex flex-col">
+                                                                    <span className="font-semibold text-white">{eff.name}</span>
+                                                                    <span className="text-[10px] text-zinc-400">{eff.desc}</span>
+                                                                  </button>
+                                                                ))}
+                                                              </div>
+                                                            )}
+                                                          </div>
+
+                                                          {/* Border Thickness Stepper */}
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              const nextW = pillBorderWidth >= 6 ? 1 : pillBorderWidth + 1;
+                                                              updateDeckSlideField(activeDeckSlide?.id, 'pillBorderWidth', nextW);
+                                                              showToast(`Border thickness: ${nextW}px`);
+                                                            }}
+                                                            className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] font-mono cursor-pointer"
+                                                            title="Border Thickness"
+                                                          >
+                                                            {pillBorderWidth}px
+                                                          </button>
+
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+
+                                                          {/* Gradient Style */}
                                                           <div className="relative">
                                                             <button
                                                               type="button"
                                                               onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pillGrad' ? null : 'pillGrad'); }}
                                                               className="w-4 h-4 rounded-full border border-white/40 shadow-xs hover:scale-110 transition-transform cursor-pointer"
                                                               style={{ background: pillGradient }}
-                                                              title="Gradient Style"
+                                                              title="Gradient Fill"
                                                             />
                                                             {deckFloatingMenuOpen === 'pillGrad' && (
-                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-6 left-0 z-[999] w-52 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 flex flex-col gap-1 text-xs">
+                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-52 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 flex flex-col gap-1 text-xs">
                                                                 {[
                                                                   { name: 'Dark Cyber Glow', val: 'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)' },
                                                                   { name: 'Royal Indigo Purple', val: 'linear-gradient(135deg, #4f46e5, #7c3aed)' },
                                                                   { name: 'Electric Cyan Beams', val: 'linear-gradient(135deg, #06b6d4, #3b82f6)' },
                                                                   { name: 'Laser Rose Glow', val: 'linear-gradient(135deg, #f43f5e, #ec4899)' },
                                                                   { name: 'Emerald Trust', val: 'linear-gradient(135deg, #059669, #10b981)' },
-                                                                  { name: 'Obsidian Minimal', val: 'linear-gradient(135deg, #1e293b, #0f172a)' },
+                                                                  { name: 'Obsidian Minimal', val: 'linear-gradient(135deg, #1e293b, #0f172a)' }
                                                                 ].map((g) => (
-                                                                  <button
-                                                                    key={g.name}
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                      updateDeckSlideField(activeDeckSlide?.id, 'pillGradient', g.val);
-                                                                      setDeckFloatingMenuOpen(null);
-                                                                      showToast(`Pill gradient: ${g.name}`);
-                                                                    }}
-                                                                    className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-2 text-zinc-200"
-                                                                  >
+                                                                  <button key={g.name} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillGradient', g.val); setDeckFloatingMenuOpen(null); showToast(`Gradient: ${g.name}`); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded flex items-center gap-2 text-zinc-200">
                                                                     <div className="w-3.5 h-3.5 rounded-full shrink-0 border border-white/20" style={{ background: g.val }} />
                                                                     <span>{g.name}</span>
                                                                   </button>
@@ -48484,33 +48586,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                             )}
                                                           </div>
 
-                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
-
-                                                          {/* More Options */}
-                                                          <div className="relative">
-                                                            <button
-                                                              type="button"
-                                                              onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pillMore' ? null : 'pillMore'); }}
-                                                              className="p-1 hover:bg-white/10 rounded-md text-zinc-300 hover:text-white transition-colors cursor-pointer"
-                                                            >
-                                                              <MoreHorizontal size={12} />
-                                                            </button>
-                                                            {deckFloatingMenuOpen === 'pillMore' && (
-                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-40 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-0.5 text-xs text-zinc-200">
-                                                                <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillPosX', (pX || 0) + 15); updateDeckSlideField(activeDeckSlide?.id, 'pillPosY', (pY || 0) + 15); setDeckFloatingMenuOpen(null); showToast('Pill duplicated'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-1.5"><Copy size={11} /> Duplicate</button>
-                                                                <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillPosX', 0); updateDeckSlideField(activeDeckSlide?.id, 'pillPosY', 0); updateDeckSlideField(activeDeckSlide?.id, 'pillWidth', 220); setDeckFloatingMenuOpen(null); showToast('Position & width reset'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded-md flex items-center gap-1.5"><RotateCcw size={11} /> Reset Pos</button>
-                                                                <div className="h-px bg-white/10 my-0.5" />
-                                                                <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillHidden', true); setDeckSelection({ type: 'none', id: null }); showToast('Pill badge removed'); }} className="w-full text-left px-2 py-1 hover:bg-rose-500/20 text-rose-400 rounded-md flex items-center gap-1.5"><Trash2 size={11} /> Delete Shape</button>
-                                                              </div>
-                                                            )}
-                                                          </div>
-
                                                           {/* Delete Pill */}
                                                           <button
                                                             type="button"
-                                                            onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'pillHidden', true); setDeckSelection({ type: 'none', id: null }); showToast('Pill shape removed'); }}
-                                                            className="p-1 hover:bg-rose-500/30 text-zinc-400 hover:text-rose-300 rounded-md transition-colors cursor-pointer"
-                                                            title="Delete pill badge"
+                                                            onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'pillHidden', true); setDeckSelection({ type: 'none', id: null }); showToast('Presenter shape removed'); }}
+                                                            className="p-1 hover:bg-rose-500/30 text-zinc-400 hover:text-rose-300 rounded cursor-pointer"
+                                                            title="Delete shape"
                                                           >
                                                             <Trash2 size={11} />
                                                           </button>
@@ -48531,7 +48612,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               );
                                             })()}
                                           </div>
-
                                           {/* Bottom Row: Interactive Editable Divider Line & Multi-Shape Badges */}
                                           {(() => {
                                             const isLineHidden = activeDeckSlide?.footerLineHidden;
