@@ -47454,7 +47454,161 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         <span>AI Slide Enhancer</span>
                                       </button>
                                     </>
-                                  ) : deckSelection.type === 'vector' ? (
+                                  ) : deckSelection.type === 'bento' || deckSelection.type === 'bentoCard' ? (
+                                     /* ── BENTO CONTAINER SELECTION CONTEXTUAL TOOLBAR ── */
+                                     <>
+                                       {/* Card Style & Preset Dropdown */}
+                                       <div data-deck-toolbar-menu="true" className="relative shrink-0">
+                                         <button
+                                           type="button"
+                                           onPointerDown={(e) => e.stopPropagation()}
+                                           onClick={(e) => {
+                                             e.stopPropagation();
+                                             setDeckActiveToolbarMenu((prev) => (prev === 'bentoStyle' ? null : 'bentoStyle'));
+                                           }}
+                                           className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/70 cursor-pointer shadow-2xs"
+                                         >
+                                           <Sparkles size={13} className="text-amber-500" />
+                                           <span>Card Style & Glass</span>
+                                           <ChevronDown size={10} className="text-gray-400" />
+                                         </button>
+                                         {deckActiveToolbarMenu === 'bentoStyle' && (
+                                           <div onClick={(e) => e.stopPropagation()} className="absolute top-8 left-0 z-[999] w-64 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.18)] p-2 flex flex-col gap-1">
+                                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">Glassmorphic & Container Styles</span>
+                                             {[
+                                               { id: 'lavender', label: 'Lavender Studio Light', bg: '#C4B5FD', text: '#000000' },
+                                               { id: 'midnight', label: 'Midnight Blue Glassmorphic', bg: 'linear-gradient(to right, #172554, #1e1b4b, #0f172a)', text: '#ffffff' },
+                                               { id: 'cyber', label: 'Cyber Neon Glow Dark', bg: '#000000', text: '#00f0ff' },
+                                               { id: 'frosted', label: 'Frosted Obsidian Glass', bg: 'rgba(24,24,27,0.85)', text: '#ffffff' },
+                                               { id: 'clean', label: 'Clean Studio White', bg: '#FFFFFF', text: '#0f172a' },
+                                               { id: 'transparent', label: 'Minimal Transparent', bg: 'transparent', text: '#ffffff' }
+                                             ].map((style) => (
+                                               <button
+                                                 key={style.id}
+                                                 type="button"
+                                                 onPointerDown={(e) => {
+                                                   e.preventDefault();
+                                                   if (deckSelection.id === 'bento-left') {
+                                                     updateDeckSlideField(activeDeckSlide?.id, 'introLeftBg', style.bg);
+                                                   } else if (deckSelection.id === 'bento-top-right') {
+                                                     updateDeckSlideField(activeDeckSlide?.id, 'introTopRightBg', style.bg);
+                                                   } else if (deckSelection.id === 'bento-sub-photo') {
+                                                     updateDeckSlideField(activeDeckSlide?.id, 'introSubBg', style.bg);
+                                                   }
+                                                   setDeckActiveToolbarMenu(null);
+                                                   showToast("Applied " + style.label);
+                                                 }}
+                                                 className="w-full text-left px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 flex items-center justify-between"
+                                               >
+                                                 <div className="flex items-center gap-2">
+                                                   <div className="w-3.5 h-3.5 rounded border border-black/10 shrink-0" style={{ background: style.bg }} />
+                                                   <span>{style.label}</span>
+                                                 </div>
+                                               </button>
+                                             ))}
+                                           </div>
+                                         )}
+                                       </div>
+
+                                       {/* Background Color Swatch Dropdown */}
+                                       <div data-deck-toolbar-menu="true" className="relative shrink-0">
+                                         <button
+                                           type="button"
+                                           onPointerDown={(e) => e.stopPropagation()}
+                                           onClick={(e) => {
+                                             e.stopPropagation();
+                                             setDeckActiveToolbarMenu((prev) => (prev === 'bentoColor' ? null : 'bentoColor'));
+                                           }}
+                                           className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/70 cursor-pointer shadow-2xs"
+                                         >
+                                           <div className="w-3.5 h-3.5 rounded border border-white/60 shadow-2xs shrink-0" style={{ backgroundColor: activeDeckSlide?.introLeftBg || '#C4B5FD' }} />
+                                           <span>Card Fill</span>
+                                           <ChevronDown size={10} className="text-gray-400" />
+                                         </button>
+                                         {deckActiveToolbarMenu === 'bentoColor' && (
+                                           <div onClick={(e) => e.stopPropagation()} className="absolute top-8 left-0 z-[999] w-56 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.18)] p-3 flex flex-col gap-2">
+                                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Card Background Colors</span>
+                                             <div className="grid grid-cols-5 gap-1.5">
+                                               {['#C4B5FD', '#A78BFA', '#818CF8', '#00f0ff', '#172554', '#1e1b4b', '#0f172a', '#000000', '#ffffff', '#ec4899'].map((c) => (
+                                                 <button
+                                                   key={c}
+                                                   type="button"
+                                                   onClick={() => {
+                                                     if (deckSelection.id === 'bento-left') {
+                                                       updateDeckSlideField(activeDeckSlide?.id, 'introLeftBg', c);
+                                                     } else if (deckSelection.id === 'bento-top-right') {
+                                                       updateDeckSlideField(activeDeckSlide?.id, 'introTopRightBg', c);
+                                                     } else if (deckSelection.id === 'bento-sub-photo') {
+                                                       updateDeckSlideField(activeDeckSlide?.id, 'introSubBg', c);
+                                                     }
+                                                     setDeckActiveToolbarMenu(null);
+                                                     showToast("Card color updated");
+                                                   }}
+                                                   className="w-7 h-7 rounded-lg border border-slate-200/80 shadow-2xs hover:scale-110 transition-transform cursor-pointer"
+                                                   style={{ backgroundColor: c }}
+                                                 />
+                                               ))}
+                                             </div>
+                                           </div>
+                                         )}
+                                       </div>
+
+                                       {/* Shape & Corner Radius Dropdown */}
+                                       <div data-deck-toolbar-menu="true" className="relative shrink-0">
+                                         <button
+                                           type="button"
+                                           onPointerDown={(e) => e.stopPropagation()}
+                                           onClick={(e) => {
+                                             e.stopPropagation();
+                                             setDeckActiveToolbarMenu((prev) => (prev === 'bentoShape' ? null : 'bentoShape'));
+                                           }}
+                                           className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/70 cursor-pointer shadow-2xs"
+                                         >
+                                           <Square size={13} className="text-violet-500" />
+                                           <span>Corner Radius</span>
+                                           <ChevronDown size={10} className="text-gray-400" />
+                                         </button>
+                                         {deckActiveToolbarMenu === 'bentoShape' && (
+                                           <div onClick={(e) => e.stopPropagation()} className="absolute top-8 left-0 z-[999] w-48 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-lg p-1.5">
+                                             {[
+                                               { label: 'Subtle Rounded (8px)', r: '8px' },
+                                               { label: 'Medium Rounded (16px)', r: '16px' },
+                                               { label: 'Executive Bento (24px)', r: '24px' },
+                                               { label: 'Ultra Curved (32px)', r: '32px' },
+                                               { label: 'Pill Radius (999px)', r: '999px' },
+                                               { label: 'Sharp Corners (0px)', r: '0px' }
+                                             ].map((radius) => (
+                                               <button
+                                                 key={radius.r}
+                                                 type="button"
+                                                 onClick={() => {
+                                                   if (deckSelection.id === 'bento-left') {
+                                                     updateDeckSlideField(activeDeckSlide?.id, 'introLeftRadius', radius.r);
+                                                   } else if (deckSelection.id === 'bento-top-right') {
+                                                     updateDeckSlideField(activeDeckSlide?.id, 'introTopRightRadius', radius.r);
+                                                   }
+                                                   setDeckActiveToolbarMenu(null);
+                                                   showToast("Radius set to " + radius.label);
+                                                 }}
+                                                 className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-zinc-800 rounded-lg"
+                                               >
+                                                 {radius.label}
+                                               </button>
+                                             ))}
+                                           </div>
+                                         )}
+                                       </div>
+
+                                       {/* Reset / Done Button */}
+                                       <button
+                                         type="button"
+                                         onClick={() => setDeckSelection({ type: 'none', id: null })}
+                                         className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 text-white shrink-0 cursor-pointer shadow-xs"
+                                       >
+                                         Done
+                                       </button>
+                                     </>
+                                   ) : deckSelection.type === 'vector' ? (
                                     /* ── VECTOR MESH SELECTION CONTEXTUAL TOOLBAR ── */
                                     <>
                                       {/* Primary Glow Color Dropdown */}
@@ -49831,17 +49985,80 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            <div className="flex-1 grid grid-cols-12 gap-3.5 w-full pointer-events-auto z-20 min-h-0 max-h-[82%]">
                                              {/* Left Column (Span 4): Light Lavender Studio Card with Screen Graphic */}
                                              <div 
-                                               onClick={() => setDeckSelection({ type: 'bento', id: 'bento-left' })}
-                                               className={`col-span-4 rounded-2xl overflow-hidden relative group flex flex-col justify-between p-3 shadow-xl transition-all cursor-pointer ${
+                                               onClick={(e) => {
+                                                 e.stopPropagation();
+                                                 setDeckSelection({ type: 'bento', id: 'bento-left' });
+                                               }}
+                                               className={`col-span-4 overflow-visible relative group flex flex-col justify-between p-3 shadow-xl transition-all cursor-pointer ${
                                                  deckSelection.type === 'bento' && deckSelection.id === 'bento-left'
                                                    ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30'
                                                    : 'hover:border-purple-300/60'
                                                }`}
                                                style={{
                                                  backgroundColor: activeDeckSlide?.introLeftBg || '#C4B5FD',
+                                                 borderRadius: activeDeckSlide?.introLeftRadius || '16px',
                                                  color: '#000000'
                                                }}
                                              >
+                                               {/* Floating Capsule Toolbar for Bento Left Card */}
+                                               {deckSelection.type === 'bento' && deckSelection.id === 'bento-left' && (
+                                                 <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                   <Sparkles size={11} className="text-purple-400" />
+                                                   <span>Studio Card</span>
+                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                   {/* Color Swatch */}
+                                                   <div className="relative">
+                                                     <button
+                                                       type="button"
+                                                       onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'bColorLeft' ? null : 'bColorLeft'); }}
+                                                       className="w-3.5 h-3.5 rounded border border-white/40 shadow-xs hover:scale-110 cursor-pointer"
+                                                       style={{ backgroundColor: activeDeckSlide?.introLeftBg || '#C4B5FD' }}
+                                                       title="Card Color"
+                                                     />
+                                                     {deckFloatingMenuOpen === 'bColorLeft' && (
+                                                       <div onClick={(e) => e.stopPropagation()} className="absolute bottom-6 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5">
+                                                         {['#C4B5FD', '#A78BFA', '#818CF8', '#00f0ff', '#172554', '#1e1b4b', '#0f172a', '#000000', '#ffffff', '#ec4899'].map((hex) => (
+                                                           <button key={hex} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'introLeftBg', hex); setDeckFloatingMenuOpen(null); }} className="w-6 h-6 rounded-md border border-white/20 hover:scale-110" style={{ backgroundColor: hex }} />
+                                                         ))}
+                                                       </div>
+                                                     )}
+                                                   </div>
+                                                   {/* Shape / Corner Radius */}
+                                                   <div className="relative">
+                                                     <button
+                                                       type="button"
+                                                       onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'bRadiusLeft' ? null : 'bRadiusLeft'); }}
+                                                       className="p-1 hover:bg-white/10 rounded text-zinc-300 hover:text-white"
+                                                       title="Change Corner Shape"
+                                                     >
+                                                       <Square size={11} />
+                                                     </button>
+                                                     {deckFloatingMenuOpen === 'bRadiusLeft' && (
+                                                       <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-36 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1 flex flex-col gap-0.5 text-xs text-zinc-200">
+                                                         {['8px', '16px', '24px', '32px', '999px', '0px'].map((r) => (
+                                                           <button key={r} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'introLeftRadius', r); setDeckFloatingMenuOpen(null); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded">{r === '999px' ? 'Pill' : r === '0px' ? 'Sharp' : `Rounded ${r}`}</button>
+                                                         ))}
+                                                       </div>
+                                                     )}
+                                                   </div>
+                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                   {/* Quick Clear / Reset */}
+                                                   <button
+                                                     type="button"
+                                                     onClick={(e) => {
+                                                       e.stopPropagation();
+                                                       updateDeckSlideField(activeDeckSlide?.id, 'introLeftBg', '#C4B5FD');
+                                                       updateDeckSlideField(activeDeckSlide?.id, 'introLeftRadius', '16px');
+                                                       showToast('Card reset');
+                                                     }}
+                                                     className="p-1 hover:bg-rose-500/20 text-rose-300 rounded"
+                                                     title="Reset Card"
+                                                   >
+                                                     <RotateCcw size={11} />
+                                                   </button>
+                                                 </div>
+                                               )}
+
                                                {/* Lavender Card Internal Split Graphic / Studio Backdrop */}
                                                <div className="relative z-10 w-full h-[60%] rounded-xl overflow-hidden border border-black/10 bg-black/85 shadow-xl flex items-center justify-center group/card">
                                                  <img 
@@ -49891,13 +50108,63 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                              <div className="col-span-8 flex flex-col justify-between gap-3 min-h-0">
                                                {/* Top Card: Wide Deep Midnight Blue Gradient Glass Card */}
                                                <div 
-                                                 onClick={() => setDeckSelection({ type: 'bento', id: 'bento-top-right' })}
-                                                 className={`flex-1 rounded-2xl border border-white/20 bg-gradient-to-r from-[#172554]/95 via-[#1e1b4b]/90 to-[#0f172a]/95 p-3.5 md:p-4 shadow-xl backdrop-blur-xl flex items-center relative overflow-hidden transition-all cursor-pointer ${
+                                                 onClick={(e) => {
+                                                   e.stopPropagation();
+                                                   setDeckSelection({ type: 'bento', id: 'bento-top-right' });
+                                                 }}
+                                                 className={`flex-1 overflow-visible border border-white/20 p-3.5 md:p-4 shadow-xl backdrop-blur-xl flex items-center relative transition-all cursor-pointer ${
                                                    deckSelection.type === 'bento' && deckSelection.id === 'bento-top-right'
                                                      ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30'
                                                      : 'hover:border-cyan-400/50'
                                                  }`}
+                                                 style={{
+                                                   background: activeDeckSlide?.introTopRightBg || 'linear-gradient(to right, #172554, #1e1b4b, #0f172a)',
+                                                   borderRadius: activeDeckSlide?.introTopRightRadius || '16px'
+                                                 }}
                                                >
+                                                 {/* Floating Capsule Toolbar for Top-Right Glass Card */}
+                                                 {deckSelection.type === 'bento' && deckSelection.id === 'bento-top-right' && (
+                                                   <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                     <Sparkles size={11} className="text-cyan-400" />
+                                                     <span>Glass Card</span>
+                                                     <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                     {/* Color Swatch */}
+                                                     <div className="relative">
+                                                       <button
+                                                         type="button"
+                                                         onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'bColorTR' ? null : 'bColorTR'); }}
+                                                         className="w-3.5 h-3.5 rounded border border-white/40 shadow-xs hover:scale-110 cursor-pointer"
+                                                         style={{ background: activeDeckSlide?.introTopRightBg || '#172554' }}
+                                                         title="Card Color"
+                                                       />
+                                                       {deckFloatingMenuOpen === 'bColorTR' && (
+                                                         <div onClick={(e) => e.stopPropagation()} className="absolute bottom-6 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5">
+                                                           {['#172554', '#1e1b4b', '#0f172a', '#000000', '#C4B5FD', '#A78BFA', '#00f0ff', '#ffffff', '#ec4899', '#064e3b'].map((hex) => (
+                                                             <button key={hex} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'introTopRightBg', hex); setDeckFloatingMenuOpen(null); }} className="w-6 h-6 rounded-md border border-white/20 hover:scale-110" style={{ backgroundColor: hex }} />
+                                                           ))}
+                                                         </div>
+                                                       )}
+                                                     </div>
+                                                     {/* Corner Radius */}
+                                                     <div className="relative">
+                                                       <button
+                                                         type="button"
+                                                         onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'bRadiusTR' ? null : 'bRadiusTR'); }}
+                                                         className="p-1 hover:bg-white/10 rounded text-zinc-300 hover:text-white"
+                                                         title="Change Corner Shape"
+                                                       >
+                                                         <Square size={11} />
+                                                       </button>
+                                                       {deckFloatingMenuOpen === 'bRadiusTR' && (
+                                                         <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-36 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1 flex flex-col gap-0.5 text-xs text-zinc-200">
+                                                           {['8px', '16px', '24px', '32px', '999px', '0px'].map((r) => (
+                                                             <button key={r} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'introTopRightRadius', r); setDeckFloatingMenuOpen(null); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded">{r === '999px' ? 'Pill' : r === '0px' ? 'Sharp' : `Rounded ${r}`}</button>
+                                                           ))}
+                                                         </div>
+                                                       )}
+                                                     </div>
+                                                   </div>
+                                                 )}
                                                  <div className="absolute -right-16 -top-16 w-36 h-36 rounded-full bg-cyan-500/15 blur-2xl pointer-events-none" />
                                                  <p 
                                                    contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -49914,8 +50181,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                <div className="h-[48%] grid grid-cols-12 gap-3 min-h-0">
                                                  {/* Sub-Card Left (Span 5): Cyber Mockup Photo Card */}
                                                  <div 
-                                                   onClick={() => setDeckSelection({ type: 'bento', id: 'bento-sub-photo' })}
-                                                   className={`col-span-5 rounded-2xl overflow-hidden border border-white/20 bg-black/70 relative group/sub shadow-lg flex items-center justify-center transition-all cursor-pointer ${
+                                                   onClick={(e) => {
+                                                     e.stopPropagation();
+                                                     setDeckSelection({ type: 'bento', id: 'bento-sub-photo' });
+                                                   }}
+                                                   className={`col-span-5 rounded-2xl overflow-visible border border-white/20 bg-black/70 relative group/sub shadow-lg flex items-center justify-center transition-all cursor-pointer ${
                                                      deckSelection.type === 'bento' && deckSelection.id === 'bento-sub-photo'
                                                        ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30'
                                                        : 'hover:border-purple-400/50'
@@ -49924,10 +50194,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                    <img 
                                                      src={activeDeckSlide?.introSubImg || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80'} 
                                                      alt="Holographic Laptop Visual"
-                                                     className="w-full h-full object-cover transition-transform duration-500 group-hover/sub:scale-105"
+                                                     className="w-full h-full object-cover rounded-2xl transition-transform duration-500 group-hover/sub:scale-105"
                                                    />
                                                    {/* Hover Actions */}
-                                                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/sub:opacity-100 transition-opacity flex items-center justify-center gap-1 p-1">
+                                                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/sub:opacity-100 transition-opacity flex items-center justify-center gap-1 p-1 rounded-2xl">
                                                      <button
                                                        type="button"
                                                        onClick={(e) => {
