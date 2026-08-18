@@ -50062,24 +50062,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       ) : layout === "Startup Problem Statement" || layout === "Startup Problem" || activeDeckSlide?.title === "Problem Statement" || layout === "Problem Statement" ? (
                                          /* ── STARTUP PROBLEM STATEMENT TEMPLATE (WITH SMART ALIGNMENT DASHED GUIDES) ── */
                                          <div className="flex flex-col justify-center h-full w-full relative z-10 pointer-events-none select-none px-4 pt-1 pb-3 md:px-7 md:pb-4">
-                                           {/* Smart Alignment Guides (Visible during dragging & resizing) */}
-                                           {(deckBentoDrag.isDragging || deckResizeDrag.isResizing) && (
-                                             <div className="absolute inset-0 pointer-events-none z-50">
-                                               {/* Top alignment dashed line */}
-                                               <div className="absolute left-4 right-4 top-[12%] border-t border-dashed border-cyan-400/80 shadow-[0_0_8px_rgba(0,240,255,0.8)] flex items-center justify-end pr-2">
-                                                 <span className="text-[9px] font-mono text-cyan-300 bg-black/80 px-1 rounded -translate-y-1/2">Top Align</span>
-                                               </div>
-                                               {/* Center alignment dashed line */}
-                                               <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 border-t border-dashed border-purple-400/80 shadow-[0_0_8px_rgba(168,85,247,0.8)] flex items-center justify-end pr-2">
-                                                 <span className="text-[9px] font-mono text-purple-300 bg-black/80 px-1 rounded -translate-y-1/2">Center Y</span>
-                                               </div>
-                                               {/* Bottom alignment dashed line */}
-                                               <div className="absolute left-4 right-4 bottom-[12%] border-t border-dashed border-cyan-400/80 shadow-[0_0_8px_rgba(0,240,255,0.8)] flex items-center justify-end pr-2">
-                                                 <span className="text-[9px] font-mono text-cyan-300 bg-black/80 px-1 rounded -translate-y-1/2">Bottom Align</span>
-                                               </div>
-                                             </div>
-                                           )}
-
                                            {/* Main 2-Column Split */}
                                            <div className="flex-1 grid grid-cols-12 gap-6 w-full pointer-events-auto z-20 min-h-0 max-h-[76%] items-start my-auto">
                                              {/* Left Column: Draggable Title Heading */}
