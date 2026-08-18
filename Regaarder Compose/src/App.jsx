@@ -47630,7 +47630,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               updateDeckSlideField(activeDeckSlide?.id, "vectorColor1", matched.c1);
                                               updateDeckSlideField(activeDeckSlide?.id, "vectorColor2", matched.c2);
                                               updateDeckSlideField(activeDeckSlide?.id, "vectorOpacity", 0.9);
-                                              updateDeckSlideField(activeDeckSlide?.id, "vectorGlow", "ultra-radiant");
+                                              updateDeckSlideField(activeDeckSlide?.id, "vectorGlow", "crisp");
                                               setDeckSelection({ type: "vector", id: "vector-mesh" });
                                               showToast(`Activated: ${matched.label}`);
                                             } else {
@@ -48358,16 +48358,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     const c1 = activeDeckSlide?.vectorColor1 || '#00f0ff';
                                     const c2 = activeDeckSlide?.vectorColor2 || '#a855f7';
                                     const opVal = activeDeckSlide?.vectorOpacity ?? 0.85;
-                                    const vGlow = activeDeckSlide?.vectorGlow || 'ultra-radiant';
-                                    const glowFilter = vGlow === 'ultra-radiant'
-                                      ? 'drop-shadow(0 0 35px #00f0ff) drop-shadow(0 0 70px #d946ef) saturate(220%) brightness(1.25)'
-                                      : vGlow === 'neon-bloom'
-                                      ? 'drop-shadow(0 0 22px #00f0ff) drop-shadow(0 0 45px #a855f7) saturate(180%) brightness(1.15)'
-                                      : vGlow === 'electric-high'
-                                      ? 'drop-shadow(0 0 16px #00f0ff) saturate(160%) brightness(1.1)'
-                                      : vGlow === 'soft-ambient'
-                                      ? 'drop-shadow(0 0 10px rgba(0,240,255,0.35)) saturate(125%)'
-                                      : 'none';
+                                     const vGlow = activeDeckSlide?.vectorGlow || 'crisp';
+                                     const glowFilter = vGlow === 'ultra-radiant'
+                                       ? `drop-shadow(0 0 8px ${c1}99) drop-shadow(0 0 18px ${c2}66) saturate(140%)`
+                                       : vGlow === 'neon-bloom'
+                                       ? `drop-shadow(0 0 6px ${c1}88) saturate(125%)`
+                                       : vGlow === 'electric-high'
+                                       ? `drop-shadow(0 0 4px ${c1}77)`
+                                       : vGlow === 'soft-ambient'
+                                       ? `drop-shadow(0 0 3px ${c1}55)`
+                                       : 'none';
 
                                     return (
                                       <div 
