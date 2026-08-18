@@ -491,6 +491,25 @@ const DECK_THEME_OPTIONS = [
 
 const DECK_LAYOUT_OPTIONS = [
   { 
+    key: "Startup Timeline", 
+    name: "Startup Accomplishments Timeline",
+    desc: 'Vertical ACCOMPLISHMENTS DATE headline, glowing vertical timeline spine with 4 sphere nodes & stacked milestone cards',
+    visualType: 'startup vertical accomplishments timeline',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
+        <div className="w-1.5 h-full flex flex-col justify-center items-center">
+          <div className="w-0.5 h-full bg-cyan-400/80 rounded-full" />
+        </div>
+        <div className="w-4/5 h-full flex flex-col justify-between p-0.5 gap-0.5">
+          <div className="w-full h-1 bg-indigo-950 border border-white/20 rounded-xs" />
+          <div className="w-full h-1 bg-indigo-950 border border-white/20 rounded-xs" />
+          <div className="w-full h-1 bg-indigo-950 border border-white/20 rounded-xs" />
+          <div className="w-full h-1 bg-purple-600 border border-purple-400 rounded-xs" />
+        </div>
+      </div>
+    )
+  },
+  { 
     key: "Startup Revenue Model", 
     name: "Startup Revenue Model",
     desc: '3-tier glassmorphic pricing comparison cards (Basic, elevated Standard, Premium) with laser dividing lines',
@@ -9523,6 +9542,42 @@ const DEFAULT_DECK_SLIDES = [
     plan3Shape: '14px',
     motionCue: '3-Card Stagger Rise In',
     speakerNotes: 'Walk through our 3-tier pricing strategy: Basic ($135/mo), Standard ($175/mo with add-ons), and Premium ($220/mo with dedicated consulting).',
+    footer: 'ingoude Company'
+  },
+  {
+    id: 12,
+    section: 'Milestones',
+    title: 'Accomplishments & Roadmap',
+    tagline: 'Ingoude Company',
+    headline: 'ACCOMPLISHMENTS',
+    subHeadline: 'DATE',
+    backgroundColor: '#05070B',
+    vectorWaveStyle: 'bottom-left-neon-wave',
+    vectorColor1: '#00f0ff',
+    vectorColor2: '#a855f7',
+    designPresetKey: 'midnight-slate',
+    presetKey: 'midnight-slate',
+    accent: 'from-cyan-400 via-indigo-500 to-purple-600',
+    visualType: 'startup vertical accomplishments timeline',
+    layoutStyle: 'Startup Timeline',
+    timeline1Year: '2021',
+    timeline1Desc: 'In our first year, we successfully launched a new product/service, received positive feedback from early users, and formed partnerships with key industry players.',
+    timeline1Bg: 'linear-gradient(90deg, rgba(14,18,36,0.88) 0%, rgba(8,12,28,0.95) 100%)',
+    timeline1Shape: '14px',
+    timeline2Year: '2023',
+    timeline2Desc: 'We expanded into new markets, improved operational efficiency, and saw an increase in customer satisfaction.',
+    timeline2Bg: 'linear-gradient(90deg, rgba(14,18,36,0.88) 0%, rgba(8,12,28,0.95) 100%)',
+    timeline2Shape: '14px',
+    timeline3Year: '2025',
+    timeline3Desc: 'We secured funding for growth, refined our offerings based on customer feedback, and formed strategic partnerships.',
+    timeline3Bg: 'linear-gradient(90deg, rgba(14,18,36,0.88) 0%, rgba(8,12,28,0.95) 100%)',
+    timeline3Shape: '14px',
+    timeline4Year: 'PRESENT',
+    timeline4Desc: 'We achieved profitability, expanded our product line, and strengthened our brand reputation through positive customer feedback.',
+    timeline4Bg: 'linear-gradient(90deg, rgba(157,120,205,0.88) 0%, rgba(59,92,184,0.9) 100%)',
+    timeline4Shape: '14px',
+    motionCue: 'Vertical Timeline Cascade',
+    speakerNotes: 'Highlight historical milestones from initial 2021 product launch, 2023 expansion, 2025 growth round, leading to present profitability.',
     footer: 'ingoude Company'
   }
 ];
@@ -50673,7 +50728,340 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
                                           </div>
                                         </div>
-                                      ) : layout === "Startup Revenue Model" || layout === "Startup Revenue" || layout === "Revenue Model" || activeDeckSlide?.title === "Revenue Model & Pricing" || activeDeckSlide?.title === "Revenue Model" ? (
+                                      ) : layout === "Startup Timeline" || layout === "Startup Accomplishments" || layout === "Accomplishments" || activeDeckSlide?.title === "Accomplishments & Roadmap" || activeDeckSlide?.title === "Accomplishments" ? (
+                                          /* ── STARTUP TIMELINE / ACCOMPLISHMENTS TEMPLATE (REVERSE-ENGINEERED SLIDE 12) ── */
+                                          <div className="flex flex-row items-stretch h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-3 md:px-8 md:pt-3.5 md:pb-3 overflow-hidden gap-4 md:gap-6">
+                                            
+                                            {/* Bottom-Left Ambient Neon Wave Ribbon */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'vector', id: 'timeline-neon' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'timelineNeon',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.timelineNeon_posX || 0,
+                                                  origY: activeDeckSlide?.timelineNeon_posY || 0
+                                                });
+                                              }}
+                                              style={{
+                                                position: 'absolute',
+                                                bottom: -15,
+                                                left: -15,
+                                                width: activeDeckSlide?.timelineNeon_width ? `${activeDeckSlide.timelineNeon_width}px` : '200px',
+                                                height: activeDeckSlide?.timelineNeon_height ? `${activeDeckSlide.timelineNeon_height}px` : '120px',
+                                                transform: `translate(${activeDeckSlide?.timelineNeon_posX || 0}px, ${activeDeckSlide?.timelineNeon_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                pointerEvents: 'auto',
+                                                cursor: 'grab',
+                                                zIndex: 4
+                                              }}
+                                              className={`overflow-visible select-none group/timeneon ${deckSelection.type === 'vector' && deckSelection.id === 'timeline-neon' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
+                                            >
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 200 120" fill="none">
+                                                <defs>
+                                                  <linearGradient id="timeNeonGrad1" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.95" />
+                                                    <stop offset="50%" stopColor="#6366f1" stopOpacity="0.85" />
+                                                    <stop offset="100%" stopColor="#a855f7" stopOpacity="0.7" />
+                                                  </linearGradient>
+                                                  <filter id="timeGlow" x="-20%" y="-30%" width="140%" height="160%">
+                                                    <feGaussianBlur stdDeviation="5" result="blur" />
+                                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                                  </filter>
+                                                </defs>
+                                                <path d="M0,110 C50,115 110,60 200,30" stroke="url(#timeNeonGrad1)" strokeWidth="3.5" fill="none" opacity="0.85" filter="url(#timeGlow)" />
+                                                <path d="M0,95 C55,102 115,48 200,18" stroke="#38bdf8" strokeWidth="2" fill="none" opacity="0.9" />
+                                                <path d="M0,80 C60,90 120,36 200,6" stroke="#c084fc" strokeWidth="1.2" fill="none" opacity="0.6" strokeDasharray="5 3" />
+                                              </svg>
+                                              {/* Drag Capsule */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'timeline-neon' && (
+                                                <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'timeline-neon' }); setDeckBentoDrag({ isDragging: true, cardId: 'timelineNeon', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.timelineNeon_posX || 0, origY: activeDeckSlide?.timelineNeon_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <span>Neon Sweep</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { timelineNeon_posX: 0, timelineNeon_posY: 0, timelineNeon_width: undefined, timelineNeon_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Far-Left Vertical Headline Block: ACCOMPLISHMENTS DATE */}
+                                            <div className="flex flex-col justify-center items-center h-full shrink-0 z-20 pointer-events-auto pr-1">
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'text', id: 'timeline-headline' });
+                                                  setDeckBentoDrag({
+                                                    isDragging: true,
+                                                    cardId: 'timelineHeadline',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    origX: activeDeckSlide?.timelineHeadline_posX || 0,
+                                                    origY: activeDeckSlide?.timelineHeadline_posY || 0
+                                                  });
+                                                }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.timelineHeadline_posX || 0}px, ${activeDeckSlide?.timelineHeadline_posY || 0}px)`,
+                                                  transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                  width: activeDeckSlide?.timelineHeadline_width ? `${activeDeckSlide.timelineHeadline_width}px` : undefined,
+                                                  height: activeDeckSlide?.timelineHeadline_height ? `${activeDeckSlide.timelineHeadline_height}px` : undefined,
+                                                  touchAction: 'none'
+                                                }}
+                                                className={`relative flex flex-col items-center justify-center cursor-grab active:cursor-grabbing group/title z-30 select-none ${deckSelection.type === 'text' && deckSelection.id === 'timeline-headline' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg p-1' : ''}`}
+                                              >
+                                                <div className="flex flex-col items-center justify-center text-center">
+                                                  <span
+                                                    contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                    suppressContentEditableWarning
+                                                    onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
+                                                    style={{
+                                                      color: "#ffffff",
+                                                      caretColor: "#00f0ff",
+                                                      writingMode: 'vertical-rl',
+                                                      transform: 'rotate(180deg)'
+                                                    }}
+                                                    className="text-[17px] md:text-[21px] font-[900] tracking-[0.16em] text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none my-1"
+                                                  >
+                                                    {activeDeckSlide?.headline || 'ACCOMPLISHMENTS'}
+                                                  </span>
+                                                  <span
+                                                    contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                    suppressContentEditableWarning
+                                                    onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'subHeadline', e.currentTarget.textContent || '')}
+                                                    style={{
+                                                      color: "#ffffff",
+                                                      caretColor: "#00f0ff",
+                                                      writingMode: 'vertical-rl',
+                                                      transform: 'rotate(180deg)'
+                                                    }}
+                                                    className="text-[17px] md:text-[21px] font-[900] tracking-[0.16em] text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none mt-2"
+                                                  >
+                                                    {activeDeckSlide?.subHeadline || 'DATE'}
+                                                  </span>
+                                                </div>
+                                                {/* Drag Capsule */}
+                                                {deckSelection.type === 'text' && deckSelection.id === 'timeline-headline' && (
+                                                  <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'text', id: 'timeline-headline' }); setDeckBentoDrag({ isDragging: true, cardId: 'timelineHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.timelineHeadline_posX || 0, origY: activeDeckSlide?.timelineHeadline_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                    <Move size={11} className="text-violet-400" />
+                                                    <span>Vertical Headline</span>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { timelineHeadline_posX: 0, timelineHeadline_posY: 0, timelineHeadline_width: undefined, timelineHeadline_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+
+                                            {/* Central Vertical Laser Timeline Spine with 4 Luminous Sphere Nodes */}
+                                            <div className="flex flex-col items-center justify-around h-full relative z-20 pointer-events-auto py-2 shrink-0 px-1">
+                                              {/* Continuous Laser Line */}
+                                              <div className="absolute top-4 bottom-4 w-0.5 bg-gradient-to-b from-white/60 via-cyan-400/80 to-purple-500/80 shadow-[0_0_8px_rgba(0,240,255,0.6)]" />
+                                              
+                                              {/* 4 Node Spheres */}
+                                              {[0, 1, 2, 3].map((sIdx) => (
+                                                <div
+                                                  key={sIdx}
+                                                  style={{
+                                                    boxShadow: '0 0 14px rgba(255,255,255,0.9), 0 0 24px rgba(0,240,255,0.7)',
+                                                    background: 'radial-gradient(circle at 35% 35%, #ffffff 0%, #e0e7ff 60%, #94a3b8 100%)'
+                                                  }}
+                                                  className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-white relative z-10 shrink-0 transition-transform hover:scale-125"
+                                                />
+                                              ))}
+                                            </div>
+
+                                            {/* Right Column: 4 Stacked Horizontal Milestone Bento Cards */}
+                                            <div className="flex-1 flex flex-col justify-between h-full min-h-0 gap-2.5 z-20 pointer-events-auto py-0.5">
+                                              {[
+                                                {
+                                                  id: 'timeline-card-1',
+                                                  cardKey: 'timeline1',
+                                                  yearKey: 'timeline1Year',
+                                                  descKey: 'timeline1Desc',
+                                                  bgKey: 'timeline1Bg',
+                                                  shapeKey: 'timeline1Shape',
+                                                  defYear: '2021',
+                                                  defDesc: 'In our first year, we successfully launched a new product/service, received positive feedback from early users, and formed partnerships with key industry players.',
+                                                  defBg: 'linear-gradient(90deg, rgba(14,18,36,0.88) 0%, rgba(8,12,28,0.95) 100%)',
+                                                  isHighlighted: false
+                                                },
+                                                {
+                                                  id: 'timeline-card-2',
+                                                  cardKey: 'timeline2',
+                                                  yearKey: 'timeline2Year',
+                                                  descKey: 'timeline2Desc',
+                                                  bgKey: 'timeline2Bg',
+                                                  shapeKey: 'timeline2Shape',
+                                                  defYear: '2023',
+                                                  defDesc: 'We expanded into new markets, improved operational efficiency, and saw an increase in customer satisfaction.',
+                                                  defBg: 'linear-gradient(90deg, rgba(14,18,36,0.88) 0%, rgba(8,12,28,0.95) 100%)',
+                                                  isHighlighted: false
+                                                },
+                                                {
+                                                  id: 'timeline-card-3',
+                                                  cardKey: 'timeline3',
+                                                  yearKey: 'timeline3Year',
+                                                  descKey: 'timeline3Desc',
+                                                  bgKey: 'timeline3Bg',
+                                                  shapeKey: 'timeline3Shape',
+                                                  defYear: '2025',
+                                                  defDesc: 'We secured funding for growth, refined our offerings based on customer feedback, and formed strategic partnerships.',
+                                                  defBg: 'linear-gradient(90deg, rgba(14,18,36,0.88) 0%, rgba(8,12,28,0.95) 100%)',
+                                                  isHighlighted: false
+                                                },
+                                                {
+                                                  id: 'timeline-card-4',
+                                                  cardKey: 'timeline4',
+                                                  yearKey: 'timeline4Year',
+                                                  descKey: 'timeline4Desc',
+                                                  bgKey: 'timeline4Bg',
+                                                  shapeKey: 'timeline4Shape',
+                                                  defYear: 'PRESENT',
+                                                  defDesc: 'We achieved profitability, expanded our product line, and strengthened our brand reputation through positive customer feedback.',
+                                                  defBg: 'linear-gradient(90deg, rgba(157,120,205,0.88) 0%, rgba(59,92,184,0.9) 100%)',
+                                                  isHighlighted: true
+                                                }
+                                              ].map((tItem, tIdx) => {
+                                                const curYear = activeDeckSlide?.[tItem.yearKey] || tItem.defYear;
+                                                const curDesc = activeDeckSlide?.[tItem.descKey] || tItem.defDesc;
+                                                const curBg = activeDeckSlide?.[tItem.bgKey] || tItem.defBg;
+                                                const curShape = activeDeckSlide?.[tItem.shapeKey] || '14px';
+                                                const isSelected = deckSelection.type === 'bento' && deckSelection.id === tItem.id;
+                                                const itemPosX = activeDeckSlide?.[tItem.cardKey + '_posX'] || 0;
+                                                const itemPosY = activeDeckSlide?.[tItem.cardKey + '_posY'] || 0;
+                                                const itemW = activeDeckSlide?.[tItem.cardKey + '_width'];
+                                                const itemH = activeDeckSlide?.[tItem.cardKey + '_height'];
+
+                                                return (
+                                                  <div
+                                                    key={tIdx}
+                                                    onPointerDown={(e) => {
+                                                      if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn') || e.target.getAttribute('contenteditable')) return;
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'bento', id: tItem.id });
+                                                      setDeckBentoDrag({
+                                                        isDragging: true,
+                                                        cardId: tItem.cardKey,
+                                                        startX: e.clientX,
+                                                        startY: e.clientY,
+                                                        origX: itemPosX,
+                                                        origY: itemPosY
+                                                      });
+                                                    }}
+                                                    onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: tItem.id }); }}
+                                                    style={{
+                                                      transform: `translate(${itemPosX}px, ${itemPosY}px)`,
+                                                      transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                      width: itemW ? `${itemW}px` : undefined,
+                                                      height: itemH ? `${itemH}px` : undefined,
+                                                      background: curBg,
+                                                      borderRadius: curShape,
+                                                      border: tItem.isHighlighted ? '1.4px solid rgba(255, 255, 255, 0.85)' : '1.2px solid rgba(255, 255, 255, 0.4)',
+                                                      boxShadow: tItem.isHighlighted
+                                                        ? '0 12px 30px rgba(0,0,0,0.7), 0 0 20px rgba(157,120,205,0.3), inset 0 1px 1px rgba(255,255,255,0.45)'
+                                                        : '0 8px 24px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.25)',
+                                                      backdropFilter: 'blur(12px)',
+                                                      WebkitBackdropFilter: 'blur(12px)',
+                                                      touchAction: 'none',
+                                                      cursor: 'grab'
+                                                    }}
+                                                    className={`flex-1 flex flex-col justify-center px-3.5 py-1.5 md:px-4 md:py-2 rounded-2xl relative group/milestone select-none min-w-0 transition-all ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : 'hover:border-white/70 z-20'}`}
+                                                  >
+                                                    {/* Milestone Header / Year */}
+                                                    <div className="flex items-center pb-0.5">
+                                                      <span
+                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                        suppressContentEditableWarning
+                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, tItem.yearKey, e.currentTarget.textContent || '')}
+                                                        style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                        className="text-[11px] md:text-[12.5px] font-[900] uppercase tracking-wide text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text font-sans leading-tight"
+                                                      >
+                                                        {curYear}
+                                                      </span>
+                                                    </div>
+
+                                                    {/* Milestone Narrative Description */}
+                                                    <div className="flex items-center">
+                                                      <p
+                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                        suppressContentEditableWarning
+                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, tItem.descKey, e.currentTarget.textContent || '')}
+                                                        style={{ color: "#e2e8f0", caretColor: "#00f0ff" }}
+                                                        className="text-[7.5px] md:text-[8.5px] text-slate-200 font-normal leading-[1.3] outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text w-full break-words"
+                                                      >
+                                                        {curDesc}
+                                                      </p>
+                                                    </div>
+
+                                                    {/* Floating Capsule Menu */}
+                                                    {isSelected && (
+                                                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                        <Sparkles size={11} className="text-cyan-400" />
+                                                        <span>Milestone {tIdx + 1}</span>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActivePillShapePicker({ rowKey: tItem.cardKey, shapeKey: tItem.shapeKey });
+                                                          }}
+                                                          className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                          <Shapes size={10} /> Shape
+                                                        </button>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActivePillGradPicker({ rowKey: tItem.cardKey, bgKey: tItem.bgKey });
+                                                          }}
+                                                          className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-violet-300 flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                          <Palette size={10} /> Color
+                                                        </button>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onPointerDown={(e) => {
+                                                            e.stopPropagation();
+                                                            updateDeckSlideFields(activeDeckSlide?.id, {
+                                                              [tItem.cardKey + '_posX']: 0,
+                                                              [tItem.cardKey + '_posY']: 0,
+                                                              [tItem.cardKey + '_width']: undefined,
+                                                              [tItem.cardKey + '_height']: undefined
+                                                            });
+                                                          }}
+                                                          className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                          title="Reset Position"
+                                                        >
+                                                          <RotateCcw size={11} />
+                                                        </button>
+                                                      </div>
+                                                    )}
+
+                                                    {/* 8 Resize Handles */}
+                                                    {isSelected && (
+                                                      <>
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                      </>
+                                                    )}
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                        ) : layout === "Startup Revenue Model" || layout === "Startup Revenue" || layout === "Revenue Model" || activeDeckSlide?.title === "Revenue Model & Pricing" || activeDeckSlide?.title === "Revenue Model" ? (
                                           /* ── STARTUP REVENUE MODEL TEMPLATE (REVERSE-ENGINEERED SLIDE 11) ── */
                                           <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-3 md:px-8 md:pt-3.5 md:pb-3 overflow-hidden">
                                             
