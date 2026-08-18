@@ -47528,7 +47528,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        { 
                                          label: 'Vector & Wave', 
                                          icon: RegaarderVectorIcon,
-                                         menuItems: ['Dual-Mesh (Cyan & Purple)', 'Electric Cyan Wave', 'Neon Cyan & Purple Glow', 'Bottom-Left Wave Accent', 'Dual Warp Light Beams'],
+                                         menuItems: ALL_INDUSTRY_VECTOR_STYLES.map((s) => s.label),
                                          onSelect: (item) => {
                                            updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', false);
                                            if (item.includes('Dual-Mesh')) {
