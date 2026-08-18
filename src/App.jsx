@@ -12524,6 +12524,7 @@ const DEFAULT_DECK_SLIDES = [
   const [deckLineDrag, setDeckLineDrag] = useState({ isDragging: false, startY: 0, origY: 0 });
   const [deckBentoDrag, setDeckBentoDrag] = useState({ isDragging: false, cardId: null, startX: 0, startY: 0, origX: 0, origY: 0 });
   const [deckFloatingMenuOpen, setDeckFloatingMenuOpen] = useState(null);
+  const [activeCardIconPicker, setActiveCardIconPicker] = useState(null);
   // ── CLIENT-SIDE RASTER TO VECTOR (JPG/PNG to SVG) TRACER ENGINE ──
   const [vectorWaveSearch, setVectorWaveSearch] = useState('');
 
@@ -31891,6 +31892,18 @@ Respond with a JSON array of slide objects matching the schema.`;
       window.removeEventListener('pointerup', handlePointerUp);
     };
   }, [deckResizeDrag, activeDeckSlide?.id]);
+
+  // Click outside listener for card icon picker popover
+  useEffect(() => {
+    if (!activeCardIconPicker) return;
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.icon-picker-popover') && !e.target.closest('.card-icon-badge')) {
+        setActiveCardIconPicker(null);
+      }
+    };
+    window.addEventListener('pointerdown', handleOutsideClick);
+    return () => window.removeEventListener('pointerdown', handleOutsideClick);
+  }, [activeCardIconPicker]);
 
     // Badge dragging lifecycle listener
   useEffect(() => {
