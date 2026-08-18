@@ -50488,7 +50488,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           /* ── STARTUP COMPETITOR ANALYSIS TEMPLATE (REVERSE-ENGINEERED SLIDE 8) ── */
                                           <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-2 md:px-8 md:pt-4 md:pb-2.5 overflow-hidden">
                                             
-                                            {/* Bottom Ambient Neon Swirl Graphic */}
+                                            {/* Bottom & Right Ambient Neon Vortex Swirl Graphic */}
                                             <div
                                               onPointerDown={(e) => {
                                                 if (e.target.getAttribute('data-resize-handle')) return;
@@ -50505,10 +50505,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               }}
                                               style={{
                                                 position: 'absolute',
-                                                bottom: -20,
+                                                bottom: -15,
                                                 left: 0,
                                                 right: 0,
-                                                height: activeDeckSlide?.compBottomSwirl_height ? `${activeDeckSlide.compBottomSwirl_height}px` : '110px',
+                                                height: activeDeckSlide?.compBottomSwirl_height ? `${activeDeckSlide.compBottomSwirl_height}px` : '140px',
                                                 transform: `translate(${activeDeckSlide?.compBottomSwirl_posX || 0}px, ${activeDeckSlide?.compBottomSwirl_posY || 0}px)`,
                                                 transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
                                                 pointerEvents: 'auto',
@@ -50517,33 +50517,42 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               }}
                                               className={`overflow-visible select-none group/swirl ${deckSelection.type === 'vector' && deckSelection.id === 'comp-bottom-swirl' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
                                             >
-                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 1000 120" fill="none" preserveAspectRatio="none">
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 1000 140" fill="none" preserveAspectRatio="none">
                                                 <defs>
-                                                  <linearGradient id="compSwirlGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                    <stop offset="0%" stopColor="#a855f7" stopOpacity="0.85" />
-                                                    <stop offset="40%" stopColor="#6366f1" stopOpacity="0.75" />
-                                                    <stop offset="80%" stopColor="#00f0ff" stopOpacity="0.6" />
-                                                    <stop offset="100%" stopColor="#0055ff" stopOpacity="0" />
+                                                  <linearGradient id="compSwirlGrad1" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stopColor="#a855f7" stopOpacity="0.9" />
+                                                    <stop offset="35%" stopColor="#6366f1" stopOpacity="0.8" />
+                                                    <stop offset="70%" stopColor="#00f0ff" stopOpacity="0.85" />
+                                                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.4" />
                                                   </linearGradient>
-                                                  <linearGradient id="compSwirlGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
-                                                    <stop offset="60%" stopColor="#00f0ff" stopOpacity="0.9" />
-                                                    <stop offset="100%" stopColor="#c084fc" stopOpacity="0" />
+                                                  <linearGradient id="compSwirlGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.85" />
+                                                    <stop offset="50%" stopColor="#00f0ff" stopOpacity="0.95" />
+                                                    <stop offset="100%" stopColor="#c084fc" stopOpacity="0.6" />
+                                                  </linearGradient>
+                                                  <linearGradient id="compVortexLoopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.9" />
+                                                    <stop offset="50%" stopColor="#818cf8" stopOpacity="0.75" />
+                                                    <stop offset="100%" stopColor="#c084fc" stopOpacity="0.2" />
                                                   </linearGradient>
                                                   <filter id="compSwirlGlow" x="-20%" y="-30%" width="140%" height="160%">
-                                                    <feGaussianBlur stdDeviation="5" result="blur" />
+                                                    <feGaussianBlur stdDeviation="6" result="blur" />
                                                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                                                   </filter>
                                                 </defs>
-                                                <path d="M0,105 C180,60 350,115 520,70 C700,25 880,95 1000,60" stroke="url(#compSwirlGrad1)" strokeWidth="3.5" fill="none" opacity="0.8" filter="url(#compSwirlGlow)" />
-                                                <path d="M0,118 C220,75 420,125 640,85 C800,55 920,95 1000,80" stroke="url(#compSwirlGrad2)" strokeWidth="2.5" fill="none" opacity="0.9" />
-                                                <path d="M0,90 C150,45 300,95 480,55 C660,15 840,75 1000,45" stroke="#00f0ff" strokeWidth="1.5" fill="none" opacity="0.6" strokeDasharray="6 4" />
+                                                {/* Left-to-Right Bottom Sweep */}
+                                                <path d="M0,120 C180,70 380,130 560,90 C740,50 880,110 1000,75" stroke="url(#compSwirlGrad1)" strokeWidth="4" fill="none" opacity="0.85" filter="url(#compSwirlGlow)" />
+                                                <path d="M0,132 C220,90 440,138 660,105 C800,80 920,115 1000,95" stroke="url(#compSwirlGrad2)" strokeWidth="2.5" fill="none" opacity="0.9" />
+                                                <path d="M0,105 C160,60 320,110 500,75 C680,40 840,90 1000,60" stroke="#00f0ff" strokeWidth="1.5" fill="none" opacity="0.55" strokeDasharray="6 4" />
+                                                {/* Right-Side Vortex Loop Ribbons */}
+                                                <path d="M720,135 C820,130 960,110 980,65 C1000,20 920,0 840,15 C760,30 730,85 800,120 C870,155 980,120 1000,90" stroke="url(#compVortexLoopGrad)" strokeWidth="3" fill="none" opacity="0.8" filter="url(#compSwirlGlow)" />
+                                                <path d="M740,138 C840,135 970,115 990,70 C1010,25 930,5 850,20 C770,35 740,90 810,125" stroke="#38bdf8" strokeWidth="1.5" fill="none" opacity="0.6" />
                                               </svg>
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'comp-bottom-swirl' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'comp-bottom-swirl' }); setDeckBentoDrag({ isDragging: true, cardId: 'compBottomSwirl', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.compBottomSwirl_posX || 0, origY: activeDeckSlide?.compBottomSwirl_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
                                                   <Sparkles size={11} className="text-cyan-400" />
-                                                  <span>Bottom Neon Wave</span>
+                                                  <span>Ambient Neon Wave</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { compBottomSwirl_posX: 0, compBottomSwirl_posY: 0, compBottomSwirl_width: undefined, compBottomSwirl_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
                                                 </div>
@@ -50557,10 +50566,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               )}
                                             </div>
 
-                                            {/* Main Content Layout: 2 Equal Columns with Vertical Central Laser Divider */}
-                                            <div className="flex-1 grid grid-cols-12 gap-4 md:gap-6 w-full pointer-events-auto z-20 min-h-0 items-stretch my-auto">
+                                            {/* Main Content Layout: Strictly Side-by-Side Flex Layout with Central Vertical Laser Beam */}
+                                            <div className="flex-1 flex flex-row items-stretch justify-between w-full pointer-events-auto z-20 min-h-0 my-auto gap-5 md:gap-8 px-2 md:px-4">
                                               
-                                              {/* Left Column: Direct Competitor */}
+                                              {/* Left Column: Direct Competitor (flex-1) */}
                                               <div
                                                 onPointerDown={(e) => {
                                                   if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn') || e.target.getAttribute('contenteditable')) return;
@@ -50584,7 +50593,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   touchAction: 'none',
                                                   cursor: 'grab'
                                                 }}
-                                                className={`col-span-6 flex flex-col justify-start items-center text-center p-2 rounded-2xl relative group/direct ${deckSelection.type === 'bento' && deckSelection.id === 'direct-col' ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : ''}`}
+                                                className={`flex-1 flex flex-col justify-start items-center text-center p-2 rounded-2xl relative group/direct min-w-0 ${deckSelection.type === 'bento' && deckSelection.id === 'direct-col' ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : ''}`}
                                               >
                                                 {/* Header Pill Badge (DIRECT COMPETITOR) */}
                                                 <div
@@ -50594,7 +50603,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     border: '1.2px solid rgba(255, 255, 255, 0.4)',
                                                     boxShadow: '0 8px 24px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.4)'
                                                   }}
-                                                  className="w-[220px] md:w-[250px] h-[38px] md:h-[42px] px-3 flex items-center justify-center text-center shrink-0 mb-3 shadow-lg transition-all"
+                                                  className="w-full max-w-[260px] h-[38px] md:h-[42px] px-3 flex items-center justify-center text-center shrink-0 mb-3 shadow-lg transition-all"
                                                 >
                                                   <span
                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -50722,7 +50731,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 )}
                                               </div>
 
-                                              {/* Right Column: Indirect Competitor */}
+                                              {/* Right Column: Indirect Competitor (flex-1) */}
                                               <div
                                                 onPointerDown={(e) => {
                                                   if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn') || e.target.getAttribute('contenteditable')) return;
@@ -50746,7 +50755,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   touchAction: 'none',
                                                   cursor: 'grab'
                                                 }}
-                                                className={`col-span-6 flex flex-col justify-start items-center text-center p-2 rounded-2xl relative group/indirect ${deckSelection.type === 'bento' && deckSelection.id === 'indirect-col' ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : ''}`}
+                                                className={`flex-1 flex flex-col justify-start items-center text-center p-2 rounded-2xl relative group/indirect min-w-0 ${deckSelection.type === 'bento' && deckSelection.id === 'indirect-col' ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : ''}`}
                                               >
                                                 {/* Header Pill Badge (INDIRECT COMPETITOR) */}
                                                 <div
@@ -50756,7 +50765,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     border: '1.2px solid rgba(255, 255, 255, 0.4)',
                                                     boxShadow: '0 8px 24px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.4)'
                                                   }}
-                                                  className="w-[220px] md:w-[250px] h-[38px] md:h-[42px] px-3 flex items-center justify-center text-center shrink-0 mb-3 shadow-lg transition-all"
+                                                  className="w-full max-w-[260px] h-[38px] md:h-[42px] px-3 flex items-center justify-center text-center shrink-0 mb-3 shadow-lg transition-all"
                                                 >
                                                   <span
                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
