@@ -48396,7 +48396,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {activeDeckSlide?.headline || 'STARTUP\nPITCH DECK'}
                                             </h1>
 
-                                            {/* Presenter Pill Badge (Interactive Draggable & Resizable Shape with Animated Shimmer Effects) */}
+                                            {/* Presenter Pill Badge (Interactive Draggable & Resizable Shape with Animated Shimmer & Snake Effects) */}
                                             {(() => {
                                               const isPillSelected = deckSelection.type === 'pill';
                                               const isPillHidden = activeDeckSlide?.pillHidden;
@@ -48410,16 +48410,30 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               const pillBorderWidth = activeDeckSlide?.pillBorderWidth || 2;
                                               const roundedClass = pillShape === 'square' ? 'rounded-md' : pillShape === 'rounded-square' ? 'rounded-2xl' : 'rounded-full';
 
-                                              // Compute dynamic Outer Glow Shadows
+                                              // Custom Shimmer & Snake Colors
+                                              const sColor1 = activeDeckSlide?.pillShimmerColor1 || '#00f0ff';
+                                              const sColor2 = activeDeckSlide?.pillShimmerColor2 || '#ec4899';
+                                              const isDynamic = (activeDeckSlide?.pillMotionMode || 'dynamic') === 'dynamic';
+                                              const pillSpeedSec = activeDeckSlide?.pillSpeedSec || 3;
+                                              const glowLevel = activeDeckSlide?.pillGlowIntensity || 'standard';
+
+                                              // Compute dynamic Outer Glow Shadows with Granularity
                                               const getPillOuterGlow = () => {
+                                                if (pillBorderEffect === 'none' || pillBorderEffect === 'solid') return 'none';
+                                                const blur1 = glowLevel === 'soft' ? 12 : glowLevel === 'vibrant' ? 35 : glowLevel === 'bloom' ? 60 : 25;
+                                                const blur2 = glowLevel === 'soft' ? 24 : glowLevel === 'vibrant' ? 60 : glowLevel === 'bloom' ? 90 : 45;
+
+                                                if (pillBorderEffect === 'snake') {
+                                                  return `0 0 ${blur1}px ${sColor1}99, 0 0 ${blur2}px ${sColor2}66`;
+                                                }
                                                 if (pillBorderEffect === 'shimmer') {
-                                                  return '0 0 25px rgba(0, 240, 255, 0.45), 0 0 50px rgba(217, 70, 239, 0.3)';
+                                                  return `0 0 ${blur1}px ${sColor1}88, 0 0 ${blur2}px ${sColor2}55`;
                                                 }
                                                 if (pillBorderEffect === 'neon-glow') {
-                                                  return '0 0 30px rgba(168, 85, 247, 0.55), 0 0 15px rgba(0, 240, 255, 0.7)';
+                                                  return `0 0 ${blur1}px #a855f799, 0 0 ${blur2}px #00f0ff88`;
                                                 }
                                                 if (pillBorderEffect === 'pulsing-aura') {
-                                                  return '0 0 35px rgba(236, 72, 153, 0.5)';
+                                                  return `0 0 ${blur1}px #ec489988`;
                                                 }
                                                 if (pillBorderEffect === 'glass-frost') {
                                                   return '0 8px 32px rgba(0, 0, 0, 0.37)';
@@ -48438,7 +48452,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   {/* Pulsing Aura Ambient Glow Layer */}
                                                   {pillBorderEffect === 'pulsing-aura' && (
                                                     <div 
-                                                      className={`absolute -inset-1.5 ${roundedClass} bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 opacity-60 blur-md animate-pulse pointer-events-none`} 
+                                                      className={`absolute -inset-1.5 ${roundedClass} bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 opacity-60 blur-md ${isDynamic ? 'animate-pulse' : ''} pointer-events-none`} 
                                                     />
                                                   )}
 
@@ -48471,19 +48485,32 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       boxShadow: getPillOuterGlow()
                                                     }}
                                                   >
-                                                    {/* Dynamic Moving Shimmer Rotating Conic Beam */}
-                                                    {pillBorderEffect === 'shimmer' ? (
+                                                    {/* Dynamic Moving Shimmer / Snake Rotating Conic Beam */}
+                                                    {pillBorderEffect === 'snake' ? (
                                                       <div 
-                                                        className="absolute -inset-[200%] animate-deck-beam-spin pointer-events-none"
+                                                        className="absolute -inset-[200%] pointer-events-none"
                                                         style={{
-                                                          background: 'conic-gradient(from 0deg at 50% 50%, transparent 0deg 180deg, #00f0ff 250deg, #ec4899 310deg, #7c4dff 360deg)'
+                                                          background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 270deg, ${sColor1} 315deg, #ffffff 350deg, ${sColor2} 360deg)`,
+                                                          animation: isDynamic ? `deckBeamSpin ${pillSpeedSec}s linear infinite` : 'none',
+                                                          transform: isDynamic ? undefined : 'rotate(45deg)'
+                                                        }}
+                                                      />
+                                                    ) : pillBorderEffect === 'shimmer' ? (
+                                                      <div 
+                                                        className="absolute -inset-[200%] pointer-events-none"
+                                                        style={{
+                                                          background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 180deg, ${sColor1} 250deg, ${sColor2} 310deg, #7c4dff 360deg)`,
+                                                          animation: isDynamic ? `deckBeamSpin ${pillSpeedSec}s linear infinite` : 'none',
+                                                          transform: isDynamic ? undefined : 'rotate(45deg)'
                                                         }}
                                                       />
                                                     ) : pillBorderEffect === 'neon-glow' ? (
                                                       <div 
-                                                        className="absolute -inset-[200%] animate-deck-neon-spin pointer-events-none"
+                                                        className="absolute -inset-[200%] pointer-events-none"
                                                         style={{
-                                                          background: 'conic-gradient(from 0deg at 50% 50%, transparent 0deg 80deg, #a855f7 140deg, transparent 180deg, #00f0ff 270deg, transparent 360deg)'
+                                                          background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 80deg, ${sColor2} 140deg, transparent 180deg, ${sColor1} 270deg, transparent 360deg)`,
+                                                          animation: isDynamic ? `deckBeamSpin ${Math.max(1, pillSpeedSec - 1)}s linear infinite` : 'none',
+                                                          transform: isDynamic ? undefined : 'rotate(45deg)'
                                                         }}
                                                       />
                                                     ) : pillBorderEffect === 'solid' ? (
@@ -48499,7 +48526,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       }}
                                                     >
                                                       {/* Moving Sheen Ray for Frosted Glass or Shimmer */}
-                                                      {(pillBorderEffect === 'glass-frost' || pillBorderEffect === 'shimmer') && (
+                                                      {isDynamic && (pillBorderEffect === 'glass-frost' || pillBorderEffect === 'shimmer' || pillBorderEffect === 'snake') && (
                                                         <div 
                                                           className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 animate-deck-sheen pointer-events-none" 
                                                         />
@@ -48566,16 +48593,50 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                             {deckFloatingMenuOpen === 'pillEffect' && (
                                                               <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-52 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 text-xs text-zinc-200">
                                                                 {[
-                                                                  { id: 'shimmer', name: '🌀 Rotating Shimmer (Moving)', desc: 'Moving cyan & magenta laser beam' },
-                                                                  { id: 'neon-glow', name: '⚡ Electric Neon Rim (Moving)', desc: 'Revolving neon laser ribbon' },
-                                                                  { id: 'pulsing-aura', name: '✨ Pulsing Laser Aura', desc: 'Breathing ambient glow' },
-                                                                  { id: 'glass-frost', name: '❄️ Frosted Glass Sheen (Moving)', desc: 'Moving light beam across glass' },
+                                                                  { id: 'snake', name: '🐍 Snake Laser Border', desc: 'Continuous revolving snake head & trail' },
+                                                                  { id: 'shimmer', name: '🌀 Revolving Shimmer Beam', desc: 'Moving cyan & magenta laser beam' },
+                                                                  { id: 'neon-glow', name: '⚡ Electric Neon Rim', desc: 'Dual-phase revolving neon laser' },
+                                                                  { id: 'pulsing-aura', name: '✨ Pulsing Laser Aura', desc: 'Expanding ambient laser glow' },
+                                                                  { id: 'glass-frost', name: '❄️ Frosted Glass Sheen', desc: 'Moving light beam across glass' },
                                                                   { id: 'solid', name: 'Classic Solid Border', desc: 'Clean static outline' }
                                                                 ].map((eff) => (
                                                                   <button key={eff.id} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillBorderEffect', eff.id); setDeckFloatingMenuOpen(null); showToast(`Effect: ${eff.name}`); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded flex flex-col">
                                                                     <span className="font-semibold text-white">{eff.name}</span>
                                                                     <span className="text-[10px] text-zinc-400">{eff.desc}</span>
                                                                   </button>
+                                                                ))}
+                                                              </div>
+                                                            )}
+                                                          </div>
+
+                                                          {/* Motion Mode Toggle (Dynamic vs Static) */}
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              const nextMode = isDynamic ? 'static' : 'dynamic';
+                                                              updateDeckSlideField(activeDeckSlide?.id, 'pillMotionMode', nextMode);
+                                                              showToast(`Motion: ${nextMode}`);
+                                                            }}
+                                                            className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] font-semibold cursor-pointer"
+                                                            title="Motion Toggle: Dynamic vs Static"
+                                                          >
+                                                            {isDynamic ? '⚡ Dynamic' : '⏸ Static'}
+                                                          </button>
+
+                                                          {/* Shimmer Color Picker */}
+                                                          <div className="relative">
+                                                            <button
+                                                              type="button"
+                                                              onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pillShimmerColor' ? null : 'pillShimmerColor'); }}
+                                                              className="w-4 h-4 rounded-full border border-white/40 shadow-xs hover:scale-110 transition-transform cursor-pointer"
+                                                              style={{ backgroundColor: sColor1 }}
+                                                              title="Laser & Shimmer Color"
+                                                            />
+                                                            {deckFloatingMenuOpen === 'pillShimmerColor' && (
+                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5">
+                                                                {['#00f0ff', '#ec4899', '#7c4dff', '#a855f7', '#3b82f6', '#f59e0b', '#10b981', '#f43f5e', '#ffffff', '#64748b'].map((hex) => (
+                                                                  <button key={hex} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillShimmerColor1', hex); setDeckFloatingMenuOpen(null); showToast('Laser color updated'); }} className="w-6 h-6 rounded-md border border-white/20 hover:scale-110" style={{ backgroundColor: hex }} />
                                                                 ))}
                                                               </div>
                                                             )}
