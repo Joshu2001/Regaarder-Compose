@@ -12260,23 +12260,23 @@ const DEFAULT_DECK_SLIDES = [
   // ── CLIENT-SIDE RASTER TO VECTOR (JPG/PNG to SVG) TRACER ENGINE ──
   const [vectorWaveSearch, setVectorWaveSearch] = useState('');
 
-  const ALL_INDUSTRY_VECTOR_STYLES = [
-    { id: 'original-pitch', label: 'Original Pitch Deck (Image 1 Exact)', category: 'Featured', desc: 'Dual Top-Right Vortex Loop + Bottom-Left Horizon Wave', c1: '#0055ff', c2: '#00f0ff' },
-    { id: 'top-right-vortex', label: 'Top-Right Orbital Vortex Arc', category: 'Corner & Top', desc: 'High-speed sweeping spiral arc loops on top-right', c1: '#0066ff', c2: '#00f0ff' },
-    { id: 'bottom-left-wave', label: 'Bottom-Left Horizon Wave Accent', category: 'Horizon & Footer', desc: 'Ascending metric baseline wave in bottom-left', c1: '#0055ff', c2: '#00f0ff' },
-    { id: 'topographic-elevation', label: 'Topographic Elevation Contours', category: 'Geographic & Depth', desc: 'Concentric 3D terrain isoline curves for data density', c1: '#00f0ff', c2: '#3b82f6' },
+const ALL_INDUSTRY_VECTOR_STYLES = [
+    { id: 'tesseract-cube', label: '3D Hypercube (Tesseract)', category: '3D Shapes', desc: 'Nested isometric 3D cubes with coordinate vertices', c1: '#7c4dff', c2: '#00f0ff' },
+    { id: 'toroid-ring', label: '3D Torus / Donut Ring Mesh', category: '3D Shapes', desc: 'Revolving 3D donut wireframe with radial ribs & loops', c1: '#00f0ff', c2: '#ec4899' },
+    { id: 'mobius-infinity', label: 'Möbius Strip & Infinity Ribbon', category: '3D Shapes', desc: 'Twisted single-surface ribbon loop with cross-hatching', c1: '#3b82f6', c2: '#a855f7' },
+    { id: 'geodesic-icosahedron', label: 'Geodesic Polyhedral Sphere', category: '3D Shapes', desc: 'Triangular-faceted icosahedron with glowing node junctions', c1: '#00f0ff', c2: '#10b981' },
+    { id: 'dna-double-helix', label: 'Double Helix DNA Pipeline', category: '3D Shapes', desc: 'Cylindrical spiral ladder with transverse molecular rungs', c1: '#ec4899', c2: '#00f0ff' },
+    { id: 'tapered-funnel', label: '3D Ingestion Funnel Cone', category: '3D Shapes', desc: 'Tapering 3D conical wireframe with concentric rings', c1: '#00f0ff', c2: '#f59e0b' },
+    { id: 'hourglass-hyperboloid', label: 'Hourglass Hyperboloid Mesh', category: '3D Shapes', desc: 'Symmetrical pinched-waist dual cone with hyperbolic curves', c1: '#a855f7', c2: '#00f0ff' },
+    { id: 'crystal-pyramid', label: 'Crystalline Pyramid Tetrahedron', category: '3D Shapes', desc: '3D multi-faceted triangular prism with internal facets', c1: '#38bdf8', c2: '#7c4dff' },
+    { id: 'cylindrical-tunnel', label: 'Cylindrical Warp Tunnel', category: '3D Shapes', desc: 'Concentric tubular perspective grid conduit', c1: '#00f0ff', c2: '#3b82f6' },
+    { id: 'gyroid-saddle', label: 'Gyroid & Saddle Minimal Surface', category: '3D Shapes', desc: 'Periodic triply minimal saddle curvature contour mesh', c1: '#ec4899', c2: '#7c4dff' },
+    { id: 'original-pitch', label: 'Original Pitch Deck (Image 1 Exact)', category: 'Keynote Waves', desc: 'Dual Top-Right Vortex Loop + Bottom-Left Horizon Wave', c1: '#0055ff', c2: '#00f0ff' },
+    { id: 'topographic-elevation', label: 'Topographic Elevation Contours', category: 'Topography', desc: 'Concentric 3D terrain isoline curves for data density', c1: '#00f0ff', c2: '#3b82f6' },
     { id: 'radial-sunburst', label: 'Radial Caustic Sunburst Flare', category: 'Radiance', desc: 'Divergent ray-traced beams from corner anchor', c1: '#00f0ff', c2: '#f59e0b' },
     { id: 'isometric-grid', label: 'Isometric Perspective Cyber Grid', category: 'Perspective & Grid', desc: 'Slanted receding wireframe ground plane', c1: '#7c4dff', c2: '#00f0ff' },
-    { id: 'double-helix', label: 'Intertwined Double Helix', category: 'Biotech & Connectivity', desc: 'Dual twisting synchronous ribbon filaments', c1: '#ec4899', c2: '#00f0ff' },
-    { id: 'fluid-marbling', label: 'Chromatic Fluid Marbling Waves', category: 'Fluid & Organic', desc: 'Viscous non-linear organic liquid dispersion curves', c1: '#ec4899', c2: '#7c4dff' },
-    { id: 'lissajous-resonance', label: 'Harmonic Lissajous Resonance', category: 'Audio & Signal', desc: 'Mathematical frequency curves and resonance loops', c1: '#00f0ff', c2: '#10b981' },
-    { id: 'horizon-halo', label: 'Planetary Horizon Halo Arc', category: 'Hero Keynote', desc: 'Colossal low-curvature planetary rim from bottom bezel', c1: '#0055ff', c2: '#00f0ff' },
     { id: 'voronoi-mesh', label: 'Voronoi & Hexagonal Mesh', category: 'Architecture & Security', desc: 'Honeycomb grid with luminous junction nodes', c1: '#00f0ff', c2: '#7c4dff' },
-    { id: 'magnetic-dipole', label: 'Magnetic Dipole Field Lines', category: 'Network & System', desc: 'Symmetrical flux curves looping across poles', c1: '#3b82f6', c2: '#ec4899' },
-    { id: 'waterfall-ribbon', label: 'Cascading Ribbon Waterfall', category: 'Vertical Split', desc: 'Multi-ply gradient ribbons plunging down slide margin', c1: '#7c4dff', c2: '#00f0ff' },
-    { id: 'dual-mesh', label: 'Dual-Mesh Cybernetic Lattice', category: 'Lattice & Mesh', desc: 'Classic dual-mesh cybernetic lattice', c1: '#00f0ff', c2: '#a855f7' },
-    { id: 'electric-cyan', label: 'Electric Cyan Ribbon', category: 'Ribbon & Beams', desc: 'High-speed electric cyan ribbon wave', c1: '#00f0ff', c2: '#38bdf8' },
-    { id: 'dual-warp', label: 'Dual Warp Light Beams', category: 'Ribbon & Beams', desc: 'Cross-slide dual perspective warp beams', c1: '#00f0ff', c2: '#ec4899' }
+    { id: 'magnetic-dipole', label: 'Magnetic Dipole Field Lines', category: 'Network & System', desc: 'Symmetrical flux curves looping across poles', c1: '#3b82f6', c2: '#ec4899' }
   ];
   
   const [vectorizerModalOpen, setVectorizerModalOpen] = useState(false);
@@ -48570,8 +48570,381 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  <stop offset="100%" stopColor={c2 || "#00f0ff"} stopOpacity="0.95" />
                                                </linearGradient>
                                             </defs>
-                                            {waveStyle === 'original-pitch' || !waveStyle ? (
-                                               /* ── 1. EXACT STARTUP PITCH DECK VORTEX & HORIZON CURVES ── */
+{waveStyle === 'tesseract-cube' ? (
+                                               /* ── 1. 3D WIREFRAME HYPERCUBE (TESSERACT) ── */
+                                               <g>
+                                                 {/* Outer Cube Faces */}
+                                                 <polygon points="620,120 780,120 840,170 680,170" stroke="url(#dynWaveGrad1)" strokeWidth="1.8" fill="none" opacity="0.8" />
+                                                 <polygon points="620,120 680,170 680,390 620,340" stroke="url(#dynWaveGrad1)" strokeWidth="1.8" fill="none" opacity="0.85" />
+                                                 <polygon points="680,170 840,170 840,390 680,390" stroke="url(#dynWaveGradCobalt)" strokeWidth="2" fill="none" opacity="0.9" />
+                                                 <polygon points="620,340 680,390 840,390 780,340" stroke="url(#dynWaveGrad2)" strokeWidth="1.8" fill="none" opacity="0.75" />
+                                                 {/* Inner Cube */}
+                                                 <polygon points="690,210 770,210 800,235 720,235" stroke="url(#dynWaveGrad2)" strokeWidth="1.4" fill="none" opacity="0.9" />
+                                                 <polygon points="690,210 720,235 720,345 690,320" stroke="url(#dynWaveGrad2)" strokeWidth="1.4" fill="none" opacity="0.9" />
+                                                 <polygon points="720,235 800,235 800,345 720,345" stroke="url(#dynWaveGrad1)" strokeWidth="1.6" fill="none" opacity="0.95" />
+                                                 {/* Connecting 4D Vertices */}
+                                                 <line x1="620" y1="120" x2="690" y2="210" stroke="url(#dynWaveGrad1)" strokeWidth="1.4" opacity="0.85" />
+                                                 <line x1="780" y1="120" x2="770" y2="210" stroke="url(#dynWaveGrad1)" strokeWidth="1.4" opacity="0.85" />
+                                                 <line x1="840" y1="170" x2="800" y2="235" stroke="url(#dynWaveGrad1)" strokeWidth="1.4" opacity="0.85" />
+                                                 <line x1="680" y1="170" x2="720" y2="235" stroke="url(#dynWaveGrad1)" strokeWidth="1.4" opacity="0.85" />
+                                                 <line x1="620" y1="340" x2="690" y2="320" stroke="url(#dynWaveGrad2)" strokeWidth="1.4" opacity="0.85" />
+                                                 <line x1="780" y1="340" x2="770" y2="320" stroke="url(#dynWaveGrad2)" strokeWidth="1.4" opacity="0.85" />
+                                                 <line x1="840" y1="390" x2="800" y2="345" stroke="url(#dynWaveGrad2)" strokeWidth="1.4" opacity="0.85" />
+                                                 <line x1="680" y1="390" x2="720" y2="345" stroke="url(#dynWaveGrad2)" strokeWidth="1.4" opacity="0.85" />
+                                                 {/* Internal Grid Lattice Planes */}
+                                                 {Array.from({ length: 8 }).map((_, i) => {
+                                                   const t = (i + 1) / 9;
+                                                   return (
+                                                     <g key={i}>
+                                                       <line x1={620 + (680 - 620) * t} y1={120 + (170 - 120) * t} x2={620 + (680 - 620) * t} y2={340 + (390 - 340) * t} stroke="url(#dynWaveGrad1)" strokeWidth="0.8" opacity="0.4" strokeDasharray="3 3" />
+                                                       <line x1={680 + (840 - 680) * t} y1={170} x2={680 + (840 - 680) * t} y2={390} stroke="url(#dynWaveGrad2)" strokeWidth="0.8" opacity="0.4" strokeDasharray="3 3" />
+                                                     </g>
+                                                   );
+                                                 })}
+                                                 {/* Luminous Node Junctions */}
+                                                 {[
+                                                   [620, 120], [780, 120], [840, 170], [680, 170],
+                                                   [620, 340], [780, 340], [840, 390], [680, 390],
+                                                   [690, 210], [770, 210], [800, 235], [720, 235],
+                                                   [690, 320], [770, 320], [800, 345], [720, 345]
+                                                 ].map(([x, y], idx) => (
+                                                   <circle key={idx} cx={x} cy={y} r="3.5" fill="#00f0ff" opacity="0.9" />
+                                                 ))}
+                                               </g>
+                                             ) : waveStyle === 'toroid-ring' ? (
+                                               /* ── 2. 3D TORUS / DONUT RING MESH ── */
+                                               <g>
+                                                 {/* 3D Radial Longitudinal Ellipses */}
+                                                 {Array.from({ length: 32 }).map((_, i) => {
+                                                   const angle = (i / 32) * Math.PI * 2;
+                                                   const cx = 710 + Math.cos(angle) * 140;
+                                                   const cy = 300 + Math.sin(angle) * 70;
+                                                   const rx = 24 + Math.abs(Math.sin(angle)) * 12;
+                                                   const ry = 42 + Math.abs(Math.cos(angle)) * 16;
+                                                   const opacity = 0.2 + (Math.sin(angle) + 1) * 0.35;
+                                                   return (
+                                                     <ellipse 
+                                                       key={i} 
+                                                       cx={cx} 
+                                                       cy={cy} 
+                                                       rx={rx} 
+                                                       ry={ry} 
+                                                       transform={`rotate(${(angle * 180) / Math.PI + 90} ${cx} ${cy})`} 
+                                                       stroke={i % 2 === 0 ? 'url(#dynWaveGrad1)' : 'url(#dynWaveGrad2)'} 
+                                                       strokeWidth="1.2" 
+                                                       fill="none" 
+                                                       opacity={opacity} 
+                                                     />
+                                                   );
+                                                 })}
+                                                 {/* Concentric Latitude Torus Rings */}
+                                                 {Array.from({ length: 14 }).map((_, i) => {
+                                                   const rX = 90 + i * 14;
+                                                   const rY = 45 + i * 7;
+                                                   const opacity = 0.15 + (1 - Math.abs(i - 7) / 7) * 0.65;
+                                                   return (
+                                                     <ellipse key={i} cx="710" cy="300" rx={rX} ry={rY} stroke="url(#dynWaveGradCobalt)" strokeWidth="1.4" fill="none" opacity={opacity} />
+                                                   );
+                                                 })}
+                                               </g>
+                                             ) : waveStyle === 'mobius-infinity' ? (
+                                               /* ── 3. MÖBIUS STRIP & INFINITY RIBBON ── */
+                                               <g>
+                                                 {Array.from({ length: 48 }).map((_, i) => {
+                                                   const u = (i / 48) * Math.PI * 2;
+                                                   const scale = 210;
+                                                   const x1 = 680 + (scale * Math.cos(u)) / (1 + Math.sin(u) * Math.sin(u));
+                                                   const y1 = 300 + (scale * Math.sin(u) * Math.cos(u)) / (1 + Math.sin(u) * Math.sin(u));
+                                                   const vSpread = 28 * Math.sin(u / 2);
+                                                   const nx = -Math.sin(u) * vSpread;
+                                                   const ny = Math.cos(u) * vSpread;
+                                                   const opacity = 0.25 + (Math.sin(u) + 1) * 0.35;
+                                                   return (
+                                                     <g key={i}>
+                                                       <line x1={x1 - nx} y1={y1 - ny} x2={x1 + nx} y2={y1 + ny} stroke="url(#dynWaveGradCobalt)" strokeWidth="1.4" opacity={opacity} />
+                                                       <circle cx={x1 - nx} cy={y1 - ny} r="2" fill="#00f0ff" opacity={opacity} />
+                                                       <circle cx={x1 + nx} cy={y1 + ny} r="2" fill="#ec4899" opacity={opacity} />
+                                                     </g>
+                                                   );
+                                                 })}
+                                                 {/* Continuous Center Loop */}
+                                                 <path 
+                                                   d="M 680 300 C 760 220, 840 220, 840 300 C 840 380, 760 380, 680 300 C 600 220, 520 220, 520 300 C 520 380, 600 380, 680 300 Z" 
+                                                   stroke="url(#dynWaveGrad1)" 
+                                                   strokeWidth="2.4" 
+                                                   fill="none" 
+                                                   opacity="0.8" 
+                                                 />
+                                               </g>
+                                             ) : waveStyle === 'geodesic-icosahedron' ? (
+                                               /* ── 4. GEODESIC POLYHEDRAL SPHERE ── */
+                                               <g>
+                                                 {/* Latitude Rings */}
+                                                 {Array.from({ length: 12 }).map((_, i) => {
+                                                   const latAngle = ((i + 1) / 13) * Math.PI;
+                                                   const r = Math.sin(latAngle) * 160;
+                                                   const y = 300 - Math.cos(latAngle) * 160;
+                                                   const opacity = 0.2 + Math.sin(latAngle) * 0.6;
+                                                   return <ellipse key={`lat-${i}`} cx="700" cy={y} rx={r} ry={r * 0.32} stroke="url(#dynWaveGrad1)" strokeWidth="1.2" fill="none" opacity={opacity} />;
+                                                 })}
+                                                 {/* Longitude Ellipses */}
+                                                 {Array.from({ length: 8 }).map((_, i) => {
+                                                   const rot = (i / 8) * 180;
+                                                   return (
+                                                     <ellipse key={`long-${i}`} cx="700" cy="300" rx="160" ry="160" transform={`rotate(${rot} 700 300) scale(1, 0.38)`} stroke="url(#dynWaveGrad2)" strokeWidth="1.2" fill="none" opacity="0.45" />
+                                                   );
+                                                 })}
+                                                 {/* Triangular Facets & Node Vertices */}
+                                                 {Array.from({ length: 18 }).map((_, i) => {
+                                                   const a1 = (i / 18) * Math.PI * 2;
+                                                   const a2 = ((i + 1) / 18) * Math.PI * 2;
+                                                   const x1 = 700 + Math.cos(a1) * 160;
+                                                   const y1 = 300 + Math.sin(a1) * 60;
+                                                   const x2 = 700 + Math.cos(a2) * 160;
+                                                   const y2 = 300 + Math.sin(a2) * 60;
+                                                   return (
+                                                     <g key={i}>
+                                                       <line x1="700" y1="140" x2={x1} y2={y1} stroke="url(#dynWaveGradCobalt)" strokeWidth="1" opacity="0.6" />
+                                                       <line x1="700" y1="460" x2={x1} y2={y1} stroke="url(#dynWaveGradCobalt)" strokeWidth="1" opacity="0.6" />
+                                                       <circle cx={x1} cy={y1} r="3" fill="#00f0ff" opacity="0.85" />
+                                                     </g>
+                                                   );
+                                                 })}
+                                               </g>
+                                             ) : waveStyle === 'dna-double-helix' ? (
+                                               /* ── 5. DOUBLE HELIX DNA PIPELINE ── */
+                                               <g>
+                                                 {Array.from({ length: 48 }).map((_, i) => {
+                                                   const ratio = i / 48;
+                                                   const x = 320 + ratio * 580;
+                                                   const angle = ratio * Math.PI * 5;
+                                                   const y1 = 300 + Math.sin(angle) * 120;
+                                                   const y2 = 300 - Math.sin(angle) * 120;
+                                                   const zDepth = Math.cos(angle);
+                                                   const opacity = 0.2 + (zDepth + 1) * 0.4;
+                                                   return (
+                                                     <g key={i}>
+                                                       {/* Transverse Cross-Link Rung */}
+                                                       {i % 2 === 0 && (
+                                                         <line x1={x} y1={y1} x2={x} y2={y2} stroke="url(#dynWaveGrad2)" strokeWidth="1.5" opacity={opacity * 0.8} />
+                                                       )}
+                                                       {/* Strand 1 Node */}
+                                                       <circle cx={x} cy={y1} r={3 + zDepth * 1.5} fill="#00f0ff" opacity={opacity + 0.2} />
+                                                       {/* Strand 2 Node */}
+                                                       <circle cx={x} cy={y2} r={3 - zDepth * 1.5} fill="#ec4899" opacity={0.3 + (1 - zDepth) * 0.4} />
+                                                     </g>
+                                                   );
+                                                 })}
+                                                 {/* Continuous Helical Ribbon Strands */}
+                                                 <path 
+                                                   d={Array.from({ length: 48 }).map((_, i) => {
+                                                     const ratio = i / 48;
+                                                     const x = 320 + ratio * 580;
+                                                     const y = 300 + Math.sin(ratio * Math.PI * 5) * 120;
+                                                     return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                                                   }).join(' ')} 
+                                                   stroke="url(#dynWaveGrad1)" 
+                                                   strokeWidth="2.5" 
+                                                   fill="none" 
+                                                   opacity="0.8" 
+                                                 />
+                                                 <path 
+                                                   d={Array.from({ length: 48 }).map((_, i) => {
+                                                     const ratio = i / 48;
+                                                     const x = 320 + ratio * 580;
+                                                     const y = 300 - Math.sin(ratio * Math.PI * 5) * 120;
+                                                     return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                                                   }).join(' ')} 
+                                                   stroke="url(#dynWaveGrad2)" 
+                                                   strokeWidth="2.5" 
+                                                   fill="none" 
+                                                   opacity="0.8" 
+                                                 />
+                                               </g>
+                                             ) : waveStyle === 'tapered-funnel' ? (
+                                               /* ── 6. 3D INGESTION FUNNEL CONE ── */
+                                               <g>
+                                                 {/* Concentric Tapering Elliptical Rings */}
+                                                 {Array.from({ length: 24 }).map((_, i) => {
+                                                   const ratio = i / 24;
+                                                   const x = 860 - ratio * 480;
+                                                   const rx = 18 + ratio * 160;
+                                                   const ry = 9 + ratio * 80;
+                                                   const opacity = 0.15 + (1 - ratio) * 0.75;
+                                                   return (
+                                                     <ellipse key={i} cx={x} cy="300" rx={ry} ry={rx} stroke={i % 2 === 0 ? 'url(#dynWaveGrad1)' : 'url(#dynWaveGrad2)'} strokeWidth={1 + ratio * 1.5} fill="none" opacity={opacity} />
+                                                   );
+                                                 })}
+                                                 {/* Longitudinal Guide Cones */}
+                                                 {Array.from({ length: 16 }).map((_, i) => {
+                                                   const angle = (i / 16) * Math.PI * 2;
+                                                   const y2 = 300 + Math.sin(angle) * 178;
+                                                   const z2 = Math.cos(angle) * 89;
+                                                   const opacity = 0.2 + (Math.sin(angle) + 1) * 0.35;
+                                                   return <line key={i} x1="380" y1="300" x2={860 + z2} y2={y2} stroke="url(#dynWaveGradCobalt)" strokeWidth="1.2" opacity={opacity} />;
+                                                 })}
+                                               </g>
+                                             ) : waveStyle === 'hourglass-hyperboloid' ? (
+                                               /* ── 7. HOURGLASS HYPERBOLOID MESH ── */
+                                               <g>
+                                                 {/* Asymptotic Hyperbolic Ruling Lines */}
+                                                 {Array.from({ length: 36 }).map((_, i) => {
+                                                   const theta = (i / 36) * Math.PI * 2;
+                                                   const x1 = 700 + Math.cos(theta) * 160;
+                                                   const y1 = 120;
+                                                   const x2 = 700 + Math.cos(theta + Math.PI / 1.5) * 160;
+                                                   const y2 = 480;
+                                                   const opacity = 0.2 + Math.abs(Math.sin(theta)) * 0.65;
+                                                   return (
+                                                     <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={i % 2 === 0 ? 'url(#dynWaveGrad1)' : 'url(#dynWaveGrad2)'} strokeWidth="1.3" opacity={opacity} />
+                                                   );
+                                                 })}
+                                                 {/* Horizontal Cross-Sectional Rings */}
+                                                 {Array.from({ length: 14 }).map((_, i) => {
+                                                   const ratio = i / 13;
+                                                   const y = 120 + ratio * 360;
+                                                   const waist = Math.cosh((ratio - 0.5) * 2.2);
+                                                   const rX = 45 * waist;
+                                                   const rY = 18 * waist;
+                                                   const opacity = 0.2 + (1 - Math.abs(ratio - 0.5) * 2) * 0.7;
+                                                   return <ellipse key={i} cx="700" cy={y} rx={rX} ry={rY} stroke="url(#dynWaveGradCobalt)" strokeWidth="1.4" fill="none" opacity={opacity} />;
+                                                 })}
+                                               </g>
+                                             ) : waveStyle === 'crystal-pyramid' ? (
+                                               /* ── 8. CRYSTALLINE PYRAMID TETRAHEDRON ── */
+                                               <g>
+                                                 {/* Base Triangle */}
+                                                 <polygon points="560,450 860,450 710,360" stroke="url(#dynWaveGrad2)" strokeWidth="2" fill="none" opacity="0.8" />
+                                                 {/* Apex Vertices */}
+                                                 <line x1="710" y1="120" x2="560" y2="450" stroke="url(#dynWaveGrad1)" strokeWidth="2.2" opacity="0.9" />
+                                                 <line x1="710" y1="120" x2="860" y2="450" stroke="url(#dynWaveGradCobalt)" strokeWidth="2.2" opacity="0.95" />
+                                                 <line x1="710" y1="120" x2="710" y2="360" stroke="url(#dynWaveGrad1)" strokeWidth="1.8" opacity="0.75" />
+                                                 {/* Internal Subdivided Facet Rays */}
+                                                 {Array.from({ length: 12 }).map((_, i) => {
+                                                   const t = (i + 1) / 13;
+                                                   return (
+                                                     <g key={i}>
+                                                       <line x1="710" y1="120" x2={560 + (860 - 560) * t} y2="450" stroke="url(#dynWaveGrad1)" strokeWidth="1" opacity="0.45" />
+                                                       <line x1={560 + (710 - 560) * t} y1={450 - (450 - 120) * t} x2={860 - (860 - 710) * t} y2={450 - (450 - 120) * t} stroke="url(#dynWaveGrad2)" strokeWidth="1" opacity="0.5" />
+                                                     </g>
+                                                   );
+                                                 })}
+                                                 {/* Glowing Vertex Spheres */}
+                                                 {[[710, 120], [560, 450], [860, 450], [710, 360]].map(([x, y], idx) => (
+                                                   <circle key={idx} cx={x} cy={y} r="4" fill="#00f0ff" opacity="0.95" />
+                                                 ))}
+                                               </g>
+                                             ) : waveStyle === 'cylindrical-tunnel' ? (
+                                               /* ── 9. CYLINDRICAL WARP TUNNEL ── */
+                                               <g>
+                                                 {/* Concentric Conduit Rings */}
+                                                 {Array.from({ length: 20 }).map((_, i) => {
+                                                   const ratio = Math.pow((i + 1) / 20, 1.6);
+                                                   const rX = ratio * 280;
+                                                   const rY = ratio * 190;
+                                                   const opacity = 0.1 + (1 - ratio) * 0.8;
+                                                   return (
+                                                     <ellipse key={i} cx="680" cy="310" rx={rX} ry={rY} stroke={i % 2 === 0 ? 'url(#dynWaveGrad1)' : 'url(#dynWaveGrad2)'} strokeWidth={0.8 + ratio * 2} fill="none" opacity={opacity} />
+                                                   );
+                                                 })}
+                                                 {/* Longitudinal Guide Rails */}
+                                                 {Array.from({ length: 16 }).map((_, i) => {
+                                                   const angle = (i / 16) * Math.PI * 2;
+                                                   const x2 = 680 + Math.cos(angle) * 280;
+                                                   const y2 = 310 + Math.sin(angle) * 190;
+                                                   return <line key={i} x1="680" y1="310" x2={x2} y2={y2} stroke="url(#dynWaveGradCobalt)" strokeWidth="1.2" opacity="0.6" />;
+                                                 })}
+                                               </g>
+                                             ) : waveStyle === 'gyroid-saddle' ? (
+                                               /* ── 10. GYROID & SADDLE MINIMAL SURFACE ── */
+                                               <g>
+                                                 {Array.from({ length: 36 }).map((_, i) => {
+                                                   const ratio = i / 36;
+                                                   const u = ratio * Math.PI * 2;
+                                                   const pts = [];
+                                                   for (let x = 450; x <= 880; x += 15) {
+                                                     const normX = (x - 450) / 430;
+                                                     const y = 300 + Math.sin(normX * Math.PI * 3 + u) * 90 + Math.cos(normX * Math.PI * 2 - u) * 60;
+                                                     pts.push(`${x === 450 ? 'M' : 'L'} ${x} ${y}`);
+                                                   }
+                                                   const opacity = 0.12 + Math.sin(ratio * Math.PI) * 0.65;
+                                                   return <path key={i} d={pts.join(' ')} stroke={i % 2 === 0 ? 'url(#dynWaveGrad1)' : 'url(#dynWaveGrad2)'} strokeWidth={0.8 + ratio * 1.6} fill="none" opacity={opacity} />;
+                                                 })}
+                                               </g>
+                                             ) : waveStyle === 'topographic-elevation' ? (
+                                               /* ── 11. TOPOGRAPHIC ELEVATION CONTOURS ── */
+                                               <g>
+                                                 {Array.from({ length: 32 }).map((_, i) => {
+                                                   const ratio = i / 32;
+                                                   const scale = 70 + ratio * 380;
+                                                   const opacity = 0.12 + (1 - ratio) * 0.7;
+                                                   const d = `M ${540 - scale * 0.8} ${300 - scale * 0.4} C ${600 - scale * 0.3} ${160 - scale * 0.2}, ${800 + scale * 0.4} ${200 - scale * 0.3}, ${860 + scale * 0.6} ${380 + scale * 0.4} C ${820 + scale * 0.4} ${540 + scale * 0.3}, ${580 - scale * 0.2} ${580 + scale * 0.3}, ${540 - scale * 0.8} ${300 - scale * 0.4} Z`;
+                                                   return <path key={i} d={d} stroke="url(#dynWaveGrad1)" strokeWidth={0.8 + ratio * 1.5} opacity={opacity} fill="none" />;
+                                                 })}
+                                               </g>
+                                             ) : waveStyle === 'radial-sunburst' ? (
+                                               /* ── 12. RADIAL CAUSTIC SUNBURST FLARE ── */
+                                               <g>
+                                                 {Array.from({ length: 42 }).map((_, i) => {
+                                                   const angle = (i / 42) * (Math.PI / 2) + Math.PI / 4;
+                                                   const len = 950;
+                                                   const x2 = 900 - Math.cos(angle) * len;
+                                                   const y2 = Math.sin(angle) * len;
+                                                   const opacity = 0.08 + Math.sin((i / 42) * Math.PI) * 0.7;
+                                                   return <line key={i} x1="900" y1="0" x2={x2} y2={y2} stroke="url(#dynWaveGrad1)" strokeWidth={0.7 + Math.sin((i / 42) * Math.PI) * 2} opacity={opacity} />;
+                                                 })}
+                                               </g>
+                                             ) : waveStyle === 'isometric-grid' ? (
+                                               /* ── 13. ISOMETRIC PERSPECTIVE CYBER GRID ── */
+                                               <g>
+                                                 {Array.from({ length: 24 }).map((_, i) => {
+                                                   const x1 = (i / 24) * 900;
+                                                   const opacity = 0.15 + (i % 2 === 0 ? 0.4 : 0.15);
+                                                   return <line key={`ray-${i}`} x1="450" y1="180" x2={x1} y2="650" stroke="url(#dynWaveGrad1)" strokeWidth="1.2" opacity={opacity} />;
+                                                 })}
+                                                 {Array.from({ length: 18 }).map((_, i) => {
+                                                   const ratio = Math.pow(i / 18, 1.8);
+                                                   const y = 180 + ratio * 470;
+                                                   const span = ratio * 900;
+                                                   const opacity = 0.1 + ratio * 0.65;
+                                                   return <line key={`lat-${i}`} x1={450 - span / 2} y1={y} x2={450 + span / 2} y2={y} stroke="url(#dynWaveGrad2)" strokeWidth={0.8 + ratio * 1.5} opacity={opacity} />;
+                                                 })}
+                                               </g>
+                                             ) : waveStyle === 'voronoi-mesh' ? (
+                                               /* ── 14. VORONOI & HEXAGONAL MESH ── */
+                                               <g>
+                                                 {Array.from({ length: 30 }).map((_, i) => {
+                                                   const row = Math.floor(i / 6);
+                                                   const col = i % 6;
+                                                   const cx = 450 + col * 75 + (row % 2) * 37.5;
+                                                   const cy = 100 + row * 85;
+                                                   const opacity = 0.15 + (col / 6) * 0.65;
+                                                   return (
+                                                     <g key={i}>
+                                                       <polygon points={`${cx}, ${cy-28} ${cx+24}, ${cy-14} ${cx+24}, ${cy+14} ${cx}, ${cy+28} ${cx-24}, ${cy+14} ${cx-24}, ${cy-14}`} stroke="url(#dynWaveGrad1)" strokeWidth="1.2" opacity={opacity} fill="none" />
+                                                       <circle cx={cx} cy={cy} r="2.5" fill="#00f0ff" opacity={opacity + 0.2} />
+                                                     </g>
+                                                   );
+                                                 })}
+                                               </g>
+                                             ) : waveStyle === 'magnetic-dipole' ? (
+                                               /* ── 15. MAGNETIC DIPOLE FIELD LINES ── */
+                                               <g>
+                                                 {Array.from({ length: 36 }).map((_, i) => {
+                                                   const ratio = (i + 1) / 36;
+                                                   const rX = ratio * 360;
+                                                   const rY = ratio * 240;
+                                                   const opacity = 0.15 + (1 - ratio) * 0.65;
+                                                   return (
+                                                     <g key={i}>
+                                                       <path d={`M 420 325 C ${420 - rX} ${325 - rY}, ${680 - rX} ${325 - rY}, 680 325`} stroke="url(#dynWaveGrad1)" strokeWidth="1.3" opacity={opacity} fill="none" />
+                                                       <path d={`M 420 325 C ${420 - rX} ${325 + rY}, ${680 - rX} ${325 + rY}, 680 325`} stroke="url(#dynWaveGrad2)" strokeWidth="1.3" opacity={opacity} fill="none" />
+                                                     </g>
+                                                   );
+                                                 })}
+                                               </g>
+                                             ) : (
+                                               /* ── 16. ORIGINAL PITCH DECK VORTEX & HORIZON CURVES ── */
                                                <g>
                                                  {Array.from({ length: 48 }).map((_, i) => {
                                                    const ratio = i / 48;
@@ -48598,195 +48971,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                    );
                                                  })}
                                                </g>
-                                             ) : waveStyle === 'top-right-vortex' ? (
-                                               /* ── 2. TOP-RIGHT ORBITAL VORTEX ARC ── */
-                                               <g>
-                                                 {Array.from({ length: 52 }).map((_, i) => {
-                                                   const ratio = i / 52;
-                                                   const spread = ratio * 140;
-                                                   const opacity = 0.15 + (1 - ratio) * 0.7;
-                                                   const thickness = 0.8 + ratio * 2.4;
-                                                   const d = `M ${460 + spread * 1.1} -30 C ${480 + spread * 0.8} ${140 + ratio * 80}, ${540 + ratio * 160} ${390 - ratio * 40}, ${760 + ratio * 60} ${360 - ratio * 90} C ${860 - ratio * 40} ${340 - ratio * 110}, ${960} ${220 - ratio * 80}, 980 ${110 - ratio * 40}`;
-                                                   return <path key={i} d={d} stroke="url(#dynWaveGradCobalt)" strokeWidth={thickness} opacity={opacity} fill="none" />;
-                                                 })}
-                                               </g>
-                                             ) : waveStyle === 'bottom-left-wave' ? (
-                                               /* ── 3. BOTTOM-LEFT HORIZON WAVE ACCENT ── */
-                                               <g>
-                                                 {Array.from({ length: 42 }).map((_, i) => {
-                                                   const ratio = i / 42;
-                                                   const offset = ratio * 120;
-                                                   const opacity = 0.2 + (1 - ratio) * 0.7;
-                                                   const thickness = 0.8 + ratio * 2;
-                                                   const d = `M -30 ${610 + offset * 0.4} C ${60 + offset * 0.8} ${580 - ratio * 50}, ${180 + offset * 0.9} ${630 + ratio * 30}, ${290 + ratio * 60} ${530 - ratio * 70} C ${350 + ratio * 40} ${460 - ratio * 60}, ${390 + ratio * 30} ${540}, ${460 + offset * 1.2} 670`;
-                                                   return <path key={i} d={d} stroke="url(#dynWaveGradCobalt)" strokeWidth={thickness} opacity={opacity} fill="none" />;
-                                                 })}
-                                               </g>
-                                             ) : waveStyle === 'topographic-elevation' ? (
-                                               /* ── 4. TOPOGRAPHIC ELEVATION CONTOURS (TERRAIN ISOLINES) ── */
-                                               <g>
-                                                 {Array.from({ length: 36 }).map((_, i) => {
-                                                   const ratio = i / 36;
-                                                   const scale = 80 + ratio * 420;
-                                                   const opacity = 0.12 + (1 - ratio) * 0.65;
-                                                   const thickness = 0.7 + ratio * 1.5;
-                                                   const d = `M ${550 - scale * 0.8} ${300 - scale * 0.4} C ${600 - scale * 0.3} ${160 - scale * 0.2}, ${800 + scale * 0.4} ${200 - scale * 0.3}, ${860 + scale * 0.6} ${380 + scale * 0.4} C ${820 + scale * 0.4} ${540 + scale * 0.3}, ${580 - scale * 0.2} ${580 + scale * 0.3}, ${550 - scale * 0.8} ${300 - scale * 0.4} Z`;
-                                                   return <path key={i} d={d} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />;
-                                                 })}
-                                               </g>
-                                             ) : waveStyle === 'radial-sunburst' ? (
-                                               /* ── 5. RADIAL CAUSTIC SUNBURST FLARE ── */
-                                               <g>
-                                                 {Array.from({ length: 40 }).map((_, i) => {
-                                                   const angle = (i / 40) * (Math.PI / 2) + Math.PI / 4;
-                                                   const len = 950;
-                                                   const x2 = 900 - Math.cos(angle) * len;
-                                                   const y2 = Math.sin(angle) * len;
-                                                   const opacity = 0.08 + Math.sin((i / 40) * Math.PI) * 0.65;
-                                                   const thickness = 0.6 + Math.sin((i / 40) * Math.PI) * 2;
-                                                   return <line key={i} x1="900" y1="0" x2={x2} y2={y2} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} />;
-                                                 })}
-                                               </g>
-                                             ) : waveStyle === 'isometric-grid' ? (
-                                               /* ── 6. ISOMETRIC PERSPECTIVE CYBER GRID ── */
-                                               <g>
-                                                 {/* Perspective Longitude Rays */}
-                                                 {Array.from({ length: 24 }).map((_, i) => {
-                                                   const x1 = (i / 24) * 900;
-                                                   const opacity = 0.15 + (i % 2 === 0 ? 0.35 : 0.15);
-                                                   return <line key={`ray-${i}`} x1="450" y1="200" x2={x1} y2="650" stroke="url(#dynWaveGrad1)" strokeWidth="1.2" opacity={opacity} />;
-                                                 })}
-                                                 {/* Perspective Latitude Rings */}
-                                                 {Array.from({ length: 18 }).map((_, i) => {
-                                                   const ratio = Math.pow(i / 18, 1.8);
-                                                   const y = 200 + ratio * 450;
-                                                   const span = ratio * 900;
-                                                   const opacity = 0.1 + ratio * 0.6;
-                                                   return <line key={`lat-${i}`} x1={450 - span / 2} y1={y} x2={450 + span / 2} y2={y} stroke="url(#dynWaveGrad2)" strokeWidth={0.8 + ratio * 1.5} opacity={opacity} />;
-                                                 })}
-                                               </g>
-                                             ) : waveStyle === 'double-helix' ? (
-                                               /* ── 7. INTERTWINED DOUBLE HELIX ── */
-                                               <g>
-                                                 {Array.from({ length: 44 }).map((_, i) => {
-                                                   const ratio = i / 44;
-                                                   const x = ratio * 950;
-                                                   const y1 = 325 + Math.sin(ratio * Math.PI * 4) * 140;
-                                                   const y2 = 325 - Math.sin(ratio * Math.PI * 4) * 140;
-                                                   const opacity = 0.25 + Math.cos(ratio * Math.PI * 4) * 0.35;
-                                                   return (
-                                                     <g key={i}>
-                                                       <line x1={x} y1={y1} x2={x} y2={y2} stroke="url(#dynWaveGrad2)" strokeWidth="1.2" opacity={opacity * 0.6} strokeDasharray="3 3" />
-                                                       <circle cx={x} cy={y1} r="3" fill="#00f0ff" opacity={opacity + 0.3} />
-                                                       <circle cx={x} cy={y2} r="3" fill="#ec4899" opacity={opacity + 0.3} />
-                                                     </g>
-                                                   );
-                                                 })}
-                                               </g>
-                                             ) : waveStyle === 'fluid-marbling' ? (
-                                               /* ── 8. CHROMATIC FLUID MARBLING WAVES ── */
-                                               <g>
-                                                 {Array.from({ length: 38 }).map((_, i) => {
-                                                   const ratio = i / 38;
-                                                   const offset = ratio * 200;
-                                                   const opacity = 0.1 + (1 - ratio) * 0.55;
-                                                   const thickness = 1 + ratio * 2.5;
-                                                   const d = `M -50 ${200 + offset} C ${240 + Math.sin(ratio * Math.PI * 3) * 120} ${80 + offset * 0.8}, ${580 + Math.cos(ratio * Math.PI * 2) * 140} ${520 - offset * 0.6}, 950 ${260 + offset * 0.7}`;
-                                                   return <path key={i} d={d} stroke={i % 2 === 0 ? 'url(#dynWaveGrad1)' : 'url(#dynWaveGrad2)'} strokeWidth={thickness} opacity={opacity} fill="none" />;
-                                                 })}
-                                               </g>
-                                             ) : waveStyle === 'lissajous-resonance' ? (
-                                               /* ── 9. HARMONIC LISSAJOUS RESONANCE LOOPS ── */
-                                               <g>
-                                                 {Array.from({ length: 32 }).map((_, i) => {
-                                                   const delta = (i / 32) * Math.PI;
-                                                   const opacity = 0.1 + (1 - i / 32) * 0.6;
-                                                   let pts = [];
-                                                   for (let t = 0; t <= Math.PI * 2; t += 0.1) {
-                                                     const px = 680 + Math.sin(3 * t + delta) * 220;
-                                                     const py = 320 + Math.sin(2 * t) * 180;
-                                                     pts.push(`${t === 0 ? 'M' : 'L'} ${px} ${py}`);
-                                                   }
-                                                   return <path key={i} d={pts.join(' ')} stroke="url(#dynWaveGrad1)" strokeWidth="1.2" opacity={opacity} fill="none" />;
-                                                 })}
-                                               </g>
-                                             ) : waveStyle === 'horizon-halo' ? (
-                                               /* ── 10. PLANETARY HORIZON HALO ARC ── */
-                                               <g>
-                                                 {Array.from({ length: 30 }).map((_, i) => {
-                                                   const r = 680 + i * 18;
-                                                   const opacity = 0.05 + (1 - i / 30) * 0.7;
-                                                   const thickness = 0.8 + (1 - i / 30) * 3;
-                                                   return <circle key={i} cx="450" cy="1100" r={r} stroke="url(#dynWaveGradCobalt)" strokeWidth={thickness} opacity={opacity} fill="none" />;
-                                                 })}
-                                               </g>
-                                             ) : waveStyle === 'voronoi-mesh' ? (
-                                               /* ── 11. VORONOI & HEXAGONAL MESH ── */
-                                               <g>
-                                                 {Array.from({ length: 28 }).map((_, i) => {
-                                                   const row = Math.floor(i / 7);
-                                                   const col = i % 7;
-                                                   const cx = 400 + col * 80 + (row % 2) * 40;
-                                                   const cy = 100 + row * 90;
-                                                   const opacity = 0.15 + (col / 7) * 0.6;
-                                                   return (
-                                                     <polygon key={i} points={`${cx}, ${cy-28} ${cx+24}, ${cy-14} ${cx+24}, ${cy+14} ${cx}, ${cy+28} ${cx-24}, ${cy+14} ${cx-24}, ${cy-14}`} stroke="url(#dynWaveGrad1)" strokeWidth="1.2" opacity={opacity} fill="none" />
-                                                   );
-                                                 })}
-                                               </g>
-                                             ) : waveStyle === 'magnetic-dipole' ? (
-                                               /* ── 12. MAGNETIC DIPOLE FIELD LINES ── */
-                                               <g>
-                                                 {Array.from({ length: 36 }).map((_, i) => {
-                                                   const ratio = (i + 1) / 36;
-                                                   const rX = ratio * 380;
-                                                   const rY = ratio * 260;
-                                                   const opacity = 0.15 + (1 - ratio) * 0.6;
-                                                   return (
-                                                     <g key={i}>
-                                                       <path d={`M 350 325 C ${350 - rX} ${325 - rY}, ${550 - rX} ${325 - rY}, 550 325`} stroke="url(#dynWaveGrad1)" strokeWidth="1.3" opacity={opacity} fill="none" />
-                                                       <path d={`M 350 325 C ${350 - rX} ${325 + rY}, ${550 - rX} ${325 + rY}, 550 325`} stroke="url(#dynWaveGrad2)" strokeWidth="1.3" opacity={opacity} fill="none" />
-                                                     </g>
-                                                   );
-                                                 })}
-                                               </g>
-                                             ) : waveStyle === 'waterfall-ribbon' ? (
-                                               /* ── 13. CASCADING RIBBON WATERFALL ── */
-                                               <g>
-                                                 {Array.from({ length: 32 }).map((_, i) => {
-                                                   const ratio = i / 32;
-                                                   const x = 720 + ratio * 160;
-                                                   const opacity = 0.12 + (1 - ratio) * 0.7;
-                                                   const d = `M ${x} -30 C ${x - 80} 220, ${x + 90} 420, ${x - 40} 680`;
-                                                   return <path key={i} d={d} stroke="url(#dynWaveGradCobalt)" strokeWidth={1 + ratio * 2} opacity={opacity} fill="none" />;
-                                                 })}
-                                               </g>
-                                             ) : waveStyle === 'electric-cyan' ? (
-                                               /* ── 14. ELECTRIC CYAN RIBBON ── */
-                                               Array.from({ length: 32 }).map((_, i) => {
-                                                 const ratio = i / 32;
-                                                 const offset = ratio * 140;
-                                                 const opacity = 0.08 + (1 - ratio) * 0.45;
-                                                 const thickness = 0.8 + ratio * 2;
-                                                 const d = `M ${100 + offset * 1.8} 650 C ${280 + Math.sin(ratio * Math.PI) * 140} ${480 - ratio * 220}, ${540 + Math.cos(ratio * Math.PI) * 130} ${220 - ratio * 140}, 950 ${240 + ratio * 200}`;
-                                                 return <path key={i} d={d} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />;
-                                               })
-                                             ) : (
-                                               /* ── 15. DUAL-MESH CYBERNETIC LATTICE ── */
-                                               Array.from({ length: 45 }).map((_, i) => {
-                                                 const ratio = i / 45;
-                                                 const offset = ratio * 180;
-                                                 const opacity = 0.05 + (1 - ratio) * 0.35;
-                                                 const thickness = 0.6 + ratio * 1.5;
-                                                 const d1 = `M ${140 + offset * 1.6} 650 C ${320 + Math.sin(ratio * Math.PI) * 110} ${500 - ratio * 200}, ${580 + Math.cos(ratio * Math.PI) * 120} ${240 - ratio * 130}, 950 ${260 + ratio * 230}`;
-                                                 const d2 = `M ${80 + offset * 1.4} 650 C ${280 + Math.cos(ratio * Math.PI) * 90} ${460 - ratio * 170}, ${520 + Math.sin(ratio * Math.PI) * 100} ${200 - ratio * 110}, 950 ${340 + ratio * 210}`;
-                                                 return (
-                                                   <g key={i}>
-                                                     <path d={d1} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />
-                                                     <path d={d2} stroke="url(#dynWaveGrad2)" strokeWidth={thickness * 0.85} opacity={opacity * 0.8} fill="none" />
-                                                   </g>
-                                                 );
-                                               })
                                              )}</svg>
                                         </div>
                                       </div>
