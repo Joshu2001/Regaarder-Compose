@@ -48396,7 +48396,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {activeDeckSlide?.headline || 'STARTUP\nPITCH DECK'}
                                             </h1>
 
-                                            {/* Presenter Pill Badge (Interactive Draggable & Resizable Shape with Shimmer Effects) */}
+                                            {/* Presenter Pill Badge (Interactive Draggable & Resizable Shape with Animated Shimmer Effects) */}
                                             {(() => {
                                               const isPillSelected = deckSelection.type === 'pill';
                                               const isPillHidden = activeDeckSlide?.pillHidden;
@@ -48408,48 +48408,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               const pillShape = activeDeckSlide?.pillShape || 'pill';
                                               const pillBorderEffect = activeDeckSlide?.pillBorderEffect || 'shimmer';
                                               const pillBorderWidth = activeDeckSlide?.pillBorderWidth || 2;
+                                              const roundedClass = pillShape === 'square' ? 'rounded-md' : pillShape === 'rounded-square' ? 'rounded-2xl' : 'rounded-full';
 
-                                              // Compute dynamic Shimmer / Glow Border Styling
-                                              const getPillBorderStyles = () => {
-                                                const base = {
-                                                  minWidth: `${pW}px`,
-                                                  background: pillGradient,
-                                                  borderRadius: pillShape === 'square' ? '4px' : pillShape === 'rounded-square' ? '12px' : '9999px'
-                                                };
-
+                                              // Compute dynamic Outer Glow Shadows
+                                              const getPillOuterGlow = () => {
                                                 if (pillBorderEffect === 'shimmer') {
-                                                  return {
-                                                    ...base,
-                                                    border: `${pillBorderWidth}px solid rgba(0, 240, 255, 0.6)`,
-                                                    boxShadow: '0 0 25px rgba(0, 240, 255, 0.45), 0 0 50px rgba(217, 70, 239, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.15)'
-                                                  };
+                                                  return '0 0 25px rgba(0, 240, 255, 0.45), 0 0 50px rgba(217, 70, 239, 0.3)';
                                                 }
                                                 if (pillBorderEffect === 'neon-glow') {
-                                                  return {
-                                                    ...base,
-                                                    border: `${pillBorderWidth}px solid #a855f7`,
-                                                    boxShadow: '0 0 30px rgba(168, 85, 247, 0.6), 0 0 12px rgba(0, 240, 255, 0.8)'
-                                                  };
+                                                  return '0 0 30px rgba(168, 85, 247, 0.55), 0 0 15px rgba(0, 240, 255, 0.7)';
                                                 }
                                                 if (pillBorderEffect === 'pulsing-aura') {
-                                                  return {
-                                                    ...base,
-                                                    border: `${pillBorderWidth}px solid #ec4899`,
-                                                    boxShadow: '0 0 35px rgba(236, 72, 153, 0.55), inset 0 0 20px rgba(124, 77, 255, 0.4)'
-                                                  };
+                                                  return '0 0 35px rgba(236, 72, 153, 0.5)';
                                                 }
                                                 if (pillBorderEffect === 'glass-frost') {
-                                                  return {
-                                                    ...base,
-                                                    border: `${pillBorderWidth}px solid rgba(255, 255, 255, 0.4)`,
-                                                    backdropFilter: 'blur(20px)',
-                                                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.37)'
-                                                  };
+                                                  return '0 8px 32px rgba(0, 0, 0, 0.37)';
                                                 }
-                                                return {
-                                                  ...base,
-                                                  border: `${pillBorderWidth}px solid rgba(255, 255, 255, 0.2)`
-                                                };
+                                                return 'none';
                                               };
 
                                               return (
@@ -48460,7 +48435,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     transition: deckPillDrag.isDragging || deckResizeDrag.isResizing ? 'none' : 'transform 120ms ease-out'
                                                   }}
                                                 >
-                                                  {/* Pill Shape Box */}
+                                                  {/* Pulsing Aura Ambient Glow Layer */}
+                                                  {pillBorderEffect === 'pulsing-aura' && (
+                                                    <div 
+                                                      className={`absolute -inset-1.5 ${roundedClass} bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 opacity-60 blur-md animate-pulse pointer-events-none`} 
+                                                    />
+                                                  )}
+
+                                                  {/* Animated Outer Wrapper with Border Padding & Rotation */}
                                                   <div
                                                     onPointerDown={(e) => {
                                                       if (e.target.getAttribute('data-resize-handle')) return;
@@ -48478,13 +48460,61 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       e.stopPropagation();
                                                       setDeckSelection({ type: 'pill', id: 'presenter-pill' });
                                                     }}
-                                                    className={`relative inline-flex items-center justify-center px-4 py-1.5 cursor-grab active:cursor-grabbing transition-all ${
+                                                    className={`relative inline-flex items-center justify-center cursor-grab active:cursor-grabbing transition-all overflow-hidden ${roundedClass} ${
                                                       isPillSelected 
                                                         ? 'outline outline-1 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-2xl' 
                                                         : 'hover:scale-[1.02]'
                                                     }`}
-                                                    style={getPillBorderStyles()}
+                                                    style={{
+                                                      minWidth: `${pW}px`,
+                                                      padding: `${pillBorderWidth}px`,
+                                                      boxShadow: getPillOuterGlow()
+                                                    }}
                                                   >
+                                                    {/* Dynamic Moving Shimmer Rotating Conic Beam */}
+                                                    {pillBorderEffect === 'shimmer' ? (
+                                                      <div 
+                                                        className="absolute -inset-[200%] animate-deck-beam-spin pointer-events-none"
+                                                        style={{
+                                                          background: 'conic-gradient(from 0deg at 50% 50%, transparent 0deg 180deg, #00f0ff 250deg, #ec4899 310deg, #7c4dff 360deg)'
+                                                        }}
+                                                      />
+                                                    ) : pillBorderEffect === 'neon-glow' ? (
+                                                      <div 
+                                                        className="absolute -inset-[200%] animate-deck-neon-spin pointer-events-none"
+                                                        style={{
+                                                          background: 'conic-gradient(from 0deg at 50% 50%, transparent 0deg 80deg, #a855f7 140deg, transparent 180deg, #00f0ff 270deg, transparent 360deg)'
+                                                        }}
+                                                      />
+                                                    ) : pillBorderEffect === 'solid' ? (
+                                                      <div className="absolute inset-0 bg-white/30 pointer-events-none" />
+                                                    ) : null}
+
+                                                    {/* Inner Presenter Capsule Body */}
+                                                    <div 
+                                                      className={`relative z-10 w-full h-full flex items-center justify-center px-4 py-1.5 ${roundedClass} overflow-hidden`}
+                                                      style={{
+                                                        background: pillGradient,
+                                                        backdropFilter: pillBorderEffect === 'glass-frost' ? 'blur(20px)' : 'none'
+                                                      }}
+                                                    >
+                                                      {/* Moving Sheen Ray for Frosted Glass or Shimmer */}
+                                                      {(pillBorderEffect === 'glass-frost' || pillBorderEffect === 'shimmer') && (
+                                                        <div 
+                                                          className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 animate-deck-sheen pointer-events-none" 
+                                                        />
+                                                      )}
+
+                                                      <span 
+                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                        suppressContentEditableWarning
+                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'presenter', e.currentTarget.textContent || '')}
+                                                        className="relative z-20 text-[11px] font-bold tracking-[0.2em] text-slate-200 uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text"
+                                                      >
+                                                        {activeDeckSlide?.presenter || 'PRESENT BY NEIL TRAN'}
+                                                      </span>
+                                                    </div>
+
                                                     {/* Sleek Selection & Resize Handles */}
                                                     {isPillSelected && (
                                                       <>
@@ -48528,19 +48558,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               type="button"
                                                               onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pillEffect' ? null : 'pillEffect'); }}
                                                               className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs flex items-center gap-1 cursor-pointer"
-                                                              title="Shimmer & Glow Effects"
+                                                              title="Moving Shimmer & Glow Effects"
                                                             >
                                                               <Zap size={11} />
                                                               <span className="capitalize">{pillBorderEffect}</span>
                                                             </button>
                                                             {deckFloatingMenuOpen === 'pillEffect' && (
-                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 text-xs text-zinc-200">
+                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-52 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 text-xs text-zinc-200">
                                                                 {[
-                                                                  { id: 'shimmer', name: 'Shimmer Glow (Image 3 Style)', desc: 'Radiant cyan & magenta glow' },
-                                                                  { id: 'neon-glow', name: 'Electric Neon Rim', desc: 'High-intensity purple aura' },
-                                                                  { id: 'pulsing-aura', name: 'Pulsing Laser Aura', desc: 'Laser rose glow' },
-                                                                  { id: 'glass-frost', name: 'Frosted Glass Apple', desc: 'Sleek translucent frost' },
-                                                                  { id: 'solid', name: 'Classic Solid Border', desc: 'Clean border outline' }
+                                                                  { id: 'shimmer', name: '🌀 Rotating Shimmer (Moving)', desc: 'Moving cyan & magenta laser beam' },
+                                                                  { id: 'neon-glow', name: '⚡ Electric Neon Rim (Moving)', desc: 'Revolving neon laser ribbon' },
+                                                                  { id: 'pulsing-aura', name: '✨ Pulsing Laser Aura', desc: 'Breathing ambient glow' },
+                                                                  { id: 'glass-frost', name: '❄️ Frosted Glass Sheen (Moving)', desc: 'Moving light beam across glass' },
+                                                                  { id: 'solid', name: 'Classic Solid Border', desc: 'Clean static outline' }
                                                                 ].map((eff) => (
                                                                   <button key={eff.id} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillBorderEffect', eff.id); setDeckFloatingMenuOpen(null); showToast(`Effect: ${eff.name}`); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded flex flex-col">
                                                                     <span className="font-semibold text-white">{eff.name}</span>
@@ -48608,15 +48638,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         </div>
                                                       </>
                                                     )}
-
-                                                    <span 
-                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                                      suppressContentEditableWarning
-                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'presenter', e.currentTarget.textContent || '')}
-                                                      className="text-[11px] font-bold tracking-[0.2em] text-slate-200 uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text"
-                                                    >
-                                                      {activeDeckSlide?.presenter || 'PRESENT BY NEIL TRAN'}
-                                                    </span>
                                                   </div>
                                                 </div>
                                               );

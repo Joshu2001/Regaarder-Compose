@@ -67,3 +67,33 @@
 .app-dark .bg-violet-600, .app-dark .bg-violet-500 {
   filter: hue-rotate(180deg);
 }
+
+@keyframes deckBeamSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes deckSheenTravel {
+  0% {
+    transform: translateX(-150%);
+  }
+  100% {
+    transform: translateX(150%);
+  }
+}
+
+.animate-deck-beam-spin {
+  animation: deckBeamSpin 3s linear infinite;
+}
+
+.animate-deck-neon-spin {
+  animation: deckBeamSpin 2s linear infinite;
+}
+
+.animate-deck-sheen {
+  animation: deckSheenTravel 2.5s ease-in-out infinite;
+}
