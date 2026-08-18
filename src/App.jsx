@@ -31663,6 +31663,17 @@ Respond with a JSON array of slide objects matching the schema.`;
     }));
   };
 
+  const updateDeckSlideFields = (slideId, fieldsObj) => {
+    markUserHasEdited();
+    setDeckSlidesData((prev) => prev.map((slide) => {
+      if (slide.id !== slideId) return slide;
+      const updated = { ...slide, ...fieldsObj };
+      if (fieldsObj.designPresetKey) updated.presetKey = fieldsObj.designPresetKey;
+      if (fieldsObj.presetKey) updated.designPresetKey = fieldsObj.presetKey;
+      return updated;
+    }));
+  };
+
   
   // Bento card dragging lifecycle listener
   useEffect(() => {
@@ -31672,8 +31683,10 @@ Respond with a JSON array of slide objects matching the schema.`;
       const dy = e.clientY - deckBentoDrag.startY;
       const nextX = Math.round(deckBentoDrag.origX + dx);
       const nextY = Math.round(deckBentoDrag.origY + dy);
-      updateDeckSlideField(activeDeckSlide?.id, `${deckBentoDrag.cardId}_posX`, nextX);
-      updateDeckSlideField(activeDeckSlide?.id, `${deckBentoDrag.cardId}_posY`, nextY);
+      updateDeckSlideFields(activeDeckSlide?.id, {
+        [`${deckBentoDrag.cardId}_posX`]: nextX,
+        [`${deckBentoDrag.cardId}_posY`]: nextY
+      });
     };
     const handlePointerUp = () => {
       setDeckBentoDrag((prev) => ({ ...prev, isDragging: false, cardId: null }));
@@ -31716,45 +31729,59 @@ Respond with a JSON array of slide objects matching the schema.`;
       const dy = e.clientY - deckResizeDrag.startY;
       const { handle, initW, initH, initX, initY, target } = deckResizeDrag;
       
+      const isText = target && target.startsWith('text-');
+      const minW = isText ? 40 : 80;
+      const minH = isText ? 24 : 60;
+      const maxW = isText ? 950 : 850;
+      const maxH = isText ? 750 : 650;
+
       let newW = initW;
       let newH = initH;
       let newX = initX;
       let newY = initY;
 
-      if (handle.includes('right')) newW = Math.max(120, Math.min(850, initW + dx));
+      if (handle.includes('right')) newW = Math.max(minW, Math.min(maxW, initW + dx));
       if (handle.includes('left')) {
-        const deltaW = Math.min(initW - 120, dx);
+        const deltaW = Math.min(initW - minW, dx);
         newW = initW - deltaW;
         newX = initX + deltaW;
       }
-      if (handle.includes('bottom')) newH = Math.max(80, Math.min(650, initH + dy));
+      if (handle.includes('bottom')) newH = Math.max(minH, Math.min(maxH, initH + dy));
       if (handle.includes('top')) {
-        const deltaH = Math.min(initH - 80, dy);
+        const deltaH = Math.min(initH - minH, dy);
         newH = initH - deltaH;
         newY = initY + deltaH;
       }
 
       if (target === 'vector') {
-        updateDeckSlideField(activeDeckSlide?.id, 'vectorWidth', Math.round(newW));
-        updateDeckSlideField(activeDeckSlide?.id, 'vectorHeight', Math.round(newH));
-        updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', Math.round(newX));
-        updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', Math.round(newY));
+        updateDeckSlideFields(activeDeckSlide?.id, {
+          vectorWidth: Math.round(newW),
+          vectorHeight: Math.round(newH),
+          vectorPosX: Math.round(newX),
+          vectorPosY: Math.round(newY)
+        });
       } else if (target === 'pill') {
-        updateDeckSlideField(activeDeckSlide?.id, 'pillWidth', Math.round(newW));
-        updateDeckSlideField(activeDeckSlide?.id, 'pillPosX', Math.round(newX));
-        updateDeckSlideField(activeDeckSlide?.id, 'pillPosY', Math.round(newY));
+        updateDeckSlideFields(activeDeckSlide?.id, {
+          pillWidth: Math.round(newW),
+          pillPosX: Math.round(newX),
+          pillPosY: Math.round(newY)
+        });
       } else if (target && target.startsWith('bento-')) {
         const cardKey = target.replace('bento-', '');
-        updateDeckSlideField(activeDeckSlide?.id, `${cardKey}_width`, Math.round(newW));
-        updateDeckSlideField(activeDeckSlide?.id, `${cardKey}_height`, Math.round(newH));
-        updateDeckSlideField(activeDeckSlide?.id, `${cardKey}_posX`, Math.round(newX));
-        updateDeckSlideField(activeDeckSlide?.id, `${cardKey}_posY`, Math.round(newY));
+        updateDeckSlideFields(activeDeckSlide?.id, {
+          [`${cardKey}_width`]: Math.round(newW),
+          [`${cardKey}_height`]: Math.round(newH),
+          [`${cardKey}_posX`]: Math.round(newX),
+          [`${cardKey}_posY`]: Math.round(newY)
+        });
       } else if (target && target.startsWith('text-')) {
         const itemKey = target.replace('text-', '');
-        updateDeckSlideField(activeDeckSlide?.id, `${itemKey}_width`, Math.round(newW));
-        updateDeckSlideField(activeDeckSlide?.id, `${itemKey}_height`, Math.round(newH));
-        updateDeckSlideField(activeDeckSlide?.id, `${itemKey}_posX`, Math.round(newX));
-        updateDeckSlideField(activeDeckSlide?.id, `${itemKey}_posY`, Math.round(newY));
+        updateDeckSlideFields(activeDeckSlide?.id, {
+          [`${itemKey}_width`]: Math.round(newW),
+          [`${itemKey}_height`]: Math.round(newH),
+          [`${itemKey}_posX`]: Math.round(newX),
+          [`${itemKey}_posY`]: Math.round(newY)
+        });
       }
     };
     const handlePointerUp = () => {
@@ -50054,7 +50081,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            )}
 
                                            {/* Main 2-Column Split */}
-                                           <div className="flex-1 grid grid-cols-12 gap-6 w-full pointer-events-auto z-20 min-h-0 max-h-[76%] items-center my-auto">
+                                           <div className="flex-1 grid grid-cols-12 gap-6 w-full pointer-events-auto z-20 min-h-0 max-h-[76%] items-start my-auto">
                                              {/* Left Column: Draggable Title Heading */}
                                              <div 
                                                onPointerDown={(e) => {
@@ -50072,40 +50099,42 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                }}
                                                style={{
                                                  transform: `translate(${activeDeckSlide?.titleHeading_posX || 0}px, ${activeDeckSlide?.titleHeading_posY || 0}px)`,
-                                                 transition: deckBentoDrag.isDragging ? 'none' : 'transform 120ms ease-out',
-                                                 width: activeDeckSlide?.titleHeading_width ? `${activeDeckSlide.titleHeading_width}px` : undefined
+                                                 transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                 width: activeDeckSlide?.titleHeading_width ? `${activeDeckSlide.titleHeading_width}px` : undefined,
+                                                 height: activeDeckSlide?.titleHeading_height ? `${activeDeckSlide.titleHeading_height}px` : undefined,
+                                                 touchAction: 'none'
                                                }}
-                                               className={`col-span-5 relative overflow-visible flex flex-col justify-center pl-1 select-auto cursor-grab active:cursor-grabbing group/title ${deckSelection.type === 'text' && deckSelection.id === 'title-heading' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
+                                               className={`col-span-5 relative overflow-visible flex flex-col justify-center pl-1 select-auto cursor-grab active:cursor-grabbing group/title self-center ${deckSelection.type === 'text' && deckSelection.id === 'title-heading' ? 'z-50 outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : 'z-30'}`}
                                              >
                                                <h1
                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                  suppressContentEditableWarning
                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                  style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                 className="text-[34px] md:text-[42px] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-[1.02] inline-block"
+                                                 className="text-[34px] md:text-[42px] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-[1.02] w-full break-words"
                                                >
                                                  {activeDeckSlide?.headline ? (
                                                    activeDeckSlide.headline.split('\n').map((line, idx) => (
-                                                     <span key={idx} className="block whitespace-nowrap">
+                                                     <span key={idx} className="block break-words">
                                                        {line}
                                                      </span>
                                                    ))
                                                  ) : (
                                                    <>
-                                                     <span className="block whitespace-nowrap">PROBLEM</span>
-                                                     <span className="block whitespace-nowrap">STATEMENT</span>
+                                                     <span className="block break-words">PROBLEM</span>
+                                                     <span className="block break-words">STATEMENT</span>
                                                    </>
                                                  )}
                                                </h1>
                                                {/* Drag Capsule */}
-                                               {deckSelection.type === 'text' && deckSelection.id === 'title-heading' && (
-                                                 <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                   <Move size={11} className="text-violet-400" />
-                                                   <span>Drag Headline</span>
-                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
-                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'titleHeading_posX', 0); updateDeckSlideField(activeDeckSlide?.id, 'titleHeading_posY', 0); updateDeckSlideField(activeDeckSlide?.id, 'titleHeading_width', undefined); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white" title="Reset Position"><RotateCcw size={11} /></button>
-                                                 </div>
-                                               )}
+                                                {deckSelection.type === 'text' && deckSelection.id === 'title-heading' && (
+                                                  <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'text', id: 'title-heading' }); setDeckBentoDrag({ isDragging: true, cardId: 'titleHeading', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.titleHeading_posX || 0, origY: activeDeckSlide?.titleHeading_posY || 0 }); }} className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                    <Move size={11} className="text-violet-400" />
+                                                    <span>Drag Headline</span>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { titleHeading_posX: 0, titleHeading_posY: 0, titleHeading_width: undefined, titleHeading_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                  </div>
+                                                )}
                                                {/* 8 Resize Handles */}
                                                {deckSelection.type === 'text' && deckSelection.id === 'title-heading' && (
                                                  <>
@@ -50161,7 +50190,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  >
                                                    
                                                    {/* 8 Resize Handles (4 Corners + 4 Edges) */}
-                                                   {deckSelection.type === 'bento' && deckSelection.id === 'prob-card1' && (
+                                                   {deckSelection.type === 'bento' && (deckSelection.id === 'prob-card-1' || deckSelection.id === 'prob-card1') && (
                                                      <>
                                                        {/* Corners */}
                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.card1_width || Math.round(rect.width), initH: activeDeckSlide?.card1_height || Math.round(rect.height), initX: activeDeckSlide?.card1_posX || 0, initY: activeDeckSlide?.card1_posY || 0, target: 'bento-card1' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
@@ -50304,7 +50333,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  >
                                                    
                                                    {/* 8 Resize Handles (4 Corners + 4 Edges) */}
-                                                   {deckSelection.type === 'bento' && deckSelection.id === 'prob-card2' && (
+                                                   {deckSelection.type === 'bento' && (deckSelection.id === 'prob-card-2' || deckSelection.id === 'prob-card2') && (
                                                      <>
                                                        {/* Corners */}
                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.card2_width || Math.round(rect.width), initH: activeDeckSlide?.card2_height || Math.round(rect.height), initX: activeDeckSlide?.card2_posX || 0, initY: activeDeckSlide?.card2_posY || 0, target: 'bento-card2' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
@@ -50447,7 +50476,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  >
                                                    
                                                    {/* 8 Resize Handles (4 Corners + 4 Edges) */}
-                                                   {deckSelection.type === 'bento' && deckSelection.id === 'prob-card3' && (
+                                                   {deckSelection.type === 'bento' && (deckSelection.id === 'prob-card-3' || deckSelection.id === 'prob-card3') && (
                                                      <>
                                                        {/* Corners */}
                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.card3_width || Math.round(rect.width), initH: activeDeckSlide?.card3_height || Math.round(rect.height), initX: activeDeckSlide?.card3_posX || 0, initY: activeDeckSlide?.card3_posY || 0, target: 'bento-card3' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
@@ -50583,25 +50612,30 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                              }}
                                              style={{
                                                transform: `translate(${activeDeckSlide?.introHeadline_posX || 0}px, ${activeDeckSlide?.introHeadline_posY || 0}px)`,
-                                               transition: deckBentoDrag.isDragging ? 'none' : 'transform 120ms ease-out',
-                                               width: activeDeckSlide?.introHeadline_width ? `${activeDeckSlide.introHeadline_width}px` : undefined
+                                               transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                               width: activeDeckSlide?.introHeadline_width ? `${activeDeckSlide.introHeadline_width}px` : undefined,
+                                               height: activeDeckSlide?.introHeadline_height ? `${activeDeckSlide.introHeadline_height}px` : undefined,
+                                               touchAction: 'none'
                                              }}
-                                             className={`relative overflow-visible flex items-center justify-start pointer-events-auto select-auto z-20 mb-2 pl-0.5 pt-0 cursor-grab active:cursor-grabbing ${deckSelection.type === 'text' && deckSelection.id === 'intro-headline' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
+                                             className={`relative overflow-visible flex items-center justify-start pointer-events-auto select-auto z-20 mb-2 pl-0.5 pt-0 cursor-grab active:cursor-grabbing ${deckSelection.type === 'text' && deckSelection.id === 'intro-headline' ? 'z-50 outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : 'z-30'}`}
                                            >
                                              <h1
                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                suppressContentEditableWarning
                                                onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                               className="text-[34px] md:text-[42px] font-[900] tracking-wider text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none"
+                                               className="text-[34px] md:text-[42px] font-[900] tracking-wider text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none w-full break-words"
                                              >
                                                {activeDeckSlide?.headline || 'INTRODUCTION'}
                                              </h1>
-                                             {deckSelection.type === 'text' && deckSelection.id === 'intro-headline' && (
-                                               <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                 <Move size={11} className="text-violet-400" /><span>Drag Headline</span><div className="w-px h-3 bg-white/20 mx-0.5" /><button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'introHeadline_posX', 0); updateDeckSlideField(activeDeckSlide?.id, 'introHeadline_posY', 0); updateDeckSlideField(activeDeckSlide?.id, 'introHeadline_width', undefined); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white" title="Reset Position"><RotateCcw size={11} /></button>
-                                               </div>
-                                             )}
+                                                {deckSelection.type === 'text' && deckSelection.id === 'intro-headline' && (
+                                                  <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'text', id: 'intro-headline' }); setDeckBentoDrag({ isDragging: true, cardId: 'introHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.introHeadline_posX || 0, origY: activeDeckSlide?.introHeadline_posY || 0 }); }} className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                    <Move size={11} className="text-violet-400" />
+                                                    <span>Drag Headline</span>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { introHeadline_posX: 0, introHeadline_posY: 0, introHeadline_width: undefined, introHeadline_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                  </div>
+                                                )}
                                              {deckSelection.type === 'text' && deckSelection.id === 'intro-headline' && (
                                                <>
                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.introHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.introHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.introHeadline_posX || 0, initY: activeDeckSlide?.introHeadline_posY || 0, target: 'text-introHeadline' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
@@ -50902,44 +50936,49 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '');
                                                  showToast('Tagline saved');
                                                }}
-                                               style={{ color: "#94a3b8", caretColor: "#00f0ff" }}
-                                               className="text-[13px] md:text-[14px] italic font-normal tracking-wide text-slate-400 !text-slate-400 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 focus:ring-2 focus:ring-[#7C4DFF] rounded px-1.5 py-0.5 cursor-text transition-all bg-transparent hover:bg-white/5 select-text"
-                                             >
-                                               {activeDeckSlide?.tagline || 'Ingoude Company'}
-                                             </div>
-                                           </div>
+                                                style={{ color: "#94a3b8", caretColor: "#00f0ff" }}
+                                                className="text-[13px] md:text-[14px] italic font-normal tracking-wide text-slate-400 !text-slate-400 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 focus:ring-2 focus:ring-[#7C4DFF] rounded px-1.5 py-0.5 cursor-text transition-all bg-transparent hover:bg-white/5 select-text"
+                                              >
+                                                {activeDeckSlide?.tagline || 'Ingoude Company'}
+                                              </div>
+                                            </div>
 
-                                           {/* Main Content: Left Headline + Right 2-Column Numbered Agenda Table */}
-                                           <div className="flex items-start gap-8 my-auto w-full pointer-events-auto z-20 flex-1">
-                                             {/* Left Column: Big Bold Agenda Title */}
-                                             <div
-                                               onPointerDown={(e) => {
-                                                 if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
-                                                 e.stopPropagation();
-                                                 setDeckSelection({ type: 'text', id: 'agenda-headline' });
-                                                 setDeckBentoDrag({ isDragging: true, cardId: 'agendaHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.agendaHeadline_posX || 0, origY: activeDeckSlide?.agendaHeadline_posY || 0 });
-                                               }}
-                                               style={{
-                                                 transform: `translate(${activeDeckSlide?.agendaHeadline_posX || 0}px, ${activeDeckSlide?.agendaHeadline_posY || 0}px)`,
-                                                 transition: deckBentoDrag.isDragging ? 'none' : 'transform 120ms ease-out',
-                                                 width: activeDeckSlide?.agendaHeadline_width ? `${activeDeckSlide.agendaHeadline_width}px` : '30%'
-                                               }}
-                                               className={`relative overflow-visible shrink-0 pt-4 cursor-grab active:cursor-grabbing ${deckSelection.type === 'text' && deckSelection.id === 'agenda-headline' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
-                                             >
+                                            {/* Main Content: Left Headline + Right 2-Column Numbered Agenda Table */}
+                                            <div className="flex items-start gap-8 my-auto w-full pointer-events-auto z-20 flex-1">
+                                              {/* Left Column: Big Bold Agenda Title */}
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'text', id: 'agenda-headline' });
+                                                  setDeckBentoDrag({ isDragging: true, cardId: 'agendaHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.agendaHeadline_posX || 0, origY: activeDeckSlide?.agendaHeadline_posY || 0 });
+                                                }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.agendaHeadline_posX || 0}px, ${activeDeckSlide?.agendaHeadline_posY || 0}px)`,
+                                                  transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                  width: activeDeckSlide?.agendaHeadline_width ? `${activeDeckSlide.agendaHeadline_width}px` : '30%',
+                                                  height: activeDeckSlide?.agendaHeadline_height ? `${activeDeckSlide.agendaHeadline_height}px` : undefined,
+                                                  touchAction: 'none'
+                                                }}
+                                                className={`relative overflow-visible shrink-0 pt-4 cursor-grab active:cursor-grabbing ${deckSelection.type === 'text' && deckSelection.id === 'agenda-headline' ? 'z-50 outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : 'z-30'}`}
+                                              >
                                                <h1
                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                  suppressContentEditableWarning
                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                  style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                 className="text-[38px] md:text-[46px] leading-[0.98] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text whitespace-pre-line font-sans select-text"
+                                                 className="text-[38px] md:text-[46px] leading-[0.98] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text whitespace-pre-line font-sans select-text w-full break-words"
                                                >
                                                  {activeDeckSlide?.headline || "TODAY'S\nAGENDA"}
                                                </h1>
-                                               {deckSelection.type === 'text' && deckSelection.id === 'agenda-headline' && (
-                                                 <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                   <Move size={11} className="text-violet-400" /><span>Drag Headline</span><div className="w-px h-3 bg-white/20 mx-0.5" /><button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'agendaHeadline_posX', 0); updateDeckSlideField(activeDeckSlide?.id, 'agendaHeadline_posY', 0); updateDeckSlideField(activeDeckSlide?.id, 'agendaHeadline_width', undefined); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white" title="Reset Position"><RotateCcw size={11} /></button>
-                                                 </div>
-                                               )}
+                                                {deckSelection.type === 'text' && deckSelection.id === 'agenda-headline' && (
+                                                  <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'text', id: 'agenda-headline' }); setDeckBentoDrag({ isDragging: true, cardId: 'agendaHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.agendaHeadline_posX || 0, origY: activeDeckSlide?.agendaHeadline_posY || 0 }); }} className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                    <Move size={11} className="text-violet-400" />
+                                                    <span>Drag Headline</span>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { agendaHeadline_posX: 0, agendaHeadline_posY: 0, agendaHeadline_width: undefined, agendaHeadline_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                  </div>
+                                                )}
                                                {deckSelection.type === 'text' && deckSelection.id === 'agenda-headline' && (
                                                  <>
                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.agendaHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.agendaHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.agendaHeadline_posX || 0, initY: activeDeckSlide?.agendaHeadline_posY || 0, target: 'text-agendaHeadline' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
@@ -51048,44 +51087,49 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '');
                                                 showToast('Tagline saved');
                                               }}
-                                               style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                               className="text-[13px] italic font-normal tracking-wide text-slate-300 !text-slate-300 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 focus:ring-2 focus:ring-[#7C4DFF] rounded px-1.5 py-0.5 cursor-text transition-all bg-transparent hover:bg-white/5 select-text"
-                                            >
-                                              {activeDeckSlide?.tagline || 'Ingoude Company'}
-                                            </div>
-                                          </div>
+                                                style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                className="text-[13px] italic font-normal tracking-wide text-slate-300 !text-slate-300 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 focus:ring-2 focus:ring-[#7C4DFF] rounded px-1.5 py-0.5 cursor-text transition-all bg-transparent hover:bg-white/5 select-text"
+                                             >
+                                               {activeDeckSlide?.tagline || 'Ingoude Company'}
+                                             </div>
+                                           </div>
 
-                                          {/* Center Area: Big Bold Title & Presenter Pill */}
-                                          <div className="flex flex-col gap-4 my-auto max-w-[62%] pointer-events-auto">
-                                            <div
-                                              onPointerDown={(e) => {
-                                                if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
-                                                e.stopPropagation();
-                                                setDeckSelection({ type: 'text', id: 'cover-headline' });
-                                                setDeckBentoDrag({ isDragging: true, cardId: 'coverHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.coverHeadline_posX || 0, origY: activeDeckSlide?.coverHeadline_posY || 0 });
-                                              }}
-                                              style={{
-                                                transform: `translate(${activeDeckSlide?.coverHeadline_posX || 0}px, ${activeDeckSlide?.coverHeadline_posY || 0}px)`,
-                                                transition: deckBentoDrag.isDragging ? 'none' : 'transform 120ms ease-out',
-                                                width: activeDeckSlide?.coverHeadline_width ? `${activeDeckSlide.coverHeadline_width}px` : undefined
-                                              }}
-                                              className={`relative overflow-visible cursor-grab active:cursor-grabbing ${deckSelection.type === 'text' && deckSelection.id === 'cover-headline' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
-                                            >
+                                           {/* Center Area: Big Bold Title & Presenter Pill */}
+                                           <div className="flex flex-col gap-4 my-auto max-w-[62%] pointer-events-auto">
+                                             <div
+                                               onPointerDown={(e) => {
+                                                 if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                 e.stopPropagation();
+                                                 setDeckSelection({ type: 'text', id: 'cover-headline' });
+                                                 setDeckBentoDrag({ isDragging: true, cardId: 'coverHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.coverHeadline_posX || 0, origY: activeDeckSlide?.coverHeadline_posY || 0 });
+                                               }}
+                                               style={{
+                                                 transform: `translate(${activeDeckSlide?.coverHeadline_posX || 0}px, ${activeDeckSlide?.coverHeadline_posY || 0}px)`,
+                                                 transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                 width: activeDeckSlide?.coverHeadline_width ? `${activeDeckSlide.coverHeadline_width}px` : undefined,
+                                                 height: activeDeckSlide?.coverHeadline_height ? `${activeDeckSlide.coverHeadline_height}px` : undefined,
+                                                 touchAction: 'none'
+                                               }}
+                                               className={`relative overflow-visible cursor-grab active:cursor-grabbing ${deckSelection.type === 'text' && deckSelection.id === 'cover-headline' ? 'z-50 outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : 'z-30'}`}
+                                             >
                                             <h1
                                               contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                               suppressContentEditableWarning
                                               onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                               className="text-[44px] leading-[1.02] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text whitespace-pre-line font-sans select-text"
+                                                className="text-[44px] leading-[1.02] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text whitespace-pre-line font-sans select-text w-full break-words"
                                             >
                                               {activeDeckSlide?.headline || 'STARTUP\nPITCH DECK'}
                                             </h1>
 
-                                              {deckSelection.type === 'text' && deckSelection.id === 'cover-headline' && (
-                                                <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                  <Move size={11} className="text-violet-400" /><span>Drag Headline</span><div className="w-px h-3 bg-white/20 mx-0.5" /><button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'coverHeadline_posX', 0); updateDeckSlideField(activeDeckSlide?.id, 'coverHeadline_posY', 0); updateDeckSlideField(activeDeckSlide?.id, 'coverHeadline_width', undefined); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white" title="Reset Position"><RotateCcw size={11} /></button>
-                                                </div>
-                                              )}
+                                                {deckSelection.type === 'text' && deckSelection.id === 'cover-headline' && (
+                                                  <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'text', id: 'cover-headline' }); setDeckBentoDrag({ isDragging: true, cardId: 'coverHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.coverHeadline_posX || 0, origY: activeDeckSlide?.coverHeadline_posY || 0 }); }} className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                    <Move size={11} className="text-violet-400" />
+                                                    <span>Drag Headline</span>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { coverHeadline_posX: 0, coverHeadline_posY: 0, coverHeadline_width: undefined, coverHeadline_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                  </div>
+                                                )}
                                               {deckSelection.type === 'text' && deckSelection.id === 'cover-headline' && (
                                                 <>
                                                   <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.coverHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.coverHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.coverHeadline_posX || 0, initY: activeDeckSlide?.coverHeadline_posY || 0, target: 'text-coverHeadline' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
