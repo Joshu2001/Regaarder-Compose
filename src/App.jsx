@@ -382,7 +382,28 @@ const DECK_THEME_OPTIONS = [
 ];
 
 const DECK_LAYOUT_OPTIONS = [
-    { 
+      { 
+    key: "Startup Introduction", 
+    name: "Startup Introduction",
+    desc: 'Bento layout with multi-media cards & dual narrative blocks',
+    visualType: 'startup intro bento',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col p-0.5 justify-between shrink-0">
+        <div className="w-2/5 h-0.5 bg-white rounded-xs" />
+        <div className="flex gap-0.5 h-3 items-stretch">
+          <div className="w-1/3 bg-purple-400/40 rounded-xs" />
+          <div className="w-2/3 flex flex-col gap-0.5">
+            <div className="h-1.5 bg-blue-500/40 rounded-xs" />
+            <div className="flex-1 flex gap-0.5">
+              <div className="w-1/2 bg-purple-500/40 rounded-xs" />
+              <div className="w-1/2 bg-slate-600/40 rounded-xs" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  },
+  { 
     key: "Startup Today's Agenda", 
     name: "Startup Today's Agenda",
     desc: 'Two-column 10-point agenda with glowing divider beams',
@@ -33265,6 +33286,22 @@ Respond with a JSON array of slide objects matching the schema.`;
     .replace(/'/g, '&#39;');
 
   const buildDeckPreviewDataUri = (slide) => {
+    if (slide?.layoutStyle === "Startup Introduction" || slide?.layoutStyle === 'Startup Intro') {
+      const headline = escapeSvgText(slide?.headline || 'INTRODUCTION');
+      const footer = escapeSvgText(slide?.footer || 'Ingoude Company');
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+        <rect width="320" height="192" rx="14" fill="#05070B"/>
+        <path d="M 200 0 C 240 60, 280 40, 320 30" stroke="#00f0ff" stroke-width="2" opacity="0.8" fill="none" />
+        <path d="M 170 0 C 220 80, 290 60, 320 50" stroke="#0055ff" stroke-width="1.8" opacity="0.6" fill="none" />
+        <text x="14" y="32" font-size="13" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900">INTRODUCTION</text>
+        <rect x="14" y="44" width="90" height="124" rx="8" fill="#c084fc" opacity="0.35"/>
+        <rect x="110" y="44" width="196" height="62" rx="8" fill="#1e1b4b" opacity="0.85"/>
+        <rect x="110" y="112" width="80" height="56" rx="8" fill="#000000" opacity="0.7"/>
+        <rect x="196" y="112" width="110" height="56" rx="8" fill="rgba(255,255,255,0.06)"/>
+        <text x="306" y="180" font-size="6.5" font-family="Inter, sans-serif" fill="#94a3b8" font-style="italic" text-anchor="end">${footer}</text>
+      </svg>`;
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
     if (slide?.layoutStyle === "Startup Today's Agenda" || slide?.layoutStyle === 'Startup Agenda') {
       const tagline = escapeSvgText(slide?.tagline || 'Ingoude Company');
       const headline = escapeSvgText(slide?.headline || "TODAY'S\nAGENDA").replace(/\n/g, ' ');
@@ -49697,7 +49734,136 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
                                           </div>
                                         </div>
-                                      ) : layout === "Startup Today's Agenda" || layout === "Startup Agenda" ? (
+                                      ) : layout === "Startup Introduction" || layout === "Startup Intro" ? (
+                                         /* ── STARTUP INTRODUCTION TEMPLATE (REVERSE-ENGINEERED SLIDE 3) ── */
+                                         <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-2 py-1 md:px-3 md:py-1.5">
+                                           {/* Header: Bold Headline "INTRODUCTION" */}
+                                           <div className="flex items-center justify-start pointer-events-auto select-auto z-20 mb-2">
+                                             <h1
+                                               contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                               suppressContentEditableWarning
+                                               onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
+                                               style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                               className="text-[36px] md:text-[44px] font-[900] tracking-wider text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text"
+                                             >
+                                               {activeDeckSlide?.headline || 'INTRODUCTION'}
+                                             </h1>
+                                           </div>
+
+                                           {/* Main Content Bento Grid (Left Tall Media Card + Right Dual Bento Cards) */}
+                                           <div className="flex-1 grid grid-cols-12 gap-3.5 my-auto w-full pointer-events-auto z-20 min-h-0">
+                                             {/* Left Column (Span 4): Tall Studio Card with Laptop Device & Slogan */}
+                                             <div className="col-span-4 rounded-2xl overflow-hidden border border-white/15 bg-[#C4B5FD]/20 backdrop-blur-md relative group flex flex-col justify-between p-3.5 shadow-xl transition-all hover:border-cyan-400/40">
+                                               {/* Background Lavender Texture / Geometric Shape */}
+                                               <div className="absolute inset-0 bg-gradient-to-br from-[#c084fc]/35 via-[#818cf8]/25 to-[#6366f1]/20 pointer-events-none" />
+                                               <div className="absolute -top-12 -left-12 w-40 h-40 rounded-full bg-cyan-400/20 blur-2xl pointer-events-none" />
+                                               
+                                               {/* Mockup Showcase Visual Card */}
+                                               <div className="relative z-10 w-full h-[62%] rounded-xl overflow-hidden border border-white/20 bg-black/60 shadow-2xl flex items-center justify-center group/card">
+                                                 <img 
+                                                   src={activeDeckSlide?.introMainImg || 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80'} 
+                                                   alt="Design Your Future With Us"
+                                                   className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
+                                                 />
+                                                 {/* Custom Replace & Remove BG Badge Actions */}
+                                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                                                   <button
+                                                     type="button"
+                                                     onClick={() => {
+                                                       const url = prompt('Enter image URL for Main Showcase:', activeDeckSlide?.introMainImg || '');
+                                                       if (url) updateDeckSlideField(activeDeckSlide?.id, 'introMainImg', url);
+                                                     }}
+                                                     className="px-2.5 py-1 rounded-lg bg-cyan-500/80 text-white text-[11px] font-bold shadow-md hover:bg-cyan-500 flex items-center gap-1 cursor-pointer"
+                                                   >
+                                                     <Sparkles size={11} /> Replace
+                                                   </button>
+                                                 </div>
+                                               </div>
+
+                                               {/* Bottom Slogan Badge inside Left Card */}
+                                               <div className="relative z-10 mt-auto pt-2 flex flex-col">
+                                                 <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/50 border border-white/15 text-[10px] font-bold text-cyan-300 w-fit tracking-wider">
+                                                   <span>⚡ STUDIO EDITION</span>
+                                                 </div>
+                                                 <h3 className="text-white font-[900] text-[15px] leading-tight tracking-tight mt-1.5 uppercase font-sans">
+                                                   DESIGN YOUR FUTURE WITH US.
+                                                 </h3>
+                                               </div>
+                                             </div>
+
+                                             {/* Right Column (Span 8): Dual Horizontal Narrative Bento Cards */}
+                                             <div className="col-span-8 flex flex-col justify-between gap-3 min-h-0">
+                                               {/* Top Card: Deep Midnight Blue Gradient Glass Card with Primary Mission Statement */}
+                                               <div className="flex-1 rounded-2xl border border-white/15 bg-gradient-to-r from-[#172554]/95 via-[#1e1b4b]/90 to-[#0f172a]/95 p-4 md:p-5 shadow-2xl backdrop-blur-xl flex items-center relative overflow-hidden transition-all hover:border-cyan-400/40">
+                                                 <div className="absolute -right-16 -top-16 w-36 h-36 rounded-full bg-cyan-500/15 blur-2xl pointer-events-none" />
+                                                 <p 
+                                                   contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                   suppressContentEditableWarning
+                                                   onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'introCard1Text', e.currentTarget.textContent || '')}
+                                                   style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                   className="text-[12.5px] md:text-[13.5px] leading-[1.5] font-normal text-slate-100 !text-slate-100 tracking-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans select-text"
+                                                 >
+                                                   {activeDeckSlide?.introCard1Text || "We're your dedicated partners in propelling startups toward success. With a blend of expertise and innovation, we offer comprehensive solutions tailored to meet the specific needs of each venture we work with. From strategic guidance to brand development and digital marketing, we're committed to empowering startups to thrive in competitive markets."}
+                                                 </p>
+                                               </div>
+
+                                               {/* Bottom Row Split: Small Futuristic Image Card + Collaborative Approach Paragraph */}
+                                               <div className="h-[48%] grid grid-cols-12 gap-3 min-h-0">
+                                                 {/* Sub-Card Left (Span 5): Cyber Stage Mockup */}
+                                                 <div className="col-span-5 rounded-2xl overflow-hidden border border-white/15 bg-black/60 relative group/sub shadow-xl flex items-center justify-center transition-all hover:border-purple-400/40">
+                                                   <img 
+                                                     src={activeDeckSlide?.introSubImg || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80'} 
+                                                     alt="Holographic Laptop Visual"
+                                                     className="w-full h-full object-cover transition-transform duration-500 group-hover/sub:scale-105"
+                                                   />
+                                                   {/* Hover Actions */}
+                                                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/sub:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
+                                                     <button
+                                                       type="button"
+                                                       onClick={() => {
+                                                         const url = prompt('Enter image URL for Secondary Card:', activeDeckSlide?.introSubImg || '');
+                                                         if (url) updateDeckSlideField(activeDeckSlide?.id, 'introSubImg', url);
+                                                       }}
+                                                       className="px-2 py-0.5 rounded bg-purple-500/80 text-white text-[10px] font-bold shadow hover:bg-purple-500 flex items-center gap-1 cursor-pointer"
+                                                     >
+                                                       <Sparkles size={10} /> Replace
+                                                     </button>
+                                                   </div>
+                                                 </div>
+
+                                                 {/* Sub-Card Right (Span 7): Secondary Collaborative Approach Paragraph */}
+                                                 <div className="col-span-7 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 shadow-xl backdrop-blur-md flex items-center relative overflow-hidden transition-all hover:border-white/20">
+                                                   <p 
+                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'introCard2Text', e.currentTarget.textContent || '')}
+                                                     style={{ color: "#e2e8f0", caretColor: "#00f0ff" }}
+                                                     className="text-[11.5px] md:text-[12.5px] leading-[1.45] font-normal text-slate-200 !text-slate-200 tracking-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans select-text"
+                                                   >
+                                                     {activeDeckSlide?.introCard2Text || "Our collaborative approach ensures that we're not just service providers but invested advocates for your growth. Let us be the catalyst for your startup's journey, guiding you towards achieving your goals and beyond."}
+                                                   </p>
+                                                 </div>
+                                               </div>
+                                             </div>
+                                           </div>
+
+                                           {/* Footer Anchor: Company Name in Italics on Bottom-Right */}
+                                           <div className="flex items-center justify-end pointer-events-auto select-auto z-20 pt-1">
+                                             <div 
+                                               contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                               suppressContentEditableWarning
+                                               onBlur={(e) => {
+                                                 updateDeckSlideField(activeDeckSlide?.id, 'footer', e.currentTarget.textContent || '');
+                                                 showToast('Footer saved');
+                                               }}
+                                               style={{ color: "#94a3b8", caretColor: "#00f0ff" }}
+                                               className="text-[12px] italic font-normal tracking-wide text-slate-400 !text-slate-400 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 rounded px-1 cursor-text select-text"
+                                             >
+                                               {activeDeckSlide?.footer || 'Ingoude Company'}
+                                             </div>
+                                           </div>
+                                         </div>
+                                       ) : layout === "Startup Today's Agenda" || layout === "Startup Agenda" ? (
                                          /* ── STARTUP TODAY'S AGENDA TEMPLATE (REVERSE-ENGINEERED SLIDE 2) ── */
                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-2 py-1 md:px-4 md:py-2">
                                            {/* Top Row: Company Tagline (Directly Above Headline) */}
