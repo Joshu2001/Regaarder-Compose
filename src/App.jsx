@@ -50530,7 +50530,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
                                                         title="Select Presenter Image"
                                                       >
-                                                        <Image size={10} /> Change
+                                                        <ImageIcon size={10} /> Change
                                                       </button>
                                                       <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                       <button
