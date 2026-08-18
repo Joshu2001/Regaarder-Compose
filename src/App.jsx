@@ -49998,11 +49998,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
                                       ) : layout === "Startup Problem Statement" || layout === "Startup Problem" ? (
                                          /* ── STARTUP PROBLEM STATEMENT TEMPLATE (PIXEL-PERFECT REFINED SLIDE 4) ── */
-                                         <div className="flex flex-col justify-start h-full w-full relative z-10 pointer-events-none select-none px-4 pt-2 pb-4 md:px-6 md:pb-5">
+                                         <div className="flex flex-col justify-center h-full w-full relative z-10 pointer-events-none select-none px-4 pt-1 pb-3 md:px-7 md:pb-4">
                                            {/* Main 2-Column Split: Left Big Headline (Col-Span 5) + Right 3 Vertical Cards (Col-Span 7) */}
-                                           <div className="flex-1 grid grid-cols-12 gap-6 w-full pointer-events-auto z-20 min-h-0 max-h-[80%] items-center my-auto">
+                                           <div className="flex-1 grid grid-cols-12 gap-6 w-full pointer-events-auto z-20 min-h-0 max-h-[76%] items-center my-auto">
                                              {/* Left Column (Span 4.5): 2-Line Bold Headline with generous width to prevent clipping the T */}
-                                             <div className="col-span-5 flex flex-col justify-center pl-2 select-auto">
+                                             <div className="col-span-5 flex flex-col justify-center pl-1 select-auto">
                                                <h1
                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                  suppressContentEditableWarning
@@ -50025,25 +50025,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                </h1>
                                              </div>
 
-                                             {/* Right Column (Span 7): 3 Vertical Pill-Card Containers with Glimmer Effects */}
-                                             <div className="col-span-7 grid grid-cols-3 gap-3.5 h-full max-h-[85%] min-h-0 py-1 items-stretch">
-                                               {/* Card 01 (Lavender -> Indigo Gradient Card with Glimmer Glow Border) */}
+                                             {/* Right Column (Span 7): 3 Vertical Pill-Card Containers with Crisp 3D Glass Depth */}
+                                             <div className="col-span-7 grid grid-cols-3 gap-4 h-full min-h-0 py-1 items-stretch">
+                                               {/* Card 01 (Lavender -> Indigo Gradient Card with Crisp White Glass Depth Border) */}
                                                {!activeDeckSlide?.card1Hidden && (
                                                  <div 
                                                    onClick={(e) => {
                                                      e.stopPropagation();
                                                      setDeckSelection({ type: 'bento', id: 'prob-card-1' });
                                                    }}
-                                                   className={`overflow-visible relative group flex flex-col justify-between p-3.5 shadow-2xl transition-all cursor-pointer ${
+                                                   className={`overflow-visible relative group flex flex-col items-center justify-start p-4 shadow-[0_16px_40px_rgba(0,0,0,0.6)] transition-all cursor-pointer ${
                                                      deckSelection.type === 'bento' && deckSelection.id === 'prob-card-1'
-                                                       ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(167,139,250,0.45)]'
-                                                       : 'hover:border-purple-300/60'
+                                                       ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(167,139,250,0.5)]'
+                                                       : 'hover:border-white/60'
                                                    }`}
                                                    style={{
                                                      background: activeDeckSlide?.card1Bg || 'linear-gradient(180deg, #A78BFA 0%, #6366F1 45%, #1E1B4B 100%)',
                                                      borderRadius: activeDeckSlide?.card1Radius || '18px',
-                                                     border: activeDeckSlide?.card1Glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.8)' : activeDeckSlide?.card1Glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1px solid rgba(255, 255, 255, 0.25)',
-                                                     boxShadow: activeDeckSlide?.card1Glimmer === 'cyan' ? '0 0 20px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.15)' : activeDeckSlide?.card1Glimmer === 'violet' ? '0 0 20px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(168, 85, 247, 0.15)' : '0 10px 30px rgba(0,0,0,0.5)'
+                                                     border: activeDeckSlide?.card1Glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.9)' : activeDeckSlide?.card1Glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1.5px solid rgba(255, 255, 255, 0.45)',
+                                                     boxShadow: activeDeckSlide?.card1Glimmer === 'cyan' ? '0 0 25px rgba(0, 240, 255, 0.45), inset 0 0 15px rgba(0, 240, 255, 0.2)' : activeDeckSlide?.card1Glimmer === 'violet' ? '0 0 25px rgba(168, 85, 247, 0.45), inset 0 0 15px rgba(168, 85, 247, 0.2)' : '0 16px 40px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.4)'
                                                    }}
                                                  >
                                                    {/* Floating Capsule for Card 1 */}
@@ -50057,7 +50057,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                          type="button"
                                                          onClick={(e) => {
                                                            e.stopPropagation();
-                                                           const nextGlimmer = activeDeckSlide?.card1Glimmer === 'violet' ? 'cyan' : activeDeckSlide?.card1Glimmer === 'cyan' ? 'none' : 'violet';
+                                                           const nextGlimmer = activeDeckSlide?.card1Glimmer === 'white' ? 'violet' : activeDeckSlide?.card1Glimmer === 'violet' ? 'cyan' : 'white';
                                                            updateDeckSlideField(activeDeckSlide?.id, 'card1Glimmer', nextGlimmer);
                                                            showToast(`Glimmer: ${nextGlimmer}`);
                                                          }}
@@ -50101,39 +50101,39 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                    )}
 
                                                    {/* Big Number Header */}
-                                                   <div className="text-center pt-0.5 pb-1">
+                                                   <div className="text-center pt-1 pb-1">
                                                      <span 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                        suppressContentEditableWarning
                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card1Num', e.currentTarget.textContent || '')}
                                                        style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                       className="text-[28px] md:text-[32px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
+                                                       className="text-[34px] md:text-[38px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
                                                      >
                                                        {activeDeckSlide?.card1Num || '01'}
                                                      </span>
                                                    </div>
 
                                                    {/* Card Title */}
-                                                   <div className="text-center pb-1.5 px-1 min-h-[30px] flex items-center justify-center">
+                                                   <div className="text-center mt-1 mb-2.5 px-1 min-h-[32px] flex items-center justify-center">
                                                      <h3 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                        suppressContentEditableWarning
                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card1Title', e.currentTarget.textContent || '')}
                                                        style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                       className="text-[9.5px] md:text-[10.5px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
+                                                       className="text-[10.5px] md:text-[11.5px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
                                                      >
                                                        {activeDeckSlide?.card1Title || 'LACK OF BRAND DIFFERENTIATION'}
                                                      </h3>
                                                    </div>
 
-                                                   {/* Card Paragraph */}
-                                                   <div className="text-center px-1 overflow-y-auto thin-scrollbar mt-auto">
+                                                   {/* Card Paragraph: Natural Top Flow directly beneath title */}
+                                                   <div className="text-center px-1 overflow-y-auto thin-scrollbar">
                                                      <p 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                        suppressContentEditableWarning
                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card1Text', e.currentTarget.textContent || '')}
-                                                       style={{ color: "#f1f5f9", caretColor: "#00f0ff" }}
-                                                       className="text-[9px] md:text-[9.5px] leading-[1.38] font-normal text-slate-100 !text-slate-100 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
+                                                       style={{ color: "#f8fafc", caretColor: "#00f0ff" }}
+                                                       className="text-[9.5px] md:text-[10px] leading-[1.45] font-normal text-slate-100 !text-slate-100 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
                                                      >
                                                        {activeDeckSlide?.card1Text || 'Startups often find it hard to make their brand unique in a crowded market. Without a clear way to stand out, they struggle to catch the eye of potential customers and lose out to bigger competitors.'}
                                                      </p>
@@ -50141,23 +50141,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  </div>
                                                )}
 
-                                               {/* Card 02 (Deep Frosted Indigo / Midnight Card with Glimmer Edge) */}
+                                               {/* Card 02 (Deep Frosted Indigo / Midnight Card with Crisp White Glass Depth Border) */}
                                                {!activeDeckSlide?.card2Hidden && (
                                                  <div 
                                                    onClick={(e) => {
                                                      e.stopPropagation();
                                                      setDeckSelection({ type: 'bento', id: 'prob-card-2' });
                                                    }}
-                                                   className={`overflow-visible relative group flex flex-col justify-between p-3.5 shadow-2xl transition-all cursor-pointer backdrop-blur-xl ${
+                                                   className={`overflow-visible relative group flex flex-col items-center justify-start p-4 shadow-[0_16px_40px_rgba(0,0,0,0.6)] transition-all cursor-pointer backdrop-blur-xl ${
                                                      deckSelection.type === 'bento' && deckSelection.id === 'prob-card-2'
-                                                       ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(124,77,255,0.45)]'
-                                                       : 'hover:border-purple-300/40'
+                                                       ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(124,77,255,0.5)]'
+                                                       : 'hover:border-white/60'
                                                    }`}
                                                    style={{
                                                      background: activeDeckSlide?.card2Bg || 'linear-gradient(180deg, #2E2640 0%, #1E1B38 45%, #121829 100%)',
                                                      borderRadius: activeDeckSlide?.card2Radius || '18px',
-                                                     border: activeDeckSlide?.card2Glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.8)' : activeDeckSlide?.card2Glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1px solid rgba(255, 255, 255, 0.18)',
-                                                     boxShadow: activeDeckSlide?.card2Glimmer === 'cyan' ? '0 0 20px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.15)' : activeDeckSlide?.card2Glimmer === 'violet' ? '0 0 20px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(168, 85, 247, 0.15)' : '0 10px 30px rgba(0,0,0,0.5)'
+                                                     border: activeDeckSlide?.card2Glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.9)' : activeDeckSlide?.card2Glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1.5px solid rgba(255, 255, 255, 0.35)',
+                                                     boxShadow: activeDeckSlide?.card2Glimmer === 'cyan' ? '0 0 25px rgba(0, 240, 255, 0.45), inset 0 0 15px rgba(0, 240, 255, 0.2)' : activeDeckSlide?.card2Glimmer === 'violet' ? '0 0 25px rgba(168, 85, 247, 0.45), inset 0 0 15px rgba(168, 85, 247, 0.2)' : '0 16px 40px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.3)'
                                                    }}
                                                  >
                                                    {/* Floating Capsule for Card 2 */}
@@ -50171,7 +50171,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                          type="button"
                                                          onClick={(e) => {
                                                            e.stopPropagation();
-                                                           const nextGlimmer = activeDeckSlide?.card2Glimmer === 'violet' ? 'cyan' : activeDeckSlide?.card2Glimmer === 'cyan' ? 'none' : 'violet';
+                                                           const nextGlimmer = activeDeckSlide?.card2Glimmer === 'white' ? 'violet' : activeDeckSlide?.card2Glimmer === 'violet' ? 'cyan' : 'white';
                                                            updateDeckSlideField(activeDeckSlide?.id, 'card2Glimmer', nextGlimmer);
                                                            showToast(`Glimmer: ${nextGlimmer}`);
                                                          }}
@@ -50215,39 +50215,39 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                    )}
 
                                                    {/* Big Number Header */}
-                                                   <div className="text-center pt-0.5 pb-1">
+                                                   <div className="text-center pt-1 pb-1">
                                                      <span 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                        suppressContentEditableWarning
                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card2Num', e.currentTarget.textContent || '')}
                                                        style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                       className="text-[28px] md:text-[32px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
+                                                       className="text-[34px] md:text-[38px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
                                                      >
                                                        {activeDeckSlide?.card2Num || '02'}
                                                      </span>
                                                    </div>
 
                                                    {/* Card Title */}
-                                                   <div className="text-center pb-1.5 px-1 min-h-[30px] flex items-center justify-center">
+                                                   <div className="text-center mt-1 mb-2.5 px-1 min-h-[32px] flex items-center justify-center">
                                                      <h3 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                        suppressContentEditableWarning
                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card2Title', e.currentTarget.textContent || '')}
                                                        style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                       className="text-[9.5px] md:text-[10.5px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
+                                                       className="text-[10.5px] md:text-[11.5px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
                                                      >
                                                        {activeDeckSlide?.card2Title || 'INCONSISTENT BRAND MESSAGING'}
                                                      </h3>
                                                    </div>
 
-                                                   {/* Card Paragraph */}
-                                                   <div className="text-center px-1 overflow-y-auto thin-scrollbar mt-auto">
+                                                   {/* Card Paragraph: Natural Top Flow directly beneath title */}
+                                                   <div className="text-center px-1 overflow-y-auto thin-scrollbar">
                                                      <p 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                        suppressContentEditableWarning
                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card2Text', e.currentTarget.textContent || '')}
                                                        style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                       className="text-[9px] md:text-[9.5px] leading-[1.38] font-normal text-slate-300 !text-slate-300 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
+                                                       className="text-[9.5px] md:text-[10px] leading-[1.45] font-normal text-slate-300 !text-slate-300 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
                                                      >
                                                        {activeDeckSlide?.card2Text || 'Inconsistency in brand messaging across various marketing channels confuses potential customers and dilutes brand perception. Startups often face challenges in maintaining a cohesive message that effectively communicates their value proposition and resonates with their target audience.'}
                                                      </p>
@@ -50255,23 +50255,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  </div>
                                                )}
 
-                                               {/* Card 03 (Deep Midnight Obsidian Card with Glimmer Edge) */}
+                                               {/* Card 03 (Deep Midnight Obsidian Card with Crisp White Glass Depth Border) */}
                                                {!activeDeckSlide?.card3Hidden && (
                                                  <div 
                                                    onClick={(e) => {
                                                      e.stopPropagation();
                                                      setDeckSelection({ type: 'bento', id: 'prob-card-3' });
                                                    }}
-                                                   className={`overflow-visible relative group flex flex-col justify-between p-3.5 shadow-2xl transition-all cursor-pointer backdrop-blur-xl ${
+                                                   className={`overflow-visible relative group flex flex-col items-center justify-start p-4 shadow-[0_16px_40px_rgba(0,0,0,0.6)] transition-all cursor-pointer backdrop-blur-xl ${
                                                      deckSelection.type === 'bento' && deckSelection.id === 'prob-card-3'
-                                                       ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(99,102,241,0.45)]'
-                                                       : 'hover:border-purple-300/40'
+                                                       ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(99,102,241,0.5)]'
+                                                       : 'hover:border-white/60'
                                                    }`}
                                                    style={{
                                                      background: activeDeckSlide?.card3Bg || 'linear-gradient(180deg, #33263D 0%, #1C1A2E 45%, #0E1320 100%)',
                                                      borderRadius: activeDeckSlide?.card3Radius || '18px',
-                                                     border: activeDeckSlide?.card3Glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.8)' : activeDeckSlide?.card3Glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1px solid rgba(255, 255, 255, 0.18)',
-                                                     boxShadow: activeDeckSlide?.card3Glimmer === 'cyan' ? '0 0 20px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.15)' : activeDeckSlide?.card3Glimmer === 'violet' ? '0 0 20px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(168, 85, 247, 0.15)' : '0 10px 30px rgba(0,0,0,0.5)'
+                                                     border: activeDeckSlide?.card3Glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.9)' : activeDeckSlide?.card3Glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1.5px solid rgba(255, 255, 255, 0.35)',
+                                                     boxShadow: activeDeckSlide?.card3Glimmer === 'cyan' ? '0 0 25px rgba(0, 240, 255, 0.45), inset 0 0 15px rgba(0, 240, 255, 0.2)' : activeDeckSlide?.card3Glimmer === 'violet' ? '0 0 25px rgba(168, 85, 247, 0.45), inset 0 0 15px rgba(168, 85, 247, 0.2)' : '0 16px 40px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.3)'
                                                    }}
                                                  >
                                                    {/* Floating Capsule for Card 3 */}
@@ -50285,7 +50285,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                          type="button"
                                                          onClick={(e) => {
                                                            e.stopPropagation();
-                                                           const nextGlimmer = activeDeckSlide?.card3Glimmer === 'violet' ? 'cyan' : activeDeckSlide?.card3Glimmer === 'cyan' ? 'none' : 'violet';
+                                                           const nextGlimmer = activeDeckSlide?.card3Glimmer === 'white' ? 'violet' : activeDeckSlide?.card3Glimmer === 'violet' ? 'cyan' : 'white';
                                                            updateDeckSlideField(activeDeckSlide?.id, 'card3Glimmer', nextGlimmer);
                                                            showToast(`Glimmer: ${nextGlimmer}`);
                                                          }}
@@ -50329,39 +50329,39 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                    )}
 
                                                    {/* Big Number Header */}
-                                                   <div className="text-center pt-0.5 pb-1">
+                                                   <div className="text-center pt-1 pb-1">
                                                      <span 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                        suppressContentEditableWarning
                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card3Num', e.currentTarget.textContent || '')}
                                                        style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                       className="text-[28px] md:text-[32px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
+                                                       className="text-[34px] md:text-[38px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
                                                      >
                                                        {activeDeckSlide?.card3Num || '03'}
                                                      </span>
                                                    </div>
 
                                                    {/* Card Title */}
-                                                   <div className="text-center pb-1.5 px-1 min-h-[30px] flex items-center justify-center">
+                                                   <div className="text-center mt-1 mb-2.5 px-1 min-h-[32px] flex items-center justify-center">
                                                      <h3 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                        suppressContentEditableWarning
                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card3Title', e.currentTarget.textContent || '')}
                                                        style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                       className="text-[9.5px] md:text-[10.5px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
+                                                       className="text-[10.5px] md:text-[11.5px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
                                                      >
                                                        {activeDeckSlide?.card3Title || 'KEEPING UP WITH TRENDS'}
                                                      </h3>
                                                    </div>
 
-                                                   {/* Card Paragraph */}
-                                                   <div className="text-center px-1 overflow-y-auto thin-scrollbar mt-auto">
+                                                   {/* Card Paragraph: Natural Top Flow directly beneath title */}
+                                                   <div className="text-center px-1 overflow-y-auto thin-scrollbar">
                                                      <p 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                        suppressContentEditableWarning
                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card3Text', e.currentTarget.textContent || '')}
                                                        style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                       className="text-[9px] md:text-[9.5px] leading-[1.38] font-normal text-slate-300 !text-slate-300 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
+                                                       className="text-[9.5px] md:text-[10px] leading-[1.45] font-normal text-slate-300 !text-slate-300 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
                                                      >
                                                        {activeDeckSlide?.card3Text || 'The marketing landscape evolves fast, and startups often struggle to keep up. With limited resources and time, staying on top of the latest trends and integrating them into marketing strategies can be a hurdle.'}
                                                      </p>
