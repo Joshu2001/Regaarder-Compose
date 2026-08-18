@@ -47856,7 +47856,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                              updateDeckSlideField(activeDeckSlide?.id, 'badge1_bg', '#7C4DFF');
                                              setDeckSelection({ type: 'badge', id: 'badge1' });
                                              showToast(`Inserted ${item}`);
-                                           } else if (item.includes('Presenter Pill') || item.includes('Gradient Pill Shape')) {
+                                           } else if (item.includes('Bento Card')) {
+                                              const bentoStyle = item.includes('Midnight') ? 'midnight' : item.includes('Lavender') ? 'lavender' : item.includes('Cyber') ? 'cyber' : 'frosted';
+                                              const newCard = {
+                                                id: 'bento_' + Date.now(),
+                                                posX: 400,
+                                                posY: 180,
+                                                width: 320,
+                                                height: 200,
+                                                style: bentoStyle,
+                                                bg: bentoStyle === 'midnight' ? 'linear-gradient(to right, #172554, #1e1b4b, #0f172a)' : bentoStyle === 'lavender' ? '#C4B5FD' : bentoStyle === 'cyber' ? '#000000' : 'rgba(24,24,27,0.85)',
+                                                borderRadius: 16,
+                                                glow: bentoStyle === 'cyber' ? 'rgba(0,240,255,0.5)' : 'rgba(255,255,255,0.1)'
+                                              };
+                                              updateDeckSlideField(activeDeckSlide?.id, 'bentoCards', [...(activeDeckSlide?.bentoCards || []), newCard]);
+                                              setDeckSelection({ type: 'bentoCard', id: newCard.id });
+                                              showToast(`Inserted ${item}`);
+                                            } else if (item.includes('Presenter Pill') || item.includes('Gradient Pill Shape')) {
                                              updateDeckSlideField(activeDeckSlide?.id, 'pillHidden', false);
                                              updateDeckSlideField(activeDeckSlide?.id, 'presenter', 'PRESENT BY NEIL TRAN');
                                              updateDeckSlideField(activeDeckSlide?.id, 'pillGradient', 'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)');
@@ -49797,26 +49813,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
                                       ) : layout === "Startup Introduction" || layout === "Startup Intro" ? (
                                          /* ── STARTUP INTRODUCTION TEMPLATE (REVERSE-ENGINEERED SLIDE 3) ── */
-                                         <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-2 py-1 md:px-4 md:py-2">
-                                           {/* Header: Bold Headline "INTRODUCTION" */}
-                                           <div className="flex items-center justify-start pointer-events-auto select-auto z-20 mb-3 pl-1">
+                                         <div className="flex flex-col justify-start h-full w-full relative z-10 pointer-events-none select-none px-2 pt-0 pb-2 md:px-3 md:pb-3">
+                                           {/* Header: Bold Headline "INTRODUCTION" shifted higher */}
+                                           <div className="flex items-center justify-start pointer-events-auto select-auto z-20 mb-2 pl-0.5 pt-0">
                                              <h1
                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                suppressContentEditableWarning
                                                onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                               className="text-[36px] md:text-[44px] font-[900] tracking-wider text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text"
+                                               className="text-[34px] md:text-[42px] font-[900] tracking-wider text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none"
                                              >
                                                {activeDeckSlide?.headline || 'INTRODUCTION'}
                                              </h1>
                                            </div>
 
-                                           {/* Main Content Bento Grid (Left Light Lavender Card + Right Dual Bento Cards) */}
-                                           <div className="flex-1 grid grid-cols-12 gap-4 my-auto w-full pointer-events-auto z-20 min-h-0">
+                                           {/* Main Content Bento Grid (Elevated with compact balanced aspect ratio) */}
+                                           <div className="flex-1 grid grid-cols-12 gap-3.5 w-full pointer-events-auto z-20 min-h-0 max-h-[82%]">
                                              {/* Left Column (Span 4): Light Lavender Studio Card with Screen Graphic */}
                                              <div 
                                                onClick={() => setDeckSelection({ type: 'bento', id: 'bento-left' })}
-                                               className={`col-span-4 rounded-2xl overflow-hidden relative group flex flex-col justify-between p-3.5 shadow-2xl transition-all cursor-pointer ${
+                                               className={`col-span-4 rounded-2xl overflow-hidden relative group flex flex-col justify-between p-3 shadow-xl transition-all cursor-pointer ${
                                                  deckSelection.type === 'bento' && deckSelection.id === 'bento-left'
                                                    ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30'
                                                    : 'hover:border-purple-300/60'
@@ -49827,14 +49843,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                }}
                                              >
                                                {/* Lavender Card Internal Split Graphic / Studio Backdrop */}
-                                               <div className="relative z-10 w-full h-[58%] rounded-xl overflow-hidden border border-black/10 bg-black/85 shadow-2xl flex items-center justify-center group/card">
+                                               <div className="relative z-10 w-full h-[60%] rounded-xl overflow-hidden border border-black/10 bg-black/85 shadow-xl flex items-center justify-center group/card">
                                                  <img 
                                                    src={activeDeckSlide?.introMainImg || 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80'} 
                                                    alt="Design Your Future With Us"
                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
                                                  />
                                                  {/* Card Actions on Hover */}
-                                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-2">
+                                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1.5">
                                                    <button
                                                      type="button"
                                                      onClick={(e) => {
@@ -49842,7 +49858,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                        const url = prompt('Enter image URL for Main Showcase:', activeDeckSlide?.introMainImg || '');
                                                        if (url) updateDeckSlideField(activeDeckSlide?.id, 'introMainImg', url);
                                                      }}
-                                                     className="px-2 py-1 rounded-md bg-cyan-500 text-white text-[11px] font-bold shadow hover:bg-cyan-600 flex items-center gap-1 cursor-pointer"
+                                                     className="px-2 py-1 rounded-md bg-cyan-500 text-white text-[10.5px] font-bold shadow hover:bg-cyan-600 flex items-center gap-1 cursor-pointer"
                                                    >
                                                      <Sparkles size={11} /> Replace
                                                    </button>
@@ -49853,7 +49869,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                        updateDeckSlideField(activeDeckSlide?.id, 'introMainImg', null);
                                                        showToast('Image cleared');
                                                      }}
-                                                     className="px-2 py-1 rounded-md bg-rose-500 text-white text-[11px] font-bold shadow hover:bg-rose-600 flex items-center gap-1 cursor-pointer"
+                                                     className="px-2 py-1 rounded-md bg-rose-500 text-white text-[10.5px] font-bold shadow hover:bg-rose-600 flex items-center gap-1 cursor-pointer"
                                                    >
                                                      <Trash2 size={11} /> Clear
                                                    </button>
@@ -49861,22 +49877,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                </div>
 
                                                {/* Bottom Slogan Badge inside Left Lavender Card */}
-                                               <div className="relative z-10 mt-auto pt-2 flex flex-col">
-                                                 <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/80 border border-white/20 text-[9.5px] font-bold text-cyan-300 w-fit tracking-wider">
+                                               <div className="relative z-10 mt-auto pt-1 flex flex-col">
+                                                 <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/80 border border-white/20 text-[9px] font-bold text-cyan-300 w-fit tracking-wider">
                                                    <span>STUDIO EDITION</span>
                                                  </div>
-                                                 <h3 className="text-black font-[900] text-[15px] leading-tight tracking-tight mt-1.5 uppercase font-sans">
+                                                 <h3 className="text-black font-[900] text-[13.5px] leading-tight tracking-tight mt-1 uppercase font-sans">
                                                    DESIGN YOUR FUTURE WITH US.
                                                  </h3>
                                                </div>
                                              </div>
 
                                              {/* Right Column (Span 8): Dual Horizontal Narrative Bento Cards */}
-                                             <div className="col-span-8 flex flex-col justify-between gap-3.5 min-h-0">
+                                             <div className="col-span-8 flex flex-col justify-between gap-3 min-h-0">
                                                {/* Top Card: Wide Deep Midnight Blue Gradient Glass Card */}
                                                <div 
                                                  onClick={() => setDeckSelection({ type: 'bento', id: 'bento-top-right' })}
-                                                 className={`flex-1 rounded-2xl border border-white/20 bg-gradient-to-r from-[#172554]/95 via-[#1e1b4b]/90 to-[#0f172a]/95 p-4 md:p-5 shadow-2xl backdrop-blur-xl flex items-center relative overflow-hidden transition-all cursor-pointer ${
+                                                 className={`flex-1 rounded-2xl border border-white/20 bg-gradient-to-r from-[#172554]/95 via-[#1e1b4b]/90 to-[#0f172a]/95 p-3.5 md:p-4 shadow-xl backdrop-blur-xl flex items-center relative overflow-hidden transition-all cursor-pointer ${
                                                    deckSelection.type === 'bento' && deckSelection.id === 'bento-top-right'
                                                      ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30'
                                                      : 'hover:border-cyan-400/50'
@@ -49888,18 +49904,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                    suppressContentEditableWarning
                                                    onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'introCard1Text', e.currentTarget.textContent || '')}
                                                    style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                   className="text-[12px] md:text-[13px] leading-[1.55] font-normal text-slate-100 !text-slate-100 tracking-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans select-text"
+                                                   className="text-[11.5px] md:text-[12.5px] leading-[1.45] font-normal text-slate-100 !text-slate-100 tracking-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans select-text"
                                                  >
                                                    {activeDeckSlide?.introCard1Text || "We're your dedicated partners in propelling startups toward success. With a blend of expertise and innovation, we offer comprehensive solutions tailored to meet the specific needs of each venture we work with. From strategic guidance to brand development and digital marketing, we're committed to empowering startups to thrive in competitive markets."}
                                                  </p>
                                                </div>
 
                                                {/* Bottom Row Split: Small Cybernetic Photo Card + Clean Collaborative Text Paragraph */}
-                                               <div className="h-[48%] grid grid-cols-12 gap-3.5 min-h-0">
+                                               <div className="h-[48%] grid grid-cols-12 gap-3 min-h-0">
                                                  {/* Sub-Card Left (Span 5): Cyber Mockup Photo Card */}
                                                  <div 
                                                    onClick={() => setDeckSelection({ type: 'bento', id: 'bento-sub-photo' })}
-                                                   className={`col-span-5 rounded-2xl overflow-hidden border border-white/20 bg-black/70 relative group/sub shadow-xl flex items-center justify-center transition-all cursor-pointer ${
+                                                   className={`col-span-5 rounded-2xl overflow-hidden border border-white/20 bg-black/70 relative group/sub shadow-lg flex items-center justify-center transition-all cursor-pointer ${
                                                      deckSelection.type === 'bento' && deckSelection.id === 'bento-sub-photo'
                                                        ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30'
                                                        : 'hover:border-purple-400/50'
@@ -49911,7 +49927,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      className="w-full h-full object-cover transition-transform duration-500 group-hover/sub:scale-105"
                                                    />
                                                    {/* Hover Actions */}
-                                                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/sub:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
+                                                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/sub:opacity-100 transition-opacity flex items-center justify-center gap-1 p-1">
                                                      <button
                                                        type="button"
                                                        onClick={(e) => {
@@ -49919,7 +49935,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                          const url = prompt('Enter image URL for Secondary Card:', activeDeckSlide?.introSubImg || '');
                                                          if (url) updateDeckSlideField(activeDeckSlide?.id, 'introSubImg', url);
                                                        }}
-                                                       className="px-2 py-0.5 rounded bg-purple-500 text-white text-[10px] font-bold shadow hover:bg-purple-600 flex items-center gap-1 cursor-pointer"
+                                                       className="px-2 py-0.5 rounded bg-purple-500 text-white text-[9.5px] font-bold shadow hover:bg-purple-600 flex items-center gap-1 cursor-pointer"
                                                      >
                                                        <Sparkles size={10} /> Replace
                                                      </button>
@@ -49930,7 +49946,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                          updateDeckSlideField(activeDeckSlide?.id, 'introSubImg', null);
                                                          showToast('Photo cleared');
                                                        }}
-                                                       className="px-2 py-0.5 rounded bg-rose-500 text-white text-[10px] font-bold shadow hover:bg-rose-600 flex items-center gap-1 cursor-pointer"
+                                                       className="px-2 py-0.5 rounded bg-rose-500 text-white text-[9.5px] font-bold shadow hover:bg-rose-600 flex items-center gap-1 cursor-pointer"
                                                      >
                                                        <Trash2 size={10} /> Clear
                                                      </button>
@@ -49938,13 +49954,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  </div>
 
                                                  {/* Sub-Card Right (Span 7): Open Collaborative Approach Text */}
-                                                 <div className="col-span-7 flex flex-col justify-center pr-2">
+                                                 <div className="col-span-7 flex flex-col justify-center pr-1">
                                                    <p 
                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                      suppressContentEditableWarning
                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'introCard2Text', e.currentTarget.textContent || '')}
                                                      style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                     className="text-[11.5px] md:text-[12.5px] leading-[1.5] font-normal text-slate-300 !text-slate-300 tracking-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans select-text"
+                                                     className="text-[11px] md:text-[12px] leading-[1.45] font-normal text-slate-300 !text-slate-300 tracking-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans select-text"
                                                    >
                                                      {activeDeckSlide?.introCard2Text || "Our collaborative approach ensures that we're not just service providers but invested advocates for your growth. Let us be the catalyst for your startup's journey, guiding you towards achieving your goals and beyond."}
                                                    </p>
@@ -49954,7 +49970,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            </div>
 
                                            {/* Footer Anchor: Company Name in Italics on Bottom-Right */}
-                                           <div className="flex items-center justify-end pointer-events-auto select-auto z-20 pt-1 pr-1">
+                                           <div className="flex items-center justify-end pointer-events-auto select-auto z-20 pt-1 pr-1 mt-auto">
                                              <div 
                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                suppressContentEditableWarning
@@ -49963,7 +49979,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  showToast('Footer saved');
                                                }}
                                                style={{ color: "#94a3b8", caretColor: "#00f0ff" }}
-                                               className="text-[12px] italic font-normal tracking-wide text-slate-400 !text-slate-400 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 rounded px-1 cursor-text select-text"
+                                               className="text-[11.5px] italic font-normal tracking-wide text-slate-400 !text-slate-400 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 rounded px-1 cursor-text select-text"
                                              >
                                                {activeDeckSlide?.footer || 'Ingoude Company'}
                                              </div>
