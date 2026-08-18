@@ -50884,8 +50884,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 position: 'absolute',
                                                 top: -15,
                                                 right: -10,
-                                                width: activeDeckSlide?.teamNeonWave_width ? `${activeDeckSlide.teamNeonWave_width}px` : '300px',
-                                                height: activeDeckSlide?.teamNeonWave_height ? `${activeDeckSlide.teamNeonWave_height}px` : '150px',
+                                                width: activeDeckSlide?.teamNeonWave_width ? `${activeDeckSlide.teamNeonWave_width}px` : '280px',
+                                                height: activeDeckSlide?.teamNeonWave_height ? `${activeDeckSlide.teamNeonWave_height}px` : '140px',
                                                 transform: `translate(${activeDeckSlide?.teamNeonWave_posX || 0}px, ${activeDeckSlide?.teamNeonWave_posY || 0}px)`,
                                                 transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
                                                 pointerEvents: 'auto',
@@ -50894,7 +50894,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               }}
                                               className={`overflow-visible select-none group/teamneon ${deckSelection.type === 'vector' && deckSelection.id === 'team-neon-wave' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
                                             >
-                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 300 150" fill="none">
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 280 140" fill="none">
                                                 <defs>
                                                   <linearGradient id="teamWaveGrad1" x1="100%" y1="0%" x2="0%" y2="100%">
                                                     <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.95" />
@@ -50906,9 +50906,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                                                   </filter>
                                                 </defs>
-                                                <path d="M300,10 C240,20 180,120 40,70" stroke="url(#teamWaveGrad1)" strokeWidth="4" fill="none" opacity="0.85" filter="url(#teamWaveGlow)" />
-                                                <path d="M300,20 C245,28 185,128 45,78" stroke="#00f0ff" strokeWidth="2" fill="none" opacity="0.9" />
-                                                <path d="M300,30 C250,38 190,135 50,85" stroke="#c084fc" strokeWidth="1.2" fill="none" opacity="0.6" strokeDasharray="5 3" />
+                                                <path d="M280,10 C220,20 160,110 30,60" stroke="url(#teamWaveGrad1)" strokeWidth="4" fill="none" opacity="0.85" filter="url(#teamWaveGlow)" />
+                                                <path d="M280,20 C225,28 165,118 35,68" stroke="#00f0ff" strokeWidth="2" fill="none" opacity="0.9" />
+                                                <path d="M280,30 C230,38 170,125 40,75" stroke="#c084fc" strokeWidth="1.2" fill="none" opacity="0.6" strokeDasharray="5 3" />
                                               </svg>
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'team-neon-wave' && (
@@ -50922,7 +50922,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             </div>
 
                                             {/* Top-Left Headline & Narrative Block */}
-                                            <div className="flex flex-col gap-0.5 mb-1.5 z-20 pointer-events-auto max-w-[580px]">
+                                            <div className="flex flex-col gap-0.5 mb-1 z-20 pointer-events-auto max-w-[580px]">
                                               {/* Headline */}
                                               <div
                                                 onPointerDown={(e) => {
@@ -50952,7 +50952,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   suppressContentEditableWarning
                                                   onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                   style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                  className="text-[24px] md:text-[28px] font-[900] tracking-tight text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none w-full break-words"
+                                                  className="text-[22px] md:text-[27px] font-[900] tracking-tight text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none w-full break-words"
                                                 >
                                                   {activeDeckSlide?.headline || 'MEET THE TEAM'}
                                                 </h1>
@@ -50996,15 +50996,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   suppressContentEditableWarning
                                                   onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'teamSub', e.currentTarget.textContent || '')}
                                                   style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                  className="text-[9px] md:text-[10px] text-slate-300 font-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text w-full select-text"
+                                                  className="text-[8.5px] md:text-[9.5px] text-slate-300 font-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text w-full select-text"
                                                 >
                                                   {activeDeckSlide?.teamSub || 'Thank you for your time! Reach out to us for questions.'}
                                                 </p>
                                               </div>
                                             </div>
 
-                                            {/* Main Stage: 2x2 Grid of Glassmorphic Executive Member Bento Cards */}
-                                            <div className="flex-1 grid grid-cols-2 gap-3 md:gap-4 w-full pointer-events-auto z-20 min-h-0 items-stretch py-1">
+                                            {/* Main Stage: 2x2 Grid of Sleek Horizontal Executive Bento Cards */}
+                                            <div className="flex-1 grid grid-cols-2 gap-3 md:gap-3.5 w-full pointer-events-auto z-20 min-h-0 items-center py-1">
                                               {[
                                                 {
                                                   id: 'team-card-1',
@@ -51095,16 +51095,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       background: curBg,
                                                       borderRadius: curShape,
                                                       border: '1.2px solid rgba(255, 255, 255, 0.45)',
-                                                      boxShadow: '0 10px 28px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.35)',
+                                                      boxShadow: '0 8px 24px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.35)',
                                                       backdropFilter: 'blur(12px)',
                                                       WebkitBackdropFilter: 'blur(12px)',
                                                       touchAction: 'none',
                                                       cursor: 'grab'
                                                     }}
-                                                    className={`flex items-center gap-3.5 p-2.5 md:p-3 rounded-2xl relative group/card select-none min-w-0 transition-all ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : 'hover:border-white/70 z-20'}`}
+                                                    className={`flex items-center gap-3 md:gap-3.5 p-2 md:p-2.5 rounded-2xl relative group/card select-none min-w-0 transition-all ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : 'hover:border-white/70 z-20'}`}
                                                   >
-                                                    {/* Member Photo Avatar */}
-                                                    <div className="w-13 h-13 md:w-15 md:h-15 rounded-xl overflow-hidden shrink-0 border border-white/40 shadow-md relative group/photo">
+                                                    {/* Member Photo Avatar - Fixed Aspect Ratio Thumbnail */}
+                                                    <div className="w-[52px] h-[52px] md:w-[60px] md:h-[60px] rounded-xl overflow-hidden shrink-0 border border-white/40 shadow-md relative group/photo">
                                                       <img
                                                         src={curPhoto}
                                                         alt={curName}
@@ -51114,13 +51114,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     </div>
 
                                                     {/* Member Name & Role */}
-                                                    <div className="flex-1 flex flex-col justify-center min-w-0">
+                                                    <div className="flex-1 flex flex-col justify-center min-w-0 pr-1">
                                                       <span
                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, mItem.nameKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                        className="text-[11.5px] md:text-[13px] font-[900] uppercase tracking-wide text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text font-sans leading-tight truncate"
+                                                        className="text-[11px] md:text-[12.5px] font-[900] uppercase tracking-wide text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text font-sans leading-tight truncate"
                                                       >
                                                         {curName}
                                                       </span>
@@ -51129,7 +51129,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, mItem.roleKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                        className="text-[9.5px] md:text-[10.5px] italic text-slate-300 font-serif leading-tight outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text truncate mt-0.5"
+                                                        className="text-[8.5px] md:text-[9.5px] italic text-slate-300 font-serif leading-tight outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text truncate mt-1"
                                                       >
                                                         {curRole}
                                                       </span>
@@ -51221,19 +51221,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 transition: deckBentoDrag.isDragging ? 'none' : 'transform 120ms ease-out',
                                                 touchAction: 'none'
                                               }}
-                                              className={`flex items-center justify-around w-full pt-1.5 pb-0.5 z-20 pointer-events-auto relative group/contact rounded-xl cursor-grab active:cursor-grabbing ${deckSelection.type === 'bento' && deckSelection.id === 'team-contact-bar' ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : ''}`}
+                                              className={`flex items-center justify-around w-full pt-1 pb-0.5 z-20 pointer-events-auto relative group/contact rounded-xl cursor-grab active:cursor-grabbing ${deckSelection.type === 'bento' && deckSelection.id === 'team-contact-bar' ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : ''}`}
                                             >
                                               {/* Item 1: Website */}
                                               <div className="flex items-center gap-1.5">
-                                                <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-black shrink-0 shadow-sm">
-                                                  <Globe size={10} />
+                                                <div className="w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center text-black shrink-0 shadow-sm">
+                                                  <Globe size={9} />
                                                 </div>
                                                 <span
                                                   contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                   suppressContentEditableWarning
                                                   onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'contactWeb', e.currentTarget.textContent || '')}
                                                   style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                  className="text-[8.5px] md:text-[9.5px] text-slate-300 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
+                                                  className="text-[8px] md:text-[9px] text-slate-300 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
                                                 >
                                                   {activeDeckSlide?.contactWeb || 'www.reallygreatsite.com'}
                                                 </span>
@@ -51241,15 +51241,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                               {/* Item 2: Email */}
                                               <div className="flex items-center gap-1.5">
-                                                <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-black shrink-0 shadow-sm">
-                                                  <Mail size={10} />
+                                                <div className="w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center text-black shrink-0 shadow-sm">
+                                                  <Mail size={9} />
                                                 </div>
                                                 <span
                                                   contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                   suppressContentEditableWarning
                                                   onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'contactEmail', e.currentTarget.textContent || '')}
                                                   style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                  className="text-[8.5px] md:text-[9.5px] text-slate-300 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
+                                                  className="text-[8px] md:text-[9px] text-slate-300 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
                                                 >
                                                   {activeDeckSlide?.contactEmail || 'hello@reallygreatsite.com'}
                                                 </span>
@@ -51257,15 +51257,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                               {/* Item 3: Phone */}
                                               <div className="flex items-center gap-1.5">
-                                                <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-black shrink-0 shadow-sm">
-                                                  <Phone size={10} />
+                                                <div className="w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center text-black shrink-0 shadow-sm">
+                                                  <Phone size={9} />
                                                 </div>
                                                 <span
                                                   contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                   suppressContentEditableWarning
                                                   onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'contactPhone', e.currentTarget.textContent || '')}
                                                   style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                  className="text-[8.5px] md:text-[9.5px] text-slate-300 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
+                                                  className="text-[8px] md:text-[9px] text-slate-300 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
                                                 >
                                                   {activeDeckSlide?.contactPhone || '+123-456-7890'}
                                                 </span>
