@@ -9562,19 +9562,19 @@ const DEFAULT_DECK_SLIDES = [
     layoutStyle: 'Startup Timeline',
     timeline1Year: '2021',
     timeline1Desc: 'In our first year, we successfully launched a new product/service, received positive feedback from early users, and formed partnerships with key industry players.',
-    timeline1Bg: 'linear-gradient(90deg, rgba(14,18,36,0.88) 0%, rgba(8,12,28,0.95) 100%)',
+    timeline1Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
     timeline1Shape: '14px',
     timeline2Year: '2023',
     timeline2Desc: 'We expanded into new markets, improved operational efficiency, and saw an increase in customer satisfaction.',
-    timeline2Bg: 'linear-gradient(90deg, rgba(14,18,36,0.88) 0%, rgba(8,12,28,0.95) 100%)',
+    timeline2Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
     timeline2Shape: '14px',
     timeline3Year: '2025',
     timeline3Desc: 'We secured funding for growth, refined our offerings based on customer feedback, and formed strategic partnerships.',
-    timeline3Bg: 'linear-gradient(90deg, rgba(14,18,36,0.88) 0%, rgba(8,12,28,0.95) 100%)',
+    timeline3Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
     timeline3Shape: '14px',
     timeline4Year: 'PRESENT',
     timeline4Desc: 'We achieved profitability, expanded our product line, and strengthened our brand reputation through positive customer feedback.',
-    timeline4Bg: 'linear-gradient(90deg, rgba(157,120,205,0.88) 0%, rgba(59,92,184,0.9) 100%)',
+    timeline4Bg: 'linear-gradient(90deg, rgba(165,130,215,0.95) 0%, rgba(115,85,200,0.95) 35%, rgba(55,80,185,0.95) 75%, rgba(25,35,120,0.98) 100%)',
     timeline4Shape: '14px',
     motionCue: 'Vertical Timeline Cascade',
     speakerNotes: 'Highlight historical milestones from initial 2021 product launch, 2023 expansion, 2025 growth round, leading to present profitability.',
@@ -50788,7 +50788,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               )}
                                             </div>
 
-                                            {/* Far-Left Vertical Headline Block: ACCOMPLISHMENTS DATE */}
+                                            {/* Far-Left Vertical Headline Block: Upright Letter Stacking ACCOMPLISHMENTS DATE */}
                                             <div className="flex flex-col justify-center items-center h-full shrink-0 z-20 pointer-events-auto pr-1">
                                               <div
                                                 onPointerDown={(e) => {
@@ -50817,28 +50817,30 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   <span
                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                     suppressContentEditableWarning
-                                                    onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
+                                                    onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent?.replace(/\s+/g, '') || '')}
                                                     style={{
                                                       color: "#ffffff",
                                                       caretColor: "#00f0ff",
                                                       writingMode: 'vertical-rl',
-                                                      transform: 'rotate(180deg)'
+                                                      textOrientation: 'upright',
+                                                      letterSpacing: '0.12em'
                                                     }}
-                                                    className="text-[17px] md:text-[21px] font-[900] tracking-[0.16em] text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none my-1"
+                                                    className="text-[12px] md:text-[14px] font-[900] text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 cursor-text font-sans select-text leading-none my-0.5"
                                                   >
                                                     {activeDeckSlide?.headline || 'ACCOMPLISHMENTS'}
                                                   </span>
                                                   <span
                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                     suppressContentEditableWarning
-                                                    onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'subHeadline', e.currentTarget.textContent || '')}
+                                                    onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'subHeadline', e.currentTarget.textContent?.replace(/\s+/g, '') || '')}
                                                     style={{
                                                       color: "#ffffff",
                                                       caretColor: "#00f0ff",
                                                       writingMode: 'vertical-rl',
-                                                      transform: 'rotate(180deg)'
+                                                      textOrientation: 'upright',
+                                                      letterSpacing: '0.12em'
                                                     }}
-                                                    className="text-[17px] md:text-[21px] font-[900] tracking-[0.16em] text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none mt-2"
+                                                    className="text-[12px] md:text-[14px] font-[900] text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 cursor-text font-sans select-text leading-none mt-2"
                                                   >
                                                     {activeDeckSlide?.subHeadline || 'DATE'}
                                                   </span>
@@ -50856,25 +50858,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             </div>
 
                                             {/* Central Vertical Laser Timeline Spine with 4 Luminous Sphere Nodes */}
-                                            <div className="flex flex-col items-center justify-around h-full relative z-20 pointer-events-auto py-2 shrink-0 px-1">
-                                              {/* Continuous Laser Line */}
-                                              <div className="absolute top-4 bottom-4 w-0.5 bg-gradient-to-b from-white/60 via-cyan-400/80 to-purple-500/80 shadow-[0_0_8px_rgba(0,240,255,0.6)]" />
+                                            <div className="flex flex-col items-center justify-around h-full relative z-20 pointer-events-auto py-1 shrink-0 px-1">
+                                              {/* Continuous Glowing Laser Line */}
+                                              <div className="absolute top-3 bottom-3 w-0.5 bg-gradient-to-b from-white/70 via-cyan-400 to-purple-500 shadow-[0_0_10px_rgba(0,240,255,0.8)]" />
                                               
                                               {/* 4 Node Spheres */}
                                               {[0, 1, 2, 3].map((sIdx) => (
                                                 <div
                                                   key={sIdx}
                                                   style={{
-                                                    boxShadow: '0 0 14px rgba(255,255,255,0.9), 0 0 24px rgba(0,240,255,0.7)',
-                                                    background: 'radial-gradient(circle at 35% 35%, #ffffff 0%, #e0e7ff 60%, #94a3b8 100%)'
+                                                    boxShadow: '0 0 16px rgba(0,240,255,0.9), 0 0 8px rgba(255,255,255,0.95)',
+                                                    background: '#ffffff'
                                                   }}
-                                                  className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-white relative z-10 shrink-0 transition-transform hover:scale-125"
+                                                  className="w-5.5 h-5.5 md:w-6.5 md:h-6.5 rounded-full border-2 border-white relative z-10 shrink-0 transition-transform hover:scale-125"
                                                 />
                                               ))}
                                             </div>
 
-                                            {/* Right Column: 4 Stacked Horizontal Milestone Bento Cards */}
-                                            <div className="flex-1 flex flex-col justify-between h-full min-h-0 gap-2.5 z-20 pointer-events-auto py-0.5">
+                                            {/* Right Column: 4 Stacked Horizontal Milestone Bento Cards with Calibrated Mauve-to-Blue Gradients */}
+                                            <div className="flex-1 flex flex-col justify-between h-full min-h-0 gap-2 md:gap-2.5 z-20 pointer-events-auto py-0.5">
                                               {[
                                                 {
                                                   id: 'timeline-card-1',
@@ -50885,7 +50887,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   shapeKey: 'timeline1Shape',
                                                   defYear: '2021',
                                                   defDesc: 'In our first year, we successfully launched a new product/service, received positive feedback from early users, and formed partnerships with key industry players.',
-                                                  defBg: 'linear-gradient(90deg, rgba(14,18,36,0.88) 0%, rgba(8,12,28,0.95) 100%)',
+                                                  defBg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
                                                   isHighlighted: false
                                                 },
                                                 {
@@ -50897,7 +50899,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   shapeKey: 'timeline2Shape',
                                                   defYear: '2023',
                                                   defDesc: 'We expanded into new markets, improved operational efficiency, and saw an increase in customer satisfaction.',
-                                                  defBg: 'linear-gradient(90deg, rgba(14,18,36,0.88) 0%, rgba(8,12,28,0.95) 100%)',
+                                                  defBg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
                                                   isHighlighted: false
                                                 },
                                                 {
@@ -50909,7 +50911,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   shapeKey: 'timeline3Shape',
                                                   defYear: '2025',
                                                   defDesc: 'We secured funding for growth, refined our offerings based on customer feedback, and formed strategic partnerships.',
-                                                  defBg: 'linear-gradient(90deg, rgba(14,18,36,0.88) 0%, rgba(8,12,28,0.95) 100%)',
+                                                  defBg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
                                                   isHighlighted: false
                                                 },
                                                 {
@@ -50921,7 +50923,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   shapeKey: 'timeline4Shape',
                                                   defYear: 'PRESENT',
                                                   defDesc: 'We achieved profitability, expanded our product line, and strengthened our brand reputation through positive customer feedback.',
-                                                  defBg: 'linear-gradient(90deg, rgba(157,120,205,0.88) 0%, rgba(59,92,184,0.9) 100%)',
+                                                  defBg: 'linear-gradient(90deg, rgba(165,130,215,0.95) 0%, rgba(115,85,200,0.95) 35%, rgba(55,80,185,0.95) 75%, rgba(25,35,120,0.98) 100%)',
                                                   isHighlighted: true
                                                 }
                                               ].map((tItem, tIdx) => {
@@ -50959,10 +50961,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       height: itemH ? `${itemH}px` : undefined,
                                                       background: curBg,
                                                       borderRadius: curShape,
-                                                      border: tItem.isHighlighted ? '1.4px solid rgba(255, 255, 255, 0.85)' : '1.2px solid rgba(255, 255, 255, 0.4)',
+                                                      border: tItem.isHighlighted ? '1.4px solid rgba(255, 255, 255, 0.85)' : '1.2px solid rgba(255, 255, 255, 0.45)',
                                                       boxShadow: tItem.isHighlighted
-                                                        ? '0 12px 30px rgba(0,0,0,0.7), 0 0 20px rgba(157,120,205,0.3), inset 0 1px 1px rgba(255,255,255,0.45)'
-                                                        : '0 8px 24px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.25)',
+                                                        ? '0 12px 30px rgba(0,0,0,0.7), 0 0 20px rgba(165,130,215,0.35), inset 0 1px 1px rgba(255,255,255,0.5)'
+                                                        : '0 8px 24px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.35)',
                                                       backdropFilter: 'blur(12px)',
                                                       WebkitBackdropFilter: 'blur(12px)',
                                                       touchAction: 'none',
@@ -50977,7 +50979,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, tItem.yearKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                        className="text-[11px] md:text-[12.5px] font-[900] uppercase tracking-wide text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text font-sans leading-tight"
+                                                        className="text-[10.5px] md:text-[12px] font-[900] uppercase tracking-wide text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text font-sans leading-tight"
                                                       >
                                                         {curYear}
                                                       </span>
@@ -50990,7 +50992,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, tItem.descKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#e2e8f0", caretColor: "#00f0ff" }}
-                                                        className="text-[7.5px] md:text-[8.5px] text-slate-200 font-normal leading-[1.3] outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text w-full break-words"
+                                                        className="text-[7px] md:text-[8px] text-slate-200 font-normal leading-[1.25] outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text w-full break-words"
                                                       >
                                                         {curDesc}
                                                       </p>
@@ -51049,7 +51051,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + tItem.cardKey }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
