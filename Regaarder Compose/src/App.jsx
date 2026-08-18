@@ -12413,6 +12413,7 @@ const DEFAULT_DECK_SLIDES = [
   const [deckResizeDrag, setDeckResizeDrag] = useState({ isResizing: false, handle: null, startX: 0, startY: 0, initW: 0, initH: 0, initX: 0, initY: 0, target: null });
   const [deckBadgeDrag, setDeckBadgeDrag] = useState({ isDragging: false, badgeId: null, startX: 0, startY: 0, origX: 0, origY: 0 });
   const [deckLineDrag, setDeckLineDrag] = useState({ isDragging: false, startY: 0, origY: 0 });
+  const [deckBentoDrag, setDeckBentoDrag] = useState({ isDragging: false, cardId: null, startX: 0, startY: 0, origX: 0, origY: 0 });
   const [deckFloatingMenuOpen, setDeckFloatingMenuOpen] = useState(null);
   // ── CLIENT-SIDE RASTER TO VECTOR (JPG/PNG to SVG) TRACER ENGINE ──
   const [vectorWaveSearch, setVectorWaveSearch] = useState('');
@@ -31650,6 +31651,29 @@ Respond with a JSON array of slide objects matching the schema.`;
     }));
   };
 
+  
+  // Bento card dragging lifecycle listener
+  useEffect(() => {
+    if (!deckBentoDrag.isDragging || !deckBentoDrag.cardId) return;
+    const handlePointerMove = (e) => {
+      const dx = e.clientX - deckBentoDrag.startX;
+      const dy = e.clientY - deckBentoDrag.startY;
+      const nextX = Math.round(deckBentoDrag.origX + dx);
+      const nextY = Math.round(deckBentoDrag.origY + dy);
+      updateDeckSlideField(activeDeckSlide?.id, `${deckBentoDrag.cardId}_posX`, nextX);
+      updateDeckSlideField(activeDeckSlide?.id, `${deckBentoDrag.cardId}_posY`, nextY);
+    };
+    const handlePointerUp = () => {
+      setDeckBentoDrag((prev) => ({ ...prev, isDragging: false, cardId: null }));
+    };
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [deckBentoDrag, activeDeckSlide?.id]);
+
   // Pill badge dragging lifecycle listener
   useEffect(() => {
     if (!deckPillDrag.isDragging) return;
@@ -31708,6 +31732,12 @@ Respond with a JSON array of slide objects matching the schema.`;
         updateDeckSlideField(activeDeckSlide?.id, 'pillPosX', Math.round(newX));
         updateDeckSlideField(activeDeckSlide?.id, 'pillPosY', Math.round(newY));
       }
+      } else if (target && target.startsWith('bento-')) {
+        const cardKey = target.replace('bento-', '');
+        updateDeckSlideField(activeDeckSlide?.id, `${cardKey}_width`, Math.round(newW));
+        updateDeckSlideField(activeDeckSlide?.id, `${cardKey}_height`, Math.round(newH));
+        updateDeckSlideField(activeDeckSlide?.id, `${cardKey}_posX`, Math.round(newX));
+        updateDeckSlideField(activeDeckSlide?.id, `${cardKey}_posY`, Math.round(newY));
     };
     const handlePointerUp = () => {
       setDeckResizeDrag((prev) => ({ ...prev, isResizing: false }));
@@ -50033,13 +50063,32 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
                                           </div>
                                         </div>
-                                      ) : layout === "Startup Problem Statement" || layout === "Startup Problem" ? (
-                                         /* ── STARTUP PROBLEM STATEMENT TEMPLATE (PIXEL-PERFECT REFINED SLIDE 4) ── */
+                                      ) : layout === "Startup Problem Statement" || layout === "Startup Problem" || activeDeckSlide?.title === "Problem Statement" || layout === "Problem Statement" ? (
+                                         /* ── STARTUP PROBLEM STATEMENT TEMPLATE (INTERACTIVE DRAGGABLE CARDS) ── */
                                          <div className="flex flex-col justify-center h-full w-full relative z-10 pointer-events-none select-none px-4 pt-1 pb-3 md:px-7 md:pb-4">
-                                           {/* Main 2-Column Split: Left Big Headline (Col-Span 5) + Right 3 Vertical Cards (Col-Span 7) */}
+                                           {/* Main 2-Column Split */}
                                            <div className="flex-1 grid grid-cols-12 gap-6 w-full pointer-events-auto z-20 min-h-0 max-h-[76%] items-center my-auto">
-                                             {/* Left Column (Span 4.5): 2-Line Bold Headline with generous width to prevent clipping the T */}
-                                             <div className="col-span-5 flex flex-col justify-center pl-1 select-auto">
+                                             {/* Left Column: Draggable Title Heading */}
+                                             <div 
+                                               onPointerDown={(e) => {
+                                                 if (e.target.getAttribute('contenteditable')) return;
+                                                 e.stopPropagation();
+                                                 setDeckSelection({ type: 'text', id: 'title-heading' });
+                                                 setDeckBentoDrag({
+                                                   isDragging: true,
+                                                   cardId: 'titleHeading',
+                                                   startX: e.clientX,
+                                                   startY: e.clientY,
+                                                   origX: activeDeckSlide?.titleHeading_posX || 0,
+                                                   origY: activeDeckSlide?.titleHeading_posY || 0
+                                                 });
+                                               }}
+                                               style={{
+                                                 transform: `translate(${activeDeckSlide?.titleHeading_posX || 0}px, ${activeDeckSlide?.titleHeading_posY || 0}px)`,
+                                                 transition: deckBentoDrag.isDragging ? 'none' : 'transform 120ms ease-out'
+                                               }}
+                                               className="col-span-5 flex flex-col justify-center pl-1 select-auto cursor-grab active:cursor-grabbing group/title"
+                                             >
                                                <h1
                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                  suppressContentEditableWarning
@@ -50062,16 +50111,29 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                </h1>
                                              </div>
 
-                                             {/* Right Column (Span 7): 3 Vertical Pill-Card Containers with Crisp 3D Glass Depth */}
+                                             {/* Right Column: 3 Draggable, Resizable Glassmorphic Cards */}
                                              <div className="col-span-7 grid grid-cols-3 gap-4 h-full min-h-0 py-1 items-stretch">
-                                               {/* Card 01 (Lavender -> Indigo Gradient Card with Crisp White Glass Depth Border) */}
+                                               {/* Card 01 */}
                                                {!activeDeckSlide?.card1Hidden && (
                                                  <div 
+                                                   onPointerDown={(e) => {
+                                                     if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                     e.stopPropagation();
+                                                     setDeckSelection({ type: 'bento', id: 'prob-card-1' });
+                                                     setDeckBentoDrag({
+                                                       isDragging: true,
+                                                       cardId: 'card1',
+                                                       startX: e.clientX,
+                                                       startY: e.clientY,
+                                                       origX: activeDeckSlide?.card1_posX || 0,
+                                                       origY: activeDeckSlide?.card1_posY || 0
+                                                     });
+                                                   }}
                                                    onClick={(e) => {
                                                      e.stopPropagation();
                                                      setDeckSelection({ type: 'bento', id: 'prob-card-1' });
                                                    }}
-                                                   className={`overflow-visible relative group flex flex-col items-center justify-start p-4 shadow-[0_16px_40px_rgba(0,0,0,0.6)] transition-all cursor-pointer ${
+                                                   className={`overflow-visible relative group flex flex-col items-center justify-start p-4 shadow-[0_16px_40px_rgba(0,0,0,0.6)] transition-all cursor-grab active:cursor-grabbing ${
                                                      deckSelection.type === 'bento' && deckSelection.id === 'prob-card-1'
                                                        ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(167,139,250,0.5)]'
                                                        : 'hover:border-white/60'
@@ -50080,16 +50142,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      background: activeDeckSlide?.card1Bg || 'linear-gradient(180deg, #A78BFA 0%, #6366F1 45%, #1E1B4B 100%)',
                                                      borderRadius: activeDeckSlide?.card1Radius || '18px',
                                                      border: activeDeckSlide?.card1Glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.9)' : activeDeckSlide?.card1Glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1.5px solid rgba(255, 255, 255, 0.45)',
-                                                     boxShadow: activeDeckSlide?.card1Glimmer === 'cyan' ? '0 0 25px rgba(0, 240, 255, 0.45), inset 0 0 15px rgba(0, 240, 255, 0.2)' : activeDeckSlide?.card1Glimmer === 'violet' ? '0 0 25px rgba(168, 85, 247, 0.45), inset 0 0 15px rgba(168, 85, 247, 0.2)' : '0 16px 40px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.4)'
+                                                     boxShadow: activeDeckSlide?.card1Glimmer === 'cyan' ? '0 0 25px rgba(0, 240, 255, 0.45), inset 0 0 15px rgba(0, 240, 255, 0.2)' : activeDeckSlide?.card1Glimmer === 'violet' ? '0 0 25px rgba(168, 85, 247, 0.45), inset 0 0 15px rgba(168, 85, 247, 0.2)' : '0 16px 40px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.4)',
+                                                     transform: `translate(${activeDeckSlide?.card1_posX || 0}px, ${activeDeckSlide?.card1_posY || 0}px)`,
+                                                     transition: deckBentoDrag.isDragging || deckResizeDrag.isResizing ? 'none' : 'transform 120ms ease-out'
                                                    }}
                                                  >
+                                                   {/* 4 Corner Resize Handles */}
+                                                   {deckSelection.type === 'bento' && deckSelection.id === 'prob-card-1' && (
+                                                     <>
+                                                       <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: e.currentTarget.parentElement.offsetWidth, initH: e.currentTarget.parentElement.offsetHeight, initX: activeDeckSlide?.card1_posX || 0, initY: activeDeckSlide?.card1_posY || 0, target: 'bento-card1' }); }} className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nwse-resize hover:scale-125" />
+                                                       <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: e.currentTarget.parentElement.offsetWidth, initH: e.currentTarget.parentElement.offsetHeight, initX: activeDeckSlide?.card1_posX || 0, initY: activeDeckSlide?.card1_posY || 0, target: 'bento-card1' }); }} className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nesw-resize hover:scale-125" />
+                                                       <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: e.currentTarget.parentElement.offsetWidth, initH: e.currentTarget.parentElement.offsetHeight, initX: activeDeckSlide?.card1_posX || 0, initY: activeDeckSlide?.card1_posY || 0, target: 'bento-card1' }); }} className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nesw-resize hover:scale-125" />
+                                                       <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: e.currentTarget.parentElement.offsetWidth, initH: e.currentTarget.parentElement.offsetHeight, initX: activeDeckSlide?.card1_posX || 0, initY: activeDeckSlide?.card1_posY || 0, target: 'bento-card1' }); }} className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nwse-resize hover:scale-125" />
+                                                     </>
+                                                   )}
+
                                                    {/* Floating Capsule for Card 1 */}
                                                    {deckSelection.type === 'bento' && deckSelection.id === 'prob-card-1' && (
                                                      <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
                                                        <Sparkles size={11} className="text-purple-400" />
                                                        <span>Card 01</span>
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
-                                                       {/* Glimmer Toggle */}
                                                        <button
                                                          type="button"
                                                          onClick={(e) => {
@@ -50099,12 +50172,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                            showToast(`Glimmer: ${nextGlimmer}`);
                                                          }}
                                                          className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1"
-                                                         title="Toggle Glimmer Luminous Edge"
+                                                         title="Toggle Glimmer Edge"
                                                        >
                                                          <Wand2 size={10} /> Glimmer
                                                        </button>
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
-                                                       {/* Color Picker */}
                                                        <button
                                                          type="button"
                                                          onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pCol1' ? null : 'pCol1'); }}
@@ -50120,7 +50192,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                          </div>
                                                        )}
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
-                                                       {/* Delete Card 1 */}
                                                        <button
                                                          type="button"
                                                          onClick={(e) => {
@@ -50137,7 +50208,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      </div>
                                                    )}
 
-                                                   {/* Big Number Header */}
                                                    <div className="text-center pt-1 pb-1">
                                                      <span 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -50150,7 +50220,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      </span>
                                                    </div>
 
-                                                   {/* Card Title */}
                                                    <div className="text-center mt-1 mb-2.5 px-1 min-h-[32px] flex items-center justify-center">
                                                      <h3 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -50163,7 +50232,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      </h3>
                                                    </div>
 
-                                                   {/* Card Paragraph: Natural Top Flow directly beneath title */}
                                                    <div className="text-center px-1 overflow-y-auto thin-scrollbar">
                                                      <p 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -50178,14 +50246,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  </div>
                                                )}
 
-                                               {/* Card 02 (Deep Frosted Indigo / Midnight Card with Crisp White Glass Depth Border) */}
+                                               {/* Card 02 */}
                                                {!activeDeckSlide?.card2Hidden && (
                                                  <div 
+                                                   onPointerDown={(e) => {
+                                                     if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                     e.stopPropagation();
+                                                     setDeckSelection({ type: 'bento', id: 'prob-card-2' });
+                                                     setDeckBentoDrag({
+                                                       isDragging: true,
+                                                       cardId: 'card2',
+                                                       startX: e.clientX,
+                                                       startY: e.clientY,
+                                                       origX: activeDeckSlide?.card2_posX || 0,
+                                                       origY: activeDeckSlide?.card2_posY || 0
+                                                     });
+                                                   }}
                                                    onClick={(e) => {
                                                      e.stopPropagation();
                                                      setDeckSelection({ type: 'bento', id: 'prob-card-2' });
                                                    }}
-                                                   className={`overflow-visible relative group flex flex-col items-center justify-start p-4 shadow-[0_16px_40px_rgba(0,0,0,0.6)] transition-all cursor-pointer backdrop-blur-xl ${
+                                                   className={`overflow-visible relative group flex flex-col items-center justify-start p-4 shadow-[0_16px_40px_rgba(0,0,0,0.6)] transition-all cursor-grab active:cursor-grabbing backdrop-blur-xl ${
                                                      deckSelection.type === 'bento' && deckSelection.id === 'prob-card-2'
                                                        ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(124,77,255,0.5)]'
                                                        : 'hover:border-white/60'
@@ -50194,16 +50275,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      background: activeDeckSlide?.card2Bg || 'linear-gradient(180deg, #2E2640 0%, #1E1B38 45%, #121829 100%)',
                                                      borderRadius: activeDeckSlide?.card2Radius || '18px',
                                                      border: activeDeckSlide?.card2Glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.9)' : activeDeckSlide?.card2Glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1.5px solid rgba(255, 255, 255, 0.35)',
-                                                     boxShadow: activeDeckSlide?.card2Glimmer === 'cyan' ? '0 0 25px rgba(0, 240, 255, 0.45), inset 0 0 15px rgba(0, 240, 255, 0.2)' : activeDeckSlide?.card2Glimmer === 'violet' ? '0 0 25px rgba(168, 85, 247, 0.45), inset 0 0 15px rgba(168, 85, 247, 0.2)' : '0 16px 40px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.3)'
+                                                     boxShadow: activeDeckSlide?.card2Glimmer === 'cyan' ? '0 0 25px rgba(0, 240, 255, 0.45), inset 0 0 15px rgba(0, 240, 255, 0.2)' : activeDeckSlide?.card2Glimmer === 'violet' ? '0 0 25px rgba(168, 85, 247, 0.45), inset 0 0 15px rgba(168, 85, 247, 0.2)' : '0 16px 40px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.3)',
+                                                     transform: `translate(${activeDeckSlide?.card2_posX || 0}px, ${activeDeckSlide?.card2_posY || 0}px)`,
+                                                     transition: deckBentoDrag.isDragging || deckResizeDrag.isResizing ? 'none' : 'transform 120ms ease-out'
                                                    }}
                                                  >
+                                                   {/* 4 Corner Resize Handles */}
+                                                   {deckSelection.type === 'bento' && deckSelection.id === 'prob-card-2' && (
+                                                     <>
+                                                       <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: e.currentTarget.parentElement.offsetWidth, initH: e.currentTarget.parentElement.offsetHeight, initX: activeDeckSlide?.card2_posX || 0, initY: activeDeckSlide?.card2_posY || 0, target: 'bento-card2' }); }} className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nwse-resize hover:scale-125" />
+                                                       <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: e.currentTarget.parentElement.offsetWidth, initH: e.currentTarget.parentElement.offsetHeight, initX: activeDeckSlide?.card2_posX || 0, initY: activeDeckSlide?.card2_posY || 0, target: 'bento-card2' }); }} className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nesw-resize hover:scale-125" />
+                                                       <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: e.currentTarget.parentElement.offsetWidth, initH: e.currentTarget.parentElement.offsetHeight, initX: activeDeckSlide?.card2_posX || 0, initY: activeDeckSlide?.card2_posY || 0, target: 'bento-card2' }); }} className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nesw-resize hover:scale-125" />
+                                                       <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: e.currentTarget.parentElement.offsetWidth, initH: e.currentTarget.parentElement.offsetHeight, initX: activeDeckSlide?.card2_posX || 0, initY: activeDeckSlide?.card2_posY || 0, target: 'bento-card2' }); }} className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nwse-resize hover:scale-125" />
+                                                     </>
+                                                   )}
+
                                                    {/* Floating Capsule for Card 2 */}
                                                    {deckSelection.type === 'bento' && deckSelection.id === 'prob-card-2' && (
                                                      <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
                                                        <Sparkles size={11} className="text-cyan-400" />
                                                        <span>Card 02</span>
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
-                                                       {/* Glimmer Toggle */}
                                                        <button
                                                          type="button"
                                                          onClick={(e) => {
@@ -50213,12 +50305,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                            showToast(`Glimmer: ${nextGlimmer}`);
                                                          }}
                                                          className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1"
-                                                         title="Toggle Glimmer Luminous Edge"
+                                                         title="Toggle Glimmer Edge"
                                                        >
                                                          <Wand2 size={10} /> Glimmer
                                                        </button>
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
-                                                       {/* Color Picker */}
                                                        <button
                                                          type="button"
                                                          onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pCol2' ? null : 'pCol2'); }}
@@ -50234,7 +50325,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                          </div>
                                                        )}
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
-                                                       {/* Delete Card 2 */}
                                                        <button
                                                          type="button"
                                                          onClick={(e) => {
@@ -50251,7 +50341,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      </div>
                                                    )}
 
-                                                   {/* Big Number Header */}
                                                    <div className="text-center pt-1 pb-1">
                                                      <span 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -50264,7 +50353,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      </span>
                                                    </div>
 
-                                                   {/* Card Title */}
                                                    <div className="text-center mt-1 mb-2.5 px-1 min-h-[32px] flex items-center justify-center">
                                                      <h3 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -50277,7 +50365,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      </h3>
                                                    </div>
 
-                                                   {/* Card Paragraph: Natural Top Flow directly beneath title */}
                                                    <div className="text-center px-1 overflow-y-auto thin-scrollbar">
                                                      <p 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -50292,14 +50379,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  </div>
                                                )}
 
-                                               {/* Card 03 (Deep Midnight Obsidian Card with Crisp White Glass Depth Border) */}
+                                               {/* Card 03 */}
                                                {!activeDeckSlide?.card3Hidden && (
                                                  <div 
+                                                   onPointerDown={(e) => {
+                                                     if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                     e.stopPropagation();
+                                                     setDeckSelection({ type: 'bento', id: 'prob-card-3' });
+                                                     setDeckBentoDrag({
+                                                       isDragging: true,
+                                                       cardId: 'card3',
+                                                       startX: e.clientX,
+                                                       startY: e.clientY,
+                                                       origX: activeDeckSlide?.card3_posX || 0,
+                                                       origY: activeDeckSlide?.card3_posY || 0
+                                                     });
+                                                   }}
                                                    onClick={(e) => {
                                                      e.stopPropagation();
                                                      setDeckSelection({ type: 'bento', id: 'prob-card-3' });
                                                    }}
-                                                   className={`overflow-visible relative group flex flex-col items-center justify-start p-4 shadow-[0_16px_40px_rgba(0,0,0,0.6)] transition-all cursor-pointer backdrop-blur-xl ${
+                                                   className={`overflow-visible relative group flex flex-col items-center justify-start p-4 shadow-[0_16px_40px_rgba(0,0,0,0.6)] transition-all cursor-grab active:cursor-grabbing backdrop-blur-xl ${
                                                      deckSelection.type === 'bento' && deckSelection.id === 'prob-card-3'
                                                        ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(99,102,241,0.5)]'
                                                        : 'hover:border-white/60'
@@ -50308,16 +50408,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      background: activeDeckSlide?.card3Bg || 'linear-gradient(180deg, #33263D 0%, #1C1A2E 45%, #0E1320 100%)',
                                                      borderRadius: activeDeckSlide?.card3Radius || '18px',
                                                      border: activeDeckSlide?.card3Glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.9)' : activeDeckSlide?.card3Glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1.5px solid rgba(255, 255, 255, 0.35)',
-                                                     boxShadow: activeDeckSlide?.card3Glimmer === 'cyan' ? '0 0 25px rgba(0, 240, 255, 0.45), inset 0 0 15px rgba(0, 240, 255, 0.2)' : activeDeckSlide?.card3Glimmer === 'violet' ? '0 0 25px rgba(168, 85, 247, 0.45), inset 0 0 15px rgba(168, 85, 247, 0.2)' : '0 16px 40px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.3)'
+                                                     boxShadow: activeDeckSlide?.card3Glimmer === 'cyan' ? '0 0 25px rgba(0, 240, 255, 0.45), inset 0 0 15px rgba(0, 240, 255, 0.2)' : activeDeckSlide?.card3Glimmer === 'violet' ? '0 0 25px rgba(168, 85, 247, 0.45), inset 0 0 15px rgba(168, 85, 247, 0.2)' : '0 16px 40px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.3)',
+                                                     transform: `translate(${activeDeckSlide?.card3_posX || 0}px, ${activeDeckSlide?.card3_posY || 0}px)`,
+                                                     transition: deckBentoDrag.isDragging || deckResizeDrag.isResizing ? 'none' : 'transform 120ms ease-out'
                                                    }}
                                                  >
+                                                   {/* 4 Corner Resize Handles */}
+                                                   {deckSelection.type === 'bento' && deckSelection.id === 'prob-card-3' && (
+                                                     <>
+                                                       <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: e.currentTarget.parentElement.offsetWidth, initH: e.currentTarget.parentElement.offsetHeight, initX: activeDeckSlide?.card3_posX || 0, initY: activeDeckSlide?.card3_posY || 0, target: 'bento-card3' }); }} className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nwse-resize hover:scale-125" />
+                                                       <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: e.currentTarget.parentElement.offsetWidth, initH: e.currentTarget.parentElement.offsetHeight, initX: activeDeckSlide?.card3_posX || 0, initY: activeDeckSlide?.card3_posY || 0, target: 'bento-card3' }); }} className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nesw-resize hover:scale-125" />
+                                                       <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: e.currentTarget.parentElement.offsetWidth, initH: e.currentTarget.parentElement.offsetHeight, initX: activeDeckSlide?.card3_posX || 0, initY: activeDeckSlide?.card3_posY || 0, target: 'bento-card3' }); }} className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nesw-resize hover:scale-125" />
+                                                       <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: e.currentTarget.parentElement.offsetWidth, initH: e.currentTarget.parentElement.offsetHeight, initX: activeDeckSlide?.card3_posX || 0, initY: activeDeckSlide?.card3_posY || 0, target: 'bento-card3' }); }} className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border border-[#7C4DFF] rounded-[2px] shadow-sm z-30 cursor-nwse-resize hover:scale-125" />
+                                                     </>
+                                                   )}
+
                                                    {/* Floating Capsule for Card 3 */}
                                                    {deckSelection.type === 'bento' && deckSelection.id === 'prob-card-3' && (
                                                      <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
                                                        <Sparkles size={11} className="text-violet-400" />
                                                        <span>Card 03</span>
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
-                                                       {/* Glimmer Toggle */}
                                                        <button
                                                          type="button"
                                                          onClick={(e) => {
@@ -50327,12 +50438,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                            showToast(`Glimmer: ${nextGlimmer}`);
                                                          }}
                                                          className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1"
-                                                         title="Toggle Glimmer Luminous Edge"
+                                                         title="Toggle Glimmer Edge"
                                                        >
                                                          <Wand2 size={10} /> Glimmer
                                                        </button>
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
-                                                       {/* Color Picker */}
                                                        <button
                                                          type="button"
                                                          onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pCol3' ? null : 'pCol3'); }}
@@ -50348,7 +50458,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                          </div>
                                                        )}
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
-                                                       {/* Delete Card 3 */}
                                                        <button
                                                          type="button"
                                                          onClick={(e) => {
@@ -50365,7 +50474,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      </div>
                                                    )}
 
-                                                   {/* Big Number Header */}
                                                    <div className="text-center pt-1 pb-1">
                                                      <span 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -50378,7 +50486,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      </span>
                                                    </div>
 
-                                                   {/* Card Title */}
                                                    <div className="text-center mt-1 mb-2.5 px-1 min-h-[32px] flex items-center justify-center">
                                                      <h3 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -50391,7 +50498,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      </h3>
                                                    </div>
 
-                                                   {/* Card Paragraph: Natural Top Flow directly beneath title */}
                                                    <div className="text-center px-1 overflow-y-auto thin-scrollbar">
                                                      <p 
                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -50408,7 +50514,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                              </div>
                                            </div>
 
-                                           {/* Footer Anchor: Company Name in Italics on Bottom-Right */}
+                                           {/* Footer Anchor */}
                                            <div className="flex items-center justify-end pointer-events-auto select-auto z-20 pt-1 pr-1 mt-auto">
                                              <div 
                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
