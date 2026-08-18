@@ -491,6 +491,26 @@ const DECK_THEME_OPTIONS = [
 
 const DECK_LAYOUT_OPTIONS = [
   { 
+    key: "Startup Traction", 
+    name: "Startup Traction",
+    desc: 'Multi-series 5-point trend chart card, top-right orbital neon vortex & 3 metric percentage badge rows',
+    visualType: 'startup multi-series traction chart',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
+        <div className="w-3/5 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex flex-col justify-between p-0.5">
+          <div className="w-full h-px bg-cyan-400" />
+          <div className="w-full h-px bg-blue-400" />
+          <div className="w-full h-px bg-purple-400" />
+        </div>
+        <div className="w-2/5 h-full flex flex-col justify-between p-0.5">
+          <div className="w-full h-1 bg-indigo-600 rounded-xs" />
+          <div className="w-full h-1 bg-blue-600 rounded-xs" />
+          <div className="w-full h-1 bg-purple-600 rounded-xs" />
+        </div>
+      </div>
+    )
+  },
+  { 
     key: "Startup Key Advantages", 
     name: "Startup Key Advantages",
     desc: '4 ascending staircase glassmorphic cards with floating icon spheres & dual neon vortex curves',
@@ -9396,6 +9416,49 @@ const DEFAULT_DECK_SLIDES = [
     motionCue: 'Staircase Rise In',
     speakerNotes: 'Highlight the 4 core competitive pillars: Expert Team, Cutting-Edge Tech, Customer Focus, and Proven Success.',
     footer: 'ingoude Company'
+  },
+  {
+    id: 10,
+    section: 'Traction',
+    title: 'Traction & Growth',
+    tagline: 'Ingoude Company',
+    headline: 'TRACTION',
+    tractionDesc: 'This matrix provides a snapshot of various success metrics for our company, including revenue growth, customer satisfaction, market share, employee retention, innovation, and brand reputation.',
+    backgroundColor: '#05070B',
+    vectorWaveStyle: 'top-right-neon-vortex',
+    vectorColor1: '#00f0ff',
+    vectorColor2: '#a855f7',
+    designPresetKey: 'midnight-slate',
+    presetKey: 'midnight-slate',
+    accent: 'from-blue-500 via-indigo-500 to-cyan-400',
+    visualType: 'startup multi-series traction chart',
+    layoutStyle: 'Startup Traction',
+    chartType: 'line',
+    tractionChartBg: 'linear-gradient(180deg, rgba(38,28,64,0.75) 0%, rgba(18,16,40,0.9) 100%)',
+    series1Label: 'Series 1',
+    series2Label: 'Series 2',
+    series3Label: 'Series 3',
+    series1Color: '#cbd5e1',
+    series2Color: '#3b82f6',
+    series3Color: '#c084fc',
+    series1Data: [2, 12, 38, 30, 32],
+    series2Data: [12, 5, 20, 16, 48],
+    series3Data: [18, 30, 25, 40, 42],
+    metric1Val: '20%',
+    metric1Desc: 'Annual revenue growth',
+    metric1Bg: 'linear-gradient(180deg, #4f46e5 0%, #312e81 100%)',
+    metric1Shape: '12px',
+    metric2Val: '90%',
+    metric2Desc: 'Maintain customer satisfaction ratings',
+    metric2Bg: 'linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%)',
+    metric2Shape: '12px',
+    metric3Val: '15%',
+    metric3Desc: 'Market share in key segments',
+    metric3Bg: 'linear-gradient(180deg, #6366f1 0%, #3730a3 100%)',
+    metric3Shape: '12px',
+    motionCue: 'Chart Draw & Metric Cascade',
+    speakerNotes: 'Walk through historical performance trends across Series 1-3 leading to 20% annual revenue growth and 90% satisfaction.',
+    footer: 'ingoude Company'
   }
 ];
   const [deckSlidesData, setDeckSlidesData] = useState(DEFAULT_DECK_SLIDES);
@@ -12827,6 +12890,7 @@ const DEFAULT_DECK_SLIDES = [
   const [activePillGradPicker, setActivePillGradPicker] = useState(null);
   const [activePillShapePicker, setActivePillShapePicker] = useState(null);
   const [activeAdvIconPicker, setActiveAdvIconPicker] = useState(null);
+  const [activeTractionChartPicker, setActiveTractionChartPicker] = useState(false);
   const [activeMarketCardStylePicker, setActiveMarketCardStylePicker] = useState(false);
   // ── CLIENT-SIDE RASTER TO VECTOR (JPG/PNG to SVG) TRACER ENGINE ──
   const [vectorWaveSearch, setVectorWaveSearch] = useState('');
@@ -32217,6 +32281,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           !e.target.closest('.pill-grad-popover') &&
           !e.target.closest('.pill-shape-popover') &&
           !e.target.closest('.adv-icon-popover') &&
+          !e.target.closest('.traction-chart-popover') &&
           !e.target.closest('.market-card-popover') && !e.target.closest('.picker-trigger-btn')) {
         setActiveOrbColorPicker(null);
         setActivePresenterImgPicker(false);
@@ -32225,6 +32290,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         setActivePillGradPicker(null);
         setActivePillShapePicker(null);
         setActiveAdvIconPicker(null);
+        setActiveTractionChartPicker(false);
         setActiveMarketCardStylePicker(false);
       }
     };
@@ -50542,7 +50608,570 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
                                           </div>
                                         </div>
-                                      ) : layout === "Startup Key Advantages" || layout === "Startup Competitive Advantages" || layout === "Key Competitive Advantages" || activeDeckSlide?.title === "Key Competitive Advantages" || layout === "Competitive Advantages" || layout === "Advantages" ? (
+                                      ) : layout === "Startup Traction" || layout === "Startup Traction Metrics" || layout === "Traction & Growth" || activeDeckSlide?.title === "Traction & Growth" || layout === "Traction" ? (
+                                          /* ── STARTUP TRACTION TEMPLATE (REVERSE-ENGINEERED SLIDE 10) ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-2 md:px-8 md:pt-4 md:pb-2.5 overflow-hidden">
+                                            
+                                            {/* Top-Right Ambient Neon Orbital Vortex Vector Graphic */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'vector', id: 'traction-neon-vortex' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'tractionNeonVortex',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.tractionNeonVortex_posX || 0,
+                                                  origY: activeDeckSlide?.tractionNeonVortex_posY || 0
+                                                });
+                                              }}
+                                              style={{
+                                                position: 'absolute',
+                                                top: -15,
+                                                right: -10,
+                                                width: activeDeckSlide?.tractionNeonVortex_width ? `${activeDeckSlide.tractionNeonVortex_width}px` : '300px',
+                                                height: activeDeckSlide?.tractionNeonVortex_height ? `${activeDeckSlide.tractionNeonVortex_height}px` : '240px',
+                                                transform: `translate(${activeDeckSlide?.tractionNeonVortex_posX || 0}px, ${activeDeckSlide?.tractionNeonVortex_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                pointerEvents: 'auto',
+                                                cursor: 'grab',
+                                                zIndex: 4
+                                              }}
+                                              className={`overflow-visible select-none group/vortex ${deckSelection.type === 'vector' && deckSelection.id === 'traction-neon-vortex' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
+                                            >
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 300 240" fill="none">
+                                                <defs>
+                                                  <linearGradient id="tracVortexGrad1" x1="100%" y1="0%" x2="0%" y2="100%">
+                                                    <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.95" />
+                                                    <stop offset="40%" stopColor="#6366f1" stopOpacity="0.8" />
+                                                    <stop offset="80%" stopColor="#a855f7" stopOpacity="0.75" />
+                                                    <stop offset="100%" stopColor="#ec4899" stopOpacity="0.2" />
+                                                  </linearGradient>
+                                                  <linearGradient id="tracVortexGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.95" />
+                                                    <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.85" />
+                                                    <stop offset="100%" stopColor="#c084fc" stopOpacity="0.4" />
+                                                  </linearGradient>
+                                                  <filter id="tracGlow" x="-30%" y="-30%" width="160%" height="160%">
+                                                    <feGaussianBlur stdDeviation="6" result="blur" />
+                                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                                  </filter>
+                                                </defs>
+                                                {/* Orbital Loop Ribbon Paths */}
+                                                <path d="M260,0 C280,60 270,140 220,190 C170,240 90,230 40,180 C-10,130 10,50 70,20 C130,-10 210,20 250,80" stroke="url(#tracVortexGrad1)" strokeWidth="4.5" fill="none" opacity="0.85" filter="url(#tracGlow)" />
+                                                <path d="M268,10 C286,68 275,145 228,193 C180,241 102,232 54,183 C6,135 24,58 82,28 C140,-2 218,28 258,86" stroke="url(#tracVortexGrad2)" strokeWidth="2.5" fill="none" opacity="0.9" />
+                                                <path d="M250,25 C265,75 255,135 215,175 C175,215 110,208 70,168" stroke="#00f0ff" strokeWidth="1.5" fill="none" opacity="0.6" strokeDasharray="5 3" />
+                                              </svg>
+                                              {/* Drag Capsule */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'traction-neon-vortex' && (
+                                                <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'traction-neon-vortex' }); setDeckBentoDrag({ isDragging: true, cardId: 'tractionNeonVortex', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.tractionNeonVortex_posX || 0, origY: activeDeckSlide?.tractionNeonVortex_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <span>Orbital Neon Vortex</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { tractionNeonVortex_posX: 0, tractionNeonVortex_posY: 0, tractionNeonVortex_width: undefined, tractionNeonVortex_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Top-Left Headline & Narrative Paragraph Block */}
+                                            <div className="flex flex-col gap-1 mb-2 z-20 pointer-events-auto max-w-[580px]">
+                                              {/* Headline */}
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'text', id: 'traction-headline' });
+                                                  setDeckBentoDrag({
+                                                    isDragging: true,
+                                                    cardId: 'tractionHeadline',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    origX: activeDeckSlide?.tractionHeadline_posX || 0,
+                                                    origY: activeDeckSlide?.tractionHeadline_posY || 0
+                                                  });
+                                                }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.tractionHeadline_posX || 0}px, ${activeDeckSlide?.tractionHeadline_posY || 0}px)`,
+                                                  transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                  width: activeDeckSlide?.tractionHeadline_width ? `${activeDeckSlide.tractionHeadline_width}px` : undefined,
+                                                  height: activeDeckSlide?.tractionHeadline_height ? `${activeDeckSlide.tractionHeadline_height}px` : undefined,
+                                                  touchAction: 'none'
+                                                }}
+                                                className={`relative overflow-visible cursor-grab active:cursor-grabbing group/title z-30 mb-0.5 ${deckSelection.type === 'text' && deckSelection.id === 'traction-headline' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
+                                              >
+                                                <h1
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                  className="text-[24px] md:text-[30px] font-[900] tracking-tight text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none w-full break-words"
+                                                >
+                                                  {activeDeckSlide?.headline || 'TRACTION'}
+                                                </h1>
+                                                {/* Drag Capsule */}
+                                                {deckSelection.type === 'text' && deckSelection.id === 'traction-headline' && (
+                                                  <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'text', id: 'traction-headline' }); setDeckBentoDrag({ isDragging: true, cardId: 'tractionHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.tractionHeadline_posX || 0, origY: activeDeckSlide?.tractionHeadline_posY || 0 }); }} className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                    <Move size={11} className="text-violet-400" />
+                                                    <span>Headline</span>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { tractionHeadline_posX: 0, tractionHeadline_posY: 0, tractionHeadline_width: undefined, tractionHeadline_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                  </div>
+                                                )}
+                                              </div>
+
+                                              {/* Narrative Paragraph */}
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'text', id: 'traction-desc' });
+                                                  setDeckBentoDrag({
+                                                    isDragging: true,
+                                                    cardId: 'tractionDesc',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    origX: activeDeckSlide?.tractionDesc_posX || 0,
+                                                    origY: activeDeckSlide?.tractionDesc_posY || 0
+                                                  });
+                                                }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.tractionDesc_posX || 0}px, ${activeDeckSlide?.tractionDesc_posY || 0}px)`,
+                                                  transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                  width: activeDeckSlide?.tractionDesc_width ? `${activeDeckSlide.tractionDesc_width}px` : undefined,
+                                                  height: activeDeckSlide?.tractionDesc_height ? `${activeDeckSlide.tractionDesc_height}px` : undefined,
+                                                  touchAction: 'none'
+                                                }}
+                                                className={`relative overflow-visible cursor-grab active:cursor-grabbing group/desc z-30 ${deckSelection.type === 'text' && deckSelection.id === 'traction-desc' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
+                                              >
+                                                <p
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tractionDesc', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                  className="text-[8.5px] md:text-[9.5px] leading-[1.32] text-slate-300 font-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text w-full select-text"
+                                                >
+                                                  {activeDeckSlide?.tractionDesc || 'This matrix provides a snapshot of various success metrics for our company, including revenue growth, customer satisfaction, market share, employee retention, innovation, and brand reputation.'}
+                                                </p>
+                                              </div>
+                                            </div>
+
+                                            {/* Main Content Layout: Left Chart Card (8 cols) + Right 3 Metric Percentage Badges (4 cols) */}
+                                            <div className="flex-1 grid grid-cols-12 gap-5 md:gap-6 w-full pointer-events-auto z-20 min-h-0 items-stretch pb-1">
+                                              
+                                              {/* Left Column: Multi-Series 5-Point Interactive Chart Card */}
+                                              {(() => {
+                                                const s1Data = activeDeckSlide?.series1Data || [2, 12, 38, 30, 32];
+                                                const s2Data = activeDeckSlide?.series2Data || [12, 5, 20, 16, 48];
+                                                const s3Data = activeDeckSlide?.series3Data || [18, 30, 25, 40, 42];
+                                                const s1Color = activeDeckSlide?.series1Color || '#cbd5e1';
+                                                const s2Color = activeDeckSlide?.series2Color || '#3b82f6';
+                                                const s3Color = activeDeckSlide?.series3Color || '#c084fc';
+                                                const s1Label = activeDeckSlide?.series1Label || 'Series 1';
+                                                const s2Label = activeDeckSlide?.series2Label || 'Series 2';
+                                                const s3Label = activeDeckSlide?.series3Label || 'Series 3';
+                                                const chartType = activeDeckSlide?.chartType || 'line';
+                                                const maxVal = 50;
+
+                                                const xPoints = [40, 105, 170, 235, 300];
+                                                const calcY = (val) => Math.round(145 - (val / maxVal) * 120);
+
+                                                const makePath = (data) => data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${xPoints[i]},${calcY(d)}`).join(' ');
+                                                const makeAreaPath = (data) => `${makePath(data)} L 300,145 L 40,145 Z`;
+
+                                                return (
+                                                  <div
+                                                    onPointerDown={(e) => {
+                                                      if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn') || e.target.getAttribute('contenteditable')) return;
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'bento', id: 'traction-chart-card' });
+                                                      setDeckBentoDrag({
+                                                        isDragging: true,
+                                                        cardId: 'tractionChartCard',
+                                                        startX: e.clientX,
+                                                        startY: e.clientY,
+                                                        origX: activeDeckSlide?.tractionChartCard_posX || 0,
+                                                        origY: activeDeckSlide?.tractionChartCard_posY || 0
+                                                      });
+                                                    }}
+                                                    onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: 'traction-chart-card' }); }}
+                                                    style={{
+                                                      transform: `translate(${activeDeckSlide?.tractionChartCard_posX || 0}px, ${activeDeckSlide?.tractionChartCard_posY || 0}px)`,
+                                                      transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                      width: activeDeckSlide?.tractionChartCard_width ? `${activeDeckSlide.tractionChartCard_width}px` : undefined,
+                                                      height: activeDeckSlide?.tractionChartCard_height ? `${activeDeckSlide.tractionChartCard_height}px` : '100%',
+                                                      background: activeDeckSlide?.tractionChartBg || 'linear-gradient(180deg, rgba(38,28,64,0.75) 0%, rgba(18,16,40,0.9) 100%)',
+                                                      borderRadius: '18px',
+                                                      border: '1.2px solid rgba(255, 255, 255, 0.25)',
+                                                      boxShadow: '0 15px 35px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.2)',
+                                                      touchAction: 'none',
+                                                      cursor: 'grab'
+                                                    }}
+                                                    className={`col-span-8 flex flex-col justify-between p-3.5 rounded-2xl relative group/chart min-h-0 select-none ${deckSelection.type === 'bento' && deckSelection.id === 'traction-chart-card' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30' : ''}`}
+                                                  >
+                                                    {/* Chart Floating Capsule Menu */}
+                                                    {deckSelection.type === 'bento' && deckSelection.id === 'traction-chart-card' && (
+                                                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                        <LineChart size={11} className="text-cyan-400" />
+                                                        <span className="capitalize">{chartType} Trend Chart</span>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActiveTractionChartPicker(!activeTractionChartPicker);
+                                                          }}
+                                                          className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                          <Palette size={10} /> Chart Options
+                                                        </button>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onPointerDown={(e) => {
+                                                            e.stopPropagation();
+                                                            updateDeckSlideFields(activeDeckSlide?.id, {
+                                                              tractionChartCard_posX: 0,
+                                                              tractionChartCard_posY: 0,
+                                                              tractionChartCard_width: undefined,
+                                                              tractionChartCard_height: undefined
+                                                            });
+                                                          }}
+                                                          className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                          title="Reset Position"
+                                                        >
+                                                          <RotateCcw size={11} />
+                                                        </button>
+                                                      </div>
+                                                    )}
+
+                                                    {/* 8 Resize Handles for Chart */}
+                                                    {deckSelection.type === 'bento' && deckSelection.id === 'traction-chart-card' && (
+                                                      <>
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.tractionChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.tractionChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.tractionChartCard_posX || 0, initY: activeDeckSlide?.tractionChartCard_posY || 0, target: 'bento-tractionChartCard' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.tractionChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.tractionChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.tractionChartCard_posX || 0, initY: activeDeckSlide?.tractionChartCard_posY || 0, target: 'bento-tractionChartCard' }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.tractionChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.tractionChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.tractionChartCard_posX || 0, initY: activeDeckSlide?.tractionChartCard_posY || 0, target: 'bento-tractionChartCard' }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.tractionChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.tractionChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.tractionChartCard_posX || 0, initY: activeDeckSlide?.tractionChartCard_posY || 0, target: 'bento-tractionChartCard' }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.tractionChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.tractionChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.tractionChartCard_posX || 0, initY: activeDeckSlide?.tractionChartCard_posY || 0, target: 'bento-tractionChartCard' }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.tractionChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.tractionChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.tractionChartCard_posX || 0, initY: activeDeckSlide?.tractionChartCard_posY || 0, target: 'bento-tractionChartCard' }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.tractionChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.tractionChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.tractionChartCard_posX || 0, initY: activeDeckSlide?.tractionChartCard_posY || 0, target: 'bento-tractionChartCard' }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.tractionChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.tractionChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.tractionChartCard_posX || 0, initY: activeDeckSlide?.tractionChartCard_posY || 0, target: 'bento-tractionChartCard' }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                      </>
+                                                    )}
+
+                                                    {/* Top Legend */}
+                                                    <div className="flex items-center justify-center gap-4 px-1 mb-1">
+                                                      {[
+                                                        { labelKey: 'series1Label', label: s1Label, color: s1Color },
+                                                        { labelKey: 'series2Label', label: s2Label, color: s2Color },
+                                                        { labelKey: 'series3Label', label: s3Label, color: s3Color }
+                                                      ].map((leg, lIdx) => (
+                                                        <div key={lIdx} className="flex items-center gap-1.5">
+                                                          <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: leg.color }} />
+                                                          <span
+                                                            contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                            suppressContentEditableWarning
+                                                            onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, leg.labelKey, e.currentTarget.textContent || '')}
+                                                            style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                            className="text-[8.5px] md:text-[9.5px] text-slate-200 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text whitespace-nowrap"
+                                                          >
+                                                            {leg.label}
+                                                          </span>
+                                                        </div>
+                                                      ))}
+                                                    </div>
+
+                                                    {/* Chart Visualization Area: Y-Axis + SVG Grid & Lines + X-Axis */}
+                                                    <div className="flex-1 flex items-stretch gap-2 min-h-0 pt-1 pb-0.5 relative">
+                                                      
+                                                      {/* Y-Axis Scale Numbers */}
+                                                      <div className="flex flex-col justify-between items-end text-[7.5px] md:text-[8.5px] text-slate-400 font-mono pr-1 select-none shrink-0 py-0.5">
+                                                        <span>50</span>
+                                                        <span>40</span>
+                                                        <span>30</span>
+                                                        <span>20</span>
+                                                        <span>10</span>
+                                                        <span>0</span>
+                                                      </div>
+
+                                                      {/* SVG Chart Body with 6 Gridlines & 3 Multi-Series Lines */}
+                                                      <div className="flex-1 flex flex-col justify-between relative min-h-0">
+                                                        
+                                                        {/* Horizontal Gridlines */}
+                                                        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none py-1">
+                                                          <div className="w-full h-px bg-white/10" />
+                                                          <div className="w-full h-px bg-white/10" />
+                                                          <div className="w-full h-px bg-white/10" />
+                                                          <div className="w-full h-px bg-white/10" />
+                                                          <div className="w-full h-px bg-white/10" />
+                                                          <div className="w-full h-px bg-white/20" />
+                                                        </div>
+
+                                                        {/* SVG Visual Lines / Bars */}
+                                                        <div className="flex-1 relative min-h-0 z-10">
+                                                          {chartType === 'bar' ? (
+                                                            /* Grouped Bar Mode */
+                                                            <div className="w-full h-full flex items-end justify-around px-2 pt-2">
+                                                              {[0, 1, 2, 3, 4].map((i) => (
+                                                                <div key={i} className="flex items-end gap-1 h-full">
+                                                                  <div style={{ height: `${(s1Data[i] / maxVal) * 100}%`, background: s1Color }} className="w-2.5 rounded-t-xs" />
+                                                                  <div style={{ height: `${(s2Data[i] / maxVal) * 100}%`, background: s2Color }} className="w-2.5 rounded-t-xs" />
+                                                                  <div style={{ height: `${(s3Data[i] / maxVal) * 100}%`, background: s3Color }} className="w-2.5 rounded-t-xs" />
+                                                                </div>
+                                                              ))}
+                                                            </div>
+                                                          ) : (
+                                                            /* Multi-Line & Multi-Area Mode */
+                                                            <svg className="w-full h-full overflow-visible" viewBox="0 0 340 155" preserveAspectRatio="none">
+                                                              <defs>
+                                                                <linearGradient id="s2AreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                                  <stop offset="0%" stopColor={s2Color} stopOpacity="0.4" />
+                                                                  <stop offset="100%" stopColor={s2Color} stopOpacity="0.0" />
+                                                                </linearGradient>
+                                                              </defs>
+                                                              {chartType === 'area' && <path d={makeAreaPath(s2Data)} fill="url(#s2AreaGrad)" />}
+                                                              {/* Series 1 Line */}
+                                                              <path d={makePath(s1Data)} fill="none" stroke={s1Color} strokeWidth="2.2" strokeLinecap="round" />
+                                                              {s1Data.map((d, i) => (
+                                                                <circle key={i} cx={xPoints[i]} cy={calcY(d)} r="3.5" fill={s1Color} stroke="#ffffff" strokeWidth="1" />
+                                                              ))}
+                                                              {/* Series 2 Line */}
+                                                              <path d={makePath(s2Data)} fill="none" stroke={s2Color} strokeWidth="2.5" strokeLinecap="round" className="drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+                                                              {s2Data.map((d, i) => (
+                                                                <circle key={i} cx={xPoints[i]} cy={calcY(d)} r="3.5" fill={s2Color} stroke="#ffffff" strokeWidth="1" />
+                                                              ))}
+                                                              {/* Series 3 Line */}
+                                                              <path d={makePath(s3Data)} fill="none" stroke={s3Color} strokeWidth="2.2" strokeLinecap="round" />
+                                                              {s3Data.map((d, i) => (
+                                                                <circle key={i} cx={xPoints[i]} cy={calcY(d)} r="3.5" fill={s3Color} stroke="#ffffff" strokeWidth="1" />
+                                                              ))}
+                                                            </svg>
+                                                          )}
+                                                        </div>
+
+                                                        {/* X-Axis Labels */}
+                                                        <div className="flex items-center justify-around px-2 pt-1 border-t border-white/20 select-none">
+                                                          {['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'].map((xLabel, xIdx) => (
+                                                            <span key={xIdx} className="text-[7.5px] md:text-[8.5px] font-medium text-slate-300 w-1/5 text-center truncate">
+                                                              {xLabel}
+                                                            </span>
+                                                          ))}
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                );
+                                              })()}
+
+                                              {/* Right Column: 3 Metric Percentage Badges with Descriptions */}
+                                              <div className="col-span-4 flex flex-col justify-between gap-2.5 min-h-0">
+                                                {[
+                                                  { id: 'trac-metric-1', valKey: 'metric1Val', descKey: 'metric1Desc', bgKey: 'metric1Bg', shapeKey: 'metric1Shape', defVal: '20%', defDesc: 'Annual revenue growth', defBg: 'linear-gradient(180deg, #4f46e5 0%, #312e81 100%)' },
+                                                  { id: 'trac-metric-2', valKey: 'metric2Val', descKey: 'metric2Desc', bgKey: 'metric2Bg', shapeKey: 'metric2Shape', defVal: '90%', defDesc: 'Maintain customer satisfaction ratings', defBg: 'linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%)' },
+                                                  { id: 'trac-metric-3', valKey: 'metric3Val', descKey: 'metric3Desc', bgKey: 'metric3Bg', shapeKey: 'metric3Shape', defVal: '15%', defDesc: 'Market share in key segments', defBg: 'linear-gradient(180deg, #6366f1 0%, #3730a3 100%)' }
+                                                ].map((mItem, mIdx) => {
+                                                  const curVal = activeDeckSlide?.[mItem.valKey] || mItem.defVal;
+                                                  const curDesc = activeDeckSlide?.[mItem.descKey] || mItem.defDesc;
+                                                  const curBg = activeDeckSlide?.[mItem.bgKey] || mItem.defBg;
+                                                  const curShape = activeDeckSlide?.[mItem.shapeKey] || '12px';
+                                                  const isSelected = deckSelection.type === 'bento' && deckSelection.id === mItem.id;
+                                                  const itemPosX = activeDeckSlide?.[mItem.valKey + '_posX'] || 0;
+                                                  const itemPosY = activeDeckSlide?.[mItem.valKey + '_posY'] || 0;
+
+                                                  return (
+                                                    <div
+                                                      key={mIdx}
+                                                      onPointerDown={(e) => {
+                                                        if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn') || e.target.getAttribute('contenteditable')) return;
+                                                        e.stopPropagation();
+                                                        setDeckSelection({ type: 'bento', id: mItem.id });
+                                                        setDeckBentoDrag({
+                                                          isDragging: true,
+                                                          cardId: mItem.valKey,
+                                                          startX: e.clientX,
+                                                          startY: e.clientY,
+                                                          origX: itemPosX,
+                                                          origY: itemPosY
+                                                        });
+                                                      }}
+                                                      onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: mItem.id }); }}
+                                                      style={{
+                                                        transform: `translate(${itemPosX}px, ${itemPosY}px)`,
+                                                        transition: deckBentoDrag.isDragging ? 'none' : 'transform 120ms ease-out',
+                                                        touchAction: 'none'
+                                                      }}
+                                                      className={`flex items-center gap-3 relative group/metric rounded-xl p-1 transition-all cursor-grab active:cursor-grabbing ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5 z-30' : 'hover:bg-white/[0.02] z-20'}`}
+                                                    >
+                                                      {/* 3D Glassmorphic Percentage Badge */}
+                                                      <div
+                                                        style={{
+                                                          background: curBg,
+                                                          borderRadius: curShape,
+                                                          border: '1.2px solid rgba(255, 255, 255, 0.45)',
+                                                          boxShadow: '0 8px 24px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.45)'
+                                                        }}
+                                                        className="w-[74px] md:w-[82px] h-[38px] md:h-[44px] flex items-center justify-center text-center shrink-0 transition-all shadow-lg"
+                                                      >
+                                                        <span
+                                                          contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                          suppressContentEditableWarning
+                                                          onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, mItem.valKey, e.currentTarget.textContent || '')}
+                                                          style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                          className="text-[14px] md:text-[17px] font-[900] tracking-wide text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text font-sans"
+                                                        >
+                                                          {curVal}
+                                                        </span>
+                                                      </div>
+
+                                                      {/* Metric Description */}
+                                                      <div className="flex-1 flex items-center pl-1">
+                                                        <span
+                                                          contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                          suppressContentEditableWarning
+                                                          onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, mItem.descKey, e.currentTarget.textContent || '')}
+                                                          style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                          className="text-[9.5px] md:text-[10.5px] text-slate-200 font-medium leading-[1.3] outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text w-full break-words"
+                                                        >
+                                                          {curDesc}
+                                                        </span>
+                                                      </div>
+
+                                                      {/* Floating Capsule Toolbar */}
+                                                      {isSelected && (
+                                                        <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                          <Sparkles size={11} className="text-cyan-400" />
+                                                          <span>Metric {mIdx + 1}</span>
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              setActivePillShapePicker({ rowKey: mItem.valKey, shapeKey: mItem.shapeKey });
+                                                            }}
+                                                            className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                          >
+                                                            <Shapes size={10} /> Shape
+                                                          </button>
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              setActivePillGradPicker({ rowKey: mItem.valKey, bgKey: mItem.bgKey });
+                                                            }}
+                                                            className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-violet-300 flex items-center gap-1 cursor-pointer"
+                                                          >
+                                                            <Palette size={10} /> Color
+                                                          </button>
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                          <button
+                                                            type="button"
+                                                            onPointerDown={(e) => {
+                                                              e.stopPropagation();
+                                                              updateDeckSlideFields(activeDeckSlide?.id, {
+                                                                [mItem.valKey + '_posX']: 0,
+                                                                [mItem.valKey + '_posY']: 0
+                                                               });
+                                                            }}
+                                                            className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                            title="Reset Position"
+                                                          >
+                                                            <RotateCcw size={11} />
+                                                          </button>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+
+                                            {/* Interactive Traction Chart Options Popover Modal */}
+                                            {activeTractionChartPicker && (
+                                              <div
+                                                className="traction-chart-popover absolute z-[120] bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-3.5 w-[310px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onPointerDown={(e) => e.stopPropagation()}
+                                              >
+                                                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
+                                                  <span className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                                    <LineChart size={12} className="text-cyan-400" /> Traction Chart Options
+                                                  </span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setActiveTractionChartPicker(false)}
+                                                    className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                                                  >
+                                                    <X size={12} />
+                                                  </button>
+                                                </div>
+
+                                                {/* Chart Type Selector */}
+                                                <div className="mb-3">
+                                                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Chart Style</label>
+                                                  <div className="grid grid-cols-3 gap-1.5">
+                                                    {[
+                                                      { id: 'line', label: 'Multi-Line', icon: LineChart },
+                                                      { id: 'bar', label: 'Grouped Bar', icon: BarChart2 },
+                                                      { id: 'area', label: 'Area Wave', icon: Activity }
+                                                    ].map((tStyle) => {
+                                                      const TypeIcon = tStyle.icon;
+                                                      const isSel = (activeDeckSlide?.chartType || 'line') === tStyle.id;
+                                                      return (
+                                                        <button
+                                                          key={tStyle.id}
+                                                          type="button"
+                                                          onClick={() => {
+                                                            updateDeckSlideField(activeDeckSlide?.id, 'chartType', tStyle.id);
+                                                            showToast(`Chart style: ${tStyle.label}`);
+                                                          }}
+                                                          className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg border text-[9px] font-semibold cursor-pointer transition-all ${
+                                                            isSel
+                                                              ? 'bg-violet-600/40 border-cyan-400 text-cyan-300 shadow-[0_0_10px_rgba(0,240,255,0.3)]'
+                                                              : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/15 hover:text-white'
+                                                          }`}
+                                                        >
+                                                          <TypeIcon size={12} />
+                                                          <span>{tStyle.label.split(' ')[0]}</span>
+                                                        </button>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </div>
+
+                                                {/* Theme Palette Buttons */}
+                                                <div className="mb-3">
+                                                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Color Palette</label>
+                                                  <div className="grid grid-cols-1 gap-1 max-h-[90px] overflow-y-auto thin-scrollbar">
+                                                    {DECK_MARKET_CHART_THEMES.map((theme) => (
+                                                      <button
+                                                        key={theme.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                          updateDeckSlideFields(activeDeckSlide?.id, {
+                                                            series1Color: theme.c1,
+                                                            series2Color: theme.c2,
+                                                            series3Color: theme.c3
+                                                          });
+                                                          showToast(`Chart palette: ${theme.label}`);
+                                                        }}
+                                                        className="flex items-center justify-between px-2 py-1 rounded bg-white/5 hover:bg-white/15 text-[9.5px] text-slate-200 cursor-pointer"
+                                                      >
+                                                        <span>{theme.label}</span>
+                                                        <div className="flex gap-1">
+                                                          <div className="w-3 h-3 rounded-full" style={{ background: theme.c1 }} />
+                                                          <div className="w-3 h-3 rounded-full" style={{ background: theme.c2 }} />
+                                                          <div className="w-3 h-3 rounded-full" style={{ background: theme.c3 }} />
+                                                        </div>
+                                                      </button>
+                                                    ))}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : layout === "Startup Key Advantages" || layout === "Startup Competitive Advantages" || layout === "Key Competitive Advantages" || activeDeckSlide?.title === "Key Competitive Advantages" || layout === "Competitive Advantages" || layout === "Advantages" ? (
                                           /* ── STARTUP KEY ADVANTAGES TEMPLATE (REVERSE-ENGINEERED SLIDE 9) ── */
                                           <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-2 md:px-8 md:pt-4 md:pb-2.5 overflow-hidden">
                                             
