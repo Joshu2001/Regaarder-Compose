@@ -31708,7 +31708,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     };
   }, [deckPillDrag.isDragging, deckPillDrag.startX, deckPillDrag.startY, deckPillDrag.origX, deckPillDrag.origY, activeDeckSlide?.id]);
 
-  // Object edge and corner resizing lifecycle listener
+    // Object edge and corner resizing lifecycle listener
   useEffect(() => {
     if (!deckResizeDrag.isResizing) return;
     const handlePointerMove = (e) => {
@@ -31762,7 +31762,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     };
   }, [deckResizeDrag, activeDeckSlide?.id]);
 
-  // Badge dragging lifecycle listener
+    // Badge dragging lifecycle listener
   useEffect(() => {
     if (!deckBadgeDrag.isDragging || !deckBadgeDrag.badgeId) return;
     const handlePointerMove = (e) => {
@@ -50120,7 +50120,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                        : 'hover:border-white/60'
                                                    }`}
                                                    style={{
-                                                     width: activeDeckSlide?.card1_width ? `${activeDeckSlide.card1_width}px` : undefined,
+                                                     width: activeDeckSlide?.card1_width ? `${activeDeckSlide.card1_width}px` : undefined, minWidth: activeDeckSlide?.card1_width ? `${activeDeckSlide.card1_width}px` : undefined, flexShrink: activeDeckSlide?.card1_width ? 0 : 1,
                                                      height: activeDeckSlide?.card1_height ? `${activeDeckSlide.card1_height}px` : undefined,
                                                      background: activeDeckSlide?.card1Bg || 'linear-gradient(180deg, #A78BFA 0%, #6366F1 45%, #1E1B4B 100%)',
                                                      borderRadius: activeDeckSlide?.card1Radius || '18px',
@@ -50263,7 +50263,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                        : 'hover:border-white/60'
                                                    }`}
                                                    style={{
-                                                     width: activeDeckSlide?.card2_width ? `${activeDeckSlide.card2_width}px` : undefined,
+                                                     width: activeDeckSlide?.card2_width ? `${activeDeckSlide.card2_width}px` : undefined, minWidth: activeDeckSlide?.card2_width ? `${activeDeckSlide.card2_width}px` : undefined, flexShrink: activeDeckSlide?.card2_width ? 0 : 1,
                                                      height: activeDeckSlide?.card2_height ? `${activeDeckSlide.card2_height}px` : undefined,
                                                      background: activeDeckSlide?.card2Bg || 'linear-gradient(180deg, #2E2640 0%, #1E1B38 45%, #121829 100%)',
                                                      borderRadius: activeDeckSlide?.card2Radius || '18px',
@@ -50406,7 +50406,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                        : 'hover:border-white/60'
                                                    }`}
                                                    style={{
-                                                     width: activeDeckSlide?.card3_width ? `${activeDeckSlide.card3_width}px` : undefined,
+                                                     width: activeDeckSlide?.card3_width ? `${activeDeckSlide.card3_width}px` : undefined, minWidth: activeDeckSlide?.card3_width ? `${activeDeckSlide.card3_width}px` : undefined, flexShrink: activeDeckSlide?.card3_width ? 0 : 1,
                                                      height: activeDeckSlide?.card3_height ? `${activeDeckSlide.card3_height}px` : undefined,
                                                      background: activeDeckSlide?.card3Bg || 'linear-gradient(180deg, #33263D 0%, #1C1A2E 45%, #0E1320 100%)',
                                                      borderRadius: activeDeckSlide?.card3Radius || '18px',
