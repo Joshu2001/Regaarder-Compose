@@ -47537,6 +47537,41 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                          }
                                        },
                                        { 
+                                          label: 'Media & Logo', 
+                                          icon: Sparkles,
+                                          menuItems: ['🖼️ Upload Picture / Image', '💎 Upload Brand Logo', '⚡ Convert PNG/JPG to Vector (SVG)', '💎 Preset Monogram Logo'],
+                                          onSelect: (item) => {
+                                            if (item.includes('Picture / Image')) {
+                                              imageFileInputRef.current?.click();
+                                            } else if (item.includes('Brand Logo')) {
+                                              logoFileInputRef.current?.click();
+                                            } else if (item.includes('Convert PNG/JPG to Vector')) {
+                                              vectorizerFileInputRef.current?.click();
+                                            } else if (item.includes('Preset Monogram')) {
+                                              const newImg = {
+                                                id: 'logo_' + Date.now(),
+                                                url: null,
+                                                name: 'Monogram Logo',
+                                                posX: 740,
+                                                posY: 24,
+                                                width: 100,
+                                                height: 48,
+                                                opacity: 1,
+                                                isVector: true,
+                                                vectorSvg: `<svg viewBox="0 0 100 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="48" rx="8" fill="#1e1e2e" stroke="#7C4DFF" stroke-width="1.5"/><text x="50" y="30" font-family="system-ui, sans-serif" font-weight="900" font-size="18" fill="#00f0ff" text-anchor="middle" letter-spacing="2">LOGO</text></svg>`,
+                                                vectorColor: '#00f0ff',
+                                                vectorGlow: 'ultra-radiant',
+                                                borderRadius: 8,
+                                                isLogo: true
+                                              };
+                                              const currentImages = Array.isArray(activeDeckSlide?.images) ? activeDeckSlide.images : [];
+                                              updateDeckSlideField(activeDeckSlide?.id, 'images', [...currentImages, newImg]);
+                                              setDeckSelection({ type: 'image', id: newImg.id });
+                                              showToast('Inserted Monogram Logo');
+                                            }
+                                          }
+                                        },
+                                       { 
                                          label: 'Layout', 
                                          icon: LayoutGrid,
                                          menuItems: ['Startup Pitch Deck', 'Title Slide', 'Title & Content', 'Two Columns', 'Section Header', 'Big Number', 'Key Metric', 'Quote Slide', 'Cinematic Split', 'Blank Slide'],
@@ -47553,12 +47588,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        { 
                                          label: 'Insert', 
                                          icon: Plus,
-                                         menuItems: ['Contact Icon Shape', 'Circle Shape', 'Square Shape', 'Diamond Shape', 'Triangle Shape', 'Presenter Pill Badge', 'Gradient Pill Shape', 'Divider Line', 'Text Box (Multi-line)', 'Heading H1', 'Glow Vector Wave'],
-                                         onSelect: (item) => {
-                                           if (item.includes('Contact Icon') || item.includes('Circle Shape') || item.includes('Square Shape') || item.includes('Diamond Shape') || item.includes('Triangle Shape')) {
-                                             const shapeType = item.includes('Circle') ? 'circle' : item.includes('Square') ? 'rounded-square' : item.includes('Diamond') ? 'diamond' : item.includes('Triangle') ? 'triangle' : 'circle';
-                                             updateDeckSlideField(activeDeckSlide?.id, 'badge1_hidden', false);
-                                             updateDeckSlideField(activeDeckSlide?.id, 'badge1_shape', shapeType);
                                              updateDeckSlideField(activeDeckSlide?.id, 'badge1_bg', '#7C4DFF');
                                              setDeckSelection({ type: 'badge', id: 'badge1' });
                                              showToast(`Inserted ${item}`);
