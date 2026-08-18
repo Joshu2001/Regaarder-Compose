@@ -12257,6 +12257,212 @@ const DEFAULT_DECK_SLIDES = [
   const [deckBadgeDrag, setDeckBadgeDrag] = useState({ isDragging: false, badgeId: null, startX: 0, startY: 0, origX: 0, origY: 0 });
   const [deckLineDrag, setDeckLineDrag] = useState({ isDragging: false, startY: 0, origY: 0 });
   const [deckFloatingMenuOpen, setDeckFloatingMenuOpen] = useState(null);
+  // ── CLIENT-SIDE RASTER TO VECTOR (JPG/PNG to SVG) TRACER ENGINE ──
+  const [vectorizerModalOpen, setVectorizerModalOpen] = useState(false);
+  const [vectorizerSourceImage, setVectorizerSourceImage] = useState(null);
+  const [vectorizerTargetImageId, setVectorizerTargetImageId] = useState(null);
+  const [vectorizerMode, setVectorizerMode] = useState('silhouette'); // 'silhouette' | 'color' | 'outline' | 'cyber'
+  const [vectorizerThreshold, setVectorizerThreshold] = useState(128);
+  const [vectorizerColor, setVectorizerColor] = useState('#00f0ff');
+  const [vectorizerPreviewSvg, setVectorizerPreviewSvg] = useState('');
+  const [isVectorizing, setIsVectorizing] = useState(false);
+  const imageFileInputRef = useRef(null);
+  const logoFileInputRef = useRef(null);
+  const vectorizerFileInputRef = useRef(null);
+
+  const runImageVectorizer = (imageSrc, mode = vectorizerMode, threshold = vectorizerThreshold, color = vectorizerColor) => {
+    if (!imageSrc) return;
+    setIsVectorizing(true);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const maxDim = 320;
+        let w = img.naturalWidth || img.width || 300;
+        let h = img.naturalHeight || img.height || 300;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const data = imgData.data;
+
+        let svgContent = '';
+
+        if (mode === 'silhouette') {
+          // Binarize and extract horizontal polygon spans
+          let paths = [];
+          for (let y = 0; y < h; y += 2) {
+            let startX = -1;
+            for (let x = 0; x < w; x += 2) {
+              const idx = (y * w + x) * 4;
+              const alpha = data[idx + 3];
+              const lum = (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114);
+              const isDark = alpha > 40 && lum < threshold;
+              if (isDark) {
+                if (startX === -1) startX = x;
+              } else {
+                if (startX !== -1) {
+                  paths.push(`M ${startX} ${y} L ${x} ${y} L ${x} ${y + 2} L ${startX} ${y + 2} Z`);
+                  startX = -1;
+                }
+              }
+            }
+            if (startX !== -1) {
+              paths.push(`M ${startX} ${y} L ${w} ${y} L ${w} ${y + 2} L ${startX} ${y + 2} Z`);
+            }
+          }
+          svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" fill="${color}">
+  <path d="${paths.join(' ')}" />
+</svg>`;
+        } else if (mode === 'outline') {
+          // Edge detection contour
+          let paths = [];
+          for (let y = 1; y < h - 1; y += 2) {
+            for (let x = 1; x < w - 1; x += 2) {
+              const idx = (y * w + x) * 4;
+              const lum = (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114);
+              const lumRight = (data[idx + 4] * 0.299 + data[idx + 5] * 0.587 + data[idx + 6] * 0.114);
+              const lumDown = (data[((y + 1) * w + x) * 4] * 0.299 + data[((y + 1) * w + x) * 4 + 1] * 0.587 + data[((y + 1) * w + x) * 4 + 2] * 0.114);
+              const diff = Math.abs(lum - lumRight) + Math.abs(lum - lumDown);
+              if (diff > 35) {
+                paths.push(`M ${x} ${y} l 2 0 l 0 2 l -2 0 Z`);
+              }
+            }
+          }
+          svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" fill="${color}">
+  <path d="${paths.join(' ')}" />
+</svg>`;
+        } else if (mode === 'cyber') {
+          // Cyber glow neon edge paths
+          let paths = [];
+          for (let y = 1; y < h - 1; y += 2) {
+            for (let x = 1; x < w - 1; x += 2) {
+              const idx = (y * w + x) * 4;
+              const alpha = data[idx + 3];
+              const lum = (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114);
+              if (alpha > 40 && lum > 60 && lum < 220) {
+                paths.push(`M ${x} ${y} h 2 v 2 h -2 Z`);
+              }
+            }
+          }
+          svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" fill="${color}" style="filter: drop-shadow(0 0 8px ${color}) drop-shadow(0 0 16px #ec4899)">
+  <path d="${paths.join(' ')}" />
+</svg>`;
+        } else {
+          // Color multi-layer posterized SVG
+          const colors = ['#00f0ff', '#7c4dff', '#ec4899', '#ffffff'];
+          let layerPaths = { 0: [], 1: [], 2: [], 3: [] };
+          for (let y = 0; y < h; y += 3) {
+            for (let x = 0; x < w; x += 3) {
+              const idx = (y * w + x) * 4;
+              const alpha = data[idx + 3];
+              if (alpha < 40) continue;
+              const lum = (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114);
+              const bucket = lum < 64 ? 0 : lum < 128 ? 1 : lum < 192 ? 2 : 3;
+              layerPaths[bucket].push(`M ${x} ${y} h 3 v 3 h -3 Z`);
+            }
+          }
+          svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">
+  ${Object.entries(layerPaths).map(([b, p]) => p.length ? `<path d="${p.join(' ')}" fill="${colors[b]}" />` : '').join('\n  ')}
+</svg>`;
+        }
+
+        setVectorizerPreviewSvg(svgContent);
+        setIsVectorizing(false);
+      } catch (err) {
+        console.error('Vectorizer error:', err);
+        setIsVectorizing(false);
+      }
+    };
+    img.src = imageSrc;
+  };
+
+  const handleInsertDeckImageFile = (file, isLogo = false) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const url = e.target.result;
+      const newImg = {
+        id: 'img_' + Date.now(),
+        url,
+        name: file.name || 'image',
+        posX: isLogo ? 720 : 360,
+        posY: isLogo ? 28 : 200,
+        width: isLogo ? 120 : 260,
+        height: isLogo ? 50 : 200,
+        opacity: 1,
+        isVector: file.type === 'image/svg+xml',
+        vectorSvg: file.type === 'image/svg+xml' ? url : null,
+        vectorColor: '#00f0ff',
+        vectorGlow: 'none',
+        borderRadius: isLogo ? 8 : 12,
+        isLogo: Boolean(isLogo)
+      };
+
+      const currentImages = Array.isArray(activeDeckSlide?.images) ? activeDeckSlide.images : [];
+      updateDeckSlideField(activeDeckSlide?.id, 'images', [...currentImages, newImg]);
+      setDeckSelection({ type: 'image', id: newImg.id });
+      showToast(isLogo ? 'Brand Logo added' : 'Picture added to slide');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const applyVectorToSlideImage = () => {
+    if (!vectorizerPreviewSvg) {
+      showToast('No vector generated');
+      return;
+    }
+    if (vectorizerTargetImageId) {
+      const currentImages = Array.isArray(activeDeckSlide?.images) ? activeDeckSlide.images : [];
+      const updated = currentImages.map((img) => {
+        if (img.id !== vectorizerTargetImageId) return img;
+        return {
+          ...img,
+          isVector: true,
+          vectorSvg: vectorizerPreviewSvg,
+          vectorColor: vectorizerColor,
+          vectorGlow: vectorizerMode === 'cyber' ? 'ultra-radiant' : 'none'
+        };
+      });
+      updateDeckSlideField(activeDeckSlide?.id, 'images', updated);
+      showToast('Image converted to Scalable Vector (SVG)!');
+    } else {
+      // Insert as a new vector asset on slide
+      const newImg = {
+        id: 'vec_' + Date.now(),
+        url: null,
+        name: 'Traced Vector',
+        posX: 520,
+        posY: 160,
+        width: 240,
+        height: 240,
+        opacity: 1,
+        isVector: true,
+        vectorSvg: vectorizerPreviewSvg,
+        vectorColor: vectorizerColor,
+        vectorGlow: vectorizerMode === 'cyber' ? 'ultra-radiant' : 'none',
+        borderRadius: 0,
+        isLogo: false
+      };
+      const currentImages = Array.isArray(activeDeckSlide?.images) ? activeDeckSlide.images : [];
+      updateDeckSlideField(activeDeckSlide?.id, 'images', [...currentImages, newImg]);
+      setDeckSelection({ type: 'image', id: newImg.id });
+      showToast('Traced Vector placed on slide!');
+    }
+    setVectorizerModalOpen(false);
+  };
+
   const [deckSemanticStyle, setDeckSemanticStyle] = useState('Title');
   const [deckTextFont, setDeckTextFont] = useState('Inter');
   const [deckTextSize, setDeckTextSize] = useState(24);
@@ -48309,6 +48515,167 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     );
                                   })()}
 
+                                  
+                                            {/* ── INTERACTIVE DRAGGABLE & RESIZABLE IMAGES, LOGOS & VECTOR TRACED ASSETS ── */}
+                                            {Array.isArray(activeDeckSlide?.images) && activeDeckSlide.images.map((img) => {
+                                              const isImgSelected = deckSelection.type === 'image' && deckSelection.id === img.id;
+                                              const iX = img.posX || 0;
+                                              const iY = img.posY || 0;
+                                              const iW = img.width || 180;
+                                              const iH = img.height || 180;
+                                              const iOp = img.opacity ?? 1;
+
+                                              return (
+                                                <div
+                                                  key={img.id}
+                                                  className="absolute pointer-events-auto select-none z-20"
+                                                  style={{
+                                                    transform: `translate(${iX}px, ${iY}px)`,
+                                                    transition: deckResizeDrag.isResizing ? 'none' : 'transform 120ms ease-out'
+                                                  }}
+                                                >
+                                                  <div
+                                                    onPointerDown={(e) => {
+                                                      if (e.target.getAttribute('data-resize-handle')) return;
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'image', id: img.id });
+                                                      setDeckResizeDrag({
+                                                        isResizing: false,
+                                                        isDraggingImg: true,
+                                                        imgId: img.id,
+                                                        startX: e.clientX,
+                                                        startY: e.clientY,
+                                                        origX: iX,
+                                                        origY: iY
+                                                      });
+                                                    }}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'image', id: img.id });
+                                                    }}
+                                                    className={`relative inline-flex items-center justify-center cursor-grab active:cursor-grabbing group transition-all ${
+                                                      isImgSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-2xl rounded-xl' : 'hover:outline hover:outline-1 hover:outline-white/30 rounded-xl'
+                                                    }`}
+                                                    style={{
+                                                      width: `${iW}px`,
+                                                      height: `${iH}px`,
+                                                      opacity: iOp,
+                                                      borderRadius: `${img.borderRadius || 0}px`
+                                                    }}
+                                                  >
+                                                    {/* Render Raster Image OR Clean Scalable SVG Vector */}
+                                                    {img.isVector && img.vectorSvg ? (
+                                                      <div 
+                                                        className="w-full h-full flex items-center justify-center pointer-events-none"
+                                                        style={{
+                                                          filter: img.vectorGlow === 'ultra-radiant' 
+                                                            ? `drop-shadow(0 0 15px ${img.vectorColor || '#00f0ff'}) drop-shadow(0 0 30px #ec4899)` 
+                                                            : 'none'
+                                                        }}
+                                                        dangerouslySetInnerHTML={{ __html: img.vectorSvg }}
+                                                      />
+                                                    ) : (
+                                                      <img 
+                                                        src={img.url} 
+                                                        alt={img.name || 'Slide asset'} 
+                                                        className="w-full h-full object-contain pointer-events-none"
+                                                        style={{ borderRadius: `${img.borderRadius || 0}px` }}
+                                                      />
+                                                    )}
+
+                                                    {/* Selection Outline & 8 Resize Handles */}
+                                                    {isImgSelected && (
+                                                      <>
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'nw', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'ne', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nesw-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'sw', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nesw-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'se', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'e', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-2 h-3 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ew-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'w', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-2 h-3 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ew-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-2 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ns-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-2 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ns-resize z-40 hover:scale-125 transition-transform" />
+
+                                                        {/* Floating Contextual Inspector for Image / Logo */}
+                                                        <div className="absolute -top-11 left-0 px-3 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[11px] font-semibold tracking-wide shadow-2xl flex items-center gap-2 z-50 border border-white/15 whitespace-nowrap pointer-events-auto">
+                                                          {/* Vectorize Action Button */}
+                                                          {!img.isVector ? (
+                                                            <button
+                                                              type="button"
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setVectorizerSourceImage(img.url);
+                                                                setVectorizerTargetImageId(img.id);
+                                                                setVectorizerModalOpen(true);
+                                                                runImageVectorizer(img.url, 'silhouette', 128, '#00f0ff');
+                                                              }}
+                                                              className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs flex items-center gap-1 cursor-pointer font-bold"
+                                                              title="Convert PNG/JPG to Scalable Vector SVG"
+                                                            >
+                                                              <Sparkles size={11} className="text-cyan-400" />
+                                                              <span>Trace to Vector</span>
+                                                            </button>
+                                                          ) : (
+                                                            <div className="flex items-center gap-1.5 text-xs text-emerald-400">
+                                                              <Check size={12} strokeWidth={3} />
+                                                              <span>Vector SVG</span>
+                                                            </div>
+                                                          )}
+
+                                                          {/* Color Picker for Vectorized Asset */}
+                                                          {img.isVector && (
+                                                            <div className="relative">
+                                                              <button
+                                                                type="button"
+                                                                onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === `imgCol_${img.id}` ? null : `imgCol_${img.id}`); }}
+                                                                className="w-4 h-4 rounded-full border border-white/40 shadow-xs hover:scale-110 cursor-pointer"
+                                                                style={{ backgroundColor: img.vectorColor || '#00f0ff' }}
+                                                                title="Vector Fill Color"
+                                                              />
+                                                              {deckFloatingMenuOpen === `imgCol_${img.id}` && (
+                                                                <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5">
+                                                                  {['#00f0ff', '#ffffff', '#7c4dff', '#ec4899', '#3b82f6', '#f59e0b', '#10b981', '#f43f5e', '#a855f7', '#64748b'].map((hex) => (
+                                                                    <button 
+                                                                      key={hex} 
+                                                                      type="button" 
+                                                                      onClick={() => { 
+                                                                        const updated = activeDeckSlide.images.map((im) => im.id === img.id ? { ...im, vectorColor: hex, vectorSvg: im.vectorSvg ? im.vectorSvg.replace(/fill="[^"]*"/g, `fill="${hex}"`) : im.vectorSvg } : im);
+                                                                        updateDeckSlideField(activeDeckSlide?.id, 'images', updated);
+                                                                        setDeckFloatingMenuOpen(null); 
+                                                                      }} 
+                                                                      className="w-6 h-6 rounded-md border border-white/20 hover:scale-110" 
+                                                                      style={{ backgroundColor: hex }} 
+                                                                    />
+                                                                  ))}
+                                                                </div>
+                                                              )}
+                                                            </div>
+                                                          )}
+
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+
+                                                          {/* Delete Image */}
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              const updated = activeDeckSlide.images.filter((im) => im.id !== img.id);
+                                                              updateDeckSlideField(activeDeckSlide?.id, 'images', updated);
+                                                              setDeckSelection({ type: 'none', id: null });
+                                                              showToast('Asset removed');
+                                                            }}
+                                                            className="p-1 hover:bg-rose-500/30 text-zinc-400 hover:text-rose-300 rounded cursor-pointer"
+                                                            title="Delete asset"
+                                                          >
+                                                            <Trash2 size={11} />
+                                                          </button>
+                                                        </div>
+                                                      </>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+  
                                   {/* Main Slide Content */}
                                   <div className="flex flex-col h-full justify-between relative z-10 pointer-events-none">
                                     {/* Header Lockup - Blank */}
