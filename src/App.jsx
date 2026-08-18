@@ -489,6 +489,29 @@ const DECK_THEME_OPTIONS = [
 
 const DECK_LAYOUT_OPTIONS = [
   { 
+    key: "Startup Competitor Analysis", 
+    name: "Startup Competitor Analysis",
+    desc: 'Direct vs Indirect Competitors 2-column breakdown with laser divider beams & glowing comparison rows',
+    visualType: 'startup competitors comparison',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
+        <div className="w-1/2 h-full flex flex-col justify-between p-0.5">
+          <div className="w-full h-1 bg-slate-700 rounded-xs" />
+          <div className="w-full h-0.5 bg-slate-400" />
+          <div className="w-full h-0.5 bg-slate-400" />
+          <div className="w-full h-0.5 bg-slate-400" />
+        </div>
+        <div className="w-px h-full bg-cyan-400" />
+        <div className="w-1/2 h-full flex flex-col justify-between p-0.5">
+          <div className="w-full h-1 bg-purple-500/80 rounded-xs" />
+          <div className="w-full h-0.5 bg-slate-400" />
+          <div className="w-full h-0.5 bg-slate-400" />
+          <div className="w-full h-0.5 bg-slate-400" />
+        </div>
+      </div>
+    )
+  },
+  { 
     key: "Startup Size of Market", 
     name: "Startup Size of Market",
     desc: 'Market narrative, TAM/SAM/SOM breakdown metric pills & dynamic 3-bar chart visualization',
@@ -9285,6 +9308,39 @@ const DEFAULT_DECK_SLIDES = [
     motionCue: 'Slide & Bar Rise',
     speakerNotes: 'Explain the market opportunity breakdown: TAM (32M US small businesses), SAM (9.6M tech/ecommerce/services), and SOM (480K target customers).',
     footer: 'Ingoude Company'
+  },
+  {
+    id: 8,
+    section: 'Competitors',
+    title: 'Key Competitors Advantage',
+    tagline: 'Ingoude Company',
+    headline: 'COMPETITOR ANALYSIS',
+    backgroundColor: '#05070B',
+    vectorWaveStyle: 'bottom-neon-swirl',
+    vectorColor1: '#a855f7',
+    vectorColor2: '#00f0ff',
+    designPresetKey: 'midnight-slate',
+    presetKey: 'midnight-slate',
+    accent: 'from-purple-500 via-indigo-500 to-cyan-500',
+    visualType: 'startup competitors comparison',
+    layoutStyle: 'Startup Competitor Analysis',
+    directHeader: 'DIRECT COMPETITOR',
+    directBg: 'linear-gradient(180deg, #322846 0%, #1e1f3b 50%, #0e1428 100%)',
+    directShape: '12px',
+    direct1: 'Offers similar services or products to ours.',
+    direct2: 'Targets the same customer base and market segments.',
+    direct3: 'Competes directly with us in terms of pricing, features, and positioning.',
+    direct4: 'Can be easily identified and recognized as a competitor by customers and industry analysts.',
+    indirectHeader: 'INDIRECT COMPETITOR',
+    indirectBg: 'linear-gradient(180deg, #7c5c99 0%, #3e3264 50%, #191c3d 100%)',
+    indirectShape: '12px',
+    indirect1: 'Provides different services or products that solve similar customer needs or problems.',
+    indirect2: 'Targets overlapping or adjacent market segments that may not directly compete with us.',
+    indirect3: 'Might offer complementary products or services that could substitute or supplement ours.',
+    indirect4: 'Can include companies from different industries or sectors that indirectly impact our market.',
+    motionCue: 'Dual Column Slide In',
+    speakerNotes: 'Contrast direct competitors targeting identical segments with indirect competitors addressing complementary needs.',
+    footer: 'ingoude Company'
   }
 ];
   const [deckSlidesData, setDeckSlidesData] = useState(DEFAULT_DECK_SLIDES);
@@ -50428,7 +50484,412 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
                                           </div>
                                         </div>
-                                      ) : layout === "Startup Size of Market" || layout === "Startup Market Size" || layout === "Size of Market" || activeDeckSlide?.title === "Size of Market" || layout === "Market Size" || layout === "Market" ? (
+                                      ) : layout === "Startup Competitor Analysis" || layout === "Startup Competitors" || layout === "Key Competitors Advantage" || activeDeckSlide?.title === "Key Competitors Advantage" || layout === "Competitor Analysis" || layout === "Competitors" ? (
+                                          /* ── STARTUP COMPETITOR ANALYSIS TEMPLATE (REVERSE-ENGINEERED SLIDE 8) ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-2 md:px-8 md:pt-4 md:pb-2.5 overflow-hidden">
+                                            
+                                            {/* Bottom Ambient Neon Swirl Graphic */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'vector', id: 'comp-bottom-swirl' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'compBottomSwirl',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.compBottomSwirl_posX || 0,
+                                                  origY: activeDeckSlide?.compBottomSwirl_posY || 0
+                                                });
+                                              }}
+                                              style={{
+                                                position: 'absolute',
+                                                bottom: -20,
+                                                left: 0,
+                                                right: 0,
+                                                height: activeDeckSlide?.compBottomSwirl_height ? `${activeDeckSlide.compBottomSwirl_height}px` : '110px',
+                                                transform: `translate(${activeDeckSlide?.compBottomSwirl_posX || 0}px, ${activeDeckSlide?.compBottomSwirl_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                pointerEvents: 'auto',
+                                                cursor: 'grab',
+                                                zIndex: 5
+                                              }}
+                                              className={`overflow-visible select-none group/swirl ${deckSelection.type === 'vector' && deckSelection.id === 'comp-bottom-swirl' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
+                                            >
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 1000 120" fill="none" preserveAspectRatio="none">
+                                                <defs>
+                                                  <linearGradient id="compSwirlGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stopColor="#a855f7" stopOpacity="0.85" />
+                                                    <stop offset="40%" stopColor="#6366f1" stopOpacity="0.75" />
+                                                    <stop offset="80%" stopColor="#00f0ff" stopOpacity="0.6" />
+                                                    <stop offset="100%" stopColor="#0055ff" stopOpacity="0" />
+                                                  </linearGradient>
+                                                  <linearGradient id="compSwirlGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
+                                                    <stop offset="60%" stopColor="#00f0ff" stopOpacity="0.9" />
+                                                    <stop offset="100%" stopColor="#c084fc" stopOpacity="0" />
+                                                  </linearGradient>
+                                                  <filter id="compSwirlGlow" x="-20%" y="-30%" width="140%" height="160%">
+                                                    <feGaussianBlur stdDeviation="5" result="blur" />
+                                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                                  </filter>
+                                                </defs>
+                                                <path d="M0,105 C180,60 350,115 520,70 C700,25 880,95 1000,60" stroke="url(#compSwirlGrad1)" strokeWidth="3.5" fill="none" opacity="0.8" filter="url(#compSwirlGlow)" />
+                                                <path d="M0,118 C220,75 420,125 640,85 C800,55 920,95 1000,80" stroke="url(#compSwirlGrad2)" strokeWidth="2.5" fill="none" opacity="0.9" />
+                                                <path d="M0,90 C150,45 300,95 480,55 C660,15 840,75 1000,45" stroke="#00f0ff" strokeWidth="1.5" fill="none" opacity="0.6" strokeDasharray="6 4" />
+                                              </svg>
+                                              {/* Drag Capsule */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'comp-bottom-swirl' && (
+                                                <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'comp-bottom-swirl' }); setDeckBentoDrag({ isDragging: true, cardId: 'compBottomSwirl', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.compBottomSwirl_posX || 0, origY: activeDeckSlide?.compBottomSwirl_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <span>Bottom Neon Wave</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { compBottomSwirl_posX: 0, compBottomSwirl_posY: 0, compBottomSwirl_width: undefined, compBottomSwirl_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                </div>
+                                              )}
+                                              {/* 8 Resize Handles */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'comp-bottom-swirl' && (
+                                                <>
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: Math.round(rect.width), initH: activeDeckSlide?.compBottomSwirl_height || Math.round(rect.height), initX: activeDeckSlide?.compBottomSwirl_posX || 0, initY: activeDeckSlide?.compBottomSwirl_posY || 0, target: 'bento-compBottomSwirl' }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: Math.round(rect.width), initH: activeDeckSlide?.compBottomSwirl_height || Math.round(rect.height), initX: activeDeckSlide?.compBottomSwirl_posX || 0, initY: activeDeckSlide?.compBottomSwirl_posY || 0, target: 'bento-compBottomSwirl' }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                </>
+                                              )}
+                                            </div>
+
+                                            {/* Main Content Layout: 2 Equal Columns with Vertical Central Laser Divider */}
+                                            <div className="flex-1 grid grid-cols-12 gap-4 md:gap-6 w-full pointer-events-auto z-20 min-h-0 items-stretch my-auto">
+                                              
+                                              {/* Left Column: Direct Competitor */}
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn') || e.target.getAttribute('contenteditable')) return;
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'bento', id: 'direct-col' });
+                                                  setDeckBentoDrag({
+                                                    isDragging: true,
+                                                    cardId: 'directCol',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    origX: activeDeckSlide?.directCol_posX || 0,
+                                                    origY: activeDeckSlide?.directCol_posY || 0
+                                                  });
+                                                }}
+                                                onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: 'direct-col' }); }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.directCol_posX || 0}px, ${activeDeckSlide?.directCol_posY || 0}px)`,
+                                                  transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                  width: activeDeckSlide?.directCol_width ? `${activeDeckSlide.directCol_width}px` : undefined,
+                                                  height: activeDeckSlide?.directCol_height ? `${activeDeckSlide.directCol_height}px` : undefined,
+                                                  touchAction: 'none',
+                                                  cursor: 'grab'
+                                                }}
+                                                className={`col-span-6 flex flex-col justify-start items-center text-center p-2 rounded-2xl relative group/direct ${deckSelection.type === 'bento' && deckSelection.id === 'direct-col' ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : ''}`}
+                                              >
+                                                {/* Header Pill Badge (DIRECT COMPETITOR) */}
+                                                <div
+                                                  style={{
+                                                    background: activeDeckSlide?.directBg || 'linear-gradient(180deg, #322846 0%, #1e1f3b 50%, #0e1428 100%)',
+                                                    borderRadius: activeDeckSlide?.directShape || '12px',
+                                                    border: '1.2px solid rgba(255, 255, 255, 0.4)',
+                                                    boxShadow: '0 8px 24px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.4)'
+                                                  }}
+                                                  className="w-[220px] md:w-[250px] h-[38px] md:h-[42px] px-3 flex items-center justify-center text-center shrink-0 mb-3 shadow-lg transition-all"
+                                                >
+                                                  <span
+                                                    contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                    suppressContentEditableWarning
+                                                    onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'directHeader', e.currentTarget.textContent || '')}
+                                                    style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                    className="text-[11px] md:text-[12px] font-[900] uppercase tracking-[0.14em] text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 leading-tight select-text w-full break-words text-center"
+                                                  >
+                                                    {activeDeckSlide?.directHeader || 'DIRECT COMPETITOR'}
+                                                  </span>
+                                                </div>
+
+                                                {/* Floating Capsule Toolbar for Direct Header */}
+                                                {deckSelection.type === 'bento' && deckSelection.id === 'direct-col' && (
+                                                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                    <Sparkles size={11} className="text-cyan-400" />
+                                                    <span>Direct Column</span>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActivePillShapePicker({ rowKey: 'directCol', shapeKey: 'directShape' });
+                                                      }}
+                                                      className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                      <Shapes size={10} /> Shape
+                                                    </button>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActivePillGradPicker({ rowKey: 'directCol', bgKey: 'directBg' });
+                                                      }}
+                                                      className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-violet-300 flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                      <Palette size={10} /> Color
+                                                    </button>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button
+                                                      type="button"
+                                                      onPointerDown={(e) => {
+                                                        e.stopPropagation();
+                                                        updateDeckSlideFields(activeDeckSlide?.id, {
+                                                          directCol_posX: 0,
+                                                          directCol_posY: 0,
+                                                          directCol_width: undefined,
+                                                          directCol_height: undefined
+                                                        });
+                                                      }}
+                                                      className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                      title="Reset Position"
+                                                    >
+                                                      <RotateCcw size={11} />
+                                                    </button>
+                                                  </div>
+                                                )}
+
+                                                {/* 8 Resize Handles */}
+                                                {deckSelection.type === 'bento' && deckSelection.id === 'direct-col' && (
+                                                  <>
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.directCol_width || Math.round(rect.width), initH: activeDeckSlide?.directCol_height || Math.round(rect.height), initX: activeDeckSlide?.directCol_posX || 0, initY: activeDeckSlide?.directCol_posY || 0, target: 'bento-directCol' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.directCol_width || Math.round(rect.width), initH: activeDeckSlide?.directCol_height || Math.round(rect.height), initX: activeDeckSlide?.directCol_posX || 0, initY: activeDeckSlide?.directCol_posY || 0, target: 'bento-directCol' }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.directCol_width || Math.round(rect.width), initH: activeDeckSlide?.directCol_height || Math.round(rect.height), initX: activeDeckSlide?.directCol_posX || 0, initY: activeDeckSlide?.directCol_posY || 0, target: 'bento-directCol' }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.directCol_width || Math.round(rect.width), initH: activeDeckSlide?.directCol_height || Math.round(rect.height), initX: activeDeckSlide?.directCol_posX || 0, initY: activeDeckSlide?.directCol_posY || 0, target: 'bento-directCol' }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.directCol_width || Math.round(rect.width), initH: activeDeckSlide?.directCol_height || Math.round(rect.height), initX: activeDeckSlide?.directCol_posX || 0, initY: activeDeckSlide?.directCol_posY || 0, target: 'bento-directCol' }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.directCol_width || Math.round(rect.width), initH: activeDeckSlide?.directCol_height || Math.round(rect.height), initX: activeDeckSlide?.directCol_posX || 0, initY: activeDeckSlide?.directCol_posY || 0, target: 'bento-directCol' }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.directCol_width || Math.round(rect.width), initH: activeDeckSlide?.directCol_height || Math.round(rect.height), initX: activeDeckSlide?.directCol_posX || 0, initY: activeDeckSlide?.directCol_posY || 0, target: 'bento-directCol' }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.directCol_width || Math.round(rect.width), initH: activeDeckSlide?.directCol_height || Math.round(rect.height), initX: activeDeckSlide?.directCol_posX || 0, initY: activeDeckSlide?.directCol_posY || 0, target: 'bento-directCol' }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                  </>
+                                                )}
+
+                                                {/* 4 Direct Comparison Rows with Horizontal Separators */}
+                                                <div className="w-full flex flex-col justify-between flex-1 min-h-0">
+                                                  {[
+                                                    { key: 'direct1', def: 'Offers similar services or products to ours.' },
+                                                    { key: 'direct2', def: 'Targets the same customer base and market segments.' },
+                                                    { key: 'direct3', def: 'Competes directly with us in terms of pricing, features, and positioning.' },
+                                                    { key: 'direct4', def: 'Can be easily identified and recognized as a competitor by customers and industry analysts.' }
+                                                  ].map((item, idx) => (
+                                                    <div key={idx} className="w-full flex flex-col items-center">
+                                                      <p
+                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                        suppressContentEditableWarning
+                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, item.key, e.currentTarget.textContent || '')}
+                                                        style={{ color: "#e2e8f0", caretColor: "#00f0ff" }}
+                                                        className="text-[9.5px] md:text-[10.5px] text-slate-200 font-normal leading-[1.35] text-center outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1.5 py-1.5 select-text w-full break-words"
+                                                      >
+                                                        {activeDeckSlide?.[item.key] || item.def}
+                                                      </p>
+                                                      {/* Horizontal Separator Line */}
+                                                      <div className="w-full h-px bg-gradient-to-r from-transparent via-white/35 to-transparent my-0.5" />
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              </div>
+
+                                              {/* Vertical Central Laser Beam Divider */}
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'bento', id: 'comp-divider-v' });
+                                                  setDeckBentoDrag({
+                                                    isDragging: true,
+                                                    cardId: 'compDividerV',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    origX: activeDeckSlide?.compDividerV_posX || 0,
+                                                    origY: activeDeckSlide?.compDividerV_posY || 0
+                                                  });
+                                                }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.compDividerV_posX || 0}px, ${activeDeckSlide?.compDividerV_posY || 0}px)`,
+                                                  transition: deckBentoDrag.isDragging ? 'none' : 'transform 120ms ease-out',
+                                                  cursor: 'ew-resize'
+                                                }}
+                                                className={`w-px self-stretch bg-gradient-to-b from-white/40 via-cyan-400 to-purple-500/20 shadow-[0_0_10px_rgba(0,240,255,0.8)] shrink-0 my-1 relative group/divv ${deckSelection.type === 'bento' && deckSelection.id === 'comp-divider-v' ? 'ring-2 ring-cyan-400' : ''}`}
+                                              >
+                                                {deckSelection.type === 'bento' && deckSelection.id === 'comp-divider-v' && (
+                                                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-zinc-900 text-cyan-400 text-[9px] font-bold border border-cyan-400 whitespace-nowrap z-50 flex items-center gap-1">
+                                                    <span>Laser Beam</span>
+                                                    <button type="button" onClick={() => updateDeckSlideFields(activeDeckSlide?.id, { compDividerV_posX: 0, compDividerV_posY: 0 })} className="p-0.5 hover:bg-white/10 rounded text-slate-200"><RotateCcw size={9} /></button>
+                                                  </div>
+                                                )}
+                                              </div>
+
+                                              {/* Right Column: Indirect Competitor */}
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn') || e.target.getAttribute('contenteditable')) return;
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'bento', id: 'indirect-col' });
+                                                  setDeckBentoDrag({
+                                                    isDragging: true,
+                                                    cardId: 'indirectCol',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    origX: activeDeckSlide?.indirectCol_posX || 0,
+                                                    origY: activeDeckSlide?.indirectCol_posY || 0
+                                                  });
+                                                }}
+                                                onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: 'indirect-col' }); }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.indirectCol_posX || 0}px, ${activeDeckSlide?.indirectCol_posY || 0}px)`,
+                                                  transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                  width: activeDeckSlide?.indirectCol_width ? `${activeDeckSlide.indirectCol_width}px` : undefined,
+                                                  height: activeDeckSlide?.indirectCol_height ? `${activeDeckSlide.indirectCol_height}px` : undefined,
+                                                  touchAction: 'none',
+                                                  cursor: 'grab'
+                                                }}
+                                                className={`col-span-6 flex flex-col justify-start items-center text-center p-2 rounded-2xl relative group/indirect ${deckSelection.type === 'bento' && deckSelection.id === 'indirect-col' ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : ''}`}
+                                              >
+                                                {/* Header Pill Badge (INDIRECT COMPETITOR) */}
+                                                <div
+                                                  style={{
+                                                    background: activeDeckSlide?.indirectBg || 'linear-gradient(180deg, #7c5c99 0%, #3e3264 50%, #191c3d 100%)',
+                                                    borderRadius: activeDeckSlide?.indirectShape || '12px',
+                                                    border: '1.2px solid rgba(255, 255, 255, 0.4)',
+                                                    boxShadow: '0 8px 24px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.4)'
+                                                  }}
+                                                  className="w-[220px] md:w-[250px] h-[38px] md:h-[42px] px-3 flex items-center justify-center text-center shrink-0 mb-3 shadow-lg transition-all"
+                                                >
+                                                  <span
+                                                    contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                    suppressContentEditableWarning
+                                                    onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'indirectHeader', e.currentTarget.textContent || '')}
+                                                    style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                    className="text-[11px] md:text-[12px] font-[900] uppercase tracking-[0.14em] text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 leading-tight select-text w-full break-words text-center"
+                                                  >
+                                                    {activeDeckSlide?.indirectHeader || 'INDIRECT COMPETITOR'}
+                                                  </span>
+                                                </div>
+
+                                                {/* Floating Capsule Toolbar for Indirect Header */}
+                                                {deckSelection.type === 'bento' && deckSelection.id === 'indirect-col' && (
+                                                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                    <Sparkles size={11} className="text-cyan-400" />
+                                                    <span>Indirect Column</span>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActivePillShapePicker({ rowKey: 'indirectCol', shapeKey: 'indirectShape' });
+                                                      }}
+                                                      className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                      <Shapes size={10} /> Shape
+                                                    </button>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActivePillGradPicker({ rowKey: 'indirectCol', bgKey: 'indirectBg' });
+                                                      }}
+                                                      className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-violet-300 flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                      <Palette size={10} /> Color
+                                                    </button>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button
+                                                      type="button"
+                                                      onPointerDown={(e) => {
+                                                        e.stopPropagation();
+                                                        updateDeckSlideFields(activeDeckSlide?.id, {
+                                                          indirectCol_posX: 0,
+                                                          indirectCol_posY: 0,
+                                                          indirectCol_width: undefined,
+                                                          indirectCol_height: undefined
+                                                        });
+                                                      }}
+                                                      className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                      title="Reset Position"
+                                                    >
+                                                      <RotateCcw size={11} />
+                                                    </button>
+                                                  </div>
+                                                )}
+
+                                                {/* 8 Resize Handles */}
+                                                {deckSelection.type === 'bento' && deckSelection.id === 'indirect-col' && (
+                                                  <>
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.indirectCol_width || Math.round(rect.width), initH: activeDeckSlide?.indirectCol_height || Math.round(rect.height), initX: activeDeckSlide?.indirectCol_posX || 0, initY: activeDeckSlide?.indirectCol_posY || 0, target: 'bento-indirectCol' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.indirectCol_width || Math.round(rect.width), initH: activeDeckSlide?.indirectCol_height || Math.round(rect.height), initX: activeDeckSlide?.indirectCol_posX || 0, initY: activeDeckSlide?.indirectCol_posY || 0, target: 'bento-indirectCol' }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.indirectCol_width || Math.round(rect.width), initH: activeDeckSlide?.indirectCol_height || Math.round(rect.height), initX: activeDeckSlide?.indirectCol_posX || 0, initY: activeDeckSlide?.indirectCol_posY || 0, target: 'bento-indirectCol' }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.indirectCol_width || Math.round(rect.width), initH: activeDeckSlide?.indirectCol_height || Math.round(rect.height), initX: activeDeckSlide?.indirectCol_posX || 0, initY: activeDeckSlide?.indirectCol_posY || 0, target: 'bento-indirectCol' }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.indirectCol_width || Math.round(rect.width), initH: activeDeckSlide?.indirectCol_height || Math.round(rect.height), initX: activeDeckSlide?.indirectCol_posX || 0, initY: activeDeckSlide?.indirectCol_posY || 0, target: 'bento-indirectCol' }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.indirectCol_width || Math.round(rect.width), initH: activeDeckSlide?.indirectCol_height || Math.round(rect.height), initX: activeDeckSlide?.indirectCol_posX || 0, initY: activeDeckSlide?.indirectCol_posY || 0, target: 'bento-indirectCol' }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.indirectCol_width || Math.round(rect.width), initH: activeDeckSlide?.indirectCol_height || Math.round(rect.height), initX: activeDeckSlide?.indirectCol_posX || 0, initY: activeDeckSlide?.indirectCol_posY || 0, target: 'bento-indirectCol' }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.indirectCol_width || Math.round(rect.width), initH: activeDeckSlide?.indirectCol_height || Math.round(rect.height), initX: activeDeckSlide?.indirectCol_posX || 0, initY: activeDeckSlide?.indirectCol_posY || 0, target: 'bento-indirectCol' }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                  </>
+                                                )}
+
+                                                {/* 4 Indirect Comparison Rows with Horizontal Separators */}
+                                                <div className="w-full flex flex-col justify-between flex-1 min-h-0">
+                                                  {[
+                                                    { key: 'indirect1', def: 'Provides different services or products that solve similar customer needs or problems.' },
+                                                    { key: 'indirect2', def: 'Targets overlapping or adjacent market segments that may not directly compete with us.' },
+                                                    { key: 'indirect3', def: 'Might offer complementary products or services that could substitute or supplement ours.' },
+                                                    { key: 'indirect4', def: 'Can include companies from different industries or sectors that indirectly impact our market.' }
+                                                  ].map((item, idx) => (
+                                                    <div key={idx} className="w-full flex flex-col items-center">
+                                                      <p
+                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                        suppressContentEditableWarning
+                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, item.key, e.currentTarget.textContent || '')}
+                                                        style={{ color: "#e2e8f0", caretColor: "#00f0ff" }}
+                                                        className="text-[9.5px] md:text-[10.5px] text-slate-200 font-normal leading-[1.35] text-center outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1.5 py-1.5 select-text w-full break-words"
+                                                      >
+                                                        {activeDeckSlide?.[item.key] || item.def}
+                                                      </p>
+                                                      {/* Horizontal Separator Line */}
+                                                      <div className="w-full h-px bg-gradient-to-r from-transparent via-white/35 to-transparent my-0.5" />
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            </div>
+
+                                            {/* Footer Text */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'text', id: 'comp-footer' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'compFooter',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.compFooter_posX || 0,
+                                                  origY: activeDeckSlide?.compFooter_posY || 0
+                                                });
+                                              }}
+                                              style={{
+                                                transform: `translate(${activeDeckSlide?.compFooter_posX || 0}px, ${activeDeckSlide?.compFooter_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                touchAction: 'none'
+                                              }}
+                                              className={`relative flex items-center justify-center z-30 pt-1 pointer-events-auto cursor-grab active:cursor-grabbing select-none group/ftr ${deckSelection.type === 'text' && deckSelection.id === 'comp-footer' ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 rounded px-2' : ''}`}
+                                            >
+                                              <span
+                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                suppressContentEditableWarning
+                                                onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footer', e.currentTarget.textContent || '')}
+                                                style={{ color: "#94a3b8", caretColor: "#00f0ff" }}
+                                                className="text-[11px] md:text-[12px] italic text-slate-400 font-serif outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text"
+                                              >
+                                                {activeDeckSlide?.footer || 'ingoude Company'}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        ) : layout === "Startup Size of Market" || layout === "Startup Market Size" || layout === "Size of Market" || activeDeckSlide?.title === "Size of Market" || layout === "Market Size" || layout === "Market" ? (
                                           /* ── STARTUP SIZE OF MARKET TEMPLATE (REVERSE-ENGINEERED SLIDE 7) ── */
                                           <div className="flex flex-col justify-center items-center h-full w-full relative z-10 pointer-events-none select-none px-4 py-2 md:px-6 md:py-3 overflow-hidden">
                                             
