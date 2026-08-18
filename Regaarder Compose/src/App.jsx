@@ -382,6 +382,28 @@ const DECK_THEME_OPTIONS = [
 ];
 
 const DECK_LAYOUT_OPTIONS = [
+    { 
+    key: "Startup Today's Agenda", 
+    name: "Startup Today's Agenda",
+    desc: 'Two-column 10-point agenda with glowing divider beams',
+    visualType: 'startup agenda',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col p-0.5 justify-between shrink-0">
+        <div className="w-1/3 h-0.5 bg-cyan-400 rounded-xs" />
+        <div className="flex gap-0.5 h-full items-center">
+          <div className="w-1/2 h-full flex flex-col gap-0.5 justify-around">
+            <div className="w-full h-0.5 bg-slate-400" />
+            <div className="w-full h-0.5 bg-slate-400" />
+          </div>
+          <div className="w-px h-full bg-cyan-400" />
+          <div className="w-1/2 h-full flex flex-col gap-0.5 justify-around">
+            <div className="w-full h-0.5 bg-slate-400" />
+            <div className="w-full h-0.5 bg-slate-400" />
+          </div>
+        </div>
+      </div>
+    )
+  },
   { 
     key: 'Startup Pitch Deck', 
     name: 'Startup Pitch Deck',
@@ -33192,6 +33214,32 @@ Respond with a JSON array of slide objects matching the schema.`;
     .replace(/'/g, '&#39;');
 
   const buildDeckPreviewDataUri = (slide) => {
+    if (slide?.layoutStyle === "Startup Today's Agenda" || slide?.layoutStyle === 'Startup Agenda') {
+      const tagline = escapeSvgText(slide?.tagline || 'Ingoude Company');
+      const headline = escapeSvgText(slide?.headline || "TODAY'S\nAGENDA").replace(/\n/g, ' ');
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+        <rect width="320" height="192" rx="14" fill="#05070B"/>
+        <path d="M 0 170 C 80 140, 160 180, 240 160" stroke="#a855f7" stroke-width="2" opacity="0.8" fill="none" />
+        <path d="M 20 180 C 100 150, 180 190, 280 170" stroke="#00f0ff" stroke-width="1.8" opacity="0.9" fill="none" />
+        <text x="14" y="24" font-size="8" font-family="Inter, sans-serif" fill="#94a3b8" font-style="italic">${tagline}</text>
+        <text x="14" y="70" font-size="14" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900">TODAY'S</text>
+        <text x="14" y="88" font-size="14" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900">AGENDA</text>
+        <line x1="190" y1="36" x2="190" y2="156" stroke="#00f0ff" stroke-width="1" opacity="0.8"/>
+        <g font-size="6" font-family="Inter, sans-serif" fill="#ffffff" font-weight="700">
+          <text x="110" y="48">01</text><text x="124" y="48" font-weight="500">Introduction</text><line x1="110" y1="52" x2="180" y2="52" stroke="#00f0ff" stroke-width="0.5" opacity="0.6"/>
+          <text x="110" y="70">02</text><text x="124" y="70" font-weight="500">Problem Statement</text><line x1="110" y1="74" x2="180" y2="74" stroke="#00f0ff" stroke-width="0.5" opacity="0.6"/>
+          <text x="110" y="92">03</text><text x="124" y="92" font-weight="500">Solutions</text><line x1="110" y1="96" x2="180" y2="96" stroke="#00f0ff" stroke-width="0.5" opacity="0.6"/>
+          <text x="110" y="114">04</text><text x="124" y="114" font-weight="500">Services</text><line x1="110" y1="118" x2="180" y2="118" stroke="#00f0ff" stroke-width="0.5" opacity="0.6"/>
+          <text x="110" y="136">05</text><text x="124" y="136" font-weight="500">Market</text><line x1="110" y1="140" x2="180" y2="140" stroke="#00f0ff" stroke-width="0.5" opacity="0.6"/>
+          <text x="200" y="48">06</text><text x="214" y="48" font-weight="500">Advantage</text><line x1="200" y1="52" x2="270" y2="52" stroke="#00f0ff" stroke-width="0.5" opacity="0.6"/>
+          <text x="200" y="70">07</text><text x="214" y="70" font-weight="500">Traction</text><line x1="200" y1="74" x2="270" y2="74" stroke="#00f0ff" stroke-width="0.5" opacity="0.6"/>
+          <text x="200" y="92">08</text><text x="214" y="92" font-weight="500">Revenue</text><line x1="200" y1="96" x2="270" y2="96" stroke="#00f0ff" stroke-width="0.5" opacity="0.6"/>
+          <text x="200" y="114">09</text><text x="214" y="114" font-weight="500">Timeline</text><line x1="200" y1="118" x2="270" y2="118" stroke="#00f0ff" stroke-width="0.5" opacity="0.6"/>
+          <text x="200" y="136">10</text><text x="214" y="136" font-weight="500">Funds</text><line x1="200" y1="140" x2="270" y2="140" stroke="#00f0ff" stroke-width="0.5" opacity="0.6"/>
+        </g>
+      </svg>`;
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
     if (slide?.layoutStyle === 'Startup Pitch Deck' || slide?.backgroundColor === '#05070B') {
       const tagline = escapeSvgText(slide?.tagline || 'Ingoude Company');
       const headline = escapeSvgText(slide?.headline || 'STARTUP\nPITCH DECK').replace(/\n/g, ' ');
@@ -49586,7 +49634,123 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
                                           </div>
                                         </div>
-                                      ) : layout === 'Startup Pitch Deck' ? (
+                                      ) : layout === "Startup Today's Agenda" || layout === "Startup Agenda" ? (
+                                         /* ── STARTUP TODAY'S AGENDA TEMPLATE (REVERSE-ENGINEERED SLIDE 2) ── */
+                                         <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none">
+                                           {/* Top Row: Company Tagline / Subtitle (Fully Editable) */}
+                                           <div className="flex items-center justify-between pointer-events-auto select-auto z-20">
+                                             <div 
+                                               contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                               suppressContentEditableWarning
+                                               onBlur={(e) => {
+                                                 updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '');
+                                                 showToast('Tagline saved');
+                                               }}
+                                               style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                               className="text-[13px] italic font-normal tracking-wide text-slate-300 !text-slate-300 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 focus:ring-2 focus:ring-[#7C4DFF] rounded px-1.5 py-0.5 cursor-text transition-all bg-transparent hover:bg-white/5 select-text"
+                                             >
+                                               {activeDeckSlide?.tagline || 'Ingoude Company'}
+                                             </div>
+                                           </div>
+
+                                           {/* Main Content: Left Headline + Right 2-Column Agenda Table with Laser Separator Beams */}
+                                           <div className="flex items-center gap-6 my-auto w-full pointer-events-auto z-20">
+                                             {/* Left Side: Big Bold Agenda Title */}
+                                             <div className="max-w-[32%] shrink-0">
+                                               <h1
+                                                 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                 suppressContentEditableWarning
+                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
+                                                 style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                 className="text-[34px] md:text-[40px] leading-[1.04] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text whitespace-pre-line font-sans select-text"
+                                               >
+                                                 {activeDeckSlide?.headline || "TODAY'S\nAGENDA"}
+                                               </h1>
+                                             </div>
+
+                                             {/* Right Side: 2-Column 10-Item Numbered Table */}
+                                             <div className="flex-1 relative flex items-stretch">
+                                               {/* Column 1: Items 01 - 05 */}
+                                               <div className="flex-1 flex flex-col justify-between pr-4 space-y-1">
+                                                 {[
+                                                   { numKey: 'agendaNum1', titleKey: 'agendaTitle1', defNum: '01', defTitle: 'Introduction' },
+                                                   { numKey: 'agendaNum2', titleKey: 'agendaTitle2', defNum: '02', defTitle: 'Problem Statement' },
+                                                   { numKey: 'agendaNum3', titleKey: 'agendaTitle3', defNum: '03', defTitle: 'Our Innovative Solutions' },
+                                                   { numKey: 'agendaNum4', titleKey: 'agendaTitle4', defNum: '04', defTitle: 'Discover Our Services' },
+                                                   { numKey: 'agendaNum5', titleKey: 'agendaTitle5', defNum: '05', defTitle: 'Size of Market' }
+                                                 ].map((row, idx) => (
+                                                   <div key={idx} className="flex flex-col justify-center">
+                                                     <div className="flex items-center gap-3 py-1.5">
+                                                       <span 
+                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                         suppressContentEditableWarning
+                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, row.numKey, e.currentTarget.textContent || '')}
+                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                         className="text-[17px] md:text-[20px] font-[900] text-white !text-white tracking-wider shrink-0 w-8 outline-none hover:ring-1 hover:ring-violet-500/40 rounded font-sans cursor-text"
+                                                       >
+                                                         {activeDeckSlide?.[row.numKey] || row.defNum}
+                                                       </span>
+                                                       <span 
+                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                         suppressContentEditableWarning
+                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, row.titleKey, e.currentTarget.textContent || '')}
+                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                         className="text-[12px] md:text-[13.5px] font-bold text-white !text-white tracking-wide leading-snug outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 flex-1 font-sans cursor-text"
+                                                       >
+                                                         {activeDeckSlide?.[row.titleKey] || row.defTitle}
+                                                       </span>
+                                                     </div>
+                                                     {/* Horizontal Glowing Row Separator Beam */}
+                                                     <div className="w-full h-px bg-gradient-to-r from-cyan-400/80 via-purple-500/40 to-transparent" />
+                                                   </div>
+                                                 ))}
+                                               </div>
+
+                                               {/* Vertical Central Column Separator Beam */}
+                                               <div className="w-px self-stretch bg-gradient-to-b from-white/30 via-cyan-400 to-white/10 shadow-[0_0_8px_rgba(0,240,255,0.6)] shrink-0" />
+
+                                               {/* Column 2: Items 06 - 10 */}
+                                               <div className="flex-1 flex flex-col justify-between pl-4 space-y-1">
+                                                 {[
+                                                   { numKey: 'agendaNum6', titleKey: 'agendaTitle6', defNum: '06', defTitle: 'Key Competitors Advantage' },
+                                                   { numKey: 'agendaNum7', titleKey: 'agendaTitle7', defNum: '07', defTitle: 'Traction' },
+                                                   { numKey: 'agendaNum8', titleKey: 'agendaTitle8', defNum: '08', defTitle: 'Revenue Model' },
+                                                   { numKey: 'agendaNum9', titleKey: 'agendaTitle9', defNum: '09', defTitle: 'Accomplishments to Date' },
+                                                   { numKey: 'agendaNum10', titleKey: 'agendaTitle10', defNum: '10', defTitle: 'Use of Funds' }
+                                                 ].map((row, idx) => (
+                                                   <div key={idx} className="flex flex-col justify-center">
+                                                     <div className="flex items-center gap-3 py-1.5">
+                                                       <span 
+                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                         suppressContentEditableWarning
+                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, row.numKey, e.currentTarget.textContent || '')}
+                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                         className="text-[17px] md:text-[20px] font-[900] text-white !text-white tracking-wider shrink-0 w-8 outline-none hover:ring-1 hover:ring-violet-500/40 rounded font-sans cursor-text"
+                                                       >
+                                                         {activeDeckSlide?.[row.numKey] || row.defNum}
+                                                       </span>
+                                                       <span 
+                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                         suppressContentEditableWarning
+                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, row.titleKey, e.currentTarget.textContent || '')}
+                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                         className="text-[12px] md:text-[13.5px] font-bold text-white !text-white tracking-wide leading-snug outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 flex-1 font-sans cursor-text"
+                                                       >
+                                                         {activeDeckSlide?.[row.titleKey] || row.defTitle}
+                                                       </span>
+                                                     </div>
+                                                     {/* Horizontal Glowing Row Separator Beam */}
+                                                     <div className="w-full h-px bg-gradient-to-r from-cyan-400/80 via-purple-500/40 to-transparent" />
+                                                   </div>
+                                                 ))}
+                                               </div>
+                                             </div>
+                                           </div>
+
+                                           {/* Bottom Margin Anchor */}
+                                           <div className="h-2" />
+                                         </div>
+                                       ) : layout === 'Startup Pitch Deck' ? (
                                         /* ── STARTUP PITCH DECK COVER TEMPLATE (REVERSE-ENGINEERED SLIDE 1) ── */
                                         <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none">
                                           {/* Top Row: Company Tagline / Subtitle (Fully Editable) */}
