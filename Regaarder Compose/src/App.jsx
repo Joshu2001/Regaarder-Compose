@@ -49273,7 +49273,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '');
                                                 showToast('Tagline saved');
                                               }}
-                                              className="text-[13px] italic font-normal tracking-wide text-slate-300 outline-none hover:ring-1 hover:ring-violet-500/50 focus:ring-2 focus:ring-[#7C4DFF] rounded px-1.5 py-0.5 cursor-text transition-all bg-transparent hover:bg-white/5"
+                                               style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                               className="text-[13px] italic font-normal tracking-wide text-slate-300 !text-slate-300 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 focus:ring-2 focus:ring-[#7C4DFF] rounded px-1.5 py-0.5 cursor-text transition-all bg-transparent hover:bg-white/5 select-text"
                                             >
                                               {activeDeckSlide?.tagline || 'Ingoude Company'}
                                             </div>
@@ -49285,7 +49286,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                               suppressContentEditableWarning
                                               onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
-                                              className="text-[44px] leading-[1.02] font-[900] tracking-tight text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text whitespace-pre-line font-sans"
+                                               style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                               className="text-[44px] leading-[1.02] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text whitespace-pre-line font-sans select-text"
                                             >
                                               {activeDeckSlide?.headline || 'STARTUP\nPITCH DECK'}
                                             </h1>
@@ -49451,7 +49453,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'presenter', e.currentTarget.textContent || '')}
-                                                        className="relative z-20 text-[11px] font-bold tracking-[0.2em] text-slate-200 uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text"
+                                                         style={{ color: "#e2e8f0", caretColor: "#00f0ff" }}
+                                                         className="relative z-20 text-[11px] font-bold tracking-[0.2em] text-slate-200 !text-slate-200 focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.presenter || 'PRESENT BY NEIL TRAN'}
                                                       </span>
