@@ -8930,6 +8930,30 @@ const DEFAULT_DECK_SLIDES = [
     motionCue: 'Soft Fade (Left)',
     speakerNotes: "Walk investors through the 10 core agenda items for today's pitch session.",
     footer: 'Ingoude Company'
+  },
+  {
+    id: 3,
+    section: 'Introduction',
+    title: 'Introduction',
+    tagline: 'Ingoude Company',
+    headline: 'INTRODUCTION',
+    backgroundColor: '#05070B',
+    vectorWaveStyle: 'top-right-vortex',
+    vectorColor1: '#0055ff',
+    vectorColor2: '#00f0ff',
+    vectorWaveHue: 'neon-cyan-purple',
+    designPresetKey: 'midnight-slate',
+    presetKey: 'midnight-slate',
+    accent: 'from-indigo-500 to-violet-500',
+    visualType: 'startup intro bento',
+    layoutStyle: 'Startup Introduction',
+    introCard1Text: "We're your dedicated partners in propelling startups toward success. With a blend of expertise and innovation, we offer comprehensive solutions tailored to meet the specific needs of each venture we work with. From strategic guidance to brand development and digital marketing, we're committed to empowering startups to thrive in competitive markets.",
+    introCard2Text: "Our collaborative approach ensures that we're not just service providers but invested advocates for your growth. Let us be the catalyst for your startup's journey, guiding you towards achieving your goals and beyond.",
+    introMainImg: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80',
+    introSubImg: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80',
+    motionCue: 'Zoom & Glow Entrance',
+    speakerNotes: 'Introduce the core mission, team capabilities, and collaborative startup acceleration model.',
+    footer: 'Ingoude Company'
   }
 ];
   const [deckSlidesData, setDeckSlidesData] = useState(DEFAULT_DECK_SLIDES);
