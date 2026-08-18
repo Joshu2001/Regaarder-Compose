@@ -420,6 +420,25 @@ const DECK_THEME_OPTIONS = [
 
 const DECK_LAYOUT_OPTIONS = [
   { 
+    key: "Startup Discover Services", 
+    name: "Startup Discover Services",
+    desc: 'Presenter portrait with 3D backdrop pop-out, top-right neon vortex & 2x2 services grid with laser divider beams',
+    visualType: 'startup services grid',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-1">
+        <div className="w-2/5 h-full rounded-xs bg-indigo-950 border border-white/20 relative flex items-center justify-center">
+          <div className="w-2.5 h-3 bg-purple-400 rounded-full" />
+        </div>
+        <div className="w-3/5 grid grid-cols-2 gap-0.5 h-full items-center">
+          <div className="w-full h-1 bg-white/40 rounded-xs" />
+          <div className="w-full h-1 bg-white/40 rounded-xs" />
+          <div className="w-full h-1 bg-white/40 rounded-xs" />
+          <div className="w-full h-1 bg-white/40 rounded-xs" />
+        </div>
+      </div>
+    )
+  },
+  { 
     key: "Startup Innovative Solutions", 
     name: "Startup Innovative Solutions",
     desc: 'Neon flowing wave hero with 3 glassmorphic solution cards & floating icon badges',
@@ -9100,6 +9119,40 @@ const DEFAULT_DECK_SLIDES = [
     card3Glimmer: 'white',
     motionCue: 'Stagger Card Entrance',
     speakerNotes: 'Walk through the 3 innovative solutions: USP discovery, unified brand messaging guidelines, and agile marketing execution.',
+    footer: 'Ingoude Company'
+  },
+  {
+    id: 6,
+    section: 'Services',
+    title: 'Discover Our Services',
+    tagline: 'Ingoude Company',
+    headline: 'DISCOVER OUR\nSERVICES',
+    backgroundColor: '#05070B',
+    vectorVortexStyle: 'neon-concentric-arc',
+    vectorColor1: '#00f0ff',
+    vectorColor2: '#a855f7',
+    designPresetKey: 'midnight-slate',
+    presetKey: 'midnight-slate',
+    accent: 'from-blue-500 via-indigo-500 to-violet-600',
+    visualType: 'startup services grid',
+    layoutStyle: 'Startup Discover Services',
+    presenterImg: '/assets/slide6_presenter.png',
+    presenterZIndex: 20,
+    presenterBg: 'linear-gradient(180deg, #1e1b4b 0%, #312e81 40%, #581c87 100%)',
+    srv1_icon: 'award',
+    srv1_title: 'BRAND BUILDING',
+    srv1_text: 'We create a strong brand identity, including logos and design elements, to help startups stand out and gain trust.',
+    srv2_icon: 'trending-up',
+    srv2_title: 'DIGITAL MARKETING',
+    srv2_text: 'We create a strong digital presence including SEO, social media, and digital campaigns to drive customer acquisition.',
+    srv3_icon: 'activity',
+    srv3_title: 'MARKETING ANALYTICS',
+    srv3_text: 'We provide insights and reports on marketing performance to help startups make informed decisions.',
+    srv4_icon: 'sparkles',
+    srv4_title: 'PR SUPPORT',
+    srv4_text: 'We help startups get media coverage and build relationships with relevant journalists and influencers.',
+    motionCue: 'Stagger Grid Fade',
+    speakerNotes: 'Showcase the 4 primary services offering: Brand Building, Digital Marketing, Marketing Analytics, and PR Support.',
     footer: 'Ingoude Company'
   }
 ];
@@ -33533,6 +33586,33 @@ Respond with a JSON array of slide objects matching the schema.`;
     .replace(/'/g, '&#39;');
 
   const buildDeckPreviewDataUri = (slide) => {
+    if (slide?.layoutStyle === "Startup Discover Services" || slide?.layoutStyle === "Startup Services" || slide?.title === "Discover Our Services") {
+      const headline = escapeSvgText(slide?.headline || "DISCOVER OUR\nSERVICES").replace(/\n/g, ' ');
+      const footer = escapeSvgText(slide?.footer || 'Ingoude Company');
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+        <rect width="320" height="192" rx="14" fill="#05070B"/>
+        <path d="M 280 0 A 70 70 0 0 1 320 70" stroke="#00f0ff" stroke-width="3" opacity="0.85" fill="none" />
+        <path d="M 290 0 A 80 80 0 0 1 320 80" stroke="#a855f7" stroke-width="2" opacity="0.75" fill="none" />
+        <text x="140" y="32" font-size="11" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900">DISCOVER OUR</text>
+        <text x="140" y="46" font-size="11" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900">SERVICES</text>
+        <rect x="14" y="60" width="95" height="116" rx="8" fill="#1e1b4b" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>
+        <circle cx="61" cy="65" r="16" fill="#4338ca"/>
+        <line x1="220" y1="65" x2="220" y2="165" stroke="#00f0ff" stroke-width="0.8" opacity="0.8"/>
+        <line x1="125" y1="115" x2="310" y2="115" stroke="#00f0ff" stroke-width="0.6" opacity="0.5"/>
+        <g font-size="6" font-family="Inter, sans-serif" fill="#ffffff" font-weight="700">
+          <circle cx="165" cy="72" r="4" fill="#3b82f6"/>
+          <text x="165" y="84" text-anchor="middle">BRAND</text>
+          <circle cx="265" cy="72" r="4" fill="#3b82f6"/>
+          <text x="265" y="84" text-anchor="middle">DIGITAL</text>
+          <circle cx="165" cy="128" r="4" fill="#3b82f6"/>
+          <text x="165" y="140" text-anchor="middle">ANALYTICS</text>
+          <circle cx="265" cy="128" r="4" fill="#3b82f6"/>
+          <text x="265" y="140" text-anchor="middle">PR SUPPORT</text>
+        </g>
+        <text x="306" y="186" font-size="5" font-family="Inter, sans-serif" fill="#94a3b8" font-style="italic" text-anchor="end">${footer}</text>
+      </svg>`;
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
     if (slide?.layoutStyle === "Startup Innovative Solutions" || slide?.layoutStyle === "Startup Solutions" || slide?.title === "Our Innovative Solutions") {
       const headline = escapeSvgText(slide?.headline || "OUR INNOVATIVE\nSOLUTIONS").replace(/\n/g, ' ');
       const footer = escapeSvgText(slide?.footer || 'Ingoude Company');
@@ -50188,7 +50268,484 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
                                           </div>
                                         </div>
-                                      ) : layout === "Startup Innovative Solutions" || layout === "Startup Solutions" || layout === "Our Innovative Solutions" || activeDeckSlide?.title === "Our Innovative Solutions" || layout === "Solutions" ? (
+                                      ) : layout === "Startup Discover Services" || layout === "Startup Services" || layout === "Discover Our Services" || activeDeckSlide?.title === "Discover Our Services" || layout === "Services" ? (
+                                          /* ── STARTUP DISCOVER SERVICES TEMPLATE (REVERSE-ENGINEERED SLIDE 6) ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-4 pt-1 pb-3 md:px-7 md:pb-4 overflow-hidden">
+                                            
+                                            {/* Top Right: Multi-Ring Neon Arc / Vortex Graphic */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'vector', id: 'services-vortex' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'servicesVortex',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.servicesVortex_posX || 0,
+                                                  origY: activeDeckSlide?.servicesVortex_posY || 0
+                                                });
+                                              }}
+                                              style={{
+                                                position: 'absolute',
+                                                top: -10,
+                                                right: -10,
+                                                width: activeDeckSlide?.servicesVortex_width ? `${activeDeckSlide.servicesVortex_width}px` : '180px',
+                                                height: activeDeckSlide?.servicesVortex_height ? `${activeDeckSlide.servicesVortex_height}px` : '180px',
+                                                transform: `translate(${activeDeckSlide?.servicesVortex_posX || 0}px, ${activeDeckSlide?.servicesVortex_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                pointerEvents: 'auto',
+                                                cursor: 'grab',
+                                                zIndex: 12
+                                              }}
+                                              className={`overflow-visible select-none group/vortex ${deckSelection.type === 'vector' && deckSelection.id === 'services-vortex' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
+                                            >
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 200 200" fill="none">
+                                                <defs>
+                                                  <linearGradient id="vortexGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.9" />
+                                                    <stop offset="60%" stopColor="#3b82f6" stopOpacity="0.8" />
+                                                    <stop offset="100%" stopColor="#a855f7" stopOpacity="0.95" />
+                                                  </linearGradient>
+                                                  <linearGradient id="vortexGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                                                    <stop offset="0%" stopColor="#6366f1" stopOpacity="0.9" />
+                                                    <stop offset="100%" stopColor="#00f0ff" stopOpacity="0.7" />
+                                                  </linearGradient>
+                                                  <filter id="vortexGlow" x="-30%" y="-30%" width="160%" height="160%">
+                                                    <feGaussianBlur stdDeviation="4.5" result="blur" />
+                                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                                  </filter>
+                                                </defs>
+                                                <circle cx="160" cy="40" r="110" stroke="url(#vortexGrad1)" strokeWidth="4" fill="none" opacity="0.85" filter="url(#vortexGlow)" strokeDasharray="320 200" strokeLinecap="round" />
+                                                <circle cx="160" cy="40" r="90" stroke="url(#vortexGrad2)" strokeWidth="3" fill="none" opacity="0.9" filter="url(#vortexGlow)" strokeDasharray="260 160" strokeLinecap="round" />
+                                                <circle cx="160" cy="40" r="70" stroke="#00f0ff" strokeWidth="2.5" fill="none" opacity="0.95" strokeDasharray="200 120" strokeLinecap="round" />
+                                                <circle cx="160" cy="40" r="50" stroke="#c084fc" strokeWidth="2" fill="none" opacity="0.8" strokeDasharray="140 90" strokeLinecap="round" />
+                                              </svg>
+                                              {/* Drag Capsule */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'services-vortex' && (
+                                                <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'services-vortex' }); setDeckBentoDrag({ isDragging: true, cardId: 'servicesVortex', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.servicesVortex_posX || 0, origY: activeDeckSlide?.servicesVortex_posY || 0 }); }} className="absolute -top-10 right-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <span>Vortex Arc</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { servicesVortex_posX: 0, servicesVortex_posY: 0, servicesVortex_width: undefined, servicesVortex_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                </div>
+                                              )}
+                                              {/* 8 Resize Handles */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'services-vortex' && (
+                                                <>
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesVortex_width || Math.round(rect.width), initH: activeDeckSlide?.servicesVortex_height || Math.round(rect.height), initX: activeDeckSlide?.servicesVortex_posX || 0, initY: activeDeckSlide?.servicesVortex_posY || 0, target: 'bento-servicesVortex' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesVortex_width || Math.round(rect.width), initH: activeDeckSlide?.servicesVortex_height || Math.round(rect.height), initX: activeDeckSlide?.servicesVortex_posX || 0, initY: activeDeckSlide?.servicesVortex_posY || 0, target: 'bento-servicesVortex' }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesVortex_width || Math.round(rect.width), initH: activeDeckSlide?.servicesVortex_height || Math.round(rect.height), initX: activeDeckSlide?.servicesVortex_posX || 0, initY: activeDeckSlide?.servicesVortex_posY || 0, target: 'bento-servicesVortex' }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesVortex_width || Math.round(rect.width), initH: activeDeckSlide?.servicesVortex_height || Math.round(rect.height), initX: activeDeckSlide?.servicesVortex_posX || 0, initY: activeDeckSlide?.servicesVortex_posY || 0, target: 'bento-servicesVortex' }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesVortex_width || Math.round(rect.width), initH: activeDeckSlide?.servicesVortex_height || Math.round(rect.height), initX: activeDeckSlide?.servicesVortex_posX || 0, initY: activeDeckSlide?.servicesVortex_posY || 0, target: 'bento-servicesVortex' }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesVortex_width || Math.round(rect.width), initH: activeDeckSlide?.servicesVortex_height || Math.round(rect.height), initX: activeDeckSlide?.servicesVortex_posX || 0, initY: activeDeckSlide?.servicesVortex_posY || 0, target: 'bento-servicesVortex' }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesVortex_width || Math.round(rect.width), initH: activeDeckSlide?.servicesVortex_height || Math.round(rect.height), initX: activeDeckSlide?.servicesVortex_posX || 0, initY: activeDeckSlide?.servicesVortex_posY || 0, target: 'bento-servicesVortex' }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesVortex_width || Math.round(rect.width), initH: activeDeckSlide?.servicesVortex_height || Math.round(rect.height), initX: activeDeckSlide?.servicesVortex_posX || 0, initY: activeDeckSlide?.servicesVortex_posY || 0, target: 'bento-servicesVortex' }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                </>
+                                              )}
+                                            </div>
+
+                                            {/* Main Content Layout */}
+                                            <div className="flex-1 grid grid-cols-12 gap-6 w-full pointer-events-auto z-20 min-h-0 items-stretch my-auto">
+                                              
+                                              {/* Left Column: Presenter Cutout with Glassmorphic Backdrop Box */}
+                                              <div className="col-span-5 relative flex flex-col justify-end items-center h-full min-h-[300px] overflow-visible">
+                                                
+                                                {/* Backdrop Box Layer */}
+                                                <div
+                                                  onPointerDown={(e) => {
+                                                    if (e.target.getAttribute('data-resize-handle')) return;
+                                                    e.stopPropagation();
+                                                    setDeckSelection({ type: 'bento', id: 'presenter-backdrop' });
+                                                    setDeckBentoDrag({
+                                                      isDragging: true,
+                                                      cardId: 'presenterBackdrop',
+                                                      startX: e.clientX,
+                                                      startY: e.clientY,
+                                                      origX: activeDeckSlide?.presenterBackdrop_posX || 0,
+                                                      origY: activeDeckSlide?.presenterBackdrop_posY || 0
+                                                    });
+                                                  }}
+                                                  style={{
+                                                    position: 'absolute',
+                                                    bottom: 0,
+                                                    left: 0,
+                                                    right: 0,
+                                                    height: activeDeckSlide?.presenterBackdrop_height ? `${activeDeckSlide.presenterBackdrop_height}px` : '72%',
+                                                    transform: `translate(${activeDeckSlide?.presenterBackdrop_posX || 0}px, ${activeDeckSlide?.presenterBackdrop_posY || 0}px)`,
+                                                    transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                    background: activeDeckSlide?.presenterBg || 'linear-gradient(180deg, #1e1b4b 0%, #312e81 40%, #581c87 100%)',
+                                                    borderRadius: '24px',
+                                                    border: '1.5px solid rgba(255, 255, 255, 0.4)',
+                                                    boxShadow: '0 20px 50px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.4)',
+                                                    zIndex: 10,
+                                                    cursor: 'grab'
+                                                  }}
+                                                  className={`overflow-visible group/backdrop ${deckSelection.type === 'bento' && deckSelection.id === 'presenter-backdrop' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30' : ''}`}
+                                                >
+                                                  {/* Backdrop Floating Capsule Menu */}
+                                                  {deckSelection.type === 'bento' && deckSelection.id === 'presenter-backdrop' && (
+                                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                      <Sparkles size={11} className="text-purple-400" />
+                                                      <span>Backdrop Box</span>
+                                                      <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                      <button
+                                                        type="button"
+                                                        onPointerDown={(e) => {
+                                                          e.stopPropagation();
+                                                          updateDeckSlideFields(activeDeckSlide?.id, {
+                                                            presenterBackdrop_posX: 0,
+                                                            presenterBackdrop_posY: 0,
+                                                            presenterBackdrop_height: undefined
+                                                          });
+                                                        }}
+                                                        className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                        title="Reset Position"
+                                                      >
+                                                        <RotateCcw size={11} />
+                                                      </button>
+                                                    </div>
+                                                  )}
+                                                </div>
+
+                                                {/* Presenter Cutout Image Layer (Breaks out of the top border) */}
+                                                <div
+                                                  onPointerDown={(e) => {
+                                                    if (e.target.getAttribute('data-resize-handle')) return;
+                                                    e.stopPropagation();
+                                                    setDeckSelection({ type: 'bento', id: 'presenter-cutout' });
+                                                    setDeckBentoDrag({
+                                                      isDragging: true,
+                                                      cardId: 'presenterCutout',
+                                                      startX: e.clientX,
+                                                      startY: e.clientY,
+                                                      origX: activeDeckSlide?.presenterCutout_posX || 0,
+                                                      origY: activeDeckSlide?.presenterCutout_posY || 0
+                                                    });
+                                                  }}
+                                                  style={{
+                                                    position: 'relative',
+                                                    width: activeDeckSlide?.presenterCutout_width ? `${activeDeckSlide.presenterCutout_width}px` : '96%',
+                                                    height: activeDeckSlide?.presenterCutout_height ? `${activeDeckSlide.presenterCutout_height}px` : '98%',
+                                                    transform: `translate(${activeDeckSlide?.presenterCutout_posX || 0}px, ${activeDeckSlide?.presenterCutout_posY || 0}px)`,
+                                                    transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                    zIndex: activeDeckSlide?.presenterZIndex ?? 20,
+                                                    cursor: 'grab',
+                                                    touchAction: 'none'
+                                                  }}
+                                                  className={`overflow-visible flex items-end justify-center select-none group/presenter ${deckSelection.type === 'bento' && deckSelection.id === 'presenter-cutout' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
+                                                >
+                                                  <img
+                                                    src={activeDeckSlide?.presenterImg || '/assets/slide6_presenter.png'}
+                                                    alt="Presenter"
+                                                    className="w-full h-full object-contain object-bottom pointer-events-none drop-shadow-[0_20px_35px_rgba(0,0,0,0.8)]"
+                                                  />
+
+                                                  {/* Presenter Floating Capsule Menu with Send to Back / Bring to Front */}
+                                                  {deckSelection.type === 'bento' && deckSelection.id === 'presenter-cutout' && (
+                                                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                      <User size={11} className="text-cyan-400" />
+                                                      <span>Presenter</span>
+                                                      <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                      <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          const currentZ = activeDeckSlide?.presenterZIndex ?? 20;
+                                                          const nextZ = currentZ === 20 ? 5 : 20;
+                                                          updateDeckSlideField(activeDeckSlide?.id, 'presenterZIndex', nextZ);
+                                                          showToast(nextZ === 20 ? 'Brought to Front (Pop-out 3D)' : 'Sent to Back (Behind Box)');
+                                                        }}
+                                                        className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-violet-300 flex items-center gap-1 cursor-pointer"
+                                                        title="Toggle Layer Depth"
+                                                      >
+                                                        <Layers size={10} />
+                                                        {(activeDeckSlide?.presenterZIndex ?? 20) === 20 ? 'Send to Back' : 'Bring to Front'}
+                                                      </button>
+                                                      <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                      <button
+                                                        type="button"
+                                                        onPointerDown={(e) => {
+                                                          e.stopPropagation();
+                                                          updateDeckSlideFields(activeDeckSlide?.id, {
+                                                            presenterCutout_posX: 0,
+                                                            presenterCutout_posY: 0,
+                                                            presenterCutout_width: undefined,
+                                                            presenterCutout_height: undefined
+                                                          });
+                                                        }}
+                                                        className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                        title="Reset Position"
+                                                      >
+                                                        <RotateCcw size={11} />
+                                                      </button>
+                                                    </div>
+                                                  )}
+
+                                                  {/* 8 Resize Handles for Presenter */}
+                                                  {deckSelection.type === 'bento' && deckSelection.id === 'presenter-cutout' && (
+                                                    <>
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenterCutout_width || Math.round(rect.width), initH: activeDeckSlide?.presenterCutout_height || Math.round(rect.height), initX: activeDeckSlide?.presenterCutout_posX || 0, initY: activeDeckSlide?.presenterCutout_posY || 0, target: 'bento-presenterCutout' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenterCutout_width || Math.round(rect.width), initH: activeDeckSlide?.presenterCutout_height || Math.round(rect.height), initX: activeDeckSlide?.presenterCutout_posX || 0, initY: activeDeckSlide?.presenterCutout_posY || 0, target: 'bento-presenterCutout' }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenterCutout_width || Math.round(rect.width), initH: activeDeckSlide?.presenterCutout_height || Math.round(rect.height), initX: activeDeckSlide?.presenterCutout_posX || 0, initY: activeDeckSlide?.presenterCutout_posY || 0, target: 'bento-presenterCutout' }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenterCutout_width || Math.round(rect.width), initH: activeDeckSlide?.presenterCutout_height || Math.round(rect.height), initX: activeDeckSlide?.presenterCutout_posX || 0, initY: activeDeckSlide?.presenterCutout_posY || 0, target: 'bento-presenterCutout' }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenterCutout_width || Math.round(rect.width), initH: activeDeckSlide?.presenterCutout_height || Math.round(rect.height), initX: activeDeckSlide?.presenterCutout_posX || 0, initY: activeDeckSlide?.presenterCutout_posY || 0, target: 'bento-presenterCutout' }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenterCutout_width || Math.round(rect.width), initH: activeDeckSlide?.presenterCutout_height || Math.round(rect.height), initX: activeDeckSlide?.presenterCutout_posX || 0, initY: activeDeckSlide?.presenterCutout_posY || 0, target: 'bento-presenterCutout' }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenterCutout_width || Math.round(rect.width), initH: activeDeckSlide?.presenterCutout_height || Math.round(rect.height), initX: activeDeckSlide?.presenterCutout_posX || 0, initY: activeDeckSlide?.presenterCutout_posY || 0, target: 'bento-presenterCutout' }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenterCutout_width || Math.round(rect.width), initH: activeDeckSlide?.presenterCutout_height || Math.round(rect.height), initX: activeDeckSlide?.presenterCutout_posX || 0, initY: activeDeckSlide?.presenterCutout_posY || 0, target: 'bento-presenterCutout' }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                    </>
+                                                  )}
+                                                </div>
+                                              </div>
+
+                                              {/* Right Column: Headline + 2x2 Services Grid with Glowing Laser Divider Beams */}
+                                              <div className="col-span-7 flex flex-col justify-between h-full pl-2 pr-1 py-1">
+                                                
+                                                {/* Headline Block */}
+                                                <div
+                                                  onPointerDown={(e) => {
+                                                    if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                    e.stopPropagation();
+                                                    setDeckSelection({ type: 'text', id: 'services-headline' });
+                                                    setDeckBentoDrag({
+                                                      isDragging: true,
+                                                      cardId: 'servicesHeadline',
+                                                      startX: e.clientX,
+                                                      startY: e.clientY,
+                                                      origX: activeDeckSlide?.servicesHeadline_posX || 0,
+                                                      origY: activeDeckSlide?.servicesHeadline_posY || 0
+                                                    });
+                                                  }}
+                                                  style={{
+                                                    transform: `translate(${activeDeckSlide?.servicesHeadline_posX || 0}px, ${activeDeckSlide?.servicesHeadline_posY || 0}px)`,
+                                                    transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                    width: activeDeckSlide?.servicesHeadline_width ? `${activeDeckSlide.servicesHeadline_width}px` : undefined,
+                                                    height: activeDeckSlide?.servicesHeadline_height ? `${activeDeckSlide.servicesHeadline_height}px` : undefined,
+                                                    touchAction: 'none'
+                                                  }}
+                                                  className={`relative overflow-visible flex flex-col justify-start select-auto cursor-grab active:cursor-grabbing group/title z-30 mb-4 ${deckSelection.type === 'text' && deckSelection.id === 'services-headline' ? 'z-50 outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
+                                                >
+                                                  <h1
+                                                    contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                    suppressContentEditableWarning
+                                                    onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
+                                                    style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                    className="text-[34px] md:text-[42px] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-[1.02] w-full break-words"
+                                                  >
+                                                    {activeDeckSlide?.headline ? (
+                                                      activeDeckSlide.headline.split('\n').map((line, idx) => (
+                                                        <span key={idx} className="block break-words">
+                                                          {line}
+                                                        </span>
+                                                      ))
+                                                    ) : (
+                                                      <>
+                                                        <span className="block break-words">DISCOVER OUR</span>
+                                                        <span className="block break-words">SERVICES</span>
+                                                      </>
+                                                    )}
+                                                  </h1>
+                                                  {/* Headline Drag Capsule */}
+                                                  {deckSelection.type === 'text' && deckSelection.id === 'services-headline' && (
+                                                    <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'text', id: 'services-headline' }); setDeckBentoDrag({ isDragging: true, cardId: 'servicesHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.servicesHeadline_posX || 0, origY: activeDeckSlide?.servicesHeadline_posY || 0 }); }} className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                      <Move size={11} className="text-violet-400" />
+                                                      <span>Drag Headline</span>
+                                                      <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                      <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { servicesHeadline_posX: 0, servicesHeadline_posY: 0, servicesHeadline_width: undefined, servicesHeadline_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                    </div>
+                                                  )}
+                                                  {/* 8 Resize Handles */}
+                                                  {deckSelection.type === 'text' && deckSelection.id === 'services-headline' && (
+                                                    <>
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.servicesHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.servicesHeadline_posX || 0, initY: activeDeckSlide?.servicesHeadline_posY || 0, target: 'text-servicesHeadline' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.servicesHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.servicesHeadline_posX || 0, initY: activeDeckSlide?.servicesHeadline_posY || 0, target: 'text-servicesHeadline' }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.servicesHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.servicesHeadline_posX || 0, initY: activeDeckSlide?.servicesHeadline_posY || 0, target: 'text-servicesHeadline' }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.servicesHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.servicesHeadline_posX || 0, initY: activeDeckSlide?.servicesHeadline_posY || 0, target: 'text-servicesHeadline' }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.servicesHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.servicesHeadline_posX || 0, initY: activeDeckSlide?.servicesHeadline_posY || 0, target: 'text-servicesHeadline' }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.servicesHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.servicesHeadline_posX || 0, initY: activeDeckSlide?.servicesHeadline_posY || 0, target: 'text-servicesHeadline' }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.servicesHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.servicesHeadline_posX || 0, initY: activeDeckSlide?.servicesHeadline_posY || 0, target: 'text-servicesHeadline' }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                      <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.servicesHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.servicesHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.servicesHeadline_posX || 0, initY: activeDeckSlide?.servicesHeadline_posY || 0, target: 'text-servicesHeadline' }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                    </>
+                                                  )}
+                                                </div>
+
+                                                {/* 2x2 Services Grid with Laser Crosshair Dividers */}
+                                                <div className="flex-1 relative flex items-stretch min-h-0">
+                                                  
+                                                  {/* Left Column (Items 1 & 3) */}
+                                                  <div className="w-1/2 flex flex-col justify-between pr-4 py-1">
+                                                    {[
+                                                      { id: 'srv-item-1', itemKey: 'srvItem1', iconKey: 'srv1_icon', titleKey: 'srv1_title', bodyKey: 'srv1_text', defTitle: 'BRAND BUILDING', defBody: 'We create a strong brand identity, including logos and design elements, to help startups stand out and gain trust.', defIcon: 'award' },
+                                                      { id: 'srv-item-3', itemKey: 'srvItem3', iconKey: 'srv3_icon', titleKey: 'srv3_title', bodyKey: 'srv3_text', defTitle: 'MARKETING ANALYTICS', defBody: 'We provide insights and reports on marketing performance to help startups make informed decisions.', defIcon: 'activity' }
+                                                    ].map((sItem, sIdx) => {
+                                                      const currentIcon = activeDeckSlide?.[sItem.iconKey] || sItem.defIcon;
+                                                      const currentTitle = activeDeckSlide?.[sItem.titleKey] || sItem.defTitle;
+                                                      const currentBody = activeDeckSlide?.[sItem.bodyKey] || sItem.defBody;
+                                                      const isSelected = deckSelection.type === 'bento' && deckSelection.id === sItem.id;
+
+                                                      return (
+                                                        <div
+                                                          key={sIdx}
+                                                          onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: sItem.id }); }}
+                                                          className={`flex flex-col items-center text-center p-2.5 rounded-xl transition-all relative group/srv ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : 'hover:bg-white/[0.02]'}`}
+                                                        >
+                                                          {/* Glowing 3D Blue Sphere / Orb Badge */}
+                                                          <div
+                                                            className="w-9 h-9 rounded-full mb-2 flex items-center justify-center cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.6)] border border-cyan-400/40 relative hover:scale-110 active:scale-95 transition-all"
+                                                            style={{ background: 'radial-gradient(circle at 35% 35%, #93c5fd 0%, #3b82f6 45%, #1d4ed8 75%, #0f172a 100%)' }}
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              setDeckSelection({ type: 'bento', id: sItem.id });
+                                                              setActiveCardIconPicker(activeCardIconPicker?.iconKey === sItem.iconKey ? null : { cardKey: sItem.itemKey, iconKey: sItem.iconKey });
+                                                            }}
+                                                            title="Click to select icon"
+                                                          >
+                                                            {renderSolutionIcon(currentIcon, "w-4 h-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]")}
+                                                          </div>
+
+                                                          <h4
+                                                            contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                            suppressContentEditableWarning
+                                                            onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, sItem.titleKey, e.currentTarget.textContent || '')}
+                                                            style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                            className="text-[12px] md:text-[13px] font-extrabold text-white uppercase tracking-wider mb-1.5 outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text leading-tight w-full select-text"
+                                                          >
+                                                            {currentTitle}
+                                                          </h4>
+
+                                                          <p
+                                                            contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                            suppressContentEditableWarning
+                                                            onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, sItem.bodyKey, e.currentTarget.textContent || '')}
+                                                            style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                            className="text-[9.5px] md:text-[10.5px] leading-[1.4] text-slate-300 font-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text w-full select-text"
+                                                          >
+                                                            {currentBody}
+                                                          </p>
+                                                        </div>
+                                                      );
+                                                    })}
+                                                  </div>
+
+                                                  {/* Vertical Central Laser Beam Divider */}
+                                                  <div className="w-px self-stretch bg-gradient-to-b from-white/35 via-cyan-400 to-white/10 shadow-[0_0_8px_rgba(0,240,255,0.7)] shrink-0 my-1" />
+
+                                                  {/* Right Column (Items 2 & 4) */}
+                                                  <div className="w-1/2 flex flex-col justify-between pl-4 py-1">
+                                                    {[
+                                                      { id: 'srv-item-2', itemKey: 'srvItem2', iconKey: 'srv2_icon', titleKey: 'srv2_title', bodyKey: 'srv2_text', defTitle: 'DIGITAL MARKETING', defBody: 'We create a strong digital presence including SEO, social media, and digital campaigns to drive customer acquisition.', defIcon: 'trending-up' },
+                                                      { id: 'srv-item-4', itemKey: 'srvItem4', iconKey: 'srv4_icon', titleKey: 'srv4_title', bodyKey: 'srv4_text', defTitle: 'PR SUPPORT', defBody: 'We help startups get media coverage and build relationships with relevant journalists and influencers.', defIcon: 'sparkles' }
+                                                    ].map((sItem, sIdx) => {
+                                                      const currentIcon = activeDeckSlide?.[sItem.iconKey] || sItem.defIcon;
+                                                      const currentTitle = activeDeckSlide?.[sItem.titleKey] || sItem.defTitle;
+                                                      const currentBody = activeDeckSlide?.[sItem.bodyKey] || sItem.defBody;
+                                                      const isSelected = deckSelection.type === 'bento' && deckSelection.id === sItem.id;
+
+                                                      return (
+                                                        <div
+                                                          key={sIdx}
+                                                          onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: sItem.id }); }}
+                                                          className={`flex flex-col items-center text-center p-2.5 rounded-xl transition-all relative group/srv ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : 'hover:bg-white/[0.02]'}`}
+                                                        >
+                                                          {/* Glowing 3D Blue Sphere / Orb Badge */}
+                                                          <div
+                                                            className="w-9 h-9 rounded-full mb-2 flex items-center justify-center cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.6)] border border-cyan-400/40 relative hover:scale-110 active:scale-95 transition-all"
+                                                            style={{ background: 'radial-gradient(circle at 35% 35%, #93c5fd 0%, #3b82f6 45%, #1d4ed8 75%, #0f172a 100%)' }}
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              setDeckSelection({ type: 'bento', id: sItem.id });
+                                                              setActiveCardIconPicker(activeCardIconPicker?.iconKey === sItem.iconKey ? null : { cardKey: sItem.itemKey, iconKey: sItem.iconKey });
+                                                            }}
+                                                            title="Click to select icon"
+                                                          >
+                                                            {renderSolutionIcon(currentIcon, "w-4 h-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]")}
+                                                          </div>
+
+                                                          <h4
+                                                            contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                            suppressContentEditableWarning
+                                                            onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, sItem.titleKey, e.currentTarget.textContent || '')}
+                                                            style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                            className="text-[12px] md:text-[13px] font-extrabold text-white uppercase tracking-wider mb-1.5 outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text leading-tight w-full select-text"
+                                                          >
+                                                            {currentTitle}
+                                                          </h4>
+
+                                                          <p
+                                                            contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                            suppressContentEditableWarning
+                                                            onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, sItem.bodyKey, e.currentTarget.textContent || '')}
+                                                            style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                            className="text-[9.5px] md:text-[10.5px] leading-[1.4] text-slate-300 font-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text w-full select-text"
+                                                          >
+                                                            {currentBody}
+                                                          </p>
+                                                        </div>
+                                                      );
+                                                    })}
+                                                  </div>
+
+                                                  {/* Horizontal Crosshair Separator Lines */}
+                                                  <div className="absolute left-0 right-1/2 pr-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                    <div className="w-full h-px bg-gradient-to-r from-white/30 via-cyan-400/60 to-transparent" />
+                                                  </div>
+                                                  <div className="absolute left-1/2 right-0 pl-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                    <div className="w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-white/30" />
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+
+                                            {/* Interactive Icon Selector Dropdown Popup */}
+                                            {activeCardIconPicker && (
+                                              <div
+                                                className="icon-picker-popover absolute z-[120] bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-3.5 w-[280px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onPointerDown={(e) => e.stopPropagation()}
+                                              >
+                                                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
+                                                  <span className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                                    <Sparkles size={12} className="text-violet-400" /> Select Badge Icon
+                                                  </span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setActiveCardIconPicker(null)}
+                                                    className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                                                  >
+                                                    <X size={12} />
+                                                  </button>
+                                                </div>
+                                                <div className="grid grid-cols-4 gap-2 max-h-[220px] overflow-y-auto thin-scrollbar p-1">
+                                                  {DECK_SOLUTIONS_ICONS.map((item) => {
+                                                    const IconCmp = item.icon;
+                                                    const isCurrent = activeDeckSlide?.[activeCardIconPicker.iconKey] === item.key;
+                                                    return (
+                                                      <button
+                                                        key={item.key}
+                                                        type="button"
+                                                        onClick={() => {
+                                                          updateDeckSlideField(activeDeckSlide?.id, activeCardIconPicker.iconKey, item.key);
+                                                          showToast(`Icon set: ${item.name}`);
+                                                          setActiveCardIconPicker(null);
+                                                        }}
+                                                        title={item.name}
+                                                        className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all cursor-pointer ${
+                                                          isCurrent
+                                                            ? 'bg-violet-600/40 border-violet-400 text-cyan-300 shadow-[0_0_12px_rgba(124,77,255,0.4)]'
+                                                            : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/15 hover:text-white hover:border-white/30'
+                                                        }`}
+                                                      >
+                                                        <IconCmp size={18} />
+                                                        <span className="text-[8px] mt-1 text-center truncate max-w-full opacity-80">{item.name.split(' ')[0]}</span>
+                                                      </button>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : layout === "Startup Innovative Solutions" || layout === "Startup Solutions" || layout === "Our Innovative Solutions" || activeDeckSlide?.title === "Our Innovative Solutions" || layout === "Solutions" ? (
                                           /* ── STARTUP INNOVATIVE SOLUTIONS TEMPLATE (REVERSE-ENGINEERED SLIDE 5) ── */
                                           <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-4 pt-1 pb-3 md:px-7 md:pb-4 overflow-hidden">
                                             {/* Background Layer: Flowing Neon Curved Wave */}
