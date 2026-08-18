@@ -12354,6 +12354,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
   const ALL_INDUSTRY_VECTOR_STYLES = [
     /* ── 1. STARTUP & VENTURE KEYNOTE SPECIALS ── */
+    { id: 'agenda-bottom-wave', label: 'Agenda Bottom Luminous Ribbon (Slide 2 Exact)', category: 'Startup Specials', desc: 'Bottom-left sweeping multi-ply magenta & electric cyan keynote ribbon', c1: '#00f0ff', c2: '#d946ef' },
     { id: 'original-pitch', label: 'Startup Keynote Hero Wave (Image 1 Exact)', category: 'Startup Specials', desc: 'Dual Top-Right Vortex Loop + Bottom-Left Horizon Wave', c1: '#0055ff', c2: '#00f0ff' },
     { id: 'growth-venture-hockey', label: 'Startup Venture Growth & J-Curve', category: 'Startup Specials', desc: 'Exponential ascending hockey-stick trajectory lattice', c1: '#10b981', c2: '#00f0ff' },
     { id: 'funding-syndicate-node', label: 'Venture Syndicate Capital Flow', category: 'Startup Specials', desc: 'Constellation node graph network with funding conduits', c1: '#7c4dff', c2: '#00f0ff' },
@@ -48749,7 +48750,29 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  <stop offset="100%" stopColor={c2 || "#00f0ff"} stopOpacity="0.95" />
                                                </linearGradient>
                                             </defs>
-{waveStyle === 'growth-venture-hockey' ? (
+{waveStyle === 'agenda-bottom-wave' ? (
+                                                /* ── AGENDA BOTTOM LUMINOUS RIBBON (SLIDE 2 EXACT) ── */
+                                                <g>
+                                                  {/* Sweeping Cyan/Blue Baseline Strands */}
+                                                  {Array.from({ length: 36 }).map((_, i) => {
+                                                    const ratio = i / 36;
+                                                    const offset = ratio * 130;
+                                                    const opacity = 0.15 + (1 - ratio) * 0.7;
+                                                    const thickness = 0.8 + ratio * 2;
+                                                    const d = `M -30 ${610 + offset * 0.3} C ${120 + offset * 0.7} ${530 - ratio * 60}, ${260 + offset * 0.9} ${580 + ratio * 20}, ${480 + ratio * 80} ${540 - ratio * 70} C ${620 + ratio * 50} ${500 - ratio * 60}, ${740 + ratio * 30} ${570}, ${860 + offset * 0.8} 680`;
+                                                    return <path key={`cyan-${i}`} d={d} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />;
+                                                  })}
+                                                  {/* Sweeping Magenta/Purple Ascending Upper Ribbons */}
+                                                  {Array.from({ length: 28 }).map((_, i) => {
+                                                    const ratio = i / 28;
+                                                    const offset = ratio * 100;
+                                                    const opacity = 0.2 + (1 - ratio) * 0.75;
+                                                    const thickness = 0.9 + ratio * 2.2;
+                                                    const d = `M -30 ${580 + offset * 0.4} C ${140 + offset * 0.6} ${500 - ratio * 70}, ${300 + offset * 0.8} ${530 - ratio * 40}, ${520 + ratio * 70} ${480 - ratio * 90} C ${660 + ratio * 40} ${440 - ratio * 80}, ${760 + ratio * 20} ${530}, ${880 + offset * 0.7} 660`;
+                                                    return <path key={`mag-${i}`} d={d} stroke="url(#dynWaveGrad2)" strokeWidth={thickness} opacity={opacity} fill="none" />;
+                                                  })}
+                                                </g>
+                                              ) : waveStyle === 'growth-venture-hockey' ? (
                                                 /* ── 1. STARTUP VENTURE GROWTH & J-CURVE ── */
                                                 <g>
                                                   {Array.from({ length: 28 }).map((_, i) => {
@@ -49676,9 +49699,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
                                       ) : layout === "Startup Today's Agenda" || layout === "Startup Agenda" ? (
                                          /* ── STARTUP TODAY'S AGENDA TEMPLATE (REVERSE-ENGINEERED SLIDE 2) ── */
-                                         <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none">
-                                           {/* Top Row: Company Tagline / Subtitle (Fully Editable) */}
-                                           <div className="flex items-center justify-between pointer-events-auto select-auto z-20">
+                                         <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-2 py-1 md:px-4 md:py-2">
+                                           {/* Top Row: Company Tagline (Directly Above Headline) */}
+                                           <div className="flex items-center justify-start pointer-events-auto select-auto z-20 mb-2">
                                              <div 
                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                suppressContentEditableWarning
@@ -49686,47 +49709,47 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '');
                                                  showToast('Tagline saved');
                                                }}
-                                               style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                               className="text-[13px] italic font-normal tracking-wide text-slate-300 !text-slate-300 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 focus:ring-2 focus:ring-[#7C4DFF] rounded px-1.5 py-0.5 cursor-text transition-all bg-transparent hover:bg-white/5 select-text"
+                                               style={{ color: "#94a3b8", caretColor: "#00f0ff" }}
+                                               className="text-[13px] md:text-[14px] italic font-normal tracking-wide text-slate-400 !text-slate-400 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 focus:ring-2 focus:ring-[#7C4DFF] rounded px-1.5 py-0.5 cursor-text transition-all bg-transparent hover:bg-white/5 select-text"
                                              >
                                                {activeDeckSlide?.tagline || 'Ingoude Company'}
                                              </div>
                                            </div>
 
-                                           {/* Main Content: Left Headline + Right 2-Column Agenda Table with Laser Separator Beams */}
-                                           <div className="flex items-center gap-6 my-auto w-full pointer-events-auto z-20">
-                                             {/* Left Side: Big Bold Agenda Title */}
-                                             <div className="max-w-[32%] shrink-0">
+                                           {/* Main Content: Left Headline + Right 2-Column Numbered Agenda Table */}
+                                           <div className="flex items-start gap-8 my-auto w-full pointer-events-auto z-20 flex-1">
+                                             {/* Left Column: Big Bold Agenda Title */}
+                                             <div className="w-[30%] shrink-0 pt-4">
                                                <h1
                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                  suppressContentEditableWarning
                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                  style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                 className="text-[34px] md:text-[40px] leading-[1.04] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text whitespace-pre-line font-sans select-text"
+                                                 className="text-[38px] md:text-[46px] leading-[0.98] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text whitespace-pre-line font-sans select-text"
                                                >
                                                  {activeDeckSlide?.headline || "TODAY'S\nAGENDA"}
                                                </h1>
                                              </div>
 
-                                             {/* Right Side: 2-Column 10-Item Numbered Table */}
-                                             <div className="flex-1 relative flex items-stretch">
+                                             {/* Right Column: 2-Column 10-Item Numbered Table */}
+                                             <div className="w-[70%] flex-1 relative flex items-stretch">
                                                {/* Column 1: Items 01 - 05 */}
-                                               <div className="flex-1 flex flex-col justify-between pr-4 space-y-1">
+                                               <div className="w-1/2 flex flex-col justify-between pr-5">
                                                  {[
                                                    { numKey: 'agendaNum1', titleKey: 'agendaTitle1', defNum: '01', defTitle: 'Introduction' },
-                                                   { numKey: 'agendaNum2', titleKey: 'agendaTitle2', defNum: '02', defTitle: 'Problem Statement' },
-                                                   { numKey: 'agendaNum3', titleKey: 'agendaTitle3', defNum: '03', defTitle: 'Our Innovative Solutions' },
-                                                   { numKey: 'agendaNum4', titleKey: 'agendaTitle4', defNum: '04', defTitle: 'Discover Our Services' },
+                                                   { numKey: 'agendaNum2', titleKey: 'agendaTitle2', defNum: '02', defTitle: 'Problem\nStatement' },
+                                                   { numKey: 'agendaNum3', titleKey: 'agendaTitle3', defNum: '03', defTitle: 'Our Innovative\nSolutions' },
+                                                   { numKey: 'agendaNum4', titleKey: 'agendaTitle4', defNum: '04', defTitle: 'Discover Our\nServices' },
                                                    { numKey: 'agendaNum5', titleKey: 'agendaTitle5', defNum: '05', defTitle: 'Size of Market' }
                                                  ].map((row, idx) => (
-                                                   <div key={idx} className="flex flex-col justify-center">
-                                                     <div className="flex items-center gap-3 py-1.5">
+                                                   <div key={idx} className="flex flex-col justify-center min-h-[44px]">
+                                                     <div className="flex items-center gap-3.5 py-1">
                                                        <span 
                                                          contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                          suppressContentEditableWarning
                                                          onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, row.numKey, e.currentTarget.textContent || '')}
                                                          style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                         className="text-[17px] md:text-[20px] font-[900] text-white !text-white tracking-wider shrink-0 w-8 outline-none hover:ring-1 hover:ring-violet-500/40 rounded font-sans cursor-text"
+                                                         className="text-[22px] md:text-[28px] font-[900] text-white !text-white tracking-tight shrink-0 w-9 md:w-11 outline-none hover:ring-1 hover:ring-violet-500/40 rounded font-sans cursor-text leading-none select-text"
                                                        >
                                                          {activeDeckSlide?.[row.numKey] || row.defNum}
                                                        </span>
@@ -49735,37 +49758,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                          suppressContentEditableWarning
                                                          onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, row.titleKey, e.currentTarget.textContent || '')}
                                                          style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                         className="text-[12px] md:text-[13.5px] font-bold text-white !text-white tracking-wide leading-snug outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 flex-1 font-sans cursor-text"
+                                                         className="text-[12px] md:text-[13.5px] font-bold text-white !text-white tracking-normal leading-[1.15] whitespace-pre-line outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 flex-1 font-sans cursor-text select-text"
                                                        >
                                                          {activeDeckSlide?.[row.titleKey] || row.defTitle}
                                                        </span>
                                                      </div>
-                                                     {/* Horizontal Glowing Row Separator Beam */}
-                                                     <div className="w-full h-px bg-gradient-to-r from-cyan-400/80 via-purple-500/40 to-transparent" />
+                                                     {/* Horizontal Full-Span Separator Line */}
+                                                     <div className="w-full h-px bg-gradient-to-r from-white/30 via-cyan-400/60 to-transparent mt-0.5" />
                                                    </div>
                                                  ))}
                                                </div>
 
-                                               {/* Vertical Central Column Separator Beam */}
-                                               <div className="w-px self-stretch bg-gradient-to-b from-white/30 via-cyan-400 to-white/10 shadow-[0_0_8px_rgba(0,240,255,0.6)] shrink-0" />
+                                               {/* Vertical Central Laser Beam */}
+                                               <div className="w-px self-stretch bg-gradient-to-b from-white/35 via-cyan-400 to-white/10 shadow-[0_0_8px_rgba(0,240,255,0.7)] shrink-0 my-1" />
 
                                                {/* Column 2: Items 06 - 10 */}
-                                               <div className="flex-1 flex flex-col justify-between pl-4 space-y-1">
+                                               <div className="w-1/2 flex flex-col justify-between pl-5">
                                                  {[
-                                                   { numKey: 'agendaNum6', titleKey: 'agendaTitle6', defNum: '06', defTitle: 'Key Competitors Advantage' },
+                                                   { numKey: 'agendaNum6', titleKey: 'agendaTitle6', defNum: '06', defTitle: 'Key Competitors\nAdvantage' },
                                                    { numKey: 'agendaNum7', titleKey: 'agendaTitle7', defNum: '07', defTitle: 'Traction' },
                                                    { numKey: 'agendaNum8', titleKey: 'agendaTitle8', defNum: '08', defTitle: 'Revenue Model' },
-                                                   { numKey: 'agendaNum9', titleKey: 'agendaTitle9', defNum: '09', defTitle: 'Accomplishments to Date' },
+                                                   { numKey: 'agendaNum9', titleKey: 'agendaTitle9', defNum: '09', defTitle: 'Accomplishments to\nDate' },
                                                    { numKey: 'agendaNum10', titleKey: 'agendaTitle10', defNum: '10', defTitle: 'Use of Funds' }
                                                  ].map((row, idx) => (
-                                                   <div key={idx} className="flex flex-col justify-center">
-                                                     <div className="flex items-center gap-3 py-1.5">
+                                                   <div key={idx} className="flex flex-col justify-center min-h-[44px]">
+                                                     <div className="flex items-center gap-3.5 py-1">
                                                        <span 
                                                          contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                          suppressContentEditableWarning
                                                          onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, row.numKey, e.currentTarget.textContent || '')}
                                                          style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                         className="text-[17px] md:text-[20px] font-[900] text-white !text-white tracking-wider shrink-0 w-8 outline-none hover:ring-1 hover:ring-violet-500/40 rounded font-sans cursor-text"
+                                                         className="text-[22px] md:text-[28px] font-[900] text-white !text-white tracking-tight shrink-0 w-9 md:w-11 outline-none hover:ring-1 hover:ring-violet-500/40 rounded font-sans cursor-text leading-none select-text"
                                                        >
                                                          {activeDeckSlide?.[row.numKey] || row.defNum}
                                                        </span>
@@ -49774,21 +49797,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                          suppressContentEditableWarning
                                                          onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, row.titleKey, e.currentTarget.textContent || '')}
                                                          style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                         className="text-[12px] md:text-[13.5px] font-bold text-white !text-white tracking-wide leading-snug outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 flex-1 font-sans cursor-text"
+                                                         className="text-[12px] md:text-[13.5px] font-bold text-white !text-white tracking-normal leading-[1.15] whitespace-pre-line outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 flex-1 font-sans cursor-text select-text"
                                                        >
                                                          {activeDeckSlide?.[row.titleKey] || row.defTitle}
                                                        </span>
                                                      </div>
-                                                     {/* Horizontal Glowing Row Separator Beam */}
-                                                     <div className="w-full h-px bg-gradient-to-r from-cyan-400/80 via-purple-500/40 to-transparent" />
+                                                     {/* Horizontal Full-Span Separator Line */}
+                                                     <div className="w-full h-px bg-gradient-to-r from-white/30 via-cyan-400/60 to-transparent mt-0.5" />
                                                    </div>
                                                  ))}
                                                </div>
                                              </div>
                                            </div>
 
-                                           {/* Bottom Margin Anchor */}
-                                           <div className="h-2" />
+                                           {/* Bottom Anchor */}
+                                           <div className="h-1" />
                                          </div>
                                        ) : layout === 'Startup Pitch Deck' ? (
                                         /* ── STARTUP PITCH DECK COVER TEMPLATE (REVERSE-ENGINEERED SLIDE 1) ── */
