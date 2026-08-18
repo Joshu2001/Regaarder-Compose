@@ -47677,28 +47677,108 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <ChevronDown size={10} className={`shrink-0 transition-transform ${isOpen ? 'rotate-180 text-[#7C4DFF]' : 'text-gray-400'}`} />
                                           </button>
 
-                                          {/* Dropdown Menu */}
-                                          {isOpen && (
-                                            <div 
-                                              onClick={(e) => e.stopPropagation()}
-                                              className="absolute left-0 top-8 w-52 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.12)] p-1.5 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
-                                            >
-                                              <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">{btn.label} Options</div>
-                                              {btn.menuItems.map((item) => (
-                                                <button
-                                                  key={item}
-                                                  type="button"
-                                                  onClick={() => {
-                                                    btn.onSelect(item);
-                                                    setDeckActiveToolbarMenu(null);
-                                                  }}
-                                                  className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-gray-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/60 hover:text-[#7C4DFF] rounded-lg transition-colors flex items-center justify-between"
-                                                >
-                                                  <span>{item}</span>
-                                                </button>
-                                              ))}
-                                            </div>
-                                          )}
+                                           {/* Compact Slash-Style Dropdown Menu */}
+                                           {isOpen && (
+                                             <div 
+                                               onClick={(e) => e.stopPropagation()}
+                                               className={`absolute left-0 top-8 ${btn.label === 'Vector & Wave' ? 'w-72 max-h-[300px]' : 'w-56'} flex flex-col bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.16)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] z-[999] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-xl`}
+                                             >
+                                               {/* Search Bar Header (Exact Docs Slash Menu Style) */}
+                                               {btn.label === 'Vector & Wave' ? (
+                                                 <>
+                                                   <div className="px-2 pt-2 pb-1.5 shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50">
+                                                     <div className="relative flex items-center">
+                                                       <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+                                                       <input
+                                                         type="text"
+                                                         autoFocus
+                                                         value={vectorWaveSearch}
+                                                         onChange={(e) => setVectorWaveSearch(e.target.value)}
+                                                         placeholder="Search vector styles, waves…"
+                                                         className="w-full h-7 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500 focus:ring-1 focus:ring-violet-400/30 transition-all font-sans"
+                                                       />
+                                                       {vectorWaveSearch && (
+                                                         <button
+                                                           type="button"
+                                                           onClick={() => setVectorWaveSearch('')}
+                                                           className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded cursor-pointer transition-colors"
+                                                         >
+                                                           <X size={12} />
+                                                         </button>
+                                                       )}
+                                                     </div>
+                                                   </div>
+
+                                                   {/* Category / Count Subheader */}
+                                                   <div className="px-2.5 py-1 border-b border-slate-100 dark:border-zinc-800/60 flex items-center justify-between shrink-0 select-none font-sans bg-white/40 dark:bg-zinc-900/40">
+                                                     <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-zinc-500 uppercase">
+                                                       VECTOR & WAVE
+                                                     </span>
+                                                     <span className="text-[9.5px] font-semibold text-slate-400 dark:text-zinc-500 font-mono tracking-tight opacity-75">
+                                                       {ALL_INDUSTRY_VECTOR_STYLES.filter((s) => !vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.category.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase())).length} STYLES
+                                                     </span>
+                                                   </div>
+
+                                                   {/* Scrollable Compact Style List */}
+                                                   <div className="flex-1 overflow-y-auto thin-scrollbar p-1 space-y-0.5 max-h-[190px]">
+                                                     {ALL_INDUSTRY_VECTOR_STYLES
+                                                       .filter((s) => !vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.category.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase()))
+                                                       .map((styleObj) => {
+                                                         const isCurrent = activeDeckSlide?.vectorWaveStyle === styleObj.id;
+                                                         return (
+                                                           <button
+                                                             key={styleObj.id}
+                                                             type="button"
+                                                             onPointerDown={(e) => {
+                                                               e.preventDefault();
+                                                               btn.onSelect(styleObj.label);
+                                                               setDeckActiveToolbarMenu(null);
+                                                             }}
+                                                             className={`w-full text-left px-2 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-between gap-1.5 ${
+                                                               isCurrent 
+                                                                 ? 'bg-violet-500/15 text-violet-600 dark:text-violet-300 font-semibold' 
+                                                                 : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80'
+                                                             }`}
+                                                           >
+                                                             <div className="flex items-center gap-2 min-w-0">
+                                                               <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `linear-gradient(135deg, ${styleObj.c1}, ${styleObj.c2})` }} />
+                                                               <span className="text-xs truncate">{styleObj.label}</span>
+                                                             </div>
+                                                             <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 shrink-0 font-sans">
+                                                               {styleObj.category}
+                                                             </span>
+                                                           </button>
+                                                         );
+                                                       })}
+                                                   </div>
+                                                 </>
+                                               ) : (
+                                                 <>
+                                                   <div className="px-3 py-1.5 border-b border-slate-100 dark:border-zinc-800/60 flex items-center justify-between shrink-0 select-none font-sans bg-white/40 dark:bg-zinc-900/40">
+                                                     <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-zinc-500 uppercase">
+                                                       {btn.label} Options
+                                                     </span>
+                                                   </div>
+                                                   <div className="flex-1 overflow-y-auto thin-scrollbar p-1 space-y-0.5 max-h-[220px]">
+                                                     {btn.menuItems.map((item) => (
+                                                       <button
+                                                         key={item}
+                                                         type="button"
+                                                         onPointerDown={(e) => {
+                                                           e.preventDefault();
+                                                           btn.onSelect(item);
+                                                           setDeckActiveToolbarMenu(null);
+                                                         }}
+                                                         className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/60 hover:text-[#7C4DFF] rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                                                       >
+                                                         <span>{item}</span>
+                                                       </button>
+                                                     ))}
+                                                   </div>
+                                                 </>
+                                               )}
+                                             </div>
+                                           )}
                                         </div>
                                       );
                                     })
