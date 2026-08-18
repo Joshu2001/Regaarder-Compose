@@ -12260,8 +12260,42 @@ const DEFAULT_DECK_SLIDES = [
   // ── CLIENT-SIDE RASTER TO VECTOR (JPG/PNG to SVG) TRACER ENGINE ──
   const [vectorWaveSearch, setVectorWaveSearch] = useState('');
 
+const ALL_DECK_BACKGROUND_OPTIONS = [
+    { label: 'Deep Cyber Glow (#05070B)', value: '#05070B', category: 'Executive Dark', isDark: true },
+    { label: 'Midnight Obsidian (#0A0A0C)', value: '#0A0A0C', category: 'Executive Dark', isDark: true },
+    { label: 'Deep Navy Space (#030712)', value: '#030712', category: 'Executive Dark', isDark: true },
+    { label: 'Executive Slate (#0F172A)', value: '#0F172A', category: 'Executive Dark', isDark: true },
+    { label: 'Cyber Teal Night (#02161A)', value: '#02161A', category: 'Executive Dark', isDark: true },
+    { label: 'Aurora Violet Dark (#0A081E)', value: '#0A081E', category: 'Executive Dark', isDark: true },
+    { label: 'Pure OLED Black (#000000)', value: '#000000', category: 'Executive Dark', isDark: true },
+    { label: 'Cobalt Cyber Glow Radial', value: 'radial-gradient(circle at 80% 20%, #1e1b4b 0%, #05070b 70%)', category: 'Mesh Gradients', isDark: true },
+    { label: 'Emerald Deep Tech Radial', value: 'radial-gradient(circle at 20% 80%, #064e3b 0%, #020617 70%)', category: 'Mesh Gradients', isDark: true },
+    { label: 'Sunset Horizon Dark Mesh', value: 'linear-gradient(135deg, #180828 0%, #070714 60%, #000000 100%)', category: 'Mesh Gradients', isDark: true },
+    { label: 'Clean Studio White (#FFFFFF)', value: '#FFFFFF', category: 'Studio Light', isDark: false },
+    { label: 'Soft Porcelain (#F8FAFC)', value: '#F8FAFC', category: 'Studio Light', isDark: false },
+    { label: 'Light Titanium Grey (#F1F5F9)', value: '#F1F5F9', category: 'Studio Light', isDark: false },
+    { label: 'Warm Pearl Ivory (#FAFAF9)', value: '#FAFAF9', category: 'Studio Light', isDark: false }
+  ];
+
+
   const ALL_INDUSTRY_VECTOR_STYLES = [
-    /* ── 1. 3D VOLUMETRIC GEOMETRIC SHAPES ── */
+    /* ── 1. STARTUP & VENTURE KEYNOTE SPECIALS ── */
+    { id: 'original-pitch', label: 'Startup Keynote Hero Wave (Image 1 Exact)', category: 'Startup Specials', desc: 'Dual Top-Right Vortex Loop + Bottom-Left Horizon Wave', c1: '#0055ff', c2: '#00f0ff' },
+    { id: 'growth-venture-hockey', label: 'Startup Venture Growth & J-Curve', category: 'Startup Specials', desc: 'Exponential ascending hockey-stick trajectory lattice', c1: '#10b981', c2: '#00f0ff' },
+    { id: 'funding-syndicate-node', label: 'Venture Syndicate Capital Flow', category: 'Startup Specials', desc: 'Constellation node graph network with funding conduits', c1: '#7c4dff', c2: '#00f0ff' },
+    { id: 'market-tam-concentric', label: 'Market TAM / SAM / SOM Rings', category: 'Startup Specials', desc: 'Concentric 3D isometric elliptical discs for market scale', c1: '#00f0ff', c2: '#ec4899' },
+
+    /* ── 2. FAITH & SPIRITUAL 3D WIREFRAMES ── */
+    { id: 'luminous-cross', label: '3D Luminous Radiant Cross', category: 'Faith & Spiritual', desc: 'Beveled isometric 3D cross with celestial halo rays', c1: '#38bdf8', c2: '#f59e0b' },
+    { id: 'open-bible-scripture', label: '3D Open Bible & Scripture Ribbons', category: 'Faith & Spiritual', desc: 'Perspective open book with undulating script lines', c1: '#00f0ff', c2: '#a855f7' },
+
+    /* ── 3. SPORTS & ATHLETICS 3D GEOMETRIES ── */
+    { id: 'soccer-truncated-icosahedron', label: '3D Soccer Ball (Polyhedral Mesh)', category: 'Sports & Athletics', desc: 'Geometric spherical mesh with hexagonal & pentagonal panels', c1: '#00f0ff', c2: '#ffffff' },
+    { id: 'football-prolate-spheroid', label: '3D Football / Rugby Prolate Spheroid', category: 'Sports & Athletics', desc: '3D pointed oval lattice with longitudinal seam ribs', c1: '#f59e0b', c2: '#00f0ff' },
+    { id: 'basketball-sphere-arcs', label: '3D Basketball Geodesic Sphere', category: 'Sports & Athletics', desc: '3D sphere with iconic curved basketball seam channels', c1: '#f97316', c2: '#00f0ff' },
+    { id: 'tennis-velocity-orb', label: '3D Tennis Ball Velocity Orbit', category: 'Sports & Athletics', desc: 'Parabolic curved tennis ball seam wireframe with motion rays', c1: '#84cc16', c2: '#00f0ff' },
+
+    /* ── 4. 3D VOLUMETRIC GEOMETRIC SHAPES ── */
     { id: 'tesseract-cube', label: '3D Hypercube (Tesseract)', category: '3D Shapes', desc: 'Nested isometric 3D wireframe cubes with coordinate vertices', c1: '#7c4dff', c2: '#00f0ff' },
     { id: 'toroid-ring', label: '3D Torus / Donut Ring Mesh', category: '3D Shapes', desc: 'Revolving 3D donut wireframe with 32 radial ribs & loops', c1: '#00f0ff', c2: '#ec4899' },
     { id: 'mobius-infinity', label: 'Möbius Strip & Infinity Ribbon', category: '3D Shapes', desc: 'Twisted single-surface ribbon loop with cross-hatching', c1: '#3b82f6', c2: '#a855f7' },
@@ -12272,8 +12306,7 @@ const DEFAULT_DECK_SLIDES = [
     { id: 'cylindrical-tunnel', label: 'Cylindrical Warp Tunnel', category: '3D Shapes', desc: 'Concentric tubular perspective grid conduit', c1: '#00f0ff', c2: '#3b82f6' },
     { id: 'gyroid-saddle', label: 'Gyroid & Saddle Minimal Surface', category: '3D Shapes', desc: 'Periodic triply minimal saddle curvature contour mesh', c1: '#ec4899', c2: '#7c4dff' },
 
-    /* ── 2. FEATURED KEYNOTE WAVES & VORTEXES ── */
-    { id: 'original-pitch', label: 'Original Pitch Deck (Image 1 Exact)', category: 'Featured Waves', desc: 'Dual Top-Right Vortex Loop + Bottom-Left Horizon Wave', c1: '#0055ff', c2: '#00f0ff' },
+    /* ── 5. FEATURED KEYNOTE WAVES & VORTEXES ── */
     { id: 'top-right-vortex', label: 'Top-Right Orbital Vortex Arc', category: 'Featured Waves', desc: 'High-speed sweeping spiral arc loops on top-right', c1: '#0066ff', c2: '#00f0ff' },
     { id: 'bottom-left-wave', label: 'Bottom-Left Horizon Wave Accent', category: 'Featured Waves', desc: 'Ascending metric baseline wave in bottom-left', c1: '#0055ff', c2: '#00f0ff' },
     { id: 'dual-mesh', label: 'Dual-Mesh Cybernetic Lattice', category: 'Featured Waves', desc: 'Classic intersecting dual-mesh cybernetic lattice', c1: '#00f0ff', c2: '#a855f7' },
@@ -12282,7 +12315,7 @@ const DEFAULT_DECK_SLIDES = [
     { id: 'waterfall-ribbon', label: 'Cascading Ribbon Waterfall', category: 'Featured Waves', desc: 'Multi-ply gradient ribbons plunging down slide margin', c1: '#7c4dff', c2: '#00f0ff' },
     { id: 'horizon-halo', label: 'Planetary Horizon Halo Arc', category: 'Featured Waves', desc: 'Colossal low-curvature planetary rim from bottom bezel', c1: '#0055ff', c2: '#00f0ff' },
 
-    /* ── 3. DEEP-TECH, BIOTECH & SYSTEMS ── */
+    /* ── 6. DEEP-TECH, BIOTECH & SYSTEMS ── */
     { id: 'dna-double-helix', label: 'Double Helix DNA Pipeline', category: 'Deep-Tech & Systems', desc: 'Cylindrical spiral ladder with transverse molecular rungs', c1: '#ec4899', c2: '#00f0ff' },
     { id: 'topographic-elevation', label: 'Topographic Elevation Contours', category: 'Deep-Tech & Systems', desc: 'Concentric 3D terrain isoline curves for data density', c1: '#00f0ff', c2: '#3b82f6' },
     { id: 'radial-sunburst', label: 'Radial Caustic Sunburst Flare', category: 'Deep-Tech & Systems', desc: 'Divergent ray-traced beams from corner anchor', c1: '#00f0ff', c2: '#f59e0b' },
@@ -47548,8 +47581,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                          }
                                        },
                                        { 
-                                         label: 'Styles', 
+                                         label: 'Background', 
                                          icon: Palette,
+                                         menuItems: ALL_DECK_BACKGROUND_OPTIONS.map((b) => b.label),
+                                         onSelect: (item) => {
+                                           const matchedBg = ALL_DECK_BACKGROUND_OPTIONS.find((b) => b.label === item || b.value === item);
+                                           if (matchedBg) {
+                                             updateDeckSlideField(activeDeckSlide?.id, 'backgroundColor', matchedBg.value);
+                                             showToast(`Background set to: ${matchedBg.label}`);
+                                           }
+                                         }
+                                       },
+                                       { 
+                                         label: 'Styles', 
+                                         icon: Sparkles,
                                          menuItems: ['Deep Cyber Glow (#05070B)', 'Aurora Gradient Wave', 'Midnight Slate Clean', 'Neon Electric Cyan', 'Minimalist Mono Dark'],
                                          onSelect: (item) => {
                                            if (item.includes('Deep Cyber Glow')) {
