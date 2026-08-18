@@ -47334,50 +47334,82 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         )}
                                       </div>
 
-                                      {/* Wave Mesh Style Preset Dropdown */}
-                                      <div data-deck-toolbar-menu="true" className="relative shrink-0">
-                                        <button
-                                          type="button"
-                                          onPointerDown={(e) => e.stopPropagation()}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDeckActiveToolbarMenu((prev) => (prev === 'vectorStyle' ? null : 'vectorStyle'));
-                                          }}
-                                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/70 cursor-pointer shadow-2xs"
-                                        >
-                                          <Sparkles size={13} className="text-violet-500" />
-                                          <span>Preset</span>
-                                          <ChevronDown size={10} className="text-gray-400" />
-                                        </button>
-                                        {deckActiveToolbarMenu === 'vectorStyle' && (
-                                          <div onClick={(e) => e.stopPropagation()} className="absolute top-8 left-0 z-[999] w-52 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-lg p-1.5">
-                                            {[
-                                              { label: 'Dual-Mesh Cyan & Purple', c1: '#00f0ff', c2: '#a855f7' },
-                                              { label: 'Electric Cyber Blue', c1: '#00f0ff', c2: '#3b82f6' },
-                                              { label: 'Sunset Laser Neon', c1: '#f59e0b', c2: '#ec4899' },
-                                              { label: 'Emerald Aurora Beam', c1: '#10b981', c2: '#00f0ff' },
-                                              { label: 'Executive Obsidian Silver', c1: '#e2e8f0', c2: '#64748b' }
-                                            ].map((preset) => (
-                                              <button
-                                                key={preset.label}
-                                                type="button"
-                                                onClick={() => {
-                                                  updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', preset.c1);
-                                                  updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', preset.c2);
-                                                  setDeckActiveToolbarMenu(null);
-                                                  showToast(`Applied ${preset.label}`);
-                                                }}
-                                                className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/50 rounded-lg flex items-center gap-2"
-                                              >
-                                                <div className="w-3 h-3 rounded-full shrink-0" style={{ background: `linear-gradient(135deg, ${preset.c1}, ${preset.c2})` }} />
-                                                <span>{preset.label}</span>
-                                              </button>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
+                                      {/* Shape & Wave Selector Dropdown (with Search Bar) */}
+                                       <div data-deck-toolbar-menu="true" className="relative shrink-0">
+                                         <button
+                                           type="button"
+                                           onPointerDown={(e) => e.stopPropagation()}
+                                           onClick={(e) => {
+                                             e.stopPropagation();
+                                             setDeckActiveToolbarMenu((prev) => (prev === 'vectorStyle' ? null : 'vectorStyle'));
+                                           }}
+                                           className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/70 cursor-pointer shadow-2xs"
+                                         >
+                                           <Sparkles size={13} className="text-violet-500" />
+                                           <span>Shape & Wave ({ALL_INDUSTRY_VECTOR_STYLES.length})</span>
+                                           <ChevronDown size={10} className="text-gray-400" />
+                                         </button>
+                                         {deckActiveToolbarMenu === 'vectorStyle' && (
+                                           <div onClick={(e) => e.stopPropagation()} className="absolute top-8 left-0 z-[999] w-76 max-h-[320px] flex flex-col bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.16)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] overflow-hidden backdrop-blur-xl animate-in fade-in">
+                                             {/* Search Bar */}
+                                             <div className="px-2 pt-2 pb-1.5 shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50">
+                                               <div className="relative flex items-center">
+                                                 <Search size={13} className="absolute left-2.5 text-slate-400 pointer-events-none" />
+                                                 <input
+                                                   type="text"
+                                                   autoFocus
+                                                   value={vectorWaveSearch}
+                                                   onChange={(e) => setVectorWaveSearch(e.target.value)}
+                                                   placeholder="Search 25+ shapes & waves…"
+                                                   className="w-full h-7 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 placeholder-slate-400 rounded-lg border border-slate-200 dark:border-zinc-700 outline-none focus:ring-1 focus:ring-violet-400"
+                                                 />
+                                                 {vectorWaveSearch && (
+                                                   <button type="button" onClick={() => setVectorWaveSearch('')} className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200">
+                                                     <X size={12} />
+                                                   </button>
+                                                 )}
+                                               </div>
+                                             </div>
 
-                                      {/* Opacity Dropdown */}
+                                             <div className="flex-1 overflow-y-auto thin-scrollbar p-1 space-y-0.5 max-h-[220px]">
+                                               {ALL_INDUSTRY_VECTOR_STYLES
+                                                 .filter((s) => !vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.category.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase()))
+                                                 .map((preset) => {
+                                                   const isCurrent = activeDeckSlide?.vectorWaveStyle === preset.id;
+                                                   return (
+                                                     <button
+                                                       key={preset.id}
+                                                       type="button"
+                                                       onPointerDown={(e) => {
+                                                         e.preventDefault();
+                                                         updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', preset.id);
+                                                         updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', preset.c1);
+                                                         updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', preset.c2);
+                                                         setDeckActiveToolbarMenu(null);
+                                                         showToast(`Activated: ${preset.label}`);
+                                                       }}
+                                                       className={`w-full text-left px-2 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-between gap-1.5 ${
+                                                         isCurrent 
+                                                           ? 'bg-violet-500/15 text-violet-600 dark:text-violet-300 font-semibold' 
+                                                           : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80'
+                                                       }`}
+                                                     >
+                                                       <div className="flex items-center gap-2 min-w-0">
+                                                         <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: `linear-gradient(135deg, ${preset.c1}, ${preset.c2})` }} />
+                                                         <span className="text-xs truncate">{preset.label}</span>
+                                                       </div>
+                                                       <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 shrink-0">
+                                                         {preset.category}
+                                                       </span>
+                                                     </button>
+                                                   );
+                                                 })}
+                                             </div>
+                                           </div>
+                                         )}
+                                       </div>
+
+                                       {/* Opacity Dropdown */}
                                       <div data-deck-toolbar-menu="true" className="relative shrink-0">
                                         <button
                                           type="button"
