@@ -15830,7 +15830,7 @@ const DEFAULT_DECK_SLIDES = [
 
   const syncReplayTimeline = () => {
     setReplayTimeline([...historyPastRef.current]);
-    setCanUndo(userHasEnteredContentRef.current && historyPastRef.current.length >= 2);
+    setCanUndo(historyPastRef.current.length >= 2);
     setCanRedo(historyFutureRef.current.length > 0);
   };
 
@@ -16424,7 +16424,11 @@ const DEFAULT_DECK_SLIDES = [
   const recordHistoryAction = (actionName = 'State changed', snapshotOverrides = {}) => {
     if (historyMuteRef.current) return;
     
-    const baseSnapshot = buildSnapshot();
+    const rawBase = buildSnapshot();
+    const baseSnapshot = {
+      ...rawBase,
+      deckSlidesData: rawBase.deckSlidesData ? JSON.parse(JSON.stringify(rawBase.deckSlidesData)) : []
+    };
     const snapshot = { ...baseSnapshot, ...snapshotOverrides };
     
     const lastSnapshot = lastSnapshotHashRef.current;
@@ -16436,7 +16440,14 @@ const DEFAULT_DECK_SLIDES = [
       Object.assign(diff, snapshot);
     } else {
       for (const key in snapshot) {
-        if (snapshot[key] !== lastSnapshot[key]) {
+        if (key === 'deckSlidesData' || key === 'sheetsData' || key === 'sheetGrids' || key === 'whiteboardStrokes' || key === 'whiteboardShapes' || key === 'whiteboardWidgets') {
+          const s1 = JSON.stringify(snapshot[key]);
+          const s2 = JSON.stringify(lastSnapshot[key]);
+          if (s1 !== s2) {
+            diff[key] = snapshot[key];
+            hasChanged = true;
+          }
+        } else if (snapshot[key] !== lastSnapshot[key]) {
           diff[key] = snapshot[key];
           hasChanged = true;
         }
@@ -16479,11 +16490,9 @@ const DEFAULT_DECK_SLIDES = [
     
     historyCommitTimerRef.current = setTimeout(() => {
       historyCommitTimerRef.current = null;
-      if (userHasEnteredContentRef.current) {
-        recordHistoryAction(historyEventNameRef.current);
-      }
+      recordHistoryAction(historyEventNameRef.current);
       historyEventNameRef.current = 'State updated';
-    }, 5);
+    }, 15);
     
     return () => {
       if (historyCommitTimerRef.current) clearTimeout(historyCommitTimerRef.current);
@@ -16601,9 +16610,22 @@ const DEFAULT_DECK_SLIDES = [
 
   const openReplayPanel = () => {
     flushPendingHistoryRecord();
+    if (historyPastRef.current.length === 0) {
+      const rawBase = buildSnapshot();
+      const baseSnapshot = {
+        ...rawBase,
+        deckSlidesData: rawBase.deckSlidesData ? JSON.parse(JSON.stringify(rawBase.deckSlidesData)) : []
+      };
+      historyPastRef.current = [{
+        actionName: 'Initial State',
+        snapshot: baseSnapshot,
+        timestamp: Date.now()
+      }];
+      lastSnapshotHashRef.current = baseSnapshot;
+    }
     syncReplayTimeline();
     setReplayIndex(Math.max(0, historyPastRef.current.length - 1));
-    setReplayPanelOpen(true);
+    setReplayPanelOpen((prev) => !prev);
     setIsReplayPlaying(false);
   };
 
@@ -31171,6 +31193,7 @@ Respond with a JSON array of slide objects matching the schema.`;
 
   const isSheetsMode = productMode === 'sheets';
   const updateDeckSlideField = (slideId, field, value) => {
+    markUserHasEdited();
     setDeckSlidesData((prev) => prev.map((slide) => {
       if (slide.id !== slideId) return slide;
       const updated = { ...slide, [field]: value };
@@ -37859,7 +37882,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         {replayPanelOpen && (
           <div 
             ref={replayPanelRef} 
-            className="absolute right-6 top-16 z-[260] w-[380px] rounded-2xl bg-white/90 backdrop-blur-xl shadow-[0_32px_64px_-16px_rgba(15,23,42,0.18),0_0_1px_rgba(0,0,0,0.08)] p-6 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] animate-in fade-in zoom-in-95 select-none border border-slate-200/40"
+            className="absolute right-6 top-16 z-[260] w-[380px] rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-[0_32px_64px_-16px_rgba(15,23,42,0.18),0_0_1px_rgba(0,0,0,0.08)] p-6 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] animate-in fade-in zoom-in-95 select-none border border-slate-200/50 dark:border-zinc-800 text-slate-800 dark:text-zinc-100"
           >
             {/* Header Section: Title, and lightweight step information */}
             <div className="flex flex-col gap-1 mb-6 text-center">
