@@ -8824,7 +8824,9 @@ const DEFAULT_DECK_SLIDES = [
     footerWeb: 'hello@reallygreatsite.com',
     footerLocation: '123 Anywhere Street',
     backgroundColor: '#05070B',
-    vectorWaveStyle: 'dual-mesh',
+    vectorWaveStyle: 'original-pitch',
+    vectorColor1: '#0055ff',
+    vectorColor2: '#00f0ff',
     vectorWaveHue: 'neon-cyan-purple',
     designPresetKey: 'midnight-slate',
     presetKey: 'midnight-slate',
@@ -47718,7 +47720,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                              showToast('Inserted Divider Line');
                                            } else if (item.includes('Glow Vector Wave')) {
                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', false);
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'dual-mesh');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'original-pitch');
+                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#0055ff');
+                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#00f0ff');
                                              setDeckSelection({ type: 'vector', id: 'vector-mesh' });
                                              showToast('Inserted Vector Wave');
                                            }
@@ -47738,7 +47742,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                              updateDeckSlideField(activeDeckSlide?.id, 'footerEmail', 'www.reallygreatsite.com');
                                              updateDeckSlideField(activeDeckSlide?.id, 'footerWeb', 'hello@reallygreatsite.com');
                                              updateDeckSlideField(activeDeckSlide?.id, 'footerLocation', '123 Anywhere Street');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'dual-mesh');
+                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'original-pitch');
+                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#0055ff');
+                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#00f0ff');
                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'neon-cyan-purple');
                                            }
                                            showToast(`AI Action: ${item}`);
@@ -48348,7 +48354,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     const vY = activeDeckSlide?.vectorPosY || 0;
                                     const vW = activeDeckSlide?.vectorWidth || 900;
                                     const vH = activeDeckSlide?.vectorHeight || 650;
-                                    const waveStyle = activeDeckSlide?.vectorWaveStyle || 'dual-mesh';
+                                    const waveStyle = activeDeckSlide?.vectorWaveStyle || 'original-pitch';
                                     const c1 = activeDeckSlide?.vectorColor1 || '#00f0ff';
                                     const c2 = activeDeckSlide?.vectorColor2 || '#a855f7';
                                     const opVal = activeDeckSlide?.vectorOpacity ?? 0.85;
