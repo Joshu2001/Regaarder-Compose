@@ -372,6 +372,33 @@ const DECK_DESIGN_PRESETS = [
   },
 ];
 
+const DECK_PRESENTER_AVATARS = [
+  { id: 'leader', label: 'Executive Leader', url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80' },
+  { id: 'speaker', label: 'Modern Speaker', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80' },
+  { id: 'founder', label: 'Tech Founder', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80' },
+  { id: 'innovator', label: 'Business Innovator', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80' },
+  { id: 'director', label: 'Creative Director', url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=600&q=80' },
+  { id: 'strategist', label: 'Growth Strategist', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80' }
+];
+
+const DECK_ORB_GRADIENTS = [
+  { id: 'blue', label: 'Radiant Blue', grad: 'radial-gradient(circle at 35% 35%, #93c5fd 0%, #3b82f6 45%, #1d4ed8 75%, #0f172a 100%)' },
+  { id: 'cyan', label: 'Cyber Cyan', grad: 'radial-gradient(circle at 35% 35%, #a5f3fc 0%, #06b6d4 45%, #0891b2 75%, #083344 100%)' },
+  { id: 'violet', label: 'Electric Violet', grad: 'radial-gradient(circle at 35% 35%, #e9d5ff 0%, #a855f7 45%, #7e22ce 75%, #3b0764 100%)' },
+  { id: 'emerald', label: 'Emerald Glow', grad: 'radial-gradient(circle at 35% 35%, #a7f3d0 0%, #10b981 45%, #047857 75%, #022c22 100%)' },
+  { id: 'amber', label: 'Amber Sunset', grad: 'radial-gradient(circle at 35% 35%, #fde68a 0%, #f59e0b 45%, #d97706 75%, #451a03 100%)' },
+  { id: 'rose', label: 'Rose Neon', grad: 'radial-gradient(circle at 35% 35%, #fbcfe8 0%, #ec4899 45%, #be185d 75%, #500724 100%)' }
+];
+
+const DECK_BACKDROP_STYLES = [
+  { id: 'deep-indigo', label: 'Deep Indigo Violet', bg: 'linear-gradient(180deg, #1e1b4b 0%, #312e81 40%, #581c87 100%)' },
+  { id: 'midnight-cyber', label: 'Midnight Cyber', bg: 'linear-gradient(180deg, #090d16 0%, #1e1b4b 50%, #0f172a 100%)' },
+  { id: 'electric-purple', label: 'Electric Purple', bg: 'linear-gradient(180deg, #4c1d95 0%, #312e81 50%, #1e1b4b 100%)' },
+  { id: 'emerald-night', label: 'Emerald Night', bg: 'linear-gradient(180deg, #064e3b 0%, #0f2c2c 50%, #061e24 100%)' },
+  { id: 'slate-obsidian', label: 'Slate Obsidian', bg: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)' },
+  { id: 'frosted-glass', label: 'Frosted Glass', bg: 'rgba(255,255,255,0.08)' }
+];
+
 const DECK_SOLUTIONS_ICONS = [
   { key: 'award', name: 'Award / USP', icon: Award },
   { key: 'shield-check', name: 'Verified Shield', icon: ShieldCheck },
@@ -9136,7 +9163,7 @@ const DEFAULT_DECK_SLIDES = [
     accent: 'from-blue-500 via-indigo-500 to-violet-600',
     visualType: 'startup services grid',
     layoutStyle: 'Startup Discover Services',
-    presenterImg: '/assets/slide6_presenter.png',
+    presenterImg: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80',
     presenterZIndex: 20,
     presenterBg: 'linear-gradient(180deg, #1e1b4b 0%, #312e81 40%, #581c87 100%)',
     srv1_icon: 'award',
@@ -12578,6 +12605,9 @@ const DEFAULT_DECK_SLIDES = [
   const [deckBentoDrag, setDeckBentoDrag] = useState({ isDragging: false, cardId: null, startX: 0, startY: 0, origX: 0, origY: 0 });
   const [deckFloatingMenuOpen, setDeckFloatingMenuOpen] = useState(null);
   const [activeCardIconPicker, setActiveCardIconPicker] = useState(null);
+  const [activeOrbColorPicker, setActiveOrbColorPicker] = useState(null);
+  const [activePresenterImgPicker, setActivePresenterImgPicker] = useState(false);
+  const [activeBackdropStylePicker, setActiveBackdropStylePicker] = useState(false);
   // ── CLIENT-SIDE RASTER TO VECTOR (JPG/PNG to SVG) TRACER ENGINE ──
   const [vectorWaveSearch, setVectorWaveSearch] = useState('');
 
@@ -31958,6 +31988,20 @@ Respond with a JSON array of slide objects matching the schema.`;
     return () => window.removeEventListener('pointerdown', handleOutsideClick);
   }, [activeCardIconPicker]);
 
+  // Click outside listener for presenter and orb pickers
+  useEffect(() => {
+    if (!activeOrbColorPicker && !activePresenterImgPicker && !activeBackdropStylePicker) return;
+    const handleOutside = (e) => {
+      if (!e.target.closest('.orb-picker-popover') && !e.target.closest('.presenter-picker-popover') && !e.target.closest('.backdrop-picker-popover') && !e.target.closest('.picker-trigger-btn')) {
+        setActiveOrbColorPicker(null);
+        setActivePresenterImgPicker(false);
+        setActiveBackdropStylePicker(false);
+      }
+    };
+    window.addEventListener('pointerdown', handleOutside);
+    return () => window.removeEventListener('pointerdown', handleOutside);
+  }, [activeOrbColorPicker, activePresenterImgPicker, activeBackdropStylePicker]);
+
     // Badge dragging lifecycle listener
   useEffect(() => {
     if (!deckBadgeDrag.isDragging || !deckBadgeDrag.badgeId) return;
@@ -50270,7 +50314,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
                                       ) : layout === "Startup Discover Services" || layout === "Startup Services" || layout === "Discover Our Services" || activeDeckSlide?.title === "Discover Our Services" || layout === "Services" ? (
                                           /* ── STARTUP DISCOVER SERVICES TEMPLATE (REVERSE-ENGINEERED SLIDE 6) ── */
-                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-4 pt-1 pb-3 md:px-7 md:pb-4 overflow-hidden">
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-5 pt-2 pb-2 md:px-7 md:pt-3 md:pb-3 overflow-hidden">
                                             
                                             {/* Top Right: Multi-Ring Neon Arc / Vortex Graphic */}
                                             <div
@@ -50289,10 +50333,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               }}
                                               style={{
                                                 position: 'absolute',
-                                                top: -10,
-                                                right: -10,
-                                                width: activeDeckSlide?.servicesVortex_width ? `${activeDeckSlide.servicesVortex_width}px` : '180px',
-                                                height: activeDeckSlide?.servicesVortex_height ? `${activeDeckSlide.servicesVortex_height}px` : '180px',
+                                                top: -6,
+                                                right: -6,
+                                                width: activeDeckSlide?.servicesVortex_width ? `${activeDeckSlide.servicesVortex_width}px` : '160px',
+                                                height: activeDeckSlide?.servicesVortex_height ? `${activeDeckSlide.servicesVortex_height}px` : '160px',
                                                 transform: `translate(${activeDeckSlide?.servicesVortex_posX || 0}px, ${activeDeckSlide?.servicesVortex_posY || 0}px)`,
                                                 transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
                                                 pointerEvents: 'auto',
@@ -50313,7 +50357,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     <stop offset="100%" stopColor="#00f0ff" stopOpacity="0.7" />
                                                   </linearGradient>
                                                   <filter id="vortexGlow" x="-30%" y="-30%" width="160%" height="160%">
-                                                    <feGaussianBlur stdDeviation="4.5" result="blur" />
+                                                    <feGaussianBlur stdDeviation="4" result="blur" />
                                                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                                                   </filter>
                                                 </defs>
@@ -50346,16 +50390,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               )}
                                             </div>
 
-                                            {/* Main Content Layout */}
-                                            <div className="flex-1 grid grid-cols-12 gap-6 w-full pointer-events-auto z-20 min-h-0 items-stretch my-auto">
+                                            {/* Main Content Layout: Left Presenter + Right Headline & 2x2 Services Grid */}
+                                            <div className="flex-1 grid grid-cols-12 gap-5 w-full pointer-events-auto z-20 min-h-0 items-stretch my-auto">
                                               
                                               {/* Left Column: Presenter Cutout with Glassmorphic Backdrop Box */}
-                                              <div className="col-span-5 relative flex flex-col justify-end items-center h-full min-h-[300px] overflow-visible">
+                                              <div className="col-span-5 relative flex flex-col justify-end items-center h-full max-h-[300px] overflow-visible">
                                                 
                                                 {/* Backdrop Box Layer */}
                                                 <div
                                                   onPointerDown={(e) => {
-                                                    if (e.target.getAttribute('data-resize-handle')) return;
+                                                    if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn')) return;
                                                     e.stopPropagation();
                                                     setDeckSelection({ type: 'bento', id: 'presenter-backdrop' });
                                                     setDeckBentoDrag({
@@ -50367,16 +50411,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       origY: activeDeckSlide?.presenterBackdrop_posY || 0
                                                     });
                                                   }}
+                                                  onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: 'presenter-backdrop' }); }}
                                                   style={{
                                                     position: 'absolute',
                                                     bottom: 0,
                                                     left: 0,
                                                     right: 0,
-                                                    height: activeDeckSlide?.presenterBackdrop_height ? `${activeDeckSlide.presenterBackdrop_height}px` : '72%',
+                                                    height: activeDeckSlide?.presenterBackdrop_height ? `${activeDeckSlide.presenterBackdrop_height}px` : '74%',
                                                     transform: `translate(${activeDeckSlide?.presenterBackdrop_posX || 0}px, ${activeDeckSlide?.presenterBackdrop_posY || 0}px)`,
                                                     transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
                                                     background: activeDeckSlide?.presenterBg || 'linear-gradient(180deg, #1e1b4b 0%, #312e81 40%, #581c87 100%)',
-                                                    borderRadius: '24px',
+                                                    borderRadius: '22px',
                                                     border: '1.5px solid rgba(255, 255, 255, 0.4)',
                                                     boxShadow: '0 20px 50px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.4)',
                                                     zIndex: 10,
@@ -50384,11 +50429,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   }}
                                                   className={`overflow-visible group/backdrop ${deckSelection.type === 'bento' && deckSelection.id === 'presenter-backdrop' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30' : ''}`}
                                                 >
-                                                  {/* Backdrop Floating Capsule Menu */}
+                                                  {/* Backdrop Floating Capsule Menu with Style & Fill controls */}
                                                   {deckSelection.type === 'bento' && deckSelection.id === 'presenter-backdrop' && (
                                                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
                                                       <Sparkles size={11} className="text-purple-400" />
                                                       <span>Backdrop Box</span>
+                                                      <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                      <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          setActiveBackdropStylePicker(!activeBackdropStylePicker);
+                                                        }}
+                                                        className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-violet-300 flex items-center gap-1 cursor-pointer"
+                                                      >
+                                                        <Palette size={10} /> Style
+                                                      </button>
                                                       <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                       <button
                                                         type="button"
@@ -50412,7 +50468,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 {/* Presenter Cutout Image Layer (Breaks out of the top border) */}
                                                 <div
                                                   onPointerDown={(e) => {
-                                                    if (e.target.getAttribute('data-resize-handle')) return;
+                                                    if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn')) return;
                                                     e.stopPropagation();
                                                     setDeckSelection({ type: 'bento', id: 'presenter-cutout' });
                                                     setDeckBentoDrag({
@@ -50424,10 +50480,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       origY: activeDeckSlide?.presenterCutout_posY || 0
                                                     });
                                                   }}
+                                                  onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: 'presenter-cutout' }); }}
                                                   style={{
                                                     position: 'relative',
-                                                    width: activeDeckSlide?.presenterCutout_width ? `${activeDeckSlide.presenterCutout_width}px` : '96%',
-                                                    height: activeDeckSlide?.presenterCutout_height ? `${activeDeckSlide.presenterCutout_height}px` : '98%',
+                                                    width: activeDeckSlide?.presenterCutout_width ? `${activeDeckSlide.presenterCutout_width}px` : '92%',
+                                                    height: activeDeckSlide?.presenterCutout_height ? `${activeDeckSlide.presenterCutout_height}px` : '96%',
                                                     transform: `translate(${activeDeckSlide?.presenterCutout_posX || 0}px, ${activeDeckSlide?.presenterCutout_posY || 0}px)`,
                                                     transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
                                                     zIndex: activeDeckSlide?.presenterZIndex ?? 20,
@@ -50437,16 +50494,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   className={`overflow-visible flex items-end justify-center select-none group/presenter ${deckSelection.type === 'bento' && deckSelection.id === 'presenter-cutout' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
                                                 >
                                                   <img
-                                                    src={activeDeckSlide?.presenterImg || '/assets/slide6_presenter.png'}
+                                                    src={activeDeckSlide?.presenterImg || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80'}
                                                     alt="Presenter"
-                                                    className="w-full h-full object-contain object-bottom pointer-events-none drop-shadow-[0_20px_35px_rgba(0,0,0,0.8)]"
+                                                    className="w-full h-full object-cover object-top rounded-2xl pointer-events-none drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)] border border-white/20"
                                                   />
 
-                                                  {/* Presenter Floating Capsule Menu with Send to Back / Bring to Front */}
+                                                  {/* Presenter Floating Capsule Menu with Send to Back / Bring to Front & Change Image */}
                                                   {deckSelection.type === 'bento' && deckSelection.id === 'presenter-cutout' && (
                                                     <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
                                                       <User size={11} className="text-cyan-400" />
                                                       <span>Presenter</span>
+                                                      <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                      <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          setActivePresenterImgPicker(!activePresenterImgPicker);
+                                                        }}
+                                                        className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                        title="Select Presenter Image"
+                                                      >
+                                                        <Image size={10} /> Change
+                                                      </button>
                                                       <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                       <button
                                                         type="button"
@@ -50500,9 +50569,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               </div>
 
                                               {/* Right Column: Headline + 2x2 Services Grid with Glowing Laser Divider Beams */}
-                                              <div className="col-span-7 flex flex-col justify-between h-full pl-2 pr-1 py-1">
+                                              <div className="col-span-7 flex flex-col justify-between h-full max-h-[300px] pl-1 pr-1 py-0.5 min-h-0">
                                                 
-                                                {/* Headline Block */}
+                                                {/* Headline Block with explicit multi-line and proper spacing */}
                                                 <div
                                                   onPointerDown={(e) => {
                                                     if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
@@ -50524,14 +50593,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     height: activeDeckSlide?.servicesHeadline_height ? `${activeDeckSlide.servicesHeadline_height}px` : undefined,
                                                     touchAction: 'none'
                                                   }}
-                                                  className={`relative overflow-visible flex flex-col justify-start select-auto cursor-grab active:cursor-grabbing group/title z-30 mb-4 ${deckSelection.type === 'text' && deckSelection.id === 'services-headline' ? 'z-50 outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
+                                                  className={`relative overflow-visible flex flex-col justify-start select-auto cursor-grab active:cursor-grabbing group/title z-30 mb-2 ${deckSelection.type === 'text' && deckSelection.id === 'services-headline' ? 'z-50 outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
                                                 >
                                                   <h1
                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                     suppressContentEditableWarning
                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                     style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                    className="text-[34px] md:text-[42px] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-[1.02] w-full break-words"
+                                                    className="text-[26px] md:text-[34px] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-[1.05] w-full break-words"
                                                   >
                                                     {activeDeckSlide?.headline ? (
                                                       activeDeckSlide.headline.split('\n').map((line, idx) => (
@@ -50571,29 +50640,30 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 </div>
 
                                                 {/* 2x2 Services Grid with Laser Crosshair Dividers */}
-                                                <div className="flex-1 relative flex items-stretch min-h-0">
+                                                <div className="flex-1 relative flex items-stretch min-h-0 pt-0.5 pb-0.5">
                                                   
-                                                  {/* Left Column (Items 1 & 3) */}
-                                                  <div className="w-1/2 flex flex-col justify-between pr-4 py-1">
+                                                  {/* Left Column (Brand Building & Marketing Analytics) */}
+                                                  <div className="w-1/2 flex flex-col justify-between pr-3 py-0.5">
                                                     {[
-                                                      { id: 'srv-item-1', itemKey: 'srvItem1', iconKey: 'srv1_icon', titleKey: 'srv1_title', bodyKey: 'srv1_text', defTitle: 'BRAND BUILDING', defBody: 'We create a strong brand identity, including logos and design elements, to help startups stand out and gain trust.', defIcon: 'award' },
-                                                      { id: 'srv-item-3', itemKey: 'srvItem3', iconKey: 'srv3_icon', titleKey: 'srv3_title', bodyKey: 'srv3_text', defTitle: 'MARKETING ANALYTICS', defBody: 'We provide insights and reports on marketing performance to help startups make informed decisions.', defIcon: 'activity' }
+                                                      { id: 'srv-item-1', itemKey: 'srvItem1', iconKey: 'srv1_icon', orbKey: 'srv1_orb', titleKey: 'srv1_title', bodyKey: 'srv1_text', defTitle: 'BRAND BUILDING', defBody: 'We create a strong brand identity, including logos and design elements, to help startups stand out and gain trust.', defIcon: 'award' },
+                                                      { id: 'srv-item-3', itemKey: 'srvItem3', iconKey: 'srv3_icon', orbKey: 'srv3_orb', titleKey: 'srv3_title', bodyKey: 'srv3_text', defTitle: 'MARKETING ANALYTICS', defBody: 'We provide insights and reports on marketing performance to help startups make informed decisions.', defIcon: 'activity' }
                                                     ].map((sItem, sIdx) => {
                                                       const currentIcon = activeDeckSlide?.[sItem.iconKey] || sItem.defIcon;
                                                       const currentTitle = activeDeckSlide?.[sItem.titleKey] || sItem.defTitle;
                                                       const currentBody = activeDeckSlide?.[sItem.bodyKey] || sItem.defBody;
+                                                      const currentOrb = activeDeckSlide?.[sItem.orbKey] || 'radial-gradient(circle at 35% 35%, #93c5fd 0%, #3b82f6 45%, #1d4ed8 75%, #0f172a 100%)';
                                                       const isSelected = deckSelection.type === 'bento' && deckSelection.id === sItem.id;
 
                                                       return (
                                                         <div
                                                           key={sIdx}
                                                           onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: sItem.id }); }}
-                                                          className={`flex flex-col items-center text-center p-2.5 rounded-xl transition-all relative group/srv ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : 'hover:bg-white/[0.02]'}`}
+                                                          className={`flex flex-col items-center text-center p-2 rounded-xl transition-all relative group/srv cursor-pointer ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : 'hover:bg-white/[0.03]'}`}
                                                         >
                                                           {/* Glowing 3D Blue Sphere / Orb Badge */}
                                                           <div
-                                                            className="w-9 h-9 rounded-full mb-2 flex items-center justify-center cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.6)] border border-cyan-400/40 relative hover:scale-110 active:scale-95 transition-all"
-                                                            style={{ background: 'radial-gradient(circle at 35% 35%, #93c5fd 0%, #3b82f6 45%, #1d4ed8 75%, #0f172a 100%)' }}
+                                                            className="w-8 h-8 rounded-full mb-1.5 flex items-center justify-center cursor-pointer shadow-[0_0_12px_rgba(59,130,246,0.6)] border border-cyan-400/40 relative hover:scale-110 active:scale-95 transition-all"
+                                                            style={{ background: currentOrb }}
                                                             onClick={(e) => {
                                                               e.stopPropagation();
                                                               setDeckSelection({ type: 'bento', id: sItem.id });
@@ -50609,7 +50679,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                             suppressContentEditableWarning
                                                             onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, sItem.titleKey, e.currentTarget.textContent || '')}
                                                             style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                            className="text-[12px] md:text-[13px] font-extrabold text-white uppercase tracking-wider mb-1.5 outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text leading-tight w-full select-text"
+                                                            className="text-[11px] md:text-[12px] font-extrabold text-white uppercase tracking-wider mb-1 outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text leading-tight w-full select-text"
                                                           >
                                                             {currentTitle}
                                                           </h4>
@@ -50619,39 +50689,70 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                             suppressContentEditableWarning
                                                             onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, sItem.bodyKey, e.currentTarget.textContent || '')}
                                                             style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                            className="text-[9.5px] md:text-[10.5px] leading-[1.4] text-slate-300 font-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text w-full select-text"
+                                                            className="text-[9px] md:text-[9.5px] leading-[1.35] text-slate-300 font-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text w-full select-text"
                                                           >
                                                             {currentBody}
                                                           </p>
+
+                                                          {/* Floating Capsule for Service Card */}
+                                                          {isSelected && (
+                                                            <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                              <Sparkles size={11} className="text-cyan-400" />
+                                                              <span>{sItem.defTitle.split(' ')[0]}</span>
+                                                              <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                              <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  setActiveCardIconPicker({ cardKey: sItem.itemKey, iconKey: sItem.iconKey });
+                                                                }}
+                                                                className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                              >
+                                                                <Palette size={10} /> Icon
+                                                              </button>
+                                                              <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                              <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  setActiveOrbColorPicker({ itemKey: sItem.itemKey, orbKey: sItem.orbKey });
+                                                                }}
+                                                                className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1 cursor-pointer"
+                                                              >
+                                                                <Sparkles size={10} /> Orb
+                                                              </button>
+                                                            </div>
+                                                          )}
                                                         </div>
                                                       );
                                                     })}
                                                   </div>
 
                                                   {/* Vertical Central Laser Beam Divider */}
-                                                  <div className="w-px self-stretch bg-gradient-to-b from-white/35 via-cyan-400 to-white/10 shadow-[0_0_8px_rgba(0,240,255,0.7)] shrink-0 my-1" />
+                                                  <div className="w-px self-stretch bg-gradient-to-b from-white/35 via-cyan-400 to-white/10 shadow-[0_0_8px_rgba(0,240,255,0.7)] shrink-0 my-0.5" />
 
-                                                  {/* Right Column (Items 2 & 4) */}
-                                                  <div className="w-1/2 flex flex-col justify-between pl-4 py-1">
+                                                  {/* Right Column (Digital Marketing & PR Support) */}
+                                                  <div className="w-1/2 flex flex-col justify-between pl-3 py-0.5">
                                                     {[
-                                                      { id: 'srv-item-2', itemKey: 'srvItem2', iconKey: 'srv2_icon', titleKey: 'srv2_title', bodyKey: 'srv2_text', defTitle: 'DIGITAL MARKETING', defBody: 'We create a strong digital presence including SEO, social media, and digital campaigns to drive customer acquisition.', defIcon: 'trending-up' },
-                                                      { id: 'srv-item-4', itemKey: 'srvItem4', iconKey: 'srv4_icon', titleKey: 'srv4_title', bodyKey: 'srv4_text', defTitle: 'PR SUPPORT', defBody: 'We help startups get media coverage and build relationships with relevant journalists and influencers.', defIcon: 'sparkles' }
+                                                      { id: 'srv-item-2', itemKey: 'srvItem2', iconKey: 'srv2_icon', orbKey: 'srv2_orb', titleKey: 'srv2_title', bodyKey: 'srv2_text', defTitle: 'DIGITAL MARKETING', defBody: 'We create a strong digital presence including SEO, social media, and digital campaigns to drive customer acquisition.', defIcon: 'trending-up' },
+                                                      { id: 'srv-item-4', itemKey: 'srvItem4', iconKey: 'srv4_icon', orbKey: 'srv4_orb', titleKey: 'srv4_title', bodyKey: 'srv4_text', defTitle: 'PR SUPPORT', defBody: 'We help startups get media coverage and build relationships with relevant journalists and influencers.', defIcon: 'sparkles' }
                                                     ].map((sItem, sIdx) => {
                                                       const currentIcon = activeDeckSlide?.[sItem.iconKey] || sItem.defIcon;
                                                       const currentTitle = activeDeckSlide?.[sItem.titleKey] || sItem.defTitle;
                                                       const currentBody = activeDeckSlide?.[sItem.bodyKey] || sItem.defBody;
+                                                      const currentOrb = activeDeckSlide?.[sItem.orbKey] || 'radial-gradient(circle at 35% 35%, #93c5fd 0%, #3b82f6 45%, #1d4ed8 75%, #0f172a 100%)';
                                                       const isSelected = deckSelection.type === 'bento' && deckSelection.id === sItem.id;
 
                                                       return (
                                                         <div
                                                           key={sIdx}
                                                           onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: sItem.id }); }}
-                                                          className={`flex flex-col items-center text-center p-2.5 rounded-xl transition-all relative group/srv ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : 'hover:bg-white/[0.02]'}`}
+                                                          className={`flex flex-col items-center text-center p-2 rounded-xl transition-all relative group/srv cursor-pointer ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : 'hover:bg-white/[0.03]'}`}
                                                         >
                                                           {/* Glowing 3D Blue Sphere / Orb Badge */}
                                                           <div
-                                                            className="w-9 h-9 rounded-full mb-2 flex items-center justify-center cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.6)] border border-cyan-400/40 relative hover:scale-110 active:scale-95 transition-all"
-                                                            style={{ background: 'radial-gradient(circle at 35% 35%, #93c5fd 0%, #3b82f6 45%, #1d4ed8 75%, #0f172a 100%)' }}
+                                                            className="w-8 h-8 rounded-full mb-1.5 flex items-center justify-center cursor-pointer shadow-[0_0_12px_rgba(59,130,246,0.6)] border border-cyan-400/40 relative hover:scale-110 active:scale-95 transition-all"
+                                                            style={{ background: currentOrb }}
                                                             onClick={(e) => {
                                                               e.stopPropagation();
                                                               setDeckSelection({ type: 'bento', id: sItem.id });
@@ -50667,7 +50768,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                             suppressContentEditableWarning
                                                             onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, sItem.titleKey, e.currentTarget.textContent || '')}
                                                             style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                            className="text-[12px] md:text-[13px] font-extrabold text-white uppercase tracking-wider mb-1.5 outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text leading-tight w-full select-text"
+                                                            className="text-[11px] md:text-[12px] font-extrabold text-white uppercase tracking-wider mb-1 outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text leading-tight w-full select-text"
                                                           >
                                                             {currentTitle}
                                                           </h4>
@@ -50677,20 +50778,50 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                             suppressContentEditableWarning
                                                             onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, sItem.bodyKey, e.currentTarget.textContent || '')}
                                                             style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                            className="text-[9.5px] md:text-[10.5px] leading-[1.4] text-slate-300 font-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text w-full select-text"
+                                                            className="text-[9px] md:text-[9.5px] leading-[1.35] text-slate-300 font-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text w-full select-text"
                                                           >
                                                             {currentBody}
                                                           </p>
+
+                                                          {/* Floating Capsule for Service Card */}
+                                                          {isSelected && (
+                                                            <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                              <Sparkles size={11} className="text-cyan-400" />
+                                                              <span>{sItem.defTitle.split(' ')[0]}</span>
+                                                              <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                              <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  setActiveCardIconPicker({ cardKey: sItem.itemKey, iconKey: sItem.iconKey });
+                                                                }}
+                                                                className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                              >
+                                                                <Palette size={10} /> Icon
+                                                              </button>
+                                                              <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                              <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  setActiveOrbColorPicker({ itemKey: sItem.itemKey, orbKey: sItem.orbKey });
+                                                                }}
+                                                                className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1 cursor-pointer"
+                                                              >
+                                                                <Sparkles size={10} /> Orb
+                                                              </button>
+                                                            </div>
+                                                          )}
                                                         </div>
                                                       );
                                                     })}
                                                   </div>
 
                                                   {/* Horizontal Crosshair Separator Lines */}
-                                                  <div className="absolute left-0 right-1/2 pr-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                  <div className="absolute left-0 right-1/2 pr-3 top-1/2 -translate-y-1/2 pointer-events-none">
                                                     <div className="w-full h-px bg-gradient-to-r from-white/30 via-cyan-400/60 to-transparent" />
                                                   </div>
-                                                  <div className="absolute left-1/2 right-0 pl-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                  <div className="absolute left-1/2 right-0 pl-3 top-1/2 -translate-y-1/2 pointer-events-none">
                                                     <div className="w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-white/30" />
                                                   </div>
                                                 </div>
@@ -50741,6 +50872,127 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       </button>
                                                     );
                                                   })}
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {/* Interactive Orb Color Glow Dropdown Popup */}
+                                            {activeOrbColorPicker && (
+                                              <div
+                                                className="orb-picker-popover absolute z-[120] bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-3.5 w-[260px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onPointerDown={(e) => e.stopPropagation()}
+                                              >
+                                                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
+                                                  <span className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                                    <Palette size={12} className="text-cyan-400" /> Select Orb Color
+                                                  </span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setActiveOrbColorPicker(null)}
+                                                    className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                                                  >
+                                                    <X size={12} />
+                                                  </button>
+                                                </div>
+                                                <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto thin-scrollbar p-1">
+                                                  {DECK_ORB_GRADIENTS.map((orb) => (
+                                                    <button
+                                                      key={orb.id}
+                                                      type="button"
+                                                      onClick={() => {
+                                                        updateDeckSlideField(activeDeckSlide?.id, activeOrbColorPicker.orbKey, orb.grad);
+                                                        showToast(`Orb glow set to ${orb.label}`);
+                                                        setActiveOrbColorPicker(null);
+                                                      }}
+                                                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-white/10 flex items-center justify-between text-xs text-slate-200 cursor-pointer"
+                                                    >
+                                                      <div className="flex items-center gap-2">
+                                                        <div className="w-5 h-5 rounded-full border border-white/40 shadow-sm" style={{ background: orb.grad }} />
+                                                        <span>{orb.label}</span>
+                                                      </div>
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {/* Interactive Presenter Image Selector Dropdown Popup */}
+                                            {activePresenterImgPicker && (
+                                              <div
+                                                className="presenter-picker-popover absolute z-[120] bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-3.5 w-[290px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onPointerDown={(e) => e.stopPropagation()}
+                                              >
+                                                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
+                                                  <span className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                                    <User size={12} className="text-cyan-400" /> Select Presenter Photo
+                                                  </span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setActivePresenterImgPicker(false)}
+                                                    className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                                                  >
+                                                    <X size={12} />
+                                                  </button>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto thin-scrollbar p-1">
+                                                  {DECK_PRESENTER_AVATARS.map((item) => (
+                                                    <button
+                                                      key={item.id}
+                                                      type="button"
+                                                      onClick={() => {
+                                                        updateDeckSlideField(activeDeckSlide?.id, 'presenterImg', item.url);
+                                                        showToast(`Presenter set to ${item.label}`);
+                                                        setActivePresenterImgPicker(false);
+                                                      }}
+                                                      className="flex flex-col items-center p-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/15 hover:border-cyan-400/50 transition-all cursor-pointer group"
+                                                    >
+                                                      <img src={item.url} alt={item.label} className="w-14 h-14 rounded-lg object-cover mb-1 border border-white/20" />
+                                                      <span className="text-[9px] text-center text-slate-200 font-medium truncate max-w-full">{item.label}</span>
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {/* Interactive Backdrop Box Style Dropdown Popup */}
+                                            {activeBackdropStylePicker && (
+                                              <div
+                                                className="backdrop-picker-popover absolute z-[120] bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-3.5 w-[280px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onPointerDown={(e) => e.stopPropagation()}
+                                              >
+                                                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
+                                                  <span className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                                    <Palette size={12} className="text-purple-400" /> Backdrop Box Style
+                                                  </span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setActiveBackdropStylePicker(false)}
+                                                    className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                                                  >
+                                                    <X size={12} />
+                                                  </button>
+                                                </div>
+                                                <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto thin-scrollbar p-1">
+                                                  {DECK_BACKDROP_STYLES.map((style) => (
+                                                    <button
+                                                      key={style.id}
+                                                      type="button"
+                                                      onClick={() => {
+                                                        updateDeckSlideField(activeDeckSlide?.id, 'presenterBg', style.bg);
+                                                        showToast(`Backdrop set to ${style.label}`);
+                                                        setActiveBackdropStylePicker(false);
+                                                      }}
+                                                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-white/10 flex items-center justify-between text-xs text-slate-200 cursor-pointer"
+                                                    >
+                                                      <div className="flex items-center gap-2">
+                                                        <div className="w-5 h-5 rounded-md border border-white/30" style={{ background: style.bg }} />
+                                                        <span>{style.label}</span>
+                                                      </div>
+                                                    </button>
+                                                  ))}
                                                 </div>
                                               </div>
                                             )}
