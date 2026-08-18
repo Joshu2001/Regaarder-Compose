@@ -47917,7 +47917,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         ))}
                                       </div>
                                       <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
-                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', 0); updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', 0); updateDeckSlideField(activeDeckSlide?.id, 'vectorWidth', 580); updateDeckSlideField(activeDeckSlide?.id, 'vectorHeight', 420); showToast('Vector mesh reset'); }} className="hover:text-slate-900 dark:hover:text-white flex items-center gap-1"><RotateCcw size={11} /> Reset Bounds</button>
+                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', 0); updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', 0); updateDeckSlideField(activeDeckSlide?.id, 'vectorWidth', 900); updateDeckSlideField(activeDeckSlide?.id, 'vectorHeight', 650); showToast('Vector mesh reset'); }} className="hover:text-slate-900 dark:hover:text-white flex items-center gap-1"><RotateCcw size={11} /> Reset Bounds</button>
                                       <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', true); setDeckSelection({ type: 'none', id: null }); }} className="text-rose-500 hover:text-rose-600 flex items-center gap-1"><Trash2 size={11} /> Delete Mesh</button>
                                     </div>
                                   ) : (
@@ -48261,8 +48261,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     if (isHidden) return null;
                                     const vX = activeDeckSlide?.vectorPosX || 0;
                                     const vY = activeDeckSlide?.vectorPosY || 0;
-                                    const vW = activeDeckSlide?.vectorWidth || 580;
-                                    const vH = activeDeckSlide?.vectorHeight || 420;
+                                    const vW = activeDeckSlide?.vectorWidth || 900;
+                                    const vH = activeDeckSlide?.vectorHeight || 650;
                                     const waveStyle = activeDeckSlide?.vectorWaveStyle || 'dual-mesh';
                                     const c1 = activeDeckSlide?.vectorColor1 || '#00f0ff';
                                     const c2 = activeDeckSlide?.vectorColor2 || '#a855f7';
@@ -48301,7 +48301,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             e.stopPropagation();
                                             setDeckSelection({ type: 'vector', id: 'vector-mesh' });
                                           }}
-                                          className={`absolute bottom-0 right-0 pointer-events-auto cursor-grab active:cursor-grabbing group transition-all ${
+                                          className={`absolute inset-0 pointer-events-auto cursor-grab active:cursor-grabbing group transition-all ${
                                             isVectorSelected 
                                               ? 'border border-[#7C4DFF] shadow-[0_0_15px_rgba(124,77,255,0.25)] rounded-xl ring-1 ring-[#7C4DFF]/30' 
                                               : 'hover:border hover:border-[#7C4DFF]/40 rounded-xl'
@@ -48564,6 +48564,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 <stop offset="50%" stopColor={c2} stopOpacity="0.4" />
                                                 <stop offset="100%" stopColor={c2} stopOpacity="0.8" />
                                               </linearGradient>
+                                               <linearGradient id="dynWaveGradCobalt" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                 <stop offset="0%" stopColor={c1 || "#0055ff"} stopOpacity="0.08" />
+                                                 <stop offset="50%" stopColor={c1 || "#0066ff"} stopOpacity="0.65" />
+                                                 <stop offset="100%" stopColor={c2 || "#00f0ff"} stopOpacity="0.95" />
+                                               </linearGradient>
                                             </defs>
                                             {waveStyle === 'original-pitch' || !waveStyle ? (
                                                /* ── 1. EXACT STARTUP PITCH DECK VORTEX & HORIZON CURVES ── */
