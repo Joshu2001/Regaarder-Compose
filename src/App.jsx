@@ -491,6 +491,36 @@ const DECK_THEME_OPTIONS = [
 
 const DECK_LAYOUT_OPTIONS = [
   { 
+    key: "Startup Team", 
+    name: "Startup Meet the Team",
+    desc: '2x2 grid of glassmorphic executive team cards with photo avatars, names, italic roles & bottom contact bar',
+    visualType: 'startup 2x2 executive team grid',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col justify-between p-0.5 shrink-0 gap-0.5">
+        <div className="flex justify-between gap-0.5 h-1/2">
+          <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center p-0.5 gap-0.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+            <div className="w-full h-0.5 bg-slate-300" />
+          </div>
+          <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center p-0.5 gap-0.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+            <div className="w-full h-0.5 bg-slate-300" />
+          </div>
+        </div>
+        <div className="flex justify-between gap-0.5 h-1/2">
+          <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center p-0.5 gap-0.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+            <div className="w-full h-0.5 bg-slate-300" />
+          </div>
+          <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center p-0.5 gap-0.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+            <div className="w-full h-0.5 bg-slate-300" />
+          </div>
+        </div>
+      </div>
+    )
+  },
+  { 
     key: "Startup Use of Funds", 
     name: "Startup Use of Funds",
     desc: 'Interactive pie/donut allocation chart card, bottom-right orbital neon vortex & 4 percentage badge rows',
@@ -9635,6 +9665,49 @@ const DEFAULT_DECK_SLIDES = [
     fund4Shape: '12px',
     motionCue: 'Pie Slice Expand & Row Cascade',
     speakerNotes: 'Detail capital deployment breakdown: 40% Product R&D, 30% Marketing/GTM, 20% Infrastructure/Ops, and 10% Strategic Expansion.',
+    footer: 'ingoude Company'
+  },
+  {
+    id: 14,
+    section: 'Team',
+    title: 'Leadership & Team',
+    tagline: 'Ingoude Company',
+    headline: 'MEET THE TEAM',
+    teamSub: 'Thank you for your time! Reach out to us for questions.',
+    backgroundColor: '#05070B',
+    vectorWaveStyle: 'top-right-neon-wave',
+    vectorColor1: '#00f0ff',
+    vectorColor2: '#a855f7',
+    designPresetKey: 'midnight-slate',
+    presetKey: 'midnight-slate',
+    accent: 'from-blue-500 via-indigo-500 to-cyan-400',
+    visualType: 'startup 2x2 executive team grid',
+    layoutStyle: 'Startup Team',
+    member1Name: 'DANI MARTINEZ',
+    member1Role: 'Chief Executive Officer',
+    member1Photo: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=300&h=300&fit=crop&crop=faces',
+    member1Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
+    member1Shape: '14px',
+    member2Name: 'HARPER RUSSO',
+    member2Role: 'Chief Executive Officer',
+    member2Photo: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&h=300&fit=crop&crop=faces',
+    member2Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
+    member2Shape: '14px',
+    member3Name: 'MORGAN MAXWELL',
+    member3Role: 'Chief Executive Officer',
+    member3Photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=faces',
+    member3Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
+    member3Shape: '14px',
+    member4Name: 'NEIL TRAN',
+    member4Role: 'Director',
+    member4Photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop&crop=faces',
+    member4Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
+    member4Shape: '14px',
+    contactWeb: 'www.reallygreatsite.com',
+    contactEmail: 'hello@reallygreatsite.com',
+    contactPhone: '+123-456-7890',
+    motionCue: '2x2 Card Float & Contact Fade In',
+    speakerNotes: 'Introduce core founding and executive leadership team driving execution and scale.',
     footer: 'ingoude Company'
   }
 ];
@@ -50788,7 +50861,441 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
                                           </div>
                                         </div>
-                                      ) : layout === "Startup Use of Funds" || layout === "Use of Funds" || layout === "Startup Capital Allocation" || activeDeckSlide?.title === "Use of Funds & Capital Allocation" || activeDeckSlide?.title === "Use of Funds" ? (
+                                      ) : layout === "Startup Team" || layout === "Startup Meet the Team" || layout === "Meet the Team" || activeDeckSlide?.title === "Leadership & Team" || activeDeckSlide?.title === "Meet the Team" ? (
+                                          /* ── STARTUP MEET THE TEAM TEMPLATE (REVERSE-ENGINEERED SLIDE 14) ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-2 md:px-8 md:pt-3.5 md:pb-2.5 overflow-hidden">
+                                            
+                                            {/* Top-Right Ambient Neon Wave Ribbon Graphic */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'vector', id: 'team-neon-wave' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'teamNeonWave',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.teamNeonWave_posX || 0,
+                                                  origY: activeDeckSlide?.teamNeonWave_posY || 0
+                                                });
+                                              }}
+                                              style={{
+                                                position: 'absolute',
+                                                top: -15,
+                                                right: -10,
+                                                width: activeDeckSlide?.teamNeonWave_width ? `${activeDeckSlide.teamNeonWave_width}px` : '300px',
+                                                height: activeDeckSlide?.teamNeonWave_height ? `${activeDeckSlide.teamNeonWave_height}px` : '150px',
+                                                transform: `translate(${activeDeckSlide?.teamNeonWave_posX || 0}px, ${activeDeckSlide?.teamNeonWave_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                pointerEvents: 'auto',
+                                                cursor: 'grab',
+                                                zIndex: 4
+                                              }}
+                                              className={`overflow-visible select-none group/teamneon ${deckSelection.type === 'vector' && deckSelection.id === 'team-neon-wave' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
+                                            >
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 300 150" fill="none">
+                                                <defs>
+                                                  <linearGradient id="teamWaveGrad1" x1="100%" y1="0%" x2="0%" y2="100%">
+                                                    <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.95" />
+                                                    <stop offset="50%" stopColor="#6366f1" stopOpacity="0.8" />
+                                                    <stop offset="100%" stopColor="#a855f7" stopOpacity="0.75" />
+                                                  </linearGradient>
+                                                  <filter id="teamWaveGlow" x="-20%" y="-30%" width="140%" height="160%">
+                                                    <feGaussianBlur stdDeviation="5" result="blur" />
+                                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                                  </filter>
+                                                </defs>
+                                                <path d="M300,10 C240,20 180,120 40,70" stroke="url(#teamWaveGrad1)" strokeWidth="4" fill="none" opacity="0.85" filter="url(#teamWaveGlow)" />
+                                                <path d="M300,20 C245,28 185,128 45,78" stroke="#00f0ff" strokeWidth="2" fill="none" opacity="0.9" />
+                                                <path d="M300,30 C250,38 190,135 50,85" stroke="#c084fc" strokeWidth="1.2" fill="none" opacity="0.6" strokeDasharray="5 3" />
+                                              </svg>
+                                              {/* Drag Capsule */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'team-neon-wave' && (
+                                                <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'team-neon-wave' }); setDeckBentoDrag({ isDragging: true, cardId: 'teamNeonWave', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.teamNeonWave_posX || 0, origY: activeDeckSlide?.teamNeonWave_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <span>Neon Trails</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { teamNeonWave_posX: 0, teamNeonWave_posY: 0, teamNeonWave_width: undefined, teamNeonWave_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Top-Left Headline & Narrative Block */}
+                                            <div className="flex flex-col gap-0.5 mb-1.5 z-20 pointer-events-auto max-w-[580px]">
+                                              {/* Headline */}
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'text', id: 'team-headline' });
+                                                  setDeckBentoDrag({
+                                                    isDragging: true,
+                                                    cardId: 'teamHeadline',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    origX: activeDeckSlide?.teamHeadline_posX || 0,
+                                                    origY: activeDeckSlide?.teamHeadline_posY || 0
+                                                  });
+                                                }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.teamHeadline_posX || 0}px, ${activeDeckSlide?.teamHeadline_posY || 0}px)`,
+                                                  transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                  width: activeDeckSlide?.teamHeadline_width ? `${activeDeckSlide.teamHeadline_width}px` : undefined,
+                                                  height: activeDeckSlide?.teamHeadline_height ? `${activeDeckSlide.teamHeadline_height}px` : undefined,
+                                                  touchAction: 'none'
+                                                }}
+                                                className={`relative overflow-visible cursor-grab active:cursor-grabbing group/title z-30 mb-0.5 ${deckSelection.type === 'text' && deckSelection.id === 'team-headline' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
+                                              >
+                                                <h1
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                  className="text-[24px] md:text-[28px] font-[900] tracking-tight text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none w-full break-words"
+                                                >
+                                                  {activeDeckSlide?.headline || 'MEET THE TEAM'}
+                                                </h1>
+                                                {/* Drag Capsule */}
+                                                {deckSelection.type === 'text' && deckSelection.id === 'team-headline' && (
+                                                  <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'text', id: 'team-headline' }); setDeckBentoDrag({ isDragging: true, cardId: 'teamHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.teamHeadline_posX || 0, origY: activeDeckSlide?.teamHeadline_posY || 0 }); }} className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                    <Move size={11} className="text-violet-400" />
+                                                    <span>Headline</span>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { teamHeadline_posX: 0, teamHeadline_posY: 0, teamHeadline_width: undefined, teamHeadline_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                  </div>
+                                                )}
+                                              </div>
+
+                                              {/* Narrative Subtitle */}
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'text', id: 'team-sub' });
+                                                  setDeckBentoDrag({
+                                                    isDragging: true,
+                                                    cardId: 'teamSub',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    origX: activeDeckSlide?.teamSub_posX || 0,
+                                                    origY: activeDeckSlide?.teamSub_posY || 0
+                                                  });
+                                                }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.teamSub_posX || 0}px, ${activeDeckSlide?.teamSub_posY || 0}px)`,
+                                                  transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                  width: activeDeckSlide?.teamSub_width ? `${activeDeckSlide.teamSub_width}px` : undefined,
+                                                  height: activeDeckSlide?.teamSub_height ? `${activeDeckSlide.teamSub_height}px` : undefined,
+                                                  touchAction: 'none'
+                                                }}
+                                                className={`relative overflow-visible cursor-grab active:cursor-grabbing group/desc z-30 ${deckSelection.type === 'text' && deckSelection.id === 'team-sub' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
+                                              >
+                                                <p
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'teamSub', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                  className="text-[9px] md:text-[10px] text-slate-300 font-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text w-full select-text"
+                                                >
+                                                  {activeDeckSlide?.teamSub || 'Thank you for your time! Reach out to us for questions.'}
+                                                </p>
+                                              </div>
+                                            </div>
+
+                                            {/* Main Stage: 2x2 Grid of Glassmorphic Executive Member Bento Cards */}
+                                            <div className="flex-1 grid grid-cols-2 gap-3 md:gap-4 w-full pointer-events-auto z-20 min-h-0 items-stretch py-1">
+                                              {[
+                                                {
+                                                  id: 'team-card-1',
+                                                  cardKey: 'member1',
+                                                  nameKey: 'member1Name',
+                                                  roleKey: 'member1Role',
+                                                  photoKey: 'member1Photo',
+                                                  bgKey: 'member1Bg',
+                                                  shapeKey: 'member1Shape',
+                                                  defName: 'DANI MARTINEZ',
+                                                  defRole: 'Chief Executive Officer',
+                                                  defPhoto: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=300&h=300&fit=crop&crop=faces',
+                                                  defBg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)'
+                                                },
+                                                {
+                                                  id: 'team-card-2',
+                                                  cardKey: 'member2',
+                                                  nameKey: 'member2Name',
+                                                  roleKey: 'member2Role',
+                                                  photoKey: 'member2Photo',
+                                                  bgKey: 'member2Bg',
+                                                  shapeKey: 'member2Shape',
+                                                  defName: 'HARPER RUSSO',
+                                                  defRole: 'Chief Executive Officer',
+                                                  defPhoto: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&h=300&fit=crop&crop=faces',
+                                                  defBg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)'
+                                                },
+                                                {
+                                                  id: 'team-card-3',
+                                                  cardKey: 'member3',
+                                                  nameKey: 'member3Name',
+                                                  roleKey: 'member3Role',
+                                                  photoKey: 'member3Photo',
+                                                  bgKey: 'member3Bg',
+                                                  shapeKey: 'member3Shape',
+                                                  defName: 'MORGAN MAXWELL',
+                                                  defRole: 'Chief Executive Officer',
+                                                  defPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=faces',
+                                                  defBg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)'
+                                                },
+                                                {
+                                                  id: 'team-card-4',
+                                                  cardKey: 'member4',
+                                                  nameKey: 'member4Name',
+                                                  roleKey: 'member4Role',
+                                                  photoKey: 'member4Photo',
+                                                  bgKey: 'member4Bg',
+                                                  shapeKey: 'member4Shape',
+                                                  defName: 'NEIL TRAN',
+                                                  defRole: 'Director',
+                                                  defPhoto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop&crop=faces',
+                                                  defBg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)'
+                                                }
+                                              ].map((mItem, mIdx) => {
+                                                const curName = activeDeckSlide?.[mItem.nameKey] || mItem.defName;
+                                                const curRole = activeDeckSlide?.[mItem.roleKey] || mItem.defRole;
+                                                const curPhoto = activeDeckSlide?.[mItem.photoKey] || mItem.defPhoto;
+                                                const curBg = activeDeckSlide?.[mItem.bgKey] || mItem.defBg;
+                                                const curShape = activeDeckSlide?.[mItem.shapeKey] || '14px';
+                                                const isSelected = deckSelection.type === 'bento' && deckSelection.id === mItem.id;
+                                                const itemPosX = activeDeckSlide?.[mItem.cardKey + '_posX'] || 0;
+                                                const itemPosY = activeDeckSlide?.[mItem.cardKey + '_posY'] || 0;
+                                                const itemW = activeDeckSlide?.[mItem.cardKey + '_width'];
+                                                const itemH = activeDeckSlide?.[mItem.cardKey + '_height'];
+
+                                                return (
+                                                  <div
+                                                    key={mIdx}
+                                                    onPointerDown={(e) => {
+                                                      if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn') || e.target.getAttribute('contenteditable')) return;
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'bento', id: mItem.id });
+                                                      setDeckBentoDrag({
+                                                        isDragging: true,
+                                                        cardId: mItem.cardKey,
+                                                        startX: e.clientX,
+                                                        startY: e.clientY,
+                                                        origX: itemPosX,
+                                                        origY: itemPosY
+                                                      });
+                                                    }}
+                                                    onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: mItem.id }); }}
+                                                    style={{
+                                                      transform: `translate(${itemPosX}px, ${itemPosY}px)`,
+                                                      transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                      width: itemW ? `${itemW}px` : undefined,
+                                                      height: itemH ? `${itemH}px` : undefined,
+                                                      background: curBg,
+                                                      borderRadius: curShape,
+                                                      border: '1.2px solid rgba(255, 255, 255, 0.45)',
+                                                      boxShadow: '0 10px 28px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.35)',
+                                                      backdropFilter: 'blur(12px)',
+                                                      WebkitBackdropFilter: 'blur(12px)',
+                                                      touchAction: 'none',
+                                                      cursor: 'grab'
+                                                    }}
+                                                    className={`flex items-center gap-3.5 p-2.5 md:p-3 rounded-2xl relative group/card select-none min-w-0 transition-all ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : 'hover:border-white/70 z-20'}`}
+                                                  >
+                                                    {/* Member Photo Avatar */}
+                                                    <div className="w-13 h-13 md:w-15 md:h-15 rounded-xl overflow-hidden shrink-0 border border-white/40 shadow-md relative group/photo">
+                                                      <img
+                                                        src={curPhoto}
+                                                        alt={curName}
+                                                        className="w-full h-full object-cover"
+                                                        crossOrigin="anonymous"
+                                                      />
+                                                    </div>
+
+                                                    {/* Member Name & Role */}
+                                                    <div className="flex-1 flex flex-col justify-center min-w-0">
+                                                      <span
+                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                        suppressContentEditableWarning
+                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, mItem.nameKey, e.currentTarget.textContent || '')}
+                                                        style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                        className="text-[11.5px] md:text-[13px] font-[900] uppercase tracking-wide text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text font-sans leading-tight truncate"
+                                                      >
+                                                        {curName}
+                                                      </span>
+                                                      <span
+                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                        suppressContentEditableWarning
+                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, mItem.roleKey, e.currentTarget.textContent || '')}
+                                                        style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                        className="text-[9.5px] md:text-[10.5px] italic text-slate-300 font-serif leading-tight outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text truncate mt-0.5"
+                                                      >
+                                                        {curRole}
+                                                      </span>
+                                                    </div>
+
+                                                    {/* Floating Capsule Menu */}
+                                                    {isSelected && (
+                                                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                        <Users size={11} className="text-cyan-400" />
+                                                        <span>{curName.split(' ')[0]}</span>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActivePillShapePicker({ rowKey: mItem.cardKey, shapeKey: mItem.shapeKey });
+                                                          }}
+                                                          className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                          <Shapes size={10} /> Shape
+                                                        </button>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActivePillGradPicker({ rowKey: mItem.cardKey, bgKey: mItem.bgKey });
+                                                          }}
+                                                          className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-violet-300 flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                          <Palette size={10} /> Color
+                                                        </button>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onPointerDown={(e) => {
+                                                            e.stopPropagation();
+                                                            updateDeckSlideFields(activeDeckSlide?.id, {
+                                                              [mItem.cardKey + '_posX']: 0,
+                                                              [mItem.cardKey + '_posY']: 0,
+                                                              [mItem.cardKey + '_width']: undefined,
+                                                              [mItem.cardKey + '_height']: undefined
+                                                            });
+                                                          }}
+                                                          className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                          title="Reset Position"
+                                                        >
+                                                          <RotateCcw size={11} />
+                                                        </button>
+                                                      </div>
+                                                    )}
+
+                                                    {/* 8 Resize Handles */}
+                                                    {isSelected && (
+                                                      <>
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + mItem.cardKey }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + mItem.cardKey }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + mItem.cardKey }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + mItem.cardKey }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + mItem.cardKey }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + mItem.cardKey }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + mItem.cardKey }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + mItem.cardKey }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                      </>
+                                                    )}
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+
+                                            {/* Bottom Contact Bar: Web, Email, Phone */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'bento', id: 'team-contact-bar' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'teamContactBar',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.teamContactBar_posX || 0,
+                                                  origY: activeDeckSlide?.teamContactBar_posY || 0
+                                                });
+                                              }}
+                                              onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: 'team-contact-bar' }); }}
+                                              style={{
+                                                transform: `translate(${activeDeckSlide?.teamContactBar_posX || 0}px, ${activeDeckSlide?.teamContactBar_posY || 0}px)`,
+                                                transition: deckBentoDrag.isDragging ? 'none' : 'transform 120ms ease-out',
+                                                touchAction: 'none'
+                                              }}
+                                              className={`flex items-center justify-around w-full pt-1.5 pb-0.5 z-20 pointer-events-auto relative group/contact rounded-xl cursor-grab active:cursor-grabbing ${deckSelection.type === 'bento' && deckSelection.id === 'team-contact-bar' ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : ''}`}
+                                            >
+                                              {/* Item 1: Website */}
+                                              <div className="flex items-center gap-1.5">
+                                                <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-black shrink-0 shadow-sm">
+                                                  <Globe size={10} />
+                                                </div>
+                                                <span
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'contactWeb', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                  className="text-[8.5px] md:text-[9.5px] text-slate-300 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
+                                                >
+                                                  {activeDeckSlide?.contactWeb || 'www.reallygreatsite.com'}
+                                                </span>
+                                              </div>
+
+                                              {/* Item 2: Email */}
+                                              <div className="flex items-center gap-1.5">
+                                                <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-black shrink-0 shadow-sm">
+                                                  <Mail size={10} />
+                                                </div>
+                                                <span
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'contactEmail', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                  className="text-[8.5px] md:text-[9.5px] text-slate-300 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
+                                                >
+                                                  {activeDeckSlide?.contactEmail || 'hello@reallygreatsite.com'}
+                                                </span>
+                                              </div>
+
+                                              {/* Item 3: Phone */}
+                                              <div className="flex items-center gap-1.5">
+                                                <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-black shrink-0 shadow-sm">
+                                                  <Phone size={10} />
+                                                </div>
+                                                <span
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'contactPhone', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                  className="text-[8.5px] md:text-[9.5px] text-slate-300 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
+                                                >
+                                                  {activeDeckSlide?.contactPhone || '+123-456-7890'}
+                                                </span>
+                                              </div>
+
+                                              {/* Floating Capsule Toolbar for Contact Bar */}
+                                              {deckSelection.type === 'bento' && deckSelection.id === 'team-contact-bar' && (
+                                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                  <Globe size={11} className="text-cyan-400" />
+                                                  <span>Contact Footer</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button
+                                                    type="button"
+                                                    onPointerDown={(e) => {
+                                                      e.stopPropagation();
+                                                      updateDeckSlideFields(activeDeckSlide?.id, {
+                                                        teamContactBar_posX: 0,
+                                                        teamContactBar_posY: 0
+                                                      });
+                                                    }}
+                                                    className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                    title="Reset Position"
+                                                  >
+                                                    <RotateCcw size={11} />
+                                                  </button>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        ) : layout === "Startup Use of Funds" || layout === "Use of Funds" || layout === "Startup Capital Allocation" || activeDeckSlide?.title === "Use of Funds & Capital Allocation" || activeDeckSlide?.title === "Use of Funds" ? (
                                           /* ── STARTUP USE OF FUNDS TEMPLATE (REVERSE-ENGINEERED SLIDE 13) ── */
                                           <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-2.5 md:px-8 md:pt-3.5 md:pb-2.5 overflow-hidden">
                                             
