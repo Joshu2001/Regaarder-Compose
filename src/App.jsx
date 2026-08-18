@@ -382,7 +382,26 @@ const DECK_THEME_OPTIONS = [
 ];
 
 const DECK_LAYOUT_OPTIONS = [
-      { 
+        { 
+    key: "Startup Problem Statement", 
+    name: "Startup Problem Statement",
+    desc: 'Two-column hero headline with 3 vertical glassmorphic problem cards',
+    visualType: 'startup problem cards',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-1">
+        <div className="w-2/5 flex flex-col justify-center gap-0.5">
+          <div className="w-full h-1 bg-white rounded-xs" />
+          <div className="w-3/4 h-1 bg-white rounded-xs" />
+        </div>
+        <div className="w-3/5 flex gap-0.5 h-full items-stretch">
+          <div className="w-1/3 bg-purple-400 rounded-xs" />
+          <div className="w-1/3 bg-indigo-900 rounded-xs border border-white/20" />
+          <div className="w-1/3 bg-slate-900 rounded-xs border border-white/20" />
+        </div>
+      </div>
+    )
+  },
+  { 
     key: "Startup Introduction", 
     name: "Startup Introduction",
     desc: 'Bento layout with multi-media cards & dual narrative blocks',
@@ -8953,6 +8972,37 @@ const DEFAULT_DECK_SLIDES = [
     introSubImg: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80',
     motionCue: 'Zoom & Glow Entrance',
     speakerNotes: 'Introduce the core mission, team capabilities, and collaborative startup acceleration model.',
+    footer: 'Ingoude Company'  },
+  {
+    id: 4,
+    section: 'Problem',
+    title: 'Problem Statement',
+    tagline: 'Ingoude Company',
+    headline: 'PROBLEM\nSTATEMENT',
+    backgroundColor: '#05070B',
+    vectorWaveStyle: 'original-pitch',
+    vectorColor1: '#a855f7',
+    vectorColor2: '#00f0ff',
+    vectorWaveHue: 'neon-cyan-purple',
+    designPresetKey: 'midnight-slate',
+    presetKey: 'midnight-slate',
+    accent: 'from-indigo-500 to-violet-500',
+    visualType: 'startup problem cards',
+    layoutStyle: 'Startup Problem Statement',
+    card1Num: '01',
+    card1Title: 'LACK OF BRAND DIFFERENTIATION',
+    card1Text: 'Startups often find it hard to make their brand unique in a crowded market. Without a clear way to stand out, they struggle to catch the eye of potential customers and lose out to bigger competitors.',
+    card1Bg: 'linear-gradient(180deg, #A78BFA 0%, #6366F1 45%, #1E1B4B 100%)',
+    card2Num: '02',
+    card2Title: 'INCONSISTENT BRAND MESSAGING',
+    card2Text: 'Inconsistency in brand messaging across various marketing channels confuses potential customers and dilutes brand perception. Startups often face challenges in maintaining a cohesive message that effectively communicates their value proposition and resonates with their target audience.',
+    card2Bg: 'linear-gradient(180deg, #2E2640 0%, #1E1B38 45%, #121829 100%)',
+    card3Num: '03',
+    card3Title: 'KEEPING UP WITH TRENDS',
+    card3Text: 'The marketing landscape evolves fast, and startups often struggle to keep up. With limited resources and time, staying on top of the latest trends and integrating them into marketing strategies can be a hurdle.',
+    card3Bg: 'linear-gradient(180deg, #33263D 0%, #1C1A2E 45%, #0E1320 100%)',
+    motionCue: 'Stagger Text Reveal',
+    speakerNotes: 'Detail the three critical market pain points: brand differentiation, inconsistent messaging, and dynamic trend adaptation.',
     footer: 'Ingoude Company'
   }
 ];
@@ -33310,6 +33360,24 @@ Respond with a JSON array of slide objects matching the schema.`;
     .replace(/'/g, '&#39;');
 
   const buildDeckPreviewDataUri = (slide) => {
+    if (slide?.layoutStyle === "Startup Problem Statement" || slide?.layoutStyle === 'Startup Problem') {
+      const footer = escapeSvgText(slide?.footer || 'Ingoude Company');
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+        <rect width="320" height="192" rx="14" fill="#05070B"/>
+        <path d="M 0 170 C 60 150, 120 190, 180 165" stroke="#a855f7" stroke-width="2" opacity="0.8" fill="none" />
+        <path d="M 220 0 C 260 50, 290 30, 320 20" stroke="#00f0ff" stroke-width="1.8" opacity="0.8" fill="none" />
+        <text x="14" y="65" font-size="11" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900">PROBLEM</text>
+        <text x="14" y="80" font-size="11" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900">STATEMENT</text>
+        <rect x="120" y="24" width="58" height="144" rx="8" fill="#818cf8" opacity="0.85"/>
+        <rect x="184" y="24" width="58" height="144" rx="8" fill="#1e1b38" opacity="0.9"/>
+        <rect x="248" y="24" width="58" height="144" rx="8" fill="#18181b" opacity="0.9"/>
+        <text x="149" y="52" font-size="12" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900" text-anchor="middle">01</text>
+        <text x="213" y="52" font-size="12" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900" text-anchor="middle">02</text>
+        <text x="277" y="52" font-size="12" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900" text-anchor="middle">03</text>
+        <text x="306" y="180" font-size="6" font-family="Inter, sans-serif" fill="#94a3b8" font-style="italic" text-anchor="end">${footer}</text>
+      </svg>`;
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
     if (slide?.layoutStyle === "Startup Introduction" || slide?.layoutStyle === 'Startup Intro') {
       const headline = escapeSvgText(slide?.headline || 'INTRODUCTION');
       const footer = escapeSvgText(slide?.footer || 'Ingoude Company');
@@ -49928,7 +49996,293 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
                                           </div>
                                         </div>
-                                      ) : layout === "Startup Introduction" || layout === "Startup Intro" ? (
+                                      ) : layout === "Startup Problem Statement" || layout === "Startup Problem" ? (
+                                         /* ── STARTUP PROBLEM STATEMENT TEMPLATE (REVERSE-ENGINEERED SLIDE 4) ── */
+                                         <div className="flex flex-col justify-start h-full w-full relative z-10 pointer-events-none select-none px-2 pt-1 pb-2 md:px-4 md:pb-3">
+                                           {/* Main 2-Column Split: Left Big Headline + Right 3 Vertical Cards */}
+                                           <div className="flex-1 grid grid-cols-12 gap-4 w-full pointer-events-auto z-20 min-h-0 items-center">
+                                             {/* Left Column (Span 4.5): 2-Line Bold Headline */}
+                                             <div className="col-span-4 flex flex-col justify-center pl-1 select-auto">
+                                               <h1
+                                                 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                 suppressContentEditableWarning
+                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
+                                                 style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                 className="text-[36px] md:text-[46px] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-[1.05]"
+                                               >
+                                                 {activeDeckSlide?.headline ? (
+                                                   activeDeckSlide.headline.split('\n').map((line, idx) => (
+                                                     <React.Fragment key={idx}>
+                                                       {line}
+                                                       {idx < activeDeckSlide.headline.split('\n').length - 1 && <br />}
+                                                     </React.Fragment>
+                                                   ))
+                                                 ) : (
+                                                   <>
+                                                     PROBLEM<br />STATEMENT
+                                                   </>
+                                                 )}
+                                               </h1>
+                                             </div>
+
+                                             {/* Right Column (Span 8): 3 Vertical Pill-Card Containers */}
+                                             <div className="col-span-8 grid grid-cols-3 gap-3 h-full max-h-[92%] min-h-0 py-1">
+                                               {/* Card 01 (Lavender -> Indigo Gradient Card) */}
+                                               <div 
+                                                 onClick={(e) => {
+                                                   e.stopPropagation();
+                                                   setDeckSelection({ type: 'bento', id: 'prob-card-1' });
+                                                 }}
+                                                 className={`rounded-2xl overflow-visible relative group flex flex-col justify-start p-3.5 shadow-2xl transition-all cursor-pointer border border-white/20 ${
+                                                   deckSelection.type === 'bento' && deckSelection.id === 'prob-card-1'
+                                                     ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(167,139,250,0.35)]'
+                                                     : 'hover:border-purple-300/60'
+                                                 }`}
+                                                 style={{
+                                                   background: activeDeckSlide?.card1Bg || 'linear-gradient(180deg, #A78BFA 0%, #6366F1 45%, #1E1B4B 100%)',
+                                                   borderRadius: activeDeckSlide?.card1Radius || '18px'
+                                                 }}
+                                               >
+                                                 {/* Floating Capsule for Card 1 */}
+                                                 {deckSelection.type === 'bento' && deckSelection.id === 'prob-card-1' && (
+                                                   <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                     <Sparkles size={11} className="text-purple-400" />
+                                                     <span>Card 01</span>
+                                                     <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                     <button
+                                                       type="button"
+                                                       onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pCol1' ? null : 'pCol1'); }}
+                                                       className="w-3.5 h-3.5 rounded border border-white/40 shadow-xs hover:scale-110 cursor-pointer"
+                                                       style={{ background: activeDeckSlide?.card1Bg || '#A78BFA' }}
+                                                       title="Card 1 Color"
+                                                     />
+                                                     {deckFloatingMenuOpen === 'pCol1' && (
+                                                       <div onClick={(e) => e.stopPropagation()} className="absolute bottom-6 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5">
+                                                         {['linear-gradient(180deg, #A78BFA 0%, #6366F1 45%, #1E1B4B 100%)', '#A78BFA', '#00f0ff', '#172554', '#000000', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#ffffff'].map((c, i) => (
+                                                           <button key={i} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'card1Bg', c); setDeckFloatingMenuOpen(null); }} className="w-6 h-6 rounded-md border border-white/20 hover:scale-110" style={{ background: c }} />
+                                                         ))}
+                                                       </div>
+                                                     )}
+                                                   </div>
+                                                 )}
+
+                                                 {/* Big Number Header */}
+                                                 <div className="text-center pt-1 pb-2">
+                                                   <span 
+                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card1Num', e.currentTarget.textContent || '')}
+                                                     style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                     className="text-[34px] md:text-[38px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
+                                                   >
+                                                     {activeDeckSlide?.card1Num || '01'}
+                                                   </span>
+                                                 </div>
+
+                                                 {/* Card Title */}
+                                                 <div className="text-center pb-2.5 px-1 min-h-[38px] flex items-center justify-center">
+                                                   <h3 
+                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card1Title', e.currentTarget.textContent || '')}
+                                                     style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                     className="text-[11px] md:text-[12px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
+                                                   >
+                                                     {activeDeckSlide?.card1Title || 'LACK OF BRAND DIFFERENTIATION'}
+                                                   </h3>
+                                                 </div>
+
+                                                 {/* Card Paragraph */}
+                                                 <div className="text-center px-1 overflow-y-auto thin-scrollbar">
+                                                   <p 
+                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card1Text', e.currentTarget.textContent || '')}
+                                                     style={{ color: "#f1f5f9", caretColor: "#00f0ff" }}
+                                                     className="text-[10px] md:text-[11px] leading-[1.45] font-normal text-slate-100 !text-slate-100 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
+                                                   >
+                                                     {activeDeckSlide?.card1Text || 'Startups often find it hard to make their brand unique in a crowded market. Without a clear way to stand out, they struggle to catch the eye of potential customers and lose out to bigger competitors.'}
+                                                   </p>
+                                                 </div>
+                                               </div>
+
+                                               {/* Card 02 (Deep Frosted Indigo / Midnight Card) */}
+                                               <div 
+                                                 onClick={(e) => {
+                                                   e.stopPropagation();
+                                                   setDeckSelection({ type: 'bento', id: 'prob-card-2' });
+                                                 }}
+                                                 className={`rounded-2xl overflow-visible relative group flex flex-col justify-start p-3.5 shadow-2xl transition-all cursor-pointer border border-white/15 backdrop-blur-xl ${
+                                                   deckSelection.type === 'bento' && deckSelection.id === 'prob-card-2'
+                                                     ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(124,77,255,0.35)]'
+                                                     : 'hover:border-purple-300/40'
+                                                 }`}
+                                                 style={{
+                                                   background: activeDeckSlide?.card2Bg || 'linear-gradient(180deg, #2E2640 0%, #1E1B38 45%, #121829 100%)',
+                                                   borderRadius: activeDeckSlide?.card2Radius || '18px'
+                                                 }}
+                                               >
+                                                 {/* Floating Capsule for Card 2 */}
+                                                 {deckSelection.type === 'bento' && deckSelection.id === 'prob-card-2' && (
+                                                   <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                     <Sparkles size={11} className="text-cyan-400" />
+                                                     <span>Card 02</span>
+                                                     <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                     <button
+                                                       type="button"
+                                                       onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pCol2' ? null : 'pCol2'); }}
+                                                       className="w-3.5 h-3.5 rounded border border-white/40 shadow-xs hover:scale-110 cursor-pointer"
+                                                       style={{ background: activeDeckSlide?.card2Bg || '#2E2640' }}
+                                                       title="Card 2 Color"
+                                                     />
+                                                     {deckFloatingMenuOpen === 'pCol2' && (
+                                                       <div onClick={(e) => e.stopPropagation()} className="absolute bottom-6 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5">
+                                                         {['linear-gradient(180deg, #2E2640 0%, #1E1B38 45%, #121829 100%)', '#1E1B38', '#172554', '#000000', '#A78BFA', '#00f0ff', '#ffffff', '#ec4899', '#064e3b', '#1e293b'].map((c, i) => (
+                                                           <button key={i} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'card2Bg', c); setDeckFloatingMenuOpen(null); }} className="w-6 h-6 rounded-md border border-white/20 hover:scale-110" style={{ background: c }} />
+                                                         ))}
+                                                       </div>
+                                                     )}
+                                                   </div>
+                                                 )}
+
+                                                 {/* Big Number Header */}
+                                                 <div className="text-center pt-1 pb-2">
+                                                   <span 
+                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card2Num', e.currentTarget.textContent || '')}
+                                                     style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                     className="text-[34px] md:text-[38px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
+                                                   >
+                                                     {activeDeckSlide?.card2Num || '02'}
+                                                   </span>
+                                                 </div>
+
+                                                 {/* Card Title */}
+                                                 <div className="text-center pb-2.5 px-1 min-h-[38px] flex items-center justify-center">
+                                                   <h3 
+                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card2Title', e.currentTarget.textContent || '')}
+                                                     style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                     className="text-[11px] md:text-[12px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
+                                                   >
+                                                     {activeDeckSlide?.card2Title || 'INCONSISTENT BRAND MESSAGING'}
+                                                   </h3>
+                                                 </div>
+
+                                                 {/* Card Paragraph */}
+                                                 <div className="text-center px-1 overflow-y-auto thin-scrollbar">
+                                                   <p 
+                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card2Text', e.currentTarget.textContent || '')}
+                                                     style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                     className="text-[10px] md:text-[11px] leading-[1.45] font-normal text-slate-300 !text-slate-300 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
+                                                   >
+                                                     {activeDeckSlide?.card2Text || 'Inconsistency in brand messaging across various marketing channels confuses potential customers and dilutes brand perception. Startups often face challenges in maintaining a cohesive message that effectively communicates their value proposition and resonates with their target audience.'}
+                                                   </p>
+                                                 </div>
+                                               </div>
+
+                                               {/* Card 03 (Deep Midnight Obsidian Card) */}
+                                               <div 
+                                                 onClick={(e) => {
+                                                   e.stopPropagation();
+                                                   setDeckSelection({ type: 'bento', id: 'prob-card-3' });
+                                                 }}
+                                                 className={`rounded-2xl overflow-visible relative group flex flex-col justify-start p-3.5 shadow-2xl transition-all cursor-pointer border border-white/15 backdrop-blur-xl ${
+                                                   deckSelection.type === 'bento' && deckSelection.id === 'prob-card-3'
+                                                     ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(99,102,241,0.35)]'
+                                                     : 'hover:border-purple-300/40'
+                                                 }`}
+                                                 style={{
+                                                   background: activeDeckSlide?.card3Bg || 'linear-gradient(180deg, #33263D 0%, #1C1A2E 45%, #0E1320 100%)',
+                                                   borderRadius: activeDeckSlide?.card3Radius || '18px'
+                                                 }}
+                                               >
+                                                 {/* Floating Capsule for Card 3 */}
+                                                 {deckSelection.type === 'bento' && deckSelection.id === 'prob-card-3' && (
+                                                   <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                     <Sparkles size={11} className="text-violet-400" />
+                                                     <span>Card 03</span>
+                                                     <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                     <button
+                                                       type="button"
+                                                       onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pCol3' ? null : 'pCol3'); }}
+                                                       className="w-3.5 h-3.5 rounded border border-white/40 shadow-xs hover:scale-110 cursor-pointer"
+                                                       style={{ background: activeDeckSlide?.card3Bg || '#33263D' }}
+                                                       title="Card 3 Color"
+                                                     />
+                                                     {deckFloatingMenuOpen === 'pCol3' && (
+                                                       <div onClick={(e) => e.stopPropagation()} className="absolute bottom-6 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5">
+                                                         {['linear-gradient(180deg, #33263D 0%, #1C1A2E 45%, #0E1320 100%)', '#1C1A2E', '#0F172A', '#000000', '#A78BFA', '#00f0ff', '#ffffff', '#ec4899', '#064e3b', '#1e293b'].map((c, i) => (
+                                                           <button key={i} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'card3Bg', c); setDeckFloatingMenuOpen(null); }} className="w-6 h-6 rounded-md border border-white/20 hover:scale-110" style={{ background: c }} />
+                                                         ))}
+                                                       </div>
+                                                     )}
+                                                   </div>
+                                                 )}
+
+                                                 {/* Big Number Header */}
+                                                 <div className="text-center pt-1 pb-2">
+                                                   <span 
+                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card3Num', e.currentTarget.textContent || '')}
+                                                     style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                     className="text-[34px] md:text-[38px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
+                                                   >
+                                                     {activeDeckSlide?.card3Num || '03'}
+                                                   </span>
+                                                 </div>
+
+                                                 {/* Card Title */}
+                                                 <div className="text-center pb-2.5 px-1 min-h-[38px] flex items-center justify-center">
+                                                   <h3 
+                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card3Title', e.currentTarget.textContent || '')}
+                                                     style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                     className="text-[11px] md:text-[12px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
+                                                   >
+                                                     {activeDeckSlide?.card3Title || 'KEEPING UP WITH TRENDS'}
+                                                   </h3>
+                                                 </div>
+
+                                                 {/* Card Paragraph */}
+                                                 <div className="text-center px-1 overflow-y-auto thin-scrollbar">
+                                                   <p 
+                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card3Text', e.currentTarget.textContent || '')}
+                                                     style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                     className="text-[10px] md:text-[11px] leading-[1.45] font-normal text-slate-300 !text-slate-300 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
+                                                   >
+                                                     {activeDeckSlide?.card3Text || 'The marketing landscape evolves fast, and startups often struggle to keep up. With limited resources and time, staying on top of the latest trends and integrating them into marketing strategies can be a hurdle.'}
+                                                   </p>
+                                                 </div>
+                                               </div>
+                                             </div>
+                                           </div>
+
+                                           {/* Footer Anchor: Company Name in Italics on Bottom-Right */}
+                                           <div className="flex items-center justify-end pointer-events-auto select-auto z-20 pt-1 pr-1 mt-auto">
+                                             <div 
+                                               contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                               suppressContentEditableWarning
+                                               onBlur={(e) => {
+                                                 updateDeckSlideField(activeDeckSlide?.id, 'footer', e.currentTarget.textContent || '');
+                                                 showToast('Footer saved');
+                                               }}
+                                               style={{ color: "#94a3b8", caretColor: "#00f0ff" }}
+                                               className="text-[11.5px] italic font-normal tracking-wide text-slate-400 !text-slate-400 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 rounded px-1 cursor-text select-text"
+                                             >
+                                               {activeDeckSlide?.footer || 'Ingoude Company'}
+                                             </div>
+                                           </div>
+                                         </div>
+                                       ) : layout === "Startup Introduction" || layout === "Startup Intro" ? (
                                          /* ── STARTUP INTRODUCTION TEMPLATE (REVERSE-ENGINEERED SLIDE 3) ── */
                                          <div className="flex flex-col justify-start h-full w-full relative z-10 pointer-events-none select-none px-2 pt-0 pb-2 md:px-3 md:pb-3">
                                            {/* Header: Bold Headline "INTRODUCTION" shifted higher */}
