@@ -9502,25 +9502,25 @@ const DEFAULT_DECK_SLIDES = [
     plan1Usage: '• Limited usage\n• Limited storage',
     plan1Services: '• No additional services included',
     plan1Price: '135$/ MONTH',
-    plan1Bg: 'linear-gradient(180deg, rgba(20,18,44,0.85) 0%, rgba(10,12,28,0.95) 100%)',
-    plan1PillBg: 'linear-gradient(90deg, #9370db 0%, #2563eb 100%)',
-    plan1Shape: '16px',
+    plan1Bg: 'linear-gradient(180deg, rgba(6,9,20,0.85) 0%, rgba(3,5,12,0.92) 100%)',
+    plan1PillBg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
+    plan1Shape: '14px',
     plan2Title: 'STANDARD PLAN',
     plan2Features: '• More features\n• Standard support\n• Some customization',
     plan2Usage: '• Increased usage\n• More storage',
     plan2Services: '• Optional add-ons available for purchase',
     plan2Price: '175$/ MONTH',
-    plan2Bg: 'linear-gradient(180deg, rgba(30,24,60,0.92) 0%, rgba(14,16,36,0.98) 100%)',
-    plan2PillBg: 'linear-gradient(90deg, #a855f7 0%, #3b82f6 100%)',
-    plan2Shape: '16px',
+    plan2Bg: 'linear-gradient(180deg, rgba(10,14,30,0.92) 0%, rgba(5,8,18,0.96) 100%)',
+    plan2PillBg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
+    plan2Shape: '14px',
     plan3Title: 'PREMIUM PLAN',
     plan3Features: '• Full features\n• Priority support\n• Full customization',
     plan3Usage: '• Unlimited usage\n• Unlimited storage',
     plan3Services: '• Premium support and consulting included',
     plan3Price: '220$/ MONTH',
-    plan3Bg: 'linear-gradient(180deg, rgba(20,18,44,0.85) 0%, rgba(10,12,28,0.95) 100%)',
-    plan3PillBg: 'linear-gradient(90deg, #c084fc 0%, #38bdf8 100%)',
-    plan3Shape: '16px',
+    plan3Bg: 'linear-gradient(180deg, rgba(6,9,20,0.85) 0%, rgba(3,5,12,0.92) 100%)',
+    plan3PillBg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
+    plan3Shape: '14px',
     motionCue: '3-Card Stagger Rise In',
     speakerNotes: 'Walk through our 3-tier pricing strategy: Basic ($135/mo), Standard ($175/mo with add-ons), and Premium ($220/mo with dedicated consulting).',
     footer: 'ingoude Company'
@@ -50675,7 +50675,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
                                       ) : layout === "Startup Revenue Model" || layout === "Startup Revenue" || layout === "Revenue Model" || activeDeckSlide?.title === "Revenue Model & Pricing" || activeDeckSlide?.title === "Revenue Model" ? (
                                           /* ── STARTUP REVENUE MODEL TEMPLATE (REVERSE-ENGINEERED SLIDE 11) ── */
-                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-2 md:px-8 md:pt-4 md:pb-2.5 overflow-hidden">
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-3 md:px-8 md:pt-3.5 md:pb-3 overflow-hidden">
                                             
                                             {/* Top-Left Ambient Neon Wave Ribbon */}
                                             <div
@@ -50786,7 +50786,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             </div>
 
                                             {/* Top-Center Headline Block */}
-                                            <div className="flex flex-col items-center justify-center text-center z-20 pointer-events-auto mb-2">
+                                            <div className="flex flex-col items-center justify-center text-center z-20 pointer-events-auto mb-1">
                                               <div
                                                 onPointerDown={(e) => {
                                                   if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
@@ -50815,7 +50815,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   suppressContentEditableWarning
                                                   onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                   style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                  className="text-[24px] md:text-[30px] font-[900] tracking-tight text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none w-full break-words text-center"
+                                                  className="text-[22px] md:text-[28px] font-[900] tracking-tight text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none w-full break-words text-center"
                                                 >
                                                   {activeDeckSlide?.headline || 'REVENUE MODEL'}
                                                 </h1>
@@ -50831,8 +50831,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               </div>
                                             </div>
 
-                                            {/* 3-Tier Pricing Comparison Cards Container */}
-                                            <div className="flex-1 flex flex-row items-center justify-between gap-3.5 md:gap-5 w-full min-h-0 my-auto z-20 pointer-events-auto px-1 md:px-3 pb-1">
+                                            {/* 3-Tier Pricing Comparison Cards Container with Calibrated Height & Clearance */}
+                                            <div className="flex-1 flex flex-row items-center justify-between gap-3.5 md:gap-5 w-full min-h-0 my-auto z-20 pointer-events-auto px-1 md:px-3">
                                               {[
                                                 {
                                                   id: 'plan-card-1',
@@ -50850,10 +50850,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   defUsage: '• Limited usage\n• Limited storage',
                                                   defServ: '• No additional services included',
                                                   defPrice: '135$/ MONTH',
-                                                  defBg: 'linear-gradient(180deg, rgba(20,18,44,0.85) 0%, rgba(10,12,28,0.95) 100%)',
-                                                  defPillBg: 'linear-gradient(90deg, #9370db 0%, #2563eb 100%)',
-                                                  baseH: '260px',
-                                                  mdH: '280px',
+                                                  defBg: 'linear-gradient(180deg, rgba(6,9,20,0.85) 0%, rgba(3,5,12,0.92) 100%)',
+                                                  defPillBg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
+                                                  baseH: '230px',
+                                                  mdH: '248px',
                                                   isFeatured: false
                                                 },
                                                 {
@@ -50872,10 +50872,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   defUsage: '• Increased usage\n• More storage',
                                                   defServ: '• Optional add-ons available for purchase',
                                                   defPrice: '175$/ MONTH',
-                                                  defBg: 'linear-gradient(180deg, rgba(30,24,60,0.92) 0%, rgba(14,16,36,0.98) 100%)',
-                                                  defPillBg: 'linear-gradient(90deg, #a855f7 0%, #3b82f6 100%)',
-                                                  baseH: '280px',
-                                                  mdH: '305px',
+                                                  defBg: 'linear-gradient(180deg, rgba(10,14,30,0.92) 0%, rgba(5,8,18,0.96) 100%)',
+                                                  defPillBg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
+                                                  baseH: '250px',
+                                                  mdH: '270px',
                                                   isFeatured: true
                                                 },
                                                 {
@@ -50894,10 +50894,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   defUsage: '• Unlimited usage\n• Unlimited storage',
                                                   defServ: '• Premium support and consulting included',
                                                   defPrice: '220$/ MONTH',
-                                                  defBg: 'linear-gradient(180deg, rgba(20,18,44,0.85) 0%, rgba(10,12,28,0.95) 100%)',
-                                                  defPillBg: 'linear-gradient(90deg, #c084fc 0%, #38bdf8 100%)',
-                                                  baseH: '260px',
-                                                  mdH: '280px',
+                                                  defBg: 'linear-gradient(180deg, rgba(6,9,20,0.85) 0%, rgba(3,5,12,0.92) 100%)',
+                                                  defPillBg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
+                                                  baseH: '230px',
+                                                  mdH: '248px',
                                                   isFeatured: false
                                                 }
                                               ].map((pItem, pIdx) => {
@@ -50908,7 +50908,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 const curPrice = activeDeckSlide?.[pItem.priceKey] || pItem.defPrice;
                                                 const curBg = activeDeckSlide?.[pItem.bgKey] || pItem.defBg;
                                                 const curPillBg = activeDeckSlide?.[pItem.pillBgKey] || pItem.defPillBg;
-                                                const curShape = activeDeckSlide?.[pItem.shapeKey] || '16px';
+                                                const curShape = activeDeckSlide?.[pItem.shapeKey] || '14px';
                                                 const isSelected = deckSelection.type === 'bento' && deckSelection.id === pItem.id;
                                                 const itemPosX = activeDeckSlide?.[pItem.cardKey + '_posX'] || 0;
                                                 const itemPosY = activeDeckSlide?.[pItem.cardKey + '_posY'] || 0;
@@ -50939,74 +50939,76 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       height: itemH ? `${itemH}px` : pItem.mdH,
                                                       background: curBg,
                                                       borderRadius: curShape,
-                                                      border: pItem.isFeatured ? '1.5px solid rgba(0, 240, 255, 0.7)' : '1.2px solid rgba(255, 255, 255, 0.3)',
+                                                      border: pItem.isFeatured ? '1.4px solid rgba(255, 255, 255, 0.85)' : '1.2px solid rgba(255, 255, 255, 0.45)',
                                                       boxShadow: pItem.isFeatured
-                                                        ? '0 20px 50px rgba(0,0,0,0.85), 0 0 25px rgba(0,240,255,0.25), inset 0 1px 1px rgba(255,255,255,0.4)'
-                                                        : '0 15px 35px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.3)',
+                                                        ? '0 20px 45px rgba(0,0,0,0.85), inset 0 1px 1px rgba(255,255,255,0.4)'
+                                                        : '0 15px 35px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.25)',
+                                                      backdropFilter: 'blur(12px)',
+                                                      WebkitBackdropFilter: 'blur(12px)',
                                                       touchAction: 'none',
                                                       cursor: 'grab'
                                                     }}
-                                                    className={`flex-1 flex flex-col justify-between items-center text-center p-2.5 md:p-3 rounded-2xl relative group/card select-none min-w-0 ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : 'hover:border-white/50 z-20'}`}
+                                                    className={`flex-1 flex flex-col justify-between items-center text-center p-2.5 md:p-3 rounded-2xl relative group/card select-none min-w-0 ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : 'hover:border-white/70 z-20'}`}
                                                   >
                                                     {/* Plan Header Title */}
-                                                    <div className="w-full text-center pb-1">
+                                                    <div className="w-full text-center pb-0.5">
                                                       <span
                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, pItem.titleKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                        className="text-[11px] md:text-[12.5px] font-[900] uppercase tracking-[0.14em] text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 leading-tight select-text w-full break-words text-center"
+                                                        className="text-[10.5px] md:text-[11.5px] font-[900] uppercase tracking-[0.14em] text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 leading-tight select-text w-full break-words text-center"
                                                       >
                                                         {curTitle}
                                                       </span>
                                                     </div>
 
                                                     {/* 3 Structured Sections (Features, Usage Limits, Additional Services) */}
-                                                    <div className="w-full flex-1 flex flex-col justify-around py-1 min-h-0 text-left">
+                                                    <div className="w-full flex-1 flex flex-col justify-around py-0.5 min-h-0 text-left">
                                                       
                                                       {/* Section 1: Features */}
-                                                      <div className="flex items-start justify-between gap-1.5 px-1 py-0.5">
-                                                        <span className="text-[8px] md:text-[8.5px] font-bold text-slate-300 shrink-0 w-16">Features:</span>
+                                                      <div className="flex items-start justify-between gap-1 px-1 py-0.5">
+                                                        <span className="text-[7.5px] md:text-[8px] font-bold text-slate-200 shrink-0 w-14">Features:</span>
                                                         <div
                                                           contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                           suppressContentEditableWarning
                                                           onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, pItem.featKey, e.currentTarget.textContent || '')}
-                                                          style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                          className="flex-1 text-[7.5px] md:text-[8px] text-slate-300 font-normal leading-[1.25] outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text whitespace-pre-line"
+                                                          style={{ color: "#e2e8f0", caretColor: "#00f0ff" }}
+                                                          className="flex-1 text-[7px] md:text-[7.5px] text-slate-300 font-normal leading-[1.2] outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text whitespace-pre-line"
                                                         >
                                                           {curFeat}
                                                         </div>
                                                       </div>
 
                                                       {/* Horizontal Laser Line 1 */}
-                                                      <div className="w-full h-px bg-gradient-to-r from-transparent via-white/30 to-transparent my-0.5" />
+                                                      <div className="w-full h-px bg-gradient-to-r from-transparent via-white/35 to-transparent my-0.5" />
 
                                                       {/* Section 2: Usage Limits */}
-                                                      <div className="flex items-start justify-between gap-1.5 px-1 py-0.5">
-                                                        <span className="text-[8px] md:text-[8.5px] font-bold text-slate-300 shrink-0 w-16">Usage Limits:</span>
+                                                      <div className="flex items-start justify-between gap-1 px-1 py-0.5">
+                                                        <span className="text-[7.5px] md:text-[8px] font-bold text-slate-200 shrink-0 w-14">Usage Limits:</span>
                                                         <div
                                                           contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                           suppressContentEditableWarning
                                                           onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, pItem.usageKey, e.currentTarget.textContent || '')}
-                                                          style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                          className="flex-1 text-[7.5px] md:text-[8px] text-slate-300 font-normal leading-[1.25] outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text whitespace-pre-line"
+                                                          style={{ color: "#e2e8f0", caretColor: "#00f0ff" }}
+                                                          className="flex-1 text-[7px] md:text-[7.5px] text-slate-300 font-normal leading-[1.2] outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text whitespace-pre-line"
                                                         >
                                                           {curUsage}
                                                         </div>
                                                       </div>
 
                                                       {/* Horizontal Laser Line 2 */}
-                                                      <div className="w-full h-px bg-gradient-to-r from-transparent via-white/30 to-transparent my-0.5" />
+                                                      <div className="w-full h-px bg-gradient-to-r from-transparent via-white/35 to-transparent my-0.5" />
 
                                                       {/* Section 3: Additional Services */}
-                                                      <div className="flex items-start justify-between gap-1.5 px-1 py-0.5">
-                                                        <span className="text-[8px] md:text-[8.5px] font-bold text-slate-300 shrink-0 w-16">Additional Services:</span>
+                                                      <div className="flex items-start justify-between gap-1 px-1 py-0.5">
+                                                        <span className="text-[7.5px] md:text-[8px] font-bold text-slate-200 shrink-0 w-14">Additional Services:</span>
                                                         <div
                                                           contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                           suppressContentEditableWarning
                                                           onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, pItem.servKey, e.currentTarget.textContent || '')}
-                                                          style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                          className="flex-1 text-[7.5px] md:text-[8px] text-slate-300 font-normal leading-[1.25] outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text whitespace-pre-line"
+                                                          style={{ color: "#e2e8f0", caretColor: "#00f0ff" }}
+                                                          className="flex-1 text-[7px] md:text-[7.5px] text-slate-300 font-normal leading-[1.2] outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text whitespace-pre-line"
                                                         >
                                                           {curServ}
                                                         </div>
@@ -51014,23 +51016,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     </div>
 
                                                     {/* Bottom Pricing Block with Capsule */}
-                                                    <div className="w-full flex flex-col items-center pt-1">
-                                                      <span className="text-[8px] md:text-[8.5px] font-semibold text-slate-400 mb-0.5">Pricing:</span>
+                                                    <div className="w-full flex flex-col items-center pt-0.5">
+                                                      <span className="text-[7.5px] md:text-[8px] font-semibold text-slate-400 mb-0.5">Pricing:</span>
                                                       <div
                                                         style={{
                                                           background: curPillBg,
-                                                          borderRadius: curShape,
-                                                          border: '1.2px solid rgba(255, 255, 255, 0.45)',
-                                                          boxShadow: '0 8px 20px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.4)'
+                                                          borderRadius: '9999px',
+                                                          border: '1.2px solid rgba(255, 255, 255, 0.5)',
+                                                          boxShadow: '0 8px 20px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.45)'
                                                         }}
-                                                        className="w-full max-w-[190px] h-[32px] md:h-[36px] flex items-center justify-center text-center shrink-0 shadow-lg transition-all"
+                                                        className="w-full max-w-[175px] h-[30px] md:h-[34px] flex items-center justify-center text-center shrink-0 shadow-lg transition-all"
                                                       >
                                                         <span
                                                           contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                           suppressContentEditableWarning
                                                           onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, pItem.priceKey, e.currentTarget.textContent || '')}
                                                           style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                          className="text-[12px] md:text-[13.5px] font-[900] uppercase tracking-wide text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
+                                                          className="text-[11.5px] md:text-[13px] font-[900] uppercase tracking-wide text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
                                                         >
                                                           {curPrice}
                                                         </span>
