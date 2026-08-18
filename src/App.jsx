@@ -25,7 +25,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, MapPin, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -372,6 +372,43 @@ const DECK_DESIGN_PRESETS = [
   },
 ];
 
+const DECK_SOLUTIONS_ICONS = [
+  { key: 'award', name: 'Award / USP', icon: Award },
+  { key: 'shield-check', name: 'Verified Shield', icon: ShieldCheck },
+  { key: 'target', name: 'Bullseye Target', icon: Target },
+  { key: 'sparkles', name: 'Sparkles / AI', icon: Sparkles },
+  { key: 'zap', name: 'Fast / Zap', icon: Zap },
+  { key: 'trending-up', name: 'Growth', icon: TrendingUp },
+  { key: 'compass', name: 'Direction', icon: Compass },
+  { key: 'star', name: 'Star Rating', icon: Star },
+  { key: 'rocket', name: 'Launch / Speed', icon: Rocket },
+  { key: 'lightbulb', name: 'Innovation', icon: Lightbulb },
+  { key: 'check-circle', name: 'Checkmark', icon: CheckCircle2 },
+  { key: 'layers', name: 'Architecture', icon: Layers },
+  { key: 'bot', name: 'Automation / Bot', icon: Bot },
+  { key: 'activity', name: 'Performance', icon: Activity }
+];
+
+const renderSolutionIcon = (iconKey, className = "w-5 h-5 text-blue-600") => {
+  switch (iconKey) {
+    case 'award': return <Award className={className} />;
+    case 'shield-check': return <ShieldCheck className={className} />;
+    case 'target': return <Target className={className} />;
+    case 'sparkles': return <Sparkles className={className} />;
+    case 'zap': return <Zap className={className} />;
+    case 'trending-up': return <TrendingUp className={className} />;
+    case 'compass': return <Compass className={className} />;
+    case 'star': return <Star className={className} />;
+    case 'rocket': return <Rocket className={className} />;
+    case 'lightbulb': return <Lightbulb className={className} />;
+    case 'check-circle': return <CheckCircle2 className={className} />;
+    case 'layers': return <Layers className={className} />;
+    case 'bot': return <Bot className={className} />;
+    case 'activity': return <Activity className={className} />;
+    default: return <Award className={className} />;
+  }
+};
+
 const DECK_THEME_OPTIONS = [
   { key: 'aurora-split', name: 'Aurora', gradient: 'bg-gradient-to-r from-violet-500 via-indigo-500 to-purple-500' },
   { key: 'sunset-grid', name: 'Sunset Glow', gradient: 'bg-gradient-to-r from-amber-400 via-rose-500 to-purple-600' },
@@ -382,6 +419,31 @@ const DECK_THEME_OPTIONS = [
 ];
 
 const DECK_LAYOUT_OPTIONS = [
+  { 
+    key: "Startup Innovative Solutions", 
+    name: "Startup Innovative Solutions",
+    desc: 'Neon flowing wave hero with 3 glassmorphic solution cards & floating icon badges',
+    visualType: 'startup solution cards',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col p-0.5 justify-between shrink-0">
+        <div className="w-full flex items-center justify-between">
+          <div className="w-1/3 h-1 bg-white rounded-xs" />
+          <div className="w-1/2 h-0.5 bg-cyan-400 rounded-xs" />
+        </div>
+        <div className="flex gap-0.5 h-2.5 items-stretch mt-0.5">
+          <div className="w-1/3 bg-indigo-900/90 rounded-xs border border-white/20 relative">
+            <div className="w-1.5 h-1.5 rounded-full bg-white border border-blue-500 absolute -top-0.5 left-1/2 -translate-x-1/2" />
+          </div>
+          <div className="w-1/3 bg-indigo-900/90 rounded-xs border border-white/20 relative">
+            <div className="w-1.5 h-1.5 rounded-full bg-white border border-blue-500 absolute -top-0.5 left-1/2 -translate-x-1/2" />
+          </div>
+          <div className="w-1/3 bg-purple-900/90 rounded-xs border border-white/20 relative">
+            <div className="w-1.5 h-1.5 rounded-full bg-white border border-blue-500 absolute -top-0.5 left-1/2 -translate-x-1/2" />
+          </div>
+        </div>
+      </div>
+    )
+  },
         { 
     key: "Startup Problem Statement", 
     name: "Startup Problem Statement",
@@ -9003,6 +9065,41 @@ const DEFAULT_DECK_SLIDES = [
     card3Bg: 'linear-gradient(180deg, #33263D 0%, #1C1A2E 45%, #0E1320 100%)',
     motionCue: 'Stagger Text Reveal',
     speakerNotes: 'Detail the three critical market pain points: brand differentiation, inconsistent messaging, and dynamic trend adaptation.',
+    footer: 'Ingoude Company'
+  },
+  {
+    id: 5,
+    section: 'Solution',
+    title: 'Our Innovative Solutions',
+    tagline: 'Ingoude Company',
+    headline: 'OUR INNOVATIVE\nSOLUTIONS',
+    backgroundColor: '#05070B',
+    vectorWaveStyle: 'solutions-flow',
+    vectorColor1: '#00f0ff',
+    vectorColor2: '#a855f7',
+    vectorWaveHue: 'neon-cyan-purple',
+    designPresetKey: 'midnight-slate',
+    presetKey: 'midnight-slate',
+    accent: 'from-cyan-500 via-indigo-500 to-purple-600',
+    visualType: 'startup solution cards',
+    layoutStyle: 'Startup Innovative Solutions',
+    card1Icon: 'award',
+    card1Title: 'FIND UNIQUE SELLING POINT',
+    card1Text: 'Help startups figure out what makes them special and build their brand around it. This involves learning about their competitors and target audience, then creating a clear message that sets them apart.',
+    card1Bg: 'linear-gradient(180deg, #382c4d 0%, #20223f 50%, #0f162e 100%)',
+    card1Glimmer: 'white',
+    card2Icon: 'shield-check',
+    card2Title: 'BRAND MESSAGING GUIDELINES',
+    card2Text: "Make sure all of the startup's marketing materials send the same message. This means having clear guidelines for how they talk about themselves and making sure everyone sticks to them.",
+    card2Bg: 'linear-gradient(180deg, #322846 0%, #1e1f3b 50%, #0e1428 100%)',
+    card2Glimmer: 'white',
+    card3Icon: 'target',
+    card3Title: 'AGILE MARKETING STRATEGY',
+    card3Text: 'Help startups adapt quickly to changes in the market. This means keeping an eye on what works, analyzing data, and being open to new things to keep the marketing strategy fresh and effective.',
+    card3Bg: 'linear-gradient(180deg, #7c5c99 0%, #3e3264 50%, #191c3d 100%)',
+    card3Glimmer: 'white',
+    motionCue: 'Stagger Card Entrance',
+    speakerNotes: 'Walk through the 3 innovative solutions: USP discovery, unified brand messaging guidelines, and agile marketing execution.',
     footer: 'Ingoude Company'
   }
 ];
@@ -33423,6 +33520,25 @@ Respond with a JSON array of slide objects matching the schema.`;
     .replace(/'/g, '&#39;');
 
   const buildDeckPreviewDataUri = (slide) => {
+    if (slide?.layoutStyle === "Startup Innovative Solutions" || slide?.layoutStyle === "Startup Solutions" || slide?.title === "Our Innovative Solutions") {
+      const headline = escapeSvgText(slide?.headline || "OUR INNOVATIVE\nSOLUTIONS").replace(/\n/g, ' ');
+      const footer = escapeSvgText(slide?.footer || 'Ingoude Company');
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+        <rect width="320" height="192" rx="14" fill="#05070B"/>
+        <path d="M 80 0 C 140 60, 240 20, 320 80" stroke="#00f0ff" stroke-width="2" opacity="0.8" fill="none" />
+        <path d="M 120 0 C 180 80, 260 40, 320 100" stroke="#a855f7" stroke-width="1.8" opacity="0.8" fill="none" />
+        <text x="14" y="55" font-size="10" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900">OUR INNOVATIVE</text>
+        <text x="14" y="68" font-size="10" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900">SOLUTIONS</text>
+        <rect x="14" y="82" width="92" height="96" rx="8" fill="#20223f" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+        <circle cx="60" cy="82" r="7" fill="#ffffff" stroke="#2563eb" stroke-width="1"/>
+        <rect x="114" y="82" width="92" height="96" rx="8" fill="#1e1f3b" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+        <circle cx="160" cy="82" r="7" fill="#ffffff" stroke="#2563eb" stroke-width="1"/>
+        <rect x="214" y="82" width="92" height="96" rx="8" fill="#3e3264" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+        <circle cx="260" cy="82" r="7" fill="#ffffff" stroke="#2563eb" stroke-width="1"/>
+        <text x="306" y="186" font-size="5" font-family="Inter, sans-serif" fill="#94a3b8" font-style="italic" text-anchor="end">${footer}</text>
+      </svg>`;
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
     if (slide?.layoutStyle === "Startup Problem Statement" || slide?.layoutStyle === 'Startup Problem') {
       const footer = escapeSvgText(slide?.footer || 'Ingoude Company');
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
@@ -47507,7 +47623,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </button>
                                         {deckActiveToolbarMenu === 'slideLayout' && (
                                           <div onClick={(e) => e.stopPropagation()} className="absolute top-8 left-0 z-[999] w-52 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-lg p-1.5">
-                                            {['Title Slide', 'Title & Content', 'Two Columns', 'Section Header', 'Big Number', 'Key Metric', 'Quote Slide', 'Cinematic Split', 'Blank Slide'].map((l) => (
+                                            {['Startup Pitch Deck', "Startup Today's Agenda", 'Startup Introduction', 'Startup Problem Statement', 'Startup Innovative Solutions', 'Title Slide', 'Title & Content', 'Two Columns', 'Section Header', 'Big Number', 'Key Metric', 'Quote Slide', 'Cinematic Split', 'Blank Slide'].map((l) => (
                                               <button key={l} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'layoutStyle', l); setDeckActiveToolbarMenu(null); showToast(`Slide layout set to ${l}`); }} className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/50 rounded-lg">{l}</button>
                                             ))}
                                           </div>
@@ -50059,7 +50175,363 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
                                           </div>
                                         </div>
-                                      ) : layout === "Startup Problem Statement" || layout === "Startup Problem" || activeDeckSlide?.title === "Problem Statement" || layout === "Problem Statement" ? (
+                                      ) : layout === "Startup Innovative Solutions" || layout === "Startup Solutions" || layout === "Our Innovative Solutions" || activeDeckSlide?.title === "Our Innovative Solutions" || layout === "Solutions" ? (
+                                          /* ── STARTUP INNOVATIVE SOLUTIONS TEMPLATE (REVERSE-ENGINEERED SLIDE 5) ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-4 pt-1 pb-3 md:px-7 md:pb-4 overflow-hidden">
+                                            {/* Background Layer: Flowing Neon Curved Wave */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'vector', id: 'solutions-wave' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'vectorWave',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.vectorWave_posX || 0,
+                                                  origY: activeDeckSlide?.vectorWave_posY || 0
+                                                });
+                                              }}
+                                              style={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                right: 0,
+                                                width: activeDeckSlide?.vectorWave_width ? `${activeDeckSlide.vectorWave_width}px` : '72%',
+                                                height: activeDeckSlide?.vectorWave_height ? `${activeDeckSlide.vectorWave_height}px` : '190px',
+                                                transform: `translate(${activeDeckSlide?.vectorWave_posX || 0}px, ${activeDeckSlide?.vectorWave_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                pointerEvents: 'auto',
+                                                cursor: 'grab',
+                                                zIndex: 10
+                                              }}
+                                              className={`overflow-visible select-none group/wave ${deckSelection.type === 'vector' && deckSelection.id === 'solutions-wave' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
+                                            >
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 700 200" fill="none" preserveAspectRatio="none">
+                                                <defs>
+                                                  <linearGradient id="solWaveGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#c084fc" stopOpacity="0.95" />
+                                                    <stop offset="45%" stopColor="#818cf8" stopOpacity="0.85" />
+                                                    <stop offset="100%" stopColor="#00f0ff" stopOpacity="0.95" />
+                                                  </linearGradient>
+                                                  <linearGradient id="solWaveGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stopColor="#a855f7" stopOpacity="0.75" />
+                                                    <stop offset="55%" stopColor="#38bdf8" stopOpacity="0.9" />
+                                                    <stop offset="100%" stopColor="#ec4899" stopOpacity="0.85" />
+                                                  </linearGradient>
+                                                  <filter id="solGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                                    <feGaussianBlur stdDeviation="5.5" result="blur" />
+                                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                                  </filter>
+                                                </defs>
+                                                <path d="M 0 135 C 200 35, 420 185, 700 75" stroke="url(#solWaveGrad1)" strokeWidth="4.5" fill="none" filter="url(#solGlow)" opacity="0.95" />
+                                                <path d="M 20 150 C 220 45, 450 195, 700 90" stroke="#00f0ff" strokeWidth="2" fill="none" opacity="0.9" filter="url(#solGlow)" />
+                                                <path d="M 40 125 C 240 25, 400 175, 700 60" stroke="url(#solWaveGrad2)" strokeWidth="3" fill="none" opacity="0.8" />
+                                                <path d="M 0 155 C 180 65, 380 205, 700 105" stroke="#a855f7" strokeWidth="1.5" fill="none" opacity="0.65" />
+                                                <path d="M 60 115 C 260 15, 440 165, 700 45" stroke="#e879f9" strokeWidth="1.8" fill="none" opacity="0.75" />
+                                              </svg>
+                                              {/* Drag Capsule for wave */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'solutions-wave' && (
+                                                <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'solutions-wave' }); setDeckBentoDrag({ isDragging: true, cardId: 'vectorWave', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.vectorWave_posX || 0, origY: activeDeckSlide?.vectorWave_posY || 0 }); }} className="absolute -top-10 right-4 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <span>Vector Neon Wave</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { vectorWave_posX: 0, vectorWave_posY: 0, vectorWave_width: undefined, vectorWave_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                </div>
+                                              )}
+                                              {/* 8 Resize Handles */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'solutions-wave' && (
+                                                <>
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.vectorWave_width || Math.round(rect.width), initH: activeDeckSlide?.vectorWave_height || Math.round(rect.height), initX: activeDeckSlide?.vectorWave_posX || 0, initY: activeDeckSlide?.vectorWave_posY || 0, target: 'bento-vectorWave' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.vectorWave_width || Math.round(rect.width), initH: activeDeckSlide?.vectorWave_height || Math.round(rect.height), initX: activeDeckSlide?.vectorWave_posX || 0, initY: activeDeckSlide?.vectorWave_posY || 0, target: 'bento-vectorWave' }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.vectorWave_width || Math.round(rect.width), initH: activeDeckSlide?.vectorWave_height || Math.round(rect.height), initX: activeDeckSlide?.vectorWave_posX || 0, initY: activeDeckSlide?.vectorWave_posY || 0, target: 'bento-vectorWave' }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.vectorWave_width || Math.round(rect.width), initH: activeDeckSlide?.vectorWave_height || Math.round(rect.height), initX: activeDeckSlide?.vectorWave_posX || 0, initY: activeDeckSlide?.vectorWave_posY || 0, target: 'bento-vectorWave' }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.vectorWave_width || Math.round(rect.width), initH: activeDeckSlide?.vectorWave_height || Math.round(rect.height), initX: activeDeckSlide?.vectorWave_posX || 0, initY: activeDeckSlide?.vectorWave_posY || 0, target: 'bento-vectorWave' }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.vectorWave_width || Math.round(rect.width), initH: activeDeckSlide?.vectorWave_height || Math.round(rect.height), initX: activeDeckSlide?.vectorWave_posX || 0, initY: activeDeckSlide?.vectorWave_posY || 0, target: 'bento-vectorWave' }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.vectorWave_width || Math.round(rect.width), initH: activeDeckSlide?.vectorWave_height || Math.round(rect.height), initX: activeDeckSlide?.vectorWave_posX || 0, initY: activeDeckSlide?.vectorWave_posY || 0, target: 'bento-vectorWave' }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.vectorWave_width || Math.round(rect.width), initH: activeDeckSlide?.vectorWave_height || Math.round(rect.height), initX: activeDeckSlide?.vectorWave_posX || 0, initY: activeDeckSlide?.vectorWave_posY || 0, target: 'bento-vectorWave' }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                </>
+                                              )}
+                                            </div>
+
+                                            {/* Headline Layer: Bold Draggable & Resizable Headline */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'text', id: 'solutions-headline' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'solutionsHeadline',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.solutionsHeadline_posX || 0,
+                                                  origY: activeDeckSlide?.solutionsHeadline_posY || 0
+                                                });
+                                              }}
+                                              style={{
+                                                transform: `translate(${activeDeckSlide?.solutionsHeadline_posX || 0}px, ${activeDeckSlide?.solutionsHeadline_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                width: activeDeckSlide?.solutionsHeadline_width ? `${activeDeckSlide.solutionsHeadline_width}px` : undefined,
+                                                height: activeDeckSlide?.solutionsHeadline_height ? `${activeDeckSlide.solutionsHeadline_height}px` : undefined,
+                                                touchAction: 'none'
+                                              }}
+                                              className={`relative overflow-visible flex flex-col justify-start select-auto cursor-grab active:cursor-grabbing group/title z-30 pt-1 pl-1 ${deckSelection.type === 'text' && deckSelection.id === 'solutions-headline' ? 'z-50 outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
+                                            >
+                                              <h1
+                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                suppressContentEditableWarning
+                                                onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
+                                                style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                className="text-[34px] md:text-[44px] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-[1.02] w-full break-words"
+                                              >
+                                                {activeDeckSlide?.headline ? (
+                                                  activeDeckSlide.headline.split('\n').map((line, idx) => (
+                                                    <span key={idx} className="block break-words">
+                                                      {line}
+                                                    </span>
+                                                  ))
+                                                ) : (
+                                                  <>
+                                                    <span className="block break-words">OUR INNOVATIVE</span>
+                                                    <span className="block break-words">SOLUTIONS</span>
+                                                  </>
+                                                )}
+                                              </h1>
+                                              {/* Drag Capsule */}
+                                              {deckSelection.type === 'text' && deckSelection.id === 'solutions-headline' && (
+                                                <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'text', id: 'solutions-headline' }); setDeckBentoDrag({ isDragging: true, cardId: 'solutionsHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.solutionsHeadline_posX || 0, origY: activeDeckSlide?.solutionsHeadline_posY || 0 }); }} className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                  <Move size={11} className="text-violet-400" />
+                                                  <span>Drag Headline</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { solutionsHeadline_posX: 0, solutionsHeadline_posY: 0, solutionsHeadline_width: undefined, solutionsHeadline_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                </div>
+                                              )}
+                                              {/* 8 Resize Handles */}
+                                              {deckSelection.type === 'text' && deckSelection.id === 'solutions-headline' && (
+                                                <>
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.solutionsHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.solutionsHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.solutionsHeadline_posX || 0, initY: activeDeckSlide?.solutionsHeadline_posY || 0, target: 'text-solutionsHeadline' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.solutionsHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.solutionsHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.solutionsHeadline_posX || 0, initY: activeDeckSlide?.solutionsHeadline_posY || 0, target: 'text-solutionsHeadline' }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.solutionsHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.solutionsHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.solutionsHeadline_posX || 0, initY: activeDeckSlide?.solutionsHeadline_posY || 0, target: 'text-solutionsHeadline' }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.solutionsHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.solutionsHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.solutionsHeadline_posX || 0, initY: activeDeckSlide?.solutionsHeadline_posY || 0, target: 'text-solutionsHeadline' }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.solutionsHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.solutionsHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.solutionsHeadline_posX || 0, initY: activeDeckSlide?.solutionsHeadline_posY || 0, target: 'text-solutionsHeadline' }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.solutionsHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.solutionsHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.solutionsHeadline_posX || 0, initY: activeDeckSlide?.solutionsHeadline_posY || 0, target: 'text-solutionsHeadline' }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.solutionsHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.solutionsHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.solutionsHeadline_posX || 0, initY: activeDeckSlide?.solutionsHeadline_posY || 0, target: 'text-solutionsHeadline' }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.solutionsHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.solutionsHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.solutionsHeadline_posX || 0, initY: activeDeckSlide?.solutionsHeadline_posY || 0, target: 'text-solutionsHeadline' }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                </>
+                                              )}
+                                            </div>
+
+                                            {/* Card Layer: 3-Column Glassmorphic Solution Bento Grid with Floating Icon Badges */}
+                                            <div className="grid grid-cols-3 gap-5 w-full pointer-events-auto z-20 min-h-0 flex-1 items-stretch mt-auto pt-7 pb-2">
+                                              {[
+                                                { id: 'sol-card-1', cardKey: 'solCard1', iconKey: 'card1Icon', titleKey: 'card1Title', bodyKey: 'card1Text', bgKey: 'card1Bg', defTitle: 'FIND UNIQUE SELLING POINT', defBody: 'Help startups figure out what makes them special and build their brand around it. This involves learning about their competitors and target audience, then creating a clear message that sets them apart.', defIcon: 'award', defBg: 'linear-gradient(180deg, #382c4d 0%, #20223f 50%, #0f162e 100%)' },
+                                                { id: 'sol-card-2', cardKey: 'solCard2', iconKey: 'card2Icon', titleKey: 'card2Title', bodyKey: 'card2Text', bgKey: 'card2Bg', defTitle: 'BRAND MESSAGING GUIDELINES', defBody: 'Make sure all of the startup\'s marketing materials send the same message. This means having clear guidelines for how they talk about themselves and making sure everyone sticks to them.', defIcon: 'shield-check', defBg: 'linear-gradient(180deg, #322846 0%, #1e1f3b 50%, #0e1428 100%)' },
+                                                { id: 'sol-card-3', cardKey: 'solCard3', iconKey: 'card3Icon', titleKey: 'card3Title', bodyKey: 'card3Text', bgKey: 'card3Bg', defTitle: 'AGILE MARKETING STRATEGY', defBody: 'Help startups adapt quickly to changes in the market. This means keeping an eye on what works, analyzing data, and being open to new things to keep the marketing strategy fresh and effective.', defIcon: 'target', defBg: 'linear-gradient(180deg, #7c5c99 0%, #3e3264 50%, #191c3d 100%)' }
+                                              ].map((cData, cIdx) => {
+                                                const isSelected = deckSelection.type === 'bento' && (deckSelection.id === cData.id || deckSelection.id === cData.cardKey);
+                                                const cardPosX = activeDeckSlide?.[`${cData.cardKey}_posX`] || 0;
+                                                const cardPosY = activeDeckSlide?.[`${cData.cardKey}_posY`] || 0;
+                                                const cardWidth = activeDeckSlide?.[`${cData.cardKey}_width`];
+                                                const cardHeight = activeDeckSlide?.[`${cData.cardKey}_height`];
+                                                const currentIcon = activeDeckSlide?.[cData.iconKey] || cData.defIcon;
+                                                const currentTitle = activeDeckSlide?.[cData.titleKey] || cData.defTitle;
+                                                const currentBody = activeDeckSlide?.[cData.bodyKey] || cData.defBody;
+                                                const currentBg = activeDeckSlide?.[cData.bgKey] || cData.defBg;
+                                                const glimmer = activeDeckSlide?.[`${cData.cardKey}Glimmer`] || 'white';
+
+                                                return (
+                                                  <div
+                                                    key={cIdx}
+                                                    onPointerDown={(e) => {
+                                                      if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable') || e.target.closest('.card-icon-badge') || e.target.closest('.icon-picker-popover')) return;
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'bento', id: cData.id });
+                                                      setDeckBentoDrag({
+                                                        isDragging: true,
+                                                        cardId: cData.cardKey,
+                                                        startX: e.clientX,
+                                                        startY: e.clientY,
+                                                        origX: cardPosX,
+                                                        origY: cardPosY
+                                                      });
+                                                    }}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'bento', id: cData.id });
+                                                    }}
+                                                    style={{
+                                                      transform: `translate(${cardPosX}px, ${cardPosY}px)`,
+                                                      transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                      width: cardWidth ? `${cardWidth}px` : undefined,
+                                                      minWidth: cardWidth ? `${cardWidth}px` : undefined,
+                                                      height: cardHeight ? `${cardHeight}px` : undefined,
+                                                      background: currentBg,
+                                                      borderRadius: '20px',
+                                                      border: glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.9)' : glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1.5px solid rgba(255, 255, 255, 0.4)',
+                                                      boxShadow: glimmer === 'cyan' ? '0 0 25px rgba(0, 240, 255, 0.45), inset 0 0 15px rgba(0, 240, 255, 0.2)' : glimmer === 'violet' ? '0 0 25px rgba(168, 85, 247, 0.45), inset 0 0 15px rgba(168, 85, 247, 0.2)' : '0 16px 40px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.3)',
+                                                      touchAction: 'none'
+                                                    }}
+                                                    className={`relative group/card flex flex-col items-center justify-start pt-9 pb-5 px-5 shadow-[0_16px_40px_rgba(0,0,0,0.6)] cursor-grab active:cursor-grabbing ${
+                                                      isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : 'hover:border-white/60 z-20'
+                                                    }`}
+                                                  >
+                                                    {/* Floating Circular Overlapping Icon Badge */}
+                                                    <div
+                                                      className="card-icon-badge absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-white shadow-[0_4px_16px_rgba(0,0,0,0.5)] border-2 border-indigo-200/80 flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all z-40 group/badge"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDeckSelection({ type: 'bento', id: cData.id });
+                                                        setActiveCardIconPicker(activeCardIconPicker?.cardKey === cData.cardKey ? null : { cardKey: cData.cardKey, iconKey: cData.iconKey });
+                                                      }}
+                                                      title="Click to change icon"
+                                                    >
+                                                      <div className="w-9 h-9 rounded-full bg-blue-50/80 flex items-center justify-center border border-blue-200/50">
+                                                        {renderSolutionIcon(currentIcon, "w-5 h-5 text-blue-600")}
+                                                      </div>
+                                                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-indigo-600 rounded-full border border-white flex items-center justify-center opacity-0 group-hover/badge:opacity-100 transition-opacity">
+                                                        <ChevronDown size={10} className="text-white" />
+                                                      </div>
+                                                    </div>
+
+                                                    {/* Card Title */}
+                                                    <h3
+                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                      suppressContentEditableWarning
+                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, cData.titleKey, e.currentTarget.textContent || '')}
+                                                      style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                      className="text-[13px] md:text-[14px] font-extrabold text-white text-center tracking-wider uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1.5 py-0.5 mt-1 mb-2.5 font-sans select-text leading-tight w-full"
+                                                    >
+                                                      {currentTitle}
+                                                    </h3>
+
+                                                    {/* Card Body */}
+                                                    <p
+                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                      suppressContentEditableWarning
+                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, cData.bodyKey, e.currentTarget.textContent || '')}
+                                                      style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                      className="text-[10px] md:text-[11px] leading-[1.45] text-slate-200/90 text-center font-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans select-text w-full"
+                                                    >
+                                                      {currentBody}
+                                                    </p>
+
+                                                    {/* Card Floating Capsule Menu */}
+                                                    {isSelected && (
+                                                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                        <Sparkles size={11} className="text-purple-400" />
+                                                        <span>Card {cIdx + 1}</span>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActiveCardIconPicker(activeCardIconPicker?.cardKey === cData.cardKey ? null : { cardKey: cData.cardKey, iconKey: cData.iconKey });
+                                                          }}
+                                                          className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                          <Palette size={10} /> Icon
+                                                        </button>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const nextGlimmer = glimmer === 'white' ? 'violet' : glimmer === 'violet' ? 'cyan' : 'white';
+                                                            updateDeckSlideField(activeDeckSlide?.id, `${cData.cardKey}Glimmer`, nextGlimmer);
+                                                            showToast(`Glimmer: ${nextGlimmer}`);
+                                                          }}
+                                                          className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                          <Wand2 size={10} /> Glimmer
+                                                        </button>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onPointerDown={(e) => {
+                                                            e.stopPropagation();
+                                                            updateDeckSlideFields(activeDeckSlide?.id, {
+                                                              [`${cData.cardKey}_posX`]: 0,
+                                                              [`${cData.cardKey}_posY`]: 0,
+                                                              [`${cData.cardKey}_width`]: undefined,
+                                                              [`${cData.cardKey}_height`]: undefined
+                                                            });
+                                                          }}
+                                                          className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                          title="Reset Position"
+                                                        >
+                                                          <RotateCcw size={11} />
+                                                        </button>
+                                                      </div>
+                                                    )}
+
+                                                    {/* 8 Resize Handles for Card */}
+                                                    {isSelected && (
+                                                      <>
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: cardWidth || Math.round(rect.width), initH: cardHeight || Math.round(rect.height), initX: cardPosX, initY: cardPosY, target: `bento-${cData.cardKey}` }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: cardWidth || Math.round(rect.width), initH: cardHeight || Math.round(rect.height), initX: cardPosX, initY: cardPosY, target: `bento-${cData.cardKey}` }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: cardWidth || Math.round(rect.width), initH: cardHeight || Math.round(rect.height), initX: cardPosX, initY: cardPosY, target: `bento-${cData.cardKey}` }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: cardWidth || Math.round(rect.width), initH: cardHeight || Math.round(rect.height), initX: cardPosX, initY: cardPosY, target: `bento-${cData.cardKey}` }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: cardWidth || Math.round(rect.width), initH: cardHeight || Math.round(rect.height), initX: cardPosX, initY: cardPosY, target: `bento-${cData.cardKey}` }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: cardWidth || Math.round(rect.width), initH: cardHeight || Math.round(rect.height), initX: cardPosX, initY: cardPosY, target: `bento-${cData.cardKey}` }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: cardWidth || Math.round(rect.width), initH: cardHeight || Math.round(rect.height), initX: cardPosX, initY: cardPosY, target: `bento-${cData.cardKey}` }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: cardWidth || Math.round(rect.width), initH: cardHeight || Math.round(rect.height), initX: cardPosX, initY: cardPosY, target: `bento-${cData.cardKey}` }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                      </>
+                                                    )}
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+
+                                            {/* Interactive Icon Selector Dropdown Popup */}
+                                            {activeCardIconPicker && (
+                                              <div
+                                                className="icon-picker-popover absolute z-[120] bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-3.5 w-[280px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onPointerDown={(e) => e.stopPropagation()}
+                                              >
+                                                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
+                                                  <span className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                                    <Sparkles size={12} className="text-violet-400" /> Select Badge Icon
+                                                  </span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setActiveCardIconPicker(null)}
+                                                    className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                                                  >
+                                                    <X size={12} />
+                                                  </button>
+                                                </div>
+                                                <div className="grid grid-cols-4 gap-2 max-h-[220px] overflow-y-auto thin-scrollbar p-1">
+                                                  {DECK_SOLUTIONS_ICONS.map((item) => {
+                                                    const IconCmp = item.icon;
+                                                    const isCurrent = activeDeckSlide?.[activeCardIconPicker.iconKey] === item.key;
+                                                    return (
+                                                      <button
+                                                        key={item.key}
+                                                        type="button"
+                                                        onClick={() => {
+                                                          updateDeckSlideField(activeDeckSlide?.id, activeCardIconPicker.iconKey, item.key);
+                                                          showToast(`Icon set: ${item.name}`);
+                                                          setActiveCardIconPicker(null);
+                                                        }}
+                                                        title={item.name}
+                                                        className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all cursor-pointer ${
+                                                          isCurrent
+                                                            ? 'bg-violet-600/40 border-violet-400 text-cyan-300 shadow-[0_0_12px_rgba(124,77,255,0.4)]'
+                                                            : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/15 hover:text-white hover:border-white/30'
+                                                        }`}
+                                                      >
+                                                        <IconCmp size={18} />
+                                                        <span className="text-[8px] mt-1 text-center truncate max-w-full opacity-80">{item.name.split(' ')[0]}</span>
+                                                      </button>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : layout === "Startup Problem Statement" || layout === "Startup Problem" || activeDeckSlide?.title === "Problem Statement" || layout === "Problem Statement" ? (
                                          /* ── STARTUP PROBLEM STATEMENT TEMPLATE (WITH SMART ALIGNMENT DASHED GUIDES) ── */
                                          <div className="flex flex-col justify-center h-full w-full relative z-10 pointer-events-none select-none px-4 pt-1 pb-3 md:px-7 md:pb-4">
                                            {/* Main 2-Column Split */}
