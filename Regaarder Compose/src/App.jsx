@@ -47561,86 +47561,89 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                          label: 'Vector & Wave', 
                                          icon: RegaarderVectorIcon,
                                          menuItems: ALL_INDUSTRY_VECTOR_STYLES.map((s) => s.label),
-                                         onSelect: (item) => {
-                                           updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', false);
-                                           if (item.includes('Dual-Mesh')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'dual-mesh');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#00f0ff');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#a855f7');
-                                           } else if (item.includes('Electric Cyan')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'electric-cyan');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#00f0ff');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#38bdf8');
-                                           } else if (item.includes('Neon Cyan & Purple')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'neon-cyan-purple');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#00f0ff');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#d946ef');
-                                           } else if (item.includes('Bottom-Left')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'bottom-left-wave');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#38bdf8');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#818cf8');
-                                           } else if (item.includes('Dual Warp')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'dual-warp');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#00f0ff');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#ec4899');
-                                           }
-                                           updateDeckSlideField(activeDeckSlide?.id, 'vectorOpacity', 0.85);
-                                           setDeckSelection({ type: 'vector', id: 'vector-mesh' });
-                                           showToast(`Added & selected: ${item}`);
-                                         }
-                                       },
-                                       { 
-                                          label: 'Media & Logo', 
-                                          icon: Sparkles,
-                                          menuItems: ['🖼️ Upload Picture / Image', '💎 Upload Brand Logo', '⚡ Convert PNG/JPG to Vector (SVG)', '💎 Preset Monogram Logo'],
                                           onSelect: (item) => {
-                                            if (item.includes('Picture / Image')) {
-                                              imageFileInputRef.current?.click();
-                                            } else if (item.includes('Brand Logo')) {
-                                              logoFileInputRef.current?.click();
-                                            } else if (item.includes('Convert PNG/JPG to Vector')) {
-                                              vectorizerFileInputRef.current?.click();
-                                            } else if (item.includes('Preset Monogram')) {
-                                              const newImg = {
-                                                id: 'logo_' + Date.now(),
-                                                url: null,
-                                                name: 'Monogram Logo',
-                                                posX: 740,
-                                                posY: 24,
-                                                width: 100,
-                                                height: 48,
-                                                opacity: 1,
-                                                isVector: true,
-                                                vectorSvg: `<svg viewBox="0 0 100 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="48" rx="8" fill="#1e1e2e" stroke="#7C4DFF" stroke-width="1.5"/><text x="50" y="30" font-family="system-ui, sans-serif" font-weight="900" font-size="18" fill="#00f0ff" text-anchor="middle" letter-spacing="2">LOGO</text></svg>`,
-                                                vectorColor: '#00f0ff',
-                                                vectorGlow: 'ultra-radiant',
-                                                borderRadius: 8,
-                                                isLogo: true
-                                              };
-                                              const currentImages = Array.isArray(activeDeckSlide?.images) ? activeDeckSlide.images : [];
-                                              updateDeckSlideField(activeDeckSlide?.id, 'images', [...currentImages, newImg]);
-                                              setDeckSelection({ type: 'image', id: newImg.id });
-                                              showToast('Inserted Monogram Logo');
+                                            updateDeckSlideField(activeDeckSlide?.id, "vectorHidden", false);
+                                            const matched = ALL_INDUSTRY_VECTOR_STYLES.find((s) => s.label === item || s.id === item);
+                                            if (matched) {
+                                              updateDeckSlideField(activeDeckSlide?.id, "vectorWaveStyle", matched.id);
+                                              updateDeckSlideField(activeDeckSlide?.id, "vectorColor1", matched.c1);
+                                              updateDeckSlideField(activeDeckSlide?.id, "vectorColor2", matched.c2);
+                                              updateDeckSlideField(activeDeckSlide?.id, "vectorOpacity", 0.9);
+                                              updateDeckSlideField(activeDeckSlide?.id, "vectorGlow", "ultra-radiant");
+                                              setDeckSelection({ type: "vector", id: "vector-mesh" });
+                                              showToast(`Activated: ${matched.label}`);
+                                            } else {
+                                              updateDeckSlideField(activeDeckSlide?.id, "vectorWaveStyle", "original-pitch");
+                                              setDeckSelection({ type: "vector", id: "vector-mesh" });
+                                              showToast(`Added: ${item}`);
                                             }
                                           }
-                                        },
+                                       },
                                        { 
-                                         label: 'Layout', 
-                                         icon: LayoutGrid,
-                                         menuItems: ['Startup Pitch Deck', 'Title Slide', 'Title & Content', 'Two Columns', 'Section Header', 'Big Number', 'Key Metric', 'Quote Slide', 'Cinematic Split', 'Blank Slide'],
+                                         label: 'Media & Logo', 
+                                         icon: Sparkles,
+                                         menuItems: ['🖼️ Upload Picture / Image', '💎 Upload Brand Logo', '⚡ Convert PNG/JPG to Vector (SVG)', '💎 Preset Monogram Logo'],
                                          onSelect: (item) => {
-                                           updateDeckSlideField(activeDeckSlide?.id, 'layoutStyle', item);
-                                           if (item === 'Startup Pitch Deck') {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'backgroundColor', '#05070B');
+                                           if (item.includes('Picture / Image')) {
+                                             imageFileInputRef.current?.click();
+                                           } else if (item.includes('Brand Logo')) {
+                                             logoFileInputRef.current?.click();
+                                           } else if (item.includes('Convert PNG/JPG to Vector')) {
+                                             vectorizerFileInputRef.current?.click();
+                                           } else if (item.includes('Preset Monogram')) {
+                                             const newImg = {
+                                               id: 'logo_' + Date.now(),
+                                               url: null,
+                                               name: 'Monogram Logo',
+                                               posX: 740,
+                                               posY: 24,
+                                               width: 100,
+                                               height: 48,
+                                               opacity: 1,
+                                               isVector: true,
+                                               vectorSvg: `<svg viewBox="0 0 100 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="48" rx="8" fill="#1e1e2e" stroke="#7C4DFF" stroke-width="1.5"/><text x="50" y="30" font-family="system-ui, sans-serif" font-weight="900" font-size="18" fill="#00f0ff" text-anchor="middle" letter-spacing="2">LOGO</text></svg>`,
+                                               vectorColor: '#00f0ff',
+                                               vectorGlow: 'ultra-radiant',
+                                               borderRadius: 8,
+                                               isLogo: true
+                                             };
+                                             const currentImages = Array.isArray(activeDeckSlide?.images) ? activeDeckSlide.images : [];
+                                             updateDeckSlideField(activeDeckSlide?.id, 'images', [...currentImages, newImg]);
+                                             setDeckSelection({ type: 'image', id: newImg.id });
+                                             showToast('Inserted Monogram Logo');
                                            }
-                                           setRightSidebarOpen(true);
-                                           setDeckContextRailTab('Design');
-                                           showToast(`Layout set to ${item}`);
                                          }
                                        },
                                        { 
                                          label: 'Insert', 
                                          icon: Plus,
+                                         menuItems: [
+                                           '🖼️ Picture / Image', 
+                                           '💎 Brand Logo', 
+                                           '⚡ Convert JPG/PNG to Vector (SVG)',
+                                           'Contact Icon Shape', 
+                                           'Circle Shape', 
+                                           'Square Shape', 
+                                           'Diamond Shape', 
+                                           'Triangle Shape', 
+                                           'Presenter Pill Badge', 
+                                           'Gradient Pill Shape', 
+                                           'Divider Line', 
+                                           'Text Box (Multi-line)', 
+                                           'Heading H1', 
+                                           'Glow Vector Wave'
+                                         ],
+                                         onSelect: (item) => {
+                                           if (item.includes('Picture / Image')) {
+                                             imageFileInputRef.current?.click();
+                                           } else if (item.includes('Brand Logo')) {
+                                             logoFileInputRef.current?.click();
+                                           } else if (item.includes('Convert JPG/PNG to Vector')) {
+                                             vectorizerFileInputRef.current?.click();
+                                           } else if (item.includes('Contact Icon') || item.includes('Circle Shape') || item.includes('Square Shape') || item.includes('Diamond Shape') || item.includes('Triangle Shape')) {
+                                             const shapeType = item.includes('Circle') ? 'circle' : item.includes('Square') ? 'rounded-square' : item.includes('Diamond') ? 'diamond' : item.includes('Triangle') ? 'triangle' : 'circle';
+                                             updateDeckSlideField(activeDeckSlide?.id, 'badge1_hidden', false);
+                                             updateDeckSlideField(activeDeckSlide?.id, 'badge1_shape', shapeType);
                                              updateDeckSlideField(activeDeckSlide?.id, 'badge1_bg', '#7C4DFF');
                                              setDeckSelection({ type: 'badge', id: 'badge1' });
                                              showToast(`Inserted ${item}`);

@@ -47561,29 +47561,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                          label: 'Vector & Wave', 
                                          icon: RegaarderVectorIcon,
                                          menuItems: ALL_INDUSTRY_VECTOR_STYLES.map((s) => s.label),
-                                         onSelect: (item) => {
-                                           updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', false);
-                                           if (item.includes('Dual-Mesh')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'dual-mesh');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#00f0ff');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#a855f7');
-                                           } else if (item.includes('Neon Cyan & Purple')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'neon-cyan-purple');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#00f0ff');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#d946ef');
-                                           } else if (item.includes('Bottom-Left')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'bottom-left-wave');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#38bdf8');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#818cf8');
-                                           } else if (item.includes('Dual Warp')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'dual-warp');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#00f0ff');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#ec4899');
-                                           }
-                                           updateDeckSlideField(activeDeckSlide?.id, 'vectorOpacity', 0.85);
-                                           setDeckSelection({ type: 'vector', id: 'vector-mesh' });
-                                           showToast(`Added & selected: ${item}`);
-                                         }
+                                          onSelect: (item) => {
+                                            updateDeckSlideField(activeDeckSlide?.id, "vectorHidden", false);
+                                            const matched = ALL_INDUSTRY_VECTOR_STYLES.find((s) => s.label === item || s.id === item);
+                                            if (matched) {
+                                              updateDeckSlideField(activeDeckSlide?.id, "vectorWaveStyle", matched.id);
+                                              updateDeckSlideField(activeDeckSlide?.id, "vectorColor1", matched.c1);
+                                              updateDeckSlideField(activeDeckSlide?.id, "vectorColor2", matched.c2);
+                                              updateDeckSlideField(activeDeckSlide?.id, "vectorOpacity", 0.9);
+                                              updateDeckSlideField(activeDeckSlide?.id, "vectorGlow", "ultra-radiant");
+                                              setDeckSelection({ type: "vector", id: "vector-mesh" });
+                                              showToast(`Activated: ${matched.label}`);
+                                            } else {
+                                              updateDeckSlideField(activeDeckSlide?.id, "vectorWaveStyle", "original-pitch");
+                                              setDeckSelection({ type: "vector", id: "vector-mesh" });
+                                              showToast(`Added: ${item}`);
+                                            }
+                                          }
                                        },
                                        { 
                                          label: 'Media & Logo', 
