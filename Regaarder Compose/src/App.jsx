@@ -50034,50 +50034,52 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           </div>
                                         </div>
                                       ) : layout === "Startup Problem Statement" || layout === "Startup Problem" ? (
-                                         /* ── STARTUP PROBLEM STATEMENT TEMPLATE (REVERSE-ENGINEERED SLIDE 4) ── */
-                                         <div className="flex flex-col justify-start h-full w-full relative z-10 pointer-events-none select-none px-2 pt-1 pb-2 md:px-4 md:pb-3">
+                                         /* ── STARTUP PROBLEM STATEMENT TEMPLATE (PIXEL-PERFECT REFINED SLIDE 4) ── */
+                                         <div className="flex flex-col justify-start h-full w-full relative z-10 pointer-events-none select-none px-3 pt-1 pb-3 md:px-5 md:pb-4">
                                            {/* Main 2-Column Split: Left Big Headline + Right 3 Vertical Cards */}
-                                           <div className="flex-1 grid grid-cols-12 gap-4 w-full pointer-events-auto z-20 min-h-0 items-center">
-                                             {/* Left Column (Span 4.5): 2-Line Bold Headline */}
-                                             <div className="col-span-4 flex flex-col justify-center pl-1 select-auto">
+                                           <div className="flex-1 grid grid-cols-12 gap-5 w-full pointer-events-auto z-20 min-h-0 max-h-[84%] items-center my-auto">
+                                             {/* Left Column (Span 4.2): 2-Line Bold Headline with clean wrapping */}
+                                             <div className="col-span-4 flex flex-col justify-center pl-1 select-auto max-w-[280px]">
                                                <h1
                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                  suppressContentEditableWarning
                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                  style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                 className="text-[36px] md:text-[46px] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-[1.05]"
+                                                 className="text-[34px] md:text-[40px] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-[1.05] break-normal"
                                                >
                                                  {activeDeckSlide?.headline ? (
                                                    activeDeckSlide.headline.split('\n').map((line, idx) => (
-                                                     <React.Fragment key={idx}>
+                                                     <div key={idx} className="whitespace-nowrap">
                                                        {line}
-                                                       {idx < activeDeckSlide.headline.split('\n').length - 1 && <br />}
-                                                     </React.Fragment>
+                                                     </div>
                                                    ))
                                                  ) : (
                                                    <>
-                                                     PROBLEM<br />STATEMENT
+                                                     <div className="whitespace-nowrap">PROBLEM</div>
+                                                     <div className="whitespace-nowrap">STATEMENT</div>
                                                    </>
                                                  )}
                                                </h1>
                                              </div>
 
-                                             {/* Right Column (Span 8): 3 Vertical Pill-Card Containers */}
-                                             <div className="col-span-8 grid grid-cols-3 gap-3 h-full max-h-[92%] min-h-0 py-1">
-                                               {/* Card 01 (Lavender -> Indigo Gradient Card) */}
+                                             {/* Right Column (Span 8): 3 Vertical Pill-Card Containers with Glimmer Effects */}
+                                             <div className="col-span-8 grid grid-cols-3 gap-3.5 h-full max-h-[90%] min-h-0 py-1 items-stretch">
+                                               {/* Card 01 (Lavender -> Indigo Gradient Card with Glimmer Glow Border) */}
                                                <div 
                                                  onClick={(e) => {
                                                    e.stopPropagation();
                                                    setDeckSelection({ type: 'bento', id: 'prob-card-1' });
                                                  }}
-                                                 className={`rounded-2xl overflow-visible relative group flex flex-col justify-start p-3.5 shadow-2xl transition-all cursor-pointer border border-white/20 ${
+                                                 className={`overflow-visible relative group flex flex-col justify-between p-3.5 shadow-2xl transition-all cursor-pointer ${
                                                    deckSelection.type === 'bento' && deckSelection.id === 'prob-card-1'
-                                                     ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(167,139,250,0.35)]'
+                                                     ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(167,139,250,0.45)]'
                                                      : 'hover:border-purple-300/60'
                                                  }`}
                                                  style={{
                                                    background: activeDeckSlide?.card1Bg || 'linear-gradient(180deg, #A78BFA 0%, #6366F1 45%, #1E1B4B 100%)',
-                                                   borderRadius: activeDeckSlide?.card1Radius || '18px'
+                                                   borderRadius: activeDeckSlide?.card1Radius || '18px',
+                                                   border: activeDeckSlide?.card1Glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.8)' : activeDeckSlide?.card1Glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1px solid rgba(255, 255, 255, 0.25)',
+                                                   boxShadow: activeDeckSlide?.card1Glimmer === 'cyan' ? '0 0 20px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.15)' : activeDeckSlide?.card1Glimmer === 'violet' ? '0 0 20px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(168, 85, 247, 0.15)' : '0 10px 30px rgba(0,0,0,0.5)'
                                                  }}
                                                >
                                                  {/* Floating Capsule for Card 1 */}
@@ -50086,6 +50088,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      <Sparkles size={11} className="text-purple-400" />
                                                      <span>Card 01</span>
                                                      <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                     {/* Glimmer Toggle */}
+                                                     <button
+                                                       type="button"
+                                                       onClick={(e) => {
+                                                         e.stopPropagation();
+                                                         const nextGlimmer = activeDeckSlide?.card1Glimmer === 'violet' ? 'cyan' : activeDeckSlide?.card1Glimmer === 'cyan' ? 'none' : 'violet';
+                                                         updateDeckSlideField(activeDeckSlide?.id, 'card1Glimmer', nextGlimmer);
+                                                         showToast(`Glimmer: ${nextGlimmer}`);
+                                                       }}
+                                                       className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1"
+                                                       title="Toggle Glimmer Luminous Edge"
+                                                     >
+                                                       <Wand2 size={10} /> Glimmer
+                                                     </button>
+                                                     <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                     {/* Color Picker */}
                                                      <button
                                                        type="button"
                                                        onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pCol1' ? null : 'pCol1'); }}
@@ -50104,59 +50122,61 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  )}
 
                                                  {/* Big Number Header */}
-                                                 <div className="text-center pt-1 pb-2">
+                                                 <div className="text-center pt-0.5 pb-1">
                                                    <span 
                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                      suppressContentEditableWarning
                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card1Num', e.currentTarget.textContent || '')}
                                                      style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                     className="text-[34px] md:text-[38px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
+                                                     className="text-[30px] md:text-[34px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
                                                    >
                                                      {activeDeckSlide?.card1Num || '01'}
                                                    </span>
                                                  </div>
 
                                                  {/* Card Title */}
-                                                 <div className="text-center pb-2.5 px-1 min-h-[38px] flex items-center justify-center">
+                                                 <div className="text-center pb-2 px-1 min-h-[32px] flex items-center justify-center">
                                                    <h3 
                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                      suppressContentEditableWarning
                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card1Title', e.currentTarget.textContent || '')}
                                                      style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                     className="text-[11px] md:text-[12px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
+                                                     className="text-[10px] md:text-[11px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
                                                    >
                                                      {activeDeckSlide?.card1Title || 'LACK OF BRAND DIFFERENTIATION'}
                                                    </h3>
                                                  </div>
 
                                                  {/* Card Paragraph */}
-                                                 <div className="text-center px-1 overflow-y-auto thin-scrollbar">
+                                                 <div className="text-center px-1 overflow-y-auto thin-scrollbar mt-auto">
                                                    <p 
                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                      suppressContentEditableWarning
                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card1Text', e.currentTarget.textContent || '')}
                                                      style={{ color: "#f1f5f9", caretColor: "#00f0ff" }}
-                                                     className="text-[10px] md:text-[11px] leading-[1.45] font-normal text-slate-100 !text-slate-100 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
+                                                     className="text-[9.5px] md:text-[10.5px] leading-[1.4] font-normal text-slate-100 !text-slate-100 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
                                                    >
                                                      {activeDeckSlide?.card1Text || 'Startups often find it hard to make their brand unique in a crowded market. Without a clear way to stand out, they struggle to catch the eye of potential customers and lose out to bigger competitors.'}
                                                    </p>
                                                  </div>
                                                </div>
 
-                                               {/* Card 02 (Deep Frosted Indigo / Midnight Card) */}
+                                               {/* Card 02 (Deep Frosted Indigo / Midnight Card with Glimmer Edge) */}
                                                <div 
                                                  onClick={(e) => {
                                                    e.stopPropagation();
                                                    setDeckSelection({ type: 'bento', id: 'prob-card-2' });
                                                  }}
-                                                 className={`rounded-2xl overflow-visible relative group flex flex-col justify-start p-3.5 shadow-2xl transition-all cursor-pointer border border-white/15 backdrop-blur-xl ${
+                                                 className={`overflow-visible relative group flex flex-col justify-between p-3.5 shadow-2xl transition-all cursor-pointer backdrop-blur-xl ${
                                                    deckSelection.type === 'bento' && deckSelection.id === 'prob-card-2'
-                                                     ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(124,77,255,0.35)]'
+                                                     ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(124,77,255,0.45)]'
                                                      : 'hover:border-purple-300/40'
                                                  }`}
                                                  style={{
                                                    background: activeDeckSlide?.card2Bg || 'linear-gradient(180deg, #2E2640 0%, #1E1B38 45%, #121829 100%)',
-                                                   borderRadius: activeDeckSlide?.card2Radius || '18px'
+                                                   borderRadius: activeDeckSlide?.card2Radius || '18px',
+                                                   border: activeDeckSlide?.card2Glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.8)' : activeDeckSlide?.card2Glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1px solid rgba(255, 255, 255, 0.18)',
+                                                   boxShadow: activeDeckSlide?.card2Glimmer === 'cyan' ? '0 0 20px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.15)' : activeDeckSlide?.card2Glimmer === 'violet' ? '0 0 20px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(168, 85, 247, 0.15)' : '0 10px 30px rgba(0,0,0,0.5)'
                                                  }}
                                                >
                                                  {/* Floating Capsule for Card 2 */}
@@ -50165,6 +50185,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      <Sparkles size={11} className="text-cyan-400" />
                                                      <span>Card 02</span>
                                                      <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                     {/* Glimmer Toggle */}
+                                                     <button
+                                                       type="button"
+                                                       onClick={(e) => {
+                                                         e.stopPropagation();
+                                                         const nextGlimmer = activeDeckSlide?.card2Glimmer === 'violet' ? 'cyan' : activeDeckSlide?.card2Glimmer === 'cyan' ? 'none' : 'violet';
+                                                         updateDeckSlideField(activeDeckSlide?.id, 'card2Glimmer', nextGlimmer);
+                                                         showToast(`Glimmer: ${nextGlimmer}`);
+                                                       }}
+                                                       className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1"
+                                                       title="Toggle Glimmer Luminous Edge"
+                                                     >
+                                                       <Wand2 size={10} /> Glimmer
+                                                     </button>
+                                                     <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                     {/* Color Picker */}
                                                      <button
                                                        type="button"
                                                        onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pCol2' ? null : 'pCol2'); }}
@@ -50183,59 +50219,61 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  )}
 
                                                  {/* Big Number Header */}
-                                                 <div className="text-center pt-1 pb-2">
+                                                 <div className="text-center pt-0.5 pb-1">
                                                    <span 
                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                      suppressContentEditableWarning
                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card2Num', e.currentTarget.textContent || '')}
                                                      style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                     className="text-[34px] md:text-[38px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
+                                                     className="text-[30px] md:text-[34px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
                                                    >
                                                      {activeDeckSlide?.card2Num || '02'}
                                                    </span>
                                                  </div>
 
                                                  {/* Card Title */}
-                                                 <div className="text-center pb-2.5 px-1 min-h-[38px] flex items-center justify-center">
+                                                 <div className="text-center pb-2 px-1 min-h-[32px] flex items-center justify-center">
                                                    <h3 
                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                      suppressContentEditableWarning
                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card2Title', e.currentTarget.textContent || '')}
                                                      style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                     className="text-[11px] md:text-[12px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
+                                                     className="text-[10px] md:text-[11px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
                                                    >
                                                      {activeDeckSlide?.card2Title || 'INCONSISTENT BRAND MESSAGING'}
                                                    </h3>
                                                  </div>
 
                                                  {/* Card Paragraph */}
-                                                 <div className="text-center px-1 overflow-y-auto thin-scrollbar">
+                                                 <div className="text-center px-1 overflow-y-auto thin-scrollbar mt-auto">
                                                    <p 
                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                      suppressContentEditableWarning
                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card2Text', e.currentTarget.textContent || '')}
                                                      style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                     className="text-[10px] md:text-[11px] leading-[1.45] font-normal text-slate-300 !text-slate-300 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
+                                                     className="text-[9.5px] md:text-[10.5px] leading-[1.4] font-normal text-slate-300 !text-slate-300 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
                                                    >
                                                      {activeDeckSlide?.card2Text || 'Inconsistency in brand messaging across various marketing channels confuses potential customers and dilutes brand perception. Startups often face challenges in maintaining a cohesive message that effectively communicates their value proposition and resonates with their target audience.'}
                                                    </p>
                                                  </div>
                                                </div>
 
-                                               {/* Card 03 (Deep Midnight Obsidian Card) */}
+                                               {/* Card 03 (Deep Midnight Obsidian Card with Glimmer Edge) */}
                                                <div 
                                                  onClick={(e) => {
                                                    e.stopPropagation();
                                                    setDeckSelection({ type: 'bento', id: 'prob-card-3' });
                                                  }}
-                                                 className={`rounded-2xl overflow-visible relative group flex flex-col justify-start p-3.5 shadow-2xl transition-all cursor-pointer border border-white/15 backdrop-blur-xl ${
+                                                 className={`overflow-visible relative group flex flex-col justify-between p-3.5 shadow-2xl transition-all cursor-pointer backdrop-blur-xl ${
                                                    deckSelection.type === 'bento' && deckSelection.id === 'prob-card-3'
-                                                     ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(99,102,241,0.35)]'
+                                                     ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-[0_0_30px_rgba(99,102,241,0.45)]'
                                                      : 'hover:border-purple-300/40'
                                                  }`}
                                                  style={{
                                                    background: activeDeckSlide?.card3Bg || 'linear-gradient(180deg, #33263D 0%, #1C1A2E 45%, #0E1320 100%)',
-                                                   borderRadius: activeDeckSlide?.card3Radius || '18px'
+                                                   borderRadius: activeDeckSlide?.card3Radius || '18px',
+                                                   border: activeDeckSlide?.card3Glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.8)' : activeDeckSlide?.card3Glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1px solid rgba(255, 255, 255, 0.18)',
+                                                   boxShadow: activeDeckSlide?.card3Glimmer === 'cyan' ? '0 0 20px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.15)' : activeDeckSlide?.card3Glimmer === 'violet' ? '0 0 20px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(168, 85, 247, 0.15)' : '0 10px 30px rgba(0,0,0,0.5)'
                                                  }}
                                                >
                                                  {/* Floating Capsule for Card 3 */}
@@ -50244,6 +50282,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      <Sparkles size={11} className="text-violet-400" />
                                                      <span>Card 03</span>
                                                      <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                     {/* Glimmer Toggle */}
+                                                     <button
+                                                       type="button"
+                                                       onClick={(e) => {
+                                                         e.stopPropagation();
+                                                         const nextGlimmer = activeDeckSlide?.card3Glimmer === 'violet' ? 'cyan' : activeDeckSlide?.card3Glimmer === 'cyan' ? 'none' : 'violet';
+                                                         updateDeckSlideField(activeDeckSlide?.id, 'card3Glimmer', nextGlimmer);
+                                                         showToast(`Glimmer: ${nextGlimmer}`);
+                                                       }}
+                                                       className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1"
+                                                       title="Toggle Glimmer Luminous Edge"
+                                                     >
+                                                       <Wand2 size={10} /> Glimmer
+                                                     </button>
+                                                     <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                     {/* Color Picker */}
                                                      <button
                                                        type="button"
                                                        onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pCol3' ? null : 'pCol3'); }}
@@ -50262,39 +50316,39 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  )}
 
                                                  {/* Big Number Header */}
-                                                 <div className="text-center pt-1 pb-2">
+                                                 <div className="text-center pt-0.5 pb-1">
                                                    <span 
                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                      suppressContentEditableWarning
                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card3Num', e.currentTarget.textContent || '')}
                                                      style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                     className="text-[34px] md:text-[38px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
+                                                     className="text-[30px] md:text-[34px] font-[900] tracking-tight text-white !text-white outline-none rounded px-1 cursor-text font-sans select-text leading-none"
                                                    >
                                                      {activeDeckSlide?.card3Num || '03'}
                                                    </span>
                                                  </div>
 
                                                  {/* Card Title */}
-                                                 <div className="text-center pb-2.5 px-1 min-h-[38px] flex items-center justify-center">
+                                                 <div className="text-center pb-2 px-1 min-h-[32px] flex items-center justify-center">
                                                    <h3 
                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                      suppressContentEditableWarning
                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card3Title', e.currentTarget.textContent || '')}
                                                      style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                     className="text-[11px] md:text-[12px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
+                                                     className="text-[10px] md:text-[11px] font-[900] tracking-wider text-white !text-white uppercase outline-none hover:ring-1 hover:ring-white/40 rounded px-1 cursor-text font-sans select-text leading-tight"
                                                    >
                                                      {activeDeckSlide?.card3Title || 'KEEPING UP WITH TRENDS'}
                                                    </h3>
                                                  </div>
 
                                                  {/* Card Paragraph */}
-                                                 <div className="text-center px-1 overflow-y-auto thin-scrollbar">
+                                                 <div className="text-center px-1 overflow-y-auto thin-scrollbar mt-auto">
                                                    <p 
                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                      suppressContentEditableWarning
                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'card3Text', e.currentTarget.textContent || '')}
                                                      style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                     className="text-[10px] md:text-[11px] leading-[1.45] font-normal text-slate-300 !text-slate-300 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
+                                                     className="text-[9.5px] md:text-[10.5px] leading-[1.4] font-normal text-slate-300 !text-slate-300 tracking-normal outline-none hover:ring-1 hover:ring-white/30 rounded px-1 font-sans select-text"
                                                    >
                                                      {activeDeckSlide?.card3Text || 'The marketing landscape evolves fast, and startups often struggle to keep up. With limited resources and time, staying on top of the latest trends and integrating them into marketing strategies can be a hurdle.'}
                                                    </p>
@@ -50313,7 +50367,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  showToast('Footer saved');
                                                }}
                                                style={{ color: "#94a3b8", caretColor: "#00f0ff" }}
-                                               className="text-[11.5px] italic font-normal tracking-wide text-slate-400 !text-slate-400 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 rounded px-1 cursor-text select-text"
+                                               className="text-[11px] italic font-normal tracking-wide text-slate-400 !text-slate-400 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 rounded px-1 cursor-text select-text"
                                              >
                                                {activeDeckSlide?.footer || 'Ingoude Company'}
                                              </div>
