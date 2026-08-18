@@ -48220,65 +48220,90 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 <stop offset="100%" stopColor={c2} stopOpacity="0.8" />
                                               </linearGradient>
                                             </defs>
-                                            {waveStyle === 'electric-cyan' ? (
-                                              /* Electric Cyan Ribbon */
-                                              Array.from({ length: 32 }).map((_, i) => {
-                                                const ratio = i / 32;
-                                                const offset = ratio * 140;
-                                                const opacity = 0.08 + (1 - ratio) * 0.45;
-                                                const thickness = 0.8 + ratio * 2;
-                                                const d = `M ${100 + offset * 1.8} 650 C ${280 + Math.sin(ratio * Math.PI) * 140} ${480 - ratio * 220}, ${540 + Math.cos(ratio * Math.PI) * 130} ${220 - ratio * 140}, 950 ${240 + ratio * 200}`;
-                                                return <path key={i} d={d} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />;
-                                              })
-                                            ) : waveStyle === 'bottom-left-wave' ? (
-                                              /* Bottom-Left Ascending Accent */
-                                              Array.from({ length: 38 }).map((_, i) => {
-                                                const ratio = i / 38;
-                                                const offset = ratio * 160;
-                                                const opacity = 0.06 + (1 - ratio) * 0.38;
-                                                const thickness = 0.7 + ratio * 1.6;
-                                                const d = `M 0 ${400 + offset * 1.2} C ${240 + Math.cos(ratio * Math.PI) * 120} ${250 - ratio * 120}, ${520 + Math.sin(ratio * Math.PI) * 140} ${180 + ratio * 100}, 900 ${120 + offset * 1.5}`;
-                                                return (
-                                                  <g key={i}>
-                                                    <path d={d} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />
-                                                    <path d={d} stroke="url(#dynWaveGrad2)" strokeWidth={thickness * 0.7} opacity={opacity * 0.7} fill="none" />
-                                                  </g>
-                                                );
-                                              })
-                                            ) : waveStyle === 'dual-warp' ? (
-                                              /* Dual Warp Light Beams */
-                                              Array.from({ length: 40 }).map((_, i) => {
-                                                const ratio = i / 40;
-                                                const offset = ratio * 200;
-                                                const opacity = 0.05 + (1 - ratio) * 0.4;
-                                                const thickness = 0.6 + ratio * 1.8;
-                                                const d1 = `M ${50 + offset * 2} 650 C ${240 + offset} 400, ${600 - offset * 0.8} 260, 950 ${180 + offset * 1.5}`;
-                                                const d2 = `M ${120 + offset * 1.6} 650 C ${350} ${520 - ratio * 200}, ${650} ${280 - ratio * 150}, 950 ${320 + ratio * 180}`;
-                                                return (
-                                                  <g key={i}>
-                                                    <path d={d1} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />
-                                                    <path d={d2} stroke="url(#dynWaveGrad2)" strokeWidth={thickness * 0.8} opacity={opacity * 0.8} fill="none" />
-                                                  </g>
-                                                );
-                                              })
-                                            ) : (
-                                              /* Dual-Mesh Cybernetic Lattice (Default & Neon Cyan Purple) */
-                                              Array.from({ length: 45 }).map((_, i) => {
-                                                const ratio = i / 45;
-                                                const offset = ratio * 180;
-                                                const opacity = 0.05 + (1 - ratio) * 0.35;
-                                                const thickness = 0.6 + ratio * 1.5;
-                                                const d1 = `M ${140 + offset * 1.6} 650 C ${320 + Math.sin(ratio * Math.PI) * 110} ${500 - ratio * 200}, ${580 + Math.cos(ratio * Math.PI) * 120} ${240 - ratio * 130}, 950 ${260 + ratio * 230}`;
-                                                const d2 = `M ${80 + offset * 1.4} 650 C ${280 + Math.cos(ratio * Math.PI) * 90} ${460 - ratio * 170}, ${520 + Math.sin(ratio * Math.PI) * 100} ${200 - ratio * 110}, 950 ${340 + ratio * 210}`;
-                                                return (
-                                                  <g key={i}>
-                                                    <path d={d1} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />
-                                                    <path d={d2} stroke="url(#dynWaveGrad2)" strokeWidth={thickness * 0.85} opacity={opacity * 0.8} fill="none" />
-                                                  </g>
-                                                );
-                                              })
-                                            )}
-                                          </svg>
+                                            {waveStyle === 'original-pitch' || !waveStyle || waveStyle === 'dual-mesh' ? (
+                                               /* ── EXACT STARTUP PITCH DECK VORTEX & HORIZON CURVES (REFERENCE IMAGE) ── */
+                                               <g>
+                                                 {/* 1. TOP-RIGHT ORBITAL VORTEX ARC LOOPS (Arrow 1 in Reference) */}
+                                                 {Array.from({ length: 48 }).map((_, i) => {
+                                                   const ratio = i / 48;
+                                                   const spread = ratio * 130;
+                                                   const opacity = 0.15 + (1 - ratio) * 0.65;
+                                                   const thickness = 0.8 + ratio * 2.2;
+                                                   // Mathematical spiral arc sweeping from top-center, down in elliptical vortex, then curving out right
+                                                   const dVortex1 = `M ${460 + spread * 1.1} -30 C ${480 + spread * 0.8} ${140 + ratio * 80}, ${540 + ratio * 160} ${390 - ratio * 40}, ${760 + ratio * 60} ${360 - ratio * 90} C ${860 - ratio * 40} ${340 - ratio * 110}, ${960} ${220 - ratio * 80}, 980 ${110 - ratio * 40}`;
+                                                   const dVortex2 = `M ${490 + spread * 0.9} -20 C ${520 + spread * 0.6} ${180 + ratio * 60}, ${600 + ratio * 140} ${420 - ratio * 50}, ${800 + ratio * 40} ${340 - ratio * 80} C ${900} ${300 - ratio * 90}, ${970} ${180 - ratio * 60}, 990 ${80 - ratio * 30}`;
+                                                   return (
+                                                     <g key={`vortex-${i}`}>
+                                                       <path d={dVortex1} stroke="url(#dynWaveGradCobalt)" strokeWidth={thickness} opacity={opacity} fill="none" />
+                                                       <path d={dVortex2} stroke="url(#dynWaveGrad2)" strokeWidth={thickness * 0.85} opacity={opacity * 0.9} fill="none" />
+                                                     </g>
+                                                   );
+                                                 })}
+
+                                                 {/* 2. BOTTOM-LEFT HORIZON WAVE LOOP ACCENT (Arrow 2 in Reference) */}
+                                                 {Array.from({ length: 34 }).map((_, i) => {
+                                                   const ratio = i / 34;
+                                                   const offset = ratio * 110;
+                                                   const opacity = 0.18 + (1 - ratio) * 0.65;
+                                                   const thickness = 0.7 + ratio * 1.8;
+                                                   // Sweeping low wave loop in the bottom left
+                                                   const dBottom = `M -30 ${610 + offset * 0.4} C ${60 + offset * 0.8} ${580 - ratio * 50}, ${180 + offset * 0.9} ${630 + ratio * 30}, ${290 + ratio * 60} ${530 - ratio * 70} C ${350 + ratio * 40} ${460 - ratio * 60}, ${390 + ratio * 30} ${540}, ${460 + offset * 1.2} 670`;
+                                                   return (
+                                                     <path key={`bot-${i}`} d={dBottom} stroke="url(#dynWaveGradCobalt)" strokeWidth={thickness} opacity={opacity} fill="none" />
+                                                   );
+                                                 })}
+                                               </g>
+                                             ) : waveStyle === 'top-right-vortex' ? (
+                                               /* Top-Right Orbital Vortex Arc Only */
+                                               <g>
+                                                 {Array.from({ length: 50 }).map((_, i) => {
+                                                   const ratio = i / 50;
+                                                   const spread = ratio * 140;
+                                                   const opacity = 0.15 + (1 - ratio) * 0.7;
+                                                   const thickness = 0.8 + ratio * 2.4;
+                                                   const d = `M ${460 + spread * 1.1} -30 C ${480 + spread * 0.8} ${140 + ratio * 80}, ${540 + ratio * 160} ${390 - ratio * 40}, ${760 + ratio * 60} ${360 - ratio * 90} C ${860 - ratio * 40} ${340 - ratio * 110}, ${960} ${220 - ratio * 80}, 980 ${110 - ratio * 40}`;
+                                                   return <path key={i} d={d} stroke="url(#dynWaveGradCobalt)" strokeWidth={thickness} opacity={opacity} fill="none" />;
+                                                 })}
+                                               </g>
+                                             ) : waveStyle === 'bottom-left-wave' ? (
+                                               /* Bottom-Left Horizon Wave Loop Only */
+                                               <g>
+                                                 {Array.from({ length: 40 }).map((_, i) => {
+                                                   const ratio = i / 40;
+                                                   const offset = ratio * 120;
+                                                   const opacity = 0.2 + (1 - ratio) * 0.7;
+                                                   const thickness = 0.8 + ratio * 2;
+                                                   const d = `M -30 ${610 + offset * 0.4} C ${60 + offset * 0.8} ${580 - ratio * 50}, ${180 + offset * 0.9} ${630 + ratio * 30}, ${290 + ratio * 60} ${530 - ratio * 70} C ${350 + ratio * 40} ${460 - ratio * 60}, ${390 + ratio * 30} ${540}, ${460 + offset * 1.2} 670`;
+                                                   return <path key={i} d={d} stroke="url(#dynWaveGradCobalt)" strokeWidth={thickness} opacity={opacity} fill="none" />;
+                                                 })}
+                                               </g>
+                                             ) : waveStyle === 'electric-cyan' ? (
+                                               /* Electric Cyan Ribbon */
+                                               Array.from({ length: 32 }).map((_, i) => {
+                                                 const ratio = i / 32;
+                                                 const offset = ratio * 140;
+                                                 const opacity = 0.08 + (1 - ratio) * 0.45;
+                                                 const thickness = 0.8 + ratio * 2;
+                                                 const d = `M ${100 + offset * 1.8} 650 C ${280 + Math.sin(ratio * Math.PI) * 140} ${480 - ratio * 220}, ${540 + Math.cos(ratio * Math.PI) * 130} ${220 - ratio * 140}, 950 ${240 + ratio * 200}`;
+                                                 return <path key={i} d={d} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />;
+                                               })
+                                             ) : waveStyle === 'dual-warp' ? (
+                                               /* Dual Warp Light Beams */
+                                               Array.from({ length: 40 }).map((_, i) => {
+                                                 const ratio = i / 40;
+                                                 const offset = ratio * 200;
+                                                 const opacity = 0.05 + (1 - ratio) * 0.4;
+                                                 const thickness = 0.6 + ratio * 1.8;
+                                                 const d1 = `M ${50 + offset * 2} 650 C ${240 + offset} 400, ${600 - offset * 0.8} 260, 950 ${180 + offset * 1.5}`;
+                                                 const d2 = `M ${120 + offset * 1.6} 650 C ${350} ${520 - ratio * 200}, ${650} ${280 - ratio * 150}, 950 ${320 + ratio * 180}`;
+                                                 return (
+                                                   <g key={i}>
+                                                     <path d={d1} stroke="url(#dynWaveGrad1)" strokeWidth={thickness} opacity={opacity} fill="none" />
+                                                     <path d={d2} stroke="url(#dynWaveGrad2)" strokeWidth={thickness * 0.8} opacity={opacity * 0.8} fill="none" />
+                                                   </g>
+                                                 );
+                                               })
+                                             ) : null}</svg>
                                         </div>
                                       </div>
                                     );
@@ -48396,7 +48421,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {activeDeckSlide?.headline || 'STARTUP\nPITCH DECK'}
                                             </h1>
 
-                                            {/* Presenter Pill Badge (Interactive Draggable & Resizable Shape with Animated Shimmer & Snake Effects) */}
+                                            {/* Presenter Pill Badge (Interactive Draggable & Resizable Shape with Configurable Shimmer Placement) */}
                                             {(() => {
                                               const isPillSelected = deckSelection.type === 'pill';
                                               const isPillHidden = activeDeckSlide?.pillHidden;
@@ -48410,12 +48435,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               const pillBorderWidth = activeDeckSlide?.pillBorderWidth || 2;
                                               const roundedClass = pillShape === 'square' ? 'rounded-md' : pillShape === 'rounded-square' ? 'rounded-2xl' : 'rounded-full';
 
-                                              // Custom Shimmer & Snake Colors
+                                              // Custom Shimmer & Snake Colors and Target Placement
                                               const sColor1 = activeDeckSlide?.pillShimmerColor1 || '#00f0ff';
                                               const sColor2 = activeDeckSlide?.pillShimmerColor2 || '#ec4899';
                                               const isDynamic = (activeDeckSlide?.pillMotionMode || 'dynamic') === 'dynamic';
                                               const pillSpeedSec = activeDeckSlide?.pillSpeedSec || 3;
                                               const glowLevel = activeDeckSlide?.pillGlowIntensity || 'standard';
+                                              const shimmerTarget = activeDeckSlide?.pillShimmerTarget || 'both'; // 'border' | 'button' | 'both'
+
+                                              const hasBorderShimmer = shimmerTarget === 'border' || shimmerTarget === 'both';
+                                              const hasButtonShimmer = shimmerTarget === 'button' || shimmerTarget === 'both';
 
                                               // Compute dynamic Outer Glow Shadows with Granularity
                                               const getPillOuterGlow = () => {
@@ -48485,39 +48514,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       boxShadow: getPillOuterGlow()
                                                     }}
                                                   >
-                                                    {/* Dynamic Moving Shimmer / Snake Rotating Conic Beam */}
-                                                    {pillBorderEffect === 'snake' ? (
-                                                      <div 
-                                                        className="absolute -inset-[200%] pointer-events-none"
-                                                        style={{
-                                                          background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 270deg, ${sColor1} 315deg, #ffffff 350deg, ${sColor2} 360deg)`,
-                                                          animation: isDynamic ? `deckBeamSpin ${pillSpeedSec}s linear infinite` : 'none',
-                                                          transform: isDynamic ? undefined : 'rotate(45deg)'
-                                                        }}
-                                                      />
-                                                    ) : pillBorderEffect === 'shimmer' ? (
-                                                      <div 
-                                                        className="absolute -inset-[200%] pointer-events-none"
-                                                        style={{
-                                                          background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 180deg, ${sColor1} 250deg, ${sColor2} 310deg, #7c4dff 360deg)`,
-                                                          animation: isDynamic ? `deckBeamSpin ${pillSpeedSec}s linear infinite` : 'none',
-                                                          transform: isDynamic ? undefined : 'rotate(45deg)'
-                                                        }}
-                                                      />
-                                                    ) : pillBorderEffect === 'neon-glow' ? (
-                                                      <div 
-                                                        className="absolute -inset-[200%] pointer-events-none"
-                                                        style={{
-                                                          background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 80deg, ${sColor2} 140deg, transparent 180deg, ${sColor1} 270deg, transparent 360deg)`,
-                                                          animation: isDynamic ? `deckBeamSpin ${Math.max(1, pillSpeedSec - 1)}s linear infinite` : 'none',
-                                                          transform: isDynamic ? undefined : 'rotate(45deg)'
-                                                        }}
-                                                      />
-                                                    ) : pillBorderEffect === 'solid' ? (
-                                                      <div className="absolute inset-0 bg-white/30 pointer-events-none" />
-                                                    ) : null}
+                                                    {/* Dynamic Moving Shimmer / Snake Rotating Conic Beam on Border */}
+                                                    {hasBorderShimmer ? (
+                                                      pillBorderEffect === 'snake' ? (
+                                                        <div 
+                                                          className="absolute -inset-[200%] pointer-events-none"
+                                                          style={{
+                                                            background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 270deg, ${sColor1} 315deg, #ffffff 350deg, ${sColor2} 360deg)`,
+                                                            animation: isDynamic ? `deckBeamSpin ${pillSpeedSec}s linear infinite` : 'none',
+                                                            transform: isDynamic ? undefined : 'rotate(45deg)'
+                                                          }}
+                                                        />
+                                                      ) : pillBorderEffect === 'shimmer' ? (
+                                                        <div 
+                                                          className="absolute -inset-[200%] pointer-events-none"
+                                                          style={{
+                                                            background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 180deg, ${sColor1} 250deg, ${sColor2} 310deg, #7c4dff 360deg)`,
+                                                            animation: isDynamic ? `deckBeamSpin ${pillSpeedSec}s linear infinite` : 'none',
+                                                            transform: isDynamic ? undefined : 'rotate(45deg)'
+                                                          }}
+                                                        />
+                                                      ) : pillBorderEffect === 'neon-glow' ? (
+                                                        <div 
+                                                          className="absolute -inset-[200%] pointer-events-none"
+                                                          style={{
+                                                            background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 80deg, ${sColor2} 140deg, transparent 180deg, ${sColor1} 270deg, transparent 360deg)`,
+                                                            animation: isDynamic ? `deckBeamSpin ${Math.max(1, pillSpeedSec - 1)}s linear infinite` : 'none',
+                                                            transform: isDynamic ? undefined : 'rotate(45deg)'
+                                                          }}
+                                                        />
+                                                      ) : pillBorderEffect === 'solid' ? (
+                                                        <div className="absolute inset-0 bg-white/30 pointer-events-none" />
+                                                      ) : null
+                                                    ) : (
+                                                      <div className="absolute inset-0 bg-white/10 pointer-events-none" />
+                                                    )}
 
-                                                    {/* Inner Presenter Capsule Body */}
+                                                    {/* Inner Presenter Capsule Body with Surface Shimmer */}
                                                     <div 
                                                       className={`relative z-10 w-full h-full flex items-center justify-center px-4 py-1.5 ${roundedClass} overflow-hidden`}
                                                       style={{
@@ -48525,10 +48558,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         backdropFilter: pillBorderEffect === 'glass-frost' ? 'blur(20px)' : 'none'
                                                       }}
                                                     >
-                                                      {/* Moving Sheen Ray for Frosted Glass or Shimmer */}
-                                                      {isDynamic && (pillBorderEffect === 'glass-frost' || pillBorderEffect === 'shimmer' || pillBorderEffect === 'snake') && (
+                                                      {/* Moving Surface Sheen Ray across Button Body */}
+                                                      {hasButtonShimmer && (
                                                         <div 
-                                                          className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 animate-deck-sheen pointer-events-none" 
+                                                          className={`absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12 pointer-events-none ${isDynamic ? 'animate-deck-sheen' : ''}`} 
+                                                          style={{
+                                                            opacity: 0.85
+                                                          }}
+                                                        />
+                                                      )}
+
+                                                      {/* Holographic Body Shimmer Tint */}
+                                                      {hasButtonShimmer && (
+                                                        <div 
+                                                          className="absolute inset-0 opacity-20 pointer-events-none"
+                                                          style={{
+                                                            background: `linear-gradient(135deg, ${sColor1}, transparent 60%, ${sColor2})`
+                                                          }}
                                                         />
                                                       )}
 
@@ -48578,6 +48624,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           </div>
 
                                                           <div className="w-px h-3 bg-white/20 mx-0.5" />
+
+                                                          {/* Shimmer Placement Target Toggle (Border vs Button vs Both) */}
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              const nextTarget = shimmerTarget === 'border' ? 'button' : shimmerTarget === 'button' ? 'both' : 'border';
+                                                              updateDeckSlideField(activeDeckSlide?.id, 'pillShimmerTarget', nextTarget);
+                                                              showToast(`Shimmer on: ${nextTarget.toUpperCase()}`);
+                                                            }}
+                                                            className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 text-[10px] font-semibold cursor-pointer"
+                                                            title="Shimmer Placement: Border / Button / Both"
+                                                          >
+                                                            {shimmerTarget === 'border' ? '🔲 Border' : shimmerTarget === 'button' ? '🔘 Button' : '🔲🔘 Both'}
+                                                          </button>
 
                                                           {/* Shimmer & Glow Border Effects Popover */}
                                                           <div className="relative">
