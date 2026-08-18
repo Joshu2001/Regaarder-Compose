@@ -12260,23 +12260,37 @@ const DEFAULT_DECK_SLIDES = [
   // ── CLIENT-SIDE RASTER TO VECTOR (JPG/PNG to SVG) TRACER ENGINE ──
   const [vectorWaveSearch, setVectorWaveSearch] = useState('');
 
-const ALL_INDUSTRY_VECTOR_STYLES = [
-    { id: 'tesseract-cube', label: '3D Hypercube (Tesseract)', category: '3D Shapes', desc: 'Nested isometric 3D cubes with coordinate vertices', c1: '#7c4dff', c2: '#00f0ff' },
-    { id: 'toroid-ring', label: '3D Torus / Donut Ring Mesh', category: '3D Shapes', desc: 'Revolving 3D donut wireframe with radial ribs & loops', c1: '#00f0ff', c2: '#ec4899' },
+  const ALL_INDUSTRY_VECTOR_STYLES = [
+    /* ── 1. 3D VOLUMETRIC GEOMETRIC SHAPES ── */
+    { id: 'tesseract-cube', label: '3D Hypercube (Tesseract)', category: '3D Shapes', desc: 'Nested isometric 3D wireframe cubes with coordinate vertices', c1: '#7c4dff', c2: '#00f0ff' },
+    { id: 'toroid-ring', label: '3D Torus / Donut Ring Mesh', category: '3D Shapes', desc: 'Revolving 3D donut wireframe with 32 radial ribs & loops', c1: '#00f0ff', c2: '#ec4899' },
     { id: 'mobius-infinity', label: 'Möbius Strip & Infinity Ribbon', category: '3D Shapes', desc: 'Twisted single-surface ribbon loop with cross-hatching', c1: '#3b82f6', c2: '#a855f7' },
     { id: 'geodesic-icosahedron', label: 'Geodesic Polyhedral Sphere', category: '3D Shapes', desc: 'Triangular-faceted icosahedron with glowing node junctions', c1: '#00f0ff', c2: '#10b981' },
-    { id: 'dna-double-helix', label: 'Double Helix DNA Pipeline', category: '3D Shapes', desc: 'Cylindrical spiral ladder with transverse molecular rungs', c1: '#ec4899', c2: '#00f0ff' },
-    { id: 'tapered-funnel', label: '3D Ingestion Funnel Cone', category: '3D Shapes', desc: 'Tapering 3D conical wireframe with concentric rings', c1: '#00f0ff', c2: '#f59e0b' },
+    { id: 'crystal-pyramid', label: 'Crystalline Pyramid Tetrahedron', category: '3D Shapes', desc: '3D multi-faceted triangular prism with internal facet rays', c1: '#38bdf8', c2: '#7c4dff' },
+    { id: 'tapered-funnel', label: '3D Ingestion Funnel Cone', category: '3D Shapes', desc: 'Tapering 3D conical wireframe with concentric rings & rays', c1: '#00f0ff', c2: '#f59e0b' },
     { id: 'hourglass-hyperboloid', label: 'Hourglass Hyperboloid Mesh', category: '3D Shapes', desc: 'Symmetrical pinched-waist dual cone with hyperbolic curves', c1: '#a855f7', c2: '#00f0ff' },
-    { id: 'crystal-pyramid', label: 'Crystalline Pyramid Tetrahedron', category: '3D Shapes', desc: '3D multi-faceted triangular prism with internal facets', c1: '#38bdf8', c2: '#7c4dff' },
     { id: 'cylindrical-tunnel', label: 'Cylindrical Warp Tunnel', category: '3D Shapes', desc: 'Concentric tubular perspective grid conduit', c1: '#00f0ff', c2: '#3b82f6' },
     { id: 'gyroid-saddle', label: 'Gyroid & Saddle Minimal Surface', category: '3D Shapes', desc: 'Periodic triply minimal saddle curvature contour mesh', c1: '#ec4899', c2: '#7c4dff' },
-    { id: 'original-pitch', label: 'Original Pitch Deck (Image 1 Exact)', category: 'Keynote Waves', desc: 'Dual Top-Right Vortex Loop + Bottom-Left Horizon Wave', c1: '#0055ff', c2: '#00f0ff' },
-    { id: 'topographic-elevation', label: 'Topographic Elevation Contours', category: 'Topography', desc: 'Concentric 3D terrain isoline curves for data density', c1: '#00f0ff', c2: '#3b82f6' },
-    { id: 'radial-sunburst', label: 'Radial Caustic Sunburst Flare', category: 'Radiance', desc: 'Divergent ray-traced beams from corner anchor', c1: '#00f0ff', c2: '#f59e0b' },
-    { id: 'isometric-grid', label: 'Isometric Perspective Cyber Grid', category: 'Perspective & Grid', desc: 'Slanted receding wireframe ground plane', c1: '#7c4dff', c2: '#00f0ff' },
-    { id: 'voronoi-mesh', label: 'Voronoi & Hexagonal Mesh', category: 'Architecture & Security', desc: 'Honeycomb grid with luminous junction nodes', c1: '#00f0ff', c2: '#7c4dff' },
-    { id: 'magnetic-dipole', label: 'Magnetic Dipole Field Lines', category: 'Network & System', desc: 'Symmetrical flux curves looping across poles', c1: '#3b82f6', c2: '#ec4899' }
+
+    /* ── 2. FEATURED KEYNOTE WAVES & VORTEXES ── */
+    { id: 'original-pitch', label: 'Original Pitch Deck (Image 1 Exact)', category: 'Featured Waves', desc: 'Dual Top-Right Vortex Loop + Bottom-Left Horizon Wave', c1: '#0055ff', c2: '#00f0ff' },
+    { id: 'top-right-vortex', label: 'Top-Right Orbital Vortex Arc', category: 'Featured Waves', desc: 'High-speed sweeping spiral arc loops on top-right', c1: '#0066ff', c2: '#00f0ff' },
+    { id: 'bottom-left-wave', label: 'Bottom-Left Horizon Wave Accent', category: 'Featured Waves', desc: 'Ascending metric baseline wave in bottom-left', c1: '#0055ff', c2: '#00f0ff' },
+    { id: 'dual-mesh', label: 'Dual-Mesh Cybernetic Lattice', category: 'Featured Waves', desc: 'Classic intersecting dual-mesh cybernetic lattice', c1: '#00f0ff', c2: '#a855f7' },
+    { id: 'electric-cyan', label: 'Electric Cyan Ribbon Wave', category: 'Featured Waves', desc: 'High-speed electric cyan ribbon wave across bottom', c1: '#00f0ff', c2: '#38bdf8' },
+    { id: 'dual-warp', label: 'Dual Warp Light Beams', category: 'Featured Waves', desc: 'Cross-slide dual perspective warp beams', c1: '#00f0ff', c2: '#ec4899' },
+    { id: 'waterfall-ribbon', label: 'Cascading Ribbon Waterfall', category: 'Featured Waves', desc: 'Multi-ply gradient ribbons plunging down slide margin', c1: '#7c4dff', c2: '#00f0ff' },
+    { id: 'horizon-halo', label: 'Planetary Horizon Halo Arc', category: 'Featured Waves', desc: 'Colossal low-curvature planetary rim from bottom bezel', c1: '#0055ff', c2: '#00f0ff' },
+
+    /* ── 3. DEEP-TECH, BIOTECH & SYSTEMS ── */
+    { id: 'dna-double-helix', label: 'Double Helix DNA Pipeline', category: 'Deep-Tech & Systems', desc: 'Cylindrical spiral ladder with transverse molecular rungs', c1: '#ec4899', c2: '#00f0ff' },
+    { id: 'topographic-elevation', label: 'Topographic Elevation Contours', category: 'Deep-Tech & Systems', desc: 'Concentric 3D terrain isoline curves for data density', c1: '#00f0ff', c2: '#3b82f6' },
+    { id: 'radial-sunburst', label: 'Radial Caustic Sunburst Flare', category: 'Deep-Tech & Systems', desc: 'Divergent ray-traced beams from corner anchor', c1: '#00f0ff', c2: '#f59e0b' },
+    { id: 'isometric-grid', label: 'Isometric Perspective Cyber Grid', category: 'Deep-Tech & Systems', desc: 'Slanted receding wireframe ground plane', c1: '#7c4dff', c2: '#00f0ff' },
+    { id: 'voronoi-mesh', label: 'Voronoi & Hexagonal Mesh', category: 'Deep-Tech & Systems', desc: 'Honeycomb grid with luminous junction nodes', c1: '#00f0ff', c2: '#7c4dff' },
+    { id: 'magnetic-dipole', label: 'Magnetic Dipole Field Lines', category: 'Deep-Tech & Systems', desc: 'Symmetrical flux curves looping across poles', c1: '#3b82f6', c2: '#ec4899' },
+    { id: 'lissajous-resonance', label: 'Harmonic Lissajous Resonance', category: 'Deep-Tech & Systems', desc: 'Mathematical frequency curves and resonance loops', c1: '#00f0ff', c2: '#10b981' },
+    { id: 'fluid-marbling', label: 'Chromatic Fluid Marbling Waves', category: 'Deep-Tech & Systems', desc: 'Viscous non-linear organic liquid dispersion curves', c1: '#ec4899', c2: '#7c4dff' }
   ];
   
   const [vectorizerModalOpen, setVectorizerModalOpen] = useState(false);
