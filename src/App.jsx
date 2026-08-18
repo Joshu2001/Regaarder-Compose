@@ -491,6 +491,25 @@ const DECK_THEME_OPTIONS = [
 
 const DECK_LAYOUT_OPTIONS = [
   { 
+    key: "Startup Use of Funds", 
+    name: "Startup Use of Funds",
+    desc: 'Interactive pie/donut allocation chart card, bottom-right orbital neon vortex & 4 percentage badge rows',
+    visualType: 'startup pie allocation use of funds',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
+        <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center justify-center p-0.5">
+          <div className="w-3.5 h-3.5 rounded-full border-2 border-cyan-400 flex items-center justify-center" />
+        </div>
+        <div className="w-1/2 h-full flex flex-col justify-between p-0.5">
+          <div className="w-full h-1 bg-purple-600 rounded-xs" />
+          <div className="w-full h-1 bg-blue-600 rounded-xs" />
+          <div className="w-full h-1 bg-cyan-600 rounded-xs" />
+          <div className="w-full h-1 bg-indigo-600 rounded-xs" />
+        </div>
+      </div>
+    )
+  },
+  { 
     key: "Startup Timeline", 
     name: "Startup Accomplishments Timeline",
     desc: 'Vertical ACCOMPLISHMENTS DATE headline, glowing vertical timeline spine with 4 sphere nodes & stacked milestone cards',
@@ -9579,6 +9598,44 @@ const DEFAULT_DECK_SLIDES = [
     motionCue: 'Vertical Timeline Cascade',
     speakerNotes: 'Highlight historical milestones from initial 2021 product launch, 2023 expansion, 2025 growth round, leading to present profitability.',
     footer: 'ingoude Company'
+  },
+  {
+    id: 13,
+    section: 'Financials',
+    title: 'Use of Funds & Capital Allocation',
+    tagline: 'Ingoude Company',
+    headline: 'USE OF FUNDS',
+    fundsDesc: "Our plan for using funds generated from investors is straightforward. We'll allocate 40% towards developing our products, ensuring they stay competitive and meet customer needs. 30% will go marketing and sales efforts to attract new customers and drive revenue growth. 20% will be invested in infrastructure and operations to support our expanding business and improve efficiency. Finally, 10% will be set aside for strategic initiatives like market expansion and partnerships to fuel long-term growth.",
+    backgroundColor: '#05070B',
+    vectorWaveStyle: 'bottom-right-neon-vortex',
+    vectorColor1: '#00f0ff',
+    vectorColor2: '#a855f7',
+    designPresetKey: 'midnight-slate',
+    presetKey: 'midnight-slate',
+    accent: 'from-cyan-400 via-blue-500 to-indigo-600',
+    visualType: 'startup pie allocation use of funds',
+    layoutStyle: 'Startup Use of Funds',
+    fundsChartType: 'pie',
+    fundsChartBg: 'linear-gradient(180deg, rgba(38,28,64,0.8) 0%, rgba(18,16,40,0.92) 100%)',
+    fund1Val: '40%',
+    fund1Label: 'PRODUCT DEVELOPMENT',
+    fund1Bg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
+    fund1Shape: '12px',
+    fund2Val: '30%',
+    fund2Label: 'MARKETING AND SALES',
+    fund2Bg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
+    fund2Shape: '12px',
+    fund3Val: '20%',
+    fund3Label: 'INFRASTRUCTURE AND OPERATIONS',
+    fund3Bg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
+    fund3Shape: '12px',
+    fund4Val: '10 %',
+    fund4Label: 'EXPANSION AND GROWTH INITIATIVES',
+    fund4Bg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
+    fund4Shape: '12px',
+    motionCue: 'Pie Slice Expand & Row Cascade',
+    speakerNotes: 'Detail capital deployment breakdown: 40% Product R&D, 30% Marketing/GTM, 20% Infrastructure/Ops, and 10% Strategic Expansion.',
+    footer: 'ingoude Company'
   }
 ];
   const [deckSlidesData, setDeckSlidesData] = useState(DEFAULT_DECK_SLIDES);
@@ -13011,6 +13068,7 @@ const DEFAULT_DECK_SLIDES = [
   const [activePillShapePicker, setActivePillShapePicker] = useState(null);
   const [activeAdvIconPicker, setActiveAdvIconPicker] = useState(null);
   const [activeTractionChartPicker, setActiveTractionChartPicker] = useState(false);
+  const [activeFundsChartPicker, setActiveFundsChartPicker] = useState(false);
   const [activeMarketCardStylePicker, setActiveMarketCardStylePicker] = useState(false);
   // ── CLIENT-SIDE RASTER TO VECTOR (JPG/PNG to SVG) TRACER ENGINE ──
   const [vectorWaveSearch, setVectorWaveSearch] = useState('');
@@ -32402,6 +32460,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           !e.target.closest('.pill-shape-popover') &&
           !e.target.closest('.adv-icon-popover') &&
           !e.target.closest('.traction-chart-popover') &&
+          !e.target.closest('.funds-chart-popover') &&
           !e.target.closest('.market-card-popover') && !e.target.closest('.picker-trigger-btn')) {
         setActiveOrbColorPicker(null);
         setActivePresenterImgPicker(false);
@@ -32411,6 +32470,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         setActivePillShapePicker(null);
         setActiveAdvIconPicker(null);
         setActiveTractionChartPicker(false);
+        setActiveFundsChartPicker(false);
         setActiveMarketCardStylePicker(false);
       }
     };
@@ -50728,7 +50788,479 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
                                           </div>
                                         </div>
-                                      ) : layout === "Startup Timeline" || layout === "Startup Accomplishments" || layout === "Accomplishments" || activeDeckSlide?.title === "Accomplishments & Roadmap" || activeDeckSlide?.title === "Accomplishments" ? (
+                                      ) : layout === "Startup Use of Funds" || layout === "Use of Funds" || layout === "Startup Capital Allocation" || activeDeckSlide?.title === "Use of Funds & Capital Allocation" || activeDeckSlide?.title === "Use of Funds" ? (
+                                          /* ── STARTUP USE OF FUNDS TEMPLATE (REVERSE-ENGINEERED SLIDE 13) ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-2.5 md:px-8 md:pt-3.5 md:pb-2.5 overflow-hidden">
+                                            
+                                            {/* Bottom-Right Ambient Neon Orbital Vortex Vector Graphic */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'vector', id: 'funds-neon-vortex' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'fundsNeonVortex',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.fundsNeonVortex_posX || 0,
+                                                  origY: activeDeckSlide?.fundsNeonVortex_posY || 0
+                                                });
+                                              }}
+                                              style={{
+                                                position: 'absolute',
+                                                bottom: -20,
+                                                right: -15,
+                                                width: activeDeckSlide?.fundsNeonVortex_width ? `${activeDeckSlide.fundsNeonVortex_width}px` : '280px',
+                                                height: activeDeckSlide?.fundsNeonVortex_height ? `${activeDeckSlide.fundsNeonVortex_height}px` : '220px',
+                                                transform: `translate(${activeDeckSlide?.fundsNeonVortex_posX || 0}px, ${activeDeckSlide?.fundsNeonVortex_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                pointerEvents: 'auto',
+                                                cursor: 'grab',
+                                                zIndex: 4
+                                              }}
+                                              className={`overflow-visible select-none group/fundsvortex ${deckSelection.type === 'vector' && deckSelection.id === 'funds-neon-vortex' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
+                                            >
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 280 220" fill="none">
+                                                <defs>
+                                                  <linearGradient id="fundsVortexGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.95" />
+                                                    <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.85" />
+                                                    <stop offset="100%" stopColor="#a855f7" stopOpacity="0.75" />
+                                                  </linearGradient>
+                                                  <filter id="fundsVortexGlow" x="-30%" y="-30%" width="160%" height="160%">
+                                                    <feGaussianBlur stdDeviation="6" result="blur" />
+                                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                                  </filter>
+                                                </defs>
+                                                {/* Sweeping Orbital Vortex Swirl */}
+                                                <path d="M280,220 C240,160 200,90 140,70 C70,50 10,90 0,160 C-10,210 40,240 100,240 C170,240 240,190 280,100" stroke="url(#fundsVortexGrad1)" strokeWidth="4" fill="none" opacity="0.85" filter="url(#fundsVortexGlow)" />
+                                                <path d="M280,210 C245,155 208,88 148,68 C80,48 20,88 10,155 C0,205 48,235 105,235 C172,235 238,188 278,98" stroke="#38bdf8" strokeWidth="2" fill="none" opacity="0.9" />
+                                                <path d="M280,200 C250,150 215,85 155,65 C90,45 30,85 20,150" stroke="#c084fc" strokeWidth="1.2" fill="none" opacity="0.6" strokeDasharray="5 3" />
+                                              </svg>
+                                              {/* Drag Capsule */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'funds-neon-vortex' && (
+                                                <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'funds-neon-vortex' }); setDeckBentoDrag({ isDragging: true, cardId: 'fundsNeonVortex', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.fundsNeonVortex_posX || 0, origY: activeDeckSlide?.fundsNeonVortex_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <span>Neon Vortex</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { fundsNeonVortex_posX: 0, fundsNeonVortex_posY: 0, fundsNeonVortex_width: undefined, fundsNeonVortex_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Top-Left Headline & Narrative Block */}
+                                            <div className="flex flex-col gap-1 mb-2 z-20 pointer-events-auto max-w-[620px]">
+                                              {/* Headline */}
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'text', id: 'funds-headline' });
+                                                  setDeckBentoDrag({
+                                                    isDragging: true,
+                                                    cardId: 'fundsHeadline',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    origX: activeDeckSlide?.fundsHeadline_posX || 0,
+                                                    origY: activeDeckSlide?.fundsHeadline_posY || 0
+                                                  });
+                                                }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.fundsHeadline_posX || 0}px, ${activeDeckSlide?.fundsHeadline_posY || 0}px)`,
+                                                  transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                  width: activeDeckSlide?.fundsHeadline_width ? `${activeDeckSlide.fundsHeadline_width}px` : undefined,
+                                                  height: activeDeckSlide?.fundsHeadline_height ? `${activeDeckSlide.fundsHeadline_height}px` : undefined,
+                                                  touchAction: 'none'
+                                                }}
+                                                className={`relative overflow-visible cursor-grab active:cursor-grabbing group/title z-30 mb-0.5 ${deckSelection.type === 'text' && deckSelection.id === 'funds-headline' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
+                                              >
+                                                <h1
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                  className="text-[24px] md:text-[30px] font-[900] tracking-tight text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-none w-full break-words"
+                                                >
+                                                  {activeDeckSlide?.headline || 'USE OF FUNDS'}
+                                                </h1>
+                                                {/* Drag Capsule */}
+                                                {deckSelection.type === 'text' && deckSelection.id === 'funds-headline' && (
+                                                  <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'text', id: 'funds-headline' }); setDeckBentoDrag({ isDragging: true, cardId: 'fundsHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.fundsHeadline_posX || 0, origY: activeDeckSlide?.fundsHeadline_posY || 0 }); }} className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                    <Move size={11} className="text-violet-400" />
+                                                    <span>Headline</span>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { fundsHeadline_posX: 0, fundsHeadline_posY: 0, fundsHeadline_width: undefined, fundsHeadline_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                  </div>
+                                                )}
+                                              </div>
+
+                                              {/* Narrative Paragraph */}
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'text', id: 'funds-desc' });
+                                                  setDeckBentoDrag({
+                                                    isDragging: true,
+                                                    cardId: 'fundsDesc',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    origX: activeDeckSlide?.fundsDesc_posX || 0,
+                                                    origY: activeDeckSlide?.fundsDesc_posY || 0
+                                                  });
+                                                }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.fundsDesc_posX || 0}px, ${activeDeckSlide?.fundsDesc_posY || 0}px)`,
+                                                  transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                  width: activeDeckSlide?.fundsDesc_width ? `${activeDeckSlide.fundsDesc_width}px` : undefined,
+                                                  height: activeDeckSlide?.fundsDesc_height ? `${activeDeckSlide.fundsDesc_height}px` : undefined,
+                                                  touchAction: 'none'
+                                                }}
+                                                className={`relative overflow-visible cursor-grab active:cursor-grabbing group/desc z-30 ${deckSelection.type === 'text' && deckSelection.id === 'funds-desc' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
+                                              >
+                                                <p
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'fundsDesc', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                  className="text-[8px] md:text-[9px] leading-[1.3] text-slate-300 font-normal outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 font-sans cursor-text w-full select-text"
+                                                >
+                                                  {activeDeckSlide?.fundsDesc || "Our plan for using funds generated from investors is straightforward. We'll allocate 40% towards developing our products, ensuring they stay competitive and meet customer needs. 30% will go marketing and sales efforts to attract new customers and drive revenue growth. 20% will be invested in infrastructure and operations to support our expanding business and improve efficiency. Finally, 10% will be set aside for strategic initiatives like market expansion and partnerships to fuel long-term growth."}
+                                                </p>
+                                              </div>
+                                            </div>
+
+                                            {/* Main Content Layout: Left Pie Chart Card (5 cols) + Right 4 Allocation Rows (7 cols) */}
+                                            <div className="flex-1 grid grid-cols-12 gap-4 md:gap-6 w-full pointer-events-auto z-20 min-h-0 items-stretch pb-1">
+                                              
+                                              {/* Left Column: Glassmorphic Pie / Donut Chart Card */}
+                                              {(() => {
+                                                const chartType = activeDeckSlide?.fundsChartType || 'pie';
+                                                const chartBg = activeDeckSlide?.fundsChartBg || 'linear-gradient(180deg, rgba(38,28,64,0.8) 0%, rgba(18,16,40,0.92) 100%)';
+
+                                                return (
+                                                  <div
+                                                    onPointerDown={(e) => {
+                                                      if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn') || e.target.getAttribute('contenteditable')) return;
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'bento', id: 'funds-chart-card' });
+                                                      setDeckBentoDrag({
+                                                        isDragging: true,
+                                                        cardId: 'fundsChartCard',
+                                                        startX: e.clientX,
+                                                        startY: e.clientY,
+                                                        origX: activeDeckSlide?.fundsChartCard_posX || 0,
+                                                        origY: activeDeckSlide?.fundsChartCard_posY || 0
+                                                      });
+                                                    }}
+                                                    onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: 'funds-chart-card' }); }}
+                                                    style={{
+                                                      transform: `translate(${activeDeckSlide?.fundsChartCard_posX || 0}px, ${activeDeckSlide?.fundsChartCard_posY || 0}px)`,
+                                                      transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                      width: activeDeckSlide?.fundsChartCard_width ? `${activeDeckSlide.fundsChartCard_width}px` : undefined,
+                                                      height: activeDeckSlide?.fundsChartCard_height ? `${activeDeckSlide.fundsChartCard_height}px` : '100%',
+                                                      background: chartBg,
+                                                      borderRadius: '18px',
+                                                      border: '1.2px solid rgba(255, 255, 255, 0.25)',
+                                                      boxShadow: '0 15px 35px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.2)',
+                                                      touchAction: 'none',
+                                                      cursor: 'grab'
+                                                    }}
+                                                    className={`col-span-5 flex flex-col justify-center items-center p-3 rounded-2xl relative group/chart min-h-0 select-none ${deckSelection.type === 'bento' && deckSelection.id === 'funds-chart-card' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30' : ''}`}
+                                                  >
+                                                    {/* Chart Floating Capsule Menu */}
+                                                    {deckSelection.type === 'bento' && deckSelection.id === 'funds-chart-card' && (
+                                                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                        <PieChart size={11} className="text-cyan-400" />
+                                                        <span className="capitalize">{chartType} Allocation Chart</span>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActiveFundsChartPicker(!activeFundsChartPicker);
+                                                          }}
+                                                          className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                          <Palette size={10} /> Chart Options
+                                                        </button>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onPointerDown={(e) => {
+                                                            e.stopPropagation();
+                                                            updateDeckSlideFields(activeDeckSlide?.id, {
+                                                              fundsChartCard_posX: 0,
+                                                              fundsChartCard_posY: 0,
+                                                              fundsChartCard_width: undefined,
+                                                              fundsChartCard_height: undefined
+                                                            });
+                                                          }}
+                                                          className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                          title="Reset Position"
+                                                        >
+                                                          <RotateCcw size={11} />
+                                                        </button>
+                                                      </div>
+                                                    )}
+
+                                                    {/* 8 Resize Handles for Chart */}
+                                                    {deckSelection.type === 'bento' && deckSelection.id === 'funds-chart-card' && (
+                                                      <>
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.fundsChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.fundsChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.fundsChartCard_posX || 0, initY: activeDeckSlide?.fundsChartCard_posY || 0, target: 'bento-fundsChartCard' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.fundsChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.fundsChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.fundsChartCard_posX || 0, initY: activeDeckSlide?.fundsChartCard_posY || 0, target: 'bento-fundsChartCard' }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.fundsChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.fundsChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.fundsChartCard_posX || 0, initY: activeDeckSlide?.fundsChartCard_posY || 0, target: 'bento-fundsChartCard' }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.fundsChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.fundsChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.fundsChartCard_posX || 0, initY: activeDeckSlide?.fundsChartCard_posY || 0, target: 'bento-fundsChartCard' }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.fundsChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.fundsChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.fundsChartCard_posX || 0, initY: activeDeckSlide?.fundsChartCard_posY || 0, target: 'bento-fundsChartCard' }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.fundsChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.fundsChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.fundsChartCard_posX || 0, initY: activeDeckSlide?.fundsChartCard_posY || 0, target: 'bento-fundsChartCard' }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.fundsChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.fundsChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.fundsChartCard_posX || 0, initY: activeDeckSlide?.fundsChartCard_posY || 0, target: 'bento-fundsChartCard' }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.fundsChartCard_width || Math.round(rect.width), initH: activeDeckSlide?.fundsChartCard_height || Math.round(rect.height), initX: activeDeckSlide?.fundsChartCard_posX || 0, initY: activeDeckSlide?.fundsChartCard_posY || 0, target: 'bento-fundsChartCard' }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                      </>
+                                                    )}
+
+                                                    {/* SVG Pie / Donut Chart */}
+                                                    <div className="w-full h-full flex items-center justify-center relative min-h-0">
+                                                      <svg className="w-full max-h-[160px] overflow-visible" viewBox="0 0 200 200">
+                                                        <defs>
+                                                          <linearGradient id="fundSlice1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                            <stop offset="0%" stopColor="#67e8f9" />
+                                                            <stop offset="100%" stopColor="#06b6d4" />
+                                                          </linearGradient>
+                                                          <linearGradient id="fundSlice2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                            <stop offset="0%" stopColor="#38bdf8" />
+                                                            <stop offset="100%" stopColor="#0284c7" />
+                                                          </linearGradient>
+                                                          <linearGradient id="fundSlice3" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                            <stop offset="0%" stopColor="#3b82f6" />
+                                                            <stop offset="100%" stopColor="#1d4ed8" />
+                                                          </linearGradient>
+                                                          <linearGradient id="fundSlice4" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                            <stop offset="0%" stopColor="#6366f1" />
+                                                            <stop offset="100%" stopColor="#4338ca" />
+                                                          </linearGradient>
+                                                        </defs>
+
+                                                        {/* Slice 1: 40% (0° to 144°) */}
+                                                        <path
+                                                          d="M 100,100 L 100,25 A 75,75 0 0,1 171.3,123.2 Z"
+                                                          fill="url(#fundSlice1)"
+                                                          className="transition-transform hover:scale-105 origin-center cursor-pointer"
+                                                        />
+                                                        {/* Slice 2: 30% (144° to 252°) */}
+                                                        <path
+                                                          d="M 100,100 L 171.3,123.2 A 75,75 0 0,1 28.7,123.2 Z"
+                                                          fill="url(#fundSlice2)"
+                                                          className="transition-transform hover:scale-105 origin-center cursor-pointer"
+                                                        />
+                                                        {/* Slice 3: 20% (252° to 324°) */}
+                                                        <path
+                                                          d="M 100,100 L 28.7,123.2 A 75,75 0 0,1 55.9,39.3 Z"
+                                                          fill="url(#fundSlice3)"
+                                                          className="transition-transform hover:scale-105 origin-center cursor-pointer"
+                                                        />
+                                                        {/* Slice 4: 10% (324° to 360°) */}
+                                                        <path
+                                                          d="M 100,100 L 55.9,39.3 A 75,75 0 0,1 100,25 Z"
+                                                          fill="url(#fundSlice4)"
+                                                          className="transition-transform hover:scale-105 origin-center cursor-pointer"
+                                                        />
+
+                                                        {/* Donut Center Hole (if donut style) */}
+                                                        {chartType === 'donut' && (
+                                                          <circle cx="100" cy="100" r="40" fill="#0d111d" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+                                                        )}
+
+                                                        {/* Slice Percentage Labels */}
+                                                        <text x="145" y="85" fill="#ffffff" fontSize="9" fontWeight="900" textAnchor="middle">40%</text>
+                                                        <text x="100" y="165" fill="#ffffff" fontSize="9" fontWeight="900" textAnchor="middle">30%</text>
+                                                        <text x="45" y="95" fill="#ffffff" fontSize="8" fontWeight="900" textAnchor="middle">20%</text>
+                                                        <text x="75" y="38" fill="#ffffff" fontSize="7" fontWeight="900" textAnchor="middle">10%</text>
+                                                      </svg>
+                                                    </div>
+                                                  </div>
+                                                );
+                                              })()}
+
+                                              {/* Right Column: 4 Fund Allocation Percentage Badge Rows */}
+                                              <div className="col-span-7 flex flex-col justify-between gap-2 md:gap-2.5 min-h-0">
+                                                {[
+                                                  { id: 'fund-row-1', valKey: 'fund1Val', labelKey: 'fund1Label', bgKey: 'fund1Bg', shapeKey: 'fund1Shape', defVal: '40%', defLabel: 'PRODUCT DEVELOPMENT' },
+                                                  { id: 'fund-row-2', valKey: 'fund2Val', labelKey: 'fund2Label', bgKey: 'fund2Bg', shapeKey: 'fund2Shape', defVal: '30%', defLabel: 'MARKETING AND SALES' },
+                                                  { id: 'fund-row-3', valKey: 'fund3Val', labelKey: 'fund3Label', bgKey: 'fund3Bg', shapeKey: 'fund3Shape', defVal: '20%', defLabel: 'INFRASTRUCTURE AND OPERATIONS' },
+                                                  { id: 'fund-row-4', valKey: 'fund4Val', labelKey: 'fund4Label', bgKey: 'fund4Bg', shapeKey: 'fund4Shape', defVal: '10 %', defLabel: 'EXPANSION AND GROWTH INITIATIVES' }
+                                                ].map((fItem, fIdx) => {
+                                                  const curVal = activeDeckSlide?.[fItem.valKey] || fItem.defVal;
+                                                  const curLabel = activeDeckSlide?.[fItem.labelKey] || fItem.defLabel;
+                                                  const curBg = activeDeckSlide?.[fItem.bgKey] || 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)';
+                                                  const curShape = activeDeckSlide?.[fItem.shapeKey] || '12px';
+                                                  const isSelected = deckSelection.type === 'bento' && deckSelection.id === fItem.id;
+                                                  const itemPosX = activeDeckSlide?.[fItem.valKey + '_posX'] || 0;
+                                                  const itemPosY = activeDeckSlide?.[fItem.valKey + '_posY'] || 0;
+
+                                                  return (
+                                                    <div
+                                                      key={fIdx}
+                                                      onPointerDown={(e) => {
+                                                        if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn') || e.target.getAttribute('contenteditable')) return;
+                                                        e.stopPropagation();
+                                                        setDeckSelection({ type: 'bento', id: fItem.id });
+                                                        setDeckBentoDrag({
+                                                          isDragging: true,
+                                                          cardId: fItem.valKey,
+                                                          startX: e.clientX,
+                                                          startY: e.clientY,
+                                                          origX: itemPosX,
+                                                          origY: itemPosY
+                                                        });
+                                                      }}
+                                                      onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: fItem.id }); }}
+                                                      style={{
+                                                        transform: `translate(${itemPosX}px, ${itemPosY}px)`,
+                                                        transition: deckBentoDrag.isDragging ? 'none' : 'transform 120ms ease-out',
+                                                        touchAction: 'none'
+                                                      }}
+                                                      className={`flex items-center gap-3.5 relative group/fund rounded-xl p-1 transition-all cursor-grab active:cursor-grabbing ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5 z-30' : 'hover:bg-white/[0.02] z-20'}`}
+                                                    >
+                                                      {/* 3D Glassmorphic Percentage Badge */}
+                                                      <div
+                                                        style={{
+                                                          background: curBg,
+                                                          borderRadius: curShape,
+                                                          border: '1.2px solid rgba(255, 255, 255, 0.45)',
+                                                          boxShadow: '0 8px 24px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.45)'
+                                                        }}
+                                                        className="w-[74px] md:w-[82px] h-[36px] md:h-[40px] flex items-center justify-center text-center shrink-0 transition-all shadow-lg"
+                                                      >
+                                                        <span
+                                                          contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                          suppressContentEditableWarning
+                                                          onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, fItem.valKey, e.currentTarget.textContent || '')}
+                                                          style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                          className="text-[14px] md:text-[16px] font-[900] tracking-wide text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text font-sans"
+                                                        >
+                                                          {curVal}
+                                                        </span>
+                                                      </div>
+
+                                                      {/* Bold Uppercase Fund Allocation Label */}
+                                                      <div className="flex-1 flex items-center pl-1">
+                                                        <span
+                                                          contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                          suppressContentEditableWarning
+                                                          onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, fItem.labelKey, e.currentTarget.textContent || '')}
+                                                          style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                          className="text-[10px] md:text-[11.5px] font-[900] tracking-wide text-white uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text w-full break-words font-sans"
+                                                        >
+                                                          {curLabel}
+                                                        </span>
+                                                      </div>
+
+                                                      {/* Floating Capsule Toolbar */}
+                                                      {isSelected && (
+                                                        <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                          <Sparkles size={11} className="text-cyan-400" />
+                                                          <span>Allocation {fIdx + 1}</span>
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              setActivePillShapePicker({ rowKey: fItem.valKey, shapeKey: fItem.shapeKey });
+                                                            }}
+                                                            className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                          >
+                                                            <Shapes size={10} /> Shape
+                                                          </button>
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              setActivePillGradPicker({ rowKey: fItem.valKey, bgKey: fItem.bgKey });
+                                                            }}
+                                                            className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-violet-300 flex items-center gap-1 cursor-pointer"
+                                                          >
+                                                            <Palette size={10} /> Color
+                                                          </button>
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                          <button
+                                                            type="button"
+                                                            onPointerDown={(e) => {
+                                                              e.stopPropagation();
+                                                              updateDeckSlideFields(activeDeckSlide?.id, {
+                                                                [fItem.valKey + '_posX']: 0,
+                                                                [fItem.valKey + '_posY']: 0
+                                                              });
+                                                            }}
+                                                            className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                            title="Reset Position"
+                                                          >
+                                                            <RotateCcw size={11} />
+                                                          </button>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+
+                                            {/* Interactive Use of Funds Chart Options Popover Modal */}
+                                            {activeFundsChartPicker && (
+                                              <div
+                                                className="funds-chart-popover absolute z-[120] bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-3.5 w-[300px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onPointerDown={(e) => e.stopPropagation()}
+                                              >
+                                                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
+                                                  <span className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                                    <PieChart size={12} className="text-cyan-400" /> Chart Options
+                                                  </span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setActiveFundsChartPicker(false)}
+                                                    className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                                                  >
+                                                    <X size={12} />
+                                                  </button>
+                                                </div>
+
+                                                {/* Chart Style Selector */}
+                                                <div className="mb-3">
+                                                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Chart Style</label>
+                                                  <div className="grid grid-cols-2 gap-1.5">
+                                                    {[
+                                                      { id: 'pie', label: 'Pie Chart', icon: PieChart },
+                                                      { id: 'donut', label: 'Donut Ring', icon: Activity }
+                                                    ].map((tStyle) => {
+                                                      const TypeIcon = tStyle.icon;
+                                                      const isSel = (activeDeckSlide?.fundsChartType || 'pie') === tStyle.id;
+                                                      return (
+                                                        <button
+                                                          key={tStyle.id}
+                                                          type="button"
+                                                          onClick={() => {
+                                                            updateDeckSlideField(activeDeckSlide?.id, 'fundsChartType', tStyle.id);
+                                                            showToast(`Chart style: ${tStyle.label}`);
+                                                          }}
+                                                          className={`flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border text-[9.5px] font-semibold cursor-pointer transition-all ${
+                                                            isSel
+                                                              ? 'bg-violet-600/40 border-cyan-400 text-cyan-300 shadow-[0_0_10px_rgba(0,240,255,0.3)]'
+                                                              : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/15 hover:text-white'
+                                                          }`}
+                                                        >
+                                                          <TypeIcon size={12} />
+                                                          <span>{tStyle.label}</span>
+                                                        </button>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : layout === "Startup Timeline" || layout === "Startup Accomplishments" || layout === "Accomplishments" || activeDeckSlide?.title === "Accomplishments & Roadmap" || activeDeckSlide?.title === "Accomplishments" ? (
                                           /* ── STARTUP TIMELINE / ACCOMPLISHMENTS TEMPLATE (REVERSE-ENGINEERED SLIDE 12) ── */
                                           <div className="flex flex-row items-stretch h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-3 md:px-8 md:pt-3.5 md:pb-3 overflow-hidden gap-4 md:gap-6">
                                             
