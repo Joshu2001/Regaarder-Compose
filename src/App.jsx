@@ -7693,22 +7693,33 @@ function AppCore() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(320);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [isRightSideHovered, setIsRightSideHovered] = useState(false);
+  const [isNearRightEdge, setIsNearRightEdge] = useState(false);
   const sidebarHoverTimerRef = useRef(null);
+
+  useEffect(() => {
+    const handleGlobalPointerMove = (e) => {
+      const isNear = (window.innerWidth - e.clientX) <= 100;
+      setIsNearRightEdge(prev => (prev !== isNear ? isNear : prev));
+    };
+    window.addEventListener('pointermove', handleGlobalPointerMove, { passive: true });
+    return () => {
+      window.removeEventListener('pointermove', handleGlobalPointerMove);
+    };
+  }, []);
 
   const handleRightSidebarMouseEnter = () => {
     if (sidebarHoverTimerRef.current) clearTimeout(sidebarHoverTimerRef.current);
     sidebarHoverTimerRef.current = setTimeout(() => {
       setIsRightSideHovered(true);
       setMiniSidebarDismissed(false);
-    }, 120);
+    }, 60);
   };
 
   const handleRightSidebarMouseLeave = () => {
     if (sidebarHoverTimerRef.current) clearTimeout(sidebarHoverTimerRef.current);
     sidebarHoverTimerRef.current = setTimeout(() => {
       setIsRightSideHovered(false);
-      setMiniSidebarDismissed(false);
-    }, 150);
+    }, 220);
   };
 
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
@@ -38080,171 +38091,161 @@ Respond with a JSON array of slide objects matching the schema.`;
 
         return (
           <>
-            {/* ── Auto-Hiding Right-Edge Sensor & Hover-Activated Cue Pill ──────────── */}
+            {/* ── Floating Sidebar Cue Button (Appears when mouse is within 100px of right edge; hovering opens icon rail) ──────────── */}
             {productMode !== 'landing' && productMode !== 'browser' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
               <div
                 onMouseEnter={handleRightSidebarMouseEnter}
                 onMouseLeave={handleRightSidebarMouseLeave}
-                className="fixed right-0 top-0 h-16 w-8 z-[360] group/sidebar-rail pointer-events-auto flex items-center justify-end"
+                className={`fixed right-3 top-[72px] z-[360] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 dark:bg-zinc-800/95 backdrop-blur-md border border-slate-200/90 dark:border-zinc-700/90 shadow-md cursor-pointer text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:border-violet-300 dark:hover:border-violet-600/60 transition-all duration-300 ease-out select-none ${
+                  (isNearRightEdge || isRightSideHovered)
+                    ? 'opacity-90 translate-x-0 pointer-events-auto'
+                    : 'opacity-0 translate-x-3 pointer-events-none'
+                }`}
+                title="Hover to reveal sidebar icons"
               >
-                {/* Visual Cue Pill (Hidden by default, fades in when hovering right edge sensor zone) */}
-                <div
-                  onClick={() => {
-                    if (activeRightTab) {
-                      setRightSidebarOpen(true);
-                    } else {
-                      setActiveRightTab('assistant');
-                      setRightSidebarOpen(true);
-                    }
-                  }}
-                  className="fixed right-3 top-[72px] z-[360] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 dark:bg-zinc-800/95 backdrop-blur-md border border-slate-200/90 dark:border-zinc-700/90 shadow-md cursor-pointer text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:border-violet-300 dark:hover:border-violet-600/60 transition-all duration-300 ease-out group/cue select-none opacity-0 translate-x-2 pointer-events-none group-hover/sidebar-rail:opacity-100 group-hover/sidebar-rail:translate-x-0 group-hover/sidebar-rail:pointer-events-auto"
-                  title="Click to open sidebar"
-                >
-                  <Sidebar size={14} className="text-slate-400 dark:text-zinc-400 group-hover/cue:text-violet-500 transition-colors" />
-                  <span className="text-xs font-medium text-slate-600 dark:text-zinc-300 group-hover/cue:text-violet-600 dark:group-hover/cue:text-violet-400">
-                    Sidebar
-                  </span>
-                  <ChevronLeft size={13} className="text-slate-400 dark:text-zinc-500 group-hover/cue:-translate-x-0.5 transition-transform" />
+                <Sidebar size={14} className="text-slate-400 dark:text-zinc-400 group-hover:text-violet-500 transition-colors" />
+                <span className="text-xs font-medium text-slate-600 dark:text-zinc-300">
+                  Sidebar
+                </span>
+                <ChevronLeft size={13} className="text-slate-400 dark:text-zinc-500" />
+              </div>
+            )}
+
+            {/* ── Sleek Sidebar Icon Rail (Positioned under toolbar, in front of scrollbar, revealed on hover) ──────────── */}
+            {productMode !== 'landing' && productMode !== 'browser' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
+              <div
+                onMouseEnter={handleRightSidebarMouseEnter}
+                onMouseLeave={handleRightSidebarMouseLeave}
+                className={`fixed right-0 top-[60px] bottom-0 z-[365] group/sidebar border-l border-slate-200/70 dark:border-zinc-800/80 bg-white/95 dark:bg-[#121216]/95 backdrop-blur-xl flex flex-col items-start px-2 py-3 gap-2 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] ${
+                  isRightSideHovered && !miniSidebarDismissed
+                    ? 'translate-x-0 opacity-100 pointer-events-auto w-[58px] hover:w-[170px]'
+                    : 'translate-x-full opacity-0 pointer-events-none w-[58px]'
+                }`}
+              >
+                {/* ── Slot 1: Home (always fixed) ─── */}
+                <div className="relative mb-1 w-full">
+                  <div
+                    className="group/item flex items-center gap-3 px-2.5 py-2 rounded-xl cursor-pointer select-none border border-transparent text-slate-400 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-700 dark:hover:text-zinc-200 transition-all duration-200 w-full"
+                    onClick={() => {
+                      setProductMode('landing');
+                      setMiniSidebarDismissed(true);
+                    }}
+                    title="Home"
+                  >
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+                      <Home size={19} strokeWidth={1.8} />
+                    </div>
+                    <span className="text-[12.5px] font-medium whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-all duration-300 ease-out text-slate-700 dark:text-zinc-200">
+                      Home
+                    </span>
+                  </div>
+
+                  {/* Workspace launcher popover */}
+                  {workspaceLauncherOpen && (
+                    <div className="absolute right-full top-0 mr-4 z-[9999] w-[180px] bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 overflow-hidden origin-right animate-in fade-in zoom-in-95 duration-200">
+                      <div className="flex items-center justify-between px-3 py-2 mb-1 border-b border-slate-50">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Create New</span>
+                        <button onClick={() => setWorkspaceLauncherOpen(false)} className="text-slate-400 hover:text-slate-700 transition-colors">
+                          <X size={14} />
+                        </button>
+                      </div>
+                      <div className="space-y-0.5">
+                        {[
+                          { key: 'compose', label: 'Compose', icon: ComposeIcon },
+                          { key: 'deck',    label: 'Deck',    icon: DeckIcon },
+                          { key: 'sheet',   label: 'Sheet',   icon: SheetIcon },
+                          { key: 'room',    label: 'Room',    icon: RoomIcon },
+                          { key: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon },
+                        ].map(({ key, label, icon: Icon }) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => {
+                              launchWorkspaceFromMiniPlus(key);
+                              setMiniSidebarDismissed(true);
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 hover:bg-violet-50 hover:text-violet-700 rounded-lg transition-colors text-left font-medium group"
+                          >
+                            <Icon size={16} strokeWidth={2} className="text-slate-400 group-hover:text-violet-500 transition-colors" />
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Sidebar Shell */}
-                <div
-                  onMouseEnter={handleRightSidebarMouseEnter}
-                  onMouseLeave={handleRightSidebarMouseLeave}
-                  className={`fixed right-0 top-0 h-full z-[361] group/sidebar border-l border-slate-200/70 dark:border-zinc-800/80 bg-white/95 dark:bg-[#121216]/95 backdrop-blur-xl flex flex-col items-start px-2 py-4 gap-2.5 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] pointer-events-auto ${
-                    isRightSideHovered && !miniSidebarDismissed
-                      ? 'translate-x-0 opacity-100 w-[165px]'
-                      : (miniSidebarDismissed
-                          ? 'translate-x-full opacity-0 w-[56px]'
-                          : 'translate-x-full group-hover/sidebar-rail:translate-x-0 opacity-0 group-hover/sidebar-rail:opacity-100 w-[56px] hover:w-[165px]')
-                  }`}
-                >
+                {/* ── Slot 2: Chat (always fixed) ─── */}
+                <div className="w-full">{renderNavIcon({ key: 'chat', label: 'Chat', icon: ChatIcon })}</div>
 
-              {/* ── Slot 1: Home (always fixed) ─── */}
-              <div className="relative mb-1 w-full">
+                {/* ── Slot 3: Assist (always fixed) ─── */}
+                <div className="w-full">{renderNavIcon({ key: 'assistant', label: 'Assist', icon: AssistIcon })}</div>
+
+                {/* ── Slot 4: Agents (always fixed) ─── */}
+                <div className="w-full mb-1">{renderNavIcon({ key: 'ai-studio', label: 'Agents', icon: AgentsIcon })}</div>
+
+                {/* ── Slot 5: Tasks (always fixed) ─── */}
+                <div className="w-full">{renderNavIcon({ key: 'tasks', label: 'Tasks', icon: TasksIcon })}</div>
+
+                {/* ── Slot 6: Schedule (always fixed) ─── */}
+                <div className="w-full">{renderNavIcon({ key: 'calendar', label: 'Schedule', icon: ScheduleIcon })}</div>
+
+                {/* ── Slot 7: Room (always fixed) ─── */}
+                <div className="w-full">{renderNavIcon({ key: 'room', label: 'Room', icon: RoomIcon })}</div>
+
+                {/* ── Slot 8: Help (always fixed) ─── */}
+                <div className="w-full mb-1">{renderNavIcon({ key: 'help', label: 'Help', icon: HelpCircle })}</div>
+
+                {/* ── Slots: Dynamic (usage-promoted, excluding fixed slots) ─── */}
+                {dynamicSlots
+                  .filter(slotKey => !fixedKeys.has(slotKey))
+                  .map((slotKey, idx) => {
+                    const feature = ALL_FEATURES.find(f => f.key === slotKey);
+                    if (!feature) return null;
+                    return (
+                      <div
+                        key={`dynamic-${idx}-${slotKey}`}
+                        className="w-full animate-in fade-in zoom-in-90 duration-300 ease-out"
+                      >
+                        {renderNavIcon(feature)}
+                      </div>
+                    );
+                  })
+                }
+
+                {/* ── Spacer gap before More ─── */}
+                <div className="flex-1 min-h-[12px]" aria-hidden="true" />
+
+                {/* ── Inline expanded icons (shown when More is tapped) ─── */}
+                {morePanelOpen && moreItems.map(feature => (
+                  <div
+                    key={`more-${feature.key}`}
+                    className="w-full animate-in fade-in slide-in-from-bottom-2 duration-200 ease-out"
+                  >
+                    {renderNavIcon(feature)}
+                  </div>
+                ))}
+
+                {/* ── More button ─── */}
                 <div
-                  className="group/item flex items-center gap-3 px-2.5 py-2 rounded-xl cursor-pointer select-none border border-transparent text-slate-400 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-700 dark:hover:text-zinc-200 transition-all duration-200 w-full"
-                  onClick={() => {
-                    setProductMode('landing');
-                    setMiniSidebarDismissed(true);
-                  }}
-                  title="Home"
+                  onClick={() => setMorePanelOpen(prev => !prev)}
+                  className={`group/item flex items-center gap-3 px-2.5 py-2 rounded-xl cursor-pointer select-none transition-all duration-200 w-full ${
+                    morePanelOpen
+                      ? 'bg-slate-100/90 dark:bg-zinc-800/90 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 font-medium'
+                      : 'bg-transparent border border-transparent text-slate-400 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-700 dark:hover:text-zinc-200'
+                  }`}
+                  title="More"
                 >
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
-                    <Home size={19} strokeWidth={1.8} />
+                    <MoreHorizontal size={19} strokeWidth={1.8} />
                   </div>
                   <span className="text-[12.5px] font-medium whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-all duration-300 ease-out text-slate-700 dark:text-zinc-200">
-                    Home
+                    More
                   </span>
                 </div>
-
-                {/* Workspace launcher popover */}
-                {workspaceLauncherOpen && (
-                  <div className="absolute right-full top-0 mr-4 z-[9999] w-[180px] bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 overflow-hidden origin-right animate-in fade-in zoom-in-95 duration-200">
-                    <div className="flex items-center justify-between px-3 py-2 mb-1 border-b border-slate-50">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Create New</span>
-                      <button onClick={() => setWorkspaceLauncherOpen(false)} className="text-slate-400 hover:text-slate-700 transition-colors">
-                        <X size={14} />
-                      </button>
-                    </div>
-                    <div className="space-y-0.5">
-                      {[
-                        { key: 'compose', label: 'Compose', icon: ComposeIcon },
-                        { key: 'deck',    label: 'Deck',    icon: DeckIcon },
-                        { key: 'sheet',   label: 'Sheet',   icon: SheetIcon },
-                        { key: 'room',    label: 'Room',    icon: RoomIcon },
-                        { key: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon },
-                      ].map(({ key, label, icon: Icon }) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => {
-                            launchWorkspaceFromMiniPlus(key);
-                            setMiniSidebarDismissed(true);
-                          }}
-                          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 hover:bg-violet-50 hover:text-violet-700 rounded-lg transition-colors text-left font-medium group"
-                        >
-                          <Icon size={16} strokeWidth={2} className="text-slate-400 group-hover:text-violet-500 transition-colors" />
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
-
-              {/* ── Slot 2: Chat (always fixed) ─── */}
-              <div className="w-full">{renderNavIcon({ key: 'chat', label: 'Chat', icon: ChatIcon })}</div>
-
-              {/* ── Slot 3: Assist (always fixed) ─── */}
-              <div className="w-full">{renderNavIcon({ key: 'assistant', label: 'Assist', icon: AssistIcon })}</div>
-
-              {/* ── Slot 4: Agents (always fixed) ─── */}
-              <div className="w-full mb-1">{renderNavIcon({ key: 'ai-studio', label: 'Agents', icon: AgentsIcon })}</div>
-
-              {/* ── Slot 5: Tasks (always fixed) ─── */}
-              <div className="w-full">{renderNavIcon({ key: 'tasks', label: 'Tasks', icon: TasksIcon })}</div>
-
-              {/* ── Slot 6: Schedule (always fixed) ─── */}
-              <div className="w-full">{renderNavIcon({ key: 'calendar', label: 'Schedule', icon: ScheduleIcon })}</div>
-
-              {/* ── Slot 7: Room (always fixed) ─── */}
-              <div className="w-full">{renderNavIcon({ key: 'room', label: 'Room', icon: RoomIcon })}</div>
-
-              {/* ── Slot 8: Help (always fixed) ─── */}
-              <div className="w-full mb-1">{renderNavIcon({ key: 'help', label: 'Help', icon: HelpCircle })}</div>
-
-              {/* ── Slots: Dynamic (usage-promoted, excluding fixed slots) ─── */}
-              {dynamicSlots
-                .filter(slotKey => !fixedKeys.has(slotKey))
-                .map((slotKey, idx) => {
-                  const feature = ALL_FEATURES.find(f => f.key === slotKey);
-                  if (!feature) return null;
-                  return (
-                    <div
-                      key={`dynamic-${idx}-${slotKey}`}
-                      className="w-full animate-in fade-in zoom-in-90 duration-300 ease-out"
-                    >
-                      {renderNavIcon(feature)}
-                    </div>
-                  );
-                })
-              }
-
-              {/* ── Spacer gap before More ─── */}
-              <div className="flex-1 min-h-[12px]" aria-hidden="true" />
-
-              {/* ── Inline expanded icons (shown when More is tapped) ─── */}
-              {morePanelOpen && moreItems.map(feature => (
-                <div
-                  key={`more-${feature.key}`}
-                  className="w-full animate-in fade-in slide-in-from-bottom-2 duration-200 ease-out"
-                >
-                  {renderNavIcon(feature)}
-                </div>
-              ))}
-
-              {/* ── More button ─── */}
-              <div
-                onClick={() => setMorePanelOpen(prev => !prev)}
-                className={`group/item flex items-center gap-3 px-2.5 py-2 rounded-xl cursor-pointer select-none transition-all duration-200 w-full ${
-                  morePanelOpen
-                    ? 'bg-slate-100/90 dark:bg-zinc-800/90 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 font-medium'
-                    : 'bg-transparent border border-transparent text-slate-400 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-700 dark:hover:text-zinc-200'
-                }`}
-                title="More"
-              >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
-                  <MoreHorizontal size={19} strokeWidth={1.8} />
-                </div>
-                <span className="text-[12.5px] font-medium whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-all duration-300 ease-out text-slate-700 dark:text-zinc-200">
-                  More
-                </span>
-              </div>
-            </div>
-          </div>
-          )}
-        </>
+            )}
+          </>
         );
       })()}
 
@@ -55350,6 +55351,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
               title="Settings"
             >
               <Settings size={16} />
+            </button>
+            {/* Sidebar Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setRightSidebarOpen(prev => !prev)}
+              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                rightSidebarOpen 
+                  ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/50 dark:text-violet-300' 
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'
+              }`}
+              title={rightSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
+              aria-label="Toggle Sidebar"
+            >
+              <Sidebar size={16} />
             </button>
           </div>
         </div>

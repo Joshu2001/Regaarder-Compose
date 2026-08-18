@@ -100,22 +100,34 @@ html.popover-root, body.popover-root, #popover-root {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: transparent !important;
   border-radius: 9999px;
   border: 1px solid transparent;
   background-clip: padding-box;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.25s ease;
+}
+
+:hover::-webkit-scrollbar-thumb,
+:focus-within::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.4) !important;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.4);
+  background-color: rgba(100, 116, 139, 0.7) !important;
 }
 
 /* Regaarder Compose Sleek Overlay Scrollbars */
 .regaarder-scrollbar,
 .thin-scrollbar {
   scrollbar-width: thin !important;
-  scrollbar-color: rgba(255, 255, 255, 0.25) transparent !important;
+  scrollbar-color: transparent transparent !important;
+  transition: scrollbar-color 0.25s ease;
+}
+.regaarder-scrollbar:hover,
+.thin-scrollbar:hover,
+.regaarder-scrollbar:focus-within,
+.thin-scrollbar:focus-within {
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent !important;
 }
 .regaarder-scrollbar::-webkit-scrollbar,
 .thin-scrollbar::-webkit-scrollbar {
@@ -134,13 +146,19 @@ html.popover-root, body.popover-root, #popover-root {
 }
 .regaarder-scrollbar::-webkit-scrollbar-thumb,
 .thin-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.25) !important;
+  background-color: transparent !important;
   border-radius: 9999px !important;
   border: 1px solid transparent !important;
   background-clip: padding-box !important;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.25s ease;
+}
+.regaarder-scrollbar:hover::-webkit-scrollbar-thumb,
+.thin-scrollbar:hover::-webkit-scrollbar-thumb,
+.regaarder-scrollbar:focus-within::-webkit-scrollbar-thumb,
+.thin-scrollbar:focus-within::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.45) !important;
 }
 .regaarder-scrollbar::-webkit-scrollbar-thumb:hover,
 .thin-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.45) !important;
+  background-color: rgba(100, 116, 139, 0.75) !important;
 }
