@@ -460,6 +460,8 @@ const DECK_SOLUTIONS_ICONS = [
 
 const renderSolutionIcon = (iconKey, className = "w-5 h-5 text-blue-600") => {
   switch (iconKey) {
+    case 'users': return <Users className={className} />;
+    case 'cpu': return <Cpu className={className} />;
     case 'award': return <Award className={className} />;
     case 'shield-check': return <ShieldCheck className={className} />;
     case 'target': return <Target className={className} />;
@@ -488,6 +490,20 @@ const DECK_THEME_OPTIONS = [
 ];
 
 const DECK_LAYOUT_OPTIONS = [
+  { 
+    key: "Startup Key Advantages", 
+    name: "Startup Key Advantages",
+    desc: '4 ascending staircase glassmorphic cards with floating icon spheres & dual neon vortex curves',
+    visualType: 'startup staircase advantages',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-end justify-between shrink-0 gap-0.5">
+        <div className="w-1.5 h-2 bg-slate-700 rounded-t-xs" />
+        <div className="w-1.5 h-3 bg-indigo-900 rounded-t-xs" />
+        <div className="w-1.5 h-4 bg-purple-600 rounded-t-xs" />
+        <div className="w-1.5 h-5 bg-indigo-800 rounded-t-xs" />
+      </div>
+    )
+  },
   { 
     key: "Startup Competitor Analysis", 
     name: "Startup Competitor Analysis",
@@ -9341,6 +9357,45 @@ const DEFAULT_DECK_SLIDES = [
     motionCue: 'Dual Column Slide In',
     speakerNotes: 'Contrast direct competitors targeting identical segments with indirect competitors addressing complementary needs.',
     footer: 'ingoude Company'
+  },
+  {
+    id: 9,
+    section: 'Advantages',
+    title: 'Key Competitive Advantages',
+    tagline: 'Ingoude Company',
+    headline: 'KEY COMPETITIVE\nADVANTAGES',
+    backgroundColor: '#05070B',
+    vectorWaveStyle: 'stepped-neon-vortex',
+    vectorColor1: '#00f0ff',
+    vectorColor2: '#a855f7',
+    designPresetKey: 'midnight-slate',
+    presetKey: 'midnight-slate',
+    accent: 'from-cyan-400 via-indigo-500 to-purple-600',
+    visualType: 'startup staircase advantages',
+    layoutStyle: 'Startup Key Advantages',
+    adv1Title: 'EXPERT TEAM',
+    adv1Desc: "Our skilled team brings specialized knowledge and experience to provide top-notch solutions tailored to our clients' needs.",
+    adv1Icon: 'users',
+    adv1Bg: 'linear-gradient(180deg, #1e1f3b 0%, #0e1428 100%)',
+    adv1Shape: '16px',
+    adv2Title: 'CUTTING-EDGE TECHNOLOGY',
+    adv2Desc: 'We use the latest tools and technology to stay ahead, ensuring efficient and effective services.',
+    adv2Icon: 'cpu',
+    adv2Bg: 'linear-gradient(180deg, #2a1f48 0%, #151833 100%)',
+    adv2Shape: '16px',
+    adv3Title: 'CUSTOMER FOCUS',
+    adv3Desc: "We prioritize building strong relationships and understanding our clients' needs, leading to long-term partnerships based on trust and satisfaction.",
+    adv3Icon: 'target',
+    adv3Bg: 'linear-gradient(180deg, #6d4b94 0%, #2e2652 100%)',
+    adv3Shape: '16px',
+    adv4Title: 'PROVEN SUCCESS',
+    adv4Desc: "With a track record of successful projects, we've earned a reputation for reliability and excellence, setting us apart from the competition.",
+    adv4Icon: 'award',
+    adv4Bg: 'linear-gradient(180deg, #433261 0%, #1e1b38 100%)',
+    adv4Shape: '16px',
+    motionCue: 'Staircase Rise In',
+    speakerNotes: 'Highlight the 4 core competitive pillars: Expert Team, Cutting-Edge Tech, Customer Focus, and Proven Success.',
+    footer: 'ingoude Company'
   }
 ];
   const [deckSlidesData, setDeckSlidesData] = useState(DEFAULT_DECK_SLIDES);
@@ -12771,6 +12826,7 @@ const DEFAULT_DECK_SLIDES = [
   const [activeMarketChartPicker, setActiveMarketChartPicker] = useState(false);
   const [activePillGradPicker, setActivePillGradPicker] = useState(null);
   const [activePillShapePicker, setActivePillShapePicker] = useState(null);
+  const [activeAdvIconPicker, setActiveAdvIconPicker] = useState(null);
   const [activeMarketCardStylePicker, setActiveMarketCardStylePicker] = useState(false);
   // ── CLIENT-SIDE RASTER TO VECTOR (JPG/PNG to SVG) TRACER ENGINE ──
   const [vectorWaveSearch, setVectorWaveSearch] = useState('');
@@ -32160,6 +32216,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           !e.target.closest('.market-chart-popover') &&
           !e.target.closest('.pill-grad-popover') &&
           !e.target.closest('.pill-shape-popover') &&
+          !e.target.closest('.adv-icon-popover') &&
           !e.target.closest('.market-card-popover') && !e.target.closest('.picker-trigger-btn')) {
         setActiveOrbColorPicker(null);
         setActivePresenterImgPicker(false);
@@ -32167,6 +32224,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         setActiveMarketChartPicker(false);
         setActivePillGradPicker(null);
         setActivePillShapePicker(null);
+        setActiveAdvIconPicker(null);
         setActiveMarketCardStylePicker(false);
       }
     };
@@ -50484,7 +50542,414 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
                                           </div>
                                         </div>
-                                      ) : layout === "Startup Competitor Analysis" || layout === "Startup Competitors" || layout === "Key Competitors Advantage" || activeDeckSlide?.title === "Key Competitors Advantage" || layout === "Competitor Analysis" || layout === "Competitors" ? (
+                                      ) : layout === "Startup Key Advantages" || layout === "Startup Competitive Advantages" || layout === "Key Competitive Advantages" || activeDeckSlide?.title === "Key Competitive Advantages" || layout === "Competitive Advantages" || layout === "Advantages" ? (
+                                          /* ── STARTUP KEY ADVANTAGES TEMPLATE (REVERSE-ENGINEERED SLIDE 9) ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-2 md:px-8 md:pt-4 md:pb-2.5 overflow-hidden">
+                                            
+                                            {/* Left Ambient Neon Ribbon Loop Vector Graphic */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'vector', id: 'adv-left-neon' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'advLeftNeon',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.advLeftNeon_posX || 0,
+                                                  origY: activeDeckSlide?.advLeftNeon_posY || 0
+                                                });
+                                              }}
+                                              style={{
+                                                position: 'absolute',
+                                                top: -10,
+                                                left: -20,
+                                                width: activeDeckSlide?.advLeftNeon_width ? `${activeDeckSlide.advLeftNeon_width}px` : '280px',
+                                                height: activeDeckSlide?.advLeftNeon_height ? `${activeDeckSlide.advLeftNeon_height}px` : '340px',
+                                                transform: `translate(${activeDeckSlide?.advLeftNeon_posX || 0}px, ${activeDeckSlide?.advLeftNeon_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                pointerEvents: 'auto',
+                                                cursor: 'grab',
+                                                zIndex: 4
+                                              }}
+                                              className={`overflow-visible select-none group/leftneon ${deckSelection.type === 'vector' && deckSelection.id === 'adv-left-neon' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
+                                            >
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 280 340" fill="none">
+                                                <defs>
+                                                  <linearGradient id="advLeftLoopGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.9" />
+                                                    <stop offset="40%" stopColor="#3b82f6" stopOpacity="0.8" />
+                                                    <stop offset="80%" stopColor="#a855f7" stopOpacity="0.75" />
+                                                    <stop offset="100%" stopColor="#ec4899" stopOpacity="0.2" />
+                                                  </linearGradient>
+                                                  <linearGradient id="advLeftLoopGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#67e8f9" stopOpacity="0.95" />
+                                                    <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.85" />
+                                                    <stop offset="100%" stopColor="#818cf8" stopOpacity="0.4" />
+                                                  </linearGradient>
+                                                  <filter id="advLeftGlow" x="-30%" y="-30%" width="160%" height="160%">
+                                                    <feGaussianBlur stdDeviation="6" result="blur" />
+                                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                                  </filter>
+                                                </defs>
+                                                {/* Swooping Loop Path */}
+                                                <path d="M40,0 C30,90 20,180 50,240 C80,300 160,330 200,280 C240,230 220,150 160,110 C100,70 50,120 40,200 C30,270 90,320 180,340" stroke="url(#advLeftLoopGrad1)" strokeWidth="4" fill="none" opacity="0.85" filter="url(#advLeftGlow)" />
+                                                <path d="M48,5 C40,95 30,185 58,242 C85,298 162,325 198,278 C235,232 215,155 158,118 C102,80 58,125 48,202" stroke="url(#advLeftLoopGrad2)" strokeWidth="2" fill="none" opacity="0.9" />
+                                              </svg>
+                                              {/* Drag Capsule */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'adv-left-neon' && (
+                                                <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'adv-left-neon' }); setDeckBentoDrag({ isDragging: true, cardId: 'advLeftNeon', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.advLeftNeon_posX || 0, origY: activeDeckSlide?.advLeftNeon_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <span>Left Neon Loop</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { advLeftNeon_posX: 0, advLeftNeon_posY: 0, advLeftNeon_width: undefined, advLeftNeon_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Top-Right Ambient Neon Curve Trails Vector Graphic */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'vector', id: 'adv-right-neon' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'advRightNeon',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.advRightNeon_posX || 0,
+                                                  origY: activeDeckSlide?.advRightNeon_posY || 0
+                                                });
+                                              }}
+                                              style={{
+                                                position: 'absolute',
+                                                top: -15,
+                                                right: 0,
+                                                width: activeDeckSlide?.advRightNeon_width ? `${activeDeckSlide.advRightNeon_width}px` : '340px',
+                                                height: activeDeckSlide?.advRightNeon_height ? `${activeDeckSlide.advRightNeon_height}px` : '140px',
+                                                transform: `translate(${activeDeckSlide?.advRightNeon_posX || 0}px, ${activeDeckSlide?.advRightNeon_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                pointerEvents: 'auto',
+                                                cursor: 'grab',
+                                                zIndex: 4
+                                              }}
+                                              className={`overflow-visible select-none group/rightneon ${deckSelection.type === 'vector' && deckSelection.id === 'adv-right-neon' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
+                                            >
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 340 140" fill="none">
+                                                <defs>
+                                                  <linearGradient id="advRightTrailGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stopColor="#a855f7" stopOpacity="0" />
+                                                    <stop offset="30%" stopColor="#a855f7" stopOpacity="0.8" />
+                                                    <stop offset="70%" stopColor="#3b82f6" stopOpacity="0.85" />
+                                                    <stop offset="100%" stopColor="#00f0ff" stopOpacity="0.9" />
+                                                  </linearGradient>
+                                                  <linearGradient id="advRightTrailGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stopColor="#c084fc" stopOpacity="0" />
+                                                    <stop offset="40%" stopColor="#818cf8" stopOpacity="0.75" />
+                                                    <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.95" />
+                                                  </linearGradient>
+                                                </defs>
+                                                <path d="M0,110 C90,60 200,30 340,20" stroke="url(#advRightTrailGrad1)" strokeWidth="3" fill="none" opacity="0.85" filter="url(#advLeftGlow)" />
+                                                <path d="M30,125 C120,75 220,42 340,32" stroke="url(#advRightTrailGrad2)" strokeWidth="2" fill="none" opacity="0.9" />
+                                                <path d="M60,135 C150,88 240,55 340,45" stroke="#00f0ff" strokeWidth="1" fill="none" opacity="0.6" strokeDasharray="5 3" />
+                                              </svg>
+                                              {/* Drag Capsule */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'adv-right-neon' && (
+                                                <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'adv-right-neon' }); setDeckBentoDrag({ isDragging: true, cardId: 'advRightNeon', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.advRightNeon_posX || 0, origY: activeDeckSlide?.advRightNeon_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <span>Right Neon Trails</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { advRightNeon_posX: 0, advRightNeon_posY: 0, advRightNeon_width: undefined, advRightNeon_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Top-Left Headline Block */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'text', id: 'adv-headline' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'advHeadline',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.advHeadline_posX || 0,
+                                                  origY: activeDeckSlide?.advHeadline_posY || 0
+                                                });
+                                              }}
+                                              style={{
+                                                transform: `translate(${activeDeckSlide?.advHeadline_posX || 0}px, ${activeDeckSlide?.advHeadline_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                width: activeDeckSlide?.advHeadline_width ? `${activeDeckSlide.advHeadline_width}px` : undefined,
+                                                height: activeDeckSlide?.advHeadline_height ? `${activeDeckSlide.advHeadline_height}px` : undefined,
+                                                touchAction: 'none'
+                                              }}
+                                              className={`relative overflow-visible cursor-grab active:cursor-grabbing group/title z-30 pointer-events-auto max-w-[480px] mb-2 ${deckSelection.type === 'text' && deckSelection.id === 'adv-headline' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : ''}`}
+                                            >
+                                              <h1
+                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                suppressContentEditableWarning
+                                                onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
+                                                style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                className="text-[24px] md:text-[30px] font-[900] tracking-tight text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text font-sans select-text leading-[1.08] w-full break-words"
+                                              >
+                                                {(activeDeckSlide?.headline || 'KEY COMPETITIVE\nADVANTAGES').includes('\n') ? (
+                                                  (activeDeckSlide?.headline || 'KEY COMPETITIVE\nADVANTAGES').split('\n').map((line, lIdx) => (
+                                                    <span key={lIdx} className="block">{line}</span>
+                                                  ))
+                                                ) : (
+                                                  activeDeckSlide?.headline || 'KEY COMPETITIVE ADVANTAGES'
+                                                )}
+                                              </h1>
+                                              {/* Drag Capsule */}
+                                              {deckSelection.type === 'text' && deckSelection.id === 'adv-headline' && (
+                                                <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'text', id: 'adv-headline' }); setDeckBentoDrag({ isDragging: true, cardId: 'advHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.advHeadline_posX || 0, origY: activeDeckSlide?.advHeadline_posY || 0 }); }} className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                  <Move size={11} className="text-violet-400" />
+                                                  <span>Headline</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { advHeadline_posX: 0, advHeadline_posY: 0, advHeadline_width: undefined, advHeadline_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                </div>
+                                              )}
+                                              {/* 8 Resize Handles */}
+                                              {deckSelection.type === 'text' && deckSelection.id === 'adv-headline' && (
+                                                <>
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.advHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.advHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.advHeadline_posX || 0, initY: activeDeckSlide?.advHeadline_posY || 0, target: 'text-advHeadline' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.advHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.advHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.advHeadline_posX || 0, initY: activeDeckSlide?.advHeadline_posY || 0, target: 'text-advHeadline' }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.advHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.advHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.advHeadline_posX || 0, initY: activeDeckSlide?.advHeadline_posY || 0, target: 'text-advHeadline' }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.advHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.advHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.advHeadline_posX || 0, initY: activeDeckSlide?.advHeadline_posY || 0, target: 'text-advHeadline' }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                </>
+                                              )}
+                                            </div>
+
+                                            {/* 4 Stepped / Staircase Glassmorphic Advantage Cards */}
+                                            <div className="flex flex-row items-end justify-between gap-3 md:gap-4 w-full h-[255px] md:h-[280px] pointer-events-auto z-20 pb-0.5 min-h-0">
+                                              {[
+                                                { id: 'adv-card-1', cardKey: 'adv1', titleKey: 'adv1Title', descKey: 'adv1Desc', iconKey: 'adv1Icon', bgKey: 'adv1Bg', shapeKey: 'adv1Shape', defTitle: 'EXPERT TEAM', defDesc: "Our skilled team brings specialized knowledge and experience to provide top-notch solutions tailored to our clients' needs.", defIcon: 'users', defBg: 'linear-gradient(180deg, #1e1f3b 0%, #0e1428 100%)', baseH: '155px', mdH: '170px' },
+                                                { id: 'adv-card-2', cardKey: 'adv2', titleKey: 'adv2Title', descKey: 'adv2Desc', iconKey: 'adv2Icon', bgKey: 'adv2Bg', shapeKey: 'adv2Shape', defTitle: 'CUTTING-EDGE TECHNOLOGY', defDesc: 'We use the latest tools and technology to stay ahead, ensuring efficient and effective services.', defIcon: 'cpu', defBg: 'linear-gradient(180deg, #2a1f48 0%, #151833 100%)', baseH: '185px', mdH: '205px' },
+                                                { id: 'adv-card-3', cardKey: 'adv3', titleKey: 'adv3Title', descKey: 'adv3Desc', iconKey: 'adv3Icon', bgKey: 'adv3Bg', shapeKey: 'adv3Shape', defTitle: 'CUSTOMER FOCUS', defDesc: "We prioritize building strong relationships and understanding our clients' needs, leading to long-term partnerships based on trust and satisfaction.", defIcon: 'target', defBg: 'linear-gradient(180deg, #6d4b94 0%, #2e2652 100%)', baseH: '220px', mdH: '240px' },
+                                                { id: 'adv-card-4', cardKey: 'adv4', titleKey: 'adv4Title', descKey: 'adv4Desc', iconKey: 'adv4Icon', bgKey: 'adv4Bg', shapeKey: 'adv4Shape', defTitle: 'PROVEN SUCCESS', defDesc: "With a track record of successful projects, we've earned a reputation for reliability and excellence, setting us apart from the competition.", defIcon: 'award', defBg: 'linear-gradient(180deg, #433261 0%, #1e1b38 100%)', baseH: '255px', mdH: '275px' }
+                                              ].map((cItem, cIdx) => {
+                                                const curTitle = activeDeckSlide?.[cItem.titleKey] || cItem.defTitle;
+                                                const curDesc = activeDeckSlide?.[cItem.descKey] || cItem.defDesc;
+                                                const curIcon = activeDeckSlide?.[cItem.iconKey] || cItem.defIcon;
+                                                const curBg = activeDeckSlide?.[cItem.bgKey] || cItem.defBg;
+                                                const curShape = activeDeckSlide?.[cItem.shapeKey] || '16px';
+                                                const isSelected = deckSelection.type === 'bento' && deckSelection.id === cItem.id;
+                                                const itemPosX = activeDeckSlide?.[cItem.cardKey + '_posX'] || 0;
+                                                const itemPosY = activeDeckSlide?.[cItem.cardKey + '_posY'] || 0;
+                                                const itemW = activeDeckSlide?.[cItem.cardKey + '_width'];
+                                                const itemH = activeDeckSlide?.[cItem.cardKey + '_height'];
+
+                                                return (
+                                                  <div
+                                                    key={cIdx}
+                                                    onPointerDown={(e) => {
+                                                      if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn') || e.target.getAttribute('contenteditable')) return;
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'bento', id: cItem.id });
+                                                      setDeckBentoDrag({
+                                                        isDragging: true,
+                                                        cardId: cItem.cardKey,
+                                                        startX: e.clientX,
+                                                        startY: e.clientY,
+                                                        origX: itemPosX,
+                                                        origY: itemPosY
+                                                      });
+                                                    }}
+                                                    onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: cItem.id }); }}
+                                                    style={{
+                                                      transform: `translate(${itemPosX}px, ${itemPosY}px)`,
+                                                      transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                      width: itemW ? `${itemW}px` : undefined,
+                                                      height: itemH ? `${itemH}px` : cItem.mdH,
+                                                      background: curBg,
+                                                      borderRadius: curShape,
+                                                      border: '1.2px solid rgba(255, 255, 255, 0.35)',
+                                                      boxShadow: '0 15px 35px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.3)',
+                                                      touchAction: 'none',
+                                                      cursor: 'grab'
+                                                    }}
+                                                    className={`flex-1 flex flex-col justify-start items-center text-center p-3 pt-5 md:pt-6 rounded-2xl relative group/card select-none min-w-0 ${isSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : 'hover:border-white/50 z-20'}`}
+                                                  >
+                                                    {/* Top Floating Circular Icon Badge */}
+                                                    <div
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActiveAdvIconPicker({ cardKey: cItem.cardKey, iconKey: cItem.iconKey });
+                                                      }}
+                                                      className="absolute -top-4 md:-top-5 left-1/2 -translate-x-1/2 w-8.5 h-8.5 md:w-10 md:h-10 rounded-full border-2 border-white/70 bg-gradient-to-b from-white/30 to-slate-950 shadow-xl flex items-center justify-center cursor-pointer hover:scale-110 transition-transform group/icon"
+                                                      title="Click to Change Icon"
+                                                    >
+                                                      <div className="text-white drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]">
+                                                        {renderSolutionIcon(curIcon, "w-4 h-4 md:w-5 md:h-5 text-white")}
+                                                      </div>
+                                                    </div>
+
+                                                    {/* Card Title */}
+                                                    <h3
+                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                      suppressContentEditableWarning
+                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, cItem.titleKey, e.currentTarget.textContent || '')}
+                                                      style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                      className="text-[10px] md:text-[11px] font-[900] uppercase tracking-wider text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 mb-1 leading-tight select-text w-full break-words text-center"
+                                                    >
+                                                      {curTitle}
+                                                    </h3>
+
+                                                    {/* Card Description */}
+                                                    <p
+                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                      suppressContentEditableWarning
+                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, cItem.descKey, e.currentTarget.textContent || '')}
+                                                      style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                      className="text-[8px] md:text-[9px] text-slate-300 font-normal leading-[1.3] text-center outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-0.5 select-text w-full break-words"
+                                                    >
+                                                      {curDesc}
+                                                    </p>
+
+                                                    {/* Card Floating Capsule Menu */}
+                                                    {isSelected && (
+                                                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                        <Sparkles size={11} className="text-cyan-400" />
+                                                        <span>Card {cIdx + 1}</span>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActiveAdvIconPicker({ cardKey: cItem.cardKey, iconKey: cItem.iconKey });
+                                                          }}
+                                                          className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                          <Award size={10} /> Icon
+                                                        </button>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActivePillShapePicker({ rowKey: cItem.cardKey, shapeKey: cItem.shapeKey });
+                                                          }}
+                                                          className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-violet-300 flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                          <Shapes size={10} /> Shape
+                                                        </button>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActivePillGradPicker({ rowKey: cItem.cardKey, bgKey: cItem.bgKey });
+                                                          }}
+                                                          className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                          <Palette size={10} /> Color
+                                                        </button>
+                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                        <button
+                                                          type="button"
+                                                          onPointerDown={(e) => {
+                                                            e.stopPropagation();
+                                                            updateDeckSlideFields(activeDeckSlide?.id, {
+                                                              [cItem.cardKey + '_posX']: 0,
+                                                              [cItem.cardKey + '_posY']: 0,
+                                                              [cItem.cardKey + '_width']: undefined,
+                                                              [cItem.cardKey + '_height']: undefined
+                                                            });
+                                                          }}
+                                                          className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                          title="Reset Position"
+                                                        >
+                                                          <RotateCcw size={11} />
+                                                        </button>
+                                                      </div>
+                                                    )}
+
+                                                    {/* 8 Resize Handles */}
+                                                    {isSelected && (
+                                                      <>
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + cItem.cardKey }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + cItem.cardKey }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + cItem.cardKey }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + cItem.cardKey }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + cItem.cardKey }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + cItem.cardKey }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + cItem.cardKey }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: itemW || Math.round(rect.width), initH: itemH || Math.round(rect.height), initX: itemPosX, initY: itemPosY, target: 'bento-' + cItem.cardKey }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                      </>
+                                                    )}
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+
+                                            {/* Interactive Icon Selector Popover Modal */}
+                                            {activeAdvIconPicker && (
+                                              <div
+                                                className="adv-icon-popover absolute z-[120] bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-3.5 w-[300px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onPointerDown={(e) => e.stopPropagation()}
+                                              >
+                                                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
+                                                  <span className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                                    <Sparkles size={12} className="text-cyan-400" /> Select Card Icon
+                                                  </span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setActiveAdvIconPicker(null)}
+                                                    className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                                                  >
+                                                    <X size={12} />
+                                                  </button>
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-1.5 max-h-[220px] overflow-y-auto thin-scrollbar p-1">
+                                                  {[
+                                                    { key: 'users', name: 'Team / Users', icon: Users },
+                                                    { key: 'cpu', name: 'Tech / CPU', icon: Cpu },
+                                                    { key: 'target', name: 'Focus / Target', icon: Target },
+                                                    { key: 'award', name: 'Award / USP', icon: Award },
+                                                    { key: 'shield-check', name: 'Verified Shield', icon: ShieldCheck },
+                                                    { key: 'sparkles', name: 'Sparkles / AI', icon: Sparkles },
+                                                    { key: 'zap', name: 'Fast / Zap', icon: Zap },
+                                                    { key: 'trending-up', name: 'Growth', icon: TrendingUp },
+                                                    { key: 'compass', name: 'Direction', icon: Compass },
+                                                    { key: 'star', name: 'Star Rating', icon: Star },
+                                                    { key: 'rocket', name: 'Launch / Speed', icon: Rocket },
+                                                    { key: 'lightbulb', name: 'Innovation', icon: Lightbulb },
+                                                    { key: 'layers', name: 'Architecture', icon: Layers },
+                                                    { key: 'activity', name: 'Performance', icon: Activity }
+                                                  ].map((ico) => {
+                                                    const IcoComp = ico.icon;
+                                                    const isSel = (activeDeckSlide?.[activeAdvIconPicker.iconKey] || 'award') === ico.key;
+                                                    return (
+                                                      <button
+                                                        key={ico.key}
+                                                        type="button"
+                                                        onClick={() => {
+                                                          updateDeckSlideField(activeDeckSlide?.id, activeAdvIconPicker.iconKey, ico.key);
+                                                          showToast(`Icon changed to ${ico.name}`);
+                                                          setActiveAdvIconPicker(null);
+                                                        }}
+                                                        className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                                                          isSel
+                                                            ? 'bg-violet-600/40 border-cyan-400 text-cyan-300 shadow-[0_0_10px_rgba(0,240,255,0.4)]'
+                                                            : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/15 hover:text-white'
+                                                        }`}
+                                                      >
+                                                        <IcoComp size={16} className="mb-1 text-cyan-300" />
+                                                        <span className="text-[8.5px] font-medium leading-tight truncate w-full">{ico.name.split(' ')[0]}</span>
+                                                      </button>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : layout === "Startup Competitor Analysis" || layout === "Startup Competitors" || layout === "Key Competitors Advantage" || activeDeckSlide?.title === "Key Competitors Advantage" || layout === "Competitor Analysis" || layout === "Competitors" ? (
                                           /* ── STARTUP COMPETITOR ANALYSIS TEMPLATE (REVERSE-ENGINEERED SLIDE 8) ── */
                                           <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-3 pb-2 md:px-8 md:pt-4 md:pb-2.5 overflow-hidden">
                                             
