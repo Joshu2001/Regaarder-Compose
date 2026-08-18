@@ -46906,7 +46906,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {/* Workspace background vignette effect overlay */}
                     <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(240,242,247,0.8)_100%)] z-0" />
 
-                    <div className="flex-1 flex flex-col min-w-0 relative z-10">
+                    <div className="flex-1 min-h-0 h-full flex flex-col min-w-0 relative z-10 overflow-hidden">
                       {/* Floating Sub-header Toolbar */}
                       <div className="mx-4 mt-2 mb-1.5 w-[calc(100%-2rem)] p-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-2 z-30 shrink-0 transition-all duration-200 overflow-visible relative">
                         {/* Top Row: Navigation Tabs & Collapse/Expand Toggle */}
