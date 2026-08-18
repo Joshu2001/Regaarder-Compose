@@ -38111,12 +38111,12 @@ Respond with a JSON array of slide objects matching the schema.`;
               </div>
             )}
 
-            {/* ── Sleek Sidebar Icon Rail (Positioned under toolbar, in front of scrollbar, revealed on hover) ──────────── */}
+            {/* ── Sleek Sidebar Icon Rail (Full length from top-0 to bottom-0, in front of scrollbar, revealed on hover) ──────────── */}
             {productMode !== 'landing' && productMode !== 'browser' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
               <div
                 onMouseEnter={handleRightSidebarMouseEnter}
                 onMouseLeave={handleRightSidebarMouseLeave}
-                className={`fixed right-0 top-[60px] bottom-0 z-[365] group/sidebar border-l border-slate-200/70 dark:border-zinc-800/80 bg-white/95 dark:bg-[#121216]/95 backdrop-blur-xl flex flex-col items-start px-2 py-3 gap-2 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] ${
+                className={`fixed right-0 top-0 bottom-0 h-full z-[365] group/sidebar border-l border-slate-200/70 dark:border-zinc-800/80 bg-white/95 dark:bg-[#121216]/95 backdrop-blur-xl flex flex-col items-start px-2 py-4 gap-2 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] ${
                   isRightSideHovered && !miniSidebarDismissed
                     ? 'translate-x-0 opacity-100 pointer-events-auto w-[58px] hover:w-[170px]'
                     : 'translate-x-full opacity-0 pointer-events-none w-[58px]'
