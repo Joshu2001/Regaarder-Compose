@@ -13469,6 +13469,104 @@ const DEFAULT_DECK_SLIDES = [
     white: '#ffffff'
   };
 
+  const applyDirectSelectionStyle = (styles = {}) => {
+    let range = getEditorSelectionRange();
+    if (!range && restoreSavedSelection()) {
+      range = getEditorSelectionRange();
+    }
+    if (!range && savedSelectionRef.current) {
+      range = savedSelectionRef.current;
+    }
+    if (!range) {
+      const bodyRoot = getActiveEditorRoot() || blankBodyRef.current;
+      bodyRoot?.focus();
+      range = getEditorSelectionRange();
+    }
+    if (!range) return false;
+
+    const activeSelection = window.getSelection();
+
+    if (styles.removeHighlight) {
+      const span = document.createElement('span');
+      span.style.backgroundColor = 'transparent';
+      try {
+        range.surroundContents(span);
+      } catch (_e) {
+        const frag = range.extractContents();
+        span.appendChild(frag);
+        range.insertNode(span);
+      }
+      span.querySelectorAll('mark, [style*="background"], [style*="background-color"]').forEach(el => {
+        el.style.backgroundColor = 'transparent';
+        if (el.tagName === 'MARK') {
+          const parent = el.parentNode;
+          while (el.firstChild) parent.insertBefore(el.firstChild, el);
+          parent.removeChild(el);
+        }
+      });
+      if (activeSelection) {
+        const nextRange = document.createRange();
+        nextRange.selectNodeContents(span);
+        activeSelection.removeAllRanges();
+        activeSelection.addRange(nextRange);
+        savedSelectionRef.current = nextRange.cloneRange();
+      }
+      if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+      return true;
+    }
+
+    if (styles.removeColor) {
+      const span = document.createElement('span');
+      span.style.color = 'inherit';
+      try {
+        range.surroundContents(span);
+      } catch (_e) {
+        const frag = range.extractContents();
+        span.appendChild(frag);
+        range.insertNode(span);
+      }
+      if (activeSelection) {
+        const nextRange = document.createRange();
+        nextRange.selectNodeContents(span);
+        activeSelection.removeAllRanges();
+        activeSelection.addRange(nextRange);
+        savedSelectionRef.current = nextRange.cloneRange();
+      }
+      if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+      return true;
+    }
+
+    const wrapper = document.createElement('span');
+    if (styles.color) wrapper.style.color = styles.color;
+    if (styles.backgroundColor) wrapper.style.backgroundColor = styles.backgroundColor;
+    if (styles.fontSize) wrapper.style.fontSize = `${styles.fontSize}px`;
+    if (styles.fontFamily) wrapper.style.fontFamily = styles.fontFamily;
+    if (styles.fontWeight) wrapper.style.fontWeight = styles.fontWeight;
+    if (styles.fontStyle) wrapper.style.fontStyle = styles.fontStyle;
+    if (styles.textDecoration) wrapper.style.textDecoration = styles.textDecoration;
+
+    try {
+      range.surroundContents(wrapper);
+    } catch (_err) {
+      const frag = range.extractContents();
+      wrapper.appendChild(frag);
+      range.insertNode(wrapper);
+    }
+
+    if (activeSelection) {
+      const nextRange = document.createRange();
+      nextRange.selectNodeContents(wrapper);
+      activeSelection.removeAllRanges();
+      activeSelection.addRange(nextRange);
+      savedSelectionRef.current = nextRange.cloneRange();
+    }
+
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
+    return true;
+  };
+
   const executeSelectionAiAction = async (actionType, customInstruction = '') => {
     const selText = selectedEditorTextRef.current || selectedEditorText || (typeof window !== 'undefined' ? window.getSelection()?.toString()?.trim() : '') || (savedSelectionRef.current ? savedSelectionRef.current.toString().trim() : '');
     if (!selText) {
@@ -13478,44 +13576,73 @@ const DEFAULT_DECK_SLIDES = [
 
     const rawInstruction = String(customInstruction || selectionAiPrompt || '').trim();
 
-    // 1. Direct Formatting & Styling Intent Detection
+    // 1. High-Precision Fuzzy & Negation Intent Engine
     if (actionType === 'custom' && rawInstruction) {
-      const lower = rawInstruction.toLowerCase();
+      // Normalize common user typos and spacing
+      let normalized = rawInstruction.toLowerCase()
+        .replace(/\bchnage\b/g, 'change')
+        .replace(/\bcolr\b|\bcolour\b|\bcollor\b/g, 'color')
+        .replace(/\bhilight\b|\bhighlite\b|\bhightlight\b/g, 'highlight')
+        .replace(/\btxt\b/g, 'text');
 
-      // Check text color intents: e.g. "change the color to red", "make it blue", "color: #ef4444"
-      const colorMatch = lower.match(/(?:(?:change|make|set|turn)\s+(?:the\s+)?(?:text|title|font|selection\s+)?(?:color|colour)?\s*(?:to|as|in)?\s+|color:\s*)(#[0-9a-f]{3,8}|[a-z]+)/i);
+      // Intent A: Remove Highlight / Background
+      if (/(?:remove|clear|strip|delete|no|without)\s+(?:the\s+)?(?:highlight|background|bg|mark)/i.test(normalized)) {
+        applyDirectSelectionStyle({ removeHighlight: true });
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast('Removed highlight');
+        return;
+      }
+
+      // Intent B: Remove / Reset Color
+      if (/(?:remove|clear|reset|default|no)\s+(?:the\s+)?(?:color|text\s*color)/i.test(normalized)) {
+        applyDirectSelectionStyle({ color: '#000000' });
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast('Reset text color');
+        return;
+      }
+
+      // Intent C: Apply Highlight / Background Color
+      const highlightMatch = normalized.match(/(?:(?:change|make|set|turn|add|apply)\s+)?(?:the\s+)?(?:highlight|background|bg)(?:\s+(?:color))?\s*(?:to|in|with|as)?\s*(#[0-9a-f]{3,8}|[a-z]+)/i)
+        || normalized.match(/([a-z]+)\s+highlight/i);
+
+      if (highlightMatch) {
+        const colorWord = highlightMatch[1].toLowerCase();
+        const hex = COLOR_PALETTE_LOOKUP[colorWord] || (colorWord.startsWith('#') ? colorWord : '#fef08a');
+        applyDirectSelectionStyle({ backgroundColor: hex });
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast(`Highlighted in ${colorWord}`);
+        return;
+      }
+
+      // Intent D: Apply Text Color (with typo & flexible phrasing support)
+      // Matches: "change the text color yellow", "change the text yellow", "make it red", "color blue", "yellow text"
+      const colorMatch = normalized.match(/(?:(?:change|make|set|turn|switch|apply)\s+)?(?:the\s+)?(?:text|font|title|selection)?\s*(?:color)?\s*(?:to|in|as)?\s*(#[0-9a-f]{3,8}|[a-z]+)(?:\s+(?:text|color))?/i);
       if (colorMatch) {
-        const requestedColor = colorMatch[1].toLowerCase();
-        const hex = COLOR_PALETTE_LOOKUP[requestedColor] || (requestedColor.startsWith('#') ? requestedColor : null);
-        if (hex) {
-          applyFormatCommand('foreColor', hex);
+        const colorWord = colorMatch[1].toLowerCase();
+        const hex = COLOR_PALETTE_LOOKUP[colorWord] || (colorWord.startsWith('#') ? colorWord : null);
+        if (hex && colorWord !== 'text' && colorWord !== 'font' && colorWord !== 'title') {
+          applyDirectSelectionStyle({ color: hex });
           setSelectionAiPopoverOpen(false);
           setSelectionActionMenu({ open: false, top: 0, left: 0 });
           setSelectionAiPrompt('');
-          showToast(`Applied color: ${requestedColor}`);
+          showToast(`Color changed to ${colorWord}`);
           return;
         }
       }
 
-      // Check highlight/background intents: e.g. "highlight in yellow", "background color yellow"
-      const highlightMatch = lower.match(/(?:highlight|background)(?:\s+(?:color|colour))?\s*(?:to|in|with|as)?\s*(#[0-9a-f]{3,8}|[a-z]+)/i);
-      if (highlightMatch) {
-        const requestedColor = highlightMatch[1].toLowerCase();
-        const hex = COLOR_PALETTE_LOOKUP[requestedColor] || (requestedColor.startsWith('#') ? requestedColor : '#fef08a');
-        applyFormatCommand('hiliteColor', hex);
-        setSelectionAiPopoverOpen(false);
-        setSelectionActionMenu({ open: false, top: 0, left: 0 });
-        setSelectionAiPrompt('');
-        showToast(`Applied highlight: ${requestedColor}`);
-        return;
-      }
-
-      // Check font size intents: e.g. "change font size to 24", "make it 28px", "size 20"
-      const sizeMatch = lower.match(/(?:(?:font|text)?\s*size\s*(?:to|of)?\s*|make\s+it\s+)(\d{1,2})(?:px|pt)?/i);
+      // Intent E: Font Size
+      const sizeMatch = normalized.match(/(?:(?:font|text)?\s*size\s*(?:to|of)?\s*|make\s+it\s+)(\d{1,2})(?:px|pt)?/i);
       if (sizeMatch) {
         const nextSize = Number(sizeMatch[1]);
         if (nextSize >= 10 && nextSize <= 72) {
-          applyFormatCommand('fontSize', String(nextSize));
+          applyDirectSelectionStyle({ fontSize: nextSize });
+          setActiveFontSize(nextSize);
           setSelectionAiPopoverOpen(false);
           setSelectionActionMenu({ open: false, top: 0, left: 0 });
           setSelectionAiPrompt('');
@@ -13524,12 +13651,13 @@ const DEFAULT_DECK_SLIDES = [
         }
       }
 
-      // Check font family intents: e.g. "change font to Manrope", "font: Inter"
-      const fontMatch = lower.match(/(?:change\s+)?font(?:\s+to|:)?\s+([a-z\s]+)/i);
+      // Intent F: Font Family
+      const fontMatch = normalized.match(/(?:change\s+)?font(?:\s+to|:)?\s+([a-z\s]+)/i);
       if (fontMatch) {
         const foundFont = fontOptions.find(f => f.toLowerCase() === fontMatch[1].trim().toLowerCase());
         if (foundFont) {
-          applyFormatCommand('fontName', foundFont);
+          applyDirectSelectionStyle({ fontFamily: resolveFontFamily(foundFont) });
+          setEditorFont(foundFont);
           setSelectionAiPopoverOpen(false);
           setSelectionActionMenu({ open: false, top: 0, left: 0 });
           setSelectionAiPrompt('');
@@ -13538,8 +13666,8 @@ const DEFAULT_DECK_SLIDES = [
         }
       }
 
-      // Check basic styling intents: bold, italic, underline, strike
-      if (/\b(bold|make\s+it\s+bold|make\s+bold)\b/i.test(lower)) {
+      // Intent G: Quick Formatting
+      if (/\b(bold|make\s+it\s+bold|make\s+bold)\b/i.test(normalized)) {
         applyFormatCommand('bold');
         setSelectionAiPopoverOpen(false);
         setSelectionActionMenu({ open: false, top: 0, left: 0 });
@@ -13547,7 +13675,7 @@ const DEFAULT_DECK_SLIDES = [
         showToast('Applied Bold');
         return;
       }
-      if (/\b(italic|italicize|make\s+it\s+italic)\b/i.test(lower)) {
+      if (/\b(italic|italicize|make\s+it\s+italic)\b/i.test(normalized)) {
         applyFormatCommand('italic');
         setSelectionAiPopoverOpen(false);
         setSelectionActionMenu({ open: false, top: 0, left: 0 });
@@ -13555,7 +13683,7 @@ const DEFAULT_DECK_SLIDES = [
         showToast('Applied Italic');
         return;
       }
-      if (/\b(underline|make\s+it\s+underlined?)\b/i.test(lower)) {
+      if (/\b(underline|make\s+it\s+underlined?)\b/i.test(normalized)) {
         applyFormatCommand('underline');
         setSelectionAiPopoverOpen(false);
         setSelectionActionMenu({ open: false, top: 0, left: 0 });
@@ -13563,7 +13691,7 @@ const DEFAULT_DECK_SLIDES = [
         showToast('Applied Underline');
         return;
       }
-      if (/\b(strike|strikethrough|cross\s+out)\b/i.test(lower)) {
+      if (/\b(strike|strikethrough|cross\s+out)\b/i.test(normalized)) {
         applyFormatCommand('strikeThrough');
         setSelectionAiPopoverOpen(false);
         setSelectionActionMenu({ open: false, top: 0, left: 0 });
@@ -13571,64 +13699,9 @@ const DEFAULT_DECK_SLIDES = [
         showToast('Applied Strikethrough');
         return;
       }
-
-      // Check text alignment intents
-      if (/\b(align\s+center|center\s+text|center\s+align)\b/i.test(lower)) {
-        applyFormatCommand('justifyCenter');
-        setSelectionAiPopoverOpen(false);
-        setSelectionActionMenu({ open: false, top: 0, left: 0 });
-        setSelectionAiPrompt('');
-        showToast('Centered text');
-        return;
-      }
-      if (/\b(align\s+right|right\s+align)\b/i.test(lower)) {
-        applyFormatCommand('justifyRight');
-        setSelectionAiPopoverOpen(false);
-        setSelectionActionMenu({ open: false, top: 0, left: 0 });
-        setSelectionAiPrompt('');
-        showToast('Right-aligned text');
-        return;
-      }
-      if (/\b(align\s+left|left\s+align)\b/i.test(lower)) {
-        applyFormatCommand('justifyLeft');
-        setSelectionAiPopoverOpen(false);
-        setSelectionActionMenu({ open: false, top: 0, left: 0 });
-        setSelectionAiPrompt('');
-        showToast('Left-aligned text');
-        return;
-      }
-
-      // Check case transform intents
-      if (/\b(uppercase|all\s+caps|capital\s+letters)\b/i.test(lower)) {
-        const transformed = selText.toUpperCase();
-        injectIntoSavedSelection(transformed, { injectAsHtml: false });
-        setSelectionAiPopoverOpen(false);
-        setSelectionActionMenu({ open: false, top: 0, left: 0 });
-        setSelectionAiPrompt('');
-        showToast('Transformed to UPPERCASE');
-        return;
-      }
-      if (/\b(lowercase|all\s+lowercase)\b/i.test(lower)) {
-        const transformed = selText.toLowerCase();
-        injectIntoSavedSelection(transformed, { injectAsHtml: false });
-        setSelectionAiPopoverOpen(false);
-        setSelectionActionMenu({ open: false, top: 0, left: 0 });
-        setSelectionAiPrompt('');
-        showToast('Transformed to lowercase');
-        return;
-      }
-      if (/\b(title\s*case|capitalize\s+words?)\b/i.test(lower)) {
-        const transformed = selText.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-        injectIntoSavedSelection(transformed, { injectAsHtml: false });
-        setSelectionAiPopoverOpen(false);
-        setSelectionActionMenu({ open: false, top: 0, left: 0 });
-        setSelectionAiPrompt('');
-        showToast('Transformed to Title Case');
-        return;
-      }
     }
 
-    // 2. Full LLM Transformation Engine with HTML & Styling Support
+    // 2. Full LLM Transformation Engine with Strict Output Sanitization
     setSelectionAiLoading(true);
     let prompt = '';
 
@@ -13651,12 +13724,21 @@ const DEFAULT_DECK_SLIDES = [
     try {
       const response = await callGemini({
         userPrompt: prompt,
-        systemPrompt: 'You are the executive writing assistant for Regaarder Compose. Fulfill the user instruction on the provided text directly in clean Markdown or HTML inline styles without wrapping your output in unnecessary quotes or conversational chit-chat.',
+        systemPrompt: 'You are the executive writing assistant for Regaarder Compose. Return ONLY the directly transformed text. Do NOT wrap output in markdown code fences (```html). Do NOT include conversational greetings or explanations.',
       });
 
       let resText = String(response?.text || '').trim();
-      
-      // Clean leading/trailing quotes if the original selection did not have quotes
+
+      // 1. Strip markdown code fences (e.g. ```html ... ```)
+      resText = resText.replace(/^```(?:html|markdown|text|json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
+      // 2. Strip stray leading "html\n"
+      resText = resText.replace(/^html\s*\n/i, '').trim();
+
+      // 3. Strip conversational chit-chat prefixes
+      resText = resText.replace(/^(?:(?:Okay|Sure|Certainly|Of course|Here is|Here's|I have|I've|I'd be happy to)[^:\n]*:?\s*)+/i, '').trim();
+
+      // 4. Strip unwanted enclosing quotation marks
       if (!selText.startsWith('"') && resText.startsWith('"') && resText.endsWith('"') && resText.length > 2) {
         resText = resText.slice(1, -1).trim();
       }
@@ -31872,6 +31954,20 @@ Respond with a JSON array of slide objects matching the schema.`;
         }
       }
       if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+      return;
+    }
+
+    if (command === 'foreColor') {
+      applyDirectSelectionStyle({ color: value || '#000000' });
+      return;
+    }
+
+    if (command === 'hiliteColor') {
+      if (!value || value === 'transparent') {
+        applyDirectSelectionStyle({ removeHighlight: true });
+      } else {
+        applyDirectSelectionStyle({ backgroundColor: value });
+      }
       return;
     }
 
