@@ -8181,6 +8181,75 @@ function AppCore() {
   const [dmChannelInputValue, setDmChannelInputValue] = useState('');
   const [dmAiChatOpen, setDmAiChatOpen] = useState(false);
   const [dmAiChatInput, setDmAiChatInput] = useState('');
+  const [composeSelectedModel, setComposeSelectedModel] = useState({
+    id: 'gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
+    provider: 'Cloud',
+    isLocal: false,
+    endpoint: null
+  });
+  const [composeDetectedModels, setComposeDetectedModels] = useState([]);
+  const [composeIsScanning, setComposeIsScanning] = useState(false);
+  const [composeModelPickerOpen, setComposeModelPickerOpen] = useState(false);
+
+  // Universal Local Model Scanner for Compose AI (Docs, Sheets, Decks)
+  const scanComposeLocalModels = useCallback(async () => {
+    setComposeIsScanning(true);
+    const endpointsToProbe = [
+      { url: 'http://127.0.0.1:11434/api/tags', provider: 'Ollama', base: 'http://127.0.0.1:11434' },
+      { url: 'http://localhost:11434/api/tags', provider: 'Ollama', base: 'http://localhost:11434' },
+      { url: 'http://127.0.0.1:1234/v1/models', provider: 'LM Studio', base: 'http://127.0.0.1:1234/v1' },
+      { url: 'http://localhost:1234/v1/models', provider: 'LM Studio', base: 'http://localhost:1234/v1' },
+      { url: 'http://127.0.0.1:8080/v1/models', provider: 'llama.cpp', base: 'http://127.0.0.1:8080/v1' }
+    ];
+
+    let found = [];
+    for (const probe of endpointsToProbe) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 1200);
+        const res = await fetch(probe.url, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.models && Array.isArray(data.models)) {
+            data.models.forEach(m => {
+              found.push({
+                id: m.name,
+                name: m.name,
+                provider: probe.provider,
+                endpoint: probe.base,
+                isLocal: true,
+                sizeGB: m.size ? (m.size / (1024 * 1024 * 1024)).toFixed(1) : null
+              });
+            });
+          } else if (data.data && Array.isArray(data.data)) {
+            data.data.forEach(m => {
+              found.push({
+                id: m.id,
+                name: m.id.replace(/\.gguf$/i, ''),
+                provider: probe.provider,
+                endpoint: probe.base,
+                isLocal: true
+              });
+            });
+          }
+        }
+      } catch (e) {
+        // Probe offline, continue next
+      }
+    }
+
+    setComposeDetectedModels(found);
+    setComposeIsScanning(false);
+    if (found.length > 0) {
+      setComposeSelectedModel(found[0]);
+    }
+  }, []);
+
+  useEffect(() => {
+    scanComposeLocalModels();
+  }, [scanComposeLocalModels]);
   
   // Presentation Wizard states
   const [presentationWizardOpen, setPresentationWizardOpen] = useState(false);
@@ -40267,7 +40336,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       }
 
       const tempAssistantId = `dm-ai-assistant-loading-${now}`;
-      const loadingMessage = { id: tempAssistantId, role: 'assistant', text: 'Thinking...' };
+      const loadingMessage = { id: tempAssistantId, role: 'assistant', text: `Thinking with ${composeSelectedModel.name}...` };
       
       setDmAgentHistories((prev) => ({
         ...prev,
@@ -40299,62 +40368,103 @@ Respond with a JSON array of slide objects matching the schema.`;
         }
 
         if (routedAgent.includes('Presentation')) {
-          systemPrompt = `You are the Presentation Agent for Regaarder Compose. You specialize in converting document drafts into structured visual slide decks using React.
-When asked to convert the document or generate slides, reply that you are launching the document-to-slide converter, and append a structured action JSON block at the very end of your message in exactly this format:
+          systemPrompt = `You are the Presentation Agent for Regaarder Compose. You specialize in creating and modifying slide decks.
+When asked to convert the document or generate slides, reply that you are launching the slide generator and append:
 [ACTION: {"type": "convert_to_deck"}]`;
         } else if (routedAgent.includes('Marketing')) {
-          systemPrompt = `You are the Marketing Agent for Regaarder Compose. Specialized in copy editing and branding.
-Return direct, concise marketing suggestions.`;
+          systemPrompt = `You are the Marketing Agent for Regaarder Compose. Specialized in copy editing, executive positioning, and branding.`;
         } else if (routedAgent.includes('Analyst')) {
-          systemPrompt = `You are the Data Analyst Agent. You analyze tabular data, spreadsheets, and files. 
-If requested to draw a chart or graph, do NOT generate raw SVG or HTML tags. Instead, append a structured action JSON block at the very end of your message in exactly this format:
+          systemPrompt = `You are the Data Analyst Agent. You analyze tabular data, spreadsheets, and files.
+If requested to draw a chart or graph, append a structured action JSON block:
 [ACTION: {"type": "insert_chart", "chartType": "bar", "labels": ["Jan", "Feb", "Mar"], "data": [45, 60, 85]}]`;
         } else if (routedAgent.includes('Research')) {
-          systemPrompt = `You are the Research Agent. You lookup information, search context, and generate detailed reports.`;
+          systemPrompt = `You are the Research Agent. You lookup information, synthesize citations, and generate detailed reports.`;
         } else {
-          systemPrompt = `You are Orb, the central workspace coordinator. Assist the user with navigating documents, tracking tasks, and scheduling.
-You can recommend task creations on the board.`;
+          systemPrompt = `You are Orb, the central workspace coordinator across Docs, Decks, and Sheets. Assist the user with creating content, tracking decisions, and executing tasks.`;
         }
 
-        const response = await fetch('/api/gemini', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userPrompt: `${text}${documentContext}`,
-            systemPrompt
-          })
-        });
-        
-        const result = await response.json();
-        
-        if (result.ok && result.text) {
-          let replyText = result.text.trim();
-          
-          handleAgentActionTriggers(routedAgent, text, replyText);
+        let replyText = '';
 
-          // Add visual routed routing badge if Orb forwarded the request
-          if (activeAiAgent === 'Orb (AI Assistant)' && routedAgent !== 'Orb (AI Assistant)') {
-            replyText = `*(Routed to ${routedAgent})*\n\n${replyText}`;
-          }
+        // Check if user selected a Local LLM (Ollama / LM Studio / llama.cpp)
+        if (composeSelectedModel.isLocal && composeSelectedModel.endpoint) {
+          const isOllama = composeSelectedModel.provider === 'Ollama' || composeSelectedModel.endpoint.includes('11434');
+          const targetUrl = isOllama
+            ? `${composeSelectedModel.endpoint.replace(/\/v1$/, '')}/api/chat`
+            : `${composeSelectedModel.endpoint.endsWith('/v1') ? composeSelectedModel.endpoint : composeSelectedModel.endpoint + '/v1'}/chat/completions`;
 
-          setDmAgentHistories((prev) => {
-            const currentHistory = prev[activeAiAgent] || [];
-            const filtered = currentHistory.filter(msg => msg.id !== tempAssistantId);
-            return {
-              ...prev,
-              [activeAiAgent]: [...filtered, { id: `dm-ai-assistant-${Date.now()}`, role: 'assistant', text: replyText }]
-            };
+          const requestBody = isOllama
+            ? {
+                model: composeSelectedModel.id,
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: `${text}${documentContext}` }
+                ],
+                stream: false
+              }
+            : {
+                model: composeSelectedModel.id || 'default',
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: `${text}${documentContext}` }
+                ],
+                stream: false
+              };
+
+          const localRes = await fetch(targetUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
           });
 
-          // Log event to Workspace Memory Decision Graph
-          addWorkspaceMemory(
-            `Orb coordinator processed query: "${text.substring(0, 30)}..."`,
-            routedAgent !== 'Orb (AI Assistant)' ? `Orb ??${routedAgent.split(' ')[0]}` : 'Orb Assistant',
-            ["AI Chat"]
-          );
+          if (!localRes.ok) throw new Error(`Local LLM error: HTTP ${localRes.status}`);
+          const localData = await localRes.json();
+
+          if (isOllama && localData.message?.content) {
+            replyText = localData.message.content.trim();
+          } else if (localData.choices?.[0]?.message?.content) {
+            replyText = localData.choices[0].message.content.trim();
+          } else {
+            replyText = JSON.stringify(localData);
+          }
         } else {
-          throw new Error(result.error || 'Gemini error');
+          // Cloud Fallback (Gemini)
+          const response = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userPrompt: `${text}${documentContext}`,
+              systemPrompt
+            })
+          });
+          
+          const result = await response.json();
+          if (result.ok && result.text) {
+            replyText = result.text.trim();
+          } else {
+            throw new Error(result.error || 'Gemini error');
+          }
         }
+        
+        handleAgentActionTriggers(routedAgent, text, replyText);
+
+        if (activeAiAgent === 'Orb (AI Assistant)' && routedAgent !== 'Orb (AI Assistant)') {
+          replyText = `*(Routed to ${routedAgent})*\n\n${replyText}`;
+        }
+
+        setDmAgentHistories((prev) => {
+          const currentHistory = prev[activeAiAgent] || [];
+          const filtered = currentHistory.filter(msg => msg.id !== tempAssistantId);
+          return {
+            ...prev,
+            [activeAiAgent]: [...filtered, { id: `dm-ai-assistant-${Date.now()}`, role: 'assistant', text: replyText, modelTag: composeSelectedModel.name }]
+          };
+        });
+
+        addWorkspaceMemory(
+          `Orb (${composeSelectedModel.name}) processed: "${text.substring(0, 30)}..."`,
+          routedAgent !== 'Orb (AI Assistant)' ? `Orb ??${routedAgent.split(' ')[0]}` : 'Orb Assistant',
+          ["AI Chat"]
+        );
       } catch (err) {
         console.error('Agent chat failed:', err);
         setDmAgentHistories((prev) => {
@@ -41006,10 +41116,81 @@ You can recommend task creations on the board.`;
 
             {dmAiChatOpen && (
               <div className="mx-6 mb-3 rounded-2xl border border-violet-200 bg-white shadow-[0_14px_36px_-24px_rgba(109,40,217,0.45)] overflow-hidden">
-                <div className="h-10 px-3 border-b border-violet-100 bg-violet-50/60 flex items-center justify-between">
-                  <div className="text-xs font-semibold text-violet-700 flex items-center gap-1.5">
-                    <Sparkles size={12} className="text-violet-500" />
-                    <span>{activeAiAgent}</span>
+                <div className="h-10 px-3 border-b border-violet-100 bg-violet-50/60 flex items-center justify-between relative">
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs font-semibold text-violet-700 flex items-center gap-1.5">
+                      <Sparkles size={12} className="text-violet-500" />
+                      <span>{activeAiAgent}</span>
+                    </div>
+
+                    {/* Universal Model Selector Pill */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setComposeModelPickerOpen(!composeModelPickerOpen)}
+                        className="px-2 py-0.5 rounded-full bg-violet-100 hover:bg-violet-200 text-violet-800 text-[10.5px] font-semibold flex items-center gap-1 border border-violet-300 shadow-sm transition-all"
+                        title="Select Local Ollama, LM Studio, or Cloud AI Engine"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>{composeSelectedModel.name}</span>
+                        <ChevronDown size={10} className="text-violet-600" />
+                      </button>
+
+                      {composeModelPickerOpen && (
+                        <div className="absolute top-7 left-0 w-64 bg-zinc-900 text-zinc-100 border border-white/20 rounded-xl shadow-2xl p-2 z-50 backdrop-blur-xl">
+                          <div className="flex items-center justify-between px-2 py-1 border-b border-white/10 mb-1">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">AI Model Engine</span>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); scanComposeLocalModels(); }}
+                              disabled={composeIsScanning}
+                              className="text-[9.5px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-0.5"
+                            >
+                              <RotateCcw size={9} className={composeIsScanning ? 'animate-spin' : ''} />
+                              <span>{composeIsScanning ? 'Scanning...' : 'Rescan'}</span>
+                            </button>
+                          </div>
+
+                          {/* Local Detected Models */}
+                          {composeDetectedModels.length > 0 && (
+                            <div className="mb-2">
+                              <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest px-2 block mb-1">⚡ Local Daemons</span>
+                              {composeDetectedModels.map((m, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => { setComposeSelectedModel(m); setComposeModelPickerOpen(false); showToast(`Switched to local ${m.name}`); }}
+                                  className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${composeSelectedModel.id === m.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
+                                >
+                                  <span className="truncate">{m.name}</span>
+                                  <span className="text-[9px] text-emerald-400/80 font-mono">{m.provider}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Cloud Models */}
+                          <div>
+                            <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-widest px-2 block mb-1">☁️ Cloud LLMs</span>
+                            {[
+                              { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google Cloud', isLocal: false },
+                              { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', isLocal: false },
+                              { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', isLocal: false }
+                            ].map((cM, cIdx) => (
+                              <button
+                                key={cIdx}
+                                type="button"
+                                onClick={() => { setComposeSelectedModel(cM); setComposeModelPickerOpen(false); showToast(`Switched to ${cM.name}`); }}
+                                className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${composeSelectedModel.id === cM.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
+                              >
+                                <span>{cM.name}</span>
+                                <span className="text-[9px] text-cyan-400/80 font-mono">{cM.provider}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button

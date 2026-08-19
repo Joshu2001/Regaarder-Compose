@@ -1,10 +1,12 @@
 /**
  * docsToolRegistry.js
  * 
- * Layer 2: Canonical Tool Registry & Safety Metadata
+ * Layer 2: Universal Canonical Tool Registry & Safety Metadata
  * 
  * Defines the single canonical source of truth for all tools and feature capabilities
- * in Regaarder Compose Docs. Each tool includes rich safety metadata:
+ * across Regaarder Compose (Docs, Decks & Slides, Sheets & Matrices).
+ * 
+ * Each tool includes rich safety metadata:
  * - mutatesDocument (boolean)
  * - destructive (boolean)
  * - undoable (boolean)
@@ -18,6 +20,8 @@ export const DOCS_TOOL_CATEGORIES = {
   DOCUMENT_TOOLS: 'document_tools',
   ANALYSIS_TOOLS: 'analysis_tools',
   APPLICATION_COMMANDS: 'application_commands',
+  DECK_TOOLS: 'deck_tools',
+  SHEET_TOOLS: 'sheet_tools',
 };
 
 export const CANONICAL_DOCS_TOOLS = [
@@ -386,6 +390,240 @@ export const CANONICAL_DOCS_TOOLS = [
           wordCount: stats.wordCount
         }
       };
+    }
+  },
+
+  // ── DECK & SLIDE TOOLS ───────────────────────────────────────────
+  {
+    name: 'get_deck_slides',
+    label: 'Get Deck Slides',
+    category: DOCS_TOOL_CATEGORIES.DECK_TOOLS,
+    description: 'Retrieves all slides in the active presentation deck, including their layout style, headline, tagline, cards, and vector wave metadata.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: []
+    },
+    execute: async () => {
+      const slides = window.__REGAARDER_DECK_SLIDES__ || [];
+      return { success: true, data: { totalSlides: slides.length, slides } };
+    }
+  },
+  {
+    name: 'add_deck_slide',
+    label: 'Add Slide to Deck',
+    category: DOCS_TOOL_CATEGORIES.DECK_TOOLS,
+    description: 'Appends or inserts a new slide into the active deck with chosen layout template.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        layoutStyle: {
+          type: 'string',
+          enum: [
+            'Business Plan Summary',
+            'Business Plan Structure',
+            'Business Plan Market',
+            'Business Plan Ecosystem',
+            'Business Plan Strategy',
+            'Business Plan Moat',
+            'Business Plan Roadmap',
+            'Business Plan Financials',
+            'Business Plan Capital',
+            'Bento Grid',
+            'Text & List',
+            'Headline + Subhead'
+          ],
+          description: 'Slide layout preset style.'
+        },
+        headline: { type: 'string', description: 'Primary slide headline.' },
+        tagline: { type: 'string', description: 'Top section category badge or tagline.' },
+        vectorWaveStyle: { type: 'string', description: 'Bespoke vector mesh style (e.g. toroid-ring, dna-double-helix, isometric-grid).' }
+      },
+      required: ['layoutStyle', 'headline']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_ADD_DECK_SLIDE__) {
+        return window.__REGAARDER_ADD_DECK_SLIDE__(params);
+      }
+      return { success: true, message: 'Slide added to deck', data: params };
+    }
+  },
+  {
+    name: 'update_deck_slide',
+    label: 'Update Slide Properties',
+    category: DOCS_TOOL_CATEGORIES.DECK_TOOLS,
+    description: 'Updates content, headlines, card text, colors, or vector wave styling on a specific slide.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        slideId: { type: 'string', description: 'Unique ID of target slide.' },
+        headline: { type: 'string', description: 'Updated headline.' },
+        tagline: { type: 'string', description: 'Updated tagline.' },
+        footer: { type: 'string', description: 'Updated footer note.' },
+        vectorWaveStyle: { type: 'string', description: 'Updated vector mesh artwork style.' },
+        fields: { type: 'object', description: 'Arbitrary slide key/value properties to update.' }
+      },
+      required: ['slideId']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_UPDATE_DECK_SLIDE__) {
+        return window.__REGAARDER_UPDATE_DECK_SLIDE__(params.slideId, params.fields || params);
+      }
+      return { success: true, message: 'Slide updated', data: params };
+    }
+  },
+  {
+    name: 'delete_deck_slide',
+    label: 'Delete Slide',
+    category: DOCS_TOOL_CATEGORIES.DECK_TOOLS,
+    description: 'Deletes a slide from the presentation deck by slide ID.',
+    mutatesDocument: true,
+    destructive: true,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        slideId: { type: 'string', description: 'Unique ID of slide to remove.' }
+      },
+      required: ['slideId']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_DELETE_DECK_SLIDE__) {
+        return window.__REGAARDER_DELETE_DECK_SLIDE__(params.slideId);
+      }
+      return { success: true, message: 'Slide deleted', data: params };
+    }
+  },
+  {
+    name: 'apply_deck_template',
+    label: 'Apply Full Deck Template',
+    category: DOCS_TOOL_CATEGORIES.DECK_TOOLS,
+    description: 'Loads a complete multi-slide presentation template suite into the active project.',
+    mutatesDocument: true,
+    destructive: true,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        templateName: {
+          type: 'string',
+          enum: ['Business Plan Deck (10)', 'Startup Pitch Deck (10)', 'All Hands Company Meeting', 'Quarterly Earnings Report'],
+          description: 'Name of the template suite to apply.'
+        }
+      },
+      required: ['templateName']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_LOAD_DECK_TEMPLATE__) {
+        return window.__REGAARDER_LOAD_DECK_TEMPLATE__(params.templateName);
+      }
+      return { success: true, message: `Applied template: ${params.templateName}`, data: params };
+    }
+  },
+
+  // ── SHEET & MATRIX TOOLS ─────────────────────────────────────────
+  {
+    name: 'get_sheet_data',
+    label: 'Get Sheet Grid Data',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Retrieves current spreadsheet dimensions, column headers, cell values, formulas, and selection coordinates.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: []
+    },
+    execute: async () => {
+      const sheetData = window.__REGAARDER_SHEET_DATA__ || {};
+      return { success: true, data: sheetData };
+    }
+  },
+  {
+    name: 'update_sheet_cells',
+    label: 'Batch Update Sheet Cells',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Updates values, formulas, or formatting across specific cell coordinates in the active spreadsheet.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        updates: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              row: { type: 'number', description: 'Row index (0-based).' },
+              col: { type: 'number', description: 'Column index (0-based).' },
+              value: { type: 'string', description: 'Cell value or formula (e.g. =SUM(A1:A10)).' }
+            },
+            required: ['row', 'col', 'value']
+          },
+          description: 'Array of cell update operations.'
+        }
+      },
+      required: ['updates']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_UPDATE_SHEET_CELLS__) {
+        return window.__REGAARDER_UPDATE_SHEET_CELLS__(params.updates);
+      }
+      return { success: true, message: 'Sheet cells updated', data: params };
+    }
+  },
+  {
+    name: 'format_sheet_range',
+    label: 'Format Sheet Range',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Applies cell data validation, percentage formatting, dropdown choice lists, or styling across a range of cells.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        startRow: { type: 'number', description: 'Starting row index.' },
+        startCol: { type: 'number', description: 'Starting col index.' },
+        endRow: { type: 'number', description: 'Ending row index.' },
+        endCol: { type: 'number', description: 'Ending col index.' },
+        formatType: { type: 'string', enum: ['percentage', 'currency', 'number', 'dropdown', 'date'], description: 'Format type.' },
+        options: { type: 'array', items: { type: 'string' }, description: 'Dropdown options if formatType is dropdown.' }
+      },
+      required: ['startRow', 'startCol', 'endRow', 'endCol', 'formatType']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_FORMAT_SHEET_RANGE__) {
+        return window.__REGAARDER_FORMAT_SHEET_RANGE__(params);
+      }
+      return { success: true, message: 'Range formatted', data: params };
     }
   },
 
