@@ -27617,7 +27617,11 @@ Return ONLY valid JSON matching the schema.`;
     const forceDocBuild = Boolean(options.forceDocBuild);
     const suppressChatEcho = Boolean(options.suppressChatEcho);
     const requestedFormat = options.composeFormat || 'Auto (Compose decides)';
-    const shouldBuildDocument = forceDocBuild || source === 'compose';
+    
+    // Strict Guard: Identify informational, Q&A, review, or summarization queries
+    const isQueryOrSummary = /\b(summarize|summary|explain|what\s+is|what\s+are|review|analyze|analysis|insights?|tell\s+me|how\s+many|key\s+takeaways?|overview|details?|read|extract|audit)\b/i.test(promptText);
+    
+    const shouldBuildDocument = !isQueryOrSummary && (forceDocBuild || source === 'compose');
     const selectionScoped = Boolean(options.selectionScoped);
     const smartActionKey = String(options.smartActionKey || '').toLowerCase();
     const preferredDocType = resolveDocTypeFromComposeFormat(requestedFormat);
@@ -27629,8 +27633,8 @@ Return ONLY valid JSON matching the schema.`;
       ? `Target ${requestedTone} tone and around ${requestedLengthValue} ${requestedLengthMode}.`
       : 'No explicit length limit was requested. Choose the natural length needed to complete the idea fully, and continue onto additional pages if necessary.';
     const requestAttachments = Array.isArray(options.attachments) ? options.attachments : [];
-    const isExplicitDeckCreation = Boolean(
-      source === 'compose' ||
+    
+    const isExplicitDeckCreation = !isQueryOrSummary && Boolean(
       smartActionKey === 'deck' ||
       /^\/deck\b/i.test(promptText) ||
       /\b(create|generate|make|build|convert\s+to|produce|design)\s+(a\s+)?(new\s+)?(deck|presentation|slides|pitch\s+deck)\b/i.test(promptText)
@@ -27650,7 +27654,7 @@ Return ONLY valid JSON matching the schema.`;
       lengthValue: requestedLengthValue,
     });
 
-    if (source === 'compose' && !options.skipCommandEngine) {
+    if (source === 'compose' && !options.skipCommandEngine && !isQueryOrSummary) {
       const selectionText = savedSelectionRef.current ? savedSelectionRef.current.toString().trim() : '';
       const tables = extractTablesFromEditor();
       
@@ -27697,7 +27701,7 @@ Return ONLY valid JSON matching the schema.`;
     else if (lowerPrompt.includes('icon') || lowerPrompt.includes('emoji')) detectedBlockType = 'icon';
     else if (lowerPrompt.includes('shape') || lowerPrompt.includes('rectangle') || lowerPrompt.includes('circle') || lowerPrompt.includes('triangle') || lowerPrompt.includes('diamond')) detectedBlockType = 'shapes';
 
-    if (source === 'compose' && detectedBlockType) {
+    if (source === 'compose' && detectedBlockType && !isQueryOrSummary) {
       const selection = window.getSelection();
       let range = getEditorSelectionRange();
       if (!range && restoreSavedSelection()) {
