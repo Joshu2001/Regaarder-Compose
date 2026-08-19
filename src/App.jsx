@@ -13433,6 +13433,67 @@ const DEFAULT_DECK_SLIDES = [
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [showSelectionPromptCard, setShowSelectionPromptCard] = useState(false);
   const [selectionActionMenu, setSelectionActionMenu] = useState({ open: false, left: 0, top: 0 });
+  const [selectionAiPopoverOpen, setSelectionAiPopoverOpen] = useState(false);
+  const [selectionAiPrompt, setSelectionAiPrompt] = useState('');
+  const [selectionAiLoading, setSelectionAiLoading] = useState(false);
+  const [selectionAiTranslateLang, setSelectionAiTranslateLang] = useState('French');
+
+  const executeSelectionAiAction = async (actionType, customInstruction = '') => {
+    const selText = selectedEditorTextRef.current || selectedEditorText || (typeof window !== 'undefined' ? window.getSelection()?.toString()?.trim() : '') || (savedSelectionRef.current ? savedSelectionRef.current.toString().trim() : '');
+    if (!selText) {
+      showToast('Please select text first');
+      return;
+    }
+
+    setSelectionAiLoading(true);
+    let prompt = '';
+
+    if (actionType === 'improve') {
+      prompt = `Rewrite and polish the following text to be clearer, more engaging, and professional:\n\n"${selText}"`;
+    } else if (actionType === 'summarize') {
+      prompt = `Summarize the following text into concise bullet points:\n\n"${selText}"`;
+    } else if (actionType === 'translate') {
+      prompt = `Translate the following text into ${customInstruction || selectionAiTranslateLang}:\n\n"${selText}"`;
+    } else if (actionType === 'table') {
+      prompt = `Convert the key information from the following text into a clean Markdown table with headers and rows:\n\n"${selText}"`;
+    } else if (actionType === 'explain') {
+      prompt = `Explain what this text means in simple terms and highlight the key takeaways:\n\n"${selText}"`;
+    } else if (actionType === 'fix') {
+      prompt = `Proofread and fix all grammar, punctuation, and spelling in the following text while preserving its meaning:\n\n"${selText}"`;
+    } else {
+      prompt = `${customInstruction || selectionAiPrompt}:\n\n"${selText}"`;
+    }
+
+    try {
+      const response = await callGemini({
+        userPrompt: prompt,
+        systemPrompt: 'You are the executive writing assistant for Regaarder Compose. Fulfill the user instruction on the provided text directly in clean Markdown without conversational chit-chat or JSON wrappers.',
+      });
+
+      const resText = String(response?.text || '').trim();
+      if (resText) {
+        const formattedHtml = toParagraphHtml(resText);
+        const injected = injectIntoSavedSelection(formattedHtml, { injectAsHtml: true });
+        if (injected && blankBodyRef.current) {
+          setDocBodyHtml(blankBodyRef.current.innerHTML);
+          showToast('Updated text with AI');
+        } else {
+          // If direct selection injection missed, insert at cursor
+          if (window.__composeInsertHTML) {
+            window.__composeInsertHTML(formattedHtml);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Selection AI action error:', err);
+      showToast('AI request failed');
+    } finally {
+      setSelectionAiLoading(false);
+      setSelectionAiPopoverOpen(false);
+      setSelectionActionMenu({ open: false, top: 0, left: 0 });
+      setSelectionAiPrompt('');
+    }
+  };
   const selectionActionMenuEnabled = true;
   const [documentOutlineItems, setDocumentOutlineItems] = useState([]);
   const [promptAttachments, setPromptAttachments] = useState([]);
@@ -31487,187 +31548,90 @@ Respond with a JSON array of slide objects matching the schema.`;
 
   const applyFormatCommand = (command, value) => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
+    
     let range = getEditorSelectionRange();
-
     if (!range && restoreSavedSelection()) {
       range = getEditorSelectionRange();
     }
 
+    const activeRoot = getActiveEditorRoot() || blankBodyRef.current;
+
     if (!range) {
-      getActiveEditorRoot()?.focus();
-      return;
+      activeRoot?.focus();
+      range = getEditorSelectionRange();
+    }
+
+    if (range) {
+      const selection = window.getSelection();
+      try {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } catch (e) {}
     }
 
     if (command === 'fontSize') {
       const parsedSize = Number(value);
-      const safeSize = Number.isFinite(parsedSize) ? Math.min(72, Math.max(10, parsedSize)) : editorSize;
+      const safeSize = Number.isFinite(parsedSize) ? Math.min(72, Math.max(10, parsedSize)) : 16;
+      setActiveFontSize(safeSize);
+      
       const selection = window.getSelection();
-      if (!selection || !selection.rangeCount) {
-        return;
-      }
-
-      const activeRange = selection.getRangeAt(0);
-      if (!isRangeInsideEditor(activeRange)) {
-        return;
-      }
-
-      const ancestor = activeRange.commonAncestorContainer;
-      const targetNode = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-      const insideTitle = false;
-      const insideSubtitle = false;
-
-      if (insideTitle) {
-        setEditorSize(safeSize);
-        if (selection.rangeCount) {
-          savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
-        }
-        return;
-      }
-
-      if (insideSubtitle) {
-        setSubtitleSize(safeSize);
-        if (selection.rangeCount) {
-          savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
-        }
-        return;
-      }
-
-      if (activeRange.collapsed) {
-        const anchorNode = activeRange.startContainer;
-        const parentElement = anchorNode.nodeType === Node.ELEMENT_NODE
-          ? anchorNode
-          : anchorNode.parentElement;
-        const activeRoot = getActiveEditorRoot();
-        if (parentElement && activeRoot?.contains(parentElement)) {
-          const isContainer = parentElement === activeRoot || 
-                              parentElement.tagName === 'P' || 
-                              parentElement.tagName === 'DIV' || 
-                              parentElement.tagName === 'TD' ||
-                              parentElement.tagName === 'LI';
-          if (isContainer) {
-            const span = document.createElement('span');
-            span.style.fontSize = `${safeSize}px`;
-            span.appendChild(document.createTextNode('\u200B')); // zero-width space
-            activeRange.insertNode(span);
-            
-            const nextRange = document.createRange();
-            nextRange.setStart(span.firstChild, 1);
-            nextRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(nextRange);
-          } else {
-            parentElement.style.fontSize = `${safeSize}px`;
+      if (selection && selection.rangeCount) {
+        const activeRange = selection.getRangeAt(0);
+        if (!activeRange.collapsed) {
+          const wrapper = document.createElement('span');
+          wrapper.style.fontSize = `${safeSize}px`;
+          try {
+            activeRange.surroundContents(wrapper);
+          } catch (_err) {
+            const frag = activeRange.extractContents();
+            wrapper.appendChild(frag);
+            activeRange.insertNode(wrapper);
           }
+          const nextRange = document.createRange();
+          nextRange.selectNodeContents(wrapper);
+          selection.removeAllRanges();
+          selection.addRange(nextRange);
+          savedSelectionRef.current = nextRange.cloneRange();
         }
-      } else {
-        const wrapper = document.createElement('span');
-        wrapper.style.fontSize = `${safeSize}px`;
-
-        try {
-          activeRange.surroundContents(wrapper);
-        } catch (_error) {
-          const fragment = activeRange.extractContents();
-          wrapper.appendChild(fragment);
-          activeRange.insertNode(wrapper);
-        }
-
-        const nextRange = document.createRange();
-        nextRange.selectNodeContents(wrapper);
-        selection.removeAllRanges();
-        selection.addRange(nextRange);
       }
-
-      if (selection.rangeCount) {
-        savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
-      }
-      if (getActiveEditorRoot() === blankBodyRef.current && blankBodyRef.current) {
-        setDocBodyHtml(blankBodyRef.current.innerHTML);
-      }
+      if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
       return;
     }
 
-    const getTargetEditableRoot = (targetRange) => {
-      if (targetRange) {
-        const ancestor = targetRange.commonAncestorContainer;
-        const el = ancestor.nodeType === Node.ELEMENT_NODE ? ancestor : ancestor.parentElement;
-        const ed = el?.closest?.('[contenteditable="true"]');
-        if (ed) return ed;
-      }
-      return getActiveEditorRoot();
-    };
-
-    const targetRoot = getTargetEditableRoot(range);
-    targetRoot?.focus();
-
-    if (range) {
+    if (command === 'fontName') {
+      const font = String(value || editorFont || 'DM Sans');
+      setEditorFont(font);
+      const fontFamilyCss = resolveFontFamily(font);
+      
       const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(range);
+      if (selection && selection.rangeCount) {
+        const activeRange = selection.getRangeAt(0);
+        if (!activeRange.collapsed) {
+          const wrapper = document.createElement('span');
+          wrapper.style.fontFamily = fontFamilyCss;
+          try {
+            activeRange.surroundContents(wrapper);
+          } catch (_err) {
+            const frag = activeRange.extractContents();
+            wrapper.appendChild(frag);
+            activeRange.insertNode(wrapper);
+          }
+          const nextRange = document.createRange();
+          nextRange.selectNodeContents(wrapper);
+          selection.removeAllRanges();
+          selection.addRange(nextRange);
+          savedSelectionRef.current = nextRange.cloneRange();
+        }
+      }
+      if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+      return;
     }
 
-    const applyStandardWordProcessorList = (cmd, activeRange) => {
-      const isOrdered = cmd === 'insertOrderedList';
-      const tag = isOrdered ? 'ol' : 'ul';
-      const listStyle = isOrdered ? 'decimal' : 'disc';
-      const selection = window.getSelection();
-      const curRange = activeRange || (selection && selection.rangeCount ? selection.getRangeAt(0) : null);
-
-      if (!curRange) {
-        document.execCommand(cmd, false, null);
-        return;
-      }
-
-      const ancestor = curRange.commonAncestorContainer;
-      const parentEl = ancestor.nodeType === Node.ELEMENT_NODE ? ancestor : ancestor.parentElement;
-      const isAlreadyInList = Boolean(parentEl?.closest('li, ul, ol'));
-
-      if (isAlreadyInList) {
-        document.execCommand(cmd, false, null);
-        return;
-      }
-
-      // If selection is a simple cursor (collapsed), use native execCommand to wrap current paragraph into a single bullet
-      if (curRange.collapsed) {
-        document.execCommand(cmd, false, null);
-        return;
-      }
-
-      // Inspect selection contents
-      const container = document.createElement('div');
-      try {
-        container.appendChild(curRange.cloneContents());
-      } catch (_e) {
-        document.execCommand(cmd, false, null);
-        return;
-      }
-
-      const hasBlockBreak = container.querySelector('p, div, br, h1, h2, h3, h4, h5, h6, li') !== null;
-      const rawText = container.innerText || container.textContent || '';
-      const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-
-      // Only create multiple bullet items if selection contains multiple distinct hard line breaks
-      if ((hasBlockBreak || lines.length > 1) && lines.length > 1) {
-        const lis = lines
-          .map(item => `<li style="margin-bottom: 4px;">${escapeHtml(item)}</li>`)
-          .join('');
-        const listHtml = `<${tag} style="list-style-type: ${listStyle}; padding-left: 24px; margin: 8px 0;">${lis}</${tag}>`;
-
-        try {
-          selection.removeAllRanges();
-          selection.addRange(curRange);
-        } catch (_e) {}
-
-        document.execCommand('insertHTML', false, listHtml);
-      } else {
-        // Single continuous paragraph (with soft line wrapping): keep as ONE single bullet point
-        document.execCommand(cmd, false, null);
-      }
-    };
-
-    if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
-      applyStandardWordProcessorList(command, range);
-    } else {
-      document.execCommand(command, false, value);
+    // Execute standard format command
+    try {
+      document.execCommand(command, false, value || null);
+    } catch (e) {
+      console.warn('execCommand failed:', e);
     }
 
     const selection = window.getSelection();
@@ -31679,36 +31643,13 @@ Respond with a JSON array of slide objects matching the schema.`;
       setDocBodyHtml(blankBodyRef.current.innerHTML);
     }
 
-    setExtraPages(prevPages => {
-      return prevPages.map(pg => {
-        const pageEl = extraPageRefs.current[pg.id];
-        if (pageEl) {
-          const ed = pageEl.querySelector('[contenteditable="true"]');
-          if (ed) {
-            return { ...pg, html: ed.innerHTML };
-          }
-        }
-        return pg;
-      });
-    });
-
     try {
       setIsBoldActive(Boolean(document.queryCommandState('bold')));
       setIsItalicActive(Boolean(document.queryCommandState('italic')));
       setIsUnderlineActive(Boolean(document.queryCommandState('underline')));
       setIsStrikeActive(Boolean(document.queryCommandState('strikeThrough')));
       setIsListActive(Boolean(document.queryCommandState('insertUnorderedList')));
-      
-      const ancestor = range.commonAncestorContainer;
-      const element = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-      if (element) {
-        const style = window.getComputedStyle(element);
-        const size = parseInt(style.fontSize, 10);
-        setActiveFontSize(size || 14);
-      }
-    } catch (_error) {
-      // noop
-    }
+    } catch (_error) {}
   };
 
   const addTaskFromInput = (overrideText) => {
@@ -65521,33 +65462,141 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {selectionActionMenuEnabled && selectionActionMenu.open && (
         <div 
           ref={selectionActionMenuRef}
-          className="fixed z-[100005] bg-white/80 backdrop-blur-md border border-gray-200/50 rounded-lg shadow-xl flex items-center p-1 gap-1"
+          className="fixed z-[100005] flex flex-col items-start"
           style={{ top: selectionActionMenu.top, left: selectionActionMenu.left }}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('bold'); }} className={`p-1.5 hover:bg-slate-100/80 rounded transition-colors ${isBoldActive ? 'text-violet-600 bg-violet-50/80' : 'text-slate-700'}`}><Bold size={14}/></button>
-          <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('italic'); }} className={`p-1.5 hover:bg-slate-100/80 rounded transition-colors ${isItalicActive ? 'text-violet-600 bg-violet-50/80' : 'text-slate-700'}`}><Italic size={14}/></button>
-          <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('underline'); }} className={`p-1.5 hover:bg-slate-100/80 rounded transition-colors ${isUnderlineActive ? 'text-violet-600 bg-violet-50/80' : 'text-slate-700'}`}><Underline size={14}/></button>
-          <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('strikeThrough'); }} className={`p-1.5 hover:bg-slate-100/80 rounded transition-colors ${isStrikeActive ? 'text-violet-600 bg-violet-50/80' : 'text-slate-700'}`}><Strikethrough size={14}/></button>
-          <div className="w-px h-4 bg-gray-200/60 mx-1"></div>
-          <button onPointerDown={(e) => { 
-            e.preventDefault(); 
-            const selText = selectedEditorTextRef.current || selectedEditorText || (typeof window !== 'undefined' ? window.getSelection()?.toString()?.trim() : '') || (savedSelectionRef.current ? savedSelectionRef.current.toString().trim() : '');
-            if (selText) {
-              const truncated = truncateText(selText, 180);
-              setSelectedEditorText(truncated);
-              selectedEditorTextRef.current = selText;
-            }
-            setSelectionActionMenu({ open: false, top: 0, left: 0 });
-            setIsPromptMinimized(false);
-            setIsPromptDismissed(false);
-            setIsPromptExpanded(true);
-            setIsPromptAutoVisible(true);
-            setShowSelectionPromptCard(true);
-            setTimeout(() => {
-              floatingPromptRef.current?.focus();
-            }, 50);
-          }} className="flex items-center gap-1.5 px-2.5 py-1 hover:bg-violet-100/90 dark:hover:bg-violet-900/60 text-violet-700 dark:text-violet-300 bg-violet-50/80 dark:bg-violet-950/40 border border-violet-200/70 dark:border-violet-800/50 rounded-md text-xs font-medium transition-colors duration-150 ease-out active:scale-[0.98]" title="Ask AI about this selection"><RegaarderAiIcon size={14} className="shrink-0 text-violet-600 dark:text-violet-400" /><span>Ask AI</span></button>
+          {/* Main Floating Selection Capsule */}
+          <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-700/80 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] flex items-center p-1 gap-1">
+            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('bold'); }} className={`p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded transition-colors ${isBoldActive ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/50' : 'text-slate-700 dark:text-zinc-200'}`} title="Bold"><Bold size={14}/></button>
+            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('italic'); }} className={`p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded transition-colors ${isItalicActive ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/50' : 'text-slate-700 dark:text-zinc-200'}`} title="Italic"><Italic size={14}/></button>
+            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('underline'); }} className={`p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded transition-colors ${isUnderlineActive ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/50' : 'text-slate-700 dark:text-zinc-200'}`} title="Underline"><Underline size={14}/></button>
+            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('strikeThrough'); }} className={`p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded transition-colors ${isStrikeActive ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/50' : 'text-slate-700 dark:text-zinc-200'}`} title="Strikethrough"><Strikethrough size={14}/></button>
+            <div className="w-px h-4 bg-slate-200 dark:bg-zinc-700 mx-0.5"></div>
+            <button 
+              onPointerDown={(e) => { 
+                e.preventDefault(); 
+                setSelectionAiPopoverOpen(prev => !prev);
+              }} 
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 ease-out active:scale-[0.98] border cursor-pointer ${selectionAiPopoverOpen ? 'bg-violet-600 text-white border-violet-600 shadow-sm' : 'bg-violet-50 hover:bg-violet-100 text-violet-700 border-violet-200/80 dark:bg-violet-950/60 dark:text-violet-300 dark:border-violet-800/60'}`}
+              title="Ask AI Assistant"
+            >
+              <Sparkles size={13} className="shrink-0" />
+              <span>Ask AI</span>
+            </button>
+          </div>
+
+          {/* Interactive Selection AI Popover Menu */}
+          {selectionAiPopoverOpen && (
+            <div className="mt-2 w-80 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.18)] p-2.5 flex flex-col gap-2 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between px-1 pb-1 border-b border-slate-100 dark:border-zinc-800">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-zinc-100">
+                  <Sparkles size={13} className="text-violet-600" />
+                  <span>Selection AI</span>
+                </div>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400">
+                  {composeSelectedModel.name}
+                </span>
+              </div>
+
+              {/* Custom Prompt Input */}
+              <div className="flex items-center gap-1 bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-xl px-2.5 py-1.5">
+                <input
+                  type="text"
+                  value={selectionAiPrompt}
+                  onChange={(e) => setSelectionAiPrompt(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && selectionAiPrompt.trim() && !selectionAiLoading) {
+                      e.preventDefault();
+                      executeSelectionAiAction('custom', selectionAiPrompt);
+                    }
+                  }}
+                  placeholder="Ask AI anything about selection..."
+                  className="flex-1 bg-transparent border-none text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  disabled={selectionAiLoading || !selectionAiPrompt.trim()}
+                  onClick={() => executeSelectionAiAction('custom', selectionAiPrompt)}
+                  className="p-1 rounded-lg text-violet-600 hover:bg-violet-100 dark:hover:bg-violet-950/60 disabled:opacity-40"
+                >
+                  {selectionAiLoading ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                </button>
+              </div>
+
+              {/* Quick AI Action Pills */}
+              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                <button
+                  type="button"
+                  disabled={selectionAiLoading}
+                  onClick={() => executeSelectionAiAction('improve')}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 transition-colors"
+                >
+                  <PenTool size={13} className="text-violet-500 shrink-0" />
+                  <span>Improve & Polish</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={selectionAiLoading}
+                  onClick={() => executeSelectionAiAction('summarize')}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 transition-colors"
+                >
+                  <Scissors size={13} className="text-emerald-500 shrink-0" />
+                  <span>Summarize</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={selectionAiLoading}
+                  onClick={() => executeSelectionAiAction('fix')}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 transition-colors"
+                >
+                  <Check size={13} className="text-blue-500 shrink-0" />
+                  <span>Fix Grammar</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={selectionAiLoading}
+                  onClick={() => executeSelectionAiAction('table')}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 transition-colors"
+                >
+                  <LayoutGrid size={13} className="text-amber-500 shrink-0" />
+                  <span>Convert to Table</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={selectionAiLoading}
+                  onClick={() => executeSelectionAiAction('explain')}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 transition-colors"
+                >
+                  <Sparkles size={13} className="text-indigo-500 shrink-0" />
+                  <span>Key Insights</span>
+                </button>
+
+                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700">
+                  <Globe size={12} className="text-slate-400 shrink-0" />
+                  <select
+                    value={selectionAiTranslateLang}
+                    onChange={(e) => {
+                      setSelectionAiTranslateLang(e.target.value);
+                      executeSelectionAiAction('translate', e.target.value);
+                    }}
+                    className="w-full bg-transparent text-[11px] font-medium text-slate-700 dark:text-zinc-200 border-none outline-none cursor-pointer"
+                  >
+                    <option value="French">Translate: FR</option>
+                    <option value="Spanish">Translate: ES</option>
+                    <option value="German">Translate: DE</option>
+                    <option value="Japanese">Translate: JA</option>
+                    <option value="Chinese">Translate: ZH</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
       {imageToolbar.open && (
