@@ -13440,6 +13440,35 @@ const DEFAULT_DECK_SLIDES = [
   const [isSelectionAiTranslateOpen, setIsSelectionAiTranslateOpen] = useState(false);
   const [selectionAiTranslateSearch, setSelectionAiTranslateSearch] = useState('');
 
+  const COLOR_PALETTE_LOOKUP = {
+    red: '#ef4444',
+    crimson: '#dc2626',
+    ruby: '#e11d48',
+    blue: '#3b82f6',
+    navy: '#1e3a8a',
+    sky: '#0284c7',
+    cyan: '#06b6d4',
+    teal: '#0d9488',
+    green: '#10b981',
+    emerald: '#059669',
+    lime: '#84cc16',
+    yellow: '#eab308',
+    amber: '#f59e0b',
+    orange: '#f97316',
+    purple: '#8b5cf6',
+    violet: '#7c3aed',
+    indigo: '#6366f1',
+    pink: '#ec4899',
+    rose: '#f43f5e',
+    magenta: '#d946ef',
+    gray: '#64748b',
+    grey: '#64748b',
+    slate: '#475569',
+    zinc: '#52525b',
+    black: '#000000',
+    white: '#ffffff'
+  };
+
   const executeSelectionAiAction = async (actionType, customInstruction = '') => {
     const selText = selectedEditorTextRef.current || selectedEditorText || (typeof window !== 'undefined' ? window.getSelection()?.toString()?.trim() : '') || (savedSelectionRef.current ? savedSelectionRef.current.toString().trim() : '');
     if (!selText) {
@@ -13447,6 +13476,159 @@ const DEFAULT_DECK_SLIDES = [
       return;
     }
 
+    const rawInstruction = String(customInstruction || selectionAiPrompt || '').trim();
+
+    // 1. Direct Formatting & Styling Intent Detection
+    if (actionType === 'custom' && rawInstruction) {
+      const lower = rawInstruction.toLowerCase();
+
+      // Check text color intents: e.g. "change the color to red", "make it blue", "color: #ef4444"
+      const colorMatch = lower.match(/(?:(?:change|make|set|turn)\s+(?:the\s+)?(?:text|title|font|selection\s+)?(?:color|colour)?\s*(?:to|as|in)?\s+|color:\s*)(#[0-9a-f]{3,8}|[a-z]+)/i);
+      if (colorMatch) {
+        const requestedColor = colorMatch[1].toLowerCase();
+        const hex = COLOR_PALETTE_LOOKUP[requestedColor] || (requestedColor.startsWith('#') ? requestedColor : null);
+        if (hex) {
+          applyFormatCommand('foreColor', hex);
+          setSelectionAiPopoverOpen(false);
+          setSelectionActionMenu({ open: false, top: 0, left: 0 });
+          setSelectionAiPrompt('');
+          showToast(`Applied color: ${requestedColor}`);
+          return;
+        }
+      }
+
+      // Check highlight/background intents: e.g. "highlight in yellow", "background color yellow"
+      const highlightMatch = lower.match(/(?:highlight|background)(?:\s+(?:color|colour))?\s*(?:to|in|with|as)?\s*(#[0-9a-f]{3,8}|[a-z]+)/i);
+      if (highlightMatch) {
+        const requestedColor = highlightMatch[1].toLowerCase();
+        const hex = COLOR_PALETTE_LOOKUP[requestedColor] || (requestedColor.startsWith('#') ? requestedColor : '#fef08a');
+        applyFormatCommand('hiliteColor', hex);
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast(`Applied highlight: ${requestedColor}`);
+        return;
+      }
+
+      // Check font size intents: e.g. "change font size to 24", "make it 28px", "size 20"
+      const sizeMatch = lower.match(/(?:(?:font|text)?\s*size\s*(?:to|of)?\s*|make\s+it\s+)(\d{1,2})(?:px|pt)?/i);
+      if (sizeMatch) {
+        const nextSize = Number(sizeMatch[1]);
+        if (nextSize >= 10 && nextSize <= 72) {
+          applyFormatCommand('fontSize', String(nextSize));
+          setSelectionAiPopoverOpen(false);
+          setSelectionActionMenu({ open: false, top: 0, left: 0 });
+          setSelectionAiPrompt('');
+          showToast(`Font size set to ${nextSize}px`);
+          return;
+        }
+      }
+
+      // Check font family intents: e.g. "change font to Manrope", "font: Inter"
+      const fontMatch = lower.match(/(?:change\s+)?font(?:\s+to|:)?\s+([a-z\s]+)/i);
+      if (fontMatch) {
+        const foundFont = fontOptions.find(f => f.toLowerCase() === fontMatch[1].trim().toLowerCase());
+        if (foundFont) {
+          applyFormatCommand('fontName', foundFont);
+          setSelectionAiPopoverOpen(false);
+          setSelectionActionMenu({ open: false, top: 0, left: 0 });
+          setSelectionAiPrompt('');
+          showToast(`Font set to ${foundFont}`);
+          return;
+        }
+      }
+
+      // Check basic styling intents: bold, italic, underline, strike
+      if (/\b(bold|make\s+it\s+bold|make\s+bold)\b/i.test(lower)) {
+        applyFormatCommand('bold');
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast('Applied Bold');
+        return;
+      }
+      if (/\b(italic|italicize|make\s+it\s+italic)\b/i.test(lower)) {
+        applyFormatCommand('italic');
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast('Applied Italic');
+        return;
+      }
+      if (/\b(underline|make\s+it\s+underlined?)\b/i.test(lower)) {
+        applyFormatCommand('underline');
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast('Applied Underline');
+        return;
+      }
+      if (/\b(strike|strikethrough|cross\s+out)\b/i.test(lower)) {
+        applyFormatCommand('strikeThrough');
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast('Applied Strikethrough');
+        return;
+      }
+
+      // Check text alignment intents
+      if (/\b(align\s+center|center\s+text|center\s+align)\b/i.test(lower)) {
+        applyFormatCommand('justifyCenter');
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast('Centered text');
+        return;
+      }
+      if (/\b(align\s+right|right\s+align)\b/i.test(lower)) {
+        applyFormatCommand('justifyRight');
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast('Right-aligned text');
+        return;
+      }
+      if (/\b(align\s+left|left\s+align)\b/i.test(lower)) {
+        applyFormatCommand('justifyLeft');
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast('Left-aligned text');
+        return;
+      }
+
+      // Check case transform intents
+      if (/\b(uppercase|all\s+caps|capital\s+letters)\b/i.test(lower)) {
+        const transformed = selText.toUpperCase();
+        injectIntoSavedSelection(transformed, { injectAsHtml: false });
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast('Transformed to UPPERCASE');
+        return;
+      }
+      if (/\b(lowercase|all\s+lowercase)\b/i.test(lower)) {
+        const transformed = selText.toLowerCase();
+        injectIntoSavedSelection(transformed, { injectAsHtml: false });
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast('Transformed to lowercase');
+        return;
+      }
+      if (/\b(title\s*case|capitalize\s+words?)\b/i.test(lower)) {
+        const transformed = selText.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+        injectIntoSavedSelection(transformed, { injectAsHtml: false });
+        setSelectionAiPopoverOpen(false);
+        setSelectionActionMenu({ open: false, top: 0, left: 0 });
+        setSelectionAiPrompt('');
+        showToast('Transformed to Title Case');
+        return;
+      }
+    }
+
+    // 2. Full LLM Transformation Engine with HTML & Styling Support
     setSelectionAiLoading(true);
     let prompt = '';
 
@@ -13463,16 +13645,22 @@ const DEFAULT_DECK_SLIDES = [
     } else if (actionType === 'fix') {
       prompt = `Proofread and fix all grammar, punctuation, and spelling in the following text while preserving its meaning:\n\n"${selText}"`;
     } else {
-      prompt = `${customInstruction || selectionAiPrompt}:\n\n"${selText}"`;
+      prompt = `${rawInstruction}:\n\n"${selText}"`;
     }
 
     try {
       const response = await callGemini({
         userPrompt: prompt,
-        systemPrompt: 'You are the executive writing assistant for Regaarder Compose. Fulfill the user instruction on the provided text directly in clean Markdown without conversational chit-chat or JSON wrappers.',
+        systemPrompt: 'You are the executive writing assistant for Regaarder Compose. Fulfill the user instruction on the provided text directly in clean Markdown or HTML inline styles without wrapping your output in unnecessary quotes or conversational chit-chat.',
       });
 
-      const resText = String(response?.text || '').trim();
+      let resText = String(response?.text || '').trim();
+      
+      // Clean leading/trailing quotes if the original selection did not have quotes
+      if (!selText.startsWith('"') && resText.startsWith('"') && resText.endsWith('"') && resText.length > 2) {
+        resText = resText.slice(1, -1).trim();
+      }
+
       if (resText) {
         const formattedHtml = toParagraphHtml(resText);
         const injected = injectIntoSavedSelection(formattedHtml, { injectAsHtml: true });
@@ -13480,7 +13668,6 @@ const DEFAULT_DECK_SLIDES = [
           setDocBodyHtml(blankBodyRef.current.innerHTML);
           showToast('Updated text with AI');
         } else {
-          // If direct selection injection missed, insert at cursor
           if (window.__composeInsertHTML) {
             window.__composeInsertHTML(formattedHtml);
           }
