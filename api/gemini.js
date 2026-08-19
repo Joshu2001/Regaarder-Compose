@@ -228,6 +228,9 @@ export default async function handler(req, res) {
       if (schema) {
         payload.generationConfig.responseMimeType = 'application/json';
         payload.generationConfig.responseSchema = schema;
+      } else {
+        // Enable Google Search Grounding for real-time web awareness
+        payload.tools = [{ googleSearch: {} }];
       }
 
       const response = await fetch(

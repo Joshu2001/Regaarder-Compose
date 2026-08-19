@@ -127,12 +127,17 @@ export async function searchWikipedia(query) {
  * Comprehensive Live Web Search
  */
 export async function searchLiveWeb(query) {
+  const isNewsOrTransferQuery = /\b(transfer|news|today|latest|current|recent|score|match|football|soccer|rumou?r|barcelona|deal|signing|contract)\b/i.test(query);
+
   const [newsResults, wikiResults] = await Promise.all([
     searchGoogleNews(query),
-    searchWikipedia(query)
+    !isNewsOrTransferQuery ? searchWikipedia(query) : Promise.resolve([])
   ]);
 
-  const all = [...newsResults, ...wikiResults];
+  // If news search found items, prioritize them and exclude encyclopedic Wikipedia lists
+  const all = isNewsOrTransferQuery && newsResults.length > 0
+    ? newsResults
+    : [...newsResults, ...wikiResults];
 
   const seen = new Set();
   const deduped = [];
@@ -142,6 +147,18 @@ export async function searchLiveWeb(query) {
       seen.add(key);
       deduped.push(item);
     }
+  }
+
+  // If all proxies failed to return news, formulate direct Google Search links
+  if (deduped.length === 0) {
+    const cleanQ = encodeURIComponent(query.trim());
+    deduped.push({
+      title: `Google News: ${query}`,
+      url: `https://news.google.com/search?q=${cleanQ}`,
+      pubDate: 'Today',
+      source: 'Google News',
+      snippet: `Real-time search stream for: ${query}`
+    });
   }
 
   return deduped.slice(0, 8);
