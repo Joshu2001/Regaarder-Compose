@@ -28128,6 +28128,25 @@ Return ONLY valid JSON matching the schema.`;
     const source = options.source || 'chat';
     const forceDocBuild = Boolean(options.forceDocBuild);
     const suppressChatEcho = Boolean(options.suppressChatEcho);
+
+    // Ensure Assistant sidebar is open and active so the prompt & response are clearly visible
+    setIsRightSidebarOpen(true);
+    setActiveRightTab('assistant');
+
+    // Echo the user prompt to chat
+    if (!suppressChatEcho) {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: 'user_' + Date.now(),
+          sender: 'user',
+          role: 'user',
+          text: promptText,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    }
     const requestedFormat = options.composeFormat || 'Auto (Compose decides)';
     
     // Strict Guard: Identify informational, Q&A, review, or summarization queries
@@ -28237,7 +28256,27 @@ Return ONLY valid JSON matching the schema.`;
       try {
         const plan = planAutonomousActions(cleanVideoQuery, productMode);
 
-        // 1. Run live autonomous mouse cursor takeover on the screen
+        // 1. Generate video recording blob and script
+        const videoRes = await generateDemoVideoBlob(plan);
+        const videoScript = await generateVideoActionScriptViaAI(cleanVideoQuery, productMode, callGemini);
+
+        const assistantMsg = {
+          id: 'msg_' + Date.now(),
+          sender: 'assistant',
+          role: 'assistant',
+          text: `### ${videoScript.title}\n\nAutonomous UI takeover and video recording completed for: "${cleanVideoQuery}".\n\n` + videoScript.captions.map(c => `- ${c.text}`).join('\n'),
+          isVideoDemo: true,
+          videoScript: videoScript,
+          videoUrl: videoRes?.videoUrl || null,
+          targetQuery: cleanVideoQuery,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        setChatMessages(prev => [...prev, assistantMsg]);
+        setIsComposing(false);
+        showToast('Autonomous video recording ready');
+
+        // 2. Perform live visual mouse cursor takeover on screen
         setAutonomousCursorPos({ x: window.innerWidth / 2, y: window.innerHeight / 2, visible: true, clicking: false });
 
         await executeAutonomousVideoSequence({
@@ -28255,28 +28294,8 @@ Return ONLY valid JSON matching the schema.`;
           }
         });
 
-        // 2. Generate actual playable video recording blob
-        const videoRes = await generateDemoVideoBlob(plan);
-
         setAutonomousCursorPos(null);
         setVideoRecordingState(null);
-
-        const videoScript = await generateVideoActionScriptViaAI(cleanVideoQuery, productMode, callGemini);
-
-        const assistantMsg = {
-          id: 'msg_' + Date.now(),
-          sender: 'assistant',
-          role: 'assistant',
-          text: `### ${videoScript.title}\n\nAutonomous UI takeover and video recording completed for: "${cleanVideoQuery}".\n\n` + videoScript.captions.map(c => `- ${c.text}`).join('\n'),
-          isVideoDemo: true,
-          videoScript: videoScript,
-          videoUrl: videoRes?.videoUrl || null,
-          targetQuery: cleanVideoQuery,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-
-        setChatMessages(prev => [...prev, assistantMsg]);
-        showToast('Autonomous video recording completed');
       } catch (err) {
         console.warn('[VideoAgent] Error:', err);
         setAutonomousCursorPos(null);
