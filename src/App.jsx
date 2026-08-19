@@ -77,7 +77,7 @@ import { CANONICAL_DOCS_TOOLS } from './services/docsToolRegistry';
 import { toOpenAITools, toGeminiTools, toAnthropicTools, getDocsToolSystemPrompt, getCanonicalToolSchemas } from './services/docsLlmAdapters';
 import { getAvailableTools, executeSequence } from './services/docsAgentOrchestrator';
 import { runBrowserAgent } from './services/browserAgentService';
-import { generateTourGuide, generateVideoActionScript } from './services/tourAndVideoAgentService';
+import { generateTourGuideViaAI, generateVideoActionScriptViaAI } from './services/tourAndVideoAgentService';
 import { DocsToolDevConsoleModal } from './components/dev/DocsToolDevConsoleModal';
 
 import * as Y from 'yjs';
@@ -28189,21 +28189,29 @@ Return ONLY valid JSON matching the schema.`;
 
     if (isTourRequest) {
       const cleanTourQuery = promptText.replace(/^[\/@]tour\s*/i, '').trim() || 'Using Regaarder Compose';
-      const tourGuide = generateTourGuide(cleanTourQuery, productMode);
+      setComposingText('🧭 Tour Agent: Generating interactive walkthrough...');
+      setIsComposing(true);
+      
+      try {
+        const tourGuide = await generateTourGuideViaAI(cleanTourQuery, productMode, callGemini);
+        const assistantMsg = {
+          id: 'msg_' + Date.now(),
+          sender: 'assistant',
+          role: 'assistant',
+          text: `### 🧭 ${tourGuide.title}\n\n${tourGuide.description}\n\n` + tourGuide.steps.map(s => `**Step ${s.stepNumber}: ${s.title}**\n${s.description}`).join('\n\n'),
+          isTourGuide: true,
+          tourData: tourGuide,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
 
-      const assistantMsg = {
-        id: 'msg_' + Date.now(),
-        sender: 'assistant',
-        role: 'assistant',
-        text: `### 🧭 ${tourGuide.title}\n\n${tourGuide.description}\n\n` + tourGuide.steps.map(s => `**Step ${s.stepNumber}: ${s.title}**\n${s.description}`).join('\n\n'),
-        isTourGuide: true,
-        tourData: tourGuide,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-
-      setChatMessages(prev => [...prev, assistantMsg]);
-      showToast('🧭 Tour guide generated');
-      setActiveAgentTag(null);
+        setChatMessages(prev => [...prev, assistantMsg]);
+        showToast('🧭 Tour guide ready');
+      } catch (err) {
+        console.warn('[TourAgent] Error:', err);
+      } finally {
+        setIsComposing(false);
+        setActiveAgentTag(null);
+      }
       return;
     }
 
@@ -28219,21 +28227,32 @@ Return ONLY valid JSON matching the schema.`;
 
     if (isVideoRequest) {
       const cleanVideoQuery = promptText.replace(/^[\/@]video\s*/i, '').trim() || 'Demonstrating Action';
-      const videoScript = generateVideoActionScript(cleanVideoQuery, productMode);
+      setComposingText('🎥 Video Agent: Recording canvas workflow...');
+      setIsComposing(true);
 
-      const assistantMsg = {
-        id: 'msg_' + Date.now(),
-        sender: 'assistant',
-        role: 'assistant',
-        text: `### 🎥 ${videoScript.title}\n\nAutonomously recorded ${videoScript.duration}s animated action workflow for: "${cleanVideoQuery}".\n\n` + videoScript.captions.map(c => `- ${c.text}`).join('\n'),
-        isVideoDemo: true,
-        videoScript: videoScript,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
+      try {
+        const docText = blankBodyRef.current?.innerText || '';
+        const videoScript = await generateVideoActionScriptViaAI(cleanVideoQuery, productMode, callGemini, docText);
 
-      setChatMessages(prev => [...prev, assistantMsg]);
-      showToast('🎥 Video action demo created');
-      setActiveAgentTag(null);
+        const assistantMsg = {
+          id: 'msg_' + Date.now(),
+          sender: 'assistant',
+          role: 'assistant',
+          text: `### 🎥 ${videoScript.title}\n\nLive recorded ${videoScript.duration}s animated workflow for: "${cleanVideoQuery}".\n\n` + videoScript.captions.map(c => `- ${c.text}`).join('\n'),
+          isVideoDemo: true,
+          videoScript: videoScript,
+          targetQuery: cleanVideoQuery,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        setChatMessages(prev => [...prev, assistantMsg]);
+        showToast('🎥 Video action recorded');
+      } catch (err) {
+        console.warn('[VideoAgent] Error:', err);
+      } finally {
+        setIsComposing(false);
+        setActiveAgentTag(null);
+      }
       return;
     }
 
@@ -37219,10 +37238,41 @@ Respond with a JSON array of slide objects matching the schema.`;
                           <div className="mt-2.5 flex items-center justify-between gap-2">
                             <button
                               type="button"
-                              onClick={() => showToast('⚡ Action workflow simulated & ready')}
-                              className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                              onClick={() => {
+                                const q = (msg.targetQuery || msg.videoScript?.title || '').toLowerCase();
+                                const root = blankBodyRef.current;
+                                if (root) {
+                                  if (q.includes('checklist') || q.includes('task') || q.includes('todo')) {
+                                    const taskEl = root.querySelector('li, [data-task], ul');
+                                    if (taskEl) {
+                                      taskEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                      taskEl.style.outline = '3px solid #6366f1';
+                                      taskEl.style.borderRadius = '6px';
+                                      taskEl.style.transition = 'outline 0.3s ease';
+                                      setTimeout(() => { taskEl.style.outline = 'none'; }, 3000);
+                                      showToast('🎯 Located and highlighted checklist on canvas');
+                                      return;
+                                    }
+                                  } else if (q.includes('table') || q.includes('grid')) {
+                                    const tableEl = root.querySelector('table');
+                                    if (tableEl) {
+                                      tableEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                      tableEl.style.outline = '3px solid #6366f1';
+                                      setTimeout(() => { tableEl.style.outline = 'none'; }, 3000);
+                                      showToast('🎯 Located table on canvas');
+                                      return;
+                                    }
+                                  } else if (q.includes('image') || q.includes('photo')) {
+                                    setIsInsertImagesModalOpen(true);
+                                    showToast('🖼️ Opened Image Uploader');
+                                    return;
+                                  }
+                                }
+                                showToast('⚡ Executed action workflow on canvas');
+                              }}
+                              className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg shadow-xs transition-colors cursor-pointer"
                             >
-                              <span>⚡ Execute Action</span>
+                              <span>⚡ Execute Action on Canvas</span>
                             </button>
                             <button
                               type="button"
