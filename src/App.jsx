@@ -9235,9 +9235,9 @@ const DEFAULT_DECK_SLIDES = [
     tagline: 'Ingoude Company',
     headline: 'STARTUP\nPITCH DECK',
     presenter: 'PRESENT BY NEIL TRAN',
-    footerEmail: 'www.reallygreatsite.com',
-    footerWeb: 'hello@reallygreatsite.com',
-    footerLocation: '123 Anywhere Street',
+    contactWeb: 'www.reallygreatsite.com',
+    contactEmail: 'hello@reallygreatsite.com',
+    contactAddress: '123 Anywhere Street',
     backgroundColor: '#05070B',
     vectorWaveStyle: 'original-pitch',
     vectorColor1: '#0055ff',
@@ -57533,870 +57533,402 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            {/* Bottom Anchor */}
                                            <div className="h-1" />
                                          </div>
-                                       ) : layout === 'Startup Pitch Deck' ? (
-                                        /* ── STARTUP PITCH DECK COVER TEMPLATE (REVERSE-ENGINEERED SLIDE 1) ── */
-                                        <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none">
-                                          {/* Top Row: Company Tagline / Subtitle (Fully Editable) */}
-                                          <div className="flex items-center justify-between pointer-events-auto select-auto z-20">
-                                            <div 
-                                              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                              suppressContentEditableWarning
-                                              onBlur={(e) => {
-                                                updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '');
-                                                showToast('Tagline saved');
+                                       ) : layout === 'Startup Pitch Deck' || layout === 'Startup Cover' || activeDeckSlide?.title === 'Startup Pitch Deck' ? (
+                                          /* ── STARTUP PITCH DECK COVER TEMPLATE (PIXEL-PERFECT SLIDE 1) ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-4 pb-3 md:px-8 md:pt-5 md:pb-3.5 overflow-hidden">
+                                            
+                                            {/* Top-Right High-Luminescence Multi-Strand Neon Vortex Wave */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'vector', id: 'cover-top-neon' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'coverTopNeon',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.coverTopNeon_posX || 0,
+                                                  origY: activeDeckSlide?.coverTopNeon_posY || 0
+                                                });
                                               }}
-                                                style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                className="text-[13px] italic font-normal tracking-wide text-slate-300 !text-slate-300 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 focus:ring-2 focus:ring-[#7C4DFF] rounded px-1.5 py-0.5 cursor-text transition-all bg-transparent hover:bg-white/5 select-text"
-                                             >
-                                               {activeDeckSlide?.tagline || 'Ingoude Company'}
-                                             </div>
-                                           </div>
-
-                                           {/* Center Area: Big Bold Title & Presenter Pill */}
-                                           <div className="flex flex-col gap-4 my-auto max-w-[62%] pointer-events-auto">
-                                             <div
-                                               onPointerDown={(e) => {
-                                                 if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
-                                                 e.stopPropagation();
-                                                 setDeckSelection({ type: 'text', id: 'cover-headline' });
-                                                 setDeckBentoDrag({ isDragging: true, cardId: 'coverHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.coverHeadline_posX || 0, origY: activeDeckSlide?.coverHeadline_posY || 0 });
-                                               }}
-                                               style={{
-                                                 transform: `translate(${activeDeckSlide?.coverHeadline_posX || 0}px, ${activeDeckSlide?.coverHeadline_posY || 0}px)`,
-                                                 transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
-                                                 width: activeDeckSlide?.coverHeadline_width ? `${activeDeckSlide.coverHeadline_width}px` : undefined,
-                                                 height: activeDeckSlide?.coverHeadline_height ? `${activeDeckSlide.coverHeadline_height}px` : undefined,
-                                                 touchAction: 'none'
-                                               }}
-                                               className={`relative overflow-visible cursor-grab active:cursor-grabbing ${deckSelection.type === 'text' && deckSelection.id === 'cover-headline' ? 'z-50 outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg' : 'z-30'}`}
-                                             >
-                                            <h1
-                                              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                              suppressContentEditableWarning
-                                              onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
-                                               style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                className="text-[44px] leading-[1.02] font-[900] tracking-tight text-white !text-white focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text whitespace-pre-line font-sans select-text w-full break-words"
+                                              style={{
+                                                position: 'absolute',
+                                                top: -25,
+                                                right: -20,
+                                                width: activeDeckSlide?.coverTopNeon_width ? `${activeDeckSlide.coverTopNeon_width}px` : '360px',
+                                                height: activeDeckSlide?.coverTopNeon_height ? `${activeDeckSlide.coverTopNeon_height}px` : '300px',
+                                                transform: `translate(${activeDeckSlide?.coverTopNeon_posX || 0}px, ${activeDeckSlide?.coverTopNeon_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                pointerEvents: 'auto',
+                                                cursor: 'grab',
+                                                zIndex: 3
+                                              }}
+                                              className={`overflow-visible select-none group/coverneon ${deckSelection.type === 'vector' && deckSelection.id === 'cover-top-neon' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
                                             >
-                                              {activeDeckSlide?.headline || 'STARTUP\nPITCH DECK'}
-                                            </h1>
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 360 300" fill="none">
+                                                <defs>
+                                                  <linearGradient id="coverNeonGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.95" />
+                                                    <stop offset="45%" stopColor="#38bdf8" stopOpacity="0.9" />
+                                                    <stop offset="75%" stopColor="#818cf8" stopOpacity="0.85" />
+                                                    <stop offset="100%" stopColor="#c084fc" stopOpacity="0.8" />
+                                                  </linearGradient>
+                                                  <linearGradient id="coverNeonGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.95" />
+                                                    <stop offset="50%" stopColor="#a855f7" stopOpacity="0.9" />
+                                                    <stop offset="100%" stopColor="#ec4899" stopOpacity="0.8" />
+                                                  </linearGradient>
+                                                  <filter id="coverNeonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                                    <feGaussianBlur stdDeviation="6" result="blur" />
+                                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                                  </filter>
+                                                </defs>
+                                                {/* Outer Luminous Glow & Sweeping Strands */}
+                                                <path d="M50,-10 C50,140 110,240 230,230 C300,225 340,160 360,110" stroke="url(#coverNeonGrad2)" strokeWidth="4.5" fill="none" opacity="0.85" filter="url(#coverNeonGlow)" />
+                                                <path d="M70,-15 C70,135 125,230 240,220 C310,215 345,155 365,105" stroke="url(#coverNeonGrad1)" strokeWidth="3.5" fill="none" opacity="0.95" />
+                                                <path d="M85,-20 C85,130 135,220 245,210 C315,205 350,150 370,100" stroke="#00f0ff" strokeWidth="2.5" fill="none" opacity="0.98" />
+                                                <path d="M95,-20 C95,125 142,212 248,202 C318,198 352,145 372,95" stroke="#ffffff" strokeWidth="1.8" fill="none" opacity="0.95" />
+                                                <path d="M60,0 C60,145 118,235 235,225" stroke="#e879f9" strokeWidth="1.2" fill="none" opacity="0.7" strokeDasharray="4 3" />
+                                              </svg>
+                                              {/* Drag Capsule */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'cover-top-neon' && (
+                                                <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'cover-top-neon' }); setDeckBentoDrag({ isDragging: true, cardId: 'coverTopNeon', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.coverTopNeon_posX || 0, origY: activeDeckSlide?.coverTopNeon_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <span>Top Neon Wave</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { coverTopNeon_posX: 0, coverTopNeon_posY: 0, coverTopNeon_width: undefined, coverTopNeon_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                </div>
+                                              )}
+                                            </div>
 
+                                            {/* Bottom-Left Ambient Neon Loop Graphic */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'vector', id: 'cover-bottom-neon' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'coverBottomNeon',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.coverBottomNeon_posX || 0,
+                                                  origY: activeDeckSlide?.coverBottomNeon_posY || 0
+                                                });
+                                              }}
+                                              style={{
+                                                position: 'absolute',
+                                                bottom: -15,
+                                                left: -15,
+                                                width: activeDeckSlide?.coverBottomNeon_width ? `${activeDeckSlide.coverBottomNeon_width}px` : '220px',
+                                                height: activeDeckSlide?.coverBottomNeon_height ? `${activeDeckSlide.coverBottomNeon_height}px` : '120px',
+                                                transform: `translate(${activeDeckSlide?.coverBottomNeon_posX || 0}px, ${activeDeckSlide?.coverBottomNeon_posY || 0}px)`,
+                                                transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                pointerEvents: 'auto',
+                                                cursor: 'grab',
+                                                zIndex: 3
+                                              }}
+                                              className={`overflow-visible select-none group/coverbotneon ${deckSelection.type === 'vector' && deckSelection.id === 'cover-bottom-neon' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
+                                            >
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 220 120" fill="none">
+                                                <path d="M-10,95 C30,95 80,60 140,20 C180,-5 200,40 220,110" stroke="#00f0ff" strokeWidth="2.5" fill="none" opacity="0.85" />
+                                                <path d="M-10,85 C35,85 85,55 142,15 C182,-10 202,35 220,105" stroke="#a855f7" strokeWidth="1.5" fill="none" opacity="0.75" />
+                                              </svg>
+                                              {/* Drag Capsule */}
+                                              {deckSelection.type === 'vector' && deckSelection.id === 'cover-bottom-neon' && (
+                                                <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'cover-bottom-neon' }); setDeckBentoDrag({ isDragging: true, cardId: 'coverBottomNeon', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.coverBottomNeon_posX || 0, origY: activeDeckSlide?.coverBottomNeon_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
+                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <span>Bottom Neon Loop</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { coverBottomNeon_posX: 0, coverBottomNeon_posY: 0, coverBottomNeon_width: undefined, coverBottomNeon_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Top-Left Company Tagline Block */}
+                                            <div className="z-20 pointer-events-auto pt-1">
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'text', id: 'cover-tagline' });
+                                                  setDeckBentoDrag({
+                                                    isDragging: true,
+                                                    cardId: 'coverTagline',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    origX: activeDeckSlide?.coverTagline_posX || 0,
+                                                    origY: activeDeckSlide?.coverTagline_posY || 0
+                                                  });
+                                                }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.coverTagline_posX || 0}px, ${activeDeckSlide?.coverTagline_posY || 0}px)`,
+                                                  transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                  width: activeDeckSlide?.coverTagline_width ? `${activeDeckSlide.coverTagline_width}px` : undefined,
+                                                  height: activeDeckSlide?.coverTagline_height ? `${activeDeckSlide.coverTagline_height}px` : undefined,
+                                                  touchAction: 'none'
+                                                }}
+                                                className={`relative inline-block cursor-grab active:cursor-grabbing group/tag z-30 ${deckSelection.type === 'text' && deckSelection.id === 'cover-tagline' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-lg p-0.5' : ''}`}
+                                              >
+                                                <span
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                  className="text-[12px] md:text-[14px] italic text-slate-300 font-serif outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text select-text leading-none tracking-wide"
+                                                >
+                                                  {activeDeckSlide?.tagline || 'Ingoude Company'}
+                                                </span>
+                                              </div>
+                                            </div>
+
+                                            {/* Center-Left Stage: STARTUP PITCH DECK + PRESENTER PILL */}
+                                            <div className="flex flex-col gap-3 my-auto z-20 pointer-events-auto max-w-[62%] min-h-0 pl-1">
+                                              
+                                              {/* 1. Huge Bold STARTUP PITCH DECK Headline */}
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'text', id: 'cover-headline' });
+                                                  setDeckBentoDrag({
+                                                    isDragging: true,
+                                                    cardId: 'coverHeadline',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    origX: activeDeckSlide?.coverHeadline_posX || 0,
+                                                    origY: activeDeckSlide?.coverHeadline_posY || 0
+                                                  });
+                                                }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.coverHeadline_posX || 0}px, ${activeDeckSlide?.coverHeadline_posY || 0}px)`,
+                                                  transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                  width: activeDeckSlide?.coverHeadline_width ? `${activeDeckSlide.coverHeadline_width}px` : undefined,
+                                                  height: activeDeckSlide?.coverHeadline_height ? `${activeDeckSlide.coverHeadline_height}px` : undefined,
+                                                  touchAction: 'none'
+                                                }}
+                                                className={`relative overflow-visible cursor-grab active:cursor-grabbing group/title z-30 mb-0.5 ${deckSelection.type === 'text' && deckSelection.id === 'cover-headline' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
+                                              >
+                                                <h1
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                  className="text-[36px] md:text-[44px] leading-[1.02] font-[900] tracking-tight text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text whitespace-pre-line font-sans select-text w-full break-words"
+                                                >
+                                                  {activeDeckSlide?.headline || 'STARTUP\nPITCH DECK'}
+                                                </h1>
+                                                {/* Drag Capsule */}
                                                 {deckSelection.type === 'text' && deckSelection.id === 'cover-headline' && (
                                                   <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'text', id: 'cover-headline' }); setDeckBentoDrag({ isDragging: true, cardId: 'coverHeadline', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.coverHeadline_posX || 0, origY: activeDeckSlide?.coverHeadline_posY || 0 }); }} className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
                                                     <Move size={11} className="text-violet-400" />
-                                                    <span>Drag Headline</span>
+                                                    <span>Headline</span>
                                                     <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                     <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { coverHeadline_posX: 0, coverHeadline_posY: 0, coverHeadline_width: undefined, coverHeadline_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
                                                   </div>
                                                 )}
-                                              {deckSelection.type === 'text' && deckSelection.id === 'cover-headline' && (
-                                                <>
-                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.coverHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.coverHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.coverHeadline_posX || 0, initY: activeDeckSlide?.coverHeadline_posY || 0, target: 'text-coverHeadline' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
-                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.coverHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.coverHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.coverHeadline_posX || 0, initY: activeDeckSlide?.coverHeadline_posY || 0, target: 'text-coverHeadline' }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
-                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.coverHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.coverHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.coverHeadline_posX || 0, initY: activeDeckSlide?.coverHeadline_posY || 0, target: 'text-coverHeadline' }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
-                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.coverHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.coverHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.coverHeadline_posX || 0, initY: activeDeckSlide?.coverHeadline_posY || 0, target: 'text-coverHeadline' }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
-                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.coverHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.coverHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.coverHeadline_posX || 0, initY: activeDeckSlide?.coverHeadline_posY || 0, target: 'text-coverHeadline' }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
-                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.coverHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.coverHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.coverHeadline_posX || 0, initY: activeDeckSlide?.coverHeadline_posY || 0, target: 'text-coverHeadline' }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
-                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.coverHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.coverHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.coverHeadline_posX || 0, initY: activeDeckSlide?.coverHeadline_posY || 0, target: 'text-coverHeadline' }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
-                                                  <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.coverHeadline_width || Math.round(rect.width), initH: activeDeckSlide?.coverHeadline_height || Math.round(rect.height), initX: activeDeckSlide?.coverHeadline_posX || 0, initY: activeDeckSlide?.coverHeadline_posY || 0, target: 'text-coverHeadline' }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
-                                                </>
-                                              )}
-                                            </div>
-                                            {/* Presenter Pill Badge (Interactive Draggable & Resizable Shape with Configurable Shimmer Placement) */}
-                                            {(() => {
-                                              const isPillSelected = deckSelection.type === 'pill';
-                                              const isPillHidden = activeDeckSlide?.pillHidden;
-                                              if (isPillHidden) return null;
-                                              const pX = activeDeckSlide?.pillPosX || 0;
-                                              const pY = activeDeckSlide?.pillPosY || 0;
-                                              const pW = activeDeckSlide?.pillWidth || 220;
-                                              const pillGradient = activeDeckSlide?.pillGradient || 'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)';
-                                              const pillShape = activeDeckSlide?.pillShape || 'pill';
-                                              const pillBorderEffect = activeDeckSlide?.pillBorderEffect || 'shimmer';
-                                              const pillBorderWidth = activeDeckSlide?.pillBorderWidth || 2;
-                                              const roundedClass = pillShape === 'square' ? 'rounded-md' : pillShape === 'rounded-square' ? 'rounded-2xl' : 'rounded-full';
+                                              </div>
 
-                                              // Custom Shimmer & Snake Colors and Target Placement
-                                              const sColor1 = activeDeckSlide?.pillShimmerColor1 || '#00f0ff';
-                                              const sColor2 = activeDeckSlide?.pillShimmerColor2 || '#ec4899';
-                                              const isDynamic = (activeDeckSlide?.pillMotionMode || 'dynamic') === 'dynamic';
-                                              const pillSpeedSec = activeDeckSlide?.pillSpeedSec || 3;
-                                              const glowLevel = activeDeckSlide?.pillGlowIntensity || 'standard';
-                                              const shimmerTarget = activeDeckSlide?.pillShimmerTarget || 'both'; // 'border' | 'button' | 'both'
-
-                                              const hasBorderShimmer = shimmerTarget === 'border' || shimmerTarget === 'both';
-                                              const hasButtonShimmer = shimmerTarget === 'button' || shimmerTarget === 'both';
-
-                                              // Compute dynamic Outer Glow Shadows with Granularity
-                                              const getPillOuterGlow = () => {
-                                                if (pillBorderEffect === 'none' || pillBorderEffect === 'solid') return 'none';
-                                                const blur1 = glowLevel === 'soft' ? 12 : glowLevel === 'vibrant' ? 35 : glowLevel === 'bloom' ? 60 : 25;
-                                                const blur2 = glowLevel === 'soft' ? 24 : glowLevel === 'vibrant' ? 60 : glowLevel === 'bloom' ? 90 : 45;
-
-                                                if (pillBorderEffect === 'snake') {
-                                                  return `0 0 ${blur1}px ${sColor1}99, 0 0 ${blur2}px ${sColor2}66`;
-                                                }
-                                                if (pillBorderEffect === 'shimmer') {
-                                                  return `0 0 ${blur1}px ${sColor1}88, 0 0 ${blur2}px ${sColor2}55`;
-                                                }
-                                                if (pillBorderEffect === 'neon-glow') {
-                                                  return `0 0 ${blur1}px #a855f799, 0 0 ${blur2}px #00f0ff88`;
-                                                }
-                                                if (pillBorderEffect === 'pulsing-aura') {
-                                                  return `0 0 ${blur1}px #ec489988`;
-                                                }
-                                                if (pillBorderEffect === 'glass-frost') {
-                                                  return '0 8px 32px rgba(0, 0, 0, 0.37)';
-                                                }
-                                                return 'none';
-                                              };
-
-                                              return (
-                                                <div 
-                                                  className="relative inline-flex self-start pointer-events-auto select-none"
-                                                  style={{
-                                                    transform: `translate(${pX}px, ${pY}px)`,
-                                                    transition: deckPillDrag.isDragging || deckResizeDrag.isResizing ? 'none' : 'transform 120ms ease-out'
-                                                  }}
+                                              {/* 2. 3D Glassmorphic Presenter Stadium Pill Capsule */}
+                                              <div
+                                                onPointerDown={(e) => {
+                                                  if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn') || e.target.getAttribute('contenteditable')) return;
+                                                  e.stopPropagation();
+                                                  setDeckSelection({ type: 'bento', id: 'cover-presenter' });
+                                                  setDeckBentoDrag({
+                                                    isDragging: true,
+                                                    cardId: 'presenter',
+                                                    startX: e.clientX,
+                                                    startY: e.clientY,
+                                                    origX: activeDeckSlide?.presenter_posX || 0,
+                                                    origY: activeDeckSlide?.presenter_posY || 0
+                                                  });
+                                                }}
+                                                onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: 'cover-presenter' }); }}
+                                                style={{
+                                                  transform: `translate(${activeDeckSlide?.presenter_posX || 0}px, ${activeDeckSlide?.presenter_posY || 0}px)`,
+                                                  transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
+                                                  width: activeDeckSlide?.presenter_width ? `${activeDeckSlide.presenter_width}px` : undefined,
+                                                  height: activeDeckSlide?.presenter_height ? `${activeDeckSlide.presenter_height}px` : undefined,
+                                                  background: activeDeckSlide?.presenterBg || 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
+                                                  borderRadius: activeDeckSlide?.presenterShape || '9999px',
+                                                  border: '1.2px solid rgba(255, 255, 255, 0.45)',
+                                                  boxShadow: '0 8px 24px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.45)',
+                                                  touchAction: 'none',
+                                                  cursor: 'grab'
+                                                }}
+                                                className={`w-full max-w-[230px] md:max-w-[260px] h-[34px] md:h-[38px] flex items-center justify-center text-center rounded-full relative group/pill shadow-xl select-none ${deckSelection.type === 'bento' && deckSelection.id === 'cover-presenter' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : 'hover:border-white/80 z-20'}`}
+                                              >
+                                                <span
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'presenter', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                  className="text-[10px] md:text-[11.5px] font-[900] tracking-[0.14em] uppercase text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans leading-none"
                                                 >
-                                                  {/* Pulsing Aura Ambient Glow Layer */}
-                                                  {pillBorderEffect === 'pulsing-aura' && (
-                                                    <div 
-                                                      className={`absolute -inset-1.5 ${roundedClass} bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 opacity-60 blur-md ${isDynamic ? 'animate-pulse' : ''} pointer-events-none`} 
-                                                    />
-                                                  )}
-
-                                                  {/* Animated Outer Wrapper with Border Padding & Rotation */}
-                                                  <div
-                                                    onPointerDown={(e) => {
-                                                      if (e.target.getAttribute('data-resize-handle')) return;
-                                                      e.stopPropagation();
-                                                      setDeckSelection({ type: 'pill', id: 'presenter-pill' });
-                                                      setDeckPillDrag({
-                                                        isDragging: true,
-                                                        startX: e.clientX,
-                                                        startY: e.clientY,
-                                                        origX: pX,
-                                                        origY: pY
-                                                      });
-                                                    }}
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      setDeckSelection({ type: 'pill', id: 'presenter-pill' });
-                                                    }}
-                                                    className={`relative inline-flex items-center justify-center cursor-grab active:cursor-grabbing transition-all overflow-hidden ${roundedClass} ${
-                                                      isPillSelected 
-                                                        ? 'outline outline-1 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-2xl' 
-                                                        : 'hover:scale-[1.02]'
-                                                    }`}
-                                                    style={{
-                                                      minWidth: `${pW}px`,
-                                                      padding: `${pillBorderWidth}px`,
-                                                      boxShadow: getPillOuterGlow()
-                                                    }}
-                                                  >
-                                                    {/* Dynamic Moving Shimmer / Snake Rotating Conic Beam on Border */}
-                                                    {hasBorderShimmer ? (
-                                                      pillBorderEffect === 'snake' ? (
-                                                        <div 
-                                                          className="absolute -inset-[200%] pointer-events-none"
-                                                          style={{
-                                                            background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 270deg, ${sColor1} 315deg, #ffffff 350deg, ${sColor2} 360deg)`,
-                                                            animation: isDynamic ? `deckBeamSpin ${pillSpeedSec}s linear infinite` : 'none',
-                                                            transform: isDynamic ? undefined : 'rotate(45deg)'
-                                                          }}
-                                                        />
-                                                      ) : pillBorderEffect === 'shimmer' ? (
-                                                        <div 
-                                                          className="absolute -inset-[200%] pointer-events-none"
-                                                          style={{
-                                                            background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 180deg, ${sColor1} 250deg, ${sColor2} 310deg, #7c4dff 360deg)`,
-                                                            animation: isDynamic ? `deckBeamSpin ${pillSpeedSec}s linear infinite` : 'none',
-                                                            transform: isDynamic ? undefined : 'rotate(45deg)'
-                                                          }}
-                                                        />
-                                                      ) : pillBorderEffect === 'neon-glow' ? (
-                                                        <div 
-                                                          className="absolute -inset-[200%] pointer-events-none"
-                                                          style={{
-                                                            background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 80deg, ${sColor2} 140deg, transparent 180deg, ${sColor1} 270deg, transparent 360deg)`,
-                                                            animation: isDynamic ? `deckBeamSpin ${Math.max(1, pillSpeedSec - 1)}s linear infinite` : 'none',
-                                                            transform: isDynamic ? undefined : 'rotate(45deg)'
-                                                          }}
-                                                        />
-                                                      ) : pillBorderEffect === 'solid' ? (
-                                                        <div className="absolute inset-0 bg-white/30 pointer-events-none" />
-                                                      ) : null
-                                                    ) : (
-                                                      <div className="absolute inset-0 bg-white/10 pointer-events-none" />
-                                                    )}
-
-                                                    {/* Inner Presenter Capsule Body with Surface Shimmer */}
-                                                    <div 
-                                                      className={`relative z-10 w-full h-full flex items-center justify-center px-4 py-1.5 ${roundedClass} overflow-hidden`}
-                                                      style={{
-                                                        background: pillGradient,
-                                                        backdropFilter: pillBorderEffect === 'glass-frost' ? 'blur(20px)' : 'none'
-                                                      }}
-                                                    >
-                                                      {/* Moving Surface Sheen Ray across Button Body */}
-                                                      {hasButtonShimmer && (
-                                                        <div 
-                                                          className={`absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12 pointer-events-none ${isDynamic ? 'animate-deck-sheen' : ''}`} 
-                                                          style={{
-                                                            opacity: 0.85
-                                                          }}
-                                                        />
-                                                      )}
-
-                                                      {/* Holographic Body Shimmer Tint */}
-                                                      {hasButtonShimmer && (
-                                                        <div 
-                                                          className="absolute inset-0 opacity-20 pointer-events-none"
-                                                          style={{
-                                                            background: `linear-gradient(135deg, ${sColor1}, transparent 60%, ${sColor2})`
-                                                          }}
-                                                        />
-                                                      )}
-
-                                                      <span 
-                                                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                                        suppressContentEditableWarning
-                                                        onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'presenter', e.currentTarget.textContent || '')}
-                                                         style={{ color: "#e2e8f0", caretColor: "#00f0ff" }}
-                                                         className="relative z-20 text-[11px] font-bold tracking-[0.2em] text-slate-200 !text-slate-200 focus:!text-white uppercase outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text select-text"
-                                                      >
-                                                        {activeDeckSlide?.presenter || 'PRESENT BY NEIL TRAN'}
-                                                      </span>
-                                                    </div>
-
-                                                    {/* Sleek Selection & Resize Handles */}
-                                                    {isPillSelected && (
-                                                      <>
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'nw', startX: e.clientX, startY: e.clientY, initW: pW, initH: 36, initX: pX, initY: pY, target: 'pill' }); }} className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'ne', startX: e.clientX, startY: e.clientY, initW: pW, initH: 36, initX: pX, initY: pY, target: 'pill' }); }} className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nesw-resize z-40 hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'sw', startX: e.clientX, startY: e.clientY, initW: pW, initH: 36, initX: pX, initY: pY, target: 'pill' }); }} className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nesw-resize z-40 hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'se', startX: e.clientX, startY: e.clientY, initW: pW, initH: 36, initX: pX, initY: pY, target: 'pill' }); }} className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'e', startX: e.clientX, startY: e.clientY, initW: pW, initH: 36, initX: pX, initY: pY, target: 'pill' }); }} className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-2 h-3 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ew-resize z-40 hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'w', startX: e.clientX, startY: e.clientY, initW: pW, initH: 36, initX: pX, initY: pY, target: 'pill' }); }} className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-2 h-3 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ew-resize z-40 hover:scale-125 transition-transform" />
-
-                                                        {/* Floating Mini Contextual Inspector */}
-                                                        <div className="absolute -top-11 left-0 px-3 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[11px] font-semibold tracking-wide shadow-2xl flex items-center gap-2 z-50 border border-white/15 whitespace-nowrap pointer-events-auto">
-                                                          {/* Shape Morphing Popover */}
-                                                          <div className="relative">
-                                                            <button
-                                                              type="button"
-                                                              onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pillShape' ? null : 'pillShape'); }}
-                                                              className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-xs flex items-center gap-1 cursor-pointer"
-                                                            >
-                                                              <Shapes size={11} className="text-cyan-400" />
-                                                              <span className="capitalize">{pillShape}</span>
-                                                            </button>
-                                                            {deckFloatingMenuOpen === 'pillShape' && (
-                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-36 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1 flex flex-col gap-0.5 text-xs text-zinc-200">
-                                                                {[
-                                                                  { id: 'pill', name: 'Pill Shape' },
-                                                                  { id: 'rounded-square', name: 'Rounded Rect' },
-                                                                  { id: 'square', name: 'Square Box' }
-                                                                ].map((sh) => (
-                                                                  <button key={sh.id} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillShape', sh.id); setDeckFloatingMenuOpen(null); showToast(`Shape: ${sh.name}`); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded flex items-center gap-1.5">{sh.name}</button>
-                                                                ))}
-                                                              </div>
-                                                            )}
-                                                          </div>
-
-                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
-
-                                                          {/* Shimmer Placement Target Toggle (Border vs Button vs Both) */}
-                                                          <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              const nextTarget = shimmerTarget === 'border' ? 'button' : shimmerTarget === 'button' ? 'both' : 'border';
-                                                              updateDeckSlideField(activeDeckSlide?.id, 'pillShimmerTarget', nextTarget);
-                                                              showToast(`Shimmer on: ${nextTarget.toUpperCase()}`);
-                                                            }}
-                                                            className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 text-[10px] font-semibold cursor-pointer"
-                                                            title="Shimmer Placement: Border / Button / Both"
-                                                          >
-                                                            {shimmerTarget === 'border' ? '🔲 Border' : shimmerTarget === 'button' ? '🔘 Button' : '🔲🔘 Both'}
-                                                          </button>
-
-                                                          {/* Shimmer & Glow Border Effects Popover */}
-                                                          <div className="relative">
-                                                            <button
-                                                              type="button"
-                                                              onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pillEffect' ? null : 'pillEffect'); }}
-                                                              className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs flex items-center gap-1 cursor-pointer"
-                                                              title="Moving Shimmer & Glow Effects"
-                                                            >
-                                                              <Zap size={11} />
-                                                              <span className="capitalize">{pillBorderEffect}</span>
-                                                            </button>
-                                                            {deckFloatingMenuOpen === 'pillEffect' && (
-                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-52 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 text-xs text-zinc-200">
-                                                                {[
-                                                                  { id: 'snake', name: '🐍 Snake Laser Border', desc: 'Continuous revolving snake head & trail' },
-                                                                  { id: 'shimmer', name: '🌀 Revolving Shimmer Beam', desc: 'Moving cyan & magenta laser beam' },
-                                                                  { id: 'neon-glow', name: '⚡ Electric Neon Rim', desc: 'Dual-phase revolving neon laser' },
-                                                                  { id: 'pulsing-aura', name: '✨ Pulsing Laser Aura', desc: 'Expanding ambient laser glow' },
-                                                                  { id: 'glass-frost', name: '❄️ Frosted Glass Sheen', desc: 'Moving light beam across glass' },
-                                                                  { id: 'solid', name: 'Classic Solid Border', desc: 'Clean static outline' }
-                                                                ].map((eff) => (
-                                                                  <button key={eff.id} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillBorderEffect', eff.id); setDeckFloatingMenuOpen(null); showToast(`Effect: ${eff.name}`); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded flex flex-col">
-                                                                    <span className="font-semibold text-white">{eff.name}</span>
-                                                                    <span className="text-[10px] text-zinc-400">{eff.desc}</span>
-                                                                  </button>
-                                                                ))}
-                                                              </div>
-                                                            )}
-                                                          </div>
-
-                                                          {/* Motion Mode Toggle (Dynamic vs Static) */}
-                                                          <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              const nextMode = isDynamic ? 'static' : 'dynamic';
-                                                              updateDeckSlideField(activeDeckSlide?.id, 'pillMotionMode', nextMode);
-                                                              showToast(`Motion: ${nextMode}`);
-                                                            }}
-                                                            className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] font-semibold cursor-pointer"
-                                                            title="Motion Toggle: Dynamic vs Static"
-                                                          >
-                                                            {isDynamic ? '⚡ Dynamic' : '⏸ Static'}
-                                                          </button>
-
-                                                          {/* Shimmer Color Picker */}
-                                                          <div className="relative">
-                                                            <button
-                                                              type="button"
-                                                              onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pillShimmerColor' ? null : 'pillShimmerColor'); }}
-                                                              className="w-4 h-4 rounded-full border border-white/40 shadow-xs hover:scale-110 transition-transform cursor-pointer"
-                                                              style={{ backgroundColor: sColor1 }}
-                                                              title="Laser & Shimmer Color"
-                                                            />
-                                                            {deckFloatingMenuOpen === 'pillShimmerColor' && (
-                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5">
-                                                                {['#00f0ff', '#ec4899', '#7c4dff', '#a855f7', '#3b82f6', '#f59e0b', '#10b981', '#f43f5e', '#ffffff', '#64748b'].map((hex) => (
-                                                                  <button key={hex} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillShimmerColor1', hex); setDeckFloatingMenuOpen(null); showToast('Laser color updated'); }} className="w-6 h-6 rounded-md border border-white/20 hover:scale-110" style={{ backgroundColor: hex }} />
-                                                                ))}
-                                                              </div>
-                                                            )}
-                                                          </div>
-
-                                                          {/* Border Thickness Stepper */}
-                                                          <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              const nextW = pillBorderWidth >= 6 ? 1 : pillBorderWidth + 1;
-                                                              updateDeckSlideField(activeDeckSlide?.id, 'pillBorderWidth', nextW);
-                                                              showToast(`Border thickness: ${nextW}px`);
-                                                            }}
-                                                            className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] font-mono cursor-pointer"
-                                                            title="Border Thickness"
-                                                          >
-                                                            {pillBorderWidth}px
-                                                          </button>
-
-                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
-
-                                                          {/* Gradient Style */}
-                                                          <div className="relative">
-                                                            <button
-                                                              type="button"
-                                                              onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'pillGrad' ? null : 'pillGrad'); }}
-                                                              className="w-4 h-4 rounded-full border border-white/40 shadow-xs hover:scale-110 transition-transform cursor-pointer"
-                                                              style={{ background: pillGradient }}
-                                                              title="Gradient Fill"
-                                                            />
-                                                            {deckFloatingMenuOpen === 'pillGrad' && (
-                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-52 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 flex flex-col gap-1 text-xs">
-                                                                {[
-                                                                  { name: 'Dark Cyber Glow', val: 'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)' },
-                                                                  { name: 'Royal Indigo Purple', val: 'linear-gradient(135deg, #4f46e5, #7c3aed)' },
-                                                                  { name: 'Electric Cyan Beams', val: 'linear-gradient(135deg, #06b6d4, #3b82f6)' },
-                                                                  { name: 'Laser Rose Glow', val: 'linear-gradient(135deg, #f43f5e, #ec4899)' },
-                                                                  { name: 'Emerald Trust', val: 'linear-gradient(135deg, #059669, #10b981)' },
-                                                                  { name: 'Obsidian Minimal', val: 'linear-gradient(135deg, #1e293b, #0f172a)' }
-                                                                ].map((g) => (
-                                                                  <button key={g.name} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillGradient', g.val); setDeckFloatingMenuOpen(null); showToast(`Gradient: ${g.name}`); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded flex items-center gap-2 text-zinc-200">
-                                                                    <div className="w-3.5 h-3.5 rounded-full shrink-0 border border-white/20" style={{ background: g.val }} />
-                                                                    <span>{g.name}</span>
-                                                                  </button>
-                                                                ))}
-                                                              </div>
-                                                            )}
-                                                          </div>
-
-                                                          {/* Delete Pill */}
-                                                          <button
-                                                            type="button"
-                                                            onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'pillHidden', true); setDeckSelection({ type: 'none', id: null }); showToast('Presenter shape removed'); }}
-                                                            className="p-1 hover:bg-rose-500/30 text-zinc-400 hover:text-rose-300 rounded cursor-pointer"
-                                                            title="Delete shape"
-                                                          >
-                                                            <Trash2 size={11} />
-                                                          </button>
-                                                        </div>
-                                                      </>
-                                                    )}
-                                                  </div>
-                                                </div>
-                                              );
-                                            })()}
-                                          </div>
-                                          {/* Bottom Row: Interactive Editable Divider Line & Multi-Shape Badges */}
-                                          {(() => {
-                                            const isLineHidden = activeDeckSlide?.footerLineHidden;
-                                            const isLineSelected = deckSelection.type === 'line';
-                                            const lineY = activeDeckSlide?.footerLinePosY || 0;
-                                            const lineColor = activeDeckSlide?.footerLineColor || 'rgba(255,255,255,0.15)';
-                                            const lineThick = activeDeckSlide?.footerLineThickness || 1;
-                                            const lineStyle = activeDeckSlide?.footerLineStyle || 'solid';
-                                            const lineWidth = activeDeckSlide?.footerLineWidth || 100;
-
-                                            // Shape renderer helper
-                                            const getShapeStyle = (shape, bg, size) => {
-                                              const base = {
-                                                width: `${size}px`,
-                                                height: `${size}px`,
-                                                background: bg,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                color: '#ffffff'
-                                              };
-                                              if (shape === 'rounded-square') return { ...base, borderRadius: '6px' };
-                                              if (shape === 'square') return { ...base, borderRadius: '0px' };
-                                              if (shape === 'diamond') return { ...base, transform: 'rotate(45deg) scale(0.85)', borderRadius: '3px' };
-                                              if (shape === 'triangle') return { ...base, clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)', borderRadius: '0px' };
-                                              if (shape === 'hexagon') return { ...base, clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)' };
-                                              if (shape === 'star') return { ...base, clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' };
-                                              return { ...base, borderRadius: '9999px' }; // circle default
-                                            };
-
-                                            const SHAPE_OPTIONS = [
-                                              { key: 'circle', label: 'Circle', icon: Circle },
-                                              { key: 'rounded-square', label: 'Rounded', icon: Square },
-                                              { key: 'square', label: 'Square', icon: Square },
-                                              { key: 'diamond', label: 'Diamond', icon: Diamond },
-                                              { key: 'triangle', label: 'Triangle', icon: Triangle },
-                                              { key: 'hexagon', label: 'Hexagon', icon: Shapes },
-                                              { key: 'star', label: 'Star', icon: Star }
-                                            ];
-
-                                            const COLOR_SWATCHES = [
-                                              'rgba(255,255,255,0.2)', '#00f0ff', '#7C4DFF', '#a855f7', '#ec4899', 
-                                              '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#0f172a'
-                                            ];
-
-                                            // Curated Vector Icons (Executive Tier)
-                                            const VECTOR_ICON_OPTIONS = [
-                                              { key: 'mail', label: 'Email / Mail', icon: Mail },
-                                              { key: 'globe', label: 'Web / Globe', icon: Globe },
-                                              { key: 'map-pin', label: 'Location / Pin', icon: MapPin },
-                                              { key: 'phone', label: 'Phone', icon: Phone },
-                                              { key: 'link', label: 'Link', icon: LinkIcon },
-                                              { key: 'at-sign', label: 'Social / User', icon: AtSign },
-                                              { key: 'sparkles', label: 'Sparkles / AI', icon: Sparkles },
-                                              { key: 'star', label: 'Star', icon: Star },
-                                              { key: 'zap', label: 'Zap / Speed', icon: Zap },
-                                              { key: 'compass', label: 'Compass', icon: Compass },
-                                              { key: 'send', label: 'Send', icon: Send },
-                                              { key: 'shield', label: 'Shield', icon: Shield },
-                                              { key: 'check', label: 'Checkmark', icon: Check },
-                                              { key: 'layers', label: 'Layers', icon: Layers },
-                                              { key: 'cpu', label: 'Tech / CPU', icon: Cpu }
-                                            ];
-
-                                            // Helper to render crisp vector icon
-                                            const renderShapeVectorIcon = (rawKey, size, isDiamond = false) => {
-                                              const iconSize = Math.max(10, Math.round(size * 0.52));
-                                              const key = (rawKey || '').toLowerCase();
-
-                                              let IconComp = Mail;
-                                              if (key === 'globe' || key === '🌐' || key === 'web') IconComp = Globe;
-                                              else if (key === 'map-pin' || key === 'mappin' || key === '📍' || key === 'location' || key === 'pin') IconComp = MapPin;
-                                              else if (key === 'phone' || key === '📞') IconComp = Phone;
-                                              else if (key === 'link' || key === '🔗') IconComp = LinkIcon;
-                                              else if (key === 'at-sign' || key === 'atsign' || key === '@') IconComp = AtSign;
-                                              else if (key === 'sparkles' || key === '✨') IconComp = Sparkles;
-                                              else if (key === 'star' || key === '⭐') IconComp = Star;
-                                              else if (key === 'zap' || key === '⚡') IconComp = Zap;
-                                              else if (key === 'compass') IconComp = Compass;
-                                              else if (key === 'send' || key === '🚀') IconComp = Send;
-                                              else if (key === 'shield') IconComp = Shield;
-                                              else if (key === 'check') IconComp = Check;
-                                              else if (key === 'layers') IconComp = Layers;
-                                              else if (key === 'cpu' || key === '💻') IconComp = Cpu;
-                                              else if (key === 'mail' || key === '✉' || key === '📧') IconComp = Mail;
-
-                                              return (
-                                                <span style={{ transform: isDiamond ? 'rotate(-45deg)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                  <IconComp size={iconSize} strokeWidth={2} />
+                                                  {activeDeckSlide?.presenter || 'PRESENT BY NEIL TRAN'}
                                                 </span>
-                                              );
-                                            };
 
-                                            // Render individual badge helper
-                                            const renderInteractiveBadge = (bId, defaultIconKey) => {
-                                              const bHidden = activeDeckSlide?.[bId + '_hidden'];
-                                              if (bHidden) return null;
-                                              const bSelected = deckSelection.type === 'badge' && deckSelection.id === bId;
-                                              const bX = activeDeckSlide?.[bId + '_posX'] || 0;
-                                              const bY = activeDeckSlide?.[bId + '_posY'] || 0;
-                                              const bSize = activeDeckSlide?.[bId + '_size'] || 20;
-                                              const bBg = activeDeckSlide?.[bId + '_bg'] || 'rgba(255,255,255,0.18)';
-                                              const bIconKey = activeDeckSlide?.[bId + '_icon'] || defaultIconKey;
-                                              const bShape = activeDeckSlide?.[bId + '_shape'] || 'circle';
-
-                                              return (
-                                                <div 
-                                                  onPointerDown={(e) => {
-                                                    e.stopPropagation();
-                                                    setDeckSelection({ type: 'badge', id: bId });
-                                                    setDeckBadgeDrag({
-                                                      isDragging: true,
-                                                      badgeId: bId,
-                                                      startX: e.clientX,
-                                                      startY: e.clientY,
-                                                      origX: bX,
-                                                      origY: bY
-                                                    });
-                                                  }}
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setDeckSelection({ type: 'badge', id: bId });
-                                                  }}
-                                                  className={`relative flex items-center justify-center shrink-0 cursor-grab active:cursor-grabbing transition-all ${
-                                                    bSelected ? 'outline outline-1 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/25 shadow-lg' : 'hover:scale-110'
-                                                  }`}
-                                                  style={{
-                                                    transform: `translate(${bX}px, ${bY}px)`,
-                                                    transition: deckBadgeDrag.isDragging ? 'none' : 'transform 120ms ease-out'
-                                                  }}
-                                                >
-                                                  {/* The Geometric Shape Element with Crisp Vector Icon */}
-                                                  <div style={getShapeStyle(bShape, bBg, bSize)}>
-                                                    {renderShapeVectorIcon(bIconKey, bSize, bShape === 'diamond')}
-                                                  </div>
-
-                                                  {/* Selection Bounding Corner Handles & Floating Contextual Toolbar */}
-                                                  {bSelected && (
-                                                    <>
-                                                      <div className="absolute -top-1 -left-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[1px] shadow-xs pointer-events-none" />
-                                                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[1px] shadow-xs pointer-events-none" />
-                                                      <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[1px] shadow-xs pointer-events-none" />
-                                                      <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white border border-[#7C4DFF] rounded-[1px] shadow-xs pointer-events-none" />
-
-                                                      {/* Floating Contextual Inspector for Shape */}
-                                                      <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/15 whitespace-nowrap pointer-events-auto">
-                                                        {/* Shape Selector Popover */}
-                                                        <div className="relative">
-                                                          <button 
-                                                            type="button" 
-                                                            onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === bId + '_shape' ? null : bId + '_shape'); }}
-                                                            className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] cursor-pointer"
-                                                            title="Morph Shape Geometry"
-                                                          >
-                                                            <Shapes size={11} className="text-violet-400" />
-                                                            <span className="capitalize">{bShape}</span>
-                                                          </button>
-                                                          {deckFloatingMenuOpen === bId + '_shape' && (
-                                                            <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-40 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1 flex flex-col gap-0.5 text-xs text-zinc-200">
-                                                              {SHAPE_OPTIONS.map((sh) => (
-                                                                <button
-                                                                  key={sh.key}
-                                                                  type="button"
-                                                                  onClick={() => {
-                                                                    updateDeckSlideField(activeDeckSlide?.id, `${bId}_shape`, sh.key);
-                                                                    setDeckFloatingMenuOpen(null);
-                                                                    showToast(`Shape set to ${sh.label}`);
-                                                                  }}
-                                                                  className="w-full text-left px-2 py-1 hover:bg-white/10 rounded flex items-center gap-2"
-                                                                >
-                                                                  <sh.icon size={12} className="text-[#7C4DFF]" />
-                                                                  <span>{sh.label}</span>
-                                                                </button>
-                                                              ))}
-                                                            </div>
-                                                          )}
-                                                        </div>
-
-                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
-
-                                                        {/* Fill Color Picker Popover */}
-                                                        <div className="relative">
-                                                          <button
-                                                            type="button"
-                                                            onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === bId + '_color' ? null : bId + '_color'); }}
-                                                            className="w-4 h-4 rounded-full border border-white/40 shadow-xs hover:scale-110 transition-transform cursor-pointer"
-                                                            style={{ backgroundColor: bBg.includes('rgba') ? '#ffffff' : bBg }}
-                                                            title="Fill Color"
-                                                          />
-                                                          {deckFloatingMenuOpen === bId + '_color' && (
-                                                            <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5">
-                                                              {COLOR_SWATCHES.map((hex) => (
-                                                                <button
-                                                                  key={hex}
-                                                                  type="button"
-                                                                  onClick={() => {
-                                                                    updateDeckSlideField(activeDeckSlide?.id, `${bId}_bg`, hex);
-                                                                    setDeckFloatingMenuOpen(null);
-                                                                    showToast(`Color updated to ${hex}`);
-                                                                  }}
-                                                                  className="w-6 h-6 rounded-md border border-white/20 hover:scale-110 transition-transform"
-                                                                  style={{ backgroundColor: hex }}
-                                                                />
-                                                              ))}
-                                                            </div>
-                                                          )}
-                                                        </div>
-
-                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
-
-                                                        {/* Crisp Vector Icon Popover */}
-                                                        <div className="relative">
-                                                          <button 
-                                                            type="button" 
-                                                            onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === bId + '_icon' ? null : bId + '_icon'); }}
-                                                            className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-xs cursor-pointer flex items-center gap-1"
-                                                            title="Change Vector Icon"
-                                                          >
-                                                            {renderShapeVectorIcon(bIconKey, 14)}
-                                                          </button>
-                                                          {deckFloatingMenuOpen === bId + '_icon' && (
-                                                            <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-52 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5 text-zinc-200">
-                                                              {VECTOR_ICON_OPTIONS.map((opt) => {
-                                                                const IconElement = opt.icon;
-                                                                return (
-                                                                  <button 
-                                                                    key={opt.key} 
-                                                                    type="button" 
-                                                                    onClick={() => { 
-                                                                      updateDeckSlideField(activeDeckSlide?.id, `${bId}_icon`, opt.key); 
-                                                                      setDeckFloatingMenuOpen(null); 
-                                                                      showToast(`Icon set to ${opt.label}`);
-                                                                    }} 
-                                                                    className="hover:bg-white/15 p-1.5 rounded flex items-center justify-center cursor-pointer transition-colors"
-                                                                    title={opt.label}
-                                                                  >
-                                                                    <IconElement size={14} />
-                                                                  </button>
-                                                                );
-                                                              })}
-                                                            </div>
-                                                          )}
-                                                        </div>
-
-                                                        {/* Size Toggle */}
-                                                        <button 
-                                                          type="button" 
-                                                          onClick={(e) => { 
-                                                            e.stopPropagation(); 
-                                                            const nextS = bSize >= 28 ? 16 : bSize + 4; 
-                                                            updateDeckSlideField(activeDeckSlide?.id, `${bId}_size`, nextS); 
-                                                          }} 
-                                                          className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] font-mono cursor-pointer"
-                                                          title="Resize Shape"
-                                                        >
-                                                          {bSize}px
-                                                        </button>
-
-                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
-
-                                                        {/* More Options Dropdown (...) */}
-                                                        <div className="relative">
-                                                          <button
-                                                            type="button"
-                                                            onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === bId + '_more' ? null : bId + '_more'); }}
-                                                            className="p-1 hover:bg-white/10 rounded text-zinc-300 hover:text-white cursor-pointer"
-                                                            title="More Options"
-                                                          >
-                                                            <MoreHorizontal size={11} />
-                                                          </button>
-                                                          {deckFloatingMenuOpen === bId + '_more' && (
-                                                            <div onClick={(e) => e.stopPropagation()} className="absolute bottom-7 left-0 z-[999] w-36 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-1 flex flex-col gap-0.5 text-xs text-zinc-200">
-                                                              <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, `${bId}_posX`, (bX || 0) + 15); updateDeckSlideField(activeDeckSlide?.id, `${bId}_posY`, (bY || 0) + 15); setDeckFloatingMenuOpen(null); showToast('Shape duplicated'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded flex items-center gap-1.5"><Copy size={11} /> Duplicate</button>
-                                                              <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, `${bId}_posX`, 0); updateDeckSlideField(activeDeckSlide?.id, `${bId}_posY`, 0); setDeckFloatingMenuOpen(null); showToast('Position reset'); }} className="w-full text-left px-2 py-1 hover:bg-white/10 rounded flex items-center gap-1.5"><RotateCcw size={11} /> Reset Pos</button>
-                                                              <div className="h-px bg-white/10 my-0.5" />
-                                                              <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, `${bId}_hidden`, true); setDeckSelection({ type: 'none', id: null }); showToast('Shape removed'); }} className="w-full text-left px-2 py-1 hover:bg-rose-500/20 text-rose-400 rounded flex items-center gap-1.5"><Trash2 size={11} /> Delete</button>
-                                                            </div>
-                                                          )}
-                                                        </div>
-
-                                                        {/* Quick Delete */}
-                                                        <button 
-                                                          type="button" 
-                                                          onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, `${bId}_hidden`, true); setDeckSelection({ type: 'none', id: null }); showToast('Shape removed'); }} 
-                                                          className="p-1 hover:bg-rose-500/30 text-zinc-400 hover:text-rose-300 rounded cursor-pointer"
-                                                          title="Delete Shape"
-                                                        >
-                                                          <Trash2 size={11} />
-                                                        </button>
-                                                      </div>
-                                                    </>
-                                                  )}
-                                                </div>
-                                              );
-                                            };
-
-                                            return (
-                                              <div className="flex flex-col gap-3 relative pointer-events-auto select-none mt-auto">
-                                                {/* Interactive Horizontal Divider Line */}
-                                                {!isLineHidden && (
-                                                  <div 
-                                                    onPointerDown={(e) => {
-                                                      e.stopPropagation();
-                                                      setDeckSelection({ type: 'line', id: 'footer-divider' });
-                                                      setDeckLineDrag({
-                                                        isDragging: true,
-                                                        startY: e.clientY,
-                                                        origY: lineY
-                                                      });
-                                                    }}
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      setDeckSelection({ type: 'line', id: 'footer-divider' });
-                                                    }}
-                                                    className={`relative w-full py-2 cursor-ns-resize group transition-all ${
-                                                      isLineSelected ? 'outline outline-1 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/20 rounded-sm' : 'hover:outline-1 hover:outline-dashed hover:outline-white/30'
-                                                    }`}
-                                                    style={{
-                                                      transform: `translateY(${lineY}px)`,
-                                                      transition: deckLineDrag.isDragging ? 'none' : 'transform 120ms ease-out'
-                                                    }}
-                                                  >
-                                                    {/* Selection Handles & Floating Mini-Toolbar for Line */}
-                                                    {isLineSelected && (
-                                                      <>
-                                                        <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border border-[#7C4DFF] rounded-full shadow-md z-30 pointer-events-none" />
-                                                        <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border border-[#7C4DFF] rounded-full shadow-md z-30 pointer-events-none" />
-                                                        
-                                                        {/* Floating Contextual Line Toolbar */}
-                                                        <div className="absolute -top-9 left-4 px-2.5 py-1 rounded-full bg-zinc-900/90 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/15 whitespace-nowrap pointer-events-auto">
-                                                          <Minus size={11} className="text-violet-400" />
-                                                          <span>Divider Line</span>
-                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
-                                                          
-                                                          {/* Line Color Picker Popover */}
-                                                          <div className="relative">
-                                                            <button
-                                                              type="button"
-                                                              onClick={(e) => { e.stopPropagation(); setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'lineColor' ? null : 'lineColor'); }}
-                                                              className="w-4 h-4 rounded-full border border-white/40 shadow-xs hover:scale-110 transition-transform cursor-pointer"
-                                                              style={{ backgroundColor: lineColor.includes('rgba') ? '#ffffff' : lineColor }}
-                                                              title="Line Color"
-                                                            />
-                                                            {deckFloatingMenuOpen === 'lineColor' && (
-                                                              <div onClick={(e) => e.stopPropagation()} className="absolute bottom-6 left-0 z-[999] w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-2 grid grid-cols-5 gap-1.5">
-                                                                {COLOR_SWATCHES.map((hex) => (
-                                                                  <button key={hex} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'footerLineColor', hex); setDeckFloatingMenuOpen(null); }} className="w-6 h-6 rounded-md border border-white/20 hover:scale-110 transition-transform" style={{ backgroundColor: hex }} />
-                                                                ))}
-                                                              </div>
-                                                            )}
-                                                          </div>
-
-                                                          {/* Line Thickness */}
-                                                          <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              const nextT = lineThick >= 4 ? 1 : lineThick + 1;
-                                                              updateDeckSlideField(activeDeckSlide?.id, 'footerLineThickness', nextT);
-                                                              showToast(`Line thickness: ${nextT}px`);
-                                                            }}
-                                                            className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] font-mono cursor-pointer"
-                                                            title="Toggle Thickness"
-                                                          >
-                                                            {lineThick}px
-                                                          </button>
-
-                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
-
-                                                          {/* Reset Line Pos */}
-                                                          <button
-                                                            type="button"
-                                                            onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'footerLinePosY', 0); showToast('Line position reset'); }}
-                                                            className="p-1 hover:bg-white/10 rounded text-zinc-300 hover:text-white"
-                                                            title="Reset position"
-                                                          >
-                                                            <RotateCcw size={11} />
-                                                          </button>
-
-                                                          {/* Delete Line */}
-                                                          <button
-                                                            type="button"
-                                                            onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, 'footerLineHidden', true); setDeckSelection({ type: 'none', id: null }); showToast('Divider line removed'); }}
-                                                            className="p-1 hover:bg-rose-500/30 text-zinc-400 hover:text-rose-300 rounded transition-colors"
-                                                            title="Delete Line"
-                                                          >
-                                                            <Trash2 size={11} />
-                                                          </button>
-                                                        </div>
-                                                      </>
-                                                    )}
-
-                                                    {/* Actual Rendered Divider Line Bar */}
-                                                    <div 
-                                                      className="w-full transition-all" 
-                                                      style={{
-                                                        height: `${lineThick}px`,
-                                                        backgroundColor: lineColor,
-                                                        borderStyle: lineStyle,
-                                                        width: `${lineWidth}%`
+                                                {/* Floating Capsule Toolbar */}
+                                                {deckSelection.type === 'bento' && deckSelection.id === 'cover-presenter' && (
+                                                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                    <Sparkles size={11} className="text-cyan-400" />
+                                                    <span>Presenter Pill</span>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActivePillShapePicker({ rowKey: 'presenter', shapeKey: 'presenterShape' });
                                                       }}
-                                                    />
+                                                      className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                      <Shapes size={10} /> Shape
+                                                    </button>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActivePillGradPicker({ rowKey: 'presenter', bgKey: 'presenterBg' });
+                                                      }}
+                                                      className="picker-trigger-btn px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-violet-300 flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                      <Palette size={10} /> Color
+                                                    </button>
+                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                    <button
+                                                      type="button"
+                                                      onPointerDown={(e) => {
+                                                        e.stopPropagation();
+                                                        updateDeckSlideFields(activeDeckSlide?.id, {
+                                                          presenter_posX: 0,
+                                                          presenter_posY: 0,
+                                                          presenter_width: undefined,
+                                                          presenter_height: undefined
+                                                        });
+                                                      }}
+                                                      className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                      title="Reset Position"
+                                                    >
+                                                      <RotateCcw size={11} />
+                                                    </button>
                                                   </div>
                                                 )}
 
-                                                {/* 3 Contact Info Metadata Columns */}
-                                                <div className="grid grid-cols-3 gap-2 text-[11px] font-medium text-slate-300">
-                                                  {/* Column 1: Website / Email */}
-                                                  <div className="flex items-center gap-2 relative">
-                                                    {renderInteractiveBadge('badge1', 'mail')}
-                                                    <span 
-                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                                      suppressContentEditableWarning
-                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footerEmail', e.currentTarget.textContent || '')}
-                                                      className="outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 truncate cursor-text"
-                                                    >
-                                                      {activeDeckSlide?.footerEmail || 'www.reallygreatsite.com'}
-                                                    </span>
-                                                  </div>
-
-                                                  {/* Column 2: Web / Contact */}
-                                                  <div className="flex items-center gap-2 relative">
-                                                    {renderInteractiveBadge('badge2', 'globe')}
-                                                    <span 
-                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                                      suppressContentEditableWarning
-                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footerWeb', e.currentTarget.textContent || '')}
-                                                      className="outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 truncate cursor-text"
-                                                    >
-                                                      {activeDeckSlide?.footerWeb || 'hello@reallygreatsite.com'}
-                                                    </span>
-                                                  </div>
-
-                                                  {/* Column 3: Location / Map */}
-                                                  <div className="flex items-center gap-2 relative">
-                                                    {renderInteractiveBadge('badge3', 'map-pin')}
-                                                    <span 
-                                                      contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                                      suppressContentEditableWarning
-                                                      onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footerLocation', e.currentTarget.textContent || '')}
-                                                      className="outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-0.5 truncate cursor-text"
-                                                    >
-                                                      {activeDeckSlide?.footerLocation || '123 Anywhere Street'}
-                                                    </span>
-                                                  </div>
-                                                </div>
+                                                {/* 8 Resize Handles */}
+                                                {deckSelection.type === 'bento' && deckSelection.id === 'cover-presenter' && (
+                                                  <>
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenter_width || Math.round(rect.width), initH: activeDeckSlide?.presenter_height || Math.round(rect.height), initX: activeDeckSlide?.presenter_posX || 0, initY: activeDeckSlide?.presenter_posY || 0, target: 'bento-presenter' }); }} className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenter_width || Math.round(rect.width), initH: activeDeckSlide?.presenter_height || Math.round(rect.height), initX: activeDeckSlide?.presenter_posX || 0, initY: activeDeckSlide?.presenter_posY || 0, target: 'bento-presenter' }); }} className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenter_width || Math.round(rect.width), initH: activeDeckSlide?.presenter_height || Math.round(rect.height), initX: activeDeckSlide?.presenter_posX || 0, initY: activeDeckSlide?.presenter_posY || 0, target: 'bento-presenter' }); }} className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom-right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenter_width || Math.round(rect.width), initH: activeDeckSlide?.presenter_height || Math.round(rect.height), initX: activeDeckSlide?.presenter_posX || 0, initY: activeDeckSlide?.presenter_posY || 0, target: 'bento-presenter' }); }} className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenter_width || Math.round(rect.width), initH: activeDeckSlide?.presenter_height || Math.round(rect.height), initX: activeDeckSlide?.presenter_posX || 0, initY: activeDeckSlide?.presenter_posY || 0, target: 'bento-presenter' }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenter_width || Math.round(rect.width), initH: activeDeckSlide?.presenter_height || Math.round(rect.height), initX: activeDeckSlide?.presenter_posX || 0, initY: activeDeckSlide?.presenter_posY || 0, target: 'bento-presenter' }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize hover:scale-110" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'left', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenter_width || Math.round(rect.width), initH: activeDeckSlide?.presenter_height || Math.round(rect.height), initX: activeDeckSlide?.presenter_posX || 0, initY: activeDeckSlide?.presenter_posY || 0, target: 'bento-presenter' }); }} className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                    <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); const rect = e.currentTarget.parentElement.getBoundingClientRect(); setDeckResizeDrag({ isResizing: true, handle: 'right', startX: e.clientX, startY: e.clientY, initW: activeDeckSlide?.presenter_width || Math.round(rect.width), initH: activeDeckSlide?.presenter_height || Math.round(rect.height), initX: activeDeckSlide?.presenter_posX || 0, initY: activeDeckSlide?.presenter_posY || 0, target: 'bento-presenter' }); }} className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize hover:scale-110" />
+                                                  </>
+                                                )}
                                               </div>
-                                            );
-                                          })()}
-                                        </div>
-                                      ) : layout === 'Text & List' ? (
+                                            </div>
+
+                                            {/* Bottom Contact Bar: Web, Email, Address */}
+                                            <div
+                                              onPointerDown={(e) => {
+                                                if (e.target.getAttribute('data-resize-handle') || e.target.getAttribute('contenteditable')) return;
+                                                e.stopPropagation();
+                                                setDeckSelection({ type: 'bento', id: 'cover-contact-bar' });
+                                                setDeckBentoDrag({
+                                                  isDragging: true,
+                                                  cardId: 'coverContactBar',
+                                                  startX: e.clientX,
+                                                  startY: e.clientY,
+                                                  origX: activeDeckSlide?.coverContactBar_posX || 0,
+                                                  origY: activeDeckSlide?.coverContactBar_posY || 0
+                                                });
+                                              }}
+                                              onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: 'cover-contact-bar' }); }}
+                                              style={{
+                                                transform: `translate(${activeDeckSlide?.coverContactBar_posX || 0}px, ${activeDeckSlide?.coverContactBar_posY || 0}px)`,
+                                                transition: deckBentoDrag.isDragging ? 'none' : 'transform 120ms ease-out',
+                                                touchAction: 'none'
+                                              }}
+                                              className={`flex items-center justify-around w-full pt-1.5 pb-0.5 z-20 pointer-events-auto relative group/contact rounded-xl cursor-grab active:cursor-grabbing ${deckSelection.type === 'bento' && deckSelection.id === 'cover-contact-bar' ? 'outline outline-2 outline-[#7C4DFF] ring-2 ring-[#7C4DFF]/30 bg-white/5' : ''}`}
+                                            >
+                                              {/* Item 1: Website */}
+                                              <div className="flex items-center gap-1.5">
+                                                <div className="w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center text-black shrink-0 shadow-sm">
+                                                  <Globe size={9} />
+                                                </div>
+                                                <span
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'contactWeb', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                  className="text-[8px] md:text-[9px] text-slate-300 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
+                                                >
+                                                  {activeDeckSlide?.contactWeb || 'www.reallygreatsite.com'}
+                                                </span>
+                                              </div>
+
+                                              {/* Item 2: Email */}
+                                              <div className="flex items-center gap-1.5">
+                                                <div className="w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center text-black shrink-0 shadow-sm">
+                                                  <Mail size={9} />
+                                                </div>
+                                                <span
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'contactEmail', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                  className="text-[8px] md:text-[9px] text-slate-300 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
+                                                >
+                                                  {activeDeckSlide?.contactEmail || 'hello@reallygreatsite.com'}
+                                                </span>
+                                              </div>
+
+                                              {/* Item 3: Address */}
+                                              <div className="flex items-center gap-1.5">
+                                                <div className="w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center text-black shrink-0 shadow-sm">
+                                                  <MapPin size={9} />
+                                                </div>
+                                                <span
+                                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                  suppressContentEditableWarning
+                                                  onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'contactAddress', e.currentTarget.textContent || '')}
+                                                  style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
+                                                  className="text-[8px] md:text-[9px] text-slate-300 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
+                                                >
+                                                  {activeDeckSlide?.contactAddress || '123 Anywhere Street'}
+                                                </span>
+                                              </div>
+
+                                              {/* Floating Capsule Toolbar for Contact Bar */}
+                                              {deckSelection.type === 'bento' && deckSelection.id === 'cover-contact-bar' && (
+                                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
+                                                  <Globe size={11} className="text-cyan-400" />
+                                                  <span>Contact Footer</span>
+                                                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                  <button
+                                                    type="button"
+                                                    onPointerDown={(e) => {
+                                                      e.stopPropagation();
+                                                      updateDeckSlideFields(activeDeckSlide?.id, {
+                                                        coverContactBar_posX: 0,
+                                                        coverContactBar_posY: 0
+                                                      });
+                                                    }}
+                                                    className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer"
+                                                    title="Reset Position"
+                                                  >
+                                                    <RotateCcw size={11} />
+                                                  </button>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        ) : layout === 'Text & List' ? (
                                         <div className="flex flex-col gap-3 max-w-[85%] pointer-events-auto">
                                           <h1
                                             contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
