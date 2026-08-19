@@ -76,6 +76,7 @@ import { executeTool, undoTransaction, getExecutionLogs, getTransactionHistory }
 import { CANONICAL_DOCS_TOOLS } from './services/docsToolRegistry';
 import { toOpenAITools, toGeminiTools, toAnthropicTools, getDocsToolSystemPrompt, getCanonicalToolSchemas } from './services/docsLlmAdapters';
 import { getAvailableTools, executeSequence } from './services/docsAgentOrchestrator';
+import { runBrowserAgent } from './services/browserAgentService';
 import { DocsToolDevConsoleModal } from './components/dev/DocsToolDevConsoleModal';
 
 import * as Y from 'yjs';
@@ -28137,6 +28138,77 @@ Return ONLY valid JSON matching the schema.`;
       lengthMode: requestedLengthMode,
       lengthValue: requestedLengthValue,
     });
+
+    // ── AUTONOMOUS BROWSER AGENT ROUTER ────────────────────────────────
+    const isBrowserAgentRequest = Boolean(
+      activeAgentTag?.key === 'browser' ||
+      smartActionKey === 'browser' ||
+      /^\/browser\b/i.test(promptText) ||
+      /^@browser\b/i.test(promptText) ||
+      /\b(browse(\s+the)?\s+web|search(\s+the)?\s+(web|internet)|lookup\s+(online|on\s+the\s+web)|find\s+latest|find\s+citations\s+online|navigate\s+to\s+https?:\/\/)\b/i.test(promptText)
+    );
+
+    if (isBrowserAgentRequest) {
+      const cleanBrowserQuery = promptText
+        .replace(/^[\/@]browser\s*/i, '')
+        .replace(/\b(browse(\s+the)?\s+web|search(\s+the)?\s+(web|internet)|lookup\s+(online|on\s+the\s+web)|for)\b/gi, '')
+        .trim() || promptText;
+
+      const urlMatch = promptText.match(/https?:\/\/[^\s]+/i);
+      const targetUrl = urlMatch ? urlMatch[0] : null;
+
+      setComposingText('🌐 Browser Agent: Navigating live web...');
+      setIsComposing(true);
+      showToast('🌐 Browser Agent: Searching live web...');
+
+      try {
+        const browserResult = await runBrowserAgent({
+          query: cleanBrowserQuery,
+          targetUrl,
+          callGemini,
+          onProgress: (p) => {
+            setComposingText(`🌐 Browser Agent: ${p.message}`);
+          }
+        });
+
+        if (browserResult && browserResult.success && browserResult.text) {
+          const resMarkdown = browserResult.text;
+          
+          if (source === 'chat' || source === 'sidebar') {
+            const assistantMsg = {
+              id: 'msg_' + Date.now(),
+              sender: 'assistant',
+              role: 'assistant',
+              text: resMarkdown,
+              isBrowserResearch: true,
+              sources: browserResult.sources || [],
+              query: cleanBrowserQuery,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            setChatMessages(prev => [...prev, assistantMsg]);
+            showToast('🌐 Web research complete');
+          } else {
+            // Direct document integration
+            const formattedHtml = toParagraphHtml(resMarkdown);
+            if (window.__composeInsertHTML) {
+              window.__composeInsertHTML(formattedHtml);
+            } else if (blankBodyRef.current) {
+              blankBodyRef.current.innerHTML += formattedHtml;
+              setDocBodyHtml(blankBodyRef.current.innerHTML);
+            }
+            showToast('🌐 Inserted live web research into document');
+          }
+          setIsComposing(false);
+          setActiveAgentTag(null);
+          return;
+        }
+      } catch (browserErr) {
+        console.warn('[BrowserAgent] Execution error:', browserErr);
+        showToast('Browser Agent fallback to standard model');
+      } finally {
+        setIsComposing(false);
+      }
+    }
 
     if (source === 'compose' && !options.skipCommandEngine && !isQueryOrSummary) {
       const selectionText = savedSelectionRef.current ? savedSelectionRef.current.toString().trim() : '';
