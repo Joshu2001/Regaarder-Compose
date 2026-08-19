@@ -21526,7 +21526,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     }
 
     if (obj && typeof obj === 'object') {
-      title = obj.title || obj.headline || obj.name || obj.topic || '';
+      title = obj.title || obj.headline || obj.name || obj.topic || obj.article_title || '';
       content = obj.content || obj.article || obj.body || obj.text || obj.paragraph || obj.paragraphs || obj.textParagraph || obj.aiResponseText || '';
       if (Array.isArray(content)) {
         content = content.join('\n\n');
@@ -21535,8 +21535,19 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
     if (!content && typeof rawText === 'string') {
       let clean = rawText.replace(/```(?:json|markdown)?\s*/gi, '').replace(/```\s*$/g, '').trim();
-      const titleMatch = clean.match(/"(?:title|headline|name)"\s*:\s*"([^"]+)"/i);
+      
+      // Strip conversational chat filler (e.g. "Okay, here's a 700-word article...", "Sure! Here is...")
+      clean = clean.replace(/^(?:okay|sure|certainly|here(?:'s| is| are)|below is|as requested)[^\n#]*?[\n:]+/i, '').trim();
+
+      // Normalize inline headings squished onto a single line: "sentence. ## Section 1: Precursors" -> "sentence.\n\n## Section 1: Precursors"
+      clean = clean
+        .replace(/(?:\.|\!|\?)\s+(#+\s+)/g, '.\n\n$1')
+        .replace(/(?:^|\n)#+\s*Title:\s*/gi, '# ')
+        .replace(/(?:^|\n)##+\s*Section\s*\d*:\s*/gi, '## ');
+
+      const titleMatch = clean.match(/"(?:title|headline|name|article_title)"\s*:\s*"([^"]+)"/i);
       const contentMatch = clean.match(/"(?:content|article|body|text|paragraph)"\s*:\s*"([\s\S]*?)"\s*\}?$/i);
+      
       if (contentMatch) {
         content = contentMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
         if (titleMatch && !title) title = titleMatch[1];
@@ -21563,48 +21574,63 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
   const toParagraphHtml = (value) => {
     let text = String(value || '').trim();
-    if (!text) return '<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;"></p>';
+    if (!text) return '<p style="font-size:16px;color:#334155;line-height:1.85;margin-bottom:16px;"></p>';
 
-    // If text starts with JSON envelope, unwrap it
-    if (text.startsWith('{') && (text.includes('"content"') || text.includes('"title"') || text.includes('"article"'))) {
+    // If text contains JSON envelope, extract clean data
+    if (text.startsWith('{') && (text.includes('"content"') || text.includes('"title"') || text.includes('"article"') || text.includes('"article_title"'))) {
       const extracted = extractCleanArticleData(text);
       text = extracted.content;
     }
 
-    const applyInline = (str) => String(str || '')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/__(.+?)__/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.06);padding:2px 4px;border-radius:4px;font-family:monospace;font-size:14px;">$1</code>');
+    // Strip conversational filler
+    text = text.replace(/^(?:okay|sure|certainly|here(?:'s| is| are)|below is|as requested)[^\n#]*?[\n:]+/i, '').trim();
 
-    const lines = text.split(/\n+/);
+    // Fix inline headers without newlines: "sentence. ## Section" -> "sentence.\n\n## Section"
+    text = text
+      .replace(/(?:\.|\!|\?)\s+(#+\s+)/g, '.\n\n$1')
+      .replace(/(?:^|\n)#+\s*Title:\s*/gi, '# ')
+      .replace(/(?:^|\n)##+\s*Section\s*\d*:\s*/gi, '## ');
+
+    const applyInline = (str) => String(str || '')
+      .replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight:700;color:#0f172a;">$1</strong>')
+      .replace(/__(.+?)__/g, '<strong style="font-weight:700;color:#0f172a;">$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em style="font-style:italic;color:#475569;">$1</em>')
+      .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.05);padding:2px 5px;border-radius:4px;font-family:monospace;font-size:14px;color:#0f172a;">$1</code>');
+
+    // Split on double newlines or single newlines before headers
+    const blocks = text
+      .split(/\n{2,}|(?=\n#+\s+)/)
+      .map(b => b.trim())
+      .filter(Boolean);
+
     let html = '';
     let inList = false;
 
-    lines.forEach(line => {
-      const trimmed = line.trim();
-      if (!trimmed) return;
+    blocks.forEach(block => {
+      const lines = block.split(/\n+/).map(l => l.trim()).filter(Boolean);
 
-      if (/^#\s+(.+)$/.test(trimmed)) {
-        if (inList) { html += '</ul>'; inList = false; }
-        const h1 = trimmed.replace(/^#\s+/, '');
-        html += `<h1 style="font-size:28px;font-weight:800;color:#0f172a;line-height:1.25;margin-top:24px;margin-bottom:12px;letter-spacing:-0.02em;">${applyInline(h1)}</h1>`;
-      } else if (/^##\s+(.+)$/.test(trimmed)) {
-        if (inList) { html += '</ul>'; inList = false; }
-        const h2 = trimmed.replace(/^##\s+/, '');
-        html += `<h2 style="font-size:22px;font-weight:700;color:#1e293b;line-height:1.3;margin-top:20px;margin-bottom:10px;letter-spacing:-0.01em;">${applyInline(h2)}</h2>`;
-      } else if (/^###\s+(.+)$/.test(trimmed)) {
-        if (inList) { html += '</ul>'; inList = false; }
-        const h3 = trimmed.replace(/^###\s+/, '');
-        html += `<h3 style="font-size:18px;font-weight:600;color:#334155;line-height:1.4;margin-top:16px;margin-bottom:8px;">${applyInline(h3)}</h3>`;
-      } else if (/^[-*•]\s+(.+)$/.test(trimmed)) {
-        if (!inList) { html += '<ul style="margin-left:20px;margin-bottom:12px;list-style-type:disc;color:#334155;">'; inList = true; }
-        const li = trimmed.replace(/^[-*•]\s+/, '');
-        html += `<li style="font-size:16px;line-height:1.8;margin-bottom:4px;">${applyInline(li)}</li>`;
-      } else {
-        if (inList) { html += '</ul>'; inList = false; }
-        html += `<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:14px;">${applyInline(trimmed)}</p>`;
-      }
+      lines.forEach(line => {
+        if (/^#\s+(.+)$/.test(line)) {
+          if (inList) { html += '</ul>'; inList = false; }
+          const h1 = line.replace(/^#\s+/, '');
+          html += `<h1 style="font-size:28px;font-weight:800;color:#0f172a;line-height:1.25;margin-top:28px;margin-bottom:14px;letter-spacing:-0.02em;">${applyInline(h1)}</h1>`;
+        } else if (/^##\s+(.+)$/.test(line)) {
+          if (inList) { html += '</ul>'; inList = false; }
+          const h2 = line.replace(/^##\s+/, '');
+          html += `<h2 style="font-size:22px;font-weight:700;color:#1e293b;line-height:1.35;margin-top:24px;margin-bottom:12px;letter-spacing:-0.01em;">${applyInline(h2)}</h2>`;
+        } else if (/^###\s+(.+)$/.test(line)) {
+          if (inList) { html += '</ul>'; inList = false; }
+          const h3 = line.replace(/^###\s+/, '');
+          html += `<h3 style="font-size:18px;font-weight:600;color:#334155;line-height:1.4;margin-top:20px;margin-bottom:8px;">${applyInline(h3)}</h3>`;
+        } else if (/^[-*•]\s+(.+)$/.test(line)) {
+          if (!inList) { html += '<ul style="margin-left:24px;margin-bottom:16px;list-style-type:disc;color:#334155;">'; inList = true; }
+          const li = line.replace(/^[-*•]\s+/, '');
+          html += `<li style="font-size:16px;line-height:1.8;margin-bottom:6px;">${applyInline(li)}</li>`;
+        } else {
+          if (inList) { html += '</ul>'; inList = false; }
+          html += `<p style="font-size:16px;color:#334155;line-height:1.85;margin-bottom:16px;">${applyInline(line)}</p>`;
+        }
+      });
     });
 
     if (inList) html += '</ul>';
@@ -28006,13 +28032,23 @@ Rules:
 - Include section labels aligned to this narrative flow: Opening, Problem, Opportunity, Product, Market, Strategy, Financials, Closing.
 - Headline should be punchy and brief. Blurb should be 1-3 concise sentences.`;
     } else if (isArticleWritingRequest) {
-      // Natural Document Writing Mode: No JSON envelope constraint, write full rich Markdown directly
+      // Natural Document Writing Mode: Strict Typography Rulebook
       activeSchemaToUse = undefined;
-      systemPrompt = `You are the executive AI writing assistant for Regaarder Compose.
-Write a comprehensive, high-quality, fully realized document in clean Markdown.
-- Begin with a clear, engaging main title prefixed with "# Title".
-- Structure the document with clear section headers ("## Section Heading"), bullet points, and detailed, well-written paragraphs fulfilling the exact length and requirements requested.
-- Write the actual full text directly. Do NOT output JSON dictionaries, schemas, or metadata blocks.`;
+      systemPrompt = `You are the executive AI writing engine for Regaarder Compose.
+STRICT DOCUMENT TYPOGRAPHY RULEBOOK:
+1. ZERO CHAT FILLER: Never start with conversational filler (e.g. "Okay, here is an article...", "Sure!", "As requested"). Start IMMEDIATELY with the main title on line 1.
+2. HIERARCHICAL HEADINGS:
+   - Main Title: Begin line 1 with "# [Title Name]" (Do not write "# Title: ", just "# [Title Name]").
+   - Subheadings: Use "## [Section Heading]" on its own separate line preceded and followed by a blank line (\n\n).
+   - Minor Headings: Use "### [Subsection Heading]" on its own separate line.
+3. PARAGRAPHS & LINE BREAKS:
+   - Every paragraph MUST be separated by a double newline (\n\n).
+   - Never place a heading and body text on the same line.
+4. RICH FORMATTING:
+   - Use **bold** for key themes, takeaways, and central terminology.
+   - Use bullet lists (- item) or numbered lists (1. item) where appropriate.
+5. COMPLETE PROSE:
+   - Write the actual, full-length document prose directly in rich Markdown. Do NOT output JSON dictionaries, schemas, or metadata wrappers.`;
     } else {
       // Q&A / Summarization Mode
       activeSchemaToUse = undefined;
@@ -72005,7 +72041,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             
 
 
-            {isBlankDocument && (
+            {true && (
               <div style={{ position: 'relative' }}>
                 <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-[60]">
                   {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
@@ -72197,149 +72233,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             )}
 
-            {!isBlankDocument && (
-              <>
-                {/* 1. Objective */}
-                <div className="mb-10 group relative">
-                  <h2 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">1.</span> Objective
-                  </h2>
-                  <p contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
-                    Launch Regaarder Compose to establish it as the most intuitive AI-native productivity workspace for modern teams and individuals.
-                  </p>
-                </div>
 
-                {/* 2. Key Initiatives Table */}
-                <div className="mb-10 group relative">
-                  <h2 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">2.</span> Key Initiatives
-                    {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-                      <span className="text-[10px] font-normal text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">Click Status to Cycle</span>
-                    )}
-                  </h2>
-                  
-                  <div className="border border-gray-100 rounded-lg overflow-hidden mt-6 bg-[#FAFAFC]/30">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-[#FAFAFC] text-gray-500 font-medium border-b border-gray-100">
-                        <tr>
-                          <th className="py-3 px-4 w-[40%] font-medium">Initiative</th>
-                          <th className="py-3 px-4 font-medium">Owner</th>
-                          <th className="py-3 px-4 font-medium">Timeline</th>
-                          <th className="py-3 px-4 font-medium">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50 text-gray-700">
-                        {initiatives.map((row) => (
-                          <tr key={row.id} className="hover:bg-white/60 transition-colors">
-                            <td contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="py-3 px-4 font-medium outline-none">{row.name}</td>
-                            <td contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="py-3 px-4 text-gray-500 outline-none">{row.owner}</td>
-                            <td contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="py-3 px-4 text-gray-500 text-xs outline-none">{row.timeline}</td>
-                            <td className="py-3 px-4">
-                              <button 
-                                onClick={() => {
-                                  if (currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter') {
-                                    toggleStatus(row.id);
-                                  }
-                                }}
-                                className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all ${
-                                  row.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                                  row.status === 'In Progress' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                                  'bg-violet-50 text-violet-600 border border-violet-100'
-                                } ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'pointer-events-none opacity-80 cursor-default' : ''}`}
-                              >
-                                {row.status}
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* 3. Target Audience */}
-                <div className="mb-10">
-                  <h2 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">3.</span> Target Audience
-                  </h2>
-                  <p contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
-                    Knowledge workers, founders, creators, marketers, and teams who want a smarter, calmer, and more connected workspace.
-                  </p>
-                </div>
-              </>
-            )}
-
-            {/* Dynamic AI Appended Sections */}
-            {!isBlankDocument && appendedSections.map((sec, idx) => (
-              <div 
-                key={idx} 
-                className="mb-10 border-t border-dashed border-violet-100 pt-8 animate-fade-in group relative"
-              >
-                <div className="absolute -top-3 left-4 bg-violet-600 text-[10px] text-white px-2 py-0.5 rounded-full flex items-center gap-1 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
-                  <Sparkles size={8} /> AI Composed
-                </div>
-                
-                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4">
-                  {sec.title}
-                </h2>
-
-                {sec.type === 'timeline' && (
-                  <div className="space-y-3 mt-4">
-                    {sec.content.map((item, i) => (
-                      <div key={i} className="flex gap-4 p-3 bg-violet-50/20 border border-violet-100/50 rounded-lg">
-                        <div className="text-xs font-semibold text-violet-600 bg-white px-2 py-1 rounded h-fit shadow-xs">
-                          {item.dates}
-                        </div>
-                        <div>
-                          <div className="text-sm font-semibold text-gray-800">{item.phase}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{item.detail}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {sec.type === 'tasks' && (
-                  <div className="bg-[#FAFAFC] p-4 rounded-lg border border-gray-100 space-y-2.5">
-                    {sec.content.map((taskStr, i) => (
-                      <div key={i} className="flex items-center gap-2.5 text-sm text-gray-600">
-                        <div className="w-4 h-4 rounded-full border border-violet-400 flex items-center justify-center bg-white text-white">
-                          <Check size={10} className="stroke-[3]" />
-                        </div>
-                        <span>{taskStr}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {sec.type === 'risks' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {sec.content.map((riskObj, i) => (
-                      <div key={i} className="p-4 rounded-xl border border-rose-100 bg-rose-50/10 flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-rose-600 flex items-center gap-1 uppercase tracking-wide">
-                            <ShieldAlert size={12} /> Risk Factor
-                          </span>
-                          <span className="bg-rose-50 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded">
-                            Impact: {riskObj.impact}
-                          </span>
-                        </div>
-                        <h4 className="text-sm font-semibold text-gray-800">{riskObj.threat}</h4>
-                        <p className="text-xs text-gray-500 bg-white p-2 rounded border border-gray-100 mt-1">
-                          <span className="font-semibold text-gray-700">Mitigation:</span> {riskObj.fix}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {sec.type === 'text' && (
-                  <p className="text-gray-600 text-base leading-relaxed bg-violet-50/10 p-4 rounded-lg border border-violet-100/30">
-                    {sec.paragraph}
-                  </p>
-                )}
-              </div>
-            ))}
 
 
 
