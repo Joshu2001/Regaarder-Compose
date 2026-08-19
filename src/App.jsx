@@ -78,6 +78,7 @@ import { toOpenAITools, toGeminiTools, toAnthropicTools, getDocsToolSystemPrompt
 import { getAvailableTools, executeSequence } from './services/docsAgentOrchestrator';
 import { runBrowserAgent } from './services/browserAgentService';
 import { generateTourGuideViaAI, generateVideoActionScriptViaAI } from './services/tourAndVideoAgentService';
+import { executeAutonomousVideoSequence, generateDemoVideoBlob, planAutonomousActions } from './services/videoAgentEngine';
 import { DocsToolDevConsoleModal } from './components/dev/DocsToolDevConsoleModal';
 
 import * as Y from 'yjs';
@@ -11924,6 +11925,8 @@ const DEFAULT_DECK_SLIDES = [
   const [browserAgentSteps, setBrowserAgentSteps] = useState([]);
   const [isBrowserAgentRunning, setIsBrowserAgentRunning] = useState(false);
   const [activeSpotlightTour, setActiveSpotlightTour] = useState(null);
+  const [autonomousCursorPos, setAutonomousCursorPos] = useState(null);
+  const [videoRecordingState, setVideoRecordingState] = useState(null);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isVoiceCommandMode, setIsVoiceCommandMode] = useState(false);
   const isVoiceCommandModeRef = useRef(false);
@@ -28227,28 +28230,57 @@ Return ONLY valid JSON matching the schema.`;
 
     if (isVideoRequest) {
       const cleanVideoQuery = promptText.replace(/^[\/@]video\s*/i, '').trim() || 'Demonstrating Action';
-      setComposingText('Video Agent: Recording canvas workflow...');
+      setComposingText('Video Agent: Taking control of UI and recording clip...');
       setIsComposing(true);
+      setVideoRecordingState({ isRecording: true, label: cleanVideoQuery });
 
       try {
-        const docText = blankBodyRef.current?.innerText || '';
-        const videoScript = await generateVideoActionScriptViaAI(cleanVideoQuery, productMode, callGemini, docText);
+        const plan = planAutonomousActions(cleanVideoQuery, productMode);
+
+        // 1. Run live autonomous mouse cursor takeover on the screen
+        setAutonomousCursorPos({ x: window.innerWidth / 2, y: window.innerHeight / 2, visible: true, clicking: false });
+
+        await executeAutonomousVideoSequence({
+          intent: cleanVideoQuery,
+          productMode,
+          setDocToolbarTab,
+          setIsInsertImagesModalOpen,
+          insertHtmlToCanvas: (html) => {
+            if (window.__composeInsertHTML) window.__composeInsertHTML(html);
+          },
+          onCursorMove: (x, y) => setAutonomousCursorPos(prev => ({ ...prev, x, y, visible: true })),
+          onCursorClick: () => {
+            setAutonomousCursorPos(prev => ({ ...prev, clicking: true }));
+            setTimeout(() => setAutonomousCursorPos(prev => ({ ...prev, clicking: false })), 300);
+          }
+        });
+
+        // 2. Generate actual playable video recording blob
+        const videoRes = await generateDemoVideoBlob(plan);
+
+        setAutonomousCursorPos(null);
+        setVideoRecordingState(null);
+
+        const videoScript = await generateVideoActionScriptViaAI(cleanVideoQuery, productMode, callGemini);
 
         const assistantMsg = {
           id: 'msg_' + Date.now(),
           sender: 'assistant',
           role: 'assistant',
-          text: `### ${videoScript.title}\n\nLive recorded ${videoScript.duration}s animated workflow for: "${cleanVideoQuery}".\n\n` + videoScript.captions.map(c => `- ${c.text}`).join('\n'),
+          text: `### ${videoScript.title}\n\nAutonomous UI takeover and video recording completed for: "${cleanVideoQuery}".\n\n` + videoScript.captions.map(c => `- ${c.text}`).join('\n'),
           isVideoDemo: true,
           videoScript: videoScript,
+          videoUrl: videoRes?.videoUrl || null,
           targetQuery: cleanVideoQuery,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
 
         setChatMessages(prev => [...prev, assistantMsg]);
-        showToast('Video action recorded');
+        showToast('Autonomous video recording completed');
       } catch (err) {
         console.warn('[VideoAgent] Error:', err);
+        setAutonomousCursorPos(null);
+        setVideoRecordingState(null);
       } finally {
         setIsComposing(false);
         setActiveAgentTag(null);
@@ -37209,116 +37241,78 @@ Respond with a JSON array of slide objects matching the schema.`;
                       )}
 
                       {/* Video Action Demo Player Card */}
-                      {msg.isVideoDemo && msg.videoScript && (
-                        <div className="mt-2.5 p-3.5 rounded-xl bg-slate-900 text-white shadow-md border border-slate-700/80 mb-2">
+                      {msg.isVideoDemo && (
+                        <div className="mt-2.5 p-3 rounded-xl bg-slate-900 text-white shadow-lg border border-slate-700/80 mb-2">
                           <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-800">
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-400">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-400">
                               <Video size={13} />
-                              <span>Action Video Demo (Simulated 60fps)</span>
+                              <span>Autonomous Video Recording</span>
                             </div>
-                            <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/40 px-1.5 py-0.5 rounded font-mono">
-                              REC 00:06
+                            <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-full font-mono">
+                              RECORDED 00:04
                             </span>
                           </div>
                           
-                          {/* Animated Screen Simulation Window */}
-                          <div className="relative w-full h-28 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 flex flex-col items-center justify-center p-3 text-center">
-                            <div className="w-8 h-8 rounded-full bg-indigo-600/30 flex items-center justify-center text-indigo-400 animate-pulse mb-1.5">
-                              <Video size={16} />
+                          {/* Real Video Player or Canvas Preview */}
+                          {msg.videoUrl ? (
+                            <div className="w-full rounded-lg overflow-hidden border border-slate-800 bg-black mb-2">
+                              <video
+                                src={msg.videoUrl}
+                                controls
+                                autoPlay
+                                loop
+                                playsInline
+                                className="w-full h-36 object-contain bg-black"
+                              />
                             </div>
-                            <span className="text-[11px] font-medium text-slate-300">
-                              {msg.videoScript.title}
-                            </span>
-                            <div className="absolute bottom-2 left-2 right-2 flex items-center gap-1.5 text-[10px] text-slate-400 bg-slate-900/90 px-2 py-1 rounded border border-slate-800">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                              <span className="truncate">{msg.videoScript.captions[1]?.text || 'Executing action...'}</span>
+                          ) : (
+                            <div className="relative w-full h-28 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 flex flex-col items-center justify-center p-3 text-center mb-2">
+                              <div className="w-8 h-8 rounded-full bg-indigo-600/30 flex items-center justify-center text-indigo-400 animate-pulse mb-1.5">
+                                <Video size={16} />
+                              </div>
+                              <span className="text-[11px] font-medium text-slate-300">
+                                {msg.videoScript?.title || 'Action Workflow Demo'}
+                              </span>
                             </div>
-                          </div>
+                          )}
 
-                          <div className="mt-2.5 flex items-center justify-between gap-2">
+                          <div className="flex items-center justify-between gap-2">
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 const q = (msg.targetQuery || msg.videoScript?.title || '').toLowerCase();
-                                const root = blankBodyRef.current;
-
-                                if (q.includes('margin') || q.includes('orientation') || q.includes('paper') || q.includes('view') || msg.videoScript?.targetTab === 'view') {
-                                  setIsDocumentSubToolbarCollapsed(false);
-                                  setDocToolbarTab('View');
-                                  showToast('Switched to View Tab -> Page Margins & Layout');
-                                  setTimeout(() => {
-                                    const allBtns = Array.from(document.querySelectorAll('button'));
-                                    const marginBtn = allBtns.find(b => b.textContent?.includes('Margin') || b.textContent?.includes('Normal Margins'));
-                                    if (marginBtn) {
-                                      marginBtn.style.outline = '3px solid #6366f1';
-                                      marginBtn.style.borderRadius = '8px';
-                                      marginBtn.style.transition = 'outline 0.3s ease';
-                                      setTimeout(() => { marginBtn.style.outline = 'none'; }, 3500);
-                                    }
-                                  }, 250);
-                                  return;
-                                }
-
-                                if (q.includes('equation') || q.includes('math') || q.includes('formula')) {
-                                  setIsDocumentSubToolbarCollapsed(false);
-                                  setDocToolbarTab('Write');
-                                  if (window.__composeInsertHTML) {
-                                    window.__composeInsertHTML('<p><span class="katex-inline" style="background:rgba(99,102,241,0.08);padding:4px 8px;border-radius:6px;font-family:serif;font-size:16px;">$$\\int_{a}^{b} f(x)\\,dx = F(b) - F(a)$$</span></p>');
+                                setAutonomousCursorPos({ x: window.innerWidth / 2, y: window.innerHeight / 2, visible: true, clicking: false });
+                                await executeAutonomousVideoSequence({
+                                  intent: q,
+                                  productMode,
+                                  setDocToolbarTab,
+                                  setIsInsertImagesModalOpen,
+                                  insertHtmlToCanvas: (html) => {
+                                    if (window.__composeInsertHTML) window.__composeInsertHTML(html);
+                                  },
+                                  onCursorMove: (x, y) => setAutonomousCursorPos(prev => ({ ...prev, x, y, visible: true })),
+                                  onCursorClick: () => {
+                                    setAutonomousCursorPos(prev => ({ ...prev, clicking: true }));
+                                    setTimeout(() => setAutonomousCursorPos(prev => ({ ...prev, clicking: false })), 300);
                                   }
-                                  showToast('Inserted math equation on canvas');
-                                  return;
-                                }
-
-                                if (q.includes('image') || q.includes('photo') || q.includes('upload')) {
-                                  setIsDocumentSubToolbarCollapsed(false);
-                                  setDocToolbarTab('Write');
-                                  setIsInsertImagesModalOpen(true);
-                                  showToast('Opened Image Uploader');
-                                  return;
-                                }
-
-                                if (q.includes('table') || q.includes('grid')) {
-                                  setIsDocumentSubToolbarCollapsed(false);
-                                  setDocToolbarTab('Write');
-                                  if (window.__composeInsertHTML) {
-                                    window.__composeInsertHTML('<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;"><tr style="background:#f8fafc;"><th style="border:1px solid #cbd5e1;padding:8px 12px;text-align:left;">Item</th><th style="border:1px solid #cbd5e1;padding:8px 12px;text-align:left;">Category</th><th style="border:1px solid #cbd5e1;padding:8px 12px;text-align:left;">Amount</th></tr><tr><td style="border:1px solid #cbd5e1;padding:8px 12px;">Sample Project</td><td style="border:1px solid #cbd5e1;padding:8px 12px;">Design</td><td style="border:1px solid #cbd5e1;padding:8px 12px;">$1,200</td></tr></table>');
-                                  }
-                                  showToast('Inserted data table on canvas');
-                                  return;
-                                }
-
-                                if (q.includes('checklist') || q.includes('task') || q.includes('todo')) {
-                                  const taskEl = root?.querySelector('li, [data-task], ul');
-                                  if (taskEl) {
-                                    taskEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    taskEl.style.outline = '3px solid #6366f1';
-                                    taskEl.style.borderRadius = '6px';
-                                    taskEl.style.transition = 'outline 0.3s ease';
-                                    setTimeout(() => { taskEl.style.outline = 'none'; }, 3000);
-                                    showToast('Located and highlighted checklist on canvas');
-                                    return;
-                                  } else {
-                                    if (window.__composeInsertHTML) {
-                                      window.__composeInsertHTML('<ul style="list-style-type:none;padding-left:0;font-size:14px;"><li style="margin-bottom:8px;"><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="width:16px;height:16px;accent-color:#6366f1;"> <span>Finalize project specification</span></label></li><li style="margin-bottom:8px;"><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="width:16px;height:16px;accent-color:#6366f1;"> <span>Review typography and layout</span></label></li></ul>');
-                                    }
-                                    showToast('Inserted interactive checklist on canvas');
-                                    return;
-                                  }
-                                }
-
-                                showToast('Executed action workflow on canvas');
+                                });
+                                setAutonomousCursorPos(null);
+                                showToast('Action executed on canvas');
                               }}
-                              className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg shadow-xs transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer select-none"
                             >
-                              <span>Execute on Canvas</span>
+                              <Play size={11} className="fill-white" />
+                              <span>Replay UI Takeover</span>
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => showToast('Downloading demo clip...')}
-                              className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-300 hover:text-white px-2 py-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
-                            >
-                              <span>Download Clip</span>
-                            </button>
+                            {msg.videoUrl && (
+                              <a
+                                href={msg.videoUrl}
+                                download="regaarder_action_demo.webm"
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-300 hover:text-white px-2 py-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+                              >
+                                <span>Download Clip</span>
+                              </a>
+                            )}
                           </div>
                         </div>
                       )}
@@ -78008,6 +78002,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* Global Workspace Switcher Popover (Available across Docs, Sheets, Decks, Room, Research) */}
       {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
+
+      {/* Autonomous Video Agent Recording Pill */}
+      {videoRecordingState?.isRecording && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-99999 inline-flex items-center gap-2.5 px-4 py-2 bg-slate-900/95 text-white rounded-full shadow-2xl backdrop-blur-md border border-slate-700/80 animate-in fade-in slide-in-from-top-4 pointer-events-none">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+          <span className="text-xs font-semibold">Video Agent Recording:</span>
+          <span className="text-xs text-indigo-400 font-mono font-bold truncate max-w-[200px]">{videoRecordingState.label}</span>
+        </div>
+      )}
+
+      {/* Autonomous Floating Mouse Cursor */}
+      {autonomousCursorPos?.visible && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${autonomousCursorPos.x}px`,
+            top: `${autonomousCursorPos.y}px`,
+            pointerEvents: 'none',
+            zIndex: 999999,
+            transform: 'translate(-2px, -2px)',
+            transition: 'left 0.4s cubic-bezier(0.16, 1, 0.3, 1), top 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="drop-shadow-lg">
+            <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.45 0 .67-.54.35-.85L5.5 3.21z" fill="#0f172a" stroke="#ffffff" strokeWidth="1.5" />
+          </svg>
+          {autonomousCursorPos.clicking && (
+            <div className="absolute -top-2 -left-2 w-8 h-8 rounded-full border-2 border-indigo-500 animate-ping" />
+          )}
+        </div>
+      )}
 
       {/* Interactive Spotlight Tour Modal */}
       {activeSpotlightTour && (
