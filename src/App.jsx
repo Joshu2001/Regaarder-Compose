@@ -29005,11 +29005,23 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
   const handleSidebarSend = (e) => {
     e.preventDefault();
-    if (!chatInput.trim() && !chatAttachments.length) return;
-    const prompt = chatInput.trim() || 'Use attached files as context and answer the request.';
+    if (!chatInput.trim() && !chatAttachments.length && !activeAgentTag) return;
+    
+    let prompt = chatInput.trim() || (chatAttachments.length ? 'Use attached files as context and answer the request.' : '');
+    if (activeAgentTag) {
+      const tagStr = activeAgentTag.startsWith('/') ? activeAgentTag : `/${activeAgentTag}`;
+      if (!prompt.startsWith(tagStr)) {
+        prompt = `${tagStr} ${prompt}`.trim();
+      }
+    }
+
+    if (!prompt) return;
+
     handleAISubmit(prompt, { source: 'chat', attachments: chatAttachments });
     setChatInput('');
     setChatAttachments([]);
+    setActiveAgentTag(null);
+    setSelectedAIAgent(null);
   };
 
   const activeProductTitle = useMemo(() => {
@@ -29512,7 +29524,16 @@ Answer the user's question, provide an insightful summary, or explain the contex
   const handleFloatingSend = (e) => {
     e.preventDefault();
     if (isComposing) return;
-    if (!floatingPrompt.trim() && !promptAttachments.length) return;
+    if (!floatingPrompt.trim() && !promptAttachments.length && !activeAgentTag) return;
+    
+    let rawPrompt = floatingPrompt.trim();
+    if (activeAgentTag) {
+      const tagStr = activeAgentTag.startsWith('/') ? activeAgentTag : `/${activeAgentTag}`;
+      if (!rawPrompt.startsWith(tagStr)) {
+        rawPrompt = `${tagStr} ${rawPrompt}`.trim();
+      }
+    }
+
     const formatLabel = composeOutputFormat === 'Custom...'
       ? (customComposeFormat.trim() || 'Custom Document')
       : composeOutputFormat;
@@ -29520,20 +29541,28 @@ Answer the user's question, provide an insightful summary, or explain the contex
     const fallbackPrompt = promptAttachments.length
       ? `Use attached files as source context and generate the requested output.`
       : '';
-    const scopedInstruction = selectedScope
-      ? `Modify ONLY the selected excerpt below. Do not rewrite unrelated sections.\nSelected excerpt:\n"""${selectedScope}"""\n\nUser request: ${floatingPrompt.trim() || fallbackPrompt}`
-      : (floatingPrompt.trim() || fallbackPrompt);
+    
+    const isSpecialAgent = Boolean(
+      activeAgentTag ||
+      /^\/(?:video|tour|browser|ask|goal|schedule|health|review|designer|logic|research)\b/i.test(rawPrompt)
+    );
+
+    const scopedInstruction = selectedScope && !isSpecialAgent
+      ? `Modify ONLY the selected excerpt below. Do not rewrite unrelated sections.\nSelected excerpt:\n"""${selectedScope}"""\n\nUser request: ${rawPrompt || fallbackPrompt}`
+      : (rawPrompt || fallbackPrompt);
+
     const composeOptions = {
-      source: 'compose',
-      forceDocBuild: true,
-      suppressChatEcho: true,
+      source: isSpecialAgent ? 'chat' : 'compose',
+      forceDocBuild: !isSpecialAgent,
+      suppressChatEcho: !isSpecialAgent,
       composeFormat: formatLabel,
       tone: promptTone,
       lengthMode: promptLengthMode,
       lengthValue: promptLengthValue,
-      selectionScoped: Boolean(selectedScope),
+      selectionScoped: Boolean(selectedScope) && !isSpecialAgent,
       attachments: promptAttachments,
     };
+
     handleAISubmit(scopedInstruction, composeOptions);
     setLastComposeRun({
       prompt: scopedInstruction,
@@ -29545,6 +29574,8 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setFloatingPrompt('');
     setSelectedEditorText('');
     selectedEditorTextRef.current = '';
+    setActiveAgentTag(null);
+    setSelectedAIAgent(null);
   };
 
   const handleFloatingPaste = (event) => {
