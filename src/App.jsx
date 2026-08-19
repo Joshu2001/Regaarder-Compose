@@ -3087,6 +3087,7 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
   ];
 
   const templates = [
+    { id: 'business-plan', title: 'Executive Business Plan (10 Slides)', category: 'pitch', icon: Presentation, color: 'bg-cyan-100 text-cyan-600', chartType: 'column', chartColor: '#00f0ff', desc: '10-slide complete business plan: TAM/SAM/SOM, 3-Yr Financials, Moat & GTM with 32 bento cards' },
     { id: 'financial', title: 'Financial Revenue Model', category: 'dashboards', icon: TrendingUp, color: 'bg-sky-100 text-sky-600', chartType: 'line', chartColor: '#0284c7', desc: '3-5 Year growth, OpEx & EBITDA forecast visual chart' },
     { id: 'saas', title: 'SaaS Metrics & Economics', category: 'dashboards', icon: BarChart2, color: 'bg-emerald-100 text-emerald-600', chartType: 'column', chartColor: '#059669', desc: 'MRR, ARR, NRR & LTV:CAC live chart analytics' },
     { id: 'crm', title: 'Sales CRM & Pipeline', category: 'dashboards', icon: PieChart, color: 'bg-violet-100 text-violet-600', chartType: 'donut', chartColor: '#7c3aed', desc: 'Deal pipeline breakdown & win rate distribution visual' },
@@ -62736,6 +62737,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onClose={() => setIsTemplateModalOpen(false)} 
         onSelect={(t) => {
           setIsTemplateModalOpen(false);
+          if (t === 'business-plan') {
+            setActiveView('deck');
+            handleLoadBusinessPlanDeck();
+          }
         }} 
       />
 
