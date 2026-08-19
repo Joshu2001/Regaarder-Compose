@@ -49633,38 +49633,115 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </div>
                             )}
 
-                            {/* ── TEMPLATES TAB ── */}
+                            {/* ── TEMPLATES TAB (WITH SCROLL ARROWS & FULL TEMPLATE ACCESS) ── */}
                             {deckToolbarTab === 'Templates' && (
-                              <div className="w-full flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
-                                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 flex-1">
+                              <div className="w-full flex items-center justify-between gap-1.5 py-0.5 relative">
+                                <div className="flex items-center gap-1 min-w-0 flex-1 relative">
                                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 select-none">DECK TEMPLATES:</span>
-                                  {[
-                                    { label: 'Pitch Deck', category: 'Executive' },
-                                    { label: 'Quarterly Review', category: 'Business' },
-                                    { label: 'Product Launch', category: 'Product' },
-                                    { label: 'Sales Proposal', category: 'Sales' },
-                                    { label: 'Strategy Deck', category: 'Strategy' },
-                                    { label: 'Technical Architecture', category: 'Engineering' }
-                                  ].map((tmpl) => (
+                                  
+                                  {/* Left Scroll Arrow */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const container = document.getElementById('deck-templates-scroll-container');
+                                      if (container) container.scrollBy({ left: -220, behavior: 'smooth' });
+                                    }}
+                                    className="w-6 h-6 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/80 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 flex items-center justify-center shrink-0 shadow-xs cursor-pointer z-10 transition-all hover:scale-105"
+                                    title="Scroll templates left"
+                                  >
+                                    <ChevronLeft size={13} />
+                                  </button>
+
+                                  {/* Horizontally Scrollable Templates List */}
+                                  <div 
+                                    id="deck-templates-scroll-container"
+                                    className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 px-0.5 min-w-0"
+                                  >
+                                    {/* 1. Executive Business Plan (10 Slides) - Highlighted */}
                                     <button
-                                      key={tmpl.label}
+                                      type="button"
+                                      onClick={handleLoadBusinessPlanDeck}
+                                      className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 shrink-0 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs hover:scale-[1.02]"
+                                      title="Load Complete 10-Slide Executive Business Plan"
+                                    >
+                                      <Sparkles size={12} className="text-emerald-400 shrink-0" />
+                                      <span className="font-bold whitespace-nowrap">Business Plan (10 Slides)</span>
+                                    </button>
+
+                                    {/* 2. Startup Pitch Deck */}
+                                    <button
                                       type="button"
                                       onClick={() => {
-                                        showToast(`Applied ${tmpl.label} presentation template`);
+                                        setDeckSlides(DEFAULT_DECK_SLIDES);
+                                        setActiveDeckSlideId(DEFAULT_DECK_SLIDES[0].id);
+                                        showToast('Loaded Startup Pitch Deck Template (15 Slides)');
                                       }}
-                                      className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 hover:bg-slate-200/60 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200/60 shrink-0 transition-colors cursor-pointer flex items-center gap-1.5"
+                                      className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-500/15 hover:bg-violet-500/25 text-violet-300 border border-violet-500/40 shrink-0 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs hover:scale-[1.02]"
+                                      title="Load Original 15-Slide Startup Pitch Deck"
                                     >
-                                      <LayoutGrid size={12} className="text-violet-500 shrink-0" />
-                                      <span className="font-semibold">{tmpl.label}</span>
+                                      <Presentation size={12} className="text-violet-400 shrink-0" />
+                                      <span className="whitespace-nowrap">Startup Pitch Deck (15)</span>
                                     </button>
-                                  ))}
+
+                                    {/* Additional Catalog Templates */}
+                                    {[
+                                      { label: 'Quarterly Review', desc: 'Q1-Q4 Business Review', icon: LayoutGrid, count: '8 Slides' },
+                                      { label: 'Product Launch', desc: 'GTM & Feature Release', icon: Rocket, count: '10 Slides' },
+                                      { label: 'Sales Proposal', desc: 'Enterprise Commercial Proposal', icon: Target, count: '6 Slides' },
+                                      { label: 'Strategy Deck', desc: 'Corporate Strategy & OKRs', icon: TrendingUp, count: '9 Slides' },
+                                      { label: 'Technical Architecture', desc: 'System Design & Data Pipeline', icon: Layers, count: '7 Slides' },
+                                      { label: 'Financial Projections', desc: '3-Year Growth & Unit Economics', icon: BarChart2, count: '5 Slides' },
+                                      { label: 'Marketing Roadmap', desc: 'Multi-Channel Campaign Plan', icon: Globe, count: '6 Slides' },
+                                      { label: 'Company Overview', desc: 'All-Hands & Culture Deck', icon: Users2, count: '8 Slides' }
+                                    ].map((tmpl) => {
+                                      const IconComp = tmpl.icon || LayoutGrid;
+                                      return (
+                                        <button
+                                          key={tmpl.label}
+                                          type="button"
+                                          onClick={() => {
+                                            showToast(`Applied ${tmpl.label} presentation template`);
+                                          }}
+                                          className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 hover:bg-slate-200/60 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200/60 shrink-0 transition-colors cursor-pointer flex items-center gap-1.5"
+                                        >
+                                          <IconComp size={12} className="text-violet-500 shrink-0" />
+                                          <span className="font-semibold whitespace-nowrap">{tmpl.label}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Right Scroll Arrow (Prominent & Actionable) */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const container = document.getElementById('deck-templates-scroll-container');
+                                      if (container) container.scrollBy({ left: 220, behavior: 'smooth' });
+                                    }}
+                                    className="w-6 h-6 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/80 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 flex items-center justify-center shrink-0 shadow-xs cursor-pointer z-10 transition-all hover:scale-105"
+                                    title="Scroll templates right to see more"
+                                  >
+                                    <ChevronRight size={13} />
+                                  </button>
+
+                                  {/* All Templates Library Modal Trigger */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsTemplateModalOpen(true)}
+                                    className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700 shrink-0 cursor-pointer flex items-center gap-1"
+                                    title="Open Full Template Library Modal"
+                                  >
+                                    <Layout size={11} className="text-cyan-400" />
+                                    <span>All (Library)</span>
+                                  </button>
                                 </div>
+
                                 <button
                                   type="button"
                                   onClick={() => showToast('AI generating custom presentation template...')}
-                                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200/80 shrink-0 cursor-pointer flex items-center gap-1"
+                                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200/80 shrink-0 cursor-pointer flex items-center gap-1 hover:bg-purple-100 transition-colors"
                                 >
-                                  <Sparkles size={13} /> AI Template Generator
+                                  <Sparkles size={13} className="text-purple-500" /> AI Generator
                                 </button>
                               </div>
                             )}
