@@ -8181,13 +8181,26 @@ function AppCore() {
   const [dmChannelInputValue, setDmChannelInputValue] = useState('');
   const [dmAiChatOpen, setDmAiChatOpen] = useState(false);
   const [dmAiChatInput, setDmAiChatInput] = useState('');
-  const [composeSelectedModel, setComposeSelectedModel] = useState({
-    id: 'gemini-2.5-flash',
-    name: 'Gemini 2.5 Flash',
-    provider: 'Cloud',
-    isLocal: false,
-    endpoint: null
+  const [composeSelectedModel, setComposeSelectedModel] = useState(() => {
+    try {
+      const saved = localStorage.getItem('regaarder_selected_model');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      id: 'gemini-2.5-flash',
+      name: 'Gemini 2.5 Flash',
+      provider: 'Cloud',
+      isLocal: false,
+      endpoint: null
+    };
   });
+
+  const updateSelectedModelGlobally = (model) => {
+    setComposeSelectedModel(model);
+    try {
+      localStorage.setItem('regaarder_selected_model', JSON.stringify(model));
+    } catch (e) {}
+  };
   const [composeDetectedModels, setComposeDetectedModels] = useState([]);
   const [composeIsScanning, setComposeIsScanning] = useState(false);
   const [composeModelPickerOpen, setComposeModelPickerOpen] = useState(false);
@@ -8277,7 +8290,7 @@ function AppCore() {
     setComposeDetectedModels(found);
     setComposeIsScanning(false);
     if (found.length > 0) {
-      setComposeSelectedModel(found[0]);
+      if (!composeSelectedModel?.isLocal) { updateSelectedModelGlobally(found[0]); }
     }
   }, []);
 
@@ -27944,110 +27957,124 @@ Rules:
 
       liveModelError = String(modelResponse?.error || '');
 
-      if (modelResponse?.parsed) {
+      const rawModelText = String(modelResponse?.text || '').trim();
+      const parsedData = modelResponse?.parsed || parseJsonSafely(rawModelText);
+
+      if (rawModelText || parsedData) {
         usedLiveModel = true;
-        const result = modelResponse.parsed;
-        aiResponseText = result.aiResponseText?.trim() || (result.docAction?.textParagraph ? String(result.docAction.textParagraph).trim() : (isDeckGeneration ? 'Deck AI is designing your slides.' : ''));
+        
+        if (parsedData && typeof parsedData === 'object') {
+          const result = parsedData;
+          aiResponseText = result.aiResponseText?.trim() || (result.docAction?.textParagraph ? String(result.docAction.textParagraph).trim() : rawModelText);
 
-        if (result.hasAction && result.docAction) {
-          const rawType = String(result.docAction.type || '').toLowerCase();
-          if (rawType === 'deck' && Array.isArray(result.docAction.deckSlides) && result.docAction.deckSlides.length) {
-            const generatedSlides = result.docAction.deckSlides
-              .map((slide, index) => {
-                const nextId = index + 1;
-                const preset = DECK_DESIGN_PRESETS[index % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
-                return {
-                  id: nextId,
-                  title: String(slide?.title || `Slide ${nextId}`),
-                  subtitle: String(slide?.subtitle || ''),
-                  accent: 'from-violet-500 to-indigo-600',
-                  designPresetKey: preset.key,
-                  headline: String(slide?.headline || slide?.title || `Slide ${nextId}`),
-                  blurb: String(slide?.blurb || slide?.subtitle || ''),
-                  visualType: String(slide?.visualType || 'hero statement'),
-                  layoutStyle: String(slide?.layoutStyle || 'cinematic split'),
-                  motionCue: String(slide?.motionCue || 'Soft fade and stagger reveal'),
-                  keyMetric: String(slide?.keyMetric || ''),
-                  speakerNotes: String(slide?.speakerNotes || ''),
-                  section: String(slide?.section || ''),
-                  footer: 'Original design 繚 Editable',
-                };
-              })
-              .slice(0, 20);
-            const normalizedSlides = buildDeckSlidesFallback({
-              promptText,
-              aiText: result.aiResponseText || '',
-              sourceSlides: generatedSlides,
-            });
+          if (result.hasAction && result.docAction) {
+            const rawType = String(result.docAction.type || '').toLowerCase();
+            if (rawType === 'deck' && Array.isArray(result.docAction.deckSlides) && result.docAction.deckSlides.length) {
+              const generatedSlides = result.docAction.deckSlides
+                .map((slide, index) => {
+                  const nextId = index + 1;
+                  const preset = DECK_DESIGN_PRESETS[index % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
+                  return {
+                    id: nextId,
+                    title: String(slide?.title || `Slide ${nextId}`),
+                    subtitle: String(slide?.subtitle || ''),
+                    accent: 'from-violet-500 to-indigo-600',
+                    designPresetKey: preset.key,
+                    headline: String(slide?.headline || slide?.title || `Slide ${nextId}`),
+                    blurb: String(slide?.blurb || slide?.subtitle || ''),
+                    visualType: String(slide?.visualType || 'hero statement'),
+                    layoutStyle: String(slide?.layoutStyle || 'cinematic split'),
+                    motionCue: String(slide?.motionCue || 'Soft fade and stagger reveal'),
+                    keyMetric: String(slide?.keyMetric || ''),
+                    speakerNotes: String(slide?.speakerNotes || ''),
+                    section: String(slide?.section || ''),
+                    footer: 'Original design 繚 Editable',
+                  };
+                })
+                .slice(0, 20);
+              const normalizedSlides = buildDeckSlidesFallback({
+                promptText,
+                aiText: result.aiResponseText || '',
+                sourceSlides: generatedSlides,
+              });
 
-            if (normalizedSlides.length) {
-              setDeckSlidesData(normalizedSlides);
-              setActiveDeckSlideId(normalizedSlides[0].id);
-              didGenerateDeckSlides = true;
-              aiResponseText = result.aiResponseText?.trim() || `Created ${normalizedSlides.length} slides from your request.`;
-              showToast(`Generated ${normalizedSlides.length} slides`);
+              if (normalizedSlides.length) {
+                setDeckSlidesData(normalizedSlides);
+                setActiveDeckSlideId(normalizedSlides[0].id);
+                didGenerateDeckSlides = true;
+                aiResponseText = result.aiResponseText?.trim() || `Created ${normalizedSlides.length} slides from your request.`;
+                showToast(`Generated ${normalizedSlides.length} slides`);
+              }
+            } else if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
+              docAction = {
+                title: result.docAction.title || 'AI Timeline',
+                type: 'timeline',
+                content: result.docAction.timelineItems,
+              };
+            } else if (rawType === 'tasks' && Array.isArray(result.docAction.taskItems) && result.docAction.taskItems.length) {
+              const sanitizedTasks = result.docAction.taskItems.filter(Boolean).map((item) => String(item));
+              docAction = {
+                title: result.docAction.title || 'AI Checklist',
+                type: 'tasks',
+                content: sanitizedTasks,
+              };
+              const syncedTasks = sanitizedTasks.map((task, index) => ({
+                id: Date.now() + index,
+                text: task,
+                completed: false,
+                owner: 'agent',
+              }));
+              setTasks((prev) => [...prev, ...syncedTasks]);
+            } else if (rawType === 'risks' && Array.isArray(result.docAction.riskItems) && result.docAction.riskItems.length) {
+              docAction = {
+                title: result.docAction.title || 'AI Risk Matrix',
+                type: 'risks',
+                content: result.docAction.riskItems,
+              };
+            } else if (rawType === 'text' && (result.docAction.textParagraph || result.docAction.paragraph)) {
+              docAction = {
+                title: result.docAction.title || 'AI Composed Section',
+                type: 'text',
+                paragraph: result.docAction.textParagraph || result.docAction.paragraph,
+              };
             }
-          } else if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
-            docAction = {
-              title: result.docAction.title || 'AI Timeline',
-              type: 'timeline',
-              content: result.docAction.timelineItems,
-            };
-          } else if (rawType === 'tasks' && Array.isArray(result.docAction.taskItems) && result.docAction.taskItems.length) {
-            const sanitizedTasks = result.docAction.taskItems.filter(Boolean).map((item) => String(item));
-            docAction = {
-              title: result.docAction.title || 'AI Checklist',
-              type: 'tasks',
-              content: sanitizedTasks,
-            };
-            const syncedTasks = sanitizedTasks.map((task, index) => ({
-              id: Date.now() + index,
-              text: task,
-              completed: false,
-              owner: 'agent',
-            }));
-            setTasks((prev) => [...prev, ...syncedTasks]);
-          } else if (rawType === 'risks' && Array.isArray(result.docAction.riskItems) && result.docAction.riskItems.length) {
-            docAction = {
-              title: result.docAction.title || 'AI Risk Matrix',
-              type: 'risks',
-              content: result.docAction.riskItems,
-            };
-          } else if (rawType === 'text' && result.docAction.textParagraph) {
-            docAction = {
-              title: result.docAction.title || 'AI Composed Section',
-              type: 'text',
-              paragraph: result.docAction.textParagraph,
-            };
           }
+        } else {
+          // Direct text output from standard capable LLM (Ollama, LM Studio, Claude, Gemini)
+          aiResponseText = rawModelText;
         }
 
-        if (isDeckGeneration && !didGenerateDeckSlides) {
-          const parsedFromAiResponse = parseJsonSafely(result.aiResponseText || '');
-          const recoveredSlides = Array.isArray(parsedFromAiResponse?.docAction?.deckSlides)
-            ? parsedFromAiResponse.docAction.deckSlides
-            : [];
-          const fallbackSlides = buildDeckSlidesFallback({
-            promptText,
-            aiText: result.aiResponseText || result.docAction?.textParagraph || modelResponse?.text,
-            sourceSlides: Array.isArray(result?.docAction?.deckSlides) && result.docAction.deckSlides.length
-              ? result.docAction.deckSlides
-              : recoveredSlides,
-          });
-          if (fallbackSlides.length) {
-            setDeckSlidesData(fallbackSlides);
-            setActiveDeckSlideId(fallbackSlides[0].id);
-            didGenerateDeckSlides = true;
-            aiResponseText = `Deck AI designed ${fallbackSlides.length} slide${fallbackSlides.length > 1 ? 's' : ''} from your request.`;
-            showToast(`Designed ${fallbackSlides.length} slide${fallbackSlides.length > 1 ? 's' : ''}`);
-          }
+        // Automatic Editor Integration: If user asked to write/draft/generate content in Docs or Compose mode, automatically create docAction and render directly in the editor!
+        const isDocumentWritingRequest = productMode === 'compose' || shouldBuildDocument || source === 'compose' || source === 'floating' || /\b(write|create|draft|compose|generate|article|essay|post|letter|report|paragraph|content|add|insert|tell|rewrite|expand)\b/i.test(promptText);
+
+        if (!docAction && isDocumentWritingRequest && aiResponseText) {
+          docAction = {
+            title: 'AI Composed Section',
+            type: 'text',
+            paragraph: aiResponseText
+          };
         }
 
-        if (shouldBuildDocument && !docAction) {
-          docAction = composeFallbackAction;
+        // Ensure text renders directly into the active editor canvas immediately!
+        if (docAction && docAction.type === 'text' && blankBodyRef.current && (productMode === 'compose' || shouldBuildDocument || isDocumentWritingRequest)) {
+          const contentToRender = docAction.paragraph || aiResponseText;
+          const formattedHtml = toParagraphHtml(contentToRender);
+          
+          const injected = injectIntoSavedSelection(formattedHtml, { injectAsHtml: true });
+          if (!injected) {
+            if (!blankBodyRef.current.innerText.trim() || blankBodyRef.current.innerText === AI_NATIVE_PLACEHOLDER) {
+              blankBodyRef.current.innerHTML = formattedHtml;
+            } else {
+              const node = document.createElement('div');
+              node.innerHTML = formattedHtml;
+              blankBodyRef.current.appendChild(node);
+            }
+            setDocBodyHtml(blankBodyRef.current.innerHTML);
+          }
         }
       }
     } catch (_error) {
+      console.warn('AI call error:', _error);
       usedLiveModel = false;
     }
 
@@ -36265,7 +36292,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                           className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-2.5 px-3 pb-1.5 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 resize-none min-h-[60px]"
                         />
                         <div className="flex items-center justify-between px-2 pb-2">
-                          <div className="flex items-center gap-0.5">
+                          <div className="flex items-center gap-1">
                             <button
                               type="button"
                               onClick={() => {
@@ -36276,6 +36303,18 @@ Respond with a JSON array of slide objects matching the schema.`;
                               title="Attach files"
                             >
                               <Plus size={15} strokeWidth={1.5} />
+                            </button>
+
+                            {/* Model Selector Pill in Empty State */}
+                            <button
+                              type="button"
+                              onClick={toggleComposeModelPicker}
+                              className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer"
+                              title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
+                              <span className="max-w-[120px] truncate">{composeSelectedModel.name}</span>
+                              <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0" />
                             </button>
                             <button
                               type="button"
@@ -36814,7 +36853,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                       <button
                                         key={idx}
                                         type="button"
-                                        onClick={() => { setComposeSelectedModel(m); setComposeModelPickerOpen(false); showToast(`Switched to local ${m.name}`); }}
+                                        onClick={() => { updateSelectedModelGlobally(m); setComposeModelPickerOpen(false); showToast(`Switched to local ${m.name}`); }}
                                         className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${composeSelectedModel.id === m.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200 border border-violet-200 dark:border-violet-800 font-bold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'}`}
                                       >
                                         <div className="min-w-0 pr-1 space-y-0.5">
@@ -36888,7 +36927,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                   <button
                                     key={cIdx}
                                     type="button"
-                                    onClick={() => { setComposeSelectedModel(cM); setComposeModelPickerOpen(false); showToast(`Active model: ${cM.name}`); }}
+                                    onClick={() => { updateSelectedModelGlobally(cM); setComposeModelPickerOpen(false); showToast(`Active model: ${cM.name}`); }}
                                     className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${composeSelectedModel.id === cM.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200 border border-violet-200 dark:border-violet-800 font-bold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'}`}
                                   >
                                     <span className="font-semibold">{cM.name}</span>
@@ -41429,7 +41468,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
                                 <button
                                   key={idx}
                                   type="button"
-                                  onClick={() => { setComposeSelectedModel(m); setComposeModelPickerOpen(false); showToast(`Switched to local ${m.name}`); }}
+                                  onClick={() => { updateSelectedModelGlobally(m); setComposeModelPickerOpen(false); showToast(`Switched to local ${m.name}`); }}
                                   className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${composeSelectedModel.id === m.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
                                 >
                                   <span className="truncate">{m.name}</span>
@@ -41450,7 +41489,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
                               <button
                                 key={cIdx}
                                 type="button"
-                                onClick={() => { setComposeSelectedModel(cM); setComposeModelPickerOpen(false); showToast(`Switched to ${cM.name}`); }}
+                                onClick={() => { updateSelectedModelGlobally(cM); setComposeModelPickerOpen(false); showToast(`Switched to ${cM.name}`); }}
                                 className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${composeSelectedModel.id === cM.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
                               >
                                 <span>{cM.name}</span>
@@ -72822,6 +72861,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         />
                       );
                     })()}
+                    <button
+                      type="button"
+                      onClick={toggleComposeModelPicker}
+                      className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100/90 dark:bg-zinc-800/90 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer shrink-0 mt-1"
+                      title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
+                      <span className="max-w-[110px] truncate">{composeSelectedModel.name}</span>
+                      <ChevronDown size={10} className="text-slate-400 dark:text-zinc-400 shrink-0" />
+                    </button>
                     {activeAgentTag && (
                       <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100/90 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-medium text-xs tracking-tight group relative transition-all shrink-0 mt-1">
                         <span className="font-mono text-[11px] font-semibold leading-tight">
