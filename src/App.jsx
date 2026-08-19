@@ -2202,7 +2202,7 @@ const makeCustomDocDropdownHTML = (selectedValue, customChoices = null) => {
       data-bg="${itemStyle.bg}" data-border="${itemStyle.border}" data-color="${itemStyle.color}"
       onmouseover="this.style.background='#f5f3ff'; this.style.color='#7c3aed';" 
       onmouseout="this.style.background='transparent'; this.style.color='#334155';" 
-      style="padding:6px 12px; font-size:11px; color:#334155; cursor:pointer; text-align:left; transition:background 0.15s, color 0.15s; font-weight: 500; font-family: inherit; border-radius: 4px;">${opt}</div>`;
+      style="padding:6px 12px; font-size:11px; color:inherit; cursor:pointer; text-align:left; transition:background 0.15s, color 0.15s; font-weight: 500; font-family: inherit; border-radius: 4px;">${opt}</div>`;
   }).join('');
 
   return `<div class="custom-doc-dropdown relative" contenteditable="false" style="position:relative; display:inline-block; user-select:none; font-family:inherit; vertical-align:middle; line-height:normal;">
@@ -2299,7 +2299,7 @@ const TableGridPicker = ({ setInsertDropdownOpen }) => {
     const ths = Array.from({ length: cols }, (_, i) => {
       const isStatus = hasStatusCol && i === cols - 1;
       const headerTitle = isStatus ? 'Status' : `Col ${i + 1}`;
-      return `<th contenteditable="true" style="border:1px solid #e2e8f0;padding:8px 12px;background:#f8fafc;font-weight:600;text-align:left;color:#334155;outline:none;">${headerTitle}</th>`;
+      return `<th contenteditable="true" style="border:1px solid #e2e8f0;padding:8px 12px;background:#f8fafc;font-weight:600;text-align:left;color:inherit;outline:none;">${headerTitle}</th>`;
     }).join('');
 
     const bodyRows = Array.from({ length: rows - 1 }, () => {
@@ -17364,11 +17364,11 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
               .split(/(?<=[.!?])\s+(?=[A-Z])/)
               .map((part) => part.trim())
               .filter(Boolean)
-              .map((part) => `<p style="font-size:17px;line-height:1.72;color:#334155;margin:0 0 10px;">${escapeHtml(part)}</p>`)
+              .map((part) => `<p style="font-size:17px;line-height:1.72;color:inherit;margin:0 0 10px;">${escapeHtml(part)}</p>`)
               .join('');
 
             return `
-              <h2 style="font-size:29px;line-height:1.3;font-weight:600;color:#0f172a;margin:12px 0 8px;">${subNumber} ${escapeHtml(item.title)}</h2>
+              <h2 style="font-size:29px;line-height:1.3;font-weight:600;color:inherit;margin:12px 0 8px;">${subNumber} ${escapeHtml(item.title)}</h2>
               ${paragraphHtml}
             `;
           }).join('')
@@ -17387,15 +17387,15 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
               const subNumber = `${chapterNumber}.${index + 1}`;
               const subTitle = deriveAcademicSectionTitle(group, `Section ${subNumber}`);
               return `
-                <h2 style="font-size:29px;line-height:1.3;font-weight:600;color:#0f172a;margin:12px 0 8px;">${subNumber} ${escapeHtml(subTitle)}</h2>
-                <p style="font-size:17px;line-height:1.72;color:#334155;margin:0 0 10px;">${escapeHtml(group)}</p>
+                <h2 style="font-size:29px;line-height:1.3;font-weight:600;color:inherit;margin:12px 0 8px;">${subNumber} ${escapeHtml(subTitle)}</h2>
+                <p style="font-size:17px;line-height:1.72;color:inherit;margin:0 0 10px;">${escapeHtml(group)}</p>
               `;
             }).join('');
           })();
 
         return `
           <section data-academic-chapter="true" style="margin:0 0 20px;">
-            <h1 style="font-size:42px;line-height:1.12;font-weight:700;color:#0f172a;margin:16px 0 12px;">Chapter ${chapterNumber}. ${escapeHtml(chapterTitle)}</h1>
+            <h1 style="font-size:42px;line-height:1.12;font-weight:700;color:inherit;margin:16px 0 12px;">Chapter ${chapterNumber}. ${escapeHtml(chapterTitle)}</h1>
             ${subsectionBlocks}
           </section>
         `;
@@ -17464,18 +17464,18 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
           .split(/\n{2,}/)
           .map((paragraph) => paragraph.trim())
           .filter(Boolean)
-          .map((paragraph) => `<p style="font-size:17px;line-height:1.72;color:#334155;margin:0 0 10px;">${escapeHtml(paragraph)}</p>`)
+          .map((paragraph) => `<p style="font-size:17px;line-height:1.72;color:inherit;margin:0 0 10px;">${escapeHtml(paragraph)}</p>`)
           .join('');
 
         return `
-          <h2 style="font-size:29px;line-height:1.3;font-weight:600;color:#0f172a;margin:12px 0 8px;">${subNumber} ${escapeHtml(subTitle)}</h2>
+          <h2 style="font-size:29px;line-height:1.3;font-weight:600;color:inherit;margin:12px 0 8px;">${subNumber} ${escapeHtml(subTitle)}</h2>
           ${paragraphHtml}
         `;
       }).join('');
 
       return `
         <section data-academic-chapter="true" style="margin:0 0 20px;">
-          <h1 style="font-size:42px;line-height:1.12;font-weight:700;color:#0f172a;margin:16px 0 12px;">Chapter ${chapterNumber}. ${escapeHtml(chapterTitle)}</h1>
+          <h1 style="font-size:42px;line-height:1.12;font-weight:700;color:inherit;margin:16px 0 12px;">Chapter ${chapterNumber}. ${escapeHtml(chapterTitle)}</h1>
           ${subsectionHtml}
         </section>
       `;
@@ -17541,8 +17541,8 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
         const tag = `h${level}`;
         const headingSize = level === 1 ? 32 : level === 2 ? 24 : 20;
         return `
-          <${tag} style="font-size:${headingSize}px;line-height:1.28;font-weight:700;color:#0f172a;margin:18px 0 8px;">${escapeHtml(section.heading || `Section ${index + 1}`)}</${tag}>
-          <p style="font-size:16px;line-height:1.75;color:#334155;margin:0 0 12px;">${escapeHtml(section.text)}</p>
+          <${tag} style="font-size:${headingSize}px;line-height:1.28;font-weight:700;color:inherit;margin:18px 0 8px;">${escapeHtml(section.heading || `Section ${index + 1}`)}</${tag}>
+          <p style="font-size:16px;line-height:1.75;color:inherit;margin:0 0 12px;">${escapeHtml(section.text)}</p>
         `;
       }).join('');
     }
@@ -17589,7 +17589,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       const pageNumber = index + 1;
       return `
         <li style="margin:0 0 7px ${indent}px;list-style:none;">
-          <div style="display:flex;align-items:flex-end;gap:8px;color:#0f172a;font-size:${entrySize}px;line-height:1.3;font-weight:${weight};">
+          <div style="display:flex;align-items:flex-end;gap:8px;color:inherit;font-size:${entrySize}px;line-height:1.3;font-weight:${weight};">
             <span style="white-space:nowrap;">${escapeHtml(entry.text || `Section ${index + 1}`)}</span>
             <span aria-hidden="true" style="flex:1;align-self:center;height:1em;background-image:radial-gradient(circle at 1px 50%, #334155 1px, transparent 1.2px);background-size:5px 2px;background-repeat:repeat-x;background-position:left center;opacity:0.75;"></span>
             <span style="min-width:18px;text-align:right;white-space:nowrap;">${pageNumber}</span>
@@ -17600,7 +17600,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
     const tocHtml = `
       <section data-generated-toc="true" style="border:1px solid #dbeafe;background:#f8fbff;border-radius:16px;padding:16px 18px;margin:0 0 18px;">
-        <h1 style="font-size:14px;line-height:1.25;font-weight:700;color:#0f172a;margin:0 0 10px;">Table of Contents</h1>
+        <h1 style="font-size:14px;line-height:1.25;font-weight:700;color:inherit;margin:0 0 10px;">Table of Contents</h1>
         <ol style="margin:0;padding:0;">${tocItems}</ol>
       </section>
     `;
@@ -17618,8 +17618,8 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     }
 
     const html = plan.sections.map((section, index) => `
-      <h2 style="font-size:30px;line-height:1.25;font-weight:700;color:#0f172a;margin:22px 0 10px;">${escapeHtml(section.heading || `Section ${index + 1}`)}</h2>
-      <p style="font-size:17px;line-height:1.75;color:#334155;margin:0 0 14px;">${escapeHtml(section.text)}</p>
+      <h2 style="font-size:30px;line-height:1.25;font-weight:700;color:inherit;margin:22px 0 10px;">${escapeHtml(section.heading || `Section ${index + 1}`)}</h2>
+      <p style="font-size:17px;line-height:1.75;color:inherit;margin:0 0 14px;">${escapeHtml(section.text)}</p>
     `).join('');
 
     setDocTitle(plan.title);
@@ -17652,8 +17652,8 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       const tag = section.level === 2 ? 'h2' : section.level === 3 ? 'h3' : 'h4';
       const headingSize = section.level === 2 ? 30 : section.level === 3 ? 24 : 20;
       return `
-        <${tag} style="font-size:${headingSize}px;line-height:1.3;font-weight:700;color:#0f172a;margin:20px 0 8px;">${escapeHtml(section.heading || `Section ${index + 1}`)}</${tag}>
-        <p style="font-size:16px;line-height:1.75;color:#334155;margin:0 0 12px;">${escapeHtml(section.text)}</p>
+        <${tag} style="font-size:${headingSize}px;line-height:1.3;font-weight:700;color:inherit;margin:20px 0 8px;">${escapeHtml(section.heading || `Section ${index + 1}`)}</${tag}>
+        <p style="font-size:16px;line-height:1.75;color:inherit;margin:0 0 12px;">${escapeHtml(section.text)}</p>
       `;
     }).join('');
 
@@ -19575,7 +19575,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       const bulletMatch = line.match(/^(?:[-*?嚙稽|\d+[.)])\s+(.+)$/);
       if (bulletMatch) {
         if (!listOpen) {
-          html.push('<ul style="margin:0 0 10px 18px;padding:0;list-style:disc;color:#334155;line-height:1.7;">');
+          html.push('<ul style="margin:0 0 10px 18px;padding:0;list-style:disc;color:inherit;line-height:1.7;">');
           listOpen = true;
         }
         html.push(`<li style="margin-bottom:6px;">${escapeHtml(bulletMatch[1])}</li>`);
@@ -19591,12 +19591,12 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       closeList();
 
       if (shouldRenderHeading) {
-        html.push(`<h3 style="font-size:22px;line-height:1.35;font-weight:700;color:#0f172a;margin:16px 0 8px;">${escapeHtml(compactHeading || `Section ${index + 1}`)}</h3>`);
+        html.push(`<h3 style="font-size:22px;line-height:1.35;font-weight:700;color:inherit;margin:16px 0 8px;">${escapeHtml(compactHeading || `Section ${index + 1}`)}</h3>`);
         if (isVeryLongSentence) {
-          html.push(`<p style="font-size:16px;color:#334155;line-height:1.75;margin:0 0 10px;">${escapeHtml(line)}</p>`);
+          html.push(`<p style="font-size:16px;color:inherit;line-height:1.75;margin:0 0 10px;">${escapeHtml(line)}</p>`);
         }
       } else {
-        html.push(`<p style="font-size:16px;color:#334155;line-height:1.75;margin:0 0 10px;">${escapeHtml(line)}</p>`);
+        html.push(`<p style="font-size:16px;color:inherit;line-height:1.75;margin:0 0 10px;">${escapeHtml(line)}</p>`);
       }
     });
 
@@ -21955,7 +21955,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   const toParagraphHtml = (value, options = {}) => {
     let text = String(value || '').trim();
     const baseFontSize = options.fontSize || 14;
-    if (!text) return `<p style="font-size:${baseFontSize}px;color:#334155;line-height:1.65;margin-bottom:12px;"></p>`;
+    if (!text) return `<p style="font-size:${baseFontSize}px;color:inherit;line-height:1.65;margin-bottom:12px;"></p>`;
 
     // 1. Strip code fence artifacts (```markdown, ```html, ```, stray separators)
     text = text
@@ -21984,10 +21984,10 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
     const applyInline = (str) => String(str || '')
       .replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#4f46e5;text-decoration:underline;word-break:break-all;">$1</a>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight:700;color:#0f172a;">$1</strong>')
-      .replace(/__(.+?)__/g, '<strong style="font-weight:700;color:#0f172a;">$1</strong>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight:700;color:inherit;">$1</strong>')
+      .replace(/__(.+?)__/g, '<strong style="font-weight:700;color:inherit;">$1</strong>')
       .replace(/\*(.+?)\*/g, '<em style="font-style:italic;color:#475569;">$1</em>')
-      .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.05);padding:2px 5px;border-radius:4px;font-family:monospace;font-size:13px;color:#0f172a;">$1</code>');
+      .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.05);padding:2px 5px;border-radius:4px;font-family:monospace;font-size:13px;color:inherit;">$1</code>');
 
     // Split on double newlines or single newlines before headers
     const blocks = text
@@ -22008,22 +22008,22 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
         if (/^#\s+(.+)$/.test(line)) {
           if (inList) { html += '</ul>'; inList = false; }
           const h1 = line.replace(/^#\s+/, '');
-          html += `<h1 style="font-size:18px;font-weight:750;color:#0f172a;line-height:1.3;margin-top:14px;margin-bottom:8px;letter-spacing:-0.01em;">${applyInline(h1)}</h1>`;
+          html += `<h1 style="font-size:18px;font-weight:750;color:inherit;line-height:1.3;margin-top:14px;margin-bottom:8px;letter-spacing:-0.01em;">${applyInline(h1)}</h1>`;
         } else if (/^##\s+(.+)$/.test(line)) {
           if (inList) { html += '</ul>'; inList = false; }
           const h2 = line.replace(/^##\s+/, '');
-          html += `<h2 style="font-size:15px;font-weight:700;color:#1e293b;line-height:1.35;margin-top:12px;margin-bottom:6px;">${applyInline(h2)}</h2>`;
+          html += `<h2 style="font-size:15px;font-weight:700;color:inherit;line-height:1.35;margin-top:12px;margin-bottom:6px;">${applyInline(h2)}</h2>`;
         } else if (/^###\s+(.+)$/.test(line)) {
           if (inList) { html += '</ul>'; inList = false; }
           const h3 = line.replace(/^###\s+/, '');
-          html += `<h3 style="font-size:14px;font-weight:600;color:#334155;line-height:1.4;margin-top:10px;margin-bottom:4px;">${applyInline(h3)}</h3>`;
+          html += `<h3 style="font-size:14px;font-weight:600;color:inherit;line-height:1.4;margin-top:10px;margin-bottom:4px;">${applyInline(h3)}</h3>`;
         } else if (/^[-*•]\s+(.+)$/.test(line)) {
-          if (!inList) { html += '<ul style="margin-left:18px;margin-bottom:10px;list-style-type:disc;color:#334155;">'; inList = true; }
+          if (!inList) { html += '<ul style="margin-left:18px;margin-bottom:10px;list-style-type:disc;color:inherit;">'; inList = true; }
           const li = line.replace(/^[-*•]\s+/, '');
           html += `<li style="font-size:${baseFontSize}px;line-height:1.6;margin-bottom:4px;">${applyInline(li)}</li>`;
         } else {
           if (inList) { html += '</ul>'; inList = false; }
-          html += `<p style="font-size:${baseFontSize}px;color:#334155;line-height:1.6;margin-bottom:10px;">${applyInline(line)}</p>`;
+          html += `<p style="font-size:${baseFontSize}px;color:inherit;line-height:1.6;margin-bottom:10px;">${applyInline(line)}</p>`;
         }
       });
     });
@@ -22305,7 +22305,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       const rows = action.content.map((item) => `
         <div style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;background:#f8fafc;">
           <div style="font-size:12px;font-weight:700;color:#6d28d9;">${escapeHtml(item.dates)}</div>
-          <div style="font-size:14px;font-weight:600;color:#0f172a;margin-top:3px;">${escapeHtml(item.phase)}</div>
+          <div style="font-size:14px;font-weight:600;color:inherit;margin-top:3px;">${escapeHtml(item.phase)}</div>
           <div style="font-size:13px;color:#475569;margin-top:2px;">${escapeHtml(item.detail)}</div>
         </div>
       `).join('');
@@ -22314,7 +22314,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
     if (action.type === 'tasks' && Array.isArray(action.content)) {
       const items = action.content.map((task) => `<li style="margin-bottom:8px;">${escapeHtml(task)}</li>`).join('');
-      return `<h2 style="font-size:28px;line-height:1.2;margin-bottom:16px;">${title}</h2><ul style="padding-left:20px;color:#334155;line-height:1.7;">${items}</ul>`;
+      return `<h2 style="font-size:28px;line-height:1.2;margin-bottom:16px;">${title}</h2><ul style="padding-left:20px;color:inherit;line-height:1.7;">${items}</ul>`;
     }
 
     if (action.type === 'risks' && Array.isArray(action.content)) {
@@ -23895,7 +23895,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
         showToast(`AI generation failed: ${res.error}`);
         if (liveContainer) {
           if (type === 'table') {
-            const tableHtml = '<table style="border-collapse:collapse;width:100%;border:1px solid #e2e8f0;margin:16px 0;"><thead><tr style="background:#f1f5f9;color:#334155;"><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Item</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Value</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Notes</th></tr></thead><tbody><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">Row 1</td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td></tr></tbody></table>';
+            const tableHtml = '<table style="border-collapse:collapse;width:100%;border:1px solid #e2e8f0;margin:16px 0;"><thead><tr style="background:#f1f5f9;color:inherit;"><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Item</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Value</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Notes</th></tr></thead><tbody><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">Row 1</td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td></tr></tbody></table>';
             liveContainer.className = 'ai-preview-block';
             liveContainer.setAttribute('contenteditable', 'false');
             liveContainer.setAttribute('data-block-type', type);
@@ -23953,7 +23953,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
             <div class="schedule-preview-card" style="font-family:sans-serif; background:#fbfaff; border:1px solid #e6e3fb; border-radius:12px; padding:16px; margin:8px 0; max-width:400px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
               <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
                 <span style="font-size:20px;">??</span>
-                <span style="font-weight:700; color:#1e293b; font-size:15px;">Confirm Schedule Event</span>
+                <span style="font-weight:700; color:inherit; font-size:15px;">Confirm Schedule Event</span>
               </div>
               <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:#475569;">
                 <div><strong>Title:</strong> ${parsed.title || 'Meeting'}</div>
@@ -24010,7 +24010,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
       const liveContainer = document.getElementById(containerId);
       if (liveContainer) {
         if (type === 'table') {
-          const tableHtml = '<table style="border-collapse:collapse;width:100%;border:1px solid #e2e8f0;margin:16px 0;"><thead><tr style="background:#f1f5f9;color:#334155;"><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Item</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Value</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Notes</th></tr></thead><tbody><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">Row 1</td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td></tr></tbody></table>';
+          const tableHtml = '<table style="border-collapse:collapse;width:100%;border:1px solid #e2e8f0;margin:16px 0;"><thead><tr style="background:#f1f5f9;color:inherit;"><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Item</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Value</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Notes</th></tr></thead><tbody><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">Row 1</td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td></tr></tbody></table>';
           liveContainer.className = 'ai-preview-block';
           liveContainer.setAttribute('contenteditable', 'false');
           liveContainer.setAttribute('data-block-type', type);
@@ -24196,7 +24196,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
             <div class="schedule-preview-card" style="font-family:sans-serif; background:#fbfaff; border:1px solid #e6e3fb; border-radius:12px; padding:16px; margin:8px 0; max-width:400px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
               <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
                 <span style="font-size:20px;">??</span>
-                <span style="font-weight:700; color:#1e293b; font-size:15px;">Confirm Schedule Event</span>
+                <span style="font-weight:700; color:inherit; font-size:15px;">Confirm Schedule Event</span>
               </div>
               <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:#475569;">
                 <div><strong>Title:</strong> ${parsed.title || 'Meeting'}</div>
@@ -24401,7 +24401,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         </button>
         <div id="${boxId}_chart_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:120px; z-index:100000; pointer-events:auto !important;">
           ${['line', 'bar', 'pie', 'heatmap', 'table'].map(t => `
-            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" onclick="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" onclick="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:inherit; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
           `).join('')}
         </div>
       </div>
@@ -24417,7 +24417,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         </button>
         <div id="${boxId}_language_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:140px; z-index:100000; max-height: 200px; overflow-y: auto; pointer-events:auto !important;">
           ${['French', 'Spanish', 'German', 'Chinese', 'Chinese (Traditional)', 'Japanese', 'Italian', 'Portuguese', 'Arabic', 'Russian', 'Hindi', 'Indonesian', 'Vietnamese', 'Swedish'].map(lang => `
-            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" onclick="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${lang}</button>
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" onclick="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:inherit; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${lang}</button>
           `).join('')}
         </div>
       </div>
@@ -26758,9 +26758,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
             `).join('')}
           </div>
           <div style="display:flex; gap:4px; align-items:center;">
-            <button type="button" onclick="window.exportChartBlock('${containerId}', 'png')" style="background:#ffffff; color:#334155; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer;">PNG</button>
-            <button type="button" onclick="window.exportChartBlock('${containerId}', 'svg')" style="background:#ffffff; color:#334155; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer;">SVG</button>
-            <button type="button" onclick="window.exportChartBlock('${containerId}', 'pdf')" style="background:#ffffff; color:#334155; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer;">PDF</button>
+            <button type="button" onclick="window.exportChartBlock('${containerId}', 'png')" style="background:#ffffff; color:inherit; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer;">PNG</button>
+            <button type="button" onclick="window.exportChartBlock('${containerId}', 'svg')" style="background:#ffffff; color:inherit; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer;">SVG</button>
+            <button type="button" onclick="window.exportChartBlock('${containerId}', 'pdf')" style="background:#ffffff; color:inherit; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer;">PDF</button>
           </div>
         </div>
         <div class="chart-svg-container" style="padding:16px; background:#ffffff; display:flex; justify-content:center; align-items:center; border-bottom:1px solid #e2e8f0;">
@@ -27052,7 +27052,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           <table style="width:100%; border-collapse:collapse; background:#ffffff; border-radius:8px; overflow:hidden; font-size:13px; border:1px solid #e2e8f0;">
             <thead>
               <tr style="background:#f1f5f9; text-align:left; border-bottom:2px solid #cbd5e1;">
-                ${headers.map((h, i) => `<th onclick="window.sortChartBlockTable('${state.id || ''}', ${i})" style="padding:10px 12px; font-weight:600; color:#334155; cursor:pointer; user-select:none;">${h} ??/th>`).join('')}
+                ${headers.map((h, i) => `<th onclick="window.sortChartBlockTable('${state.id || ''}', ${i})" style="padding:10px 12px; font-weight:600; color:inherit; cursor:pointer; user-select:none;">${h} ??/th>`).join('')}
               </tr>
             </thead>
             <tbody>
@@ -37368,10 +37368,16 @@ Respond with a JSON array of slide objects matching the schema.`;
                       )}
 
                       {/* Main Message Content */}
-                      <div 
-                        className="whitespace-pre-wrap selection-ai-rendered prose-sm dark:prose-invert break-words break-all max-w-full overflow-hidden"
-                        dangerouslySetInnerHTML={{ __html: toParagraphHtml(msg.text) }}
-                      />
+                      {msg.sender === 'user' ? (
+                        <div className="whitespace-pre-wrap break-words max-w-full text-[13px] font-normal leading-relaxed text-white dark:text-zinc-900 select-text">
+                          {msg.text}
+                        </div>
+                      ) : (
+                        <div 
+                          className="whitespace-pre-wrap selection-ai-rendered prose-sm dark:prose-invert break-words break-all max-w-full overflow-hidden text-slate-800 dark:text-zinc-200"
+                          dangerouslySetInnerHTML={{ __html: toParagraphHtml(msg.text) }}
+                        />
+                      )}
 
                       {/* Browser Research Action Bar */}
                       {msg.isBrowserResearch && (
