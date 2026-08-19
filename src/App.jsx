@@ -27984,8 +27984,14 @@ Return ONLY valid JSON matching the schema.`;
       return !normalized || normalized === 'composed with live ai.' || normalized === 'composed with live ai' || normalized === 'ai response' || normalized === 'generated in normal tone with ~220 words.';
     };
 
-    const systemPrompt = isDeckGeneration
-      ? `You are Compose AI generating a full presentation deck. Return JSON only.
+    const isArticleWritingRequest = productMode === 'compose' || shouldBuildDocument || source === 'compose' || source === 'floating' || /\b(write|create|draft|compose|generate|article|essay|post|letter|report|paragraph|content|guide|memo|story)\b/i.test(promptText);
+
+    let systemPrompt = '';
+    let activeSchemaToUse = null;
+
+    if (isDeckGeneration) {
+      activeSchemaToUse = actionSchema;
+      systemPrompt = `You are Compose AI generating a full presentation deck. Return JSON only.
 Context title: ${deckTitle || 'Untitled deck'}.
 Requested output format: ${requestedFormat}.
 Tone style: ${requestedTone}.
@@ -27998,35 +28004,27 @@ Rules:
 - Each slide must include: title, subtitle, headline, blurb, visualType, layoutStyle, motionCue.
 - Add keyMetric when data exists and speakerNotes when persuasion context is needed.
 - Include section labels aligned to this narrative flow: Opening, Problem, Opportunity, Product, Market, Strategy, Financials, Closing.
-- Headline should be punchy and brief. Blurb should be 1-3 concise sentences.
-- If attachments contain source material, inspect them first and transform their specific details into slide content.
-- Never respond with generic filler when source material exists.
-- Prioritize visual outputs over dense text. Do not return plain paragraphs as the primary output.
-Process you MUST follow before creating slides:
-1) Ingest uploaded materials and user prompt.
-2) Extract goals, themes, hierarchy, key metrics, key arguments, and audience context.
-3) Create presentation strategy with slide sequence, pacing, narrative arc, and information hierarchy.
-4) Generate slides with titles, summaries, layouts, charts/timelines/diagrams/visuals.
-5) Apply adaptive design system (typography, spacing, branding, colors, visual hierarchy).
-6) Assign motion/animation cues (fade/reveal/stagger/progressive/cinematic transitions).`
-      : `You are the executive AI Copilot for Regaarder Compose (with real-time access to the user's active Presentation Deck, Document, and Spreadsheets). Return JSON only.
-Context title: ${activeProductTitle || docTitle || 'Untitled'}.
-Context subtitle: ${docSubtitle || 'No subtitle'}.
-Requested output format: ${requestedFormat}.
-Preferred doc action type: ${preferredDocType}.
-Tone style: ${requestedTone}.
-Length guidance: ${lengthGuidance}
-Rules:
-- When the user asks a question, requests a summary, reviews, or asks for explanation about the active Presentation Deck, Document, or Spreadsheet (e.g. "Summarize this deck", "What are our milestones?", "Explain the market size in slide 4"), produce a clear, thorough, executive-tier answer based directly on the provided context. Set hasAction=false and put your complete answer in aiResponseText.
-- If the input comes from Compose canvas prompt to insert content, set hasAction=true and provide docAction (timeline, tasks, risks, or text).
-- If attachments are present, ground your response in the attachment details.
-- Never return "Composed with live AI" or generic placeholders when real presentation or document content is provided.`;
+- Headline should be punchy and brief. Blurb should be 1-3 concise sentences.`;
+    } else if (isArticleWritingRequest) {
+      // Natural Document Writing Mode: No JSON envelope constraint, write full rich Markdown directly
+      activeSchemaToUse = undefined;
+      systemPrompt = `You are the executive AI writing assistant for Regaarder Compose.
+Write a comprehensive, high-quality, fully realized document in clean Markdown.
+- Begin with a clear, engaging main title prefixed with "# Title".
+- Structure the document with clear section headers ("## Section Heading"), bullet points, and detailed, well-written paragraphs fulfilling the exact length and requirements requested.
+- Write the actual full text directly. Do NOT output JSON dictionaries, schemas, or metadata blocks.`;
+    } else {
+      // Q&A / Summarization Mode
+      activeSchemaToUse = undefined;
+      systemPrompt = `You are the executive AI Copilot for Regaarder Compose (with real-time context of the active Document, Deck, and Sheets).
+Answer the user's question, provide an insightful summary, or explain the context directly, concisely, and professionally. Output your response directly in clean Markdown without JSON wrappers.`;
+    }
 
     try {
       const modelResponse = await callGemini({
         userPrompt: groundedPrompt,
         systemPrompt,
-        schema: actionSchema,
+        schema: activeSchemaToUse,
         attachments: requestAttachments,
       });
 
