@@ -13437,6 +13437,8 @@ const DEFAULT_DECK_SLIDES = [
   const [selectionAiPrompt, setSelectionAiPrompt] = useState('');
   const [selectionAiLoading, setSelectionAiLoading] = useState(false);
   const [selectionAiTranslateLang, setSelectionAiTranslateLang] = useState('French');
+  const [isSelectionAiTranslateOpen, setIsSelectionAiTranslateOpen] = useState(false);
+  const [selectionAiTranslateSearch, setSelectionAiTranslateSearch] = useState('');
 
   const executeSelectionAiAction = async (actionType, customInstruction = '') => {
     const selText = selectedEditorTextRef.current || selectedEditorText || (typeof window !== 'undefined' ? window.getSelection()?.toString()?.trim() : '') || (savedSelectionRef.current ? savedSelectionRef.current.toString().trim() : '');
@@ -35799,7 +35801,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             <div className="inline-flex items-center gap-2 min-w-max p-1 bg-slate-100/60 dark:bg-zinc-800/60 rounded-xl border border-slate-200/30 dark:border-zinc-700/30">
               {[
                 { key: 'assistant', label: 'Assistant' },
-                { key: 'ai-studio', label: 'AI Agents' },
+                { key: 'history', label: 'History' },
                 productMode !== 'sheets' && { key: 'properties', label: 'Properties' },
                 { key: 'whiteboard', label: 'Whiteboard' },
                 { key: 'tasks', label: 'Tasks' },
