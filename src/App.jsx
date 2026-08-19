@@ -9,7 +9,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { Parser } from 'hot-formula-parser';
 import { 
-  Menu, Search, Plus, Sparkles, Bell, 
+  Key, Menu, Search, Plus, Sparkles, Bell, 
   ChevronLeft, ChevronRight, Cloud, Users, Home, Inbox, Star, 
   FileText, Trash, Settings, MoreHorizontal, MoreVertical,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
