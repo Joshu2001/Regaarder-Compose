@@ -77,6 +77,7 @@ import { CANONICAL_DOCS_TOOLS } from './services/docsToolRegistry';
 import { toOpenAITools, toGeminiTools, toAnthropicTools, getDocsToolSystemPrompt, getCanonicalToolSchemas } from './services/docsLlmAdapters';
 import { getAvailableTools, executeSequence } from './services/docsAgentOrchestrator';
 import { runBrowserAgent } from './services/browserAgentService';
+import { generateTourGuide, generateVideoActionScript } from './services/tourAndVideoAgentService';
 import { DocsToolDevConsoleModal } from './components/dev/DocsToolDevConsoleModal';
 
 import * as Y from 'yjs';
@@ -1557,6 +1558,8 @@ const PROMPT_SLASH_OPTIONS = [
   { key: 'goal', label: 'Goal', desc: 'Run until the specified goal is completed', category: 'AI', icon: Target, agentKey: 'goal', tag: '/goal' },
   { key: 'schedule', label: 'Schedule', desc: 'Run an instruction on a recurring schedule', category: 'AI', icon: Clock, agentKey: 'schedule', tag: '/schedule' },
   { key: 'browser', label: 'Browser', desc: 'Invoke a browser agent for web tasks', category: 'AI', icon: Globe, agentKey: 'browser', tag: '/browser' },
+  { key: 'tour', label: 'Tour Guide', desc: 'Step-by-step visual interactive walkthrough', category: 'AI', icon: Compass, agentKey: 'tour', tag: '/tour' },
+  { key: 'video', label: 'Video Agent', desc: 'Perform action and generate animated video demo', category: 'AI', icon: Video, agentKey: 'video', tag: '/video' },
   { key: 'health', label: 'Document Health', desc: 'Run 6 parallel quality checks', category: 'Analyze', icon: Activity, agentKey: 'health', tag: '/health' },
   { key: 'writing', label: 'Writing', desc: 'Transform tone, expand, shorten & summarize', category: 'Transform', icon: PenTool, agentKey: 'writing', tag: '/writing' },
   { key: 'editor', label: 'Editor', desc: 'Grammar, clarity & style polish', category: 'Transform', icon: FileEdit, agentKey: 'editor', tag: '/editor' },
@@ -11920,6 +11923,7 @@ const DEFAULT_DECK_SLIDES = [
   const [composingText, setComposingText] = useState('AI is composing...');
   const [browserAgentSteps, setBrowserAgentSteps] = useState([]);
   const [isBrowserAgentRunning, setIsBrowserAgentRunning] = useState(false);
+  const [activeSpotlightTour, setActiveSpotlightTour] = useState(null);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isVoiceCommandMode, setIsVoiceCommandMode] = useState(false);
   const isVoiceCommandModeRef = useRef(false);
@@ -28173,6 +28177,66 @@ Return ONLY valid JSON matching the schema.`;
       /\b(browse(\s+the)?\s+web|search(\s+the)?\s+(web|internet)|lookup\s+(online|on\s+the\s+web)|find\s+latest|latest\s+news|today'?s\s+news|transfer\s+news|citations\s+online|navigate\s+to\s+https?:\/\/)\b/i.test(promptText)
     );
 
+    // ── TOUR AGENT ROUTER ──────────────────────────────────────────────
+    const isTourRequest = Boolean(
+      normalizedActiveTag === 'tour' ||
+      selectedAIAgent === 'tour' ||
+      smartActionKey === 'tour' ||
+      /^\/tour\b/i.test(promptText) ||
+      /^@tour\b/i.test(promptText) ||
+      /\b(how\s+do\s+i|guide\s+me|walkthrough|show\s+me\s+how|tour\s+of)\b/i.test(promptText)
+    );
+
+    if (isTourRequest) {
+      const cleanTourQuery = promptText.replace(/^[\/@]tour\s*/i, '').trim() || 'Using Regaarder Compose';
+      const tourGuide = generateTourGuide(cleanTourQuery, productMode);
+
+      const assistantMsg = {
+        id: 'msg_' + Date.now(),
+        sender: 'assistant',
+        role: 'assistant',
+        text: `### 🧭 ${tourGuide.title}\n\n${tourGuide.description}\n\n` + tourGuide.steps.map(s => `**Step ${s.stepNumber}: ${s.title}**\n${s.description}`).join('\n\n'),
+        isTourGuide: true,
+        tourData: tourGuide,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      setChatMessages(prev => [...prev, assistantMsg]);
+      showToast('🧭 Tour guide generated');
+      setActiveAgentTag(null);
+      return;
+    }
+
+    // ── VIDEO AGENT ROUTER ─────────────────────────────────────────────
+    const isVideoRequest = Boolean(
+      normalizedActiveTag === 'video' ||
+      selectedAIAgent === 'video' ||
+      smartActionKey === 'video' ||
+      /^\/video\b/i.test(promptText) ||
+      /^@video\b/i.test(promptText) ||
+      /\b(record\s+video|record\s+action|make\s+a\s+video|video\s+demo|video\s+guide)\b/i.test(promptText)
+    );
+
+    if (isVideoRequest) {
+      const cleanVideoQuery = promptText.replace(/^[\/@]video\s*/i, '').trim() || 'Demonstrating Action';
+      const videoScript = generateVideoActionScript(cleanVideoQuery, productMode);
+
+      const assistantMsg = {
+        id: 'msg_' + Date.now(),
+        sender: 'assistant',
+        role: 'assistant',
+        text: `### 🎥 ${videoScript.title}\n\nAutonomously recorded ${videoScript.duration}s animated action workflow for: "${cleanVideoQuery}".\n\n` + videoScript.captions.map(c => `- ${c.text}`).join('\n'),
+        isVideoDemo: true,
+        videoScript: videoScript,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      setChatMessages(prev => [...prev, assistantMsg]);
+      showToast('🎥 Video action demo created');
+      setActiveAgentTag(null);
+      return;
+    }
+
     if (isBrowserAgentRequest) {
       const cleanBrowserQuery = promptText
         .replace(/^[\/@]browser\s*/i, '')
@@ -37100,6 +37164,73 @@ Respond with a JSON array of slide objects matching the schema.`;
                                 <span className="truncate max-w-[140px]">{s.title}</span>
                               </a>
                             ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tour Guide Interactive Card */}
+                      {msg.isTourGuide && msg.tourData && (
+                        <div className="mt-2.5 p-3 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800/60 mb-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveSpotlightTour({
+                                title: msg.tourData.title,
+                                steps: msg.tourData.steps,
+                                currentIndex: 0
+                              });
+                              showToast('🚀 Started interactive spotlight walkthrough');
+                            }}
+                            className="w-full inline-flex items-center justify-center gap-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-3 rounded-lg shadow-xs transition-colors cursor-pointer"
+                          >
+                            <Compass size={14} />
+                            <span>Start Interactive Spotlight Walkthrough</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Video Action Demo Player Card */}
+                      {msg.isVideoDemo && msg.videoScript && (
+                        <div className="mt-2.5 p-3.5 rounded-xl bg-slate-900 text-white shadow-md border border-slate-700/80 mb-2">
+                          <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-800">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-400">
+                              <Video size={13} />
+                              <span>Action Video Demo (Simulated 60fps)</span>
+                            </div>
+                            <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/40 px-1.5 py-0.5 rounded font-mono">
+                              REC 00:06
+                            </span>
+                          </div>
+                          
+                          {/* Animated Screen Simulation Window */}
+                          <div className="relative w-full h-28 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 flex flex-col items-center justify-center p-3 text-center">
+                            <div className="w-8 h-8 rounded-full bg-indigo-600/30 flex items-center justify-center text-indigo-400 animate-pulse mb-1.5">
+                              <Video size={16} />
+                            </div>
+                            <span className="text-[11px] font-medium text-slate-300">
+                              {msg.videoScript.title}
+                            </span>
+                            <div className="absolute bottom-2 left-2 right-2 flex items-center gap-1.5 text-[10px] text-slate-400 bg-slate-900/90 px-2 py-1 rounded border border-slate-800">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                              <span className="truncate">{msg.videoScript.captions[1]?.text || 'Executing action...'}</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-2.5 flex items-center justify-between gap-2">
+                            <button
+                              type="button"
+                              onClick={() => showToast('⚡ Action workflow simulated & ready')}
+                              className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <span>⚡ Execute Action</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => showToast('Downloading demo clip...')}
+                              className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-300 hover:text-white px-2 py-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                            >
+                              <span>Download Clip</span>
+                            </button>
                           </div>
                         </div>
                       )}
@@ -77789,6 +77920,83 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* Global Workspace Switcher Popover (Available across Docs, Sheets, Decks, Room, Research) */}
       {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
+
+      {/* Interactive Spotlight Tour Modal */}
+      {activeSpotlightTour && (
+        <div className="fixed inset-0 z-99999 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl shadow-2xl p-5 max-w-md w-full animate-in zoom-in-95">
+            <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
+                  {activeSpotlightTour.currentIndex + 1}
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
+                    {activeSpotlightTour.steps[activeSpotlightTour.currentIndex]?.title || activeSpotlightTour.title}
+                  </h4>
+                  <span className="text-[11px] text-slate-400 dark:text-zinc-500">
+                    Step {activeSpotlightTour.currentIndex + 1} of {activeSpotlightTour.steps.length}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveSpotlightTour(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed mb-5">
+              {activeSpotlightTour.steps[activeSpotlightTour.currentIndex]?.description}
+            </p>
+
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveSpotlightTour(null)}
+                className="text-xs font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                Exit Tour
+              </button>
+              <div className="flex items-center gap-2">
+                {activeSpotlightTour.currentIndex > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveSpotlightTour(prev => ({ ...prev, currentIndex: prev.currentIndex - 1 }))}
+                    className="text-xs font-medium text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700 px-3 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    Previous
+                  </button>
+                )}
+                {activeSpotlightTour.currentIndex < activeSpotlightTour.steps.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setActiveSpotlightTour(prev => ({ ...prev, currentIndex: prev.currentIndex + 1 }))}
+                    className="inline-flex items-center gap-1 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg shadow-xs transition-colors"
+                  >
+                    <span>Next Step</span>
+                    <ArrowRight size={12} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveSpotlightTour(null);
+                      showToast('🎉 Tour completed!');
+                    }}
+                    className="inline-flex items-center gap-1 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg shadow-xs transition-colors"
+                  >
+                    <span>Complete Tour</span>
+                    <Check size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
