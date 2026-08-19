@@ -8191,6 +8191,40 @@ function AppCore() {
   const [composeDetectedModels, setComposeDetectedModels] = useState([]);
   const [composeIsScanning, setComposeIsScanning] = useState(false);
   const [composeModelPickerOpen, setComposeModelPickerOpen] = useState(false);
+  const [composeModelPickerCoords, setComposeModelPickerCoords] = useState(null);
+
+  const toggleComposeModelPicker = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (composeModelPickerOpen) {
+      setComposeModelPickerOpen(false);
+    } else {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const popupWidth = 320;
+      let targetLeft = rect.left;
+      if (targetLeft + popupWidth > window.innerWidth - 16) {
+        targetLeft = window.innerWidth - popupWidth - 16;
+      }
+      if (targetLeft < 16) targetLeft = 16;
+
+      setComposeModelPickerCoords({
+        left: targetLeft,
+        bottom: window.innerHeight - rect.top + 8
+      });
+      setComposeModelPickerOpen(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!composeModelPickerOpen) return;
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest?.('#compose-model-picker-portal') && !e.target.closest?.('.compose-model-picker-trigger')) {
+        setComposeModelPickerOpen(false);
+      }
+    };
+    window.addEventListener('pointerdown', handleOutsideClick, true);
+    return () => window.removeEventListener('pointerdown', handleOutsideClick, true);
+  }, [composeModelPickerOpen]);
 
   // Universal Local Model Scanner for Compose AI (Docs, Sheets, Decks)
   const scanComposeLocalModels = useCallback(async () => {
@@ -36719,12 +36753,12 @@ Respond with a JSON array of slide objects matching the schema.`;
                           <Plus size={16} strokeWidth={1.75} />
                         </button>
 
-                        {/* Universal LLM Model Selector Pill (Full Parity with Browser Assistant) */}
+                        {/* Universal LLM Model Selector Pill (Portal-Mounted, 0% Clipping) */}
                         <div className="relative">
                           <button
                             type="button"
-                            onClick={() => setComposeModelPickerOpen(!composeModelPickerOpen)}
-                            className="h-6 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer"
+                            onClick={toggleComposeModelPicker}
+                            className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer"
                             title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                           >
                             <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
@@ -36732,8 +36766,17 @@ Respond with a JSON array of slide objects matching the schema.`;
                             <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0" />
                           </button>
 
-                          {composeModelPickerOpen && (
-                            <div className="absolute bottom-9 left-0 w-80 max-h-[75vh] overflow-y-auto thin-scrollbar p-3 bg-white/95 dark:bg-zinc-900/95 text-slate-800 dark:text-zinc-100 border border-slate-200 dark:border-zinc-700 rounded-2xl shadow-2xl z-[999] backdrop-blur-2xl font-sans text-xs space-y-2.5 animate-in fade-in zoom-in-95 duration-150">
+                          {composeModelPickerOpen && composeModelPickerCoords && createPortal(
+                            <div
+                              id="compose-model-picker-portal"
+                              style={{
+                                position: 'fixed',
+                                left: `${composeModelPickerCoords.left}px`,
+                                bottom: `${composeModelPickerCoords.bottom}px`,
+                                zIndex: 99999999
+                              }}
+                              className="w-80 max-h-[75vh] overflow-y-auto thin-scrollbar p-3 bg-white/98 dark:bg-zinc-900/98 text-slate-800 dark:text-zinc-100 border border-slate-200 dark:border-zinc-700 rounded-2xl shadow-2xl backdrop-blur-2xl font-sans text-xs space-y-2.5 animate-in fade-in zoom-in-95 duration-150"
+                            >
                               {/* Header: Title + Rescan Button */}
                               <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-zinc-800">
                                 <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-zinc-500">
@@ -36849,7 +36892,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                                   </button>
                                 ))}
                               </div>
-                            </div>
+                            </div>,
+                            document.body
                           )}
                         </div>
                         <button
