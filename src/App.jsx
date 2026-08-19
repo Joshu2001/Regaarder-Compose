@@ -28130,7 +28130,7 @@ Return ONLY valid JSON matching the schema.`;
     const suppressChatEcho = Boolean(options.suppressChatEcho);
 
     // Ensure Assistant sidebar is open and active so the prompt & response are clearly visible
-    setIsRightSidebarOpen(true);
+    setRightSidebarOpen(true);
     setActiveRightTab('assistant');
 
     // Echo the user prompt to chat
