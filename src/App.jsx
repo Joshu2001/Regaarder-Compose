@@ -33011,6 +33011,18 @@ Respond with a JSON array of slide objects matching the schema.`;
     showToast(`Applied ${template.label} to current slide`);
   };
 
+  const handleLoadBusinessPlanDeck = () => {
+    setDeckSlidesData(JSON.parse(JSON.stringify(BUSINESS_PLAN_DECK_SLIDES)));
+    setActiveDeckSlideId(BUSINESS_PLAN_DECK_SLIDES[0].id);
+    showToast('Loaded Executive Business Plan Template (10 Slides)');
+  };
+
+  const handleLoadStartupPitchDeck = () => {
+    setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_DECK_SLIDES)));
+    setActiveDeckSlideId(DEFAULT_DECK_SLIDES[0].id);
+    showToast('Loaded Startup Pitch Deck Template (15 Slides)');
+  };
+
   const addDeckSlide = () => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
     const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
@@ -49671,11 +49683,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     {/* 2. Startup Pitch Deck */}
                                     <button
                                       type="button"
-                                      onClick={() => {
-                                        setDeckSlides(DEFAULT_DECK_SLIDES);
-                                        setActiveDeckSlideId(DEFAULT_DECK_SLIDES[0].id);
-                                        showToast('Loaded Startup Pitch Deck Template (15 Slides)');
-                                      }}
+                                      onClick={handleLoadStartupPitchDeck}
                                       className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-500/15 hover:bg-violet-500/25 text-violet-300 border border-violet-500/40 shrink-0 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs hover:scale-[1.02]"
                                       title="Load Original 15-Slide Startup Pitch Deck"
                                     >
