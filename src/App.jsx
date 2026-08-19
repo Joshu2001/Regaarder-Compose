@@ -28189,7 +28189,7 @@ Return ONLY valid JSON matching the schema.`;
 
     if (isTourRequest) {
       const cleanTourQuery = promptText.replace(/^[\/@]tour\s*/i, '').trim() || 'Using Regaarder Compose';
-      setComposingText('🧭 Tour Agent: Generating interactive walkthrough...');
+      setComposingText('Tour Agent: Generating interactive walkthrough...');
       setIsComposing(true);
       
       try {
@@ -28198,14 +28198,14 @@ Return ONLY valid JSON matching the schema.`;
           id: 'msg_' + Date.now(),
           sender: 'assistant',
           role: 'assistant',
-          text: `### 🧭 ${tourGuide.title}\n\n${tourGuide.description}\n\n` + tourGuide.steps.map(s => `**Step ${s.stepNumber}: ${s.title}**\n${s.description}`).join('\n\n'),
+          text: `### ${tourGuide.title}\n\n${tourGuide.description}\n\n` + tourGuide.steps.map(s => `**Step ${s.stepNumber}: ${s.title}**\n${s.description}`).join('\n\n'),
           isTourGuide: true,
           tourData: tourGuide,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
 
         setChatMessages(prev => [...prev, assistantMsg]);
-        showToast('🧭 Tour guide ready');
+        showToast('Tour guide ready');
       } catch (err) {
         console.warn('[TourAgent] Error:', err);
       } finally {
@@ -28227,7 +28227,7 @@ Return ONLY valid JSON matching the schema.`;
 
     if (isVideoRequest) {
       const cleanVideoQuery = promptText.replace(/^[\/@]video\s*/i, '').trim() || 'Demonstrating Action';
-      setComposingText('🎥 Video Agent: Recording canvas workflow...');
+      setComposingText('Video Agent: Recording canvas workflow...');
       setIsComposing(true);
 
       try {
@@ -28238,7 +28238,7 @@ Return ONLY valid JSON matching the schema.`;
           id: 'msg_' + Date.now(),
           sender: 'assistant',
           role: 'assistant',
-          text: `### 🎥 ${videoScript.title}\n\nLive recorded ${videoScript.duration}s animated workflow for: "${cleanVideoQuery}".\n\n` + videoScript.captions.map(c => `- ${c.text}`).join('\n'),
+          text: `### ${videoScript.title}\n\nLive recorded ${videoScript.duration}s animated workflow for: "${cleanVideoQuery}".\n\n` + videoScript.captions.map(c => `- ${c.text}`).join('\n'),
           isVideoDemo: true,
           videoScript: videoScript,
           targetQuery: cleanVideoQuery,
@@ -28246,7 +28246,7 @@ Return ONLY valid JSON matching the schema.`;
         };
 
         setChatMessages(prev => [...prev, assistantMsg]);
-        showToast('🎥 Video action recorded');
+        showToast('Video action recorded');
       } catch (err) {
         console.warn('[VideoAgent] Error:', err);
       } finally {
@@ -37187,9 +37187,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </div>
                       )}
 
-                      {/* Tour Guide Interactive Card */}
+                                            {/* Tour Guide Interactive Card */}
                       {msg.isTourGuide && msg.tourData && (
-                        <div className="mt-2.5 p-3 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800/60 mb-2">
+                        <div className="mt-2.5 p-2 rounded-xl bg-slate-50/90 dark:bg-zinc-800/50 border border-slate-200/70 dark:border-zinc-700/60 mb-2">
                           <button
                             type="button"
                             onClick={() => {
@@ -37198,12 +37198,12 @@ Respond with a JSON array of slide objects matching the schema.`;
                                 steps: msg.tourData.steps,
                                 currentIndex: 0
                               });
-                              showToast('🚀 Started interactive spotlight walkthrough');
+                              showToast('Started interactive walkthrough');
                             }}
-                            className="w-full inline-flex items-center justify-center gap-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-3 rounded-lg shadow-xs transition-colors cursor-pointer"
+                            className="w-full inline-flex items-center justify-center gap-2 text-xs font-semibold bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 py-2 px-3.5 rounded-lg shadow-2xs transition-all cursor-pointer select-none active:scale-[0.98]"
                           >
-                            <Compass size={14} />
-                            <span>Start Interactive Spotlight Walkthrough</span>
+                            <Compass size={13} className="text-slate-300 dark:text-zinc-600" />
+                            <span>Start Interactive Walkthrough</span>
                           </button>
                         </div>
                       )}
@@ -37295,7 +37295,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                     taskEl.style.borderRadius = '6px';
                                     taskEl.style.transition = 'outline 0.3s ease';
                                     setTimeout(() => { taskEl.style.outline = 'none'; }, 3000);
-                                    showToast('🎯 Located and highlighted checklist on canvas');
+                                    showToast('Located and highlighted checklist on canvas');
                                     return;
                                   } else {
                                     if (window.__composeInsertHTML) {
@@ -37306,11 +37306,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                                   }
                                 }
 
-                                showToast('⚡ Executed action workflow on canvas');
+                                showToast('Executed action workflow on canvas');
                               }}
                               className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg shadow-xs transition-colors cursor-pointer"
                             >
-                              <span>⚡ Execute Action on Canvas</span>
+                              <span>Execute on Canvas</span>
                             </button>
                             <button
                               type="button"
@@ -78072,7 +78072,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     type="button"
                     onClick={() => {
                       setActiveSpotlightTour(null);
-                      showToast('🎉 Tour completed!');
+                      showToast('Tour completed');
                     }}
                     className="inline-flex items-center gap-1 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg shadow-xs transition-colors"
                   >
