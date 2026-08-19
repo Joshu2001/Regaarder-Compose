@@ -21965,6 +21965,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       .replace(/(?:^|\n)##+\s*Section\s*\d*:\s*/gi, '## ');
 
     const applyInline = (str) => String(str || '')
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#4f46e5;text-decoration:underline;word-break:break-all;">$1</a>')
       .replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight:700;color:#0f172a;">$1</strong>')
       .replace(/__(.+?)__/g, '<strong style="font-weight:700;color:#0f172a;">$1</strong>')
       .replace(/\*(.+?)\*/g, '<em style="font-style:italic;color:#475569;">$1</em>')
@@ -22933,6 +22934,9 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   };
 
   async function callGemini({ userPrompt, systemPrompt, schema, attachments = [], customModel, customApiKey, customProvider }) {
+    const todayDateString = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const fullSystemPrompt = (systemPrompt ? `${systemPrompt}\n\n` : '') + `CURRENT DATE CONTEXT: Today is ${todayDateString}. All current-event research, dates, and sports transfer updates must reflect the current year 2026.`;
+
     // ⚡ Local LLM Execution Path (Ollama / LM Studio / llama.cpp)
     if (composeSelectedModel?.isLocal && composeSelectedModel?.endpoint) {
       try {
@@ -22945,7 +22949,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
           ? {
               model: composeSelectedModel.id,
               messages: [
-                ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+                ...(fullSystemPrompt ? [{ role: 'system', content: fullSystemPrompt }] : []),
                 { role: 'user', content: userPrompt }
               ],
               stream: false,
@@ -37087,9 +37091,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                       )}
 
                       {/* Main Message Content */}
-                      <div className="whitespace-pre-wrap selection-ai-rendered prose-sm dark:prose-invert">
-                        {msg.text}
-                      </div>
+                      <div 
+                        className="whitespace-pre-wrap selection-ai-rendered prose-sm dark:prose-invert break-words break-all max-w-full overflow-hidden"
+                        dangerouslySetInnerHTML={{ __html: toParagraphHtml(msg.text) }}
+                      />
 
                       {/* Browser Research Action Bar */}
                       {msg.isBrowserResearch && (
