@@ -255,7 +255,16 @@ CRITICAL REAL-TIME GROUNDING RULES:
         userPrompt: aiPrompt,
         systemPrompt: 'You are the Senior Browser & Live Web Research Agent for Regaarder Compose. Deliver verified, up-to-the-minute research with hyperlinked citations directly grounded in the retrieved live search results.',
       });
-      responseText = aiResponse?.text || '';
+      let rawRes = aiResponse?.text || '';
+      // Strip markdown code block fences and stray delimiters
+      responseText = rawRes
+        .replace(/^[\s`]*markdown\s*\n?/gi, '')
+        .replace(/^[\s`]*html\s*\n?/gi, '')
+        .replace(/^[`]{3,}[a-z0-9_-]*\s*\n?/gim, '')
+        .replace(/\n?[`]{3,}\s*$/gim, '')
+        .replace(/[`]{3,}/g, '')
+        .replace(/^(?:---|___|\*\*\*)\s*$/gm, '')
+        .trim();
     } else {
       responseText = `### Live Web Research: ${query}\n\n${fetchedContent}\n\n**Sources:**\n` + sources.map((s, i) => `${i + 1}. [${s.title}](${s.url}) — *${s.source}* (${s.pubDate || 'Recent'})`).join('\n');
     }

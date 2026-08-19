@@ -21945,9 +21945,20 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     };
   };
 
-  const toParagraphHtml = (value) => {
+  const toParagraphHtml = (value, options = {}) => {
     let text = String(value || '').trim();
-    if (!text) return '<p style="font-size:16px;color:#334155;line-height:1.85;margin-bottom:16px;"></p>';
+    const baseFontSize = options.fontSize || 14;
+    if (!text) return `<p style="font-size:${baseFontSize}px;color:#334155;line-height:1.65;margin-bottom:12px;"></p>`;
+
+    // 1. Strip code fence artifacts (```markdown, ```html, ```, stray separators)
+    text = text
+      .replace(/^[\s`]*markdown\s*\n?/gi, '')
+      .replace(/^[\s`]*html\s*\n?/gi, '')
+      .replace(/^[`]{3,}[a-z0-9_-]*\s*\n?/gim, '')
+      .replace(/\n?[`]{3,}\s*$/gim, '')
+      .replace(/[`]{3,}/g, '')
+      .replace(/^(?:---|___|\*\*\*)\s*$/gm, '')
+      .trim();
 
     // If text contains JSON envelope, extract clean data
     if (text.startsWith('{') && (text.includes('"content"') || text.includes('"title"') || text.includes('"article"') || text.includes('"article_title"'))) {
@@ -21969,7 +21980,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       .replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight:700;color:#0f172a;">$1</strong>')
       .replace(/__(.+?)__/g, '<strong style="font-weight:700;color:#0f172a;">$1</strong>')
       .replace(/\*(.+?)\*/g, '<em style="font-style:italic;color:#475569;">$1</em>')
-      .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.05);padding:2px 5px;border-radius:4px;font-family:monospace;font-size:14px;color:#0f172a;">$1</code>');
+      .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.05);padding:2px 5px;border-radius:4px;font-family:monospace;font-size:13px;color:#0f172a;">$1</code>');
 
     // Split on double newlines or single newlines before headers
     const blocks = text
@@ -21984,25 +21995,28 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       const lines = block.split(/\n+/).map(l => l.trim()).filter(Boolean);
 
       lines.forEach(line => {
+        // Skip stray markdown delimiter lines
+        if (/^(?:---|___|\*\*\*|[`]{3,}.*)$/.test(line)) return;
+
         if (/^#\s+(.+)$/.test(line)) {
           if (inList) { html += '</ul>'; inList = false; }
           const h1 = line.replace(/^#\s+/, '');
-          html += `<h1 style="font-size:28px;font-weight:800;color:#0f172a;line-height:1.25;margin-top:28px;margin-bottom:14px;letter-spacing:-0.02em;">${applyInline(h1)}</h1>`;
+          html += `<h1 style="font-size:18px;font-weight:750;color:#0f172a;line-height:1.3;margin-top:14px;margin-bottom:8px;letter-spacing:-0.01em;">${applyInline(h1)}</h1>`;
         } else if (/^##\s+(.+)$/.test(line)) {
           if (inList) { html += '</ul>'; inList = false; }
           const h2 = line.replace(/^##\s+/, '');
-          html += `<h2 style="font-size:22px;font-weight:700;color:#1e293b;line-height:1.35;margin-top:24px;margin-bottom:12px;letter-spacing:-0.01em;">${applyInline(h2)}</h2>`;
+          html += `<h2 style="font-size:15px;font-weight:700;color:#1e293b;line-height:1.35;margin-top:12px;margin-bottom:6px;">${applyInline(h2)}</h2>`;
         } else if (/^###\s+(.+)$/.test(line)) {
           if (inList) { html += '</ul>'; inList = false; }
           const h3 = line.replace(/^###\s+/, '');
-          html += `<h3 style="font-size:18px;font-weight:600;color:#334155;line-height:1.4;margin-top:20px;margin-bottom:8px;">${applyInline(h3)}</h3>`;
+          html += `<h3 style="font-size:14px;font-weight:600;color:#334155;line-height:1.4;margin-top:10px;margin-bottom:4px;">${applyInline(h3)}</h3>`;
         } else if (/^[-*•]\s+(.+)$/.test(line)) {
-          if (!inList) { html += '<ul style="margin-left:24px;margin-bottom:16px;list-style-type:disc;color:#334155;">'; inList = true; }
+          if (!inList) { html += '<ul style="margin-left:18px;margin-bottom:10px;list-style-type:disc;color:#334155;">'; inList = true; }
           const li = line.replace(/^[-*•]\s+/, '');
-          html += `<li style="font-size:16px;line-height:1.8;margin-bottom:6px;">${applyInline(li)}</li>`;
+          html += `<li style="font-size:${baseFontSize}px;line-height:1.6;margin-bottom:4px;">${applyInline(li)}</li>`;
         } else {
           if (inList) { html += '</ul>'; inList = false; }
-          html += `<p style="font-size:16px;color:#334155;line-height:1.85;margin-bottom:16px;">${applyInline(line)}</p>`;
+          html += `<p style="font-size:${baseFontSize}px;color:#334155;line-height:1.6;margin-bottom:10px;">${applyInline(line)}</p>`;
         }
       });
     });
