@@ -28249,22 +28249,25 @@ Return ONLY valid JSON matching the schema.`;
 
     if (isVideoRequest) {
       const cleanVideoQuery = promptText.replace(/^[\/@]video\s*/i, '').trim() || 'Demonstrating Action';
-      setComposingText('Video Agent: Taking control of UI and recording clip...');
+      setComposingText('Video Agent: Taking control of UI and executing workflow...');
       setIsComposing(true);
       setVideoRecordingState({ isRecording: true, label: cleanVideoQuery });
 
       try {
         const plan = planAutonomousActions(cleanVideoQuery, productMode);
 
-        // 1. Generate video recording blob and script
-        const videoRes = await generateDemoVideoBlob(plan);
-        const videoScript = await generateVideoActionScriptViaAI(cleanVideoQuery, productMode, callGemini);
+        // 1. Prepare video clip and AI action script
+        const [videoRes, videoScript] = await Promise.all([
+          generateDemoVideoBlob(plan),
+          generateVideoActionScriptViaAI(cleanVideoQuery, productMode, callGemini)
+        ]);
 
+        // 2. Post the assistant response card with video demo immediately
         const assistantMsg = {
           id: 'msg_' + Date.now(),
           sender: 'assistant',
           role: 'assistant',
-          text: `### ${videoScript.title}\n\nAutonomous UI takeover and video recording completed for: "${cleanVideoQuery}".\n\n` + videoScript.captions.map(c => `- ${c.text}`).join('\n'),
+          text: `### ${videoScript.title}\n\nAutonomous UI takeover and video guide for: "${cleanVideoQuery}".\n\n` + videoScript.captions.map(c => `- ${c.text}`).join('\n'),
           isVideoDemo: true,
           videoScript: videoScript,
           videoUrl: videoRes?.videoUrl || null,
@@ -28274,16 +28277,18 @@ Return ONLY valid JSON matching the schema.`;
 
         setChatMessages(prev => [...prev, assistantMsg]);
         setIsComposing(false);
-        showToast('Autonomous video recording ready');
+        showToast('Autonomous video action ready');
 
-        // 2. Perform live visual mouse cursor takeover on screen
+        // 3. Perform live interactive mouse cursor takeover on the real UI
         setAutonomousCursorPos({ x: window.innerWidth / 2, y: window.innerHeight / 2, visible: true, clicking: false });
 
         await executeAutonomousVideoSequence({
           intent: cleanVideoQuery,
           productMode,
           setDocToolbarTab,
+          setIsDocumentSubToolbarCollapsed,
           setIsInsertImagesModalOpen,
+          setDocOutlineEnabled,
           insertHtmlToCanvas: (html) => {
             if (window.__composeInsertHTML) window.__composeInsertHTML(html);
           },
@@ -37346,6 +37351,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                   productMode,
                                   setDocToolbarTab,
                                   setIsInsertImagesModalOpen,
+                                  setDocOutlineEnabled,
                                   insertHtmlToCanvas: (html) => {
                                     if (window.__composeInsertHTML) window.__composeInsertHTML(html);
                                   },
@@ -67666,6 +67672,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               {['Context', 'Templates', 'Write', 'Review', 'View'].map((tab) => (
                 <button
                   key={tab}
+                  data-toolbar-tab={tab}
                   type="button"
                   onClick={() => {
                     if (isDocumentSubToolbarCollapsed) {
@@ -68908,6 +68915,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                 {/* Outline Toggle */}
                 <button
+                  data-toolbar-action="outline-toggle"
                   type="button"
                   onClick={() => setDocOutlineEnabled((prev) => !prev)}
                   className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer ${docOutlineEnabled ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/60'}`}

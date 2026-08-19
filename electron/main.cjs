@@ -327,6 +327,20 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('[Electron Main] Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
+// App window frame capture for Video Agent real screen recording pipeline.
+// Uses capturePage() — CPU-based, safe with hardware acceleration disabled.
+ipcMain.handle('app:capture-frame', async () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return null;
+  try {
+    const image = await mainWindow.webContents.capturePage();
+    const resized = image.resize({ width: 960, height: 600 });
+    return resized.toJPEG(72);
+  } catch (e) {
+    console.warn('[app:capture-frame] capturePage failed:', e.message);
+    return null;
+  }
+});
+
 app.whenReady().then(() => {
   createWindow();
 
