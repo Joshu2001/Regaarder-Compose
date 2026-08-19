@@ -28142,12 +28142,17 @@ Return ONLY valid JSON matching the schema.`;
     });
 
     // ── AUTONOMOUS BROWSER AGENT ROUTER ────────────────────────────────
+    const normalizedActiveTag = typeof activeAgentTag === 'string' 
+      ? activeAgentTag.replace(/^\//, '').toLowerCase() 
+      : String(activeAgentTag?.key || activeAgentTag?.tag || '').replace(/^\//, '').toLowerCase();
+
     const isBrowserAgentRequest = Boolean(
-      activeAgentTag?.key === 'browser' ||
+      normalizedActiveTag === 'browser' ||
+      selectedAIAgent === 'browser' ||
       smartActionKey === 'browser' ||
       /^\/browser\b/i.test(promptText) ||
       /^@browser\b/i.test(promptText) ||
-      /\b(browse(\s+the)?\s+web|search(\s+the)?\s+(web|internet)|lookup\s+(online|on\s+the\s+web)|find\s+latest|find\s+citations\s+online|navigate\s+to\s+https?:\/\/)\b/i.test(promptText)
+      /\b(browse(\s+the)?\s+web|search(\s+the)?\s+(web|internet)|lookup\s+(online|on\s+the\s+web)|find\s+latest|latest\s+news|today'?s\s+news|transfer\s+news|citations\s+online|navigate\s+to\s+https?:\/\/)\b/i.test(promptText)
     );
 
     if (isBrowserAgentRequest) {

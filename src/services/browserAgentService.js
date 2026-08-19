@@ -6,37 +6,43 @@
  * and extracts real-time breaking news, articles, and hyperlinked citations.
  */
 
-// Multi-CORS proxy fallbacks for reliable web fetching in browser environments
+// Multi-proxy endpoints with regex-based resilient XML/HTML scrapers
 const PROXIES = [
   (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
   (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
 ];
 
-async function fetchWithProxy(targetUrl) {
+async function fetchWithFallbackProxies(targetUrl) {
   for (const proxyGen of PROXIES) {
     try {
       const pUrl = proxyGen(targetUrl);
       const res = await fetch(pUrl, { headers: { 'Accept': 'application/xml, text/xml, text/html, application/json' } });
       if (res.ok) {
-        // allorigins returns JSON with { contents: "..." }
         if (pUrl.includes('allorigins.win')) {
           const data = await res.json();
           if (data && data.contents) return data.contents;
         } else {
           const text = await res.text();
-          if (text) return text;
+          if (text && text.length > 50) return text;
         }
       }
     } catch (e) {
-      console.warn('[BrowserAgent] Proxy attempt failed:', e);
+      console.warn('[BrowserAgent] Proxy attempt fallback:', e);
     }
   }
+
+  // Direct fetch fallback
+  try {
+    const directRes = await fetch(targetUrl);
+    if (directRes.ok) return await directRes.text();
+  } catch (_e) {}
+
   return null;
 }
 
 /**
- * Live Google News RSS Search - Returns up-to-the-minute breaking news & articles
+ * Live Google News RSS Search - Extracts real-time breaking news & articles
  */
 export async function searchGoogleNews(query) {
   const cleanQuery = encodeURIComponent(query.trim());
@@ -44,34 +50,39 @@ export async function searchGoogleNews(query) {
   const items = [];
 
   try {
-    const xmlText = await fetchWithProxy(rssUrl);
-    if (xmlText) {
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-      const itemNodes = xmlDoc.querySelectorAll('item');
+    const rawXml = await fetchWithFallbackProxies(rssUrl);
+    if (rawXml) {
+      // Robust regex-based extraction (works in all JS runtimes and browser sandboxes)
+      const itemBlocks = rawXml.match(/<item[\s\S]*?<\/item>/gi) || [];
+      
+      for (const block of itemBlocks.slice(0, 8)) {
+        const titleMatch = block.match(/<title>([\s\S]*?)<\/title>/i);
+        const linkMatch = block.match(/<link>([\s\S]*?)<\/link>/i);
+        const pubDateMatch = block.match(/<pubDate>([\s\S]*?)<\/pubDate>/i);
+        const sourceMatch = block.match(/<source[^>]*>([\s\S]*?)<\/source>/i);
+        const descMatch = block.match(/<description>([\s\S]*?)<\/description>/i);
 
-      itemNodes.forEach((node, idx) => {
-        if (idx < 8) {
-          const title = node.querySelector('title')?.textContent || '';
-          const link = node.querySelector('link')?.textContent || '';
-          const pubDate = node.querySelector('pubDate')?.textContent || '';
-          const source = node.querySelector('source')?.textContent || 'Google News';
-          const description = node.querySelector('description')?.textContent || '';
-          
-          // Clean HTML from description
-          const cleanDesc = description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        let title = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/ - [^-]+$/, '').trim() : '';
+        let link = linkMatch ? linkMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : '';
+        let pubDate = pubDateMatch ? pubDateMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : '';
+        let source = sourceMatch ? sourceMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : 'Google News';
+        let desc = descMatch ? descMatch[1].replace(/<[^>]+>/g, ' ').replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/\s+/g, ' ').trim() : '';
 
-          if (title) {
-            items.push({
-              title: title.replace(/ - [^-]+$/, '').trim(),
-              url: link || `https://news.google.com/search?q=${cleanQuery}`,
-              pubDate: pubDate ? new Date(pubDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Today',
-              source: source || 'News Source',
-              snippet: cleanDesc || title
-            });
-          }
+        if (title) {
+          let formattedDate = 'Recent';
+          try {
+            if (pubDate) formattedDate = new Date(pubDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          } catch (_d) {}
+
+          items.push({
+            title,
+            url: link || `https://news.google.com/search?q=${cleanQuery}`,
+            pubDate: formattedDate,
+            source,
+            snippet: desc || title
+          });
         }
-      });
+      }
     }
   } catch (err) {
     console.warn('[BrowserAgent] Google News RSS error:', err);
@@ -113,61 +124,16 @@ export async function searchWikipedia(query) {
 }
 
 /**
- * DuckDuckGo Instant Answers & Topics
- */
-export async function searchDuckDuckGo(query) {
-  const cleanQuery = encodeURIComponent(query.trim());
-  const ddgUrl = `https://api.duckduckgo.com/?q=${cleanQuery}&format=json&no_html=1&skip_disambig=1`;
-  const items = [];
-
-  try {
-    const res = await fetch(ddgUrl);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.AbstractText) {
-        items.push({
-          title: data.Heading || query,
-          url: data.AbstractURL || `https://duckduckgo.com/?q=${cleanQuery}`,
-          pubDate: 'Knowledge Graph',
-          source: data.AbstractSource || 'DuckDuckGo',
-          snippet: data.AbstractText
-        });
-      }
-      if (Array.isArray(data.RelatedTopics)) {
-        data.RelatedTopics.slice(0, 3).forEach(topic => {
-          if (topic.Text && topic.FirstURL) {
-            items.push({
-              title: topic.Text.slice(0, 60) + '...',
-              url: topic.FirstURL,
-              pubDate: 'Web',
-              source: 'DuckDuckGo Index',
-              snippet: topic.Text
-            });
-          }
-        });
-      }
-    }
-  } catch (err) {
-    console.warn('[BrowserAgent] DDG search error:', err);
-  }
-
-  return items;
-}
-
-/**
  * Comprehensive Live Web Search
  */
 export async function searchLiveWeb(query) {
-  // Execute parallel searches
-  const [newsResults, wikiResults, ddgResults] = await Promise.all([
+  const [newsResults, wikiResults] = await Promise.all([
     searchGoogleNews(query),
-    searchWikipedia(query),
-    searchDuckDuckGo(query)
+    searchWikipedia(query)
   ]);
 
-  const all = [...newsResults, ...wikiResults, ...ddgResults];
+  const all = [...newsResults, ...wikiResults];
 
-  // Deduplicate by URL or Title
   const seen = new Set();
   const deduped = [];
   for (const item of all) {
@@ -178,7 +144,7 @@ export async function searchLiveWeb(query) {
     }
   }
 
-  return deduped.slice(0, 10);
+  return deduped.slice(0, 8);
 }
 
 /**
@@ -186,7 +152,7 @@ export async function searchLiveWeb(query) {
  */
 export async function fetchWebPageText(targetUrl) {
   try {
-    const html = await fetchWithProxy(targetUrl);
+    const html = await fetchWithFallbackProxies(targetUrl);
     if (html) {
       const doc = new DOMParser().parseFromString(html, 'text/html');
       doc.querySelectorAll('script, style, nav, footer, noscript, svg, iframe, header').forEach(el => el.remove());
@@ -237,7 +203,7 @@ export async function runBrowserAgent({
     step2.title = `Retrieved ${sources.length} live sources from Google News & Web`;
     step2.status = 'done';
 
-    fetchedContent = sources.map((s, idx) => `[Source ${idx + 1}: ${s.title}] (${s.url})\nPublisher: ${s.source} | Date: ${s.pubDate || 'Recent'}\n${s.snippet}`).join('\n\n');
+    fetchedContent = sources.map((s, idx) => `[Source ${idx + 1}: ${s.title}] (${s.url})\nPublisher: ${s.source} | Date: ${s.pubDate || 'Recent'}\nExcerpt: ${s.snippet}`).join('\n\n');
   }
 
   // Step 3: Synthesizing
@@ -248,22 +214,22 @@ export async function runBrowserAgent({
   const aiPrompt = `You are the Regaarder Autonomous Browser Agent. The user asked for real-time web research on:
 "${query}"
 
-TODAY'S LIVE RETRIEVED WEB ARTICLES & HEADLINES:
+TODAY'S LIVE RETRIEVED WEB ARTICLES & BREAKING HEADLINES:
 ---
 ${fetchedContent || 'No live articles returned; synthesize latest verified facts.'}
 ---
 
 CRITICAL REAL-TIME GROUNDING RULES:
-1. Ground your entire answer in the LIVE WEB ARTICLES provided above.
-2. Report the actual current headlines, verified transfers/news, dates, and club names from the retrieved sources.
-3. NEVER make up fictional or outdated events (e.g. do not invent outdated Cristiano Ronaldo to Juventus transfers).
-4. Organize into clean, executive Markdown sections:
-   # [Main Headline / Overview]
-   ## Key Developments & Breaking Updates
-   ## Detailed Analysis & Transfer Figures
-   ## Verified Sources & Citations
-5. For every fact, include real hyperlinked citations using Markdown: [Source Name](URL).
-6. Do NOT include conversational greetings (like "Sure!", "Here is...") or code fences around the whole document.`;
+1. Base your entire report EXCLUSIVELY on the real-time articles, dates, and club names provided in the LIVE RETRIEVED text above.
+2. If the sources state a transfer is completed or agreed (e.g. Rodri to Barcelona for £65.4m / €76.5m in August 2026), report that exact factual update.
+3. NEVER make up fictional or outdated dates like November 2023. Use the actual recent 2026 dates from the live sources.
+4. Format into clean executive Markdown:
+   # [Main Title]
+   ## Breaking News & Recent Developments
+   ## Deal Details & Key Figures
+   ## Verified Sources
+5. Cite every fact with clickable markdown links: [Publisher Name - Headline](URL).
+6. Do NOT include conversational filler (e.g. "Sure!", "Here is..."). Start immediately with the title on line 1.`;
 
   try {
     let responseText = '';
