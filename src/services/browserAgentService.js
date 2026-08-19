@@ -2,110 +2,199 @@
  * browserAgentService.js
  * 
  * Regaarder Autonomous Browser & Web Research Agent
- * Enables real-time web browsing, search querying, page content extraction,
- * and citation synthesis directly within Docs, Sheets, Decks, and Assistant Chat.
+ * Connects to live Google News RSS, DuckDuckGo Web Indices, Wikipedia,
+ * and extracts real-time breaking news, articles, and hyperlinked citations.
  */
 
-// Safe proxy / public endpoints for real-time web retrieval
-const CORS_PROXIES = [
-  'https://api.allorigins.win/get?url=',
-  'https://corsproxy.io/?',
+// Multi-CORS proxy fallbacks for reliable web fetching in browser environments
+const PROXIES = [
+  (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
 ];
 
-/**
- * Perform live web search using DuckDuckGo & Wikipedia APIs
- */
-export async function searchLiveWeb(query) {
-  const cleanQuery = encodeURIComponent(query.trim());
-  const results = [];
-
-  // 1. DuckDuckGo Instant Answer API
-  try {
-    const ddgUrl = `https://api.duckduckgo.com/?q=${cleanQuery}&format=json&no_html=1&skip_disambig=1`;
-    const response = await fetch(ddgUrl);
-    if (response.ok) {
-      const data = await response.json();
-      if (data.AbstractText) {
-        results.push({
-          title: data.Heading || query,
-          url: data.AbstractURL || `https://duckduckgo.com/?q=${cleanQuery}`,
-          snippet: data.AbstractText,
-          source: data.AbstractSource || 'DuckDuckGo Knowledge'
-        });
-      }
-      if (Array.isArray(data.RelatedTopics)) {
-        for (const topic of data.RelatedTopics.slice(0, 4)) {
-          if (topic.Text && topic.FirstURL) {
-            results.push({
-              title: topic.Text.slice(0, 60) + '...',
-              url: topic.FirstURL,
-              snippet: topic.Text,
-              source: 'Web Source'
-            });
-          }
+async function fetchWithProxy(targetUrl) {
+  for (const proxyGen of PROXIES) {
+    try {
+      const pUrl = proxyGen(targetUrl);
+      const res = await fetch(pUrl, { headers: { 'Accept': 'application/xml, text/xml, text/html, application/json' } });
+      if (res.ok) {
+        // allorigins returns JSON with { contents: "..." }
+        if (pUrl.includes('allorigins.win')) {
+          const data = await res.json();
+          if (data && data.contents) return data.contents;
+        } else {
+          const text = await res.text();
+          if (text) return text;
         }
       }
+    } catch (e) {
+      console.warn('[BrowserAgent] Proxy attempt failed:', e);
     }
-  } catch (err) {
-    console.warn('[BrowserAgent] DDG search fallback:', err);
   }
-
-  // 2. Wikipedia Live Article Search
-  try {
-    const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${cleanQuery}&utf8=&format=json&origin=*`;
-    const wikiRes = await fetch(wikiUrl);
-    if (wikiRes.ok) {
-      const wikiData = await wikiRes.json();
-      if (wikiData.query && Array.isArray(wikiData.query.search)) {
-        for (const item of wikiData.query.search.slice(0, 3)) {
-          const cleanSnippet = item.snippet.replace(/<[^>]+>/g, '');
-          results.push({
-            title: item.title,
-            url: `https://en.wikipedia.org/wiki/${encodeURIComponent(item.title.replace(/ /g, '_'))}`,
-            snippet: cleanSnippet,
-            source: 'Wikipedia'
-          });
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('[BrowserAgent] Wikipedia search fallback:', err);
-  }
-
-  // 3. If no direct API results, create synthesized web query fallback
-  if (results.length === 0) {
-    results.push({
-      title: `Search results for "${query}"`,
-      url: `https://www.google.com/search?q=${cleanQuery}`,
-      snippet: `Live web index query for: ${query}. Comprehensive knowledge base synthesis enabled.`,
-      source: 'Global Web Index'
-    });
-  }
-
-  return results;
+  return null;
 }
 
 /**
- * Fetch and extract text content from any target URL
+ * Live Google News RSS Search - Returns up-to-the-minute breaking news & articles
+ */
+export async function searchGoogleNews(query) {
+  const cleanQuery = encodeURIComponent(query.trim());
+  const rssUrl = `https://news.google.com/rss/search?q=${cleanQuery}&hl=en-US&gl=US&ceid=US:en`;
+  const items = [];
+
+  try {
+    const xmlText = await fetchWithProxy(rssUrl);
+    if (xmlText) {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+      const itemNodes = xmlDoc.querySelectorAll('item');
+
+      itemNodes.forEach((node, idx) => {
+        if (idx < 8) {
+          const title = node.querySelector('title')?.textContent || '';
+          const link = node.querySelector('link')?.textContent || '';
+          const pubDate = node.querySelector('pubDate')?.textContent || '';
+          const source = node.querySelector('source')?.textContent || 'Google News';
+          const description = node.querySelector('description')?.textContent || '';
+          
+          // Clean HTML from description
+          const cleanDesc = description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
+          if (title) {
+            items.push({
+              title: title.replace(/ - [^-]+$/, '').trim(),
+              url: link || `https://news.google.com/search?q=${cleanQuery}`,
+              pubDate: pubDate ? new Date(pubDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Today',
+              source: source || 'News Source',
+              snippet: cleanDesc || title
+            });
+          }
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('[BrowserAgent] Google News RSS error:', err);
+  }
+
+  return items;
+}
+
+/**
+ * Wikipedia Live Article Search
+ */
+export async function searchWikipedia(query) {
+  const cleanQuery = encodeURIComponent(query.trim());
+  const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${cleanQuery}&utf8=&format=json&origin=*`;
+  const items = [];
+
+  try {
+    const res = await fetch(wikiUrl);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.query && Array.isArray(data.query.search)) {
+        data.query.search.slice(0, 3).forEach(item => {
+          const cleanSnippet = item.snippet.replace(/<[^>]+>/g, '');
+          items.push({
+            title: item.title,
+            url: `https://en.wikipedia.org/wiki/${encodeURIComponent(item.title.replace(/ /g, '_'))}`,
+            pubDate: 'Encyclopedia',
+            source: 'Wikipedia',
+            snippet: cleanSnippet
+          });
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('[BrowserAgent] Wikipedia search error:', err);
+  }
+
+  return items;
+}
+
+/**
+ * DuckDuckGo Instant Answers & Topics
+ */
+export async function searchDuckDuckGo(query) {
+  const cleanQuery = encodeURIComponent(query.trim());
+  const ddgUrl = `https://api.duckduckgo.com/?q=${cleanQuery}&format=json&no_html=1&skip_disambig=1`;
+  const items = [];
+
+  try {
+    const res = await fetch(ddgUrl);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.AbstractText) {
+        items.push({
+          title: data.Heading || query,
+          url: data.AbstractURL || `https://duckduckgo.com/?q=${cleanQuery}`,
+          pubDate: 'Knowledge Graph',
+          source: data.AbstractSource || 'DuckDuckGo',
+          snippet: data.AbstractText
+        });
+      }
+      if (Array.isArray(data.RelatedTopics)) {
+        data.RelatedTopics.slice(0, 3).forEach(topic => {
+          if (topic.Text && topic.FirstURL) {
+            items.push({
+              title: topic.Text.slice(0, 60) + '...',
+              url: topic.FirstURL,
+              pubDate: 'Web',
+              source: 'DuckDuckGo Index',
+              snippet: topic.Text
+            });
+          }
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('[BrowserAgent] DDG search error:', err);
+  }
+
+  return items;
+}
+
+/**
+ * Comprehensive Live Web Search
+ */
+export async function searchLiveWeb(query) {
+  // Execute parallel searches
+  const [newsResults, wikiResults, ddgResults] = await Promise.all([
+    searchGoogleNews(query),
+    searchWikipedia(query),
+    searchDuckDuckGo(query)
+  ]);
+
+  const all = [...newsResults, ...wikiResults, ...ddgResults];
+
+  // Deduplicate by URL or Title
+  const seen = new Set();
+  const deduped = [];
+  for (const item of all) {
+    const key = item.title.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push(item);
+    }
+  }
+
+  return deduped.slice(0, 10);
+}
+
+/**
+ * Extract readable article text from any target URL
  */
 export async function fetchWebPageText(targetUrl) {
   try {
-    const encoded = encodeURIComponent(targetUrl);
-    const proxyUrl = `https://api.allorigins.win/get?url=${encoded}`;
-    const response = await fetch(proxyUrl);
-    if (response.ok) {
-      const data = await response.json();
-      const html = data.contents || '';
-      
+    const html = await fetchWithProxy(targetUrl);
+    if (html) {
       const doc = new DOMParser().parseFromString(html, 'text/html');
-      doc.querySelectorAll('script, style, nav, footer, noscript, svg, iframe').forEach(el => el.remove());
-      
+      doc.querySelectorAll('script, style, nav, footer, noscript, svg, iframe, header').forEach(el => el.remove());
       const bodyText = doc.body ? (doc.body.innerText || doc.body.textContent || '') : '';
-      const clean = bodyText.replace(/\s+/g, ' ').trim().slice(0, 4000);
-      return clean;
+      return bodyText.replace(/\s+/g, ' ').trim().slice(0, 4000);
     }
   } catch (err) {
-    console.warn('[BrowserAgent] Page fetch error:', err);
+    console.warn('[BrowserAgent] Page text fetch error:', err);
   }
   return null;
 }
@@ -117,68 +206,96 @@ export async function runBrowserAgent({
   query,
   targetUrl = null,
   callGemini = null,
-  systemPrompt = '',
   onProgress = () => {},
 }) {
-  onProgress({ step: 'navigating', message: `Navigating web for: "${query}"...` });
+  const steps = [];
 
-  let fetchedContent = '';
+  // Step 1: Navigating
+  const step1 = { id: 1, title: 'Connecting to Live Web Engine', status: 'running' };
+  steps.push(step1);
+  onProgress({ step: 'connecting', message: 'Connecting to live search indices...', steps: [...steps] });
+
   let sources = [];
+  let fetchedContent = '';
 
   if (targetUrl) {
-    onProgress({ step: 'fetching', message: `Visiting URL: ${targetUrl}...` });
+    step1.status = 'done';
+    const step2 = { id: 2, title: `Fetching URL: ${targetUrl}`, status: 'running' };
+    steps.push(step2);
+    onProgress({ step: 'fetching', message: `Navigating directly to ${targetUrl}...`, steps: [...steps] });
+
     fetchedContent = await fetchWebPageText(targetUrl);
-    sources.push({ title: targetUrl, url: targetUrl, source: 'Direct URL' });
+    sources.push({ title: targetUrl, url: targetUrl, source: 'Direct URL', snippet: fetchedContent?.slice(0, 300) || '' });
+    step2.status = 'done';
   } else {
-    onProgress({ step: 'searching', message: `Searching live web indices...` });
+    step1.status = 'done';
+    const step2 = { id: 2, title: `Searching Live Web for "${query}"`, status: 'running' };
+    steps.push(step2);
+    onProgress({ step: 'searching', message: `Searching live web indices for "${query}"...`, steps: [...steps] });
+
     sources = await searchLiveWeb(query);
-    fetchedContent = sources.map(s => `[Source: ${s.title}] (${s.url})\n${s.snippet}`).join('\n\n');
+    step2.title = `Retrieved ${sources.length} live sources from Google News & Web`;
+    step2.status = 'done';
+
+    fetchedContent = sources.map((s, idx) => `[Source ${idx + 1}: ${s.title}] (${s.url})\nPublisher: ${s.source} | Date: ${s.pubDate || 'Recent'}\n${s.snippet}`).join('\n\n');
   }
 
-  onProgress({ step: 'synthesizing', message: `Synthesizing ${sources.length} sources and drafting insights...` });
+  // Step 3: Synthesizing
+  const step3 = { id: 3, title: 'Synthesizing Real-Time Findings & Citations', status: 'running' };
+  steps.push(step3);
+  onProgress({ step: 'synthesizing', message: `Synthesizing ${sources.length} sources and drafting research report...`, steps: [...steps] });
 
-  const aiPrompt = `You are the Regaarder Autonomous Browser Agent. The user wants up-to-date web research on:
+  const aiPrompt = `You are the Regaarder Autonomous Browser Agent. The user asked for real-time web research on:
 "${query}"
 
-Here are the real-time retrieved web search results and webpage excerpts:
+TODAY'S LIVE RETRIEVED WEB ARTICLES & HEADLINES:
 ---
-${fetchedContent || 'No direct text extracted; synthesize from latest domain knowledge.'}
+${fetchedContent || 'No live articles returned; synthesize latest verified facts.'}
 ---
 
-Instructions:
-1. Provide a comprehensive, executive-tier research brief answering the user query.
-2. Ground all facts and insights in the web sources above.
-3. Include real hyperlinked citations using Markdown format: [Source Name](URL).
-4. Organize into clear sections: Key Findings, Real-Time Data & Insights, Citations.
-5. Do NOT include code fences around the whole response or conversational greetings.`;
+CRITICAL REAL-TIME GROUNDING RULES:
+1. Ground your entire answer in the LIVE WEB ARTICLES provided above.
+2. Report the actual current headlines, verified transfers/news, dates, and club names from the retrieved sources.
+3. NEVER make up fictional or outdated events (e.g. do not invent outdated Cristiano Ronaldo to Juventus transfers).
+4. Organize into clean, executive Markdown sections:
+   # [Main Headline / Overview]
+   ## Key Developments & Breaking Updates
+   ## Detailed Analysis & Transfer Figures
+   ## Verified Sources & Citations
+5. For every fact, include real hyperlinked citations using Markdown: [Source Name](URL).
+6. Do NOT include conversational greetings (like "Sure!", "Here is...") or code fences around the whole document.`;
 
   try {
     let responseText = '';
     if (typeof callGemini === 'function') {
       const aiResponse = await callGemini({
         userPrompt: aiPrompt,
-        systemPrompt: systemPrompt || 'You are the Senior Web Research and Browser Agent for Regaarder Compose. Deliver clear, verified, hyperlinked executive research.',
+        systemPrompt: 'You are the Senior Browser & Live Web Research Agent for Regaarder Compose. Deliver verified, up-to-the-minute research with hyperlinked citations directly grounded in the retrieved live search results.',
       });
       responseText = aiResponse?.text || '';
     } else {
-      // Direct fallback summary
-      responseText = `### Live Web Research: ${query}\n\n${fetchedContent}\n\n**Sources:**\n` + sources.map((s, i) => `${i + 1}. [${s.title}](${s.url}) (${s.source})`).join('\n');
+      responseText = `### Live Web Research: ${query}\n\n${fetchedContent}\n\n**Sources:**\n` + sources.map((s, i) => `${i + 1}. [${s.title}](${s.url}) — *${s.source}* (${s.pubDate || 'Recent'})`).join('\n');
     }
 
-    onProgress({ step: 'completed', message: 'Web research complete.' });
+    step3.status = 'done';
+    const step4 = { id: 4, title: 'Web Research Ready', status: 'done' };
+    steps.push(step4);
+    onProgress({ step: 'completed', message: 'Web research complete.', steps: [...steps] });
 
     return {
       success: true,
       text: responseText,
       sources,
-      query
+      query,
+      steps
     };
   } catch (err) {
     console.error('[BrowserAgent] Synthesis error:', err);
     return {
       success: false,
       error: err.message || 'Browser agent execution failed',
-      sources
+      sources,
+      steps
     };
   }
 }

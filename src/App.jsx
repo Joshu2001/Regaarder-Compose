@@ -11918,6 +11918,8 @@ const DEFAULT_DECK_SLIDES = [
   const [isTableLocked, setIsTableLocked] = useState(false);
   const [focusedTableCell, setFocusedTableCell] = useState(null);
   const [composingText, setComposingText] = useState('AI is composing...');
+  const [browserAgentSteps, setBrowserAgentSteps] = useState([]);
+  const [isBrowserAgentRunning, setIsBrowserAgentRunning] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isVoiceCommandMode, setIsVoiceCommandMode] = useState(false);
   const isVoiceCommandModeRef = useRef(false);
@@ -28159,6 +28161,10 @@ Return ONLY valid JSON matching the schema.`;
 
       setComposingText('🌐 Browser Agent: Navigating live web...');
       setIsComposing(true);
+      setIsBrowserAgentRunning(true);
+      setBrowserAgentSteps([
+        { id: 1, title: 'Connecting to Live Web Indices (Google News & Web)', status: 'running' }
+      ]);
       showToast('🌐 Browser Agent: Searching live web...');
 
       try {
@@ -28168,6 +28174,9 @@ Return ONLY valid JSON matching the schema.`;
           callGemini,
           onProgress: (p) => {
             setComposingText(`🌐 Browser Agent: ${p.message}`);
+            if (Array.isArray(p.steps)) {
+              setBrowserAgentSteps(p.steps);
+            }
           }
         });
 
@@ -28207,6 +28216,7 @@ Return ONLY valid JSON matching the schema.`;
         showToast('Browser Agent fallback to standard model');
       } finally {
         setIsComposing(false);
+        setIsBrowserAgentRunning(false);
       }
     }
 
@@ -37027,17 +37037,88 @@ Respond with a JSON array of slide objects matching the schema.`;
                     className={`group flex flex-col max-w-[88%] ${msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
                   >
                     {/* Speaker Header */}
-                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 mb-1 px-1">
-                      {msg.sender === 'user' ? 'You' : 'Compose AI'}
-                    </span>
+                    <div className="flex items-center gap-1.5 mb-1 px-1">
+                      <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">
+                        {msg.sender === 'user' ? 'You' : msg.isBrowserResearch ? '🌐 Browser Agent' : 'Compose AI'}
+                      </span>
+                      {msg.isBrowserResearch && (
+                        <span className="text-[9px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/60">
+                          Live Web Grounded
+                        </span>
+                      )}
+                    </div>
 
                     {/* Chat Bubble / Cards */}
                     <div className={`p-3 rounded-2xl text-xs leading-relaxed ${
                       msg.sender === 'user' 
                         ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-tr-xs shadow-2xs font-medium' 
-                        : 'bg-slate-100/80 dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-200 border border-slate-200/50 dark:border-zinc-700/50 rounded-tl-xs shadow-2xs'
+                        : msg.isBrowserResearch
+                          ? 'bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 border border-indigo-200/70 dark:border-indigo-900/60 rounded-tl-xs shadow-sm w-full'
+                          : 'bg-slate-100/80 dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-200 border border-slate-200/50 dark:border-zinc-700/50 rounded-tl-xs shadow-2xs'
                     }`}>
-                      {msg.text}
+                      {/* Live Sources Bar if Browser Research */}
+                      {msg.isBrowserResearch && Array.isArray(msg.sources) && msg.sources.length > 0 && (
+                        <div className="mb-3 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                          <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                            <Globe size={10} className="text-indigo-500" />
+                            <span>Verified Web Sources ({msg.sources.length})</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scrollbar">
+                            {msg.sources.map((s, sIdx) => (
+                              <a
+                                key={sIdx}
+                                href={s.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-[10px] font-medium bg-slate-50 dark:bg-zinc-800/90 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-600 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-2 py-1 rounded-md border border-slate-200/60 dark:border-zinc-700/60 transition-colors"
+                              >
+                                <span>{s.source || 'Web'}</span>
+                                <span className="text-slate-300 dark:text-zinc-600">•</span>
+                                <span className="truncate max-w-[140px]">{s.title}</span>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Main Message Content */}
+                      <div className="whitespace-pre-wrap selection-ai-rendered prose-sm dark:prose-invert">
+                        {msg.text}
+                      </div>
+
+                      {/* Browser Research Action Bar */}
+                      {msg.isBrowserResearch && (
+                        <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const formattedHtml = toParagraphHtml(msg.text);
+                              if (window.__composeInsertHTML) {
+                                window.__composeInsertHTML(formattedHtml);
+                              } else if (blankBodyRef.current) {
+                                blankBodyRef.current.innerHTML += formattedHtml;
+                                setDocBodyHtml(blankBodyRef.current.innerHTML);
+                              }
+                              showToast('Inserted live research into document');
+                            }}
+                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg shadow-xs transition-colors cursor-pointer"
+                          >
+                            <Plus size={12} />
+                            <span>Insert into Document</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(msg.text);
+                              showToast('Copied research to clipboard');
+                            }}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                          >
+                            <Copy size={11} />
+                            <span>Copy</span>
+                          </button>
+                        </div>
+                      )}
 
                       {/* Render suggestions block inline */}
                       {msg.type === 'suggestions' && (
@@ -37180,11 +37261,45 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </div>
                 ))}
                 
-                {/* Loader animation when AI is processing */}
-                {isComposing && (
+                {/* Live Browser Agent Step Execution Box */}
+                {isBrowserAgentRunning && browserAgentSteps.length > 0 && (
+                  <div className="mr-auto w-full max-w-[95%] p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 shadow-xs mb-2">
+                    <div className="flex items-center justify-between gap-2 mb-2.5 pb-2 border-b border-indigo-100 dark:border-indigo-900/60">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-ping" />
+                        <span className="text-xs font-bold text-indigo-800 dark:text-indigo-200 flex items-center gap-1.5">
+                          <Globe size={13} className="text-indigo-600 dark:text-indigo-400" />
+                          <span>Browser Agent • Real-Time Web Engine</span>
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider bg-indigo-100 dark:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full">
+                        Live Search API
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {browserAgentSteps.map((step) => (
+                        <div key={step.id} className="flex items-center gap-2.5 text-xs">
+                          {step.status === 'done' ? (
+                            <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-2xs">
+                              <Check size={10} strokeWidth={3} />
+                            </div>
+                          ) : (
+                            <div className="w-4 h-4 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin shrink-0" />
+                          )}
+                          <span className={`text-xs ${step.status === 'done' ? 'text-slate-600 dark:text-zinc-400 line-through opacity-80' : 'text-indigo-950 dark:text-indigo-100 font-semibold'}`}>
+                            {step.title}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Standard Loader animation when AI is processing */}
+                {isComposing && !isBrowserAgentRunning && (
                   <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-zinc-500 p-2 animate-pulse">
                     <Loader2 className="animate-spin text-violet-500" size={14} />
-                    <span>{productMode === 'deck' ? 'Deck AI is designing your slides...' : 'Compose AI is writing...'}</span>
+                    <span>{composingText || (productMode === 'deck' ? 'Deck AI is designing your slides...' : 'Compose AI is writing...')}</span>
                   </div>
                 )}
                 <div ref={chatEndRef} />
