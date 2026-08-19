@@ -29006,10 +29006,15 @@ Answer the user's question, provide an insightful summary, or explain the contex
   const handleSidebarSend = (e) => {
     e.preventDefault();
     if (!chatInput.trim() && !chatAttachments.length && !activeAgentTag) return;
-    
+
+    // Safely resolve tag label regardless of whether activeAgentTag is a string or object
+    const resolvedTag = typeof activeAgentTag === 'string'
+      ? activeAgentTag
+      : String(activeAgentTag?.key || activeAgentTag?.tag || activeAgentTag?.label || '');
+
     let prompt = chatInput.trim() || (chatAttachments.length ? 'Use attached files as context and answer the request.' : '');
-    if (activeAgentTag) {
-      const tagStr = activeAgentTag.startsWith('/') ? activeAgentTag : `/${activeAgentTag}`;
+    if (resolvedTag) {
+      const tagStr = resolvedTag.startsWith('/') ? resolvedTag : `/${resolvedTag}`;
       if (!prompt.startsWith(tagStr)) {
         prompt = `${tagStr} ${prompt}`.trim();
       }
@@ -29527,8 +29532,12 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (!floatingPrompt.trim() && !promptAttachments.length && !activeAgentTag) return;
     
     let rawPrompt = floatingPrompt.trim();
-    if (activeAgentTag) {
-      const tagStr = activeAgentTag.startsWith('/') ? activeAgentTag : `/${activeAgentTag}`;
+    // Safely resolve tag label — activeAgentTag can be a plain string OR an object
+    const resolvedFloatingTag = typeof activeAgentTag === 'string'
+      ? activeAgentTag
+      : String(activeAgentTag?.key || activeAgentTag?.tag || activeAgentTag?.label || '');
+    if (resolvedFloatingTag) {
+      const tagStr = resolvedFloatingTag.startsWith('/') ? resolvedFloatingTag : `/${resolvedFloatingTag}`;
       if (!rawPrompt.startsWith(tagStr)) {
         rawPrompt = `${tagStr} ${rawPrompt}`.trim();
       }
