@@ -22412,6 +22412,66 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   };
 
   async function callGemini({ userPrompt, systemPrompt, schema, attachments = [], customModel, customApiKey, customProvider }) {
+    // ⚡ Local LLM Execution Path (Ollama / LM Studio / llama.cpp)
+    if (composeSelectedModel?.isLocal && composeSelectedModel?.endpoint) {
+      try {
+        const isOllama = composeSelectedModel.provider === 'Ollama' || composeSelectedModel.endpoint.includes('11434');
+        const targetUrl = isOllama
+          ? `${composeSelectedModel.endpoint.replace(/\/v1$/, '')}/api/chat`
+          : `${composeSelectedModel.endpoint.endsWith('/v1') ? composeSelectedModel.endpoint : composeSelectedModel.endpoint + '/v1'}/chat/completions`;
+
+        const requestBody = isOllama
+          ? {
+              model: composeSelectedModel.id,
+              messages: [
+                ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+                { role: 'user', content: userPrompt }
+              ],
+              stream: false,
+              format: schema ? 'json' : undefined
+            }
+          : {
+              model: composeSelectedModel.id || 'default',
+              messages: [
+                ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+                { role: 'user', content: userPrompt }
+              ],
+              stream: false,
+              response_format: schema ? { type: 'json_object' } : undefined
+            };
+
+        const localRes = await fetch(targetUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (localRes.ok) {
+          const data = await localRes.json();
+          let text = '';
+          if (isOllama && data.message?.content) {
+            text = data.message.content.trim();
+          } else if (data.choices?.[0]?.message?.content) {
+            text = data.choices[0].message.content.trim();
+          }
+
+          if (text) {
+            let parsed = null;
+            if (schema) {
+              parsed = parseJsonSafely(text);
+            }
+            return {
+              text,
+              parsed,
+              modelName: composeSelectedModel.name
+            };
+          }
+        }
+      } catch (localErr) {
+        console.warn('Local LLM call failed, falling back to cloud endpoint:', localErr);
+      }
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000);
     try {
@@ -36618,7 +36678,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                       className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3 px-3.5 pb-2 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 resize-none min-h-[64px]"
                     />
                     <div className="flex items-center justify-between px-2 pb-2">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => {
@@ -36630,6 +36690,75 @@ Respond with a JSON array of slide objects matching the schema.`;
                         >
                           <Plus size={16} strokeWidth={1.75} />
                         </button>
+
+                        {/* Universal LLM Model Selector Pill (Local & Cloud) */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setComposeModelPickerOpen(!composeModelPickerOpen)}
+                            className="h-6 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-[10.5px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer"
+                            title="Select Local Ollama, LM Studio, or Cloud AI Engine"
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
+                            <span className="max-w-[120px] truncate">{composeSelectedModel.name}</span>
+                            <ChevronDown size={10} className="text-slate-400 dark:text-zinc-400 shrink-0" />
+                          </button>
+
+                          {composeModelPickerOpen && (
+                            <div className="absolute bottom-8 left-0 w-64 bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 border border-slate-200 dark:border-zinc-700 rounded-xl shadow-2xl p-2 z-50 backdrop-blur-xl">
+                              <div className="flex items-center justify-between px-2 py-1 border-b border-slate-100 dark:border-zinc-800 mb-1">
+                                <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-zinc-500">AI Model Engine</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); scanComposeLocalModels(); }}
+                                  disabled={composeIsScanning}
+                                  className="text-[9.5px] text-violet-600 dark:text-cyan-400 hover:underline font-semibold flex items-center gap-0.5 cursor-pointer"
+                                >
+                                  <RotateCcw size={9} className={composeIsScanning ? 'animate-spin' : ''} />
+                                  <span>{composeIsScanning ? 'Scanning...' : 'Rescan'}</span>
+                                </button>
+                              </div>
+
+                              {/* Local Detected Models */}
+                              {composeDetectedModels.length > 0 && (
+                                <div className="mb-2">
+                                  <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest px-2 block mb-1">⚡ Local Daemons</span>
+                                  {composeDetectedModels.map((m, idx) => (
+                                    <button
+                                      key={idx}
+                                      type="button"
+                                      onClick={() => { setComposeSelectedModel(m); setComposeModelPickerOpen(false); showToast(`Switched to local ${m.name}`); }}
+                                      className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer ${composeSelectedModel.id === m.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-200 font-bold' : 'text-slate-700 dark:text-zinc-300'}`}
+                                    >
+                                      <span className="truncate">{m.name}</span>
+                                      <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono">{m.provider}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Cloud Models */}
+                              <div>
+                                <span className="text-[9px] font-bold text-violet-600 dark:text-cyan-400 uppercase tracking-widest px-2 block mb-1">☁️ Cloud LLMs</span>
+                                {[
+                                  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google Cloud', isLocal: false },
+                                  { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', isLocal: false },
+                                  { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', isLocal: false }
+                                ].map((cM, cIdx) => (
+                                  <button
+                                    key={cIdx}
+                                    type="button"
+                                    onClick={() => { setComposeSelectedModel(cM); setComposeModelPickerOpen(false); showToast(`Switched to ${cM.name}`); }}
+                                    className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer ${composeSelectedModel.id === cM.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-200 font-bold' : 'text-slate-700 dark:text-zinc-300'}`}
+                                  >
+                                    <span>{cM.name}</span>
+                                    <span className="text-[9px] text-violet-600 dark:text-cyan-400 font-mono">{cM.provider}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <button
                           type="button"
                           onClick={() => {
