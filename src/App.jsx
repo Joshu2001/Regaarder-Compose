@@ -21118,6 +21118,65 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     } catch (e) {}
   }, [chatMessages]);
 
+  const [chatSessions, setChatSessions] = useState(() => {
+    try {
+      const stored = localStorage.getItem('rc.ai_chat_sessions');
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rc.ai_chat_sessions', JSON.stringify(chatSessions));
+    } catch (e) {}
+  }, [chatSessions]);
+
+  const [historySearchQuery, setHistorySearchQuery] = useState('');
+
+  const startNewChatSession = () => {
+    if (chatMessages && chatMessages.length > 0) {
+      const firstUserMsg = chatMessages.find(m => m.sender === 'user' || m.role === 'user');
+      const title = firstUserMsg 
+        ? (typeof firstUserMsg.text === 'string' ? firstUserMsg.text.slice(0, 45) : (firstUserMsg.content || 'Chat Session'))
+        : 'Chat Session';
+      
+      const newSession = {
+        id: 'session_' + Date.now(),
+        title: title || 'Conversation',
+        timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        messages: [...chatMessages],
+        attachments: chatAttachments ? [...chatAttachments] : [],
+        promptCount: chatMessages.length,
+      };
+
+      setChatSessions(prev => [newSession, ...prev.filter(s => s.id !== newSession.id)]);
+    }
+
+    setChatMessages([]);
+    setChatInput('');
+    setChatAttachments([]);
+    setActiveRightTab('assistant');
+    showToast('Started new conversation');
+  };
+
+  const restoreChatSession = (session) => {
+    if (session && session.messages) {
+      setChatMessages(session.messages);
+      if (session.attachments) {
+        setChatAttachments(session.attachments);
+      }
+      setActiveRightTab('assistant');
+      showToast(`Restored "${session.title}"`);
+    }
+  };
+
+  const deleteChatSession = (sessionId, e) => {
+    if (e) e.stopPropagation();
+    setChatSessions(prev => prev.filter(s => s.id !== sessionId));
+    showToast('Deleted conversation');
+  };
+
   // Handle status cycle on initiatives
   const toggleStatus = (id) => {
     setInitiatives(prev => prev.map(item => {
@@ -35836,7 +35895,15 @@ Respond with a JSON array of slide objects matching the schema.`;
               })}
             </div>
           </div>
-          <div className="shrink-0 flex items-center pl-2">
+          <div className="shrink-0 flex items-center gap-1 pl-2">
+            <button
+              type="button"
+              title="Start New Chat (+)"
+              className="p-1.5 rounded-lg text-slate-500 dark:text-zinc-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer"
+              onClick={startNewChatSession}
+            >
+              <Plus size={15} strokeWidth={2} />
+            </button>
             <button
               type="button"
               title="Close panel"
@@ -35852,10 +35919,140 @@ Respond with a JSON array of slide objects matching the schema.`;
         {/* Dynamic Sidebar Content */}
         <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
           
-          {/* ACTIVE TAB: AI STUDIO */}
-          {activeRightTab === 'ai-studio' && (
+          {/* ACTIVE TAB: HISTORY */}
+          {(activeRightTab === 'history' || activeRightTab === 'ai-studio') && (
             <div className="flex-1 flex flex-col min-h-0 bg-[#f8fafc] dark:bg-[#18181b]">
-              <ComposeAIStudio initialAgent={selectedAIAgent} handleAISubmit={handleAISubmit} chatMessages={chatMessages} isComposing={isComposing} />
+              {/* History Top Header */}
+              <div className="px-4 py-3 border-b border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-violet-50 dark:bg-violet-950/50 flex items-center justify-center text-violet-600 dark:text-violet-400">
+                    <Clock size={13} />
+                  </div>
+                  <div>
+                    <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-100">Conversation History</h3>
+                    <p className="text-[10px] text-slate-400 dark:text-zinc-500">Chats, uploaded files & prompts</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={startNewChatSession}
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                  title="Start a new chat conversation"
+                >
+                  <Plus size={13} strokeWidth={2.5} />
+                  <span>New Chat</span>
+                </button>
+              </div>
+
+              {/* Search Bar if history exists */}
+              {chatSessions.length > 0 && (
+                <div className="p-3 bg-white dark:bg-zinc-900 border-b border-slate-100 dark:border-zinc-800/80">
+                  <div className="relative flex items-center">
+                    <Search size={13} className="absolute left-2.5 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={historySearchQuery}
+                      onChange={(e) => setHistorySearchQuery(e.target.value)}
+                      placeholder="Search past conversations..."
+                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-violet-500"
+                    />
+                    {historySearchQuery && (
+                      <button
+                        onClick={() => setHistorySearchQuery('')}
+                        className="absolute right-2 text-slate-400 hover:text-slate-600 p-0.5"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Sessions List or Empty State */}
+              <div className="flex-1 overflow-y-auto thin-scrollbar p-3 space-y-2">
+                {chatSessions.length > 0 ? (
+                  chatSessions
+                    .filter(s => !historySearchQuery || s.title.toLowerCase().includes(historySearchQuery.toLowerCase()))
+                    .map((session) => (
+                      <div
+                        key={session.id}
+                        onClick={() => restoreChatSession(session)}
+                        className="group relative p-3.5 rounded-xl border border-slate-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all cursor-pointer"
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 line-clamp-2 leading-snug">
+                            {session.title}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => deleteChatSession(session.id, e)}
+                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-all shrink-0"
+                            title="Delete conversation"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+
+                        {/* Metadata Footer */}
+                        <div className="flex items-center gap-2 text-[10px] text-slate-400 dark:text-zinc-500 pt-0.5">
+                          <span>{session.timestamp}</span>
+                          <span>•</span>
+                          <span>{session.messages?.length || 0} msgs</span>
+                          {session.attachments && session.attachments.length > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="flex items-center gap-1 text-violet-600 dark:text-violet-400 font-medium">
+                                <Paperclip size={10} />
+                                <span>{session.attachments.length} {session.attachments.length === 1 ? 'file' : 'files'}</span>
+                              </span>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Uploaded file badges */}
+                        {session.attachments && session.attachments.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {session.attachments.map((file, fIdx) => (
+                              <span
+                                key={fIdx}
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-[9px] text-slate-600 dark:text-zinc-300 font-medium truncate max-w-[140px]"
+                              >
+                                <FileText size={9} className="text-slate-400 shrink-0" />
+                                <span className="truncate">{file.name || 'Attachment'}</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                ) : (
+                  /* Beautiful Executive Apple-Style Empty State */
+                  <div className="h-full flex flex-col items-center justify-center py-20 px-6 text-center">
+                    <div className="relative mb-4">
+                      <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-violet-500/10 to-indigo-500/20 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(139,92,246,0.12)]">
+                        <RegaarderAiIcon size={28} className="text-violet-600 dark:text-violet-400" />
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-slate-400 shadow-xs">
+                        <Clock size={12} />
+                      </div>
+                    </div>
+
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-100">No Conversations Yet</h4>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 max-w-[220px] leading-relaxed">
+                      Your past AI chats, prompts, and uploaded reference files will automatically appear here.
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={startNewChatSession}
+                      className="mt-5 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold shadow-[0_4px_14px_rgba(139,92,246,0.3)] transition-all active:scale-[0.98] cursor-pointer"
+                    >
+                      <Plus size={14} strokeWidth={2.5} />
+                      <span>Start New Conversation</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -65475,6 +65672,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('underline'); }} className={`p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded transition-colors ${isUnderlineActive ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/50' : 'text-slate-700 dark:text-zinc-200'}`} title="Underline"><Underline size={14}/></button>
             <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('strikeThrough'); }} className={`p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded transition-colors ${isStrikeActive ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/50' : 'text-slate-700 dark:text-zinc-200'}`} title="Strikethrough"><Strikethrough size={14}/></button>
             <div className="w-px h-4 bg-slate-200 dark:bg-zinc-700 mx-0.5"></div>
+            
+            {/* Ask AI button with Signature Regaarder Logo */}
             <button 
               onPointerDown={(e) => { 
                 e.preventDefault(); 
@@ -65483,17 +65682,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 ease-out active:scale-[0.98] border cursor-pointer ${selectionAiPopoverOpen ? 'bg-violet-600 text-white border-violet-600 shadow-sm' : 'bg-violet-50 hover:bg-violet-100 text-violet-700 border-violet-200/80 dark:bg-violet-950/60 dark:text-violet-300 dark:border-violet-800/60'}`}
               title="Ask AI Assistant"
             >
-              <Sparkles size={13} className="shrink-0" />
+              <RegaarderAiIcon size={14} className="shrink-0 text-current" />
               <span>Ask AI</span>
             </button>
           </div>
 
           {/* Interactive Selection AI Popover Menu */}
           {selectionAiPopoverOpen && (
-            <div className="mt-2 w-80 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.18)] p-2.5 flex flex-col gap-2 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between px-1 pb-1 border-b border-slate-100 dark:border-zinc-800">
+            <div className="mt-2 w-84 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.18)] p-3 flex flex-col gap-2.5 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between px-1 pb-1.5 border-b border-slate-100 dark:border-zinc-800">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-zinc-100">
-                  <Sparkles size={13} className="text-violet-600" />
+                  <RegaarderAiIcon size={14} className="text-violet-600" />
                   <span>Selection AI</span>
                 </div>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400">
@@ -65528,7 +65727,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
 
               {/* Quick AI Action Pills */}
-              <div className="grid grid-cols-2 gap-1.5 pt-1">
+              <div className="grid grid-cols-2 gap-1.5 pt-0.5">
                 <button
                   type="button"
                   disabled={selectionAiLoading}
@@ -65579,22 +65778,82 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <span>Key Insights</span>
                 </button>
 
-                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700">
-                  <Globe size={12} className="text-slate-400 shrink-0" />
-                  <select
-                    value={selectionAiTranslateLang}
-                    onChange={(e) => {
-                      setSelectionAiTranslateLang(e.target.value);
-                      executeSelectionAiAction('translate', e.target.value);
-                    }}
-                    className="w-full bg-transparent text-[11px] font-medium text-slate-700 dark:text-zinc-200 border-none outline-none cursor-pointer"
+                {/* Searchable Custom Language Translation Dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    disabled={selectionAiLoading}
+                    onClick={() => setIsSelectionAiTranslateOpen(prev => !prev)}
+                    className="w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-700 text-xs font-medium text-slate-700 dark:text-zinc-200 transition-colors"
                   >
-                    <option value="French">Translate: FR</option>
-                    <option value="Spanish">Translate: ES</option>
-                    <option value="German">Translate: DE</option>
-                    <option value="Japanese">Translate: JA</option>
-                    <option value="Chinese">Translate: ZH</option>
-                  </select>
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Globe size={12} className="text-slate-400 shrink-0" />
+                      <span className="truncate">{selectionAiTranslateLang}</span>
+                    </div>
+                    <ChevronDown size={11} className="text-slate-400 shrink-0" />
+                  </button>
+
+                  {isSelectionAiTranslateOpen && (
+                    <>
+                      <div className="fixed inset-0 z-[100010]" onClick={() => setIsSelectionAiTranslateOpen(false)} />
+                      <div className="absolute top-full left-0 mt-1 z-[100011] w-56 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl shadow-xl p-2 flex flex-col gap-1.5">
+                        <input
+                          type="text"
+                          value={selectionAiTranslateSearch}
+                          onChange={(e) => setSelectionAiTranslateSearch(e.target.value)}
+                          placeholder="Search language..."
+                          className="w-full px-2 py-1 text-[11px] rounded-md border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 outline-none"
+                          autoFocus
+                        />
+                        <div className="max-h-36 overflow-y-auto thin-scrollbar flex flex-col gap-0.5">
+                          {[
+                            { name: 'French', flag: '🇫🇷' },
+                            { name: 'Spanish', flag: '🇪🇸' },
+                            { name: 'German', flag: '🇩🇪' },
+                            { name: 'Chinese (Simplified)', flag: '🇨🇳' },
+                            { name: 'Chinese (Traditional)', flag: '🇹🇼' },
+                            { name: 'Japanese', flag: '🇯🇵' },
+                            { name: 'Korean', flag: '🇰🇷' },
+                            { name: 'Italian', flag: '🇮🇹' },
+                            { name: 'Portuguese', flag: '🇵🇹' },
+                            { name: 'Dutch', flag: '🇳🇱' },
+                            { name: 'Russian', flag: '🇷🇺' },
+                            { name: 'Arabic', flag: '🇸🇦' },
+                            { name: 'Hindi', flag: '🇮🇳' },
+                            { name: 'Turkish', flag: '🇹🇷' },
+                            { name: 'Polish', flag: '🇵🇱' },
+                            { name: 'Swedish', flag: '🇸🇪' },
+                            { name: 'Norwegian', flag: '🇳🇴' },
+                            { name: 'Danish', flag: '🇩🇰' },
+                            { name: 'Finnish', flag: '🇫🇮' },
+                            { name: 'Greek', flag: '🇬🇷' },
+                            { name: 'Hebrew', flag: '🇮🇱' },
+                            { name: 'Indonesian', flag: '🇮🇩' },
+                            { name: 'Vietnamese', flag: '🇻🇳' },
+                            { name: 'Thai', flag: '🇹🇭' },
+                            { name: 'Ukrainian', flag: '🇺🇦' },
+                            { name: 'English', flag: '🇬🇧' },
+                          ]
+                            .filter(l => l.name.toLowerCase().includes(selectionAiTranslateSearch.toLowerCase()))
+                            .map((lang) => (
+                              <button
+                                key={lang.name}
+                                type="button"
+                                onClick={() => {
+                                  setSelectionAiTranslateLang(lang.name);
+                                  setIsSelectionAiTranslateOpen(false);
+                                  executeSelectionAiAction('translate', lang.name);
+                                }}
+                                className="w-full flex items-center gap-2 px-2 py-1 rounded text-left text-xs text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 transition-colors"
+                              >
+                                <span>{lang.flag}</span>
+                                <span>{lang.name}</span>
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
