@@ -37241,33 +37241,71 @@ Respond with a JSON array of slide objects matching the schema.`;
                               onClick={() => {
                                 const q = (msg.targetQuery || msg.videoScript?.title || '').toLowerCase();
                                 const root = blankBodyRef.current;
-                                if (root) {
-                                  if (q.includes('checklist') || q.includes('task') || q.includes('todo')) {
-                                    const taskEl = root.querySelector('li, [data-task], ul');
-                                    if (taskEl) {
-                                      taskEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                      taskEl.style.outline = '3px solid #6366f1';
-                                      taskEl.style.borderRadius = '6px';
-                                      taskEl.style.transition = 'outline 0.3s ease';
-                                      setTimeout(() => { taskEl.style.outline = 'none'; }, 3000);
-                                      showToast('🎯 Located and highlighted checklist on canvas');
-                                      return;
+
+                                if (q.includes('margin') || q.includes('orientation') || q.includes('paper') || q.includes('view') || msg.videoScript?.targetTab === 'view') {
+                                  setIsDocumentSubToolbarCollapsed(false);
+                                  setDocToolbarTab('View');
+                                  showToast('Switched to View Tab -> Page Margins & Layout');
+                                  setTimeout(() => {
+                                    const allBtns = Array.from(document.querySelectorAll('button'));
+                                    const marginBtn = allBtns.find(b => b.textContent?.includes('Margin') || b.textContent?.includes('Normal Margins'));
+                                    if (marginBtn) {
+                                      marginBtn.style.outline = '3px solid #6366f1';
+                                      marginBtn.style.borderRadius = '8px';
+                                      marginBtn.style.transition = 'outline 0.3s ease';
+                                      setTimeout(() => { marginBtn.style.outline = 'none'; }, 3500);
                                     }
-                                  } else if (q.includes('table') || q.includes('grid')) {
-                                    const tableEl = root.querySelector('table');
-                                    if (tableEl) {
-                                      tableEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                      tableEl.style.outline = '3px solid #6366f1';
-                                      setTimeout(() => { tableEl.style.outline = 'none'; }, 3000);
-                                      showToast('🎯 Located table on canvas');
-                                      return;
+                                  }, 250);
+                                  return;
+                                }
+
+                                if (q.includes('equation') || q.includes('math') || q.includes('formula')) {
+                                  setIsDocumentSubToolbarCollapsed(false);
+                                  setDocToolbarTab('Write');
+                                  if (window.__composeInsertHTML) {
+                                    window.__composeInsertHTML('<p><span class="katex-inline" style="background:rgba(99,102,241,0.08);padding:4px 8px;border-radius:6px;font-family:serif;font-size:16px;">$$\\int_{a}^{b} f(x)\\,dx = F(b) - F(a)$$</span></p>');
+                                  }
+                                  showToast('Inserted math equation on canvas');
+                                  return;
+                                }
+
+                                if (q.includes('image') || q.includes('photo') || q.includes('upload')) {
+                                  setIsDocumentSubToolbarCollapsed(false);
+                                  setDocToolbarTab('Write');
+                                  setIsInsertImagesModalOpen(true);
+                                  showToast('Opened Image Uploader');
+                                  return;
+                                }
+
+                                if (q.includes('table') || q.includes('grid')) {
+                                  setIsDocumentSubToolbarCollapsed(false);
+                                  setDocToolbarTab('Write');
+                                  if (window.__composeInsertHTML) {
+                                    window.__composeInsertHTML('<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;"><tr style="background:#f8fafc;"><th style="border:1px solid #cbd5e1;padding:8px 12px;text-align:left;">Item</th><th style="border:1px solid #cbd5e1;padding:8px 12px;text-align:left;">Category</th><th style="border:1px solid #cbd5e1;padding:8px 12px;text-align:left;">Amount</th></tr><tr><td style="border:1px solid #cbd5e1;padding:8px 12px;">Sample Project</td><td style="border:1px solid #cbd5e1;padding:8px 12px;">Design</td><td style="border:1px solid #cbd5e1;padding:8px 12px;">$1,200</td></tr></table>');
+                                  }
+                                  showToast('Inserted data table on canvas');
+                                  return;
+                                }
+
+                                if (q.includes('checklist') || q.includes('task') || q.includes('todo')) {
+                                  const taskEl = root?.querySelector('li, [data-task], ul');
+                                  if (taskEl) {
+                                    taskEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    taskEl.style.outline = '3px solid #6366f1';
+                                    taskEl.style.borderRadius = '6px';
+                                    taskEl.style.transition = 'outline 0.3s ease';
+                                    setTimeout(() => { taskEl.style.outline = 'none'; }, 3000);
+                                    showToast('🎯 Located and highlighted checklist on canvas');
+                                    return;
+                                  } else {
+                                    if (window.__composeInsertHTML) {
+                                      window.__composeInsertHTML('<ul style="list-style-type:none;padding-left:0;font-size:14px;"><li style="margin-bottom:8px;"><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="width:16px;height:16px;accent-color:#6366f1;"> <span>Finalize project specification</span></label></li><li style="margin-bottom:8px;"><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="width:16px;height:16px;accent-color:#6366f1;"> <span>Review typography and layout</span></label></li></ul>');
                                     }
-                                  } else if (q.includes('image') || q.includes('photo')) {
-                                    setIsInsertImagesModalOpen(true);
-                                    showToast('🖼️ Opened Image Uploader');
+                                    showToast('Inserted interactive checklist on canvas');
                                     return;
                                   }
                                 }
+
                                 showToast('⚡ Executed action workflow on canvas');
                               }}
                               className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg shadow-xs transition-colors cursor-pointer"
@@ -37477,8 +37515,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                           <span>Browser Agent • Real-Time Web Engine</span>
                         </span>
                       </div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider bg-indigo-100 dark:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full">
-                        Live Search API
+                      <span className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-100/50 dark:bg-indigo-900/30 px-2.5 py-0.5 rounded-full border border-indigo-200/50 dark:border-indigo-800/40">
+                        Live Search
                       </span>
                     </div>
                     <div className="space-y-2">
