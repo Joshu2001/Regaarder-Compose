@@ -27963,13 +27963,16 @@ Return ONLY valid JSON matching the schema.`;
       ? await buildAttachmentContext(requestAttachments)
       : '';
 
-    // Extract Real-Time Live Presentation Deck Context
+    // Extract Context with Strict Mode Boundaries (Never bleed Deck into Docs or Docs into Decks)
     let deckContext = '';
-    const currentSlides = (deckSlidesData && deckSlidesData.length) ? deckSlidesData : (DEFAULT_DECK_SLIDES || []);
-    if (productMode === 'deck' || currentSlides.length > 0) {
+    let docContext = '';
+    let sheetContext = '';
+
+    if (productMode === 'deck') {
+      const currentSlides = (deckSlidesData && deckSlidesData.length) ? deckSlidesData : (DEFAULT_DECK_SLIDES || []);
       deckContext = `\n\n--- ACTIVE PRESENTATION DECK CONTEXT ---\nTotal Slides: ${currentSlides.length}\nActive Slide: ${activeDeckSlide?.title || activeDeckSlide?.headline || 'Slide 1'}\n`;
       currentSlides.forEach((s, idx) => {
-        deckContext += `\n[Slide ${idx + 1}: ${s.title || s.headline || 'Slide ${idx + 1}'}]`;
+        deckContext += `\n[Slide ${idx + 1}: ${s.title || s.headline || `Slide ${idx + 1}`}]`;
         if (s.tagline) deckContext += `\nTagline: ${s.tagline}`;
         if (s.headline) deckContext += `\nHeadline: ${s.headline}`;
         if (s.presenter) deckContext += `\nPresenter: ${s.presenter}`;
@@ -27984,15 +27987,19 @@ Return ONLY valid JSON matching the schema.`;
         if (s.footer) deckContext += `\nFooter: ${s.footer}`;
       });
       deckContext += `\n--- END PRESENTATION DECK CONTEXT ---\n`;
+    } else if (productMode === 'sheets') {
+      const activeSheet = sheetGrids?.[activeSheetId] || sheetsData;
+      if (activeSheet) {
+        sheetContext = `\n\n--- ACTIVE SPREADSHEET CONTEXT ---\nSheet Title: ${sheetsTitle || 'Sheet 1'}\n` + JSON.stringify(activeSheet).slice(0, 10000) + `\n--- END SPREADSHEET CONTEXT ---\n`;
+      }
+    } else {
+      // productMode === 'compose' (Document Mode)
+      if (blankBodyRef.current?.innerText && blankBodyRef.current.innerText.trim().length > 10) {
+        docContext = `\n\n--- ACTIVE DOCUMENT CONTENT ---\n${blankBodyRef.current.innerText.slice(0, 15000)}\n--- END DOCUMENT CONTENT ---\n`;
+      }
     }
 
-    // Extract Real-Time Live Document Context
-    let docContext = '';
-    if (blankBodyRef.current?.innerText) {
-      docContext = `\n\n--- ACTIVE DOCUMENT CONTENT ---\n${blankBodyRef.current.innerText.slice(0, 15000)}\n--- END DOCUMENT CONTENT ---\n`;
-    }
-
-    const groundedPrompt = `${promptText}${attachmentContext ? `\n\n${attachmentContext}` : ''}${deckContext}${docContext}`;
+    const groundedPrompt = `${promptText}${attachmentContext ? `\n\n${attachmentContext}` : ''}${deckContext}${docContext}${sheetContext}`;
     const composeFallbackAction = buildComposeFallbackAction({
       promptText,
       requestedFormat,
@@ -28032,9 +28039,13 @@ Rules:
 - Include section labels aligned to this narrative flow: Opening, Problem, Opportunity, Product, Market, Strategy, Financials, Closing.
 - Headline should be punchy and brief. Blurb should be 1-3 concise sentences.`;
     } else if (isArticleWritingRequest) {
-      // Natural Document Writing Mode: Strict Typography Rulebook
+      // Natural Document Writing Mode: Strict Typography Rulebook & Mode Isolation
       activeSchemaToUse = undefined;
-      systemPrompt = `You are the executive AI writing engine for Regaarder Compose.
+      systemPrompt = `You are the executive AI writing engine for Regaarder Compose operating in DOCUMENT MODE.
+CRITICAL MODE DIRECTIVE:
+You are writing a standard written text document (article, essay, memo, report, guide, or narrative).
+Under NO circumstances should you output presentation slides, slide numbers ("Slide 1:"), headlines, taglines, or pitch deck formats. Output real document paragraphs and prose.
+
 STRICT DOCUMENT TYPOGRAPHY RULEBOOK:
 1. ZERO CHAT FILLER: Never start with conversational filler (e.g. "Okay, here is an article...", "Sure!", "As requested"). Start IMMEDIATELY with the main title on line 1.
 2. HIERARCHICAL HEADINGS:
