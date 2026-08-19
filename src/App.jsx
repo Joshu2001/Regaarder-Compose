@@ -27595,7 +27595,13 @@ Return ONLY valid JSON matching the schema.`;
       ? `Target ${requestedTone} tone and around ${requestedLengthValue} ${requestedLengthMode}.`
       : 'No explicit length limit was requested. Choose the natural length needed to complete the idea fully, and continue onto additional pages if necessary.';
     const requestAttachments = Array.isArray(options.attachments) ? options.attachments : [];
-    const isDeckGeneration = productMode === 'deck' && source === 'chat';
+    const isExplicitDeckCreation = Boolean(
+      source === 'compose' ||
+      smartActionKey === 'deck' ||
+      /^\/deck\b/i.test(promptText) ||
+      /\b(create|generate|make|build|convert\s+to|produce|design)\s+(a\s+)?(new\s+)?(deck|presentation|slides|pitch\s+deck)\b/i.test(promptText)
+    );
+    const isDeckGeneration = productMode === 'deck' && isExplicitDeckCreation;
     const requestedDeckSlideCount = (() => {
       const match = String(promptText || '').match(/(\d{1,2})\s*[- ]?\s*(?:slide|slides|page|pages)\b/i);
       return Math.max(1, Math.min(20, Number(match?.[1] || 10)));
@@ -27804,9 +27810,37 @@ Return ONLY valid JSON matching the schema.`;
     const attachmentContext = requestAttachments.length
       ? await buildAttachmentContext(requestAttachments)
       : '';
-    const groundedPrompt = attachmentContext
-      ? `${promptText}\n\n${attachmentContext}`
-      : promptText;
+
+    // Extract Real-Time Live Presentation Deck Context
+    let deckContext = '';
+    const currentSlides = (deckSlidesData && deckSlidesData.length) ? deckSlidesData : (DEFAULT_DECK_SLIDES || []);
+    if (productMode === 'deck' || currentSlides.length > 0) {
+      deckContext = `\n\n--- ACTIVE PRESENTATION DECK CONTEXT ---\nTotal Slides: ${currentSlides.length}\nActive Slide: ${activeDeckSlide?.title || activeDeckSlide?.headline || 'Slide 1'}\n`;
+      currentSlides.forEach((s, idx) => {
+        deckContext += `\n[Slide ${idx + 1}: ${s.title || s.headline || 'Slide ${idx + 1}'}]`;
+        if (s.tagline) deckContext += `\nTagline: ${s.tagline}`;
+        if (s.headline) deckContext += `\nHeadline: ${s.headline}`;
+        if (s.presenter) deckContext += `\nPresenter: ${s.presenter}`;
+        ['card1', 'card2', 'card3', 'card4', 'step1', 'step2', 'step3', 'step4', 'moat1', 'moat2', 'moat3', 'moat4', 'phase1', 'phase2', 'phase3', 'phase4'].forEach(prefix => {
+          if (s[`${prefix}Title`]) deckContext += `\n- ${s[`${prefix}Title`]}: ${s[`${prefix}Desc`] || ''}`;
+        });
+        if (s.tamVal) deckContext += `\n- TAM: ${s.tamVal} (${s.tamDesc || ''})`;
+        if (s.samVal) deckContext += `\n- SAM: ${s.samVal} (${s.samDesc || ''})`;
+        if (s.somVal) deckContext += `\n- SOM: ${s.somVal} (${s.somDesc || ''})`;
+        if (s.y1Rev) deckContext += `\n- Financials: Year 1 ${s.y1Rev}, Year 2 ${s.y2Rev}, Year 3 ${s.y3Rev}`;
+        if (s.askAmount) deckContext += `\n- Funding Ask: ${s.askAmount} (${s.askDesc || ''})`;
+        if (s.footer) deckContext += `\nFooter: ${s.footer}`;
+      });
+      deckContext += `\n--- END PRESENTATION DECK CONTEXT ---\n`;
+    }
+
+    // Extract Real-Time Live Document Context
+    let docContext = '';
+    if (blankBodyRef.current?.innerText) {
+      docContext = `\n\n--- ACTIVE DOCUMENT CONTENT ---\n${blankBodyRef.current.innerText.slice(0, 15000)}\n--- END DOCUMENT CONTENT ---\n`;
+    }
+
+    const groundedPrompt = `${promptText}${attachmentContext ? `\n\n${attachmentContext}` : ''}${deckContext}${docContext}`;
     const composeFallbackAction = buildComposeFallbackAction({
       promptText,
       requestedFormat,
@@ -27849,24 +27883,18 @@ Process you MUST follow before creating slides:
 4) Generate slides with titles, summaries, layouts, charts/timelines/diagrams/visuals.
 5) Apply adaptive design system (typography, spacing, branding, colors, visual hierarchy).
 6) Assign motion/animation cues (fade/reveal/stagger/progressive/cinematic transitions).`
-      : `You are Compose AI. Return JSON only.
-Context title: ${docTitle || 'Untitled'}.
+      : `You are the executive AI Copilot for Regaarder Compose (with real-time access to the user's active Presentation Deck, Document, and Spreadsheets). Return JSON only.
+Context title: ${activeProductTitle || docTitle || 'Untitled'}.
 Context subtitle: ${docSubtitle || 'No subtitle'}.
 Requested output format: ${requestedFormat}.
 Preferred doc action type: ${preferredDocType}.
 Tone style: ${requestedTone}.
-    Length guidance: ${lengthGuidance}
+Length guidance: ${lengthGuidance}
 Rules:
-- If the input comes from Compose canvas prompt, always set hasAction=true and provide docAction that can be inserted into the main document immediately.
-- docAction.type must be one of: timeline, tasks, risks, text.
-- Prefer using the requested output format and preferred doc action type.
-- If attachments are present, ground the document in the attachment details and do not ignore them.
-- Use the attachment context to write a real document, not a placeholder or generic acknowledgment.
-- Never return "Composed with live AI" or any other filler when source material exists.
-- For chat-only questions, hasAction can be false and provide aiResponseText only.
-- Preserve paragraph structure for text outputs using meaningful line breaks.
-- Keep aiResponseText concise, actionable, and specific.
-- Do not simulate placeholders. Produce useful output.`;
+- When the user asks a question, requests a summary, reviews, or asks for explanation about the active Presentation Deck, Document, or Spreadsheet (e.g. "Summarize this deck", "What are our milestones?", "Explain the market size in slide 4"), produce a clear, thorough, executive-tier answer based directly on the provided context. Set hasAction=false and put your complete answer in aiResponseText.
+- If the input comes from Compose canvas prompt to insert content, set hasAction=true and provide docAction (timeline, tasks, risks, or text).
+- If attachments are present, ground your response in the attachment details.
+- Never return "Composed with live AI" or generic placeholders when real presentation or document content is provided.`;
 
     try {
       const modelResponse = await callGemini({
