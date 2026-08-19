@@ -49,10 +49,13 @@ import PopoverWindowContainer from './components/browser/PopoverWindowContainer'
 import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 import HelpSupportPanel from './components/HelpSupportPanel';
 
-const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false) => {
+const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
   const IconComp = iconObj.icon || Globe;
-  return <IconComp size={size} className={isDarkIcon ? 'text-slate-900' : 'currentColor'} />;
+  if (customColor) {
+    return <IconComp size={size} style={{ color: customColor }} />;
+  }
+  return <IconComp size={size} className={isDarkIcon ? 'text-slate-900' : 'text-white'} />;
 };
 
 const RegaarderVectorIcon = ({ size = 13, className = "" }) => (
@@ -9283,6 +9286,7 @@ const BUSINESS_PLAN_DECK_SLIDES = [
     tagline: 'Strategic Execution Plan',
     headline: 'BUSINESS PLAN\n2026 – 2029',
     presenter: 'PREPARED FOR BOARD & INVESTORS',
+    presenterHidden: true,
     contactWeb: 'www.regaarder.com/plan',
     contactEmail: 'exec@regaarder.com',
     contactAddress: 'One Market Plaza, San Francisco, CA',
@@ -58245,7 +58249,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                               {/* 4B. 3D Glassmorphic Presenter Stadium Pill Capsule with Full Shimmer Controls */}
                                               {(() => {
-                                                if (activeDeckSlide?.presenterHidden) return null;
+                                                if (activeDeckSlide?.presenterHidden || layout === 'Business Plan Cover' || activeDeckSlide?.layoutStyle === 'Business Plan Cover') return null;
                                                 const pX = activeDeckSlide?.presenter_posX || 0;
                                                 const pY = activeDeckSlide?.presenter_posY || 0;
                                                 const pW = activeDeckSlide?.presenter_width;
@@ -58930,17 +58934,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             </div>
                                           </div>
                                         ) : layout === 'Business Plan Summary' || activeDeckSlide?.title === 'Executive Summary' ? (
-                                          /* ── BUSINESS PLAN 02: EXECUTIVE SUMMARY & MISSION (FULLY INTERACTIVE) ── */
-                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-5 pb-4 md:px-8 md:pt-6 md:pb-5 overflow-hidden">
-                                            {/* Tagline & Headline Block */}
-                                            <div className="flex flex-col gap-1 z-20 pointer-events-auto max-w-[80%]">
+                                          /* ── BUSINESS PLAN 02: EXECUTIVE SUMMARY & MISSION (REFINED SPACING & HIGH CONTRAST) ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-7 pt-4 pb-3.5 md:px-9 md:pt-5 md:pb-4 overflow-hidden">
+                                            {/* Header with ample bottom margin */}
+                                            <div className="flex flex-col gap-0.5 z-20 pointer-events-auto max-w-[80%] mb-2">
                                               {!activeDeckSlide?.bpSummaryTaglineHidden && (
                                                 <span
                                                   contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                   suppressContentEditableWarning
                                                   onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '')}
                                                   style={{ color: "#00f0ff", caretColor: "#00f0ff" }}
-                                                  className="text-[11px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                  className="text-[10.5px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
                                                 >
                                                   {activeDeckSlide?.tagline || '01 / STRATEGIC FOUNDATION'}
                                                 </span>
@@ -58951,15 +58955,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   suppressContentEditableWarning
                                                   onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                   style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                  className="text-[28px] md:text-[34px] font-[900] text-white tracking-tight leading-none uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
+                                                  className="text-[24px] md:text-[28px] leading-[1.05] font-[900] text-white tracking-tight uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
                                                 >
                                                   {activeDeckSlide?.headline || 'EXECUTIVE SUMMARY & MISSION'}
                                                 </h1>
                                               )}
                                             </div>
 
-                                            {/* 3 High-Contrast Interactive Bento Cards */}
-                                            <div className="grid grid-cols-3 gap-4 my-auto z-20 pointer-events-auto">
+                                            {/* 3 High-Contrast Interactive Bento Cards with Perfect Vertical Centering */}
+                                            <div className="grid grid-cols-3 gap-3.5 my-auto z-20 pointer-events-auto">
                                               {[
                                                 { id: 'bp2-card-1', hiddenKey: 'bp2Card1Hidden', titleKey: 'card1Title', defTitle: 'Our Mission', descKey: 'card1Desc', defDesc: 'Empower modern enterprises with an all-in-one AI operating workspace that unifies real-time docs, decks, and data sheets.', iconKey: 'card1Icon', defIcon: 'target', shapeKey: 'card1Shape', bgKey: 'card1Bg', color: '#00f0ff', num: '01' },
                                                 { id: 'bp2-card-2', hiddenKey: 'bp2Card2Hidden', titleKey: 'card2Title', defTitle: 'Core Vision', descKey: 'card2Desc', defDesc: 'Establish the global benchmark for collaborative intelligence, reducing workflow friction by 70% across 50,000+ teams.', iconKey: 'card2Icon', defIcon: 'sparkles', shapeKey: 'card2Shape', bgKey: 'card2Bg', color: '#a855f7', num: '02' },
@@ -58970,7 +58974,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 const badgeId = `${cItem.id}-badge`;
                                                 const isBadgeSelected = deckSelection.type === 'badge' && deckSelection.id === badgeId;
                                                 const badgeShapeKey = activeDeckSlide?.[cItem.shapeKey] || 'rounded-square';
-                                                const badgeBgKey = activeDeckSlide?.[cItem.bgKey] || `${cItem.color}25`;
+                                                const badgeBgKey = activeDeckSlide?.[cItem.bgKey] || `${cItem.color}35`;
                                                 const badgeIconKey = activeDeckSlide?.[cItem.iconKey] || cItem.defIcon;
                                                 const bShapeObj = DECK_BADGE_SHAPES.find(s => s.id === badgeShapeKey) || DECK_BADGE_SHAPES[1];
 
@@ -58983,33 +58987,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       setDeckSelection({ type: 'bento', id: cItem.id });
                                                     }}
                                                     onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: cItem.id }); }}
-                                                    className={`p-4 rounded-2xl bg-zinc-950/70 backdrop-blur-xl border border-white/20 hover:border-white/40 flex flex-col justify-between min-h-[175px] relative group/bpcard shadow-2xl transition-all cursor-grab active:cursor-grabbing ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
+                                                    className={`p-3.5 rounded-2xl bg-zinc-950/80 backdrop-blur-xl border border-white/25 hover:border-white/50 flex flex-col justify-between min-h-[145px] relative group/bpcard shadow-2xl transition-all cursor-grab active:cursor-grabbing ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
                                                   >
-                                                    {/* Card Header: Icon Badge + Step Number */}
                                                     <div className="flex items-center justify-between pointer-events-auto">
-                                                      {/* Clickable & Modifiable Icon Container */}
                                                       <div
-                                                        onPointerDown={(e) => {
-                                                          e.stopPropagation();
-                                                          setDeckSelection({ type: 'badge', id: badgeId });
-                                                        }}
-                                                        onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          setDeckSelection({ type: 'badge', id: badgeId });
-                                                        }}
+                                                        onPointerDown={(e) => { e.stopPropagation(); setDeckSelection({ type: 'badge', id: badgeId }); }}
+                                                        onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'badge', id: badgeId }); }}
                                                         style={{
-                                                          width: '34px',
-                                                          height: '34px',
+                                                          width: '32px',
+                                                          height: '32px',
                                                           borderRadius: bShapeObj.radius,
                                                           clipPath: bShapeObj.clip !== 'none' ? bShapeObj.clip : undefined,
                                                           backgroundColor: badgeBgKey,
-                                                          border: `1.5px solid ${cItem.color}80`
+                                                          border: `1.5px solid ${cItem.color}`,
+                                                          boxShadow: `0 0 10px ${cItem.color}50`
                                                         }}
-                                                        className={`flex items-center justify-center shrink-0 shadow-lg cursor-pointer relative hover:scale-110 transition-transform ${isBadgeSelected ? 'outline outline-2 outline-cyan-400 ring-2 ring-cyan-400/40' : ''}`}
+                                                        className={`flex items-center justify-center shrink-0 shadow-lg cursor-pointer relative hover:scale-110 transition-transform text-white ${isBadgeSelected ? 'outline outline-2 outline-cyan-400 ring-2 ring-cyan-400/40' : ''}`}
                                                       >
-                                                        {renderDeckBadgeIcon(badgeIconKey, 16)}
+                                                        {renderDeckBadgeIcon(badgeIconKey, 16, false, '#ffffff')}
 
-                                                        {/* Floating Toolbar for Icon Badge */}
                                                         {isBadgeSelected && (
                                                           <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
                                                             <button type="button" onClick={(e) => { e.stopPropagation(); setActiveBadgeShapePicker({ badgeId, shapeKey: cItem.shapeKey }); }} className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1"><Shapes size={9} /> Shape</button>
@@ -59019,17 +59015,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         )}
                                                       </div>
 
-                                                      <span className="text-[11px] font-mono font-bold text-white/50">{cItem.num}</span>
+                                                      <span className="text-[10px] font-mono font-bold text-white/60">{cItem.num}</span>
                                                     </div>
 
-                                                    {/* Card Body: Editable Title & Description */}
-                                                    <div className="mt-3.5 flex flex-col gap-1.5">
+                                                    <div className="mt-2.5 flex flex-col gap-1">
                                                       <h3
                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, cItem.titleKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                        className="text-[14.5px] font-bold text-white leading-snug outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                        className="text-[13.5px] font-bold text-white leading-snug outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.[cItem.titleKey] || cItem.defTitle}
                                                       </h3>
@@ -59038,64 +59033,39 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, cItem.descKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                        className="text-[11px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                        className="text-[10px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.[cItem.descKey] || cItem.defDesc}
                                                       </p>
                                                     </div>
 
-                                                    {/* Floating Toolbar for Card */}
                                                     {isCardSelected && (
                                                       <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                        <Sparkles size={11} className="text-cyan-400" />
                                                         <span>{cItem.defTitle}</span>
-                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                         <button type="button" onClick={(e) => { e.stopPropagation(); updateDeckSlideField(activeDeckSlide?.id, cItem.hiddenKey, true); setDeckSelection({ type: 'none', id: null }); showToast('Card deleted'); }} className="p-1 hover:bg-rose-500/20 text-rose-400 rounded cursor-pointer" title="Delete Card"><Trash2 size={11} /></button>
                                                       </div>
-                                                    )}
-
-                                                    {/* 8 Resize Handles for Card */}
-                                                    {isCardSelected && (
-                                                      <>
-                                                        <div data-resize-handle="true" className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nesw-resize hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-md z-40 cursor-nwse-resize hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize" />
-                                                        <div data-resize-handle="true" className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ns-resize" />
-                                                        <div data-resize-handle="true" className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize" />
-                                                        <div data-resize-handle="true" className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2.5 h-4.5 bg-white border-2 border-[#7C4DFF] rounded-[3px] shadow-sm z-40 cursor-ew-resize" />
-                                                      </>
                                                     )}
                                                   </div>
                                                 );
                                               })}
                                             </div>
 
-                                            {/* Footer with Editable Notes */}
-                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-2 z-20 pointer-events-auto">
-                                              <span
-                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                                suppressContentEditableWarning
-                                                onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'footer', e.currentTarget.textContent || '')}
-                                                style={{ color: "#94a3b8" }}
-                                                className="outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
-                                              >
-                                                {activeDeckSlide?.footer || 'Regaarder Corporation'}
-                                              </span>
+                                            {/* Footer with clean separation */}
+                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-1.5 z-20 pointer-events-auto">
+                                              <span>{activeDeckSlide?.footer || 'Regaarder Corporation'}</span>
                                               <span>Confidential • Board & Investor Review</span>
                                             </div>
                                           </div>
                                         ) : layout === 'Business Plan Structure' || activeDeckSlide?.title === 'Company & Operations' ? (
-                                          /* ── BUSINESS PLAN 03: COMPANY STRUCTURE & GOVERNANCE (FULLY INTERACTIVE) ── */
-                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-5 pb-4 md:px-8 md:pt-6 md:pb-5 overflow-hidden">
-                                            <div className="flex flex-col gap-1 z-20 pointer-events-auto max-w-[80%]">
+                                          /* ── BUSINESS PLAN 03: COMPANY STRUCTURE & GOVERNANCE ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-7 pt-4 pb-3.5 md:px-9 md:pt-5 md:pb-4 overflow-hidden">
+                                            <div className="flex flex-col gap-0.5 z-20 pointer-events-auto max-w-[80%] mb-2">
                                               <span
                                                 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#a855f7", caretColor: "#00f0ff" }}
-                                                className="text-[11px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text"
+                                                className="text-[10.5px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text"
                                               >
                                                 {activeDeckSlide?.tagline || '02 / ORGANIZATION'}
                                               </span>
@@ -59104,13 +59074,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                className="text-[28px] md:text-[34px] font-[900] text-white tracking-tight leading-none uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
+                                                className="text-[24px] md:text-[28px] leading-[1.05] font-[900] text-white tracking-tight leading-none uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
                                               >
                                                 {activeDeckSlide?.headline || 'COMPANY STRUCTURE & GOVERNANCE'}
                                               </h1>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4 my-auto z-20 pointer-events-auto">
+                                            <div className="grid grid-cols-2 gap-3 my-auto z-20 pointer-events-auto">
                                               {[
                                                 { id: 'bp3-card-1', hiddenKey: 'bp3Card1Hidden', titleKey: 'card1Title', defTitle: 'Delaware C-Corp', descKey: 'card1Desc', defDesc: 'Incorporated Q1 2024. Clean cap table with institutional investor governance & founder super-voting shares.', iconKey: 'card1Icon', defIcon: 'shield', shapeKey: 'card1Shape', bgKey: 'card1Bg', color: '#00f0ff' },
                                                 { id: 'bp3-card-2', hiddenKey: 'bp3Card2Hidden', titleKey: 'card2Title', defTitle: 'Global Hubs', descKey: 'card2Desc', defDesc: 'Dual headquarters in San Francisco and Singapore supporting 24/7 distributed engineering and enterprise sales.', iconKey: 'card2Icon', defIcon: 'globe', shapeKey: 'card2Shape', bgKey: 'card2Bg', color: '#a855f7' },
@@ -59122,7 +59092,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 const badgeId = `${cItem.id}-badge`;
                                                 const isBadgeSelected = deckSelection.type === 'badge' && deckSelection.id === badgeId;
                                                 const badgeShapeKey = activeDeckSlide?.[cItem.shapeKey] || 'rounded-square';
-                                                const badgeBgKey = activeDeckSlide?.[cItem.bgKey] || `${cItem.color}25`;
+                                                const badgeBgKey = activeDeckSlide?.[cItem.bgKey] || `${cItem.color}35`;
                                                 const badgeIconKey = activeDeckSlide?.[cItem.iconKey] || cItem.defIcon;
                                                 const bShapeObj = DECK_BADGE_SHAPES.find(s => s.id === badgeShapeKey) || DECK_BADGE_SHAPES[1];
 
@@ -59135,22 +59105,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       setDeckSelection({ type: 'bento', id: cItem.id });
                                                     }}
                                                     onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: cItem.id }); }}
-                                                    className={`p-4 rounded-2xl bg-zinc-950/70 backdrop-blur-xl border border-white/20 hover:border-white/40 flex items-start gap-3.5 shadow-2xl relative group/bpcard cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
+                                                    className={`p-3 rounded-2xl bg-zinc-950/80 backdrop-blur-xl border border-white/25 hover:border-white/50 flex items-start gap-3 shadow-2xl relative group/bpcard cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
                                                   >
                                                     <div
                                                       onPointerDown={(e) => { e.stopPropagation(); setDeckSelection({ type: 'badge', id: badgeId }); }}
                                                       onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'badge', id: badgeId }); }}
                                                       style={{
-                                                        width: '36px',
-                                                        height: '36px',
+                                                        width: '32px',
+                                                        height: '32px',
                                                         borderRadius: bShapeObj.radius,
                                                         clipPath: bShapeObj.clip !== 'none' ? bShapeObj.clip : undefined,
                                                         backgroundColor: badgeBgKey,
-                                                        border: `1.5px solid ${cItem.color}80`
+                                                        border: `1.5px solid ${cItem.color}`,
+                                                        boxShadow: `0 0 10px ${cItem.color}50`
                                                       }}
-                                                      className={`flex items-center justify-center shrink-0 shadow-lg cursor-pointer relative hover:scale-110 transition-transform ${isBadgeSelected ? 'outline outline-2 outline-cyan-400 ring-2 ring-cyan-400/40' : ''}`}
+                                                      className={`flex items-center justify-center shrink-0 shadow-lg cursor-pointer relative hover:scale-110 transition-transform text-white ${isBadgeSelected ? 'outline outline-2 outline-cyan-400 ring-2 ring-cyan-400/40' : ''}`}
                                                     >
-                                                      {renderDeckBadgeIcon(badgeIconKey, 16)}
+                                                      {renderDeckBadgeIcon(badgeIconKey, 15, false, '#ffffff')}
 
                                                       {isBadgeSelected && (
                                                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
@@ -59161,13 +59132,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       )}
                                                     </div>
 
-                                                    <div className="flex-1 flex flex-col gap-1">
+                                                    <div className="flex-1 flex flex-col gap-0.5">
                                                       <h3
                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, cItem.titleKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                        className="text-sm font-bold text-white outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text leading-snug"
+                                                        className="text-[13px] font-bold text-white outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text leading-snug"
                                                       >
                                                         {activeDeckSlide?.[cItem.titleKey] || cItem.defTitle}
                                                       </h3>
@@ -59176,7 +59147,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, cItem.descKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                        className="text-[10.5px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                        className="text-[9.5px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.[cItem.descKey] || cItem.defDesc}
                                                       </p>
@@ -59193,21 +59164,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               })}
                                             </div>
 
-                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-2 z-20 pointer-events-auto">
+                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-1.5 z-20 pointer-events-auto">
                                               <span>{activeDeckSlide?.footer || 'Regaarder Corporation'}</span>
                                               <span>Legal & Corporate Governance</span>
                                             </div>
                                           </div>
                                         ) : layout === 'Business Plan Market' || activeDeckSlide?.title === 'Market Analysis' ? (
-                                          /* ── BUSINESS PLAN 04: MARKET ANALYSIS (TAM / SAM / SOM - FULLY INTERACTIVE) ── */
-                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-5 pb-4 md:px-8 md:pt-6 md:pb-5 overflow-hidden">
-                                            <div className="flex flex-col gap-1 z-20 pointer-events-auto max-w-[80%]">
+                                          /* ── BUSINESS PLAN 04: MARKET ANALYSIS (TAM / SAM / SOM) ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-7 pt-4 pb-3.5 md:px-9 md:pt-5 md:pb-4 overflow-hidden">
+                                            <div className="flex flex-col gap-0.5 z-20 pointer-events-auto max-w-[80%] mb-2">
                                               <span
                                                 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#00f0ff", caretColor: "#00f0ff" }}
-                                                className="text-[11px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                className="text-[10.5px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
                                               >
                                                 {activeDeckSlide?.tagline || '03 / OPPORTUNITY'}
                                               </span>
@@ -59216,13 +59187,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                className="text-[28px] md:text-[34px] font-[900] text-white tracking-tight leading-none uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
+                                                className="text-[24px] md:text-[28px] leading-[1.05] font-[900] text-white tracking-tight uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
                                               >
                                                 {activeDeckSlide?.headline || 'MARKET SIZE & SEGMENTATION'}
                                               </h1>
                                             </div>
 
-                                            <div className="grid grid-cols-3 gap-4 my-auto z-20 pointer-events-auto">
+                                            <div className="grid grid-cols-3 gap-3.5 my-auto z-20 pointer-events-auto">
                                               {[
                                                 { id: 'tam-card', hiddenKey: 'tamCardHidden', label: 'TAM', valKey: 'tamVal', defVal: '$128 Billion', descKey: 'tamDesc', defDesc: 'Total Addressable Market: Global enterprise productivity, spreadsheet & document SaaS software.', pct: '100%', color: '#00f0ff' },
                                                 { id: 'sam-card', hiddenKey: 'samCardHidden', label: 'SAM', valKey: 'samVal', defVal: '$42 Billion', descKey: 'samDesc', defDesc: 'Serviceable Addressable Market: Mid-market & enterprise collaborative software buyers.', pct: '65%', color: '#a855f7' },
@@ -59240,20 +59211,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       setDeckSelection({ type: 'bento', id: mItem.id });
                                                     }}
                                                     onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: mItem.id }); }}
-                                                    className={`p-4 rounded-2xl bg-zinc-950/70 backdrop-blur-xl border border-white/20 hover:border-white/40 flex flex-col justify-between min-h-[185px] relative group/mcard shadow-2xl cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
+                                                    className={`p-3.5 rounded-2xl bg-zinc-950/80 backdrop-blur-xl border border-white/25 hover:border-white/50 flex flex-col justify-between min-h-[155px] relative group/mcard shadow-2xl cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
                                                   >
                                                     <div className="flex items-center justify-between">
-                                                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider" style={{ backgroundColor: `${mItem.color}25`, color: mItem.color, border: `1px solid ${mItem.color}60` }}>{mItem.label}</span>
-                                                      <span className="text-[11px] font-mono font-bold text-slate-300">{mItem.pct}</span>
+                                                      <span className="px-2.5 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase tracking-wider" style={{ backgroundColor: `${mItem.color}30`, color: mItem.color, border: `1.5px solid ${mItem.color}` }}>{mItem.label}</span>
+                                                      <span className="text-[10.5px] font-mono font-bold text-slate-300">{mItem.pct}</span>
                                                     </div>
 
-                                                    <div className="my-2 flex flex-col gap-1">
+                                                    <div className="my-1.5 flex flex-col gap-0.5">
                                                       <div
                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, mItem.valKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                        className="text-[26px] md:text-[30px] font-[900] text-white tracking-tight leading-none outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                        className="text-[23px] md:text-[26px] font-[900] text-white tracking-tight leading-none outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.[mItem.valKey] || mItem.defVal}
                                                       </div>
@@ -59262,13 +59233,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, mItem.descKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                        className="text-[10.5px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                        className="text-[9.5px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.[mItem.descKey] || mItem.defDesc}
                                                       </p>
                                                     </div>
 
-                                                    <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden p-0.5">
+                                                    <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden p-0.5">
                                                       <div className="h-full rounded-full transition-all duration-500" style={{ width: mItem.pct, backgroundColor: mItem.color }} />
                                                     </div>
 
@@ -59283,21 +59254,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               })}
                                             </div>
 
-                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-2 z-20 pointer-events-auto">
+                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-1.5 z-20 pointer-events-auto">
                                               <span>{activeDeckSlide?.footer || 'Regaarder Corporation'}</span>
                                               <span>Industry Benchmark Data 2026</span>
                                             </div>
                                           </div>
                                         ) : layout === 'Business Plan Ecosystem' || activeDeckSlide?.title === 'Product Ecosystem' ? (
-                                          /* ── BUSINESS PLAN 05: PRODUCT ECOSYSTEM (FULLY INTERACTIVE) ── */
-                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-5 pb-4 md:px-8 md:pt-6 md:pb-5 overflow-hidden">
-                                            <div className="flex flex-col gap-1 z-20 pointer-events-auto max-w-[80%]">
+                                          /* ── BUSINESS PLAN 05: PRODUCT ECOSYSTEM (PERFECTLY CENTERED & BALANCED) ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-7 pt-4 pb-3.5 md:px-9 md:pt-5 md:pb-4 overflow-hidden">
+                                            <div className="flex flex-col gap-0.5 z-20 pointer-events-auto max-w-[80%] mb-2">
                                               <span
                                                 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#00f0ff", caretColor: "#00f0ff" }}
-                                                className="text-[11px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                className="text-[10.5px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
                                               >
                                                 {activeDeckSlide?.tagline || '04 / SOLUTIONS'}
                                               </span>
@@ -59306,13 +59277,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                className="text-[28px] md:text-[34px] font-[900] text-white tracking-tight leading-none uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
+                                                className="text-[24px] md:text-[28px] leading-[1.05] font-[900] text-white tracking-tight uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
                                               >
                                                 {activeDeckSlide?.headline || 'PRODUCT ECOSYSTEM & CAPABILITIES'}
                                               </h1>
                                             </div>
 
-                                            <div className="grid grid-cols-3 gap-4 my-auto z-20 pointer-events-auto">
+                                            <div className="grid grid-cols-3 gap-3.5 my-auto z-20 pointer-events-auto">
                                               {[
                                                 { id: 'bp5-card-1', hiddenKey: 'bp5Card1Hidden', titleKey: 'card1Title', defTitle: 'Compose Studio', descKey: 'card1Desc', defDesc: 'Real-time multi-agent word processor with markdown, citations, LaTeX math, and smart outline navigation.', iconKey: 'card1Icon', defIcon: 'globe', shapeKey: 'card1Shape', bgKey: 'card1Bg', color: '#00f0ff' },
                                                 { id: 'bp5-card-2', hiddenKey: 'bp5Card2Hidden', titleKey: 'card2Title', defTitle: 'Dynamic Deck Engine', descKey: 'card2Desc', defDesc: 'Apple-grade presentation generator with dynamic shimmer effects, bento layouts, and live chart visualizers.', iconKey: 'card2Icon', defIcon: 'sparkles', shapeKey: 'card2Shape', bgKey: 'card2Bg', color: '#a855f7' },
@@ -59323,7 +59294,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 const badgeId = `${eItem.id}-badge`;
                                                 const isBadgeSelected = deckSelection.type === 'badge' && deckSelection.id === badgeId;
                                                 const badgeShapeKey = activeDeckSlide?.[eItem.shapeKey] || 'rounded-square';
-                                                const badgeBgKey = activeDeckSlide?.[eItem.bgKey] || `${eItem.color}25`;
+                                                const badgeBgKey = activeDeckSlide?.[eItem.bgKey] || `${eItem.color}35`;
                                                 const badgeIconKey = activeDeckSlide?.[eItem.iconKey] || eItem.defIcon;
                                                 const bShapeObj = DECK_BADGE_SHAPES.find(s => s.id === badgeShapeKey) || DECK_BADGE_SHAPES[1];
 
@@ -59336,22 +59307,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       setDeckSelection({ type: 'bento', id: eItem.id });
                                                     }}
                                                     onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: eItem.id }); }}
-                                                    className={`p-4 rounded-2xl bg-zinc-950/70 backdrop-blur-xl border border-white/20 hover:border-white/40 flex flex-col justify-between min-h-[175px] relative group/bpcard shadow-2xl cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
+                                                    className={`p-3.5 rounded-2xl bg-zinc-950/80 backdrop-blur-xl border border-white/25 hover:border-white/50 flex flex-col justify-between min-h-[145px] relative group/bpcard shadow-2xl cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
                                                   >
                                                     <div
                                                       onPointerDown={(e) => { e.stopPropagation(); setDeckSelection({ type: 'badge', id: badgeId }); }}
                                                       onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'badge', id: badgeId }); }}
                                                       style={{
-                                                        width: '34px',
-                                                        height: '34px',
+                                                        width: '32px',
+                                                        height: '32px',
                                                         borderRadius: bShapeObj.radius,
                                                         clipPath: bShapeObj.clip !== 'none' ? bShapeObj.clip : undefined,
                                                         backgroundColor: badgeBgKey,
-                                                        border: `1.5px solid ${eItem.color}80`
+                                                        border: `1.5px solid ${eItem.color}`,
+                                                        boxShadow: `0 0 10px ${eItem.color}50`
                                                       }}
-                                                      className={`flex items-center justify-center shrink-0 shadow-lg cursor-pointer relative hover:scale-110 transition-transform ${isBadgeSelected ? 'outline outline-2 outline-cyan-400 ring-2 ring-cyan-400/40' : ''}`}
+                                                      className={`flex items-center justify-center shrink-0 shadow-lg cursor-pointer relative hover:scale-110 transition-transform text-white ${isBadgeSelected ? 'outline outline-2 outline-cyan-400 ring-2 ring-cyan-400/40' : ''}`}
                                                     >
-                                                      {renderDeckBadgeIcon(badgeIconKey, 16)}
+                                                      {renderDeckBadgeIcon(badgeIconKey, 16, false, '#ffffff')}
 
                                                       {isBadgeSelected && (
                                                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
@@ -59362,13 +59334,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       )}
                                                     </div>
 
-                                                    <div className="mt-3.5 flex flex-col gap-1">
+                                                    <div className="mt-2.5 flex flex-col gap-1">
                                                       <h3
                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, eItem.titleKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                        className="text-[14.5px] font-bold text-white outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text leading-snug"
+                                                        className="text-[13.5px] font-bold text-white outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text leading-snug"
                                                       >
                                                         {activeDeckSlide?.[eItem.titleKey] || eItem.defTitle}
                                                       </h3>
@@ -59377,7 +59349,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, eItem.descKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                        className="text-[10.5px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                        className="text-[10px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.[eItem.descKey] || eItem.defDesc}
                                                       </p>
@@ -59394,21 +59366,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               })}
                                             </div>
 
-                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-2 z-20 pointer-events-auto">
+                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-1.5 z-20 pointer-events-auto">
                                               <span>{activeDeckSlide?.footer || 'Regaarder Corporation'}</span>
                                               <span>Unified Multi-Modal Architecture</span>
                                             </div>
                                           </div>
                                         ) : layout === 'Business Plan Strategy' || activeDeckSlide?.title === 'Go-To-Market' ? (
-                                          /* ── BUSINESS PLAN 06: GO-TO-MARKET (FULLY INTERACTIVE) ── */
-                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-5 pb-4 md:px-8 md:pt-6 md:pb-5 overflow-hidden">
-                                            <div className="flex flex-col gap-1 z-20 pointer-events-auto max-w-[80%]">
+                                          /* ── BUSINESS PLAN 06: GO-TO-MARKET ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-7 pt-4 pb-3.5 md:px-9 md:pt-5 md:pb-4 overflow-hidden">
+                                            <div className="flex flex-col gap-0.5 z-20 pointer-events-auto max-w-[80%] mb-2">
                                               <span
                                                 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#10b981", caretColor: "#00f0ff" }}
-                                                className="text-[11px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-emerald-400/40 rounded px-1 cursor-text select-text"
+                                                className="text-[10.5px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-emerald-400/40 rounded px-1 cursor-text select-text"
                                               >
                                                 {activeDeckSlide?.tagline || '05 / EXECUTION'}
                                               </span>
@@ -59417,13 +59389,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                className="text-[28px] md:text-[34px] font-[900] text-white tracking-tight leading-none uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
+                                                className="text-[24px] md:text-[28px] leading-[1.05] font-[900] text-white tracking-tight uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
                                               >
                                                 {activeDeckSlide?.headline || 'GO-TO-MARKET & SALES FUNNEL'}
                                               </h1>
                                             </div>
 
-                                            <div className="grid grid-cols-4 gap-3 my-auto z-20 pointer-events-auto">
+                                            <div className="grid grid-cols-4 gap-2.5 my-auto z-20 pointer-events-auto">
                                               {[
                                                 { id: 'bp6-step-1', hiddenKey: 'bp6Step1Hidden', titleKey: 'step1Title', defTitle: '1. Product Virality', descKey: 'step1Desc', defDesc: 'Freemium tier drives bottom-up adoption among analysts.', color: '#00f0ff', num: '1' },
                                                 { id: 'bp6-step-2', hiddenKey: 'bp6Step2Hidden', titleKey: 'step2Title', defTitle: '2. Enterprise Sales', descKey: 'step2Desc', defDesc: 'Direct outbound sales targeting CTOs for enterprise rollouts.', color: '#a855f7', num: '2' },
@@ -59442,19 +59414,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       setDeckSelection({ type: 'bento', id: sItem.id });
                                                     }}
                                                     onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: sItem.id }); }}
-                                                    className={`p-3.5 rounded-2xl bg-zinc-950/70 backdrop-blur-xl border border-white/20 hover:border-white/40 flex flex-col justify-between min-h-[175px] relative group/bpcard shadow-2xl cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
+                                                    className={`p-3 rounded-2xl bg-zinc-950/80 backdrop-blur-xl border border-white/25 hover:border-white/50 flex flex-col justify-between min-h-[155px] relative group/bpcard shadow-2xl cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
                                                   >
-                                                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md" style={{ backgroundColor: sItem.color, color: '#000' }}>
+                                                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md" style={{ backgroundColor: sItem.color, color: '#000' }}>
                                                       {sItem.num}
                                                     </div>
 
-                                                    <div className="my-1.5 flex flex-col gap-1">
+                                                    <div className="my-1 flex flex-col gap-0.5">
                                                       <h3
                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, sItem.titleKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                        className="text-xs font-bold text-white outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                        className="text-[11.5px] font-bold text-white outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.[sItem.titleKey] || sItem.defTitle}
                                                       </h3>
@@ -59463,7 +59435,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, sItem.descKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                        className="text-[10px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                        className="text-[9.5px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.[sItem.descKey] || sItem.defDesc}
                                                       </p>
@@ -59482,21 +59454,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               })}
                                             </div>
 
-                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-2 z-20 pointer-events-auto">
+                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-1.5 z-20 pointer-events-auto">
                                               <span>{activeDeckSlide?.footer || 'Regaarder Corporation'}</span>
                                               <span>Sales & Growth Strategy</span>
                                             </div>
                                           </div>
                                         ) : layout === 'Business Plan Moat' || activeDeckSlide?.title === 'Competitive Moat' ? (
-                                          /* ── BUSINESS PLAN 07: COMPETITIVE MOAT (FULLY INTERACTIVE) ── */
-                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-5 pb-4 md:px-8 md:pt-6 md:pb-5 overflow-hidden">
-                                            <div className="flex flex-col gap-1 z-20 pointer-events-auto max-w-[80%]">
+                                          /* ── BUSINESS PLAN 07: COMPETITIVE MOAT ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-7 pt-4 pb-3.5 md:px-9 md:pt-5 md:pb-4 overflow-hidden">
+                                            <div className="flex flex-col gap-0.5 z-20 pointer-events-auto max-w-[80%] mb-2">
                                               <span
                                                 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#a855f7", caretColor: "#00f0ff" }}
-                                                className="text-[11px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text"
+                                                className="text-[10.5px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text"
                                               >
                                                 {activeDeckSlide?.tagline || '06 / DIFFERENTIATION'}
                                               </span>
@@ -59505,13 +59477,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                className="text-[28px] md:text-[34px] font-[900] text-white tracking-tight leading-none uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
+                                                className="text-[24px] md:text-[28px] leading-[1.05] font-[900] text-white tracking-tight leading-none uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
                                               >
                                                 {activeDeckSlide?.headline || 'COMPETITIVE MOAT & ADVANTAGE'}
                                               </h1>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4 my-auto z-20 pointer-events-auto">
+                                            <div className="grid grid-cols-2 gap-3 my-auto z-20 pointer-events-auto">
                                               {[
                                                 { id: 'bp7-moat-1', hiddenKey: 'bp7Moat1Hidden', titleKey: 'moat1Title', defTitle: 'Unified Canvas Stack', descKey: 'moat1Desc', defDesc: 'Zero context-switching: Docs, Decks, and Sheets run within a single ultra-responsive reactive engine.', iconKey: 'moat1Icon', defIcon: 'zap', shapeKey: 'moat1Shape', bgKey: 'moat1Bg', color: '#00f0ff' },
                                                 { id: 'bp7-moat-2', hiddenKey: 'bp7Moat2Hidden', titleKey: 'moat2Title', defTitle: 'Air-Gapped Privacy', descKey: 'moat2Desc', defDesc: 'On-device client processing ensures sensitive customer data never leaves client boundaries.', iconKey: 'moat2Icon', defIcon: 'shield', shapeKey: 'moat2Shape', bgKey: 'moat2Bg', color: '#a855f7' },
@@ -59523,7 +59495,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 const badgeId = `${mItem.id}-badge`;
                                                 const isBadgeSelected = deckSelection.type === 'badge' && deckSelection.id === badgeId;
                                                 const badgeShapeKey = activeDeckSlide?.[mItem.shapeKey] || 'rounded-square';
-                                                const badgeBgKey = activeDeckSlide?.[mItem.bgKey] || `${mItem.color}25`;
+                                                const badgeBgKey = activeDeckSlide?.[mItem.bgKey] || `${mItem.color}35`;
                                                 const badgeIconKey = activeDeckSlide?.[mItem.iconKey] || mItem.defIcon;
                                                 const bShapeObj = DECK_BADGE_SHAPES.find(s => s.id === badgeShapeKey) || DECK_BADGE_SHAPES[1];
 
@@ -59536,22 +59508,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       setDeckSelection({ type: 'bento', id: mItem.id });
                                                     }}
                                                     onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: mItem.id }); }}
-                                                    className={`p-4 rounded-2xl bg-zinc-950/70 backdrop-blur-xl border border-white/20 hover:border-white/40 flex items-start gap-3.5 shadow-2xl relative group/bpcard cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
+                                                    className={`p-3 rounded-2xl bg-zinc-950/80 backdrop-blur-xl border border-white/25 hover:border-white/50 flex items-start gap-3 shadow-2xl relative group/bpcard cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
                                                   >
                                                     <div
                                                       onPointerDown={(e) => { e.stopPropagation(); setDeckSelection({ type: 'badge', id: badgeId }); }}
                                                       onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'badge', id: badgeId }); }}
                                                       style={{
-                                                        width: '36px',
-                                                        height: '36px',
+                                                        width: '32px',
+                                                        height: '32px',
                                                         borderRadius: bShapeObj.radius,
                                                         clipPath: bShapeObj.clip !== 'none' ? bShapeObj.clip : undefined,
                                                         backgroundColor: badgeBgKey,
-                                                        border: `1.5px solid ${mItem.color}80`
+                                                        border: `1.5px solid ${mItem.color}`,
+                                                        boxShadow: `0 0 10px ${mItem.color}50`
                                                       }}
-                                                      className={`flex items-center justify-center shrink-0 shadow-lg cursor-pointer relative hover:scale-110 transition-transform ${isBadgeSelected ? 'outline outline-2 outline-cyan-400 ring-2 ring-cyan-400/40' : ''}`}
+                                                      className={`flex items-center justify-center shrink-0 shadow-lg cursor-pointer relative hover:scale-110 transition-transform text-white ${isBadgeSelected ? 'outline outline-2 outline-cyan-400 ring-2 ring-cyan-400/40' : ''}`}
                                                     >
-                                                      {renderDeckBadgeIcon(badgeIconKey, 16)}
+                                                      {renderDeckBadgeIcon(badgeIconKey, 15, false, '#ffffff')}
 
                                                       {isBadgeSelected && (
                                                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
@@ -59562,13 +59535,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       )}
                                                     </div>
 
-                                                    <div className="flex-1 flex flex-col gap-1">
+                                                    <div className="flex-1 flex flex-col gap-0.5">
                                                       <h3
                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, mItem.titleKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                        className="text-sm font-bold text-white outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text leading-snug"
+                                                        className="text-[13px] font-bold text-white outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text leading-snug"
                                                       >
                                                         {activeDeckSlide?.[mItem.titleKey] || mItem.defTitle}
                                                       </h3>
@@ -59577,7 +59550,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, mItem.descKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                        className="text-[10.5px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                        className="text-[9.5px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.[mItem.descKey] || mItem.defDesc}
                                                       </p>
@@ -59594,21 +59567,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               })}
                                             </div>
 
-                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-2 z-20 pointer-events-auto">
+                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-1.5 z-20 pointer-events-auto">
                                               <span>{activeDeckSlide?.footer || 'Regaarder Corporation'}</span>
                                               <span>Defensibility & Moat</span>
                                             </div>
                                           </div>
                                         ) : layout === 'Business Plan Roadmap' || activeDeckSlide?.title === 'Milestones Roadmap' ? (
-                                          /* ── BUSINESS PLAN 08: OPERATIONAL ROADMAP (FULLY INTERACTIVE) ── */
-                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-5 pb-4 md:px-8 md:pt-6 md:pb-5 overflow-hidden">
-                                            <div className="flex flex-col gap-1 z-20 pointer-events-auto max-w-[80%]">
+                                          /* ── BUSINESS PLAN 08: OPERATIONAL ROADMAP ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-7 pt-4 pb-3.5 md:px-9 md:pt-5 md:pb-4 overflow-hidden">
+                                            <div className="flex flex-col gap-0.5 z-20 pointer-events-auto max-w-[80%] mb-2">
                                               <span
                                                 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#f59e0b", caretColor: "#00f0ff" }}
-                                                className="text-[11px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-amber-400/40 rounded px-1 cursor-text select-text"
+                                                className="text-[10.5px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-amber-400/40 rounded px-1 cursor-text select-text"
                                               >
                                                 {activeDeckSlide?.tagline || '07 / TIMELINE'}
                                               </span>
@@ -59617,13 +59590,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                className="text-[28px] md:text-[34px] font-[900] text-white tracking-tight leading-none uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
+                                                className="text-[24px] md:text-[28px] leading-[1.05] font-[900] text-white tracking-tight uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
                                               >
                                                 {activeDeckSlide?.headline || 'OPERATIONAL MILESTONES'}
                                               </h1>
                                             </div>
 
-                                            <div className="grid grid-cols-4 gap-3 my-auto z-20 pointer-events-auto">
+                                            <div className="grid grid-cols-4 gap-2.5 my-auto z-20 pointer-events-auto">
                                               {[
                                                 { id: 'bp8-phase-1', hiddenKey: 'bp8Phase1Hidden', titleKey: 'phase1Title', defTitle: 'Q1–Q2 2026', subKey: 'phase1Sub', defSub: 'Launch & PMF', descKey: 'phase1Desc', defDesc: 'General Availability rollout, 5,000 active teams, SOC2 compliance.', color: '#00f0ff' },
                                                 { id: 'bp8-phase-2', hiddenKey: 'bp8Phase2Hidden', titleKey: 'phase2Title', defTitle: 'Q3–Q4 2026', subKey: 'phase2Sub', defSub: 'Scale & Revenue', descKey: 'phase2Desc', defDesc: 'Enterprise security tier, SAML/SSO integration, $3.2M ARR target.', color: '#a855f7' },
@@ -59642,7 +59615,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       setDeckSelection({ type: 'bento', id: pItem.id });
                                                     }}
                                                     onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: pItem.id }); }}
-                                                    className={`p-3.5 rounded-2xl bg-zinc-950/70 backdrop-blur-xl border border-white/20 hover:border-white/40 flex flex-col justify-between min-h-[180px] relative group/bpcard shadow-2xl cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
+                                                    className={`p-3 rounded-2xl bg-zinc-950/80 backdrop-blur-xl border border-white/25 hover:border-white/50 flex flex-col justify-between min-h-[160px] relative group/bpcard shadow-2xl cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
                                                   >
                                                     <div className="flex flex-col gap-0.5">
                                                       <span
@@ -59650,7 +59623,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, pItem.titleKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                        className="text-xs font-bold text-white outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                        className="text-[11.5px] font-bold text-white outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.[pItem.titleKey] || pItem.defTitle}
                                                       </span>
@@ -59659,7 +59632,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, pItem.subKey, e.currentTarget.textContent || '')}
                                                         style={{ color: pItem.color, caretColor: "#00f0ff" }}
-                                                        className="text-[10px] font-semibold block outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                        className="text-[9px] font-semibold block outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.[pItem.subKey] || pItem.defSub}
                                                       </span>
@@ -59670,7 +59643,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       suppressContentEditableWarning
                                                       onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, pItem.descKey, e.currentTarget.textContent || '')}
                                                       style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                      className="text-[10px] text-slate-300 leading-relaxed font-normal my-1.5 outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                      className="text-[9.5px] text-slate-300 leading-relaxed font-normal my-1 outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                     >
                                                       {activeDeckSlide?.[pItem.descKey] || pItem.defDesc}
                                                     </p>
@@ -59688,21 +59661,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               })}
                                             </div>
 
-                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-2 z-20 pointer-events-auto">
+                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-1.5 z-20 pointer-events-auto">
                                               <span>{activeDeckSlide?.footer || 'Regaarder Corporation'}</span>
                                               <span>Execution Horizon 2026–2028</span>
                                             </div>
                                           </div>
                                         ) : layout === 'Business Plan Financials' || activeDeckSlide?.title === 'Financial Projections' ? (
-                                          /* ── BUSINESS PLAN 09: FINANCIAL PROJECTIONS (FULLY INTERACTIVE) ── */
-                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-5 pb-4 md:px-8 md:pt-6 md:pb-5 overflow-hidden">
-                                            <div className="flex flex-col gap-1 z-20 pointer-events-auto max-w-[80%]">
+                                          /* ── BUSINESS PLAN 09: FINANCIAL PROJECTIONS ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-7 pt-4 pb-3.5 md:px-9 md:pt-5 md:pb-4 overflow-hidden">
+                                            <div className="flex flex-col gap-0.5 z-20 pointer-events-auto max-w-[80%] mb-2">
                                               <span
                                                 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#00f0ff", caretColor: "#00f0ff" }}
-                                                className="text-[11px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                className="text-[10.5px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
                                               >
                                                 {activeDeckSlide?.tagline || '08 / FINANCIALS'}
                                               </span>
@@ -59711,13 +59684,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                className="text-[28px] md:text-[34px] font-[900] text-white tracking-tight leading-none uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
+                                                className="text-[24px] md:text-[28px] leading-[1.05] font-[900] text-white tracking-tight uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
                                               >
                                                 {activeDeckSlide?.headline || '3-YEAR FINANCIAL PROJECTIONS'}
                                               </h1>
                                             </div>
 
-                                            <div className="grid grid-cols-3 gap-4 my-auto z-20 pointer-events-auto">
+                                            <div className="grid grid-cols-3 gap-3.5 my-auto z-20 pointer-events-auto">
                                               {[
                                                 { id: 'bp9-yr-1', yrKey: 'y1Label', defYr: 'Year 1 (2026)', revKey: 'y1Rev', defRev: '$2.8M ARR', growKey: 'y1Growth', defGrow: 'GA Rollout & PMF', color: '#00f0ff', height: '45%' },
                                                 { id: 'bp9-yr-2', yrKey: 'y2Label', defYr: 'Year 2 (2027)', revKey: 'y2Rev', defRev: '$9.4M ARR', growKey: 'y2Growth', defGrow: '+235% YoY Growth', color: '#a855f7', height: '72%' },
@@ -59733,25 +59706,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       setDeckSelection({ type: 'bento', id: fItem.id });
                                                     }}
                                                     onClick={(e) => { e.stopPropagation(); setDeckSelection({ type: 'bento', id: fItem.id }); }}
-                                                    className={`p-4 rounded-2xl bg-zinc-950/70 backdrop-blur-xl border border-white/20 hover:border-white/40 flex flex-col justify-between min-h-[185px] relative group/bpcard shadow-2xl cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
+                                                    className={`p-3.5 rounded-2xl bg-zinc-950/80 backdrop-blur-xl border border-white/25 hover:border-white/50 flex flex-col justify-between min-h-[160px] relative group/bpcard shadow-2xl cursor-grab active:cursor-grabbing transition-all ${isCardSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : ''}`}
                                                   >
                                                     <span
                                                       contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                       suppressContentEditableWarning
                                                       onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, fItem.yrKey, e.currentTarget.textContent || '')}
                                                       style={{ color: "#cbd5e1" }}
-                                                      className="text-[10.5px] font-bold uppercase tracking-wider outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                      className="text-[10px] font-bold uppercase tracking-wider outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                     >
                                                       {activeDeckSlide?.[fItem.yrKey] || fItem.defYr}
                                                     </span>
 
-                                                    <div className="my-2 flex flex-col gap-1">
+                                                    <div className="my-1.5 flex flex-col gap-0.5">
                                                       <div
                                                         contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, fItem.revKey, e.currentTarget.textContent || '')}
                                                         style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                        className="text-[28px] md:text-[32px] font-[900] text-white tracking-tight leading-none outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                        className="text-[25px] md:text-[28px] font-[900] text-white tracking-tight leading-none outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.[fItem.revKey] || fItem.defRev}
                                                       </div>
@@ -59760,13 +59733,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         suppressContentEditableWarning
                                                         onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, fItem.growKey, e.currentTarget.textContent || '')}
                                                         style={{ color: fItem.color, caretColor: "#00f0ff" }}
-                                                        className="text-[10.5px] font-semibold outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                        className="text-[10px] font-semibold outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                       >
                                                         {activeDeckSlide?.[fItem.growKey] || fItem.defGrow}
                                                       </span>
                                                     </div>
 
-                                                    <div className="w-full bg-white/10 h-10 rounded-xl flex items-end p-1">
+                                                    <div className="w-full bg-white/10 h-8 rounded-xl flex items-end p-1">
                                                       <div className="w-full rounded-lg transition-all duration-500 shadow-md" style={{ height: fItem.height, backgroundColor: fItem.color }} />
                                                     </div>
                                                   </div>
@@ -59774,7 +59747,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               })}
                                             </div>
 
-                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-2 z-20 pointer-events-auto">
+                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-1.5 z-20 pointer-events-auto">
                                               <div className="flex items-center gap-2">
                                                 <span
                                                   contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -59799,15 +59772,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             </div>
                                           </div>
                                         ) : layout === 'Business Plan Capital' || activeDeckSlide?.title === 'Funding Ask' ? (
-                                          /* ── BUSINESS PLAN 10: FUNDING ASK & CAPITAL USE (FULLY INTERACTIVE) ── */
-                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-6 pt-5 pb-4 md:px-8 md:pt-6 md:pb-5 overflow-hidden">
-                                            <div className="flex flex-col gap-1 z-20 pointer-events-auto max-w-[80%]">
+                                          /* ── BUSINESS PLAN 10: FUNDING ASK & CAPITAL USE ── */
+                                          <div className="flex flex-col justify-between h-full w-full relative z-10 pointer-events-none select-none px-7 pt-4 pb-3.5 md:px-9 md:pt-5 md:pb-4 overflow-hidden">
+                                            <div className="flex flex-col gap-0.5 z-20 pointer-events-auto max-w-[80%] mb-2">
                                               <span
                                                 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#ec4899", caretColor: "#00f0ff" }}
-                                                className="text-[11px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-pink-400/40 rounded px-1 cursor-text select-text"
+                                                className="text-[10.5px] font-bold uppercase tracking-widest outline-none hover:ring-1 hover:ring-pink-400/40 rounded px-1 cursor-text select-text"
                                               >
                                                 {activeDeckSlide?.tagline || '09 / CAPITAL ALLOCATION'}
                                               </span>
@@ -59816,23 +59789,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 suppressContentEditableWarning
                                                 onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'headline', e.currentTarget.textContent || '')}
                                                 style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                className="text-[28px] md:text-[34px] font-[900] text-white tracking-tight leading-none uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
+                                                className="text-[24px] md:text-[28px] leading-[1.05] font-[900] text-white tracking-tight uppercase outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 cursor-text select-text whitespace-pre-line"
                                               >
                                                 {activeDeckSlide?.headline || 'FUNDING ASK & CAPITAL USE'}
                                               </h1>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4 my-auto z-20 pointer-events-auto">
+                                            <div className="grid grid-cols-2 gap-3.5 my-auto z-20 pointer-events-auto">
                                               {/* Left: Huge Capital Ask Capsule */}
-                                              <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-950/60 to-slate-900/80 backdrop-blur-xl border border-purple-500/40 flex flex-col justify-between shadow-2xl">
+                                              <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-950/70 to-slate-900/90 backdrop-blur-xl border border-purple-500/40 flex flex-col justify-between shadow-2xl">
                                                 <div>
-                                                  <span className="text-[10.5px] font-extrabold text-cyan-400 uppercase tracking-widest">Series A Financing Ask</span>
+                                                  <span className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-widest">Series A Financing Ask</span>
                                                   <div
                                                     contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                     suppressContentEditableWarning
                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'askAmount', e.currentTarget.textContent || '')}
                                                     style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                    className="text-[38px] md:text-[46px] font-[900] text-white tracking-tight leading-none my-2 outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                    className="text-[34px] md:text-[40px] font-[900] text-white tracking-tight leading-none my-1.5 outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                   >
                                                     {activeDeckSlide?.askAmount || '$6,000,000'}
                                                   </div>
@@ -59841,41 +59814,41 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     suppressContentEditableWarning
                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'askDesc', e.currentTarget.textContent || '')}
                                                     style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                    className="text-[11px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                    className="text-[10px] text-slate-300 leading-relaxed font-normal outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                   >
                                                     {activeDeckSlide?.askDesc || 'Series A Equity Financing to accelerate enterprise sales and scale our WASM computational engine.'}
                                                   </p>
                                                 </div>
-                                                <div className="mt-3">
-                                                  <span className="px-3 py-1 rounded-full bg-cyan-400/20 text-cyan-300 text-[10px] font-bold border border-cyan-400/50">⚡ 18-Month Operational Runway</span>
+                                                <div className="mt-2">
+                                                  <span className="px-2.5 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 text-[9.5px] font-bold border border-cyan-400/50">⚡ 18-Month Operational Runway</span>
                                                 </div>
                                               </div>
 
                                               {/* Right: 4-Way Allocation Split */}
-                                              <div className="grid grid-cols-1 gap-2.5">
+                                              <div className="grid grid-cols-1 gap-2">
                                                 {[
                                                   { key: 'split1', def: '45% R&D & Core Engine', color: '#00f0ff' },
                                                   { key: 'split2', def: '35% Go-To-Market & Sales', color: '#a855f7' },
                                                   { key: 'split3', def: '12% Security & Compliance', color: '#10b981' },
                                                   { key: 'split4', def: '8% Operations & Working Cap', color: '#f59e0b' }
                                                 ].map((sItem, sIdx) => (
-                                                  <div key={sIdx} className="px-4 py-2.5 rounded-xl bg-zinc-950/70 backdrop-blur-xl border border-white/20 hover:border-white/40 flex items-center justify-between shadow-lg">
+                                                  <div key={sIdx} className="px-3.5 py-2 rounded-xl bg-zinc-950/80 backdrop-blur-xl border border-white/25 hover:border-white/50 flex items-center justify-between shadow-lg">
                                                     <span
                                                       contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                       suppressContentEditableWarning
                                                       onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, sItem.key, e.currentTarget.textContent || '')}
                                                       style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                      className="text-xs font-bold text-white outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-1 cursor-text select-text"
+                                                      className="text-[11.5px] font-bold text-white outline-none hover:ring-1 hover:ring-cyan-400/40 rounded px-0.5 cursor-text select-text"
                                                     >
                                                       {activeDeckSlide?.[sItem.key] || sItem.def}
                                                     </span>
-                                                    <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: sItem.color }} />
+                                                    <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: sItem.color }} />
                                                   </div>
                                                 ))}
                                               </div>
                                             </div>
 
-                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-2 z-20 pointer-events-auto">
+                                            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-white/15 pt-1.5 z-20 pointer-events-auto">
                                               <span>{activeDeckSlide?.footer || 'Regaarder Corporation'}</span>
                                               <span>Contact: exec@regaarder.com</span>
                                             </div>
