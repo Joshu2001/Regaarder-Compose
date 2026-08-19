@@ -417,6 +417,7 @@ const DECK_MARKET_CHART_THEMES = [
 ];
 
 const DECK_PILL_GRADIENTS = [
+  { id: 'slide1-mauve-indigo', label: 'Mauve to Royal Indigo (Slide 1 Cover)', bg: 'linear-gradient(90deg, #4d3663 0%, #373d6b 40%, #1e2c56 100%)' },
   { id: 'violet-glow', label: 'Radiant Violet (TAM Active)', bg: 'linear-gradient(180deg, #7c5c99 0%, #3e3264 50%, #191c3d 100%)' },
   { id: 'slate-indigo', label: 'Slate Indigo (SAM/SOM)', bg: 'linear-gradient(180deg, #322846 0%, #1e1f3b 50%, #0e1428 100%)' },
   { id: 'electric-blue', label: 'Electric Blue', bg: 'linear-gradient(180deg, #3b82f6 0%, #1d4ed8 50%, #0f172a 100%)' },
@@ -13213,7 +13214,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   const ALL_INDUSTRY_VECTOR_STYLES = [
     /* ── 1. STARTUP & VENTURE KEYNOTE SPECIALS ── */
     { id: 'agenda-bottom-wave', label: 'Agenda Bottom Luminous Ribbon (Slide 2 Exact)', category: 'Startup Specials', desc: 'Bottom-left sweeping multi-ply magenta & electric cyan keynote ribbon', c1: '#00f0ff', c2: '#d946ef' },
-    { id: 'original-pitch', label: 'Startup Keynote Hero Wave (Image 1 Exact)', category: 'Startup Specials', desc: 'Dual Top-Right Vortex Loop + Bottom-Left Horizon Wave', c1: '#0055ff', c2: '#00f0ff' },
+    { id: 'original-pitch', label: 'Startup Keynote Hero Wave (Image 1 Exact)', category: 'Startup Specials', desc: 'Luminous Top-Right Neon Orbit Vortex + Bottom-Left Light Loop', c1: '#00f0ff', c2: '#a855f7' },
     { id: 'growth-venture-hockey', label: 'Startup Venture Growth & J-Curve', category: 'Startup Specials', desc: 'Exponential ascending hockey-stick trajectory lattice', c1: '#10b981', c2: '#00f0ff' },
     { id: 'funding-syndicate-node', label: 'Venture Syndicate Capital Flow', category: 'Startup Specials', desc: 'Constellation node graph network with funding conduits', c1: '#7c4dff', c2: '#00f0ff' },
     { id: 'market-tam-concentric', label: 'Market TAM / SAM / SOM Rings', category: 'Startup Specials', desc: 'Concentric 3D isometric elliptical discs for market scale', c1: '#00f0ff', c2: '#ec4899' },
@@ -50631,33 +50632,73 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 </g>
                                               ) : (
                                                 /* ── 34. STARTUP KEYNOTE HERO WAVE (IMAGE 1 EXACT / ORIGINAL PITCH) ── */
-                                                <g>
-                                                  {Array.from({ length: 48 }).map((_, i) => {
-                                                    const ratio = i / 48;
-                                                    const spread = ratio * 130;
-                                                    const opacity = 0.15 + (1 - ratio) * 0.65;
-                                                    const thickness = 0.8 + ratio * 2.2;
-                                                    const dVortex1 = `M ${460 + spread * 1.1} -30 C ${480 + spread * 0.8} ${140 + ratio * 80}, ${540 + ratio * 160} ${390 - ratio * 40}, ${760 + ratio * 60} ${360 - ratio * 90} C ${860 - ratio * 40} ${340 - ratio * 110}, ${960} ${220 - ratio * 80}, 980 ${110 - ratio * 40}`;
-                                                    const dVortex2 = `M ${490 + spread * 0.9} -20 C ${520 + spread * 0.6} ${180 + ratio * 60}, ${600 + ratio * 140} ${420 - ratio * 50}, ${800 + ratio * 40} ${340 - ratio * 80} C ${900} ${300 - ratio * 90}, ${970} ${180 - ratio * 60}, 990 ${80 - ratio * 30}`;
-                                                    return (
-                                                      <g key={`vortex-${i}`}>
-                                                        <path d={dVortex1} stroke="url(#dynWaveGradCobalt)" strokeWidth={thickness} opacity={opacity} fill="none" />
-                                                        <path d={dVortex2} stroke="url(#dynWaveGrad2)" strokeWidth={thickness * 0.85} opacity={opacity * 0.9} fill="none" />
-                                                      </g>
-                                                    );
-                                                  })}
-                                                  {Array.from({ length: 34 }).map((_, i) => {
-                                                    const ratio = i / 34;
-                                                    const offset = ratio * 110;
-                                                    const opacity = 0.18 + (1 - ratio) * 0.65;
-                                                    const thickness = 0.7 + ratio * 1.8;
-                                                    const dBottom = `M -30 ${610 + offset * 0.4} C ${60 + offset * 0.8} ${580 - ratio * 50}, ${180 + offset * 0.9} ${630 + ratio * 30}, ${290 + ratio * 60} ${530 - ratio * 70} C ${350 + ratio * 40} ${460 - ratio * 60}, ${390 + ratio * 30} ${540}, ${460 + offset * 1.2} 670`;
-                                                    return (
-                                                      <path key={`bot-${i}`} d={dBottom} stroke="url(#dynWaveGradCobalt)" strokeWidth={thickness} opacity={opacity} fill="none" />
-                                                    );
-                                                  })}
-                                                </g>
-                                              )}</svg>
+                                                 <g>
+                                                   <defs>
+                                                     <linearGradient id="heroPitchCyanGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                       <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0.2" />
+                                                       <stop offset="35%" stopColor="#2563eb" stopOpacity="0.85" />
+                                                       <stop offset="70%" stopColor="#00f0ff" stopOpacity="0.95" />
+                                                       <stop offset="100%" stopColor="#ffffff" stopOpacity="1" />
+                                                     </linearGradient>
+                                                     <linearGradient id="heroPitchMagentaGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                       <stop offset="0%" stopColor="#3b0764" stopOpacity="0.2" />
+                                                       <stop offset="50%" stopColor="#a855f7" stopOpacity="0.85" />
+                                                       <stop offset="85%" stopColor="#ec4899" stopOpacity="0.95" />
+                                                       <stop offset="100%" stopColor="#ffffff" stopOpacity="1" />
+                                                     </linearGradient>
+                                                     <filter id="heroPitchGlowFilter" x="-30%" y="-30%" width="160%" height="160%">
+                                                       <feGaussianBlur stdDeviation="6" result="blur1" />
+                                                       <feGaussianBlur stdDeviation="12" result="blur2" />
+                                                       <feMerge>
+                                                         <feMergeNode in="blur2" />
+                                                         <feMergeNode in="blur1" />
+                                                         <feMergeNode in="SourceGraphic" />
+                                                       </feMerge>
+                                                     </filter>
+                                                   </defs>
+
+                                                   {/* Top-Right Neon Orbit Arc: Deep Blue & Indigo Multi-Strands */}
+                                                   {Array.from({ length: 28 }).map((_, i) => {
+                                                     const ratio = i / 28;
+                                                     const offset = ratio * 140;
+                                                     const opacity = 0.2 + (1 - ratio) * 0.65;
+                                                     const thickness = 0.8 + ratio * 2.2;
+                                                     const d = `M ${460 + offset * 1.1} -30 C ${470 + offset * 0.8} 180, ${510 + offset * 0.6} 410, ${710 + offset * 0.4} 400 C ${830 + offset * 0.2} 380, ${920 + offset * 0.1} 260, 990 ${180 - offset * 0.3}`;
+                                                     return <path key={`blue-${i}`} d={d} stroke="url(#heroPitchCyanGrad)" strokeWidth={thickness} opacity={opacity} fill="none" />;
+                                                   })}
+
+                                                   {/* Top-Right Neon Orbit Arc: Magenta & Purple Inner Luminous Strands */}
+                                                   {Array.from({ length: 20 }).map((_, i) => {
+                                                     const ratio = i / 20;
+                                                     const offset = ratio * 90;
+                                                     const opacity = 0.3 + (1 - ratio) * 0.6;
+                                                     const thickness = 0.9 + ratio * 1.8;
+                                                     const d = `M ${520 + offset * 0.8} -20 C ${530 + offset * 0.6} 190, ${550 + offset * 0.4} 390, ${730 + offset * 0.3} 380 C ${840 + offset * 0.2} 360, ${930 + offset * 0.1} 240, 990 ${150 - offset * 0.2}`;
+                                                     return <path key={`mag-${i}`} d={d} stroke="url(#heroPitchMagentaGrad)" strokeWidth={thickness} opacity={opacity} fill="none" />;
+                                                   })}
+
+                                                   {/* Top-Right Core Neon Light Tubes with SVG Filter Bloom */}
+                                                   <path d="M 550 -20 C 560 190, 580 380, 750 370 C 860 350, 940 230, 990 130" stroke="#00f0ff" strokeWidth="3.5" fill="none" opacity="0.95" filter="url(#heroPitchGlowFilter)" />
+                                                   <path d="M 565 -20 C 575 185, 595 375, 760 365 C 870 345, 950 225, 990 125" stroke="#ffffff" strokeWidth="2.5" fill="none" opacity="0.98" filter="url(#heroPitchGlowFilter)" />
+                                                   <path d="M 580 -20 C 590 180, 610 370, 770 360 C 880 340, 960 220, 990 120" stroke="#e879f9" strokeWidth="1.6" fill="none" opacity="0.85" />
+
+                                                   {/* Hot Spot Convergence Glow Flare */}
+                                                   <ellipse cx="890" cy="270" rx="130" ry="70" fill="url(#heroPitchCyanGrad)" opacity="0.3" filter="url(#heroPitchGlowFilter)" />
+                                                   <ellipse cx="920" cy="240" rx="70" ry="40" fill="#ffffff" opacity="0.45" filter="url(#heroPitchGlowFilter)" />
+
+                                                   {/* Bottom-Left Ambient Neon Loop: Multi-Strand Threads */}
+                                                   {Array.from({ length: 16 }).map((_, i) => {
+                                                     const ratio = i / 16;
+                                                     const offset = ratio * 80;
+                                                     const opacity = 0.2 + (1 - ratio) * 0.65;
+                                                     const thickness = 0.8 + ratio * 1.6;
+                                                     const d = `M -30 ${620 + offset * 0.5} C ${50 + offset * 0.6} ${570 - ratio * 30}, ${150 + offset * 0.7} ${510 - ratio * 20}, ${230 + offset * 0.5} ${540 + ratio * 20} C ${290 + offset * 0.4} ${580 + ratio * 30}, 340 640, 390 680`;
+                                                     return <path key={`bot-${i}`} d={d} stroke={i % 2 === 0 ? "url(#heroPitchCyanGrad)" : "url(#heroPitchMagentaGrad)"} strokeWidth={thickness} opacity={opacity} fill="none" />;
+                                                   })}
+                                                   <path d="M -30 630 C 50 560, 160 500, 240 535 C 300 575, 345 640, 390 680" stroke="#00f0ff" strokeWidth="2.2" fill="none" opacity="0.9" filter="url(#heroPitchGlowFilter)" />
+                                                   <path d="M -20 625 C 55 558, 165 498, 242 533 C 302 573, 347 638, 390 680" stroke="#ffffff" strokeWidth="1.4" fill="none" opacity="0.9" />
+                                                 </g>
+                                               )}</svg>
                                         </div>
                                       </div>
                                     );
@@ -57556,8 +57597,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 position: 'absolute',
                                                 top: -25,
                                                 right: -20,
-                                                width: activeDeckSlide?.coverTopNeon_width ? `${activeDeckSlide.coverTopNeon_width}px` : '360px',
-                                                height: activeDeckSlide?.coverTopNeon_height ? `${activeDeckSlide.coverTopNeon_height}px` : '300px',
+                                                width: activeDeckSlide?.coverTopNeon_width ? `${activeDeckSlide.coverTopNeon_width}px` : '440px',
+                                                height: activeDeckSlide?.coverTopNeon_height ? `${activeDeckSlide.coverTopNeon_height}px` : '340px',
                                                 transform: `translate(${activeDeckSlide?.coverTopNeon_posX || 0}px, ${activeDeckSlide?.coverTopNeon_posY || 0}px)`,
                                                 transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
                                                 pointerEvents: 'auto',
@@ -57566,30 +57607,59 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               }}
                                               className={`overflow-visible select-none group/coverneon ${deckSelection.type === 'vector' && deckSelection.id === 'cover-top-neon' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
                                             >
-                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 360 300" fill="none">
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 440 340" fill="none">
                                                 <defs>
-                                                  <linearGradient id="coverNeonGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                    <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.95" />
-                                                    <stop offset="45%" stopColor="#38bdf8" stopOpacity="0.9" />
-                                                    <stop offset="75%" stopColor="#818cf8" stopOpacity="0.85" />
-                                                    <stop offset="100%" stopColor="#c084fc" stopOpacity="0.8" />
+                                                  <linearGradient id="coverNeonCyanGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0.2" />
+                                                    <stop offset="35%" stopColor="#2563eb" stopOpacity="0.85" />
+                                                    <stop offset="70%" stopColor="#00f0ff" stopOpacity="0.95" />
+                                                    <stop offset="100%" stopColor="#ffffff" stopOpacity="1" />
                                                   </linearGradient>
-                                                  <linearGradient id="coverNeonGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.95" />
-                                                    <stop offset="50%" stopColor="#a855f7" stopOpacity="0.9" />
-                                                    <stop offset="100%" stopColor="#ec4899" stopOpacity="0.8" />
+                                                  <linearGradient id="coverNeonMagentaGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stopColor="#3b0764" stopOpacity="0.2" />
+                                                    <stop offset="50%" stopColor="#a855f7" stopOpacity="0.85" />
+                                                    <stop offset="85%" stopColor="#ec4899" stopOpacity="0.95" />
+                                                    <stop offset="100%" stopColor="#ffffff" stopOpacity="1" />
                                                   </linearGradient>
-                                                  <filter id="coverNeonGlow" x="-20%" y="-20%" width="140%" height="140%">
-                                                    <feGaussianBlur stdDeviation="6" result="blur" />
-                                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                                  <filter id="coverNeonBloom" x="-30%" y="-30%" width="160%" height="160%">
+                                                    <feGaussianBlur stdDeviation="6" result="blur1" />
+                                                    <feGaussianBlur stdDeviation="12" result="blur2" />
+                                                    <feMerge>
+                                                      <feMergeNode in="blur2" />
+                                                      <feMergeNode in="blur1" />
+                                                      <feMergeNode in="SourceGraphic" />
+                                                    </feMerge>
                                                   </filter>
                                                 </defs>
-                                                {/* Outer Luminous Glow & Sweeping Strands */}
-                                                <path d="M50,-10 C50,140 110,240 230,230 C300,225 340,160 360,110" stroke="url(#coverNeonGrad2)" strokeWidth="4.5" fill="none" opacity="0.85" filter="url(#coverNeonGlow)" />
-                                                <path d="M70,-15 C70,135 125,230 240,220 C310,215 345,155 365,105" stroke="url(#coverNeonGrad1)" strokeWidth="3.5" fill="none" opacity="0.95" />
-                                                <path d="M85,-20 C85,130 135,220 245,210 C315,205 350,150 370,100" stroke="#00f0ff" strokeWidth="2.5" fill="none" opacity="0.98" />
-                                                <path d="M95,-20 C95,125 142,212 248,202 C318,198 352,145 372,95" stroke="#ffffff" strokeWidth="1.8" fill="none" opacity="0.95" />
-                                                <path d="M60,0 C60,145 118,235 235,225" stroke="#e879f9" strokeWidth="1.2" fill="none" opacity="0.7" strokeDasharray="4 3" />
+
+                                                {/* Top-Right Neon Orbit Arc: Deep Blue & Indigo Multi-Strands */}
+                                                {Array.from({ length: 24 }).map((_, i) => {
+                                                  const ratio = i / 24;
+                                                  const offset = ratio * 100;
+                                                  const opacity = 0.2 + (1 - ratio) * 0.65;
+                                                  const thickness = 0.8 + ratio * 2;
+                                                  const d = `M ${200 + offset * 1.1} -20 C ${210 + offset * 0.8} 120, ${240 + offset * 0.6} 270, ${330 + offset * 0.4} 250 C ${380 + offset * 0.2} 240, ${420 + offset * 0.1} 160, 460 ${110 - offset * 0.3}`;
+                                                  return <path key={`cblue-${i}`} d={d} stroke="url(#coverNeonCyanGrad)" strokeWidth={thickness} opacity={opacity} fill="none" />;
+                                                })}
+
+                                                {/* Top-Right Neon Orbit Arc: Magenta & Purple Inner Luminous Strands */}
+                                                {Array.from({ length: 18 }).map((_, i) => {
+                                                  const ratio = i / 18;
+                                                  const offset = ratio * 60;
+                                                  const opacity = 0.3 + (1 - ratio) * 0.6;
+                                                  const thickness = 0.9 + ratio * 1.8;
+                                                  const d = `M ${240 + offset * 0.8} -15 C ${250 + offset * 0.6} 125, ${270 + offset * 0.4} 260, ${340 + offset * 0.3} 240 C ${390 + offset * 0.2} 230, ${430 + offset * 0.1} 150, 460 ${90 - offset * 0.2}`;
+                                                  return <path key={`cmag-${i}`} d={d} stroke="url(#coverNeonMagentaGrad)" strokeWidth={thickness} opacity={opacity} fill="none" />;
+                                                })}
+
+                                                {/* Core Neon Light Tubes with SVG Filter Bloom */}
+                                                <path d="M 260 -15 C 270 125, 290 250, 350 235 C 400 220, 440 145, 460 80" stroke="#00f0ff" strokeWidth="3.5" fill="none" opacity="0.95" filter="url(#coverNeonBloom)" />
+                                                <path d="M 270 -15 C 280 120, 300 245, 355 230 C 405 215, 445 140, 460 75" stroke="#ffffff" strokeWidth="2.5" fill="none" opacity="0.98" filter="url(#coverNeonBloom)" />
+                                                <path d="M 280 -15 C 290 115, 310 240, 360 225 C 410 210, 450 135, 460 70" stroke="#e879f9" strokeWidth="1.6" fill="none" opacity="0.85" />
+
+                                                {/* Hot Spot Convergence Glow Flare */}
+                                                <ellipse cx="400" cy="180" rx="90" ry="50" fill="url(#coverNeonCyanGrad)" opacity="0.3" filter="url(#coverNeonBloom)" />
+                                                <ellipse cx="420" cy="150" rx="50" ry="30" fill="#ffffff" opacity="0.45" filter="url(#coverNeonBloom)" />
                                               </svg>
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'cover-top-neon' && (
@@ -57621,8 +57691,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 position: 'absolute',
                                                 bottom: -15,
                                                 left: -15,
-                                                width: activeDeckSlide?.coverBottomNeon_width ? `${activeDeckSlide.coverBottomNeon_width}px` : '220px',
-                                                height: activeDeckSlide?.coverBottomNeon_height ? `${activeDeckSlide.coverBottomNeon_height}px` : '120px',
+                                                width: activeDeckSlide?.coverBottomNeon_width ? `${activeDeckSlide.coverBottomNeon_width}px` : '240px',
+                                                height: activeDeckSlide?.coverBottomNeon_height ? `${activeDeckSlide.coverBottomNeon_height}px` : '130px',
                                                 transform: `translate(${activeDeckSlide?.coverBottomNeon_posX || 0}px, ${activeDeckSlide?.coverBottomNeon_posY || 0}px)`,
                                                 transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
                                                 pointerEvents: 'auto',
@@ -57631,9 +57701,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               }}
                                               className={`overflow-visible select-none group/coverbotneon ${deckSelection.type === 'vector' && deckSelection.id === 'cover-bottom-neon' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 rounded-xl' : ''}`}
                                             >
-                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 220 120" fill="none">
-                                                <path d="M-10,95 C30,95 80,60 140,20 C180,-5 200,40 220,110" stroke="#00f0ff" strokeWidth="2.5" fill="none" opacity="0.85" />
-                                                <path d="M-10,85 C35,85 85,55 142,15 C182,-10 202,35 220,105" stroke="#a855f7" strokeWidth="1.5" fill="none" opacity="0.75" />
+                                              <svg className="w-full h-full overflow-visible" viewBox="0 0 240 130" fill="none">
+                                                {/* Bottom-Left Ambient Neon Multi-Strand Threads */}
+                                                {Array.from({ length: 12 }).map((_, i) => {
+                                                  const ratio = i / 12;
+                                                  const offset = ratio * 50;
+                                                  const opacity = 0.25 + (1 - ratio) * 0.6;
+                                                  const thickness = 0.8 + ratio * 1.5;
+                                                  const d = `M -20 ${110 + offset * 0.4} C ${40 + offset * 0.5} ${80 - ratio * 20}, ${110 + offset * 0.6} ${40 - ratio * 15}, ${160 + offset * 0.4} ${60 + ratio * 15} C ${200 + offset * 0.3} ${90 + ratio * 20}, 220 120, 240 135`;
+                                                  return <path key={`cbot-${i}`} d={d} stroke={i % 2 === 0 ? "#00f0ff" : "#a855f7"} strokeWidth={thickness} opacity={opacity} fill="none" />;
+                                                })}
+                                                <path d="M -20 115 C 40 75, 115 35, 165 58 C 205 85, 225 120, 240 135" stroke="#00f0ff" strokeWidth="2" fill="none" opacity="0.9" filter="url(#coverNeonBloom)" />
+                                                <path d="M -15 110 C 45 73, 118 33, 167 56 C 207 83, 227 118, 240 135" stroke="#ffffff" strokeWidth="1.2" fill="none" opacity="0.9" />
                                               </svg>
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'cover-bottom-neon' && (
@@ -57676,7 +57755,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   suppressContentEditableWarning
                                                   onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'tagline', e.currentTarget.textContent || '')}
                                                   style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
-                                                  className="text-[12px] md:text-[14px] italic text-slate-300 font-serif outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text select-text leading-none tracking-wide"
+                                                  className="text-[12px] md:text-[13.5px] italic text-slate-300 font-serif outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text select-text leading-none tracking-wide"
                                                 >
                                                   {activeDeckSlide?.tagline || 'Ingoude Company'}
                                                 </span>
@@ -57730,7 +57809,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 )}
                                               </div>
 
-                                              {/* 2. 3D Glassmorphic Presenter Stadium Pill Capsule */}
+                                              {/* 2. 3D Glassmorphic Presenter Stadium Pill Capsule with Dynamic Shimmer Sheen */}
                                               <div
                                                 onPointerDown={(e) => {
                                                   if (e.target.getAttribute('data-resize-handle') || e.target.closest('.picker-trigger-btn') || e.target.getAttribute('contenteditable')) return;
@@ -57751,21 +57830,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   transition: (deckBentoDrag.isDragging || deckResizeDrag.isResizing) ? 'none' : 'transform 120ms ease-out',
                                                   width: activeDeckSlide?.presenter_width ? `${activeDeckSlide.presenter_width}px` : undefined,
                                                   height: activeDeckSlide?.presenter_height ? `${activeDeckSlide.presenter_height}px` : undefined,
-                                                  background: activeDeckSlide?.presenterBg || 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
+                                                  background: activeDeckSlide?.presenterBg || 'linear-gradient(90deg, #4d3663 0%, #373d6b 40%, #1e2c56 100%)',
                                                   borderRadius: activeDeckSlide?.presenterShape || '9999px',
-                                                  border: '1.2px solid rgba(255, 255, 255, 0.45)',
-                                                  boxShadow: '0 8px 24px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.45)',
+                                                  border: '1.5px solid rgba(255, 255, 255, 0.45)',
+                                                  boxShadow: '0 8px 24px rgba(0,0,0,0.65), 0 0 16px rgba(168, 85, 247, 0.35), inset 0 1px 1px rgba(255,255,255,0.45)',
                                                   touchAction: 'none',
                                                   cursor: 'grab'
                                                 }}
-                                                className={`w-full max-w-[230px] md:max-w-[260px] h-[34px] md:h-[38px] flex items-center justify-center text-center rounded-full relative group/pill shadow-xl select-none ${deckSelection.type === 'bento' && deckSelection.id === 'cover-presenter' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : 'hover:border-white/80 z-20'}`}
+                                                className={`w-full max-w-[235px] md:max-w-[265px] h-[34px] md:h-[38px] flex items-center justify-center text-center rounded-full relative group/pill overflow-hidden select-none ${deckSelection.type === 'bento' && deckSelection.id === 'cover-presenter' ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 z-30' : 'hover:border-white/80 z-20'}`}
                                               >
+                                                {/* Animated Surface Light Sheen Ray */}
+                                                <div 
+                                                  className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent skew-x-12 pointer-events-none animate-deck-sheen" 
+                                                  style={{ opacity: 0.85 }}
+                                                />
+                                                
+                                                {/* Ambient Glass Highlight Tint */}
+                                                <div 
+                                                  className="absolute inset-0 opacity-25 pointer-events-none"
+                                                  style={{ background: 'linear-gradient(135deg, rgba(0,240,255,0.4), transparent 60%, rgba(236,72,153,0.3))' }}
+                                                />
+
                                                 <span
                                                   contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                                   suppressContentEditableWarning
                                                   onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'presenter', e.currentTarget.textContent || '')}
                                                   style={{ color: "#ffffff", caretColor: "#00f0ff" }}
-                                                  className="text-[10px] md:text-[11.5px] font-[900] tracking-[0.14em] uppercase text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans leading-none"
+                                                  className="relative z-10 text-[10px] md:text-[11.5px] font-[900] tracking-[0.16em] uppercase text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans leading-none"
                                                 >
                                                   {activeDeckSlide?.presenter || 'PRESENT BY NEIL TRAN'}
                                                 </span>
@@ -57900,7 +57991,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
                                                   className="text-[8px] md:text-[9px] text-slate-300 font-medium outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans"
                                                 >
-                                                  {activeDeckSlide?.contactAddress || '123 Anywhere Street'}
+                                                  {activeDeckSlide?.contactAddress || '123 Anywhere Street, Any City'}
                                                 </span>
                                               </div>
 
@@ -57975,6 +58066,87 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       )}
                                     </div>
 
+                                    {/* Global Canvas Overlay: Interactive Pill Shape Selector Popover Modal */}
+                                    {activePillShapePicker && (
+                                      <div
+                                        className="pill-shape-popover absolute z-[120] bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-3.5 w-[280px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                                        onClick={(e) => e.stopPropagation()}
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                      >
+                                        <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
+                                          <span className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                            <Shapes size={12} className="text-cyan-400" /> Pill Badge Shape
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => setActivePillShapePicker(null)}
+                                            className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                                          >
+                                            <X size={12} />
+                                          </button>
+                                        </div>
+                                        <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto thin-scrollbar p-1">
+                                          {DECK_PILL_SHAPES.map((shape) => (
+                                            <button
+                                              key={shape.id}
+                                              type="button"
+                                              onClick={() => {
+                                                updateDeckSlideField(activeDeckSlide?.id, activePillShapePicker.shapeKey, shape.radius);
+                                                showToast(`Badge shape: ${shape.label}`);
+                                                setActivePillShapePicker(null);
+                                              }}
+                                              className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-white/10 flex items-center justify-between text-xs text-slate-200 cursor-pointer"
+                                            >
+                                              <div className="flex items-center gap-2.5">
+                                                <div className="w-7 h-4 border border-cyan-400/80 bg-violet-600/30 shadow-xs" style={{ borderRadius: shape.radius }} />
+                                                <span className="text-[10px] font-medium">{shape.label}</span>
+                                              </div>
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Global Canvas Overlay: Interactive Pill Gradient Style Popover Modal */}
+                                    {activePillGradPicker && (
+                                      <div
+                                        className="pill-grad-popover absolute z-[120] bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-3.5 w-[280px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                                        onClick={(e) => e.stopPropagation()}
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                      >
+                                        <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
+                                          <span className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                                            <Palette size={12} className="text-violet-400" /> Pill Badge Gradient
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => setActivePillGradPicker(null)}
+                                            className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                                          >
+                                            <X size={12} />
+                                          </button>
+                                        </div>
+                                        <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto thin-scrollbar p-1">
+                                          {DECK_PILL_GRADIENTS.map((pillStyle) => (
+                                            <button
+                                              key={pillStyle.id}
+                                              type="button"
+                                              onClick={() => {
+                                                updateDeckSlideField(activeDeckSlide?.id, activePillGradPicker.bgKey, pillStyle.bg);
+                                                showToast(`Pill style: ${pillStyle.label}`);
+                                                setActivePillGradPicker(null);
+                                              }}
+                                              className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-white/10 flex items-center justify-between text-xs text-slate-200 cursor-pointer"
+                                            >
+                                              <div className="flex items-center gap-2">
+                                                <div className="w-5 h-5 rounded-md border border-white/30 shrink-0" style={{ background: pillStyle.bg }} />
+                                                <span className="text-[10px] truncate">{pillStyle.label}</span>
+                                              </div>
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
 
                                   </div>
                                 </div>
