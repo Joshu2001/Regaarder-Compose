@@ -21513,27 +21513,102 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     });
   };
 
-  const toParagraphHtml = (value) => {
-    const normalized = stripMarkdownArtifacts(value).trim();
-    if (!normalized) {
-      return '<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;"></p>';
+  const extractCleanArticleData = (rawText, parsedObject) => {
+    let title = '';
+    let content = '';
+
+    let obj = parsedObject;
+    if (!obj && typeof rawText === 'string') {
+      const jsonMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || rawText.match(/^\s*(\{[\s\S]*\})\s*$/);
+      if (jsonMatch) {
+        obj = parseJsonSafely(jsonMatch[1] || jsonMatch[0]);
+      }
     }
 
-    const applyInlineFormatting = (text) => String(text || '')
+    if (obj && typeof obj === 'object') {
+      title = obj.title || obj.headline || obj.name || obj.topic || '';
+      content = obj.content || obj.article || obj.body || obj.text || obj.paragraph || obj.paragraphs || obj.textParagraph || obj.aiResponseText || '';
+      if (Array.isArray(content)) {
+        content = content.join('\n\n');
+      }
+    }
+
+    if (!content && typeof rawText === 'string') {
+      let clean = rawText.replace(/```(?:json|markdown)?\s*/gi, '').replace(/```\s*$/g, '').trim();
+      const titleMatch = clean.match(/"(?:title|headline|name)"\s*:\s*"([^"]+)"/i);
+      const contentMatch = clean.match(/"(?:content|article|body|text|paragraph)"\s*:\s*"([\s\S]*?)"\s*\}?$/i);
+      if (contentMatch) {
+        content = contentMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+        if (titleMatch && !title) title = titleMatch[1];
+      } else {
+        const h1Match = clean.match(/^#\s+(.+)$/m);
+        if (h1Match) {
+          title = h1Match[1].trim();
+        }
+        content = clean;
+      }
+    }
+
+    title = String(title || '')
+      .replace(/^[{"'\s:]+/, '')
+      .replace(/[}"'\s,]+$/, '')
+      .replace(/^title\s*:\s*/i, '')
+      .trim();
+
+    return {
+      title: title || 'Untitled Document',
+      content: String(content || rawText || '').trim()
+    };
+  };
+
+  const toParagraphHtml = (value) => {
+    let text = String(value || '').trim();
+    if (!text) return '<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;"></p>';
+
+    // If text starts with JSON envelope, unwrap it
+    if (text.startsWith('{') && (text.includes('"content"') || text.includes('"title"') || text.includes('"article"'))) {
+      const extracted = extractCleanArticleData(text);
+      text = extracted.content;
+    }
+
+    const applyInline = (str) => String(str || '')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/__(.+?)__/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/^\s{0,3}#{1,6}\s+/gm, '')
-      .replace(/(^|\s)(\*\*|__)(?=\s|$)/g, '$1')
-      .replace(/(^|\s)\*(?=\s|$)/g, '$1')
-      .replace(/"""/g, '');
+      .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.06);padding:2px 4px;border-radius:4px;font-family:monospace;font-size:14px;">$1</code>');
 
-    return normalized
-      .split(/\n{2,}/)
-      .map((block) => block.trim())
-      .filter(Boolean)
-      .map((block) => `<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;">${applyInlineFormatting(escapeHtml(block).replace(/\n/g, '<br/>'))}</p>`)
-      .join('');
+    const lines = text.split(/\n+/);
+    let html = '';
+    let inList = false;
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+
+      if (/^#\s+(.+)$/.test(trimmed)) {
+        if (inList) { html += '</ul>'; inList = false; }
+        const h1 = trimmed.replace(/^#\s+/, '');
+        html += `<h1 style="font-size:28px;font-weight:800;color:#0f172a;line-height:1.25;margin-top:24px;margin-bottom:12px;letter-spacing:-0.02em;">${applyInline(h1)}</h1>`;
+      } else if (/^##\s+(.+)$/.test(trimmed)) {
+        if (inList) { html += '</ul>'; inList = false; }
+        const h2 = trimmed.replace(/^##\s+/, '');
+        html += `<h2 style="font-size:22px;font-weight:700;color:#1e293b;line-height:1.3;margin-top:20px;margin-bottom:10px;letter-spacing:-0.01em;">${applyInline(h2)}</h2>`;
+      } else if (/^###\s+(.+)$/.test(trimmed)) {
+        if (inList) { html += '</ul>'; inList = false; }
+        const h3 = trimmed.replace(/^###\s+/, '');
+        html += `<h3 style="font-size:18px;font-weight:600;color:#334155;line-height:1.4;margin-top:16px;margin-bottom:8px;">${applyInline(h3)}</h3>`;
+      } else if (/^[-*•]\s+(.+)$/.test(trimmed)) {
+        if (!inList) { html += '<ul style="margin-left:20px;margin-bottom:12px;list-style-type:disc;color:#334155;">'; inList = true; }
+        const li = trimmed.replace(/^[-*•]\s+/, '');
+        html += `<li style="font-size:16px;line-height:1.8;margin-bottom:4px;">${applyInline(li)}</li>`;
+      } else {
+        if (inList) { html += '</ul>'; inList = false; }
+        html += `<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:14px;">${applyInline(trimmed)}</p>`;
+      }
+    });
+
+    if (inList) html += '</ul>';
+    return html;
   };
 
   const paginateGeneratedHtml = (html, { targetWordsPerPage = 260 } = {}) => {
@@ -27963,113 +28038,127 @@ Rules:
       if (rawModelText || parsedData) {
         usedLiveModel = true;
         
-        if (parsedData && typeof parsedData === 'object') {
+        // Extract clean title and content (unwrapping any JSON envelopes like {"title": "...", "content": "..."})
+        const cleanExtracted = extractCleanArticleData(rawModelText, parsedData);
+        const cleanTitle = cleanExtracted.title;
+        const cleanContent = cleanExtracted.content;
+
+        if (parsedData && typeof parsedData === 'object' && parsedData.hasAction && parsedData.docAction) {
           const result = parsedData;
-          aiResponseText = result.aiResponseText?.trim() || (result.docAction?.textParagraph ? String(result.docAction.textParagraph).trim() : rawModelText);
+          aiResponseText = result.aiResponseText?.trim() || cleanContent;
 
-          if (result.hasAction && result.docAction) {
-            const rawType = String(result.docAction.type || '').toLowerCase();
-            if (rawType === 'deck' && Array.isArray(result.docAction.deckSlides) && result.docAction.deckSlides.length) {
-              const generatedSlides = result.docAction.deckSlides
-                .map((slide, index) => {
-                  const nextId = index + 1;
-                  const preset = DECK_DESIGN_PRESETS[index % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
-                  return {
-                    id: nextId,
-                    title: String(slide?.title || `Slide ${nextId}`),
-                    subtitle: String(slide?.subtitle || ''),
-                    accent: 'from-violet-500 to-indigo-600',
-                    designPresetKey: preset.key,
-                    headline: String(slide?.headline || slide?.title || `Slide ${nextId}`),
-                    blurb: String(slide?.blurb || slide?.subtitle || ''),
-                    visualType: String(slide?.visualType || 'hero statement'),
-                    layoutStyle: String(slide?.layoutStyle || 'cinematic split'),
-                    motionCue: String(slide?.motionCue || 'Soft fade and stagger reveal'),
-                    keyMetric: String(slide?.keyMetric || ''),
-                    speakerNotes: String(slide?.speakerNotes || ''),
-                    section: String(slide?.section || ''),
-                    footer: 'Original design 繚 Editable',
-                  };
-                })
-                .slice(0, 20);
-              const normalizedSlides = buildDeckSlidesFallback({
-                promptText,
-                aiText: result.aiResponseText || '',
-                sourceSlides: generatedSlides,
-              });
+          const rawType = String(result.docAction.type || '').toLowerCase();
+          if (rawType === 'deck' && Array.isArray(result.docAction.deckSlides) && result.docAction.deckSlides.length) {
+            const generatedSlides = result.docAction.deckSlides.map((slide, index) => {
+              const nextId = index + 1;
+              const preset = DECK_DESIGN_PRESETS[index % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
+              return {
+                id: nextId,
+                title: String(slide?.title || `Slide ${nextId}`),
+                subtitle: String(slide?.subtitle || ''),
+                accent: 'from-violet-500 to-indigo-600',
+                designPresetKey: preset.key,
+                headline: String(slide?.headline || slide?.title || `Slide ${nextId}`),
+                blurb: String(slide?.blurb || slide?.subtitle || ''),
+                visualType: String(slide?.visualType || 'hero statement'),
+                layoutStyle: String(slide?.layoutStyle || 'cinematic split'),
+                motionCue: String(slide?.motionCue || 'Soft fade and stagger reveal'),
+                keyMetric: String(slide?.keyMetric || ''),
+                speakerNotes: String(slide?.speakerNotes || ''),
+                section: String(slide?.section || ''),
+                footer: 'Original design 繚 Editable',
+              };
+            }).slice(0, 20);
 
-              if (normalizedSlides.length) {
-                setDeckSlidesData(normalizedSlides);
-                setActiveDeckSlideId(normalizedSlides[0].id);
-                didGenerateDeckSlides = true;
-                aiResponseText = result.aiResponseText?.trim() || `Created ${normalizedSlides.length} slides from your request.`;
-                showToast(`Generated ${normalizedSlides.length} slides`);
-              }
-            } else if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
-              docAction = {
-                title: result.docAction.title || 'AI Timeline',
-                type: 'timeline',
-                content: result.docAction.timelineItems,
-              };
-            } else if (rawType === 'tasks' && Array.isArray(result.docAction.taskItems) && result.docAction.taskItems.length) {
-              const sanitizedTasks = result.docAction.taskItems.filter(Boolean).map((item) => String(item));
-              docAction = {
-                title: result.docAction.title || 'AI Checklist',
-                type: 'tasks',
-                content: sanitizedTasks,
-              };
-              const syncedTasks = sanitizedTasks.map((task, index) => ({
-                id: Date.now() + index,
-                text: task,
-                completed: false,
-                owner: 'agent',
-              }));
-              setTasks((prev) => [...prev, ...syncedTasks]);
-            } else if (rawType === 'risks' && Array.isArray(result.docAction.riskItems) && result.docAction.riskItems.length) {
-              docAction = {
-                title: result.docAction.title || 'AI Risk Matrix',
-                type: 'risks',
-                content: result.docAction.riskItems,
-              };
-            } else if (rawType === 'text' && (result.docAction.textParagraph || result.docAction.paragraph)) {
-              docAction = {
-                title: result.docAction.title || 'AI Composed Section',
-                type: 'text',
-                paragraph: result.docAction.textParagraph || result.docAction.paragraph,
-              };
+            const normalizedSlides = buildDeckSlidesFallback({
+              promptText,
+              aiText: result.aiResponseText || '',
+              sourceSlides: generatedSlides,
+            });
+
+            if (normalizedSlides.length) {
+              setDeckSlidesData(normalizedSlides);
+              setActiveDeckSlideId(normalizedSlides[0].id);
+              didGenerateDeckSlides = true;
+              aiResponseText = result.aiResponseText?.trim() || `Created ${normalizedSlides.length} slides from your request.`;
+              showToast(`Generated ${normalizedSlides.length} slides`);
             }
+          } else if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
+            docAction = {
+              title: result.docAction.title || cleanTitle || 'AI Timeline',
+              type: 'timeline',
+              content: result.docAction.timelineItems,
+            };
+          } else if (rawType === 'tasks' && Array.isArray(result.docAction.taskItems) && result.docAction.taskItems.length) {
+            const sanitizedTasks = result.docAction.taskItems.filter(Boolean).map((item) => String(item));
+            docAction = {
+              title: result.docAction.title || cleanTitle || 'AI Checklist',
+              type: 'tasks',
+              content: sanitizedTasks,
+            };
+            const syncedTasks = sanitizedTasks.map((task, index) => ({
+              id: Date.now() + index,
+              text: task,
+              completed: false,
+              owner: 'agent',
+            }));
+            setTasks((prev) => [...prev, ...syncedTasks]);
+          } else if (rawType === 'risks' && Array.isArray(result.docAction.riskItems) && result.docAction.riskItems.length) {
+            docAction = {
+              title: result.docAction.title || cleanTitle || 'AI Risk Matrix',
+              type: 'risks',
+              content: result.docAction.riskItems,
+            };
+          } else if (rawType === 'text') {
+            docAction = {
+              title: cleanTitle || 'AI Composed Section',
+              type: 'text',
+              paragraph: cleanContent,
+            };
           }
         } else {
-          // Direct text output from standard capable LLM (Ollama, LM Studio, Claude, Gemini)
-          aiResponseText = rawModelText;
+          // Direct clean text output
+          aiResponseText = cleanContent;
         }
 
-        // Automatic Editor Integration: If user asked to write/draft/generate content in Docs or Compose mode, automatically create docAction and render directly in the editor!
+        // Automatic Document Editor Rendering
         const isDocumentWritingRequest = productMode === 'compose' || shouldBuildDocument || source === 'compose' || source === 'floating' || /\b(write|create|draft|compose|generate|article|essay|post|letter|report|paragraph|content|add|insert|tell|rewrite|expand)\b/i.test(promptText);
 
         if (!docAction && isDocumentWritingRequest && aiResponseText) {
           docAction = {
-            title: 'AI Composed Section',
+            title: cleanTitle || 'AI Composed Section',
             type: 'text',
             paragraph: aiResponseText
           };
         }
 
-        // Ensure text renders directly into the active editor canvas immediately!
-        if (docAction && docAction.type === 'text' && blankBodyRef.current && (productMode === 'compose' || shouldBuildDocument || isDocumentWritingRequest)) {
-          const contentToRender = docAction.paragraph || aiResponseText;
+        // Set clean document and tab title
+        if (cleanTitle && cleanTitle !== 'Untitled Document' && (!docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === 'Untitled Document' || docTitle.startsWith('{'))) {
+          setDocTitle(cleanTitle);
+        }
+
+        // Inject cleanly into the document editor canvas
+        if (blankBodyRef.current && (productMode === 'compose' || shouldBuildDocument || isDocumentWritingRequest)) {
+          const contentToRender = docAction?.paragraph || aiResponseText;
           const formattedHtml = toParagraphHtml(contentToRender);
+
+          // If the editor has the default starter template or is blank, cleanly replace it with the new article!
+          const currentText = blankBodyRef.current.innerText.trim();
+          const isStarterTemplate = currentText.includes('1. Objective') && currentText.includes('2. Key Initiatives');
           
-          const injected = injectIntoSavedSelection(formattedHtml, { injectAsHtml: true });
-          if (!injected) {
-            if (!blankBodyRef.current.innerText.trim() || blankBodyRef.current.innerText === AI_NATIVE_PLACEHOLDER) {
-              blankBodyRef.current.innerHTML = formattedHtml;
-            } else {
+          if (!currentText || currentText === AI_NATIVE_PLACEHOLDER || isStarterTemplate || isBlankDocument) {
+            blankBodyRef.current.innerHTML = formattedHtml;
+            setDocBodyHtml(formattedHtml);
+            setIsBlankDocument(true);
+            setAppendedSections([]);
+          } else {
+            const injected = injectIntoSavedSelection(formattedHtml, { injectAsHtml: true });
+            if (!injected) {
               const node = document.createElement('div');
               node.innerHTML = formattedHtml;
               blankBodyRef.current.appendChild(node);
+              setDocBodyHtml(blankBodyRef.current.innerHTML);
             }
-            setDocBodyHtml(blankBodyRef.current.innerHTML);
           }
         }
       }
