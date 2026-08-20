@@ -29058,6 +29058,26 @@ Answer the user's question, provide an insightful summary, or explain the contex
     }
   };
 
+  /**
+   * Synthesize: aggregates all attached context sources and triggers
+   * an executive-tier multi-section analysis report in the Assistant panel.
+   */
+  const handleSynthesizeContextSources = async () => {
+    const sources = docContextMaterials || [];
+    const sourceNames = sources.map((s) => s.name || s.fileName || 'Untitled').join(', ');
+    const sourceCount = sources.length;
+
+    // NOTE: prompt must use Q&A language (analyze/summarize/explain) to avoid
+    // triggering isArticleWritingRequest (which fires on: write/create/generate/report).
+    const promptText = sourceCount > 0
+      ? `Analyze and summarize the following ${sourceCount} context source(s): ${sourceNames}. Provide a structured breakdown with: 1) Executive Summary, 2) Key Strategic Findings, 3) Cross-Source Insights, 4) Recommended Actions.`
+      : 'Analyze and summarize all available context. Provide a structured breakdown with: 1) Executive Summary, 2) Key Strategic Findings, 3) Cross-Source Insights, 4) Recommended Actions.';
+
+    setActiveRightTab('assistant');
+    setRightSidebarOpen(true);
+    await handleAISubmit(promptText, { source: 'chat' });
+  };
+
   const handleSidebarSend = (e) => {
     e.preventDefault();
     if (!chatInput.trim() && !chatAttachments.length && !activeAgentTag) return;
@@ -37443,7 +37463,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </div>
                       ) : (
                         <div 
-                          className="whitespace-pre-wrap selection-ai-rendered prose-sm dark:prose-invert break-words break-all max-w-full overflow-hidden text-slate-800 dark:text-zinc-200"
+                          className="whitespace-pre-wrap selection-ai-rendered prose-sm dark:prose-invert break-words max-w-full overflow-hidden text-slate-800 dark:text-zinc-200"
                           dangerouslySetInnerHTML={{ __html: toParagraphHtml(msg.text) }}
                         />
                       )}
@@ -51228,8 +51248,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 </div>
                                 <button
                                   type="button"
-                                  onClick={() => showToast('Synthesized context sources into presentation outline')}
-                                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 text-white flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+                                  onClick={handleSynthesizeContextSources}
+                                  disabled={isComposing}
+                                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed text-white flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
                                 >
                                   <Sparkles size={13} /> Synthesize Context
                                 </button>
@@ -68535,8 +68556,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="flex items-center gap-2 shrink-0 border-l border-slate-200/60 dark:border-zinc-800 pl-3">
                 <button
                   type="button"
-                  onClick={() => showToast('AI synthesized all attached context sources')}
-                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 active:scale-95 text-white flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                  onClick={handleSynthesizeContextSources}
+                  disabled={isComposing}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed text-white flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 >
                   {/* Ultra-Delicate Multi-Source Convergent Output SVG Icon (~12% smaller/thinner) */}
                   <svg className="w-[11px] h-[11px] text-white/85 shrink-0" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
