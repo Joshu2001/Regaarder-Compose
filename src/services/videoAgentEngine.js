@@ -114,7 +114,14 @@ export function resolveTargetElement(step) {
     if (tabBtn) return tabBtn;
   }
 
-  // 2. Specific Action Resolvers
+  if (step?.type === 'open_workspace_switcher' || step?.actionType === 'open_workspace_switcher') {
+    return (
+      document.querySelector('button[title*="Switch Workspace App" i]') ||
+      document.querySelector('button:has(svg.lucide-layout-grid)') ||
+      findButton('Switch Workspace App', 'includes')
+    );
+  }
+
   if (step?.type === 'open_history' || step?.actionType === 'open_history') {
     return (
       document.querySelector('button[title*="replay" i]') ||
@@ -242,7 +249,7 @@ export function planAutonomousActions(intent, productMode = 'compose') {
 
     // Header actions do not need tab switches
     const isHeaderOrSidebarAction = [
-      'open_history', 'open_search', 'open_export', 'open_share',
+      'open_workspace_switcher', 'open_history', 'open_search', 'open_export', 'open_share',
       'undo_action', 'open_properties', 'select_model', 'trigger_slash',
       'rename_title', 'manage_tabs'
     ].includes(sitemapMatch.actionType);
@@ -257,7 +264,13 @@ export function planAutonomousActions(intent, productMode = 'compose') {
     }
 
     // Step B: Target Action
-    if (sitemapMatch.actionType === 'open_history') {
+    if (sitemapMatch.actionType === 'open_workspace_switcher') {
+      steps.push({
+        type: 'open_workspace_switcher',
+        desc: 'Opening Workspace App Switcher (Compose, Deck, Sheet, Room, Whiteboard)',
+        highlightSelector: sitemapMatch.highlightSelector
+      });
+    } else if (sitemapMatch.actionType === 'open_history') {
       steps.push({
         type: 'open_history',
         desc: 'Opening Version History & Edit Replay',

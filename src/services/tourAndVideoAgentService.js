@@ -3,14 +3,37 @@
  * 
  * Regaarder UI Knowledge Base & Autonomous Action Engine
  * Comprehensive canonical UI sitemap covering all workspace controls:
- * - Segmented Toolbar Modes (Context, Templates, Write, Review, View)
+ * - Workspace App Switcher (Compose, Deck, Sheet, Room, Whiteboard, Tasks, Schedule, Memory)
  * - Header Bar Actions (Search/Find, Version History/Replay, Export, Share, Drafts, Undo/Redo)
+ * - Segmented Toolbar Modes (Context, Templates, Write, Review, View)
  * - Canvas & Ephemeral Controls (Slash Menu, Table Cell Operations, KaTeX Math Editor)
  * - Sidebar Panels (Assistant, History/Replay, Properties, Source Files)
  * - Status Bar (Focus Mode, Word Count, Language Auto-detect)
  */
 
 export const REGAARDER_UI_SITEMAP = [
+  // ── WORKSPACE APPS & PRODUCT SWITCHER ─────────────────────────────────────
+  {
+    id: 'workspace_switcher',
+    keywords: [
+      'switch workspace app', 'switch workspace apps', 'switch workspace', 'workspace app', 'workspace apps',
+      'workspace switcher', 'switch app', 'switch apps', 'switch to deck', 'switch to sheet',
+      'switch to room', 'switch to whiteboard', 'open deck', 'open sheet', 'open whiteboard',
+      'worspace apps', 'worspace app', 'worspace switcher', 'worspace', 'app switcher',
+      'grid icon', 'layout grid', 'switch mode', 'switch products', 'switch workspace apps'
+    ],
+    title: 'How to Switch Workspace Apps (Compose, Deck, Sheet, Room, Whiteboard)',
+    description: 'Click the 9-dot grid icon in the top left header to switch between Compose, Deck, Sheet, Room, Whiteboard, and Tasks.',
+    actionType: 'open_workspace_switcher',
+    targetTab: 'Write',
+    highlightSelector: 'button[title*="Switch Workspace App" i], button:has(svg.lucide-layout-grid)',
+    steps: [
+      { stepNumber: 1, title: 'Locate 9-Dot Grid Icon', description: 'Find the 9-dot Workspace App Switcher icon in the top left header next to the document title.' },
+      { stepNumber: 2, title: 'Open Workspace Menu', description: 'Click the grid icon to open the dropdown menu of all Regaarder workspace products.' },
+      { stepNumber: 3, title: 'Select Target App', description: 'Choose Compose, Deck, Sheet, Room, Whiteboard, Schedule, or Memory to switch workspaces instantly.' }
+    ]
+  },
+
   // ── HEADER & GLOBAL CONTROLS ──────────────────────────────────────────────
   {
     id: 'search_find',
@@ -122,7 +145,7 @@ export const REGAARDER_UI_SITEMAP = [
   },
   {
     id: 'model_selector',
-    keywords: ['change model', 'select model', 'gemma', 'gemini', 'claude', 'ollama', 'model dropdown', 'ai model', 'local model', 'switch model'],
+    keywords: ['change model', 'select model', 'gemma', 'gemini', 'claude', 'ollama', 'model dropdown', 'ai model', 'local model', 'switch model', 'switch ai model', 'switch ai models'],
     title: 'How to Switch AI Models (Local Gemma / Gemini / Claude)',
     description: 'Select between local on-device models (Ollama/Gemma) and cloud models (Gemini/Claude).',
     actionType: 'select_model',
@@ -355,7 +378,7 @@ export const REGAARDER_UI_SITEMAP = [
  * Prioritizes multi-word exact phrases and eliminates false positives on stop-words.
  */
 export function findExactUiMatch(intent) {
-  const clean = String(intent || '')
+  let clean = String(intent || '')
     .toLowerCase()
     .replace(/["'“”‘’?!.,:;()\[\]]/g, ' ')
     .replace(/\s+/g, ' ')
@@ -363,7 +386,13 @@ export function findExactUiMatch(intent) {
 
   if (!clean) return null;
 
-  // 1. Exact Multi-word Phrase Matches (e.g. "where is the slash", "find specific words", "edit replay")
+  // Typo normalization
+  clean = clean
+    .replace(/\bworspace\b/g, 'workspace')
+    .replace(/\bworkspce\b/g, 'workspace')
+    .replace(/\bswich\b/g, 'switch');
+
+  // 1. Exact Multi-word Phrase Matches
   for (const item of REGAARDER_UI_SITEMAP) {
     for (const kw of item.keywords) {
       if (kw.includes(' ') && clean.includes(kw)) {
@@ -379,7 +408,7 @@ export function findExactUiMatch(intent) {
     }
   }
 
-  // 3. Significant Token Overlap (Ignores stop words: button, where, is, the, how, to, a, an, in)
+  // 3. Significant Token Overlap (Ignores stop words)
   const stopWords = new Set(['button', 'where', 'is', 'the', 'how', 'to', 'a', 'an', 'in', 'on', 'of', 'for', 'you', 'can', 'with', 'them', 'and', 'my', 'do', 'i']);
   const tokens = clean.split(/\s+/).filter(t => t.length > 2 && !stopWords.has(t));
 
@@ -393,7 +422,7 @@ export function findExactUiMatch(intent) {
     for (const kw of item.keywords) {
       const kwTokens = kw.split(/\s+/).filter(t => !stopWords.has(t));
       for (const token of tokens) {
-        if (kwTokens.includes(token)) score += 4;
+        if (kwTokens.includes(token)) score += 5;
         else if (kw.includes(token)) score += 2;
       }
     }
@@ -423,7 +452,7 @@ export async function generateTourGuideViaAI(intent, productMode = 'compose', ca
 The user is asking: "${intent}" in ${productMode} mode.
 
 ACTUAL REGAARDER COMPOSE CONTROLS:
-- Header: Search (Ctrl+F), Version History (Replay edits), Export (PDF, DOCX, MD), Share, Saved Drafts, Undo/Redo.
+- Header: Switch Workspace Apps (9-dot icon), Search (Ctrl+F), Version History (Replay edits), Export (PDF, DOCX, MD), Share, Saved Drafts, Undo/Redo.
 - Sidebar: Assistant AI chat, History / Replay tab, Properties panel.
 - Top Mode Bar: Context, Templates, Write, Review, View.
 - Write Tab Toolbar: Font (Manrope, Inter, DM Sans), Font Size (14pt), Alignment, Lists (Bullet, Numbered, Checklist), + Insert (Images, Emoji, Equations, Table Grid, Charts, Shapes).
