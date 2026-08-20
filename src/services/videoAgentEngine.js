@@ -733,5 +733,42 @@ export async function executeAutonomousVideoSequence({
   };
 }
 
-export const generateDemoVideoBlob = async (plan) => null;
-export const generateFallbackDemoBlob = async (plan) => null;
+export async function generateDemoVideoBlob(plan) {
+  if (typeof document === 'undefined') return null;
+
+  try {
+    const winW = window.innerWidth || 1440;
+    const winH = window.innerHeight || 900;
+
+    const initialFrame = await captureRealUiSnapshot();
+    const frames = initialFrame ? [initialFrame] : [];
+
+    const waypoints = [{ x: winW * 0.45, y: winH * 0.45, label: 'Start' }];
+
+    if (plan?.steps) {
+      for (const step of plan.steps) {
+        const targetEl = resolveTargetElement(step);
+        if (targetEl) {
+          const rect = targetEl.getBoundingClientRect();
+          waypoints.push({
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+            label: step.desc || step.title || 'Action',
+            isClick: true
+          });
+        }
+      }
+    }
+
+    if (waypoints.length <= 1) {
+      waypoints.push({ x: winW * 0.5, y: winH * 0.35, label: 'Action', isClick: true });
+    }
+
+    return await buildVideoClipFromFrames({ frames, waypoints, plan });
+  } catch (err) {
+    console.warn('[videoAgentEngine] generateDemoVideoBlob error:', err);
+    return null;
+  }
+}
+
+export const generateFallbackDemoBlob = async (plan) => generateDemoVideoBlob(plan);

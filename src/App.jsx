@@ -28282,7 +28282,7 @@ Return ONLY valid JSON matching the schema.`;
         // 3. Perform live interactive mouse cursor takeover on the real UI
         setAutonomousCursorPos({ x: window.innerWidth / 2, y: window.innerHeight / 2, visible: true, clicking: false });
 
-        await executeAutonomousVideoSequence({
+        const liveVideoRes = await executeAutonomousVideoSequence({
           intent: cleanVideoQuery,
           productMode,
           setDocToolbarTab,
@@ -28298,6 +28298,12 @@ Return ONLY valid JSON matching the schema.`;
             setTimeout(() => setAutonomousCursorPos(prev => ({ ...prev, clicking: false })), 300);
           }
         });
+
+        if (liveVideoRes?.videoUrl) {
+          setChatMessages(prev =>
+            prev.map(m => m.id === assistantMsg.id ? { ...m, videoUrl: liveVideoRes.videoUrl } : m)
+          );
+        }
 
         setAutonomousCursorPos(null);
         setVideoRecordingState(null);
