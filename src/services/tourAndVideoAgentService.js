@@ -2,16 +2,169 @@
  * tourAndVideoAgentService.js
  * 
  * Regaarder UI Knowledge Base & Autonomous Action Engine
- * Contains the comprehensive, verified UI sitemap of Regaarder Compose
- * so AI models never hallucinate non-existent menus (e.g. MS Word panes).
+ * Comprehensive canonical UI sitemap covering all workspace controls:
+ * - Segmented Toolbar Modes (Context, Templates, Write, Review, View)
+ * - Header Bar Actions (Search/Find, Version History/Replay, Export, Share, Drafts, Undo/Redo)
+ * - Canvas & Ephemeral Controls (Slash Menu, Table Cell Operations, KaTeX Math Editor)
+ * - Sidebar Panels (Assistant, History/Replay, Properties, Source Files)
+ * - Status Bar (Focus Mode, Word Count, Language Auto-detect)
  */
 
 export const REGAARDER_UI_SITEMAP = [
+  // ── HEADER & GLOBAL CONTROLS ──────────────────────────────────────────────
+  {
+    id: 'search_find',
+    keywords: [
+      'find specific words', 'find words', 'find word', 'search word', 'search words',
+      'search document', 'find in document', 'search in document', 'find and replace',
+      'search them', 'search bar', 'locate text', 'ctrl f', 'cmd f', 'search'
+    ],
+    title: 'How to Search & Find Words in Document',
+    description: 'Search for specific words or phrases and navigate through document matches.',
+    actionType: 'open_search',
+    targetTab: 'Write',
+    highlightSelector: 'button[title*="Search"], [data-tour="search-button"], button:has-text("Search")',
+    steps: [
+      { stepNumber: 1, title: 'Open Search in Header', description: 'Click the Magnifying Glass search icon in the top header bar, or press Ctrl+F / Cmd+F.' },
+      { stepNumber: 2, title: 'Enter Search Term', description: 'Type the word or phrase you want to locate in the search input box.' },
+      { stepNumber: 3, title: 'Navigate Matches', description: 'Use the Previous / Next arrows to cycle through all highlighted occurrences in the document.' }
+    ]
+  },
+  {
+    id: 'edit_replay',
+    keywords: [
+      'edit replay', 'replay', 'replays', 'where is the replay', 'where is the edit replay',
+      'version history', 'time machine', 'revert changes', 'previous version', 'past edits',
+      'restore version', 'history tab', 'view history', 'document history'
+    ],
+    title: 'How to View Version History & Replay Edits',
+    description: 'Inspect previous document revisions and replay past edits with the Time Machine.',
+    actionType: 'open_history',
+    targetTab: 'Write',
+    highlightSelector: 'button[title*="History"], button:has-text("History"), [data-tour="history-button"]',
+    steps: [
+      { stepNumber: 1, title: 'Open History in Header or Sidebar', description: 'Click the Clock icon in the top header, or select the "History" tab in the right sidebar.' },
+      { stepNumber: 2, title: 'Browse Version Snapshots', description: 'Review the chronological timeline of auto-saved versions and edit diffs.' },
+      { stepNumber: 3, title: 'Replay Action Sequence', description: 'Click "Replay" to watch the time-machine sequence of document changes reconstruct on canvas.' }
+    ]
+  },
+  {
+    id: 'slash_menu',
+    keywords: [
+      'slash menu', 'slash commands', 'slash command', 'slash button', 'where is the slash',
+      'how to use slash', 'slash shortcuts', 'slash palette', 'slash trigger', 'type slash',
+      'slash'
+    ],
+    title: 'How to Open & Use the Slash (/) Command Menu',
+    description: 'Press "/" on any empty line in the canvas to trigger the contextual quick-insert palette.',
+    actionType: 'trigger_slash',
+    targetTab: 'Write',
+    highlightSelector: '[data-tour="slash-menu"], .document-canvas, #root',
+    steps: [
+      { stepNumber: 1, title: 'Focus Document Canvas', description: 'Click onto an empty line inside the document editor canvas.' },
+      { stepNumber: 2, title: 'Type Slash Character', description: 'Press the "/" key on your keyboard to immediately display the floating command menu.' },
+      { stepNumber: 3, title: 'Pick a Tool', description: 'Select /table, /image, /checklist, /math, /browser, /tour, or /video to execute directly.' }
+    ]
+  },
+  {
+    id: 'export',
+    keywords: ['export document', 'export', 'pdf', 'docx', 'word document', 'download document', 'save as pdf', 'markdown export', 'print document'],
+    title: 'How to Export & Download Documents',
+    description: 'Export to PDF Document, Microsoft Word (.docx), or Clean Markdown.',
+    actionType: 'open_export',
+    targetTab: 'Write',
+    highlightSelector: '[data-tour="export-button"], button:has-text("Export")',
+    steps: [
+      { stepNumber: 1, title: 'Click Export in Top Header', description: 'Locate and click the "Export" button in the upper right navigation header.' },
+      { stepNumber: 2, title: 'Select File Format', description: 'Choose your desired format: PDF Document, Microsoft Word (.docx), or Markdown.' },
+      { stepNumber: 3, title: 'Download File', description: 'Your formatted file will download immediately to your computer.' }
+    ]
+  },
+  {
+    id: 'share',
+    keywords: ['share document', 'share', 'collaboration', 'invite', 'share permissions', 'copy link', 'share link', 'collaborate'],
+    title: 'How to Share Documents & Manage Collaboration',
+    description: 'Invite team members, set View/Edit permissions, and copy live collaboration links.',
+    actionType: 'open_share',
+    targetTab: 'Write',
+    highlightSelector: 'button:has-text("Share"), [data-tour="share-button"]',
+    steps: [
+      { stepNumber: 1, title: 'Click Share in Header', description: 'Click the purple "Share" button at the top right of the application header.' },
+      { stepNumber: 2, title: 'Configure Access Level', description: 'Select between View-Only access or Full Collaborative Editing permissions.' },
+      { stepNumber: 3, title: 'Copy Share Link', description: 'Click "Copy Link" to share the live document with colleagues.' }
+    ]
+  },
+  {
+    id: 'saved_drafts',
+    keywords: ['saved drafts', 'document title', 'rename document', 'rename file', 'saved draft', 'drafts list', 'document name', 'change title'],
+    title: 'How to Manage Saved Drafts & Rename Documents',
+    description: 'Rename the active document and switch between recent saved drafts.',
+    actionType: 'rename_title',
+    targetTab: 'Write',
+    highlightSelector: '[data-tour="document-title"], button:has-text("Saved Drafts")',
+    steps: [
+      { stepNumber: 1, title: 'Click Document Title', description: 'Click the title text at the top left of the header to edit the document name inline.' },
+      { stepNumber: 2, title: 'Open Saved Drafts', description: 'Click "Saved Drafts" to view, duplicate, or switch between recent document drafts.' }
+    ]
+  },
+  {
+    id: 'undo_redo',
+    keywords: ['undo', 'redo', 'undo edit', 'redo edit', 'revert edit', 'ctrl z', 'cmd z', 'history undo'],
+    title: 'How to Undo & Redo Edits',
+    description: 'Step backwards or forwards through your recent editing changes.',
+    actionType: 'undo_action',
+    targetTab: 'Write',
+    highlightSelector: 'button[title*="Undo"], button[title*="Redo"]',
+    steps: [
+      { stepNumber: 1, title: 'Use Header Buttons', description: 'Click the curved left arrow to Undo, or curved right arrow to Redo in the top header.' },
+      { stepNumber: 2, title: 'Use Keyboard Shortcuts', description: 'Press Ctrl+Z / Cmd+Z to undo, or Ctrl+Shift+Z / Cmd+Shift+Z to redo.' }
+    ]
+  },
+  {
+    id: 'model_selector',
+    keywords: ['change model', 'select model', 'gemma', 'gemini', 'claude', 'ollama', 'model dropdown', 'ai model', 'local model', 'switch model'],
+    title: 'How to Switch AI Models (Local Gemma / Gemini / Claude)',
+    description: 'Select between local on-device models (Ollama/Gemma) and cloud models (Gemini/Claude).',
+    actionType: 'select_model',
+    targetTab: 'Write',
+    highlightSelector: 'button:has-text("gemma"), button:has-text("gemini")',
+    steps: [
+      { stepNumber: 1, title: 'Click Model Pill in Chat', description: 'Click the active model badge (e.g. "gemma3:1b") at the bottom of the chat input box.' },
+      { stepNumber: 2, title: 'Select Target Model', description: 'Choose your desired local Ollama model or connected cloud provider from the dropdown.' }
+    ]
+  },
+  {
+    id: 'properties_panel',
+    keywords: ['properties panel', 'properties', 'word count', 'character count', 'reading time', 'document stats', 'document metadata'],
+    title: 'How to View Document Properties & Word Count',
+    description: 'Inspect live statistics including word count, character count, and document metadata.',
+    actionType: 'open_properties',
+    targetTab: 'Write',
+    highlightSelector: 'button:has-text("Properties")',
+    steps: [
+      { stepNumber: 1, title: 'Open Properties Tab', description: 'Click the "Properties" tab at the top right of the right sidebar.' },
+      { stepNumber: 2, title: 'Review Document Statistics', description: 'View total words, character count, estimated reading duration, and creation date.' }
+    ]
+  },
+  {
+    id: 'document_tabs',
+    keywords: ['new tab', 'document tab', 'document tabs', 'open tab', 'switch tab', 'close tab', 'multi tab', 'tab management'],
+    title: 'How to Open & Manage Multiple Document Tabs',
+    description: 'Open multiple documents simultaneously using the document tab strip.',
+    actionType: 'manage_tabs',
+    targetTab: 'Write',
+    highlightSelector: '[data-tour="document-tabs"], button:has-text("+")',
+    steps: [
+      { stepNumber: 1, title: 'Click "+" New Tab', description: 'Click the "+" icon on the tab bar above the toolbar to create a new document.' },
+      { stepNumber: 2, title: 'Switch Between Tabs', description: 'Click any tab title to instantly switch documents without losing unsaved changes.' }
+    ]
+  },
+
   // ── CONTEXT & GROUNDING ───────────────────────────────────────────────────
   {
     id: 'source_files',
     keywords: [
-      'add source file', 'source file', 'source files', 'add source', 'source', 'sources',
+      'add source file', 'source file', 'source files', 'add source', 'sources',
       'reference file', 'reference files', 'references', 'context file', 'context files',
       'add context', 'grounding file', 'mention docs', 'mention doc', 'attach document',
       'attach file', 'grounding', 'knowledge base'
@@ -31,7 +184,7 @@ export const REGAARDER_UI_SITEMAP = [
   // ── VIEW CONTROLS ────────────────────────────────────────────────────────
   {
     id: 'outline',
-    keywords: ['outline', 'outlines', 'document outline', 'outline panel', 'outline button', 'outline sidebar', 'left panel', 'toggle outline'],
+    keywords: ['outline', 'outlines', 'document outline', 'outline panel', 'outline sidebar', 'left panel', 'toggle outline', 'turn outline off', 'turn outline on'],
     title: 'How to Toggle Document Outline',
     description: 'Turn the document outline navigation sidebar on or off.',
     actionType: 'outline_toggle',
@@ -73,7 +226,7 @@ export const REGAARDER_UI_SITEMAP = [
   },
   {
     id: 'theme',
-    keywords: ['dark mode', 'light mode', 'theme', 'night mode', 'dark', 'light', 'color scheme'],
+    keywords: ['dark mode', 'light mode', 'theme', 'night mode', 'dark theme', 'light theme', 'color scheme'],
     title: 'How to Switch Theme (Light / Dark)',
     description: 'Toggle between light and dark visual aesthetics.',
     actionType: 'theme_toggle',
@@ -82,6 +235,19 @@ export const REGAARDER_UI_SITEMAP = [
     steps: [
       { stepNumber: 1, title: 'Open View Tab', description: 'Click the "View" tab on the toolbar.' },
       { stepNumber: 2, title: 'Toggle Theme', description: 'Click the "Dark Mode" / "Light Mode" button with sun/moon icon.' }
+    ]
+  },
+  {
+    id: 'focus',
+    keywords: ['focus mode', 'focus', 'distraction free', 'zen mode', 'immersive', 'fullscreen writing'],
+    title: 'How to Toggle Focus Mode',
+    description: 'Hide toolbars and sidebars for an immersive distraction-free writing experience.',
+    actionType: 'toggle_focus',
+    targetTab: 'Write',
+    highlightSelector: '[data-tour="focus-mode"], button:has-text("Focus Mode")',
+    steps: [
+      { stepNumber: 1, title: 'Locate Focus Mode in Footer', description: 'Find the "Focus Mode" pill in the bottom status bar.' },
+      { stepNumber: 2, title: 'Click Focus Mode', description: 'Click the button to enter or exit immersive focus mode.' }
     ]
   },
 
@@ -102,7 +268,7 @@ export const REGAARDER_UI_SITEMAP = [
   },
   {
     id: 'equations',
-    keywords: ['equation', 'equations', 'math', 'formula', 'latex', 'sum', 'integral', 'fraction'],
+    keywords: ['equation', 'equations', 'math', 'formula', 'latex', 'sum', 'integral', 'fraction', 'add equations', 'add formula'],
     title: 'How to Add Equations & Math Formulas',
     description: 'Insert LaTeX equations via the + Insert menu or slash shortcut.',
     actionType: 'open_equation',
@@ -116,7 +282,7 @@ export const REGAARDER_UI_SITEMAP = [
   },
   {
     id: 'tables',
-    keywords: ['table', 'grid', 'tabular', 'spreadsheet', 'matrix', 'columns', 'rows'],
+    keywords: ['table', 'tables', 'grid', 'tabular', 'spreadsheet', 'matrix', 'columns', 'rows', 'add table', 'insert table', 'add table manually'],
     title: 'How to Insert & Format Data Tables',
     description: 'Create interactive tables with custom rows, columns, and dropdowns.',
     actionType: 'insert_table',
@@ -130,7 +296,7 @@ export const REGAARDER_UI_SITEMAP = [
   },
   {
     id: 'checklists',
-    keywords: ['checklist', 'checklists', 'task', 'tasks', 'todo', 'todos', 'checkbox', 'bullet', 'list'],
+    keywords: ['checklist', 'checklists', 'task', 'tasks', 'todo', 'todos', 'checkbox', 'bullet', 'list', 'create checklist'],
     title: 'How to Create & Locate Checklists',
     description: 'Add interactive task checklists or locate existing tasks.',
     actionType: 'find_checklist',
@@ -144,7 +310,7 @@ export const REGAARDER_UI_SITEMAP = [
   },
   {
     id: 'typography',
-    keywords: ['font', 'fonts', 'typeface', 'family', 'typography', 'inter', 'manrope', 'dm sans', 'size', 'font size'],
+    keywords: ['font', 'fonts', 'typeface', 'family', 'typography', 'inter', 'manrope', 'dm sans', 'size', 'font size', 'change font'],
     title: 'How to Customize Fonts & Typography',
     description: 'Switch between premium font families (Manrope, Inter, DM Sans) and font sizes.',
     actionType: 'navigate_tab',
@@ -158,7 +324,7 @@ export const REGAARDER_UI_SITEMAP = [
   },
   {
     id: 'heading',
-    keywords: ['heading', 'headings', 'h1', 'h2', 'h3', 'title', 'subtitle', 'paragraph', 'formatting'],
+    keywords: ['heading', 'headings', 'h1', 'h2', 'h3', 'title', 'subtitle', 'paragraph', 'formatting', 'heading style'],
     title: 'How to Format Headings & Text Styles',
     description: 'Apply Heading 1, Heading 2, Heading 3, or Paragraph styling.',
     actionType: 'navigate_tab',
@@ -169,38 +335,9 @@ export const REGAARDER_UI_SITEMAP = [
       { stepNumber: 2, title: 'Choose Hierarchy', description: 'Select Heading 1, Heading 2, Heading 3, Subtitle, or Body text.' }
     ]
   },
-
-  // ── HEADER & GLOBAL CONTROLS ──────────────────────────────────────────────
-  {
-    id: 'export',
-    keywords: ['export', 'pdf', 'docx', 'word', 'download', 'markdown', 'share', 'save as'],
-    title: 'How to Export & Share Documents',
-    description: 'Export to PDF, Word, Markdown, or share live collaboration links.',
-    actionType: 'open_export',
-    targetTab: 'Write',
-    highlightSelector: '[data-tour="export-button"], button:has-text("Export")',
-    steps: [
-      { stepNumber: 1, title: 'Click Export in Header', description: 'Locate the "Export" button at the top right of the application header.' },
-      { stepNumber: 2, title: 'Select Export Format', description: 'Choose between PDF Document, Microsoft Word (.docx), or Clean Markdown.' },
-      { stepNumber: 3, title: 'Share Collaboration Link', description: 'Click "Share" (purple button) to copy view/edit links or manage permissions.' }
-    ]
-  },
-  {
-    id: 'focus',
-    keywords: ['focus', 'distraction', 'zen', 'focus mode', 'immersive', 'fullscreen'],
-    title: 'How to Toggle Focus Mode',
-    description: 'Hide toolbars and sidebars for an immersive distraction-free writing experience.',
-    actionType: 'toggle_focus',
-    targetTab: 'Write',
-    highlightSelector: '[data-tour="focus-mode"], button:has-text("Focus Mode")',
-    steps: [
-      { stepNumber: 1, title: 'Locate Focus Mode in Footer', description: 'Find the "Focus Mode" pill in the bottom status bar.' },
-      { stepNumber: 2, title: 'Click Focus Mode', description: 'Click the button to enter or exit immersive focus mode.' }
-    ]
-  },
   {
     id: 'templates',
-    keywords: ['template', 'templates', 'layout', 'starter', 'preset', 'executive brief', 'meeting notes'],
+    keywords: ['template', 'templates', 'layout', 'starter', 'preset', 'executive brief', 'meeting notes', 'use templates'],
     title: 'How to Use Document Templates',
     description: 'Browse curated document templates for executive briefs, roadmaps, and specs.',
     actionType: 'navigate_tab',
@@ -215,6 +352,7 @@ export const REGAARDER_UI_SITEMAP = [
 
 /**
  * Intelligent semantic matcher across REGAARDER_UI_SITEMAP
+ * Prioritizes multi-word exact phrases and eliminates false positives on stop-words.
  */
 export function findExactUiMatch(intent) {
   const clean = String(intent || '')
@@ -225,7 +363,7 @@ export function findExactUiMatch(intent) {
 
   if (!clean) return null;
 
-  // 1. Check multi-word phrase matches first (e.g. "add source file", "source file", "font size", "outline off")
+  // 1. Exact Multi-word Phrase Matches (e.g. "where is the slash", "find specific words", "edit replay")
   for (const item of REGAARDER_UI_SITEMAP) {
     for (const kw of item.keywords) {
       if (kw.includes(' ') && clean.includes(kw)) {
@@ -234,25 +372,36 @@ export function findExactUiMatch(intent) {
     }
   }
 
-  // 2. Check exact keyword matches
+  // 2. Exact Full Keyword Match
   for (const item of REGAARDER_UI_SITEMAP) {
-    if (item.keywords.some(kw => clean.includes(kw))) {
+    if (item.keywords.some(kw => clean === kw || clean.split(/\s+/).includes(kw))) {
       return item;
     }
   }
 
-  // 3. Token overlap similarity
-  const words = clean.split(/\s+/).filter(w => w.length > 2 && !['how', 'the', 'and', 'for', 'you', 'can', 'with'].includes(w));
+  // 3. Significant Token Overlap (Ignores stop words: button, where, is, the, how, to, a, an, in)
+  const stopWords = new Set(['button', 'where', 'is', 'the', 'how', 'to', 'a', 'an', 'in', 'on', 'of', 'for', 'you', 'can', 'with', 'them', 'and', 'my', 'do', 'i']);
+  const tokens = clean.split(/\s+/).filter(t => t.length > 2 && !stopWords.has(t));
+
+  if (tokens.length === 0) return null;
+
   let bestMatch = null;
   let bestScore = 0;
 
   for (const item of REGAARDER_UI_SITEMAP) {
     let score = 0;
     for (const kw of item.keywords) {
-      if (words.some(w => kw === w || kw.includes(w))) score += 3;
+      const kwTokens = kw.split(/\s+/).filter(t => !stopWords.has(t));
+      for (const token of tokens) {
+        if (kwTokens.includes(token)) score += 4;
+        else if (kw.includes(token)) score += 2;
+      }
     }
-    if (words.some(w => item.title.toLowerCase().includes(w))) score += 4;
-    if (words.some(w => item.description.toLowerCase().includes(w))) score += 1;
+
+    for (const token of tokens) {
+      if (item.title.toLowerCase().includes(token)) score += 3;
+      if (item.id.includes(token)) score += 3;
+    }
 
     if (score > bestScore) {
       bestScore = score;
@@ -260,7 +409,7 @@ export function findExactUiMatch(intent) {
     }
   }
 
-  return bestScore >= 3 ? bestMatch : null;
+  return bestScore >= 4 ? bestMatch : null;
 }
 
 export async function generateTourGuideViaAI(intent, productMode = 'compose', callGemini = null) {
@@ -273,14 +422,15 @@ export async function generateTourGuideViaAI(intent, productMode = 'compose', ca
     const prompt = `You are the Regaarder Compose Tour Guide Agent.
 The user is asking: "${intent}" in ${productMode} mode.
 
-ACTUAL REGAARDER COMPOSE UI CONTROLS:
+ACTUAL REGAARDER COMPOSE CONTROLS:
+- Header: Search (Ctrl+F), Version History (Replay edits), Export (PDF, DOCX, MD), Share, Saved Drafts, Undo/Redo.
+- Sidebar: Assistant AI chat, History / Replay tab, Properties panel.
 - Top Mode Bar: Context, Templates, Write, Review, View.
-- Write Tab Toolbar: Mode switcher, Document Title, Font (Manrope, Inter, DM Sans), Font Size (14pt default), Alignment, Lists (Bullet, Numbered, Checklist), + Insert (Images/Videos/Files, Emoji, Symbols, Equations, Table Grid, Charts, Shapes).
-- View Tab Toolbar: Portrait/Landscape, Page Margins dropdown (Normal 1.0 in, Narrow 0.5 in, Wide 1.5 in), Paper Size (A4, Letter), Outline On/Off, Dark Mode.
-- Header: Export (PDF, DOCX, Markdown), Share, Notifications.
+- Write Tab Toolbar: Font (Manrope, Inter, DM Sans), Font Size (14pt), Alignment, Lists (Bullet, Numbered, Checklist), + Insert (Images, Emoji, Equations, Table Grid, Charts, Shapes).
+- View Tab Toolbar: Margins (Normal 1.0 in, Narrow 0.5 in, Wide 1.5 in), Paper Size (A4, Letter), Outline On/Off, Dark Mode, Focus Mode.
 - Canvas: Slash commands (/table, /image, /checklist, /math, /browser, /tour, /video).
 
-CRITICAL RULE: Ground strictly in real controls. Return strict JSON without markdown:
+CRITICAL RULE: Return strict JSON without markdown code fences:
 {
   "title": "Concise walkthrough title",
   "description": "1-sentence summary",
