@@ -185,7 +185,7 @@ export default function OrbSpotlightModal({
             </div>
 
             {/* 4 Mode Tabs (Strictly styled as slightly rounded rectangular outlines, no pill shapes) */}
-            <div className={`flex items-center gap-1.5 p-1 rounded-xl ${
+            <div className={`flex items-center gap-1 p-1 rounded-xl ${
               isHighContrast
                 ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 dark:border-zinc-700'
                 : 'bg-slate-100/80 dark:bg-zinc-900/60 border border-black/[0.04] dark:border-white/[0.06]'
@@ -201,10 +201,10 @@ export default function OrbSpotlightModal({
                     className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg transition-all duration-150 cursor-pointer ${
                       isActive
                         ? isHighContrast
-                          ? 'border-2 border-[#7C5ACF] dark:border-[#a78bfa] bg-white dark:bg-zinc-800 text-[#7C5ACF] dark:text-[#a78bfa] font-extrabold shadow-sm'
-                          : 'border-2 border-[#7C5ACF] dark:border-[#8B6FD1] bg-white dark:bg-zinc-800 text-[#7C5ACF] dark:text-[#a78bfa] font-semibold shadow-xs'
+                          ? 'border-2 border-violet-500 bg-white dark:bg-zinc-800 text-black dark:text-white font-extrabold shadow-sm'
+                          : 'border border-black/[0.08] dark:border-white/[0.12] bg-white dark:bg-zinc-800 text-[#7C5ACF] dark:text-[#a78bfa] font-semibold shadow-xs'
                         : isHighContrast
-                        ? 'border-2 border-transparent text-slate-900 dark:text-zinc-100 hover:border-slate-400 font-bold'
+                        ? 'border border-transparent text-slate-900 dark:text-zinc-100 hover:border-slate-400 font-bold'
                         : 'border border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-800/60 font-medium'
                     }`}
                   >
@@ -220,7 +220,6 @@ export default function OrbSpotlightModal({
 
             {/* Window Controls */}
             <div className="flex items-center gap-1.5">
-              {/* Quick Visual Disability / High Contrast Accessibility Toggle */}
               <button
                 type="button"
                 onClick={toggleHighContrast}
@@ -229,7 +228,7 @@ export default function OrbSpotlightModal({
                     ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border-2 border-violet-500 shadow-2xs font-extrabold'
                     : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-white/80 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/60 font-medium'
                 }`}
-                title={isHighContrast ? "Visual Disabilities Mode: ON (High Contrast & Crisp Borders)" : "Visual Disabilities Mode: OFF (Calm Neutral Glassmorphism)"}
+                title={isHighContrast ? "Visual Disabilities Mode: ON" : "Visual Disabilities Mode: OFF"}
               >
                 <Eye size={14} />
                 <span className="text-[10px] uppercase tracking-wider hidden sm:inline">
@@ -256,7 +255,7 @@ export default function OrbSpotlightModal({
             </div>
           </div>
 
-          {/* ── Search Input Row (Active in Search / Find Mode) ── */}
+          {/* ── Search Input Row ── */}
           {activeMode === 'search' && (
             <div className="px-6 pb-3.5 pt-1">
               <div className="relative flex items-center">
@@ -266,18 +265,18 @@ export default function OrbSpotlightModal({
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search across docs, spreadsheets, slides, meetings, and organizational memory..."
+                  placeholder="Search a concept, project, person, number, formula, or decision across all applications..."
                   className={`w-full pl-11 pr-24 py-2.5 rounded-2xl text-sm focus:outline-none transition-all ${
                     isHighContrast
-                      ? 'border-2 border-slate-400 dark:border-zinc-500 bg-white dark:bg-zinc-900 text-black dark:text-white placeholder-slate-500 font-bold'
-                      : 'border border-black/[0.08] dark:border-white/[0.08] bg-white/90 dark:bg-zinc-900/90 text-slate-800 dark:text-zinc-100 placeholder-slate-400 font-normal focus:ring-2 focus:ring-violet-500/15'
+                      ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 focus:border-violet-500 text-black dark:text-white font-bold'
+                      : 'bg-white/80 dark:bg-zinc-900/80 border border-slate-200/80 dark:border-zinc-700/80 focus:border-[#7C5ACF] dark:focus:border-[#a78bfa] text-slate-800 dark:text-zinc-100 placeholder:text-slate-400'
                   }`}
                 />
                 {query && (
                   <button
                     type="button"
                     onClick={() => setQuery('')}
-                    className="absolute right-3 p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    className="absolute right-3.5 p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-white"
                   >
                     <X size={14} />
                   </button>
@@ -289,7 +288,6 @@ export default function OrbSpotlightModal({
 
         {/* ── Dynamic Main View Port ── */}
         <div className="flex-1 min-h-0 overflow-hidden relative">
-          {/* Mode 1: Search & Intelligence */}
           {activeMode === 'search' && (
             <OrbSearchResultsView
               query={query}
@@ -318,7 +316,6 @@ export default function OrbSpotlightModal({
             />
           )}
 
-          {/* Mode 2: Interactive Map (Knowledge Graph) */}
           {activeMode === 'map' && (
             <OrbMapCanvas
               entities={searchResults.results.map(r => r.entity)}
@@ -339,7 +336,6 @@ export default function OrbSpotlightModal({
             />
           )}
 
-          {/* Mode 3: Understand (Provenance & Evidence Explorer) */}
           {activeMode === 'understand' && (
             <OrbUnderstandPanel
               selectedEdge={selectedEdge}
@@ -353,7 +349,6 @@ export default function OrbSpotlightModal({
             />
           )}
 
-          {/* Mode 4: Decide (Strategic Decision Synthesizer) */}
           {activeMode === 'decide' && (
             <OrbDecideSynthesizer
               initialQuestion={query}
@@ -371,9 +366,9 @@ export default function OrbSpotlightModal({
         {/* ── Bottom Status Bar ── */}
         <div className="flex items-center justify-between px-6 py-2 border-t border-slate-200/60 dark:border-zinc-800/80 bg-slate-50/60 dark:bg-zinc-900/60 text-[11px] text-slate-400 dark:text-zinc-500 shrink-0">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>Unified Cross-Workspace Intelligence active</span>
+              <span className="font-medium text-slate-600 dark:text-zinc-400">Workspace intelligence active</span>
             </span>
             <span>•</span>
             <span>{allEntities.length} indexed entities</span>

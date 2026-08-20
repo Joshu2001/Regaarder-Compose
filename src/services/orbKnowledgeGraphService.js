@@ -1310,10 +1310,14 @@ export function synthesizeStrategicDecision(topicOrQuestion, {
   if (/nvidia|gpu|capex|revenue|blackwell|h200|\$48/i.test(clean)) {
     return {
       topic: 'Q3 Nvidia GPU Allocation & Capex Authorization ($48.2B Forecast)',
-      status: 'Decision Executed • Execution Phase',
+      status: 'AI Recommendation • Pending Executive Review',
       confidenceScore: 0.94,
-      recommendationTitle: 'Proceed with $1.8B Blackwell Prepayment While Locking Secondary ASE Packaging Before Sep 10',
-      coreRecommendation: 'Authorize execution of the $1.8B binding advance prepayment to preserve tier-1 allocation priority for Blackwell B200 accelerators. Concurrently accelerate Marcus Vance\'s secondary OSAT contract with ASE Group to insulate the $48.2B revenue projection against TSMC single-source delivery slippage.',
+      recommendationTitle: 'Blackwell Allocation & Packaging Mitigation',
+      recommendedCourse: 'Proceed with the Blackwell allocation, contingent on securing secondary packaging capacity.',
+      why: '+28% QoQ demand growth in datacenter compute models supports expansion.',
+      criticalConstraint: 'TSMC packaging concentration creates a potential $6.7B delivery risk if single-source packaging slips.',
+      requiredCondition: 'Secure secondary ASE Group packaging allocation before September 10.',
+      coreRecommendation: 'Proceed with the Blackwell allocation, contingent on securing secondary packaging capacity.',
       executiveSummary: 'Cross-workspace intelligence validates strong hyperscale demand (+28% QoQ), supporting the $48.2B gross revenue target in Sheets. However, single-source packaging bottlenecks at TSMC create a critical delivery slippage risk of $6.7B if secondary packaging is not locked immediately.',
       evidenceToChangeRecommendation: [
         {
@@ -1382,7 +1386,7 @@ export function synthesizeStrategicDecision(topicOrQuestion, {
         },
         {
           item: '$1.8B binding inventory advance commitment execution',
-          status: 'Completed (Board Approved Aug 18)',
+          status: 'Recorded Decision (Board Approved Aug 18)',
           owner: 'Executive Committee',
           criticality: 'Prerequisite for Tier-1 Allocation Priority'
         }

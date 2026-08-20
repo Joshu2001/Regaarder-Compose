@@ -69,38 +69,71 @@ export default function OrbSearchResultsView({
 
       {/* ── Results Container ── */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4 thin-scrollbar">
-        {/* Suggested Queries Chips when query is empty or short */}
-        {suggestedQuestions?.length > 0 && (
-          <div className={`p-4 rounded-2xl ${
-            highContrast
-              ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
-              : 'bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-xs'
-          }`}>
-            <div className={`flex items-center gap-2 mb-2 text-xs ${
-              highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-800 dark:text-zinc-200'
+        {/* Suggested Queries Chips with clear AI Primary vs Secondary Hierarchy */}
+        {suggestedQuestions?.length > 0 && (() => {
+          const primaryInquiries = suggestedQuestions.slice(0, 2);
+          const secondaryInquiries = suggestedQuestions.slice(2);
+
+          return (
+            <div className={`p-5 rounded-2xl ${
+              highContrast
+                ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
+                : 'bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-xs'
             }`}>
-              <RegaarderAiIcon size={14} className="text-[#7C5ACF] dark:text-[#a78bfa]" />
-              <span>Suggested Strategic Inquiries</span>
+              <div className={`flex items-center gap-2 mb-3 text-xs ${
+                highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-800 dark:text-zinc-200'
+              }`}>
+                <RegaarderAiIcon size={14} className="text-[#7C5ACF] dark:text-[#a78bfa]" />
+                <span>Suggested Strategic Inquiries</span>
+              </div>
+
+              {/* Primary AI Recommendations */}
+              <div className="flex flex-col sm:flex-row gap-2.5 mb-3">
+                {primaryInquiries.map((q, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => onSwitchToDecide(q)}
+                    className={`group flex-1 flex items-center justify-between p-3 rounded-xl transition-all text-left cursor-pointer ${
+                      highContrast
+                        ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-violet-500 font-bold text-black dark:text-white'
+                        : 'bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/80 dark:border-violet-800/60 hover:bg-violet-100/80 dark:hover:bg-violet-900/40 text-slate-900 dark:text-zinc-100'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2 min-w-0 pr-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-violet-200/80 dark:bg-violet-900 text-violet-800 dark:text-violet-200 shrink-0 mt-0.5">
+                        Suggested
+                      </span>
+                      <span className="text-xs font-semibold leading-snug">{q}</span>
+                    </div>
+                    <ArrowRight size={13} className="text-[#7C5ACF] dark:text-[#a78bfa] group-hover:translate-x-0.5 transition-all shrink-0" />
+                  </button>
+                ))}
+              </div>
+
+              {/* Lighter Secondary Inquiries */}
+              {secondaryInquiries.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-100 dark:border-zinc-800/80">
+                  {secondaryInquiries.map((q, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => onSwitchToDecide(q)}
+                      className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-all text-left cursor-pointer ${
+                        highContrast
+                          ? 'font-bold text-slate-900 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-900 border border-slate-300'
+                          : 'font-normal text-slate-600 dark:text-zinc-400 bg-slate-50/80 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-700/60 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-zinc-700/40'
+                      }`}
+                    >
+                      <span className="truncate max-w-md">{q}</span>
+                      <ArrowRight size={11} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {suggestedQuestions.map((q, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => onSwitchToDecide(q)}
-                  className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-all text-left cursor-pointer ${
-                    highContrast
-                      ? 'font-bold text-slate-950 dark:text-zinc-100 bg-slate-100 dark:bg-zinc-900 border-2 border-slate-400 dark:border-zinc-600 hover:border-violet-500'
-                      : 'font-medium text-slate-700 dark:text-zinc-300 bg-slate-100/70 dark:bg-zinc-800/60 hover:bg-white dark:hover:bg-zinc-700 border border-slate-200/80 dark:border-zinc-700/60 hover:border-slate-300'
-                  }`}
-                >
-                  <span>{q}</span>
-                  <ArrowRight size={11} className="text-slate-500 group-hover:translate-x-0.5 transition-all" />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Results List */}
         {results.length === 0 ? (
@@ -113,6 +146,8 @@ export default function OrbSearchResultsView({
           </div>
         ) : (
           results.map(({ entity, relevanceScore, relevanceRationale, connectedCount }) => {
+            const cleanRationale = relevanceRationale?.replace(/organizational memory/gi, 'workspace intelligence') || 'Indexed workspace entity across connected documents and models.';
+
             return (
               <div
                 key={entity.id}
@@ -181,14 +216,14 @@ export default function OrbSearchResultsView({
                 </div>
 
                 {/* ── "Why this is relevant" Semantic Rationale Banner ── */}
-                {relevanceRationale && (
+                {cleanRationale && (
                   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11.5px] mb-2.5 ${
                     highContrast
                       ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 dark:border-zinc-700 text-black dark:text-white font-bold'
                       : 'bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-700/40 text-slate-700 dark:text-zinc-300 font-medium'
                   }`}>
                     <RegaarderAiIcon size={13} className="text-[#7C5ACF] dark:text-[#a78bfa] shrink-0" />
-                    <span className="truncate">{relevanceRationale}</span>
+                    <span className="truncate">{cleanRationale}</span>
                   </div>
                 )}
 
@@ -211,26 +246,23 @@ export default function OrbSearchResultsView({
                   </div>
                 )}
 
-                {/* Footer Controls & Quick Deep-Link Actions */}
+                {/* Footer Controls & Quick Deep-Link Actions (Strict Button Hierarchy) */}
                 <div className={`flex items-center justify-between pt-3 border-t mt-auto text-xs ${
-                  highContrast ? 'border-slate-300 dark:border-zinc-700' : 'border-slate-100 dark:border-zinc-800'
+                  highContrast ? 'border-slate-300 dark:border-zinc-700' : 'border-slate-100 dark:border-zinc-800/80'
                 }`}>
                   <div className={`flex items-center gap-1.5 ${
                     highContrast ? 'font-bold text-slate-800 dark:text-zinc-200' : 'font-medium text-slate-500 dark:text-zinc-400'
                   }`}>
-                    <Network size={13} className="text-slate-500" />
+                    <Network size={13} className="text-slate-400" />
                     <span>{connectedCount} connected relationship{connectedCount === 1 ? '' : 's'}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {/* Ghost Navigation Actions */}
                     <button
                       type="button"
                       onClick={() => onSwitchToMap(entity)}
-                      className={`px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 text-[11.5px] cursor-pointer ${
-                        highContrast
-                          ? 'border-2 border-slate-400 dark:border-zinc-600 bg-white dark:bg-zinc-900 text-black dark:text-white font-bold'
-                          : 'border border-slate-200/80 dark:border-zinc-700/60 bg-white/80 dark:bg-zinc-800/80 hover:bg-slate-100 text-slate-700 dark:text-zinc-300 font-medium'
-                      }`}
+                      className="px-2.5 py-1 rounded-lg text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-1 text-[11.5px] font-medium cursor-pointer"
                       title="View dynamic knowledge graph around this entity"
                     >
                       <Network size={12} />
@@ -239,16 +271,13 @@ export default function OrbSearchResultsView({
                     <button
                       type="button"
                       onClick={() => onSwitchToUnderstand(entity)}
-                      className={`px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 text-[11.5px] cursor-pointer ${
-                        highContrast
-                          ? 'border-2 border-slate-400 dark:border-zinc-600 bg-white dark:bg-zinc-900 text-black dark:text-white font-bold'
-                          : 'border border-slate-200/80 dark:border-zinc-700/60 bg-white/80 dark:bg-zinc-800/80 hover:bg-slate-100 text-slate-700 dark:text-zinc-300 font-medium'
-                      }`}
+                      className="px-2.5 py-1 rounded-lg text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-1 text-[11.5px] font-medium cursor-pointer"
                       title="Inspect evidence and connection provenance"
                     >
                       <Layers size={12} />
                       <span>Understand</span>
                     </button>
+                    {/* Primary Action (Filled Purple) */}
                     <button
                       type="button"
                       onClick={() => onNavigateToWorkspace(entity)}

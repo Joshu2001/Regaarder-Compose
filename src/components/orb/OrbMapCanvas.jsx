@@ -187,14 +187,14 @@ export default function OrbMapCanvas({
   const activeLensMeta = ORB_LENSES.find(l => l.id === activeLens) || ORB_LENSES[0];
 
   return (
-    <div className="flex flex-col h-full w-full select-none overflow-hidden bg-[#0a0c12] relative">
+    <div className="flex flex-col h-full w-full select-none overflow-hidden bg-[#161922] relative">
       {/* ── Top Lens Switcher Toolbar: Floating Glass Bar ── */}
       <div 
         data-no-pan="true"
-        className="flex items-center justify-between px-6 py-2.5 border-b border-white/20 bg-slate-950/80 backdrop-blur-xl z-20 shrink-0"
+        className="flex items-center justify-between px-6 py-2.5 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl z-20 shrink-0"
       >
         <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar py-0.5">
-          <span className="text-xs font-bold text-slate-300 mr-2 uppercase tracking-wider">
+          <span className="text-xs font-bold text-slate-400 mr-2 uppercase tracking-wider">
             Lenses:
           </span>
           {ORB_LENSES.map(lens => {
@@ -206,8 +206,8 @@ export default function OrbMapCanvas({
                 onClick={() => onSelectLens(lens.id)}
                 className={`px-3 py-1 text-xs rounded-lg transition-all duration-150 whitespace-nowrap cursor-pointer ${
                   isActive
-                    ? 'border-2 border-[#a78bfa] bg-white/25 text-white font-bold shadow-xs'
-                    : 'border border-white/20 bg-white/10 text-slate-200 hover:text-white hover:bg-white/20 font-medium'
+                    ? 'border-2 border-[#a78bfa] bg-white/20 text-white font-bold shadow-xs'
+                    : 'border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/15 font-medium'
                 }`}
                 title={lens.desc}
               >
@@ -227,7 +227,7 @@ export default function OrbMapCanvas({
           <button
             type="button"
             onClick={() => setZoom(z => Math.max(0.35, z - 0.15))}
-            className="p-1.5 rounded-lg border border-white/20 bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg border border-white/15 bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
             title="Zoom Out"
           >
             <ZoomOut size={13} />
@@ -238,7 +238,7 @@ export default function OrbMapCanvas({
           <button
             type="button"
             onClick={() => setZoom(z => Math.min(2.5, z + 0.15))}
-            className="p-1.5 rounded-lg border border-white/20 bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg border border-white/15 bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
             title="Zoom In"
           >
             <ZoomIn size={13} />
@@ -246,7 +246,7 @@ export default function OrbMapCanvas({
           <button
             type="button"
             onClick={handleResetView}
-            className="p-1.5 rounded-lg border border-white/20 bg-white/10 hover:bg-white/20 text-white transition-colors ml-1 cursor-pointer"
+            className="p-1.5 rounded-lg border border-white/15 bg-white/10 hover:bg-white/20 text-white transition-colors ml-1 cursor-pointer"
             title="Reset Pan & Zoom"
           >
             <RefreshCw size={13} />
@@ -256,7 +256,7 @@ export default function OrbMapCanvas({
 
       {/* ── Active Lens Contextual Description Banner ── */}
       <div className="absolute top-14 left-6 z-10 pointer-events-none">
-        <div className="px-3.5 py-1.5 rounded-xl bg-slate-900 backdrop-blur-md border border-white/20 shadow-lg text-xs text-slate-200 flex items-center gap-2">
+        <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/90 backdrop-blur-md border border-white/15 shadow-lg text-xs text-slate-200 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#a78bfa]" />
           <span className="font-bold text-white">{activeLensMeta.label} Lens:</span>
           <span className="text-slate-300 font-medium">{activeLensMeta.desc}</span>
@@ -286,7 +286,7 @@ export default function OrbMapCanvas({
           <defs>
             {/* Subtle spatial coordinate grid pattern */}
             <pattern id="orb-grid" width="36" height="36" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="0.85" fill="#475569" opacity="0.35" />
+              <circle cx="2" cy="2" r="0.75" fill="#64748b" opacity="0.30" />
             </pattern>
 
             {/* Arrow marker for standard connections */}
@@ -330,7 +330,7 @@ export default function OrbMapCanvas({
           {/* Background Grid Rect */}
           <rect width="8000" height="8000" x="-3000" y="-3000" fill="url(#orb-grid)" />
 
-          {/* Render Connection Edges */}
+          {/* Render Connection Edges with Clear Visual Semantics */}
           {links.map(link => {
             const isHovered = hoveredEdgeId === link.id;
             const isSelected = selectedEdgeId === link.id;
@@ -371,7 +371,7 @@ export default function OrbMapCanvas({
                   strokeWidth={20}
                 />
                 
-                {/* Visual line */}
+                {/* Visual line with Semantic Representation */}
                 <path
                   d={pathD}
                   fill="none"
@@ -386,15 +386,15 @@ export default function OrbMapCanvas({
                       ? '#ffffff'
                       : highContrast
                       ? '#64748b'
-                      : '#334155'
+                      : '#475569'
                   }
                   strokeWidth={
                     highContrast
-                      ? (isSelected || isFocused ? 3.2 : isHovered ? 2.6 : isAi ? 2.2 : 1.8)
-                      : (isSelected || isFocused ? 2.4 : isHovered ? 2.0 : isAi ? 1.8 : 1.2)
+                      ? (isSelected || isFocused ? 3.0 : isHovered ? 2.6 : isAi ? 2.2 : 1.8)
+                      : (isSelected || isFocused ? 2.2 : isHovered ? 2.0 : isAi ? 1.6 : 1.2)
                   }
-                  strokeOpacity={isFocused || isSelected || isHovered || highContrast ? 1.0 : 0.35}
-                  strokeDasharray={isAi ? '5 5' : undefined}
+                  strokeOpacity={isFocused || isSelected || isHovered || highContrast ? 1.0 : 0.40}
+                  strokeDasharray={isAi ? '4 4' : isContradiction ? '3 3' : undefined}
                   markerEnd={
                     isContradiction
                       ? 'url(#orb-arrow-contra)'
@@ -405,7 +405,7 @@ export default function OrbMapCanvas({
                   className="transition-all duration-150"
                 />
 
-                {/* Edge Label on hover or selection */}
+                {/* Edge Label strictly on hover or selection */}
                 {(isHovered || isSelected || (isFocused && isAi) || isContradiction) && (
                   <foreignObject
                     x={mx - 95}
@@ -431,7 +431,7 @@ export default function OrbMapCanvas({
             );
           })}
 
-          {/* Render Graph Nodes */}
+          {/* Render Graph Nodes (Clean Default + Rich Hover Micro-Card) */}
           {nodes.map(node => {
             const isSelected = selectedEntityId === node.id;
             const isHovered = hoveredNodeId === node.id;
@@ -442,7 +442,7 @@ export default function OrbMapCanvas({
               <g
                 key={node.id}
                 transform={`translate(${node.x}, ${node.y})`}
-                className={`cursor-pointer select-none transition-opacity duration-200 ${isDimmed ? 'opacity-25' : 'opacity-100'}`}
+                className={`cursor-pointer select-none transition-opacity duration-200 ${isDimmed ? 'opacity-20' : 'opacity-100'}`}
                 onClick={(e) => handleNodeClick(e, node)}
                 onMouseEnter={() => setHoveredNodeId(node.id)}
                 onMouseLeave={() => setHoveredNodeId(null)}
@@ -450,15 +450,15 @@ export default function OrbMapCanvas({
                 {/* Selection / Hover Glow Ring */}
                 {(isSelected || isHovered) && (
                   <circle
-                    r={34}
-                    fill={isSelected ? 'rgba(167, 139, 250, 0.28)' : 'rgba(255, 255, 255, 0.12)'}
+                    r={32}
+                    fill={isSelected ? 'rgba(167, 139, 250, 0.25)' : 'rgba(255, 255, 255, 0.10)'}
                   />
                 )}
 
                 {/* Node Outer Circle */}
                 <circle
-                  r={22}
-                  fill={isSelected ? '#2e1065' : highContrast ? '#1e2430' : '#141824'}
+                  r={20}
+                  fill={isSelected ? '#2e1065' : highContrast ? '#1e2430' : '#1a1e2b'}
                   stroke={
                     isSelected 
                       ? '#c4b5fd' 
@@ -468,57 +468,62 @@ export default function OrbMapCanvas({
                       ? '#a78bfa' 
                       : highContrast 
                       ? '#ffffff' 
-                      : '#475569'
+                      : '#526077'
                   }
                   strokeWidth={
                     highContrast
                       ? (isSelected ? 3.5 : isHovered ? 3 : 2.5)
-                      : (isSelected ? 2.5 : isHovered ? 2.0 : 1.5)
+                      : (isSelected ? 2.2 : isHovered ? 2.0 : 1.4)
                   }
                   className="shadow-md transition-all duration-150"
                 />
 
                 {/* Regaarder Product Icon Center */}
-                <foreignObject x={-11} y={-11} width={22} height={22} className="pointer-events-none">
+                <foreignObject x={-10} y={-10} width={20} height={20} className="pointer-events-none">
                   <div className={`w-full h-full flex items-center justify-center ${
-                    isSelected ? 'text-violet-200' : 'text-slate-200'
+                    isSelected ? 'text-violet-200' : 'text-slate-300'
                   }`}>
-                    <RegaarderProductIcon name={node.workspace} size={15} />
+                    <RegaarderProductIcon name={node.workspace} size={14} />
                   </div>
                 </foreignObject>
 
-                {/* Top Badge: Metric / Value if applicable */}
+                {/* Top Metric Badge if present */}
                 {node.metadata?.cellValue && (
-                  <foreignObject x={-45} y={-44} width={90} height={20} className="overflow-visible pointer-events-none">
-                    <div className={`text-[10px] font-mono px-2 py-0.5 rounded text-center truncate shadow-sm ${
-                      highContrast
-                        ? 'font-black bg-emerald-950 text-emerald-100 border-2 border-emerald-400'
-                        : 'font-semibold bg-emerald-950/70 text-emerald-300 border border-emerald-700/60'
-                    }`}>
+                  <foreignObject x={-40} y={-40} width={80} height={18} className="overflow-visible pointer-events-none">
+                    <div className="text-[9.5px] font-mono px-1.5 py-0.2 rounded text-center truncate shadow-sm font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-600/60">
                       {node.metadata.cellValue}
                     </div>
                   </foreignObject>
                 )}
 
-                {/* Bottom Label: Entity Title */}
-                <foreignObject x={-75} y={26} width={150} height={44} className="overflow-visible pointer-events-none">
-                  <div className="flex flex-col items-center">
-                    <span className={`text-[11px] text-center leading-tight truncate max-w-[140px] px-1.5 py-0.5 rounded ${
+                {/* ── DEFAULT MINIMAL LABEL (Keeps Graph Uncluttered) ── */}
+                {!isHovered && !isSelected && (
+                  <foreignObject x={-60} y={23} width={120} height={20} className="overflow-visible pointer-events-none">
+                    <div className="text-center">
+                      <span className="text-[10px] font-medium text-slate-300 truncate max-w-[110px] inline-block">
+                        {node.title}
+                      </span>
+                    </div>
+                  </foreignObject>
+                )}
+
+                {/* ── HOVER / SELECTION RICH MICRO-CARD TOOLTIP ── */}
+                {(isHovered || isSelected) && (
+                  <foreignObject x={-100} y={24} width={200} height={80} className="overflow-visible pointer-events-none z-30">
+                    <div className={`p-2 rounded-xl text-center shadow-xl backdrop-blur-xl border flex flex-col items-center animate-in fade-in zoom-in-95 duration-150 ${
                       isSelected
-                        ? 'text-violet-200 bg-violet-950/80 border border-violet-500 font-bold'
-                        : highContrast
-                        ? 'text-white bg-black border-2 border-white/80 font-black'
-                        : 'text-slate-200 bg-slate-950/70 border border-white/10 font-medium'
+                        ? 'bg-violet-950/90 border-violet-500/80 text-white'
+                        : 'bg-slate-900/90 border-white/20 text-white'
                     }`}>
-                      {node.title}
-                    </span>
-                    <span className={`text-[10px] truncate max-w-[125px] mt-0.5 ${
-                      highContrast ? 'font-bold text-white' : 'font-normal text-slate-400'
-                    }`}>
-                      {node.lensRole || node.workspace}
-                    </span>
-                  </div>
-                </foreignObject>
+                      <span className="text-[11px] font-bold truncate max-w-[180px]">
+                        {node.title}
+                      </span>
+                      <span className="text-[9.5px] text-slate-300 truncate max-w-[170px] mt-0.5">
+                        {node.author ? `${node.author} • ` : ''}{node.lensRole || node.workspace}
+                      </span>
+                    </div>
+                  </foreignObject>
+                )}
               </g>
             );
           })}

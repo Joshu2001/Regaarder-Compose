@@ -202,39 +202,73 @@ export default function OrbDecideSynthesizer({
               <div className="flex flex-col items-end shrink-0">
                 <span className={`text-xs px-2.5 py-1 rounded-full shadow-2xs ${
                   highContrast
-                    ? 'font-extrabold bg-emerald-100 dark:bg-emerald-950 text-emerald-950 dark:text-emerald-200 border-2 border-emerald-500'
-                    : 'font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                    ? 'font-extrabold bg-violet-100 dark:bg-violet-950 text-violet-950 dark:text-violet-200 border-2 border-violet-500'
+                    : 'font-semibold bg-violet-50 dark:bg-violet-950/40 text-[#7C5ACF] dark:text-[#a78bfa] border border-violet-200 dark:border-violet-800/60'
                 }`}>
-                  {synthesis.status}
+                  {synthesis.status || 'AI Recommendation • Pending Review'}
                 </span>
                 <span className={`text-[10px] font-mono mt-1 ${
                   highContrast ? 'font-bold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-500'
                 }`}>
-                  {Math.round(synthesis.confidenceScore * 100)}% Cross-Workspace Alignment
+                  {Math.round((synthesis.confidenceScore || 0.94) * 100)}% Cross-Workspace Alignment
                 </span>
               </div>
             </div>
 
-            {/* Core Recommendation Callout */}
-            {synthesis.coreRecommendation && (
-              <div className={`p-4 rounded-2xl space-y-1.5 ${
-                highContrast
-                  ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 dark:border-zinc-700'
-                  : 'bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-700/60'
-              }`}>
-                <div className={`flex items-center gap-2 text-xs ${
+            {/* ── Structured Reasoning & Recommendation Architecture ── */}
+            <div className={`p-5 rounded-2xl space-y-3.5 ${
+              highContrast
+                ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 dark:border-zinc-700'
+                : 'bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-700/60'
+            }`}>
+              {/* 1. Recommended Course */}
+              <div>
+                <div className="text-[10.5px] uppercase tracking-wider font-bold text-[#7C5ACF] dark:text-[#a78bfa] mb-1">
+                  Recommended Course
+                </div>
+                <p className={`text-sm leading-snug ${
                   highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-900 dark:text-zinc-100'
                 }`}>
-                  <ShieldCheck size={15} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Recommendation: {synthesis.recommendationTitle || 'Primary Action Path'}</span>
-                </div>
-                <p className={`text-xs leading-relaxed ${
-                  highContrast ? 'font-medium text-slate-900 dark:text-zinc-200' : 'font-normal text-slate-600 dark:text-zinc-400'
-                }`}>
-                  {synthesis.coreRecommendation}
+                  {synthesis.recommendedCourse || synthesis.coreRecommendation || 'Proceed with the Blackwell allocation, contingent on securing secondary packaging capacity.'}
                 </p>
               </div>
-            )}
+
+              {/* 2. Structured Sub-points: Why • Critical Constraint • Required Condition */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200/60 dark:border-zinc-700/50">
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 block">
+                    Evidence / Why
+                  </span>
+                  <p className={`text-xs leading-relaxed ${
+                    highContrast ? 'font-bold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-700 dark:text-zinc-300'
+                  }`}>
+                    {synthesis.why || '+28% demand growth supports expansion.'}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 block">
+                    Critical Constraint
+                  </span>
+                  <p className={`text-xs leading-relaxed ${
+                    highContrast ? 'font-bold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-700 dark:text-zinc-300'
+                  }`}>
+                    {synthesis.criticalConstraint || 'TSMC packaging concentration creates a potential $6.7B exposure.'}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-violet-700 dark:text-violet-400 block">
+                    Required Condition
+                  </span>
+                  <p className={`text-xs leading-relaxed ${
+                    highContrast ? 'font-bold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-700 dark:text-zinc-300'
+                  }`}>
+                    {synthesis.requiredCondition || 'Secure secondary ASE capacity before September 10.'}
+                  </p>
+                </div>
+              </div>
+            </div>
 
             <p className={`text-xs leading-relaxed ${
               highContrast ? 'font-medium text-slate-900 dark:text-zinc-200' : 'font-normal text-slate-600 dark:text-zinc-400'

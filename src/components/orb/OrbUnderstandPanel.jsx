@@ -92,6 +92,7 @@ export default function OrbUnderstandPanel({
             const statusKey = edge.epistemicStatus || (edge.isAiInferred ? 'inferred' : 'verified');
             const statusConfig = EPISTEMIC_CONFIG[statusKey] || EPISTEMIC_CONFIG.verified;
             const StatusIcon = statusConfig.icon;
+            const isExplicit = statusKey === 'verified' || edge.evidence?.formula;
 
             return (
               <button
@@ -101,8 +102,8 @@ export default function OrbUnderstandPanel({
                 className={`w-full text-left p-3 rounded-xl transition-all duration-150 cursor-pointer ${
                   isSelected
                     ? highContrast
-                      ? 'border-2 border-[#7C5ACF] dark:border-[#a78bfa] bg-white dark:bg-zinc-800 shadow-sm'
-                      : 'border-2 border-[#7C5ACF] bg-white dark:bg-zinc-800 shadow-xs'
+                      ? 'border-2 border-violet-500 bg-slate-100 dark:bg-zinc-800 shadow-sm'
+                      : 'border border-violet-300/80 dark:border-violet-700/60 bg-violet-50/70 dark:bg-violet-950/40 shadow-xs'
                     : highContrast
                     ? 'border-2 border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-slate-400'
                     : 'border border-slate-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-700/60'
@@ -112,13 +113,15 @@ export default function OrbUnderstandPanel({
                   <span className={`inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded border ${
                     highContrast
                       ? statusConfig.badgeClass
+                      : isSelected
+                      ? 'bg-violet-100/90 dark:bg-violet-900/60 text-[#7C5ACF] dark:text-violet-200 border-violet-200 dark:border-violet-800'
                       : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-700'
                   }`}>
                     <StatusIcon size={10} />
                     <span>{statusConfig.label}</span>
                   </span>
                   <span className={`text-[10px] font-mono ${highContrast ? 'text-slate-900 dark:text-zinc-100 font-bold' : 'text-slate-500 font-medium'}`}>
-                    {Math.round((edge.confidenceScore || 1) * 100)}% conf
+                    {isExplicit ? 'Explicit' : `${Math.round((edge.confidenceScore || 0.88) * 100)}% conf`}
                   </span>
                 </div>
 
@@ -165,7 +168,7 @@ export default function OrbUnderstandPanel({
                   <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border ${
                     highContrast
                       ? statusConfigBadgeClass(currentEpistemicKey)
-                      : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200 dark:border-zinc-700 font-semibold'
+                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80 font-semibold'
                   }`}>
                     <EpistemicIcon size={13} />
                     <span>{currentEpistemic.label} Connection</span>
@@ -183,7 +186,9 @@ export default function OrbUnderstandPanel({
 
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={`text-xs font-mono ${highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-500'}`}>
-                    Confidence: {Math.round((activeEdge.confidenceScore || 1) * 100)}%
+                    {activeEdge.epistemicStatus === 'verified' || activeEdge.evidence?.formula
+                      ? 'Explicit • Deterministic'
+                      : `Confidence: ${Math.round((activeEdge.confidenceScore || 0.88) * 100)}%`}
                   </span>
                 </div>
               </div>
@@ -266,17 +271,14 @@ export default function OrbUnderstandPanel({
                     </div>
                   </div>
 
+                  {/* Secondary Action: Ghost / Outlined */}
                   <button
                     type="button"
                     onClick={() => onNavigateToWorkspace(sourceEntity)}
-                    className={`w-full py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                      highContrast
-                        ? 'border-2 border-slate-400 dark:border-zinc-600 bg-white dark:bg-zinc-900 text-black dark:text-white font-bold'
-                        : 'border border-slate-200/80 dark:border-zinc-700/60 bg-white/80 dark:bg-zinc-800 hover:bg-slate-100 text-slate-700 dark:text-zinc-300 font-medium'
-                    }`}
+                    className="w-full py-2 rounded-xl border border-slate-200/80 dark:border-zinc-700/60 bg-white/60 dark:bg-zinc-800/60 hover:bg-white dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <span>Inspect in {sourceEntity.workspace}</span>
-                    <ExternalLink size={13} />
+                    <ExternalLink size={12} />
                   </button>
                 </div>
               )}
@@ -337,10 +339,11 @@ export default function OrbUnderstandPanel({
                     )}
                   </div>
 
+                  {/* Primary Action: Filled Purple */}
                   <button
                     type="button"
                     onClick={() => onNavigateToWorkspace(targetEntity)}
-                    className="w-full py-2 rounded-xl bg-[#7C5ACF] text-white hover:bg-[#6c48c5] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                    className="w-full py-2 rounded-xl bg-[#7C5ACF] text-white hover:bg-[#6c48c5] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
                   >
                     <span>Open in {targetEntity.workspace}</span>
                     <ArrowRight size={13} />
