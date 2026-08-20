@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  Search, Network, Layers, Sparkles, X, Maximize2, Minimize2,
+  Search, Network, Layers, X, Maximize2, Minimize2,
   Compass, ArrowRight, CornerDownLeft, Command, HelpCircle,
-  SlidersHorizontal, CheckSquare
+  SlidersHorizontal, CheckSquare, Eye
 } from 'lucide-react';
-import { OrbIcon, RegaarderProductIcon } from '../RegaarderProductIcons';
+import { OrbIcon, RegaarderAiIcon, RegaarderProductIcon } from '../RegaarderProductIcons';
 import OrbSearchResultsView from './OrbSearchResultsView';
 import OrbMapCanvas from './OrbMapCanvas';
 import OrbUnderstandPanel from './OrbUnderstandPanel';
 import OrbDecideSynthesizer from './OrbDecideSynthesizer';
+import { useHighContrast } from '../../services/accessibilitySettingsService';
 import { 
   INITIAL_ORB_ENTITIES, 
   INITIAL_ORB_EDGES, 
@@ -20,7 +21,7 @@ export const ORB_MODES = [
   { id: 'search', label: 'Intelligence Search', icon: Search, shortcut: '⌘1' },
   { id: 'map', label: 'Map (Graph)', icon: Network, shortcut: '⌘2' },
   { id: 'understand', label: 'Understand', icon: Layers, shortcut: '⌘3' },
-  { id: 'decide', label: 'Decide', icon: Sparkles, shortcut: '⌘4' },
+  { id: 'decide', label: 'Decide', icon: RegaarderAiIcon, shortcut: '⌘4' },
 ];
 
 export default function OrbSpotlightModal({
@@ -32,13 +33,14 @@ export default function OrbSpotlightModal({
   onNavigateToEntity,
   onAddTask
 }) {
+  const [isHighContrast, toggleHighContrast] = useHighContrast();
   const [query, setQuery] = useState(initialQuery);
   const [activeMode, setActiveMode] = useState(initialMode);
   const [activeLens, setActiveLens] = useState('timeline');
   const [workspaceFilter, setWorkspaceFilter] = useState('all');
   const [selectedEntityId, setSelectedEntityId] = useState(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(true);
   const searchInputRef = useRef(null);
 
   // Sync initial props
@@ -139,39 +141,55 @@ export default function OrbSpotlightModal({
         onClick={onClose}
       />
 
-      {/* Main Orb Container */}
+      {/* Main Orb Container: Neutral Colorless Glass Shell */}
       <div 
-        className={`relative flex flex-col bg-white/92 dark:bg-[#16161a]/94 backdrop-blur-3xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 shadow-2xl rounded-3xl overflow-hidden transition-all duration-200 z-10 ${
+        className={`relative flex flex-col backdrop-blur-2xl ring-1 shadow-2xl rounded-3xl overflow-hidden transition-all duration-200 z-10 ${
+          isHighContrast
+            ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-500 ring-slate-400'
+            : 'bg-white/80 dark:bg-[#12141a]/85 border border-black/[0.08] dark:border-white/[0.08] ring-slate-900/5 dark:ring-black/40'
+        } ${
           isFullscreen 
             ? 'w-full h-full max-w-none rounded-none' 
             : 'w-full max-w-5xl h-[88vh] max-h-[820px]'
         }`}
       >
-        {/* ── Top Header Bar with Orb Branding, Search Input & Mode Tabs ── */}
-        <div className="flex flex-col border-b border-slate-200/70 dark:border-zinc-800/80 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl shrink-0">
-          <div className="flex items-center justify-between px-6 pt-4 pb-3">
+        {/* ── Top Header Bar: Darker & Recessed Luminance Hierarchy ── */}
+        <div className={`flex flex-col border-b backdrop-blur-xl shrink-0 ${
+          isHighContrast
+            ? 'border-b-2 border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-950'
+            : 'border-b border-black/[0.06] dark:border-white/[0.06] bg-slate-50/70 dark:bg-zinc-950/60'
+        }`}>
+          <div className="flex items-center justify-between px-6 pt-3.5 pb-2.5">
             {/* Orb Brand Mark */}
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#7C5ACF] to-[#a78bfa] text-white flex items-center justify-center shadow-md shadow-[#7C5ACF]/20">
-                <OrbIcon size={18} />
+              <div className="w-8 h-8 rounded-xl bg-slate-950 dark:bg-zinc-100 text-white dark:text-zinc-950 flex items-center justify-center shadow-xs">
+                <OrbIcon size={17} />
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+                  <span className={`text-sm tracking-tight ${isHighContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-900 dark:text-zinc-100'}`}>
                     Orb
                   </span>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.2 rounded bg-violet-100 dark:bg-violet-950 text-[#7C5ACF] dark:text-[#a78bfa]">
+                  <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                    isHighContrast
+                      ? 'font-bold border-2 border-slate-500 dark:border-zinc-600 bg-white dark:bg-zinc-900 text-slate-950 dark:text-zinc-100'
+                      : 'font-medium border border-slate-200/80 dark:border-zinc-700/60 bg-white/70 dark:bg-zinc-800/40 text-slate-600 dark:text-zinc-400'
+                  }`}>
                     Intelligence Layer
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-400 dark:text-zinc-500">
+                <span className={`text-[11px] ${isHighContrast ? 'font-bold text-slate-800 dark:text-zinc-300' : 'font-normal text-slate-500 dark:text-zinc-400'}`}>
                   Cross-workspace discovery & organizational reasoning
                 </span>
               </div>
             </div>
 
             {/* 4 Mode Tabs (Strictly styled as slightly rounded rectangular outlines, no pill shapes) */}
-            <div className="flex items-center gap-1 bg-slate-100/70 dark:bg-zinc-800/60 p-1 rounded-xl border border-slate-200/60 dark:border-zinc-700/60">
+            <div className={`flex items-center gap-1.5 p-1 rounded-xl ${
+              isHighContrast
+                ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 dark:border-zinc-700'
+                : 'bg-slate-100/80 dark:bg-zinc-900/60 border border-black/[0.04] dark:border-white/[0.06]'
+            }`}>
               {ORB_MODES.map(mode => {
                 const isActive = activeMode === mode.id;
                 const IconComponent = mode.icon;
@@ -180,15 +198,19 @@ export default function OrbSpotlightModal({
                     key={mode.id}
                     type="button"
                     onClick={() => setActiveMode(mode.id)}
-                    className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 cursor-pointer ${
+                    className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg transition-all duration-150 cursor-pointer ${
                       isActive
-                        ? 'border border-[#7C5ACF] dark:border-[#8B6FD1] bg-white dark:bg-zinc-800 text-[#7C5ACF] dark:text-[#a78bfa] shadow-xs'
-                        : 'border border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/50'
+                        ? isHighContrast
+                          ? 'border-2 border-[#7C5ACF] dark:border-[#a78bfa] bg-white dark:bg-zinc-800 text-[#7C5ACF] dark:text-[#a78bfa] font-extrabold shadow-sm'
+                          : 'border-2 border-[#7C5ACF] dark:border-[#8B6FD1] bg-white dark:bg-zinc-800 text-[#7C5ACF] dark:text-[#a78bfa] font-semibold shadow-xs'
+                        : isHighContrast
+                        ? 'border-2 border-transparent text-slate-900 dark:text-zinc-100 hover:border-slate-400 font-bold'
+                        : 'border border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-800/60 font-medium'
                     }`}
                   >
-                    <IconComponent size={14} />
+                    <IconComponent size={14} className={isActive ? 'text-[#7C5ACF] dark:text-[#a78bfa]' : 'text-slate-500'} />
                     <span>{mode.label}</span>
-                    <span className="text-[10px] opacity-50 hidden sm:inline font-mono">
+                    <span className="text-[10px] text-slate-400 hidden sm:inline font-mono">
                       {mode.shortcut}
                     </span>
                   </button>
@@ -198,43 +220,64 @@ export default function OrbSpotlightModal({
 
             {/* Window Controls */}
             <div className="flex items-center gap-1.5">
+              {/* Quick Visual Disability / High Contrast Accessibility Toggle */}
               <button
                 type="button"
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
-                title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                onClick={toggleHighContrast}
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  isHighContrast
+                    ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border-2 border-violet-500 shadow-2xs font-extrabold'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-white/80 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/60 font-medium'
+                }`}
+                title={isHighContrast ? "Visual Disabilities Mode: ON (High Contrast & Crisp Borders)" : "Visual Disabilities Mode: OFF (Calm Neutral Glassmorphism)"}
+              >
+                <Eye size={14} />
+                <span className="text-[10px] uppercase tracking-wider hidden sm:inline">
+                  {isHighContrast ? 'A11y: ON' : 'A11y'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsFullscreen(f => !f)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer"
+                title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
               >
                 {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer ml-1"
                 title="Close (Esc)"
               >
-                <X size={16} />
+                <X size={15} />
               </button>
             </div>
           </div>
 
-          {/* Search Input Field in Search & Map modes */}
-          {(activeMode === 'search' || activeMode === 'map') && (
-            <div className="px-6 pb-3 pt-1">
-              <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" size={17} />
+          {/* ── Search Input Row (Active in Search / Find Mode) ── */}
+          {activeMode === 'search' && (
+            <div className="px-6 pb-3.5 pt-1">
+              <div className="relative flex items-center">
+                <Search size={16} className="absolute left-4 text-slate-400 dark:text-zinc-500" />
                 <input
                   ref={searchInputRef}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search a concept, project, person, number, formula, or decision across all applications..."
-                  className="w-full pl-10 pr-20 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700/80 bg-white/80 dark:bg-zinc-800/80 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-inner"
+                  placeholder="Search across docs, spreadsheets, slides, meetings, and organizational memory..."
+                  className={`w-full pl-11 pr-24 py-2.5 rounded-2xl text-sm focus:outline-none transition-all ${
+                    isHighContrast
+                      ? 'border-2 border-slate-400 dark:border-zinc-500 bg-white dark:bg-zinc-900 text-black dark:text-white placeholder-slate-500 font-bold'
+                      : 'border border-black/[0.08] dark:border-white/[0.08] bg-white/90 dark:bg-zinc-900/90 text-slate-800 dark:text-zinc-100 placeholder-slate-400 font-normal focus:ring-2 focus:ring-violet-500/15'
+                  }`}
                 />
                 {query && (
                   <button
                     type="button"
                     onClick={() => setQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300"
+                    className="absolute right-3 p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                   >
                     <X size={14} />
                   </button>
@@ -253,6 +296,7 @@ export default function OrbSpotlightModal({
               results={searchResults.results}
               suggestedQuestions={searchResults.suggestedQuestions}
               workspaceFilter={workspaceFilter}
+              highContrast={isHighContrast}
               onSelectWorkspaceFilter={setWorkspaceFilter}
               onSelectEntity={(entity) => {
                 setSelectedEntityId(entity.id);
@@ -282,6 +326,7 @@ export default function OrbSpotlightModal({
               activeLens={activeLens}
               selectedEntityId={selectedEntityId}
               selectedEdgeId={selectedEdgeId}
+              highContrast={isHighContrast}
               onSelectLens={setActiveLens}
               onSelectEntity={(entity) => {
                 setSelectedEntityId(entity.id);
@@ -301,6 +346,7 @@ export default function OrbSpotlightModal({
               selectedEntity={selectedEntity}
               entities={allEntities}
               edges={allEdges}
+              highContrast={isHighContrast}
               onSelectEdge={setSelectedEdgeId}
               onSelectEntity={(entity) => setSelectedEntityId(entity.id)}
               onNavigateToWorkspace={handleNavigate}
@@ -313,6 +359,7 @@ export default function OrbSpotlightModal({
               initialQuestion={query}
               entities={allEntities}
               edges={allEdges}
+              highContrast={isHighContrast}
               onNavigateToWorkspace={handleNavigate}
               onAddActionToTasks={(act) => {
                 if (onAddTask) onAddTask(act);

@@ -37,6 +37,15 @@ export const ORB_RELATION_TYPES = {
   CONTRADICTS: 'contradicts',
 };
 
+// ─── EPISTEMIC PROVENANCE STATUSES ──────────────────────────────────────────
+export const ORB_EPISTEMIC_STATUS = {
+  VERIFIED: 'verified',     // Explicit formulas, direct quotes, signed resolutions (95-100%)
+  INFERRED: 'inferred',     // Autonomous AI correlation, cross-app semantic linkage (85-94%)
+  PROBABLE: 'probable',     // Contextual statistical likelihood, project/timeline overlap (70-84%)
+  UNCERTAIN: 'uncertain',   // Detected discrepancy, unverified assumption, or contested date
+};
+
+
 // ─── 9 ANALYTICAL LENSES ─────────────────────────────────────────────────────
 export const ORB_LENSES = [
   { id: 'timeline', label: 'Timeline', desc: 'Chronological progression from assumption to execution' },
@@ -301,6 +310,85 @@ export const INITIAL_ORB_ENTITIES = [
     }
   },
   {
+    id: 'ent_sched_blackwell',
+    type: 'schedule_event',
+    workspace: 'schedule',
+    title: 'Q3 Blackwell B200 Batch 1 Delivery & Datacenter Commissioning',
+    author: 'Michelle Chen',
+    authorRole: 'Head of Hardware Operations',
+    authorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop&crop=face',
+    updatedAt: '2026-08-19T14:30:00Z',
+    project: 'GPU Infrastructure 2026',
+    tags: ['Schedule', 'Blackwell', 'Milestone', 'Datacenter', 'Nvidia'],
+    excerpt: 'Critical project schedule milestone tracking 40,000 unit arrival and server rack power-on across Phoenix and Dublin clusters.',
+    content: 'Comprehensive delivery schedule tracking hardware transit from packaging facilities to hyperscale cloud data halls.',
+    metadata: {
+      scheduledDate: '2026-09-15T09:00:00Z',
+      location: 'Phoenix DC-04 & Dublin DC-02',
+      status: 'On Schedule'
+    }
+  },
+  {
+    id: 'ent_room_foundry_sync',
+    type: 'meeting',
+    workspace: 'room',
+    title: 'Foundry Capacity & Packaging Alignment Conference',
+    author: 'Marcus Vance',
+    authorRole: 'Director of Procurement',
+    authorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face',
+    updatedAt: '2026-08-17T14:00:00Z',
+    project: 'Supply Chain Resilience',
+    tags: ['Room', 'Meeting Transcript', 'Foundry', 'TSMC', 'ASE', 'Capacity'],
+    excerpt: 'Joint procurement alignment with OSAT packaging partners reviewing monthly wafer allocation and lead-time commitments.',
+    content: 'Multi-party meeting transcript covering yield variance, substrate allocation, and secondary supplier ramp schedules.',
+    metadata: {
+      roomId: 'room_foundry_alignment_aug17',
+      durationMinutes: 60,
+      attendeesCount: 8,
+      keyAgreement: '25,000 monthly wafer commitment'
+    }
+  },
+  {
+    id: 'ent_browser_semianalysis',
+    type: 'research_note',
+    workspace: 'browser',
+    title: 'SemiAnalysis Deep-Dive: CoWoS Wafer Substrate Bottlenecks & Pricing',
+    author: 'Dr. Sarah Lin',
+    authorRole: 'Lead Semiconductor Analyst',
+    authorAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop&crop=face',
+    updatedAt: '2026-08-15T11:20:00Z',
+    project: 'Supply Chain Resilience',
+    tags: ['Research', 'Browser', 'SemiAnalysis', 'CoWoS', 'Packaging', 'Economics'],
+    excerpt: 'Detailed market intelligence report analyzing advanced packaging supply constraints and gross margin implications through 2027.',
+    content: 'External analyst intelligence report captured via Browser research panel regarding glass substrate roadmaps and foundry pricing power.',
+    metadata: {
+      browserUrl: 'https://semianalysis.com/advanced-packaging-deep-dive-2026',
+      sourceType: 'External Research Report',
+      capturedAt: '2026-08-15'
+    }
+  },
+  {
+    id: 'ent_task_dual_source',
+    type: 'task',
+    workspace: 'tasks',
+    title: 'Qualify secondary foundry test wafer runs with Samsung SF2 & Intel 18A',
+    author: 'Dr. Sarah Lin',
+    authorRole: 'Lead Semiconductor Analyst',
+    authorAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop&crop=face',
+    updatedAt: '2026-08-19T16:00:00Z',
+    project: 'Supply Chain Resilience',
+    tags: ['Tasks', 'Foundry', 'Dual Sourcing', 'Intel', 'Samsung', 'Qualification'],
+    excerpt: 'Engineering validation task to execute shuttle test runs on secondary foundry process nodes.',
+    content: 'Action item to initiate shuttle wafer qualification runs to validate secondary foundry yield and thermal performance.',
+    metadata: {
+      taskId: 'task_dual_foundry_qual',
+      priority: 'High',
+      status: 'In Progress',
+      dueDate: '2026-10-15',
+      assignee: 'Dr. Sarah Lin'
+    }
+  },
+  {
     id: 'ent_orb_task',
     type: 'task',
     workspace: 'tasks',
@@ -332,6 +420,9 @@ export const INITIAL_ORB_EDGES = [
     targetId: 'ent_nv_sheet',
     relationType: ORB_RELATION_TYPES.CALCULATES_FROM,
     label: 'Calculates revenue model ($48.2B) from 28% demand growth assumption',
+    epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
+    modality: 'Formula Linkage',
+    epistemicRationale: 'Explicit spreadsheet cell formula =B4*(1+C2) directly references Elena Rostova\'s 28% growth assumption.',
     evidence: {
       sourceSnippet: 'We model hyperscale server buildouts with an assumed 28% quarter-over-quarter expansion...',
       targetSnippet: 'Cell C14 formula =$B$4*(1+$C$2) computes $48.20B gross revenue projection.',
@@ -351,6 +442,9 @@ export const INITIAL_ORB_EDGES = [
     targetId: 'ent_nv_deck',
     relationType: ORB_RELATION_TYPES.VISUALIZES,
     label: 'Visualizes $48.2B model output as Q3 Capex Breakdown on Slide 4',
+    epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
+    modality: 'Direct Citation',
+    epistemicRationale: 'Board slide 4 directly embeds the $48.2B financial model outputs as a stacked bar chart.',
     evidence: {
       sourceSnippet: 'Total projected gross revenue output: $48,200,000,000.',
       targetSnippet: 'Slide 4: Q3 GPU Revenue Trajectory ($48.2B) Stacked Bar Chart.',
@@ -370,6 +464,9 @@ export const INITIAL_ORB_EDGES = [
     targetId: 'ent_nv_meeting',
     relationType: ORB_RELATION_TYPES.DISCUSSED_IN,
     label: 'Discussed Slide 4 revenue targets against packaging yield constraints',
+    epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
+    modality: 'Meeting Transcript Citation',
+    epistemicRationale: 'Michelle Chen explicitly referenced Slide 4 revenue targets in recorded meeting transcript at 14:28.',
     evidence: {
       sourceSnippet: 'Notes wafer constraints and CoWoS delivery timelines.',
       targetSnippet: 'Michelle Chen (14:28): "If TSMC advanced packaging slips by 3 weeks, our Q3 forecast of $48.2B drops to $41.5B immediately."',
@@ -388,6 +485,9 @@ export const INITIAL_ORB_EDGES = [
     targetId: 'ent_nv_task',
     relationType: ORB_RELATION_TYPES.ASSIGNED_TO,
     label: 'Generated urgent mitigation task to secure secondary OSAT packaging capacity',
+    epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
+    modality: 'Action Item Generation',
+    epistemicRationale: 'Task created automatically following Michelle Chen\'s directive during the executive meeting.',
     evidence: {
       sourceSnippet: 'Michelle Chen recommended immediate secondary packaging qualification.',
       targetSnippet: 'Task: Finalize secondary OSAT advanced packaging contract with ASE Group.',
@@ -406,6 +506,9 @@ export const INITIAL_ORB_EDGES = [
     targetId: 'ent_nv_decision',
     relationType: ORB_RELATION_TYPES.DECIDED_BY,
     label: 'Prompted C-Suite approval for $1.8B binding inventory prepayment',
+    epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
+    modality: 'Formal Resolution Sign-off',
+    epistemicRationale: 'Executive board resolution citing Alex Vance financial model and Room discussion.',
     evidence: {
       sourceSnippet: 'Consensus reached that securing early allocation justifies upfront cash commitment.',
       targetSnippet: 'Executed binding $1.8B prepayment resolution.',
@@ -424,6 +527,9 @@ export const INITIAL_ORB_EDGES = [
     targetId: 'ent_nv_memo',
     relationType: ORB_RELATION_TYPES.AI_INFERRED,
     label: 'AI Discovered: Memo baseline relies on 92% Taiwan packaging concentration noted in Research',
+    epistemicStatus: ORB_EPISTEMIC_STATUS.INFERRED,
+    modality: 'Semantic Knowledge Extraction',
+    epistemicRationale: 'Orb multi-modal NLP detected implicit dependency between Elena\'s volume ramp and Dr. Sarah Lin\'s geographic risk report.',
     evidence: {
       sourceSnippet: 'Over 92% of advanced CoWoS packaging remain concentrated in Taiwan...',
       targetSnippet: 'We model hyperscale server buildouts with assumed rapid Blackwell ramps...',
@@ -442,6 +548,9 @@ export const INITIAL_ORB_EDGES = [
     targetId: 'ent_nv_deck',
     relationType: ORB_RELATION_TYPES.CONTRADICTS,
     label: 'Potential Variance: Fab cost delta (+ $340/die) reduces Slide 4 net margin by 4.2%',
+    epistemicStatus: ORB_EPISTEMIC_STATUS.UNCERTAIN,
+    modality: 'Discrepancy / Risk Anomaly',
+    epistemicRationale: 'Automated formula reconciliation detected unmodeled margin dilution between Sheets yield model and Board deck.',
     evidence: {
       sourceSnippet: 'Secondary fab cost delta shows +$340 per good die in alternative foundries...',
       targetSnippet: 'Slide 4 calculates standard gross margin at 74.8% without secondary yield variance.',
@@ -460,6 +569,9 @@ export const INITIAL_ORB_EDGES = [
     targetId: 'ent_nv_task',
     relationType: ORB_RELATION_TYPES.DEPENDS_ON,
     label: 'Operationalizes dual-sourcing protocol defined in Marcus Vance procurement memo',
+    epistemicStatus: ORB_EPISTEMIC_STATUS.PROBABLE,
+    modality: 'Project Alignment',
+    epistemicRationale: 'High alignment between procurement threshold guidelines and active contract negotiation workstream.',
     evidence: {
       sourceSnippet: 'Establishes internal threshold: no single fab location may exceed 60% of total supply...',
       targetSnippet: 'Contract negotiations with ASE Group for secondary advanced substrate packaging.',
@@ -477,6 +589,9 @@ export const INITIAL_ORB_EDGES = [
     targetId: 'ent_nv_decision',
     relationType: ORB_RELATION_TYPES.CAUSALLY_IMPACTS,
     label: 'Risk matrix showing $1.4B EBITDA exposure accelerated $1.8B inventory commitment',
+    epistemicStatus: ORB_EPISTEMIC_STATUS.PROBABLE,
+    modality: 'Causal Chain',
+    epistemicRationale: 'Board risk briefing on Taiwan single-sourcing directly precipitated authorization of inventory buffer funding.',
     evidence: {
       sourceSnippet: 'Slide 7 charts supply disruption scenarios estimating quarterly EBITDA risk at $1.4B.',
       targetSnippet: 'Formal board resolution authorizing binding prepayment...',
@@ -494,6 +609,9 @@ export const INITIAL_ORB_EDGES = [
     targetId: 'ent_orb_schedule',
     relationType: ORB_RELATION_TYPES.CHRONOLOGY_BEFORE,
     label: 'Architecture PRD precedes Executive sign-off milestone',
+    epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
+    modality: 'Chronological Link',
+    epistemicRationale: 'Product milestone sequence logged in enterprise release schedule.',
     evidence: {
       sourceSnippet: 'Full PRD specifying unified entity models, 9 analytical lenses...',
       targetSnippet: 'Orb Intelligence Cross-Workspace Architecture Final Sign-off',
@@ -511,6 +629,9 @@ export const INITIAL_ORB_EDGES = [
     targetId: 'ent_orb_task',
     relationType: ORB_RELATION_TYPES.DEPENDS_ON,
     label: 'PRD sub-16ms latency directive spawned graph benchmark task',
+    epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
+    modality: 'Direct Reference',
+    epistemicRationale: 'Engineering benchmark task references explicit latency requirements from PRD Section 4.',
     evidence: {
       sourceSnippet: 'Guarantees sub-16ms latency across knowledge graph rendering...',
       targetSnippet: 'Verify sub-16ms force layout physics across 500+ entity knowledge graphs.',
@@ -656,16 +777,54 @@ export function searchWorkspaceIntelligence(query, {
   entities = INITIAL_ORB_ENTITIES,
   edges = INITIAL_ORB_EDGES
 } = {}) {
+  // Helper to match workspace identity
+  const matchesWorkspace = (entity, filterKey) => {
+    if (!filterKey || filterKey === 'all') return true;
+    const ws = (entity.workspace || '').toLowerCase();
+    const type = (entity.type || '').toLowerCase();
+
+    switch (filterKey.toLowerCase()) {
+      case 'compose':
+      case 'docs':
+      case 'doc':
+        return ws === 'compose' || type === 'document' || type === 'decision';
+      case 'sheets':
+      case 'sheet':
+        return ws === 'sheets' || ws === 'sheet' || type === 'sheet';
+      case 'deck':
+      case 'decks':
+        return ws === 'deck' || ws === 'decks' || type === 'slide';
+      case 'room':
+      case 'meetings':
+      case 'meeting':
+        return ws === 'room' || type === 'meeting';
+      case 'tasks':
+      case 'task':
+        return ws === 'tasks' || type === 'task';
+      case 'schedule':
+        return ws === 'schedule' || type === 'schedule_event';
+      case 'browser':
+      case 'research':
+        return ws === 'browser' || type === 'research_note';
+      default:
+        return ws === filterKey.toLowerCase();
+    }
+  };
+
   if (!query || !query.trim()) {
+    const filteredEntities = entities.filter(e => matchesWorkspace(e, workspaceFilter));
+    const resultEntityIds = new Set(filteredEntities.map(e => e.id));
+    const matchedEdges = edges.filter(e => resultEntityIds.has(e.sourceId) || resultEntityIds.has(e.targetId));
+
     return {
       query: '',
-      results: entities.slice(0, 8).map(e => ({
+      results: filteredEntities.map(e => ({
         entity: e,
         relevanceScore: 1.0,
-        relevanceRationale: 'Recent high-impact workspace entity in your organizational memory.',
+        relevanceRationale: `Recent ${e.workspace ? (e.workspace.charAt(0).toUpperCase() + e.workspace.slice(1)) : 'workspace'} entity in organizational memory.`,
         connectedCount: edges.filter(edge => edge.sourceId === e.id || edge.targetId === e.id).length
       })),
-      matchedEdges: edges,
+      matchedEdges,
       suggestedQuestions: [
         'What should I know before expanding Nvidia GPU commitments?',
         'What evidence supports our Q3 revenue forecast of $48.2B?',
@@ -728,7 +887,7 @@ export function searchWorkspaceIntelligence(query, {
     }
 
     // Apply Workspace filter
-    if (workspaceFilter !== 'all' && entity.workspace !== workspaceFilter) {
+    if (!matchesWorkspace(entity, workspaceFilter)) {
       score = 0;
     }
 
@@ -799,37 +958,85 @@ function generateSuggestedQuestions(query) {
 }
 
 // ─── 9 ANALYTICAL LENS COORDINATE LAYOUT ENGINES ─────────────────────────────
+
+/**
+ * Force-directed collision resolution to eliminate overlaps between nodes & labels
+ */
+function relaxNodePositions(nodes, minDistance = 115, padding = 70, canvasWidth = 1250, canvasHeight = 650) {
+  for (let iter = 0; iter < 45; iter++) {
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i];
+        const b = nodes[j];
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let dist = Math.hypot(dx, dy);
+        if (dist < 1e-3) {
+          dx = (Math.random() - 0.5) * 20;
+          dy = (Math.random() - 0.5) * 20;
+          dist = Math.hypot(dx, dy);
+        }
+        if (dist < minDistance) {
+          const overlap = (minDistance - dist) / 2;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          a.x -= nx * overlap * 0.85;
+          a.y -= ny * overlap * 0.85;
+          b.x += nx * overlap * 0.85;
+          b.y += ny * overlap * 0.85;
+        }
+      }
+      // Keep within bounds
+      nodes[i].x = Math.max(padding, Math.min(canvasWidth - padding, nodes[i].x));
+      nodes[i].y = Math.max(padding, Math.min(canvasHeight - padding, nodes[i].y));
+    }
+  }
+  return nodes;
+}
+
 export function computeLensLayout(lensKey, entities = [], edges = [], { width = 940, height = 580 } = {}) {
   const nodeCount = entities.length;
   if (!nodeCount) return { nodes: [], links: [] };
 
-  const padding = 70;
-  const usableWidth = width - padding * 2;
-  const usableHeight = height - padding * 2;
+  // Use slightly reduced cohesive coordinate canvas
+  const canvasWidth = Math.max(width, Math.max(1200, nodeCount * 80));
+  const canvasHeight = Math.max(height, Math.max(620, nodeCount * 36));
+
+  const padding = 80;
+  const usableWidth = canvasWidth - padding * 2;
+  const usableHeight = canvasHeight - padding * 2;
+  const centerX = canvasWidth / 2;
+  const centerY = canvasHeight / 2;
 
   let positionedNodes = [];
 
   switch (lensKey) {
-    // ── 1. TIMELINE LENS (Horizontal temporal sequence) ──
+    // ── 1. TIMELINE LENS (Evenly-distributed chronological streams) ──
     case 'timeline': {
       const sorted = [...entities].sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
-      const minTime = new Date(sorted[0]?.updatedAt || '2026-08-10').getTime();
-      const maxTime = new Date(sorted[sorted.length - 1]?.updatedAt || '2026-08-20').getTime();
-      const timeSpan = Math.max(1, maxTime - minTime);
 
       positionedNodes = sorted.map((entity, i) => {
-        const t = new Date(entity.updatedAt).getTime();
-        const progress = (t - minTime) / timeSpan;
+        // Distribute smoothly along X by chronological rank to prevent date-clustering pileups
+        const progress = sorted.length > 1 ? i / (sorted.length - 1) : 0.5;
         const x = padding + progress * usableWidth;
-        // Stagger y to prevent horizontal overlap
-        const laneIndex = i % 4;
-        const y = padding + 60 + laneIndex * (usableHeight / 4.2);
-        return { ...entity, x, y, lensRole: 'Chronological Step' };
+
+        // Distribute across 3 distinct staggered horizontal lanes
+        const lane = i % 3;
+        const laneOffsetY = lane === 0 ? -75 : lane === 1 ? 0 : 75;
+        const microJitter = (i % 2 === 0 ? -15 : 15);
+        const y = centerY + laneOffsetY + microJitter;
+
+        return { 
+          ...entity, 
+          x, 
+          y, 
+          lensRole: `Step ${i + 1} of ${sorted.length}` 
+        };
       });
       break;
     }
 
-    // ── 2. DEPENDENCIES LENS (Directional DAG: Upstream -> Midstream -> Downstream) ──
+    // ── 2. DEPENDENCIES LENS (Directional 5-Column Pipeline) ──
     case 'dependencies': {
       const levelMap = {
         research_note: 0,
@@ -868,30 +1075,33 @@ export function computeLensLayout(lensKey, entities = [], edges = [], { width = 
       break;
     }
 
-    // ── 3. DECISIONS LENS (Radial star centered on Decision nodes) ──
+    // ── 3. DECISIONS LENS (Concentric Radial Star with Dual Orbital Rings) ──
     case 'decisions': {
       const decisionNodes = entities.filter(e => e.type === 'decision');
       const nonDecisionNodes = entities.filter(e => e.type !== 'decision');
 
-      const primaryCenter = { x: width / 2, y: height / 2 };
-
       positionedNodes = entities.map(entity => {
         if (entity.type === 'decision') {
-          return { ...entity, x: primaryCenter.x, y: primaryCenter.y, isCentral: true, lensRole: 'Core Decision' };
+          const dIdx = decisionNodes.indexOf(entity);
+          const dCount = Math.max(1, decisionNodes.length);
+          const x = centerX + (dIdx - (dCount - 1) / 2) * 130;
+          return { ...entity, x, y: centerY, isCentral: true, lensRole: 'Core Strategic Decision' };
         }
+
         const idx = nonDecisionNodes.indexOf(entity);
         const total = Math.max(1, nonDecisionNodes.length);
+        const isInnerRing = idx % 2 === 0;
+        const ringRadius = isInnerRing ? Math.min(usableWidth, usableHeight) * 0.24 : Math.min(usableWidth, usableHeight) * 0.38;
         const angle = (idx / total) * 2 * Math.PI - Math.PI / 2;
-        const radius = Math.min(usableWidth, usableHeight) * 0.40;
 
-        const x = primaryCenter.x + Math.cos(angle) * radius;
-        const y = primaryCenter.y + Math.sin(angle) * radius;
-        return { ...entity, x, y, isCentral: false, lensRole: 'Supporting Evidence / Context' };
+        const x = centerX + Math.cos(angle) * ringRadius;
+        const y = centerY + Math.sin(angle) * ringRadius;
+        return { ...entity, x, y, isCentral: false, lensRole: 'Supporting Evidence' };
       });
       break;
     }
 
-    // ── 4. PROJECTS LENS (Clustered by project initiative) ──
+    // ── 4. PROJECTS LENS (Well-Separated Orbital Clusters) ──
     case 'projects': {
       const projectNames = Array.from(new Set(entities.map(e => e.project || 'General Workspace')));
       const clusterCenters = {};
@@ -900,8 +1110,8 @@ export function computeLensLayout(lensKey, entities = [], edges = [], { width = 
         const angle = (pIdx / Math.max(1, projectNames.length)) * 2 * Math.PI - Math.PI / 2;
         const dist = Math.min(usableWidth, usableHeight) * 0.32;
         clusterCenters[pName] = {
-          x: width / 2 + Math.cos(angle) * dist,
-          y: height / 2 + Math.sin(angle) * dist
+          x: centerX + Math.cos(angle) * dist,
+          y: centerY + Math.sin(angle) * dist
         };
       });
 
@@ -914,13 +1124,13 @@ export function computeLensLayout(lensKey, entities = [], edges = [], { width = 
 
       positionedNodes = entities.map(entity => {
         const p = entity.project || 'General Workspace';
-        const center = clusterCenters[p] || { x: width / 2, y: height / 2 };
+        const center = clusterCenters[p] || { x: centerX, y: centerY };
         const bucket = projectBuckets[p];
         const itemIdx = bucket.indexOf(entity);
         const bucketCount = Math.max(1, bucket.length);
 
         const subAngle = (itemIdx / bucketCount) * 2 * Math.PI;
-        const subRadius = 85;
+        const subRadius = Math.min(100, 35 + bucketCount * 10);
 
         const x = center.x + Math.cos(subAngle) * subRadius;
         const y = center.y + Math.sin(subAngle) * subRadius;
@@ -929,7 +1139,7 @@ export function computeLensLayout(lensKey, entities = [], edges = [], { width = 
       break;
     }
 
-    // ── 5. PEOPLE LENS (Radial grouping around key authors / stakeholders) ──
+    // ── 5. PEOPLE LENS (Radial Author Spokes with Orbital Spacing) ──
     case 'people': {
       const authors = Array.from(new Set(entities.map(e => e.author || 'Contributor')));
       const authorAngles = {};
@@ -949,19 +1159,19 @@ export function computeLensLayout(lensKey, entities = [], edges = [], { width = 
         const baseAngle = authorAngles[auth] || 0;
         const bucket = authorBuckets[auth];
         const bIdx = bucket.indexOf(entity);
-        const spread = (bIdx - (bucket.length - 1) / 2) * 0.22;
+        const spread = (bIdx - (bucket.length - 1) / 2) * 0.24;
 
         const finalAngle = baseAngle + spread;
-        const radius = Math.min(usableWidth, usableHeight) * 0.38;
+        const radius = Math.min(usableWidth, usableHeight) * (bIdx % 2 === 0 ? 0.28 : 0.40);
 
-        const x = width / 2 + Math.cos(finalAngle) * radius;
-        const y = height / 2 + Math.sin(finalAngle) * radius;
+        const x = centerX + Math.cos(finalAngle) * radius;
+        const y = centerY + Math.sin(finalAngle) * radius;
         return { ...entity, x, y, stakeholder: auth, lensRole: `Author: ${auth}` };
       });
       break;
     }
 
-    // ── 6. FINANCIAL LENS (Emphasizes Sheets, Revenue, Metrics & Formulas) ──
+    // ── 6. FINANCIAL LENS (Central Spine with Staggered Wings) ──
     case 'financial': {
       const isFin = e => e.workspace === 'sheets' || e.type === 'metric' || /revenue|capex|margin|cost|\$/i.test(e.title + e.excerpt);
 
@@ -972,35 +1182,35 @@ export function computeLensLayout(lensKey, entities = [], edges = [], { width = 
         if (isFin(entity)) {
           const idx = finNodes.indexOf(entity);
           const count = Math.max(1, finNodes.length);
-          const x = width / 2 + (idx - (count - 1) / 2) * 160;
-          const y = height / 2 + (idx % 2 === 0 ? -40 : 40);
+          const x = centerX + (idx - (count - 1) / 2) * 145;
+          const y = centerY + (idx % 2 === 0 ? -45 : 45);
           return { ...entity, x, y, isFinancialHighlight: true, lensRole: 'Financial Core / Formula Model' };
         } else {
           const idx = otherNodes.indexOf(entity);
           const count = Math.max(1, otherNodes.length);
           const angle = (idx / count) * 2 * Math.PI;
-          const r = Math.min(usableWidth, usableHeight) * 0.42;
-          const x = width / 2 + Math.cos(angle) * r;
-          const y = height / 2 + Math.sin(angle) * r;
+          const r = Math.min(usableWidth, usableHeight) * 0.38;
+          const x = centerX + Math.cos(angle) * r;
+          const y = centerY + Math.sin(angle) * r;
           return { ...entity, x, y, isFinancialHighlight: false, lensRole: 'Contextual Driver' };
         }
       });
       break;
     }
 
-    // ── 7. KNOWLEDGE / CONCEPTS LENS (Force topology) ──
+    // ── 7. KNOWLEDGE / CONCEPTS LENS (Golden Ratio Archimedean Spiral) ──
     case 'knowledge': {
       positionedNodes = entities.map((entity, i) => {
-        const phi = (i / Math.max(1, nodeCount)) * 2 * Math.PI;
-        const spiralR = 60 + (i / Math.max(1, nodeCount)) * (Math.min(usableWidth, usableHeight) * 0.38);
-        const x = width / 2 + Math.cos(phi) * spiralR;
-        const y = height / 2 + Math.sin(phi) * spiralR;
+        const phi = (i / Math.max(1, nodeCount)) * 4 * Math.PI;
+        const spiralR = 60 + (i / Math.max(1, nodeCount)) * (Math.min(usableWidth, usableHeight) * 0.36);
+        const x = centerX + Math.cos(phi) * spiralR;
+        const y = centerY + Math.sin(phi) * spiralR;
         return { ...entity, x, y, lensRole: 'Knowledge Node' };
       });
       break;
     }
 
-    // ── 8. CAUSAL LENS (Cause -> Intermediate Impact -> Final Consequence) ──
+    // ── 8. CAUSAL LENS (4-Stage Horizontal Flow) ──
     case 'causal': {
       const causalStage = e => {
         if (e.type === 'research_note' || e.type === 'assumption') return 0;
@@ -1029,7 +1239,7 @@ export function computeLensLayout(lensKey, entities = [], edges = [], { width = 
       break;
     }
 
-    // ── 9. AI INFERENCES LENS (Highlights latent bridges and anomalous links) ──
+    // ── 9. AI INFERENCES LENS (Inner Latent Core & Outer Periphery) ──
     case 'ai':
     default: {
       const aiEdgeNodeIds = new Set();
@@ -1040,18 +1250,35 @@ export function computeLensLayout(lensKey, entities = [], edges = [], { width = 
         }
       });
 
-      positionedNodes = entities.map((entity, i) => {
-        const isAiFocal = aiEdgeNodeIds.has(entity.id);
-        const angle = (i / Math.max(1, nodeCount)) * 2 * Math.PI - Math.PI / 2;
-        const radius = isAiFocal ? 140 : Math.min(usableWidth, usableHeight) * 0.40;
+      const focalNodes = entities.filter(e => aiEdgeNodeIds.has(e.id));
+      const regularNodes = entities.filter(e => !aiEdgeNodeIds.has(e.id));
 
-        const x = width / 2 + Math.cos(angle) * radius;
-        const y = height / 2 + Math.sin(angle) * radius;
-        return { ...entity, x, y, isAiFocal, lensRole: isAiFocal ? 'AI Latent Bridge Node' : 'Corroborating Node' };
+      positionedNodes = entities.map(entity => {
+        const isAiFocal = aiEdgeNodeIds.has(entity.id);
+        if (isAiFocal) {
+          const idx = focalNodes.indexOf(entity);
+          const count = Math.max(1, focalNodes.length);
+          const angle = (idx / count) * 2 * Math.PI - Math.PI / 2;
+          const radius = Math.min(usableWidth, usableHeight) * 0.20;
+          const x = centerX + Math.cos(angle) * radius;
+          const y = centerY + Math.sin(angle) * radius;
+          return { ...entity, x, y, isAiFocal: true, lensRole: 'AI Latent Bridge Node' };
+        } else {
+          const idx = regularNodes.indexOf(entity);
+          const count = Math.max(1, regularNodes.length);
+          const angle = (idx / count) * 2 * Math.PI - Math.PI / 2;
+          const radius = Math.min(usableWidth, usableHeight) * 0.38;
+          const x = centerX + Math.cos(angle) * radius;
+          const y = centerY + Math.sin(angle) * radius;
+          return { ...entity, x, y, isAiFocal: false, lensRole: 'Corroborating Node' };
+        }
       });
       break;
     }
   }
+
+  // Apply Anti-Collision Force Relaxation Pass across all lenses
+  positionedNodes = relaxNodePositions(positionedNodes, 115, padding, canvasWidth, canvasHeight);
 
   // Filter links belonging to the active lens (or all if general)
   const links = edges
@@ -1064,12 +1291,12 @@ export function computeLensLayout(lensKey, entities = [], edges = [], { width = 
       const targetNode = positionedNodes.find(n => n.id === edge.targetId);
       return {
         ...edge,
-        source: sourceNode || { x: width / 2, y: height / 2 },
-        target: targetNode || { x: width / 2, y: height / 2 }
+        source: sourceNode || { x: centerX, y: centerY },
+        target: targetNode || { x: centerX, y: centerY }
       };
     });
 
-  return { nodes: positionedNodes, links };
+  return { nodes: positionedNodes, links, canvasWidth, canvasHeight };
 }
 
 // ─── DECIDE MODE STRATEGIC SYNTHESIZER ───────────────────────────────────────
@@ -1083,9 +1310,31 @@ export function synthesizeStrategicDecision(topicOrQuestion, {
   if (/nvidia|gpu|capex|revenue|blackwell|h200|\$48/i.test(clean)) {
     return {
       topic: 'Q3 Nvidia GPU Allocation & Capex Authorization ($48.2B Forecast)',
-      executiveSummary: 'Cross-workspace intelligence validates strong hyperscale demand (+28% QoQ), supporting the $48.2B gross revenue target in Sheets. However, single-source packaging bottlenecks at TSMC create a critical delivery slippage risk of $6.7B if secondary packaging is not locked immediately.',
       status: 'Decision Executed • Execution Phase',
       confidenceScore: 0.94,
+      recommendationTitle: 'Proceed with $1.8B Blackwell Prepayment While Locking Secondary ASE Packaging Before Sep 10',
+      coreRecommendation: 'Authorize execution of the $1.8B binding advance prepayment to preserve tier-1 allocation priority for Blackwell B200 accelerators. Concurrently accelerate Marcus Vance\'s secondary OSAT contract with ASE Group to insulate the $48.2B revenue projection against TSMC single-source delivery slippage.',
+      executiveSummary: 'Cross-workspace intelligence validates strong hyperscale demand (+28% QoQ), supporting the $48.2B gross revenue target in Sheets. However, single-source packaging bottlenecks at TSMC create a critical delivery slippage risk of $6.7B if secondary packaging is not locked immediately.',
+      evidenceToChangeRecommendation: [
+        {
+          trigger: 'TSMC CoWoS packaging slippage exceeds 14 days',
+          currentAssumption: 'TSMC packaging slips at most 1-2 weeks, covered by ASE secondary qualification by Sep 10.',
+          counterEvidence: 'If ASE qualification extends beyond Sep 10 or secondary yield drops below 78%, deliverable Q3 volume contracts by $6.7B.',
+          contingentAction: 'Immediately divert 35% of Q3 wafer allocations to standard H200 module packaging to preserve cash flow and delivery schedules.'
+        },
+        {
+          trigger: 'Hyperscale Capex revisions below +20% QoQ',
+          currentAssumption: 'Baseline demand expands by +28% based on Elena Rostova\'s memo and Sheets cell C14.',
+          counterEvidence: 'If top 2 cloud customers slow cluster deployment rates below 20%, inventory carrying costs rise to $140M/month.',
+          contingentAction: 'Exercise partial cancellation clause in Blackwell prepayment agreement prior to Aug 31.'
+        },
+        {
+          trigger: 'Secondary packaging unit cost delta exceeds +$450/die',
+          currentAssumption: 'Cost variance capped at +$340/die (blended net margin remains above 70.6%).',
+          counterEvidence: 'If substrate shortages push ASE pricing higher, gross margin drops below the corporate threshold of 68%.',
+          contingentAction: 'Trigger joint pricing pass-through clause with top 4 cloud CSPs to share 50% of packaging cost premium.'
+        }
+      ],
       keyEvidence: [
         {
           source: 'Compose Strategic Memo (Elena Rostova)',
@@ -1114,7 +1363,7 @@ export function synthesizeStrategicDecision(topicOrQuestion, {
           severity: 'High',
           title: 'Packaging Delay Revenue Mismatch',
           description: 'Deck Slide 4 reports an unhedged $48.2B forecast, while the Room transcript audio flags a $6.7B downside risk under TSMC packaging delays.',
-          resolution: 'Task assigned to Marcus Vance to finalize ASE Group secondary packaging contract.'
+          resolution: 'Task assigned to Marcus Vance to finalize ASE Group secondary packaging contract before Sep 10.'
         },
         {
           id: 'contra_2',
@@ -1176,9 +1425,31 @@ export function synthesizeStrategicDecision(topicOrQuestion, {
   if (/taiwan|tsmc|semiconductor|risk|foundry|fab/i.test(clean)) {
     return {
       topic: 'Taiwan Semiconductor Supply Chain Resilience & Dual-Sourcing Strategy',
-      executiveSummary: 'Concentration of 88% leading-edge logic and 92% advanced packaging in Taiwan exposes the enterprise to a $1.4B quarterly EBITDA disruption risk. Sourcing from Intel 18A or Samsung SF2 mitigates geographic exposure but introduces a 12.2% yield gap and +$340/die cost delta.',
       status: 'Under Review • Strategic Decision Required',
       confidenceScore: 0.91,
+      recommendationTitle: 'Authorize $45M Secondary Foundry Qualification while Maintaining 75% Primary TSMC Flow',
+      coreRecommendation: 'Fund engineering wafer qualification runs with secondary foundry partners (Intel 18A / Samsung SF2) to begin operational hedge, but maintain primary volume commitments with TSMC to protect baseline cost targets through 2026.',
+      executiveSummary: 'Concentration of 88% leading-edge logic and 92% advanced packaging in Taiwan exposes the enterprise to a $1.4B quarterly EBITDA disruption risk. Sourcing from Intel 18A or Samsung SF2 mitigates geographic exposure but introduces a 12.2% yield gap and +$340/die cost delta.',
+      evidenceToChangeRecommendation: [
+        {
+          trigger: 'Secondary foundry yield parity exceeds 82%',
+          currentAssumption: 'Secondary foundries average 74.2% wafer yield compared to TSMC\'s 86.4%.',
+          counterEvidence: 'If Intel 18A or Samsung SF2 achieves >82% yield on pilot runs, per-die cost penalty drops from $340 to below $110.',
+          contingentAction: 'Increase secondary volume allocation from 25% to 45% ahead of the 2027 Long-Range Plan target.'
+        },
+        {
+          trigger: 'Geopolitical disruption index rises above 8.8/10',
+          currentAssumption: 'Regional transport corridors remain operational with standard transit times.',
+          counterEvidence: 'If port delays or airspace restrictions escalate transit times past 21 days, downtime costs will exceed secondary qualification premiums.',
+          contingentAction: 'Authorize emergency dual-sourcing acceleration with immediate volume shift to Arizona and European foundry hubs.'
+        },
+        {
+          trigger: 'Customer dual-source acceptance rate below 60%',
+          currentAssumption: 'Customers will accept a 3-5% price adjustment for guaranteed supply resilience.',
+          counterEvidence: 'If enterprise customers reject pass-through pricing, margins will compress by 3.8%.',
+          contingentAction: 'Re-negotiate volume tiers to absorb resilience costs across multi-year software-attached contracts.'
+        }
+      ],
       keyEvidence: [
         {
           source: 'Browser Geopolitical Briefing (Dr. Sarah Lin)',
@@ -1248,9 +1519,25 @@ export function synthesizeStrategicDecision(topicOrQuestion, {
   // Default Universal Workspace Synthesis
   return {
     topic: `Strategic Decision Synthesis: "${topicOrQuestion || 'Cross-Workspace Assessment'}"`,
-    executiveSummary: `Orb has synthesized relevant intelligence across ${entities.length} workspace artifacts in Compose, Sheets, Deck, Tasks, and Room. Key relationships have been traced across upstream assumptions, quantitative models, and downstream task commitments.`,
     status: 'Synthesized Intelligence • Active',
     confidenceScore: 0.89,
+    recommendationTitle: 'Consolidate Cross-Workspace Intelligence & Align Quantitative Models',
+    coreRecommendation: `Synthesize findings across all ${entities.length} indexed artifacts. Prioritize reconciling spreadsheet formula dependencies against strategic document milestones before authorizing further capital allocation.`,
+    executiveSummary: `Orb has synthesized relevant intelligence across ${entities.length} workspace artifacts in Compose, Sheets, Deck, Tasks, and Room. Key relationships have been traced across upstream assumptions, quantitative models, and downstream task commitments.`,
+    evidenceToChangeRecommendation: [
+      {
+        trigger: 'Discrepancies identified in linked spreadsheet formulas',
+        currentAssumption: 'Core revenue and capex assumptions are fully synchronized between sheets and presentation decks.',
+        counterEvidence: 'If source cell references are edited or assumptions diverge by >5%, presentation decks will present outdated figures.',
+        contingentAction: 'Trigger automatic Orb cross-workspace synchronization review to flag unlinked dependencies.'
+      },
+      {
+        trigger: 'Milestone schedule slips exceed 10 business days',
+        currentAssumption: 'Project deliverables are on track for current quarter sign-off.',
+        counterEvidence: 'Task blockers in Room or Tasks will cascade downstream to delay executive review meetings.',
+        contingentAction: 'Escalate critical path dependencies to project leads and adjust roadmap milestones.'
+      }
+    ],
     keyEvidence: entities.slice(0, 4).map(e => ({
       source: `${e.title} (${e.author})`,
       type: e.type,
@@ -1290,3 +1577,4 @@ export function synthesizeStrategicDecision(topicOrQuestion, {
     ]
   };
 }
+

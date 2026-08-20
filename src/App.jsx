@@ -7578,6 +7578,13 @@ function AppCore() {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState('account');
+  const [highContrastMode, setHighContrastMode] = useState(() => {
+    try {
+      return localStorage.getItem('regaarder_high_contrast_accessibility') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [aiProviderConfig, setAiProviderConfig] = useState(() => {
     try {
       const saved = localStorage.getItem('regaarder_ai_config');
