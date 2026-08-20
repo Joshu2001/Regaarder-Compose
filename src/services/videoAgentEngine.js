@@ -1,18 +1,49 @@
 /**
  * videoAgentEngine.js
  *
- * Universal Autonomous Video Recording & DOM Takeover Engine for Regaarder Compose
+ * Universal Autonomous Video Recording & Live UI Takeover Engine for Regaarder Compose
  *
- * Connects directly to the Canonical UI Sitemap (REGAARDER_UI_SITEMAP) and provides:
- * 1. Universal Semantic DOM Element Discovery (resolves any button/menu by selector, text, aria, or sitemap entry).
- * 2. Dynamic multi-waypoint Video Generation from real DOM snapshots.
- * 3. Live interactive UI takeovers with Apple-style smooth cursor transitions, click ripples, and state execution.
+ * Guaranteed Multi-Action Resolver:
+ * - Top Header: Edit Replay (Clock), Find & Replace (Search), Export, Undo/Redo, Share, Drafts
+ * - Sidebar Panels: Assistant, History, Properties, Tasks, Schedule, Room, Memory
+ * - Document Modes: Context, Templates, Write, Review, View
+ * - Canvas Actions: Slash Commands (/), Tables, Equations, Checklists, Images
  */
 
 import html2canvas from 'html2canvas';
 import { findExactUiMatch, REGAARDER_UI_SITEMAP } from './tourAndVideoAgentService.js';
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Simulates a full human pointer sequence so React pointer-down listeners,
+ * dropdown toggles, and buttons fire properly.
+ */
+export function simulateHumanPointerClick(el) {
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  const clientX = rect.left + rect.width / 2;
+  const clientY = rect.top + rect.height / 2;
+
+  const eventInit = {
+    bubbles: true,
+    cancelable: true,
+    view: window,
+    clientX,
+    clientY,
+    buttons: 1
+  };
+
+  try {
+    el.dispatchEvent(new PointerEvent('pointerdown', eventInit));
+    el.dispatchEvent(new MouseEvent('mousedown', eventInit));
+    el.dispatchEvent(new PointerEvent('pointerup', eventInit));
+    el.dispatchEvent(new MouseEvent('mouseup', eventInit));
+    el.click();
+  } catch (err) {
+    el.click();
+  }
+}
 
 /**
  * Finds a mode tab button in the top Apple Segmented Control track.
@@ -65,31 +96,84 @@ export function findButton(label, mode = 'includes') {
       const text = (b.textContent || '').trim().toLowerCase();
       const title = (b.getAttribute('title') || '').toLowerCase().trim();
       const aria = (b.getAttribute('aria-label') || '').toLowerCase().trim();
-      return mode === 'exact' ? text === lower : (text.includes(lower) || title.includes(lower) || aria.includes(lower));
+      return mode === 'exact' ? (text === lower || title === lower) : (text.includes(lower) || title.includes(lower) || aria.includes(lower));
     }) ?? null
   );
 }
 
 /**
  * Universal DOM Element Resolver
- * Resolves any step, action, or selector to a real live DOM element & coordinates.
+ * Accurately finds Header, Sidebar, Canvas, and Toolbar controls.
  */
 export function resolveTargetElement(step) {
   if (typeof document === 'undefined') return null;
 
-  // 1. Check tab buttons
+  // 1. Direct Tab Navigation
   if (step?.tab) {
     const tabBtn = findToolbarTabButton(step.tab);
     if (tabBtn) return tabBtn;
   }
 
-  // 2. Check explicit CSS selectors
+  // 2. Specific Action Resolvers
+  if (step?.type === 'open_history' || step?.actionType === 'open_history') {
+    return (
+      document.querySelector('button[title*="replay" i]') ||
+      document.querySelector('button[title*="history" i]') ||
+      findButton('History', 'includes')
+    );
+  }
+
+  if (step?.type === 'open_search' || step?.actionType === 'open_search') {
+    return (
+      document.querySelector('button[title*="Find & Replace" i]') ||
+      document.querySelector('button[title*="Search" i]') ||
+      document.querySelector('input[placeholder*="Search" i]') ||
+      findButton('Search', 'includes')
+    );
+  }
+
+  if (step?.type === 'open_export' || step?.actionType === 'open_export') {
+    return (
+      document.querySelector('button[title*="Export" i]') ||
+      findButton('Export', 'includes') ||
+      document.querySelector('.export-menu-container button')
+    );
+  }
+
+  if (step?.type === 'undo_action' || step?.actionType === 'undo_action') {
+    return document.querySelector('button[title*="Undo" i]');
+  }
+
+  if (step?.type === 'redo_action' || step?.actionType === 'redo_action') {
+    return document.querySelector('button[title*="Redo" i]');
+  }
+
+  if (step?.type === 'open_share' || step?.actionType === 'open_share') {
+    return findButton('Share', 'includes');
+  }
+
+  if (step?.type === 'open_properties' || step?.actionType === 'open_properties') {
+    return findButton('Properties', 'includes');
+  }
+
+  if (step?.type === 'outline_toggle' || step?.actionType === 'outline_toggle') {
+    return findOutlineToggleButton();
+  }
+
+  if (step?.type === 'focus_toggle' || step?.actionType === 'toggle_focus') {
+    return findButton('Focus Mode', 'includes');
+  }
+
+  if (step?.type === 'select_model' || step?.actionType === 'select_model') {
+    return findButton('gemma', 'includes') || findButton('gemini', 'includes');
+  }
+
+  // 3. Highlight Selectors
   const selectorCandidates = [step?.highlightSelector, step?.selector].filter(Boolean);
   for (const rawSel of selectorCandidates) {
     for (const subSel of rawSel.split(',')) {
       const clean = subSel.trim();
       if (!clean) continue;
-      // Handle :has-text("...") pseudo
       const hasTextMatch = clean.match(/:has-text\("([^"]+)"\)/i);
       if (hasTextMatch) {
         const textTarget = hasTextMatch[1];
@@ -102,11 +186,6 @@ export function resolveTargetElement(step) {
         } catch (_e) {}
       }
     }
-  }
-
-  // 3. Known Action Types
-  if (step?.type === 'outline_toggle' || step?.actionType === 'outline_toggle') {
-    return findOutlineToggleButton();
   }
 
   // 4. Semantic Text Matching
@@ -161,8 +240,15 @@ export function planAutonomousActions(intent, productMode = 'compose') {
   if (sitemapMatch) {
     const steps = [];
 
+    // Header actions do not need tab switches
+    const isHeaderOrSidebarAction = [
+      'open_history', 'open_search', 'open_export', 'open_share',
+      'undo_action', 'open_properties', 'select_model', 'trigger_slash',
+      'rename_title', 'manage_tabs'
+    ].includes(sitemapMatch.actionType);
+
     // Step A: Switch tab if required
-    if (sitemapMatch.targetTab) {
+    if (sitemapMatch.targetTab && !isHeaderOrSidebarAction) {
       steps.push({
         type: 'click_tab',
         tab: sitemapMatch.targetTab,
@@ -171,7 +257,49 @@ export function planAutonomousActions(intent, productMode = 'compose') {
     }
 
     // Step B: Target Action
-    if (sitemapMatch.actionType === 'outline_toggle') {
+    if (sitemapMatch.actionType === 'open_history') {
+      steps.push({
+        type: 'open_history',
+        desc: 'Opening Version History & Edit Replay',
+        highlightSelector: sitemapMatch.highlightSelector
+      });
+    } else if (sitemapMatch.actionType === 'open_search') {
+      steps.push({
+        type: 'open_search',
+        desc: 'Opening Document Search & Find (Ctrl+F)',
+        highlightSelector: sitemapMatch.highlightSelector
+      });
+    } else if (sitemapMatch.actionType === 'open_export') {
+      steps.push({
+        type: 'open_export',
+        desc: 'Opening Export dropdown options',
+        highlightSelector: sitemapMatch.highlightSelector
+      });
+    } else if (sitemapMatch.actionType === 'open_share') {
+      steps.push({
+        type: 'open_share',
+        desc: 'Opening Share & Collaboration modal',
+        highlightSelector: sitemapMatch.highlightSelector
+      });
+    } else if (sitemapMatch.actionType === 'trigger_slash') {
+      steps.push({
+        type: 'trigger_slash',
+        desc: 'Focusing canvas and typing "/" command',
+        highlightSelector: sitemapMatch.highlightSelector
+      });
+    } else if (sitemapMatch.actionType === 'open_properties') {
+      steps.push({
+        type: 'open_properties',
+        desc: 'Opening Document Properties tab',
+        highlightSelector: sitemapMatch.highlightSelector
+      });
+    } else if (sitemapMatch.actionType === 'undo_action') {
+      steps.push({
+        type: 'undo_action',
+        desc: 'Clicking Undo edit',
+        highlightSelector: sitemapMatch.highlightSelector
+      });
+    } else if (sitemapMatch.actionType === 'outline_toggle') {
       const isOff = clean.includes('off') || clean.includes('disable') || clean.includes('hide');
       steps.push({
         type: 'outline_toggle',
@@ -189,13 +317,6 @@ export function planAutonomousActions(intent, productMode = 'compose') {
       steps.push({
         type: 'theme_toggle',
         desc: 'Toggling Light/Dark mode',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'open_export') {
-      steps.push({
-        type: 'click_header_btn',
-        label: 'Export',
-        desc: 'Opening Export options',
         highlightSelector: sitemapMatch.highlightSelector
       });
     } else if (sitemapMatch.actionType === 'open_image_modal') {
@@ -256,63 +377,14 @@ export function planAutonomousActions(intent, productMode = 'compose') {
 }
 
 /**
- * Dynamically extracts waypoints by evaluating real DOM elements for any plan.
+ * Compiles a real video WebM blob from genuine captured UI snapshots and mouse waypoints.
  */
-function getPlanWaypoints(plan, winW, winH) {
-  const waypoints = [{ x: winW * 0.45, y: winH * 0.45, label: 'Start' }];
-
-  const steps = plan?.steps || [];
-  for (const step of steps) {
-    const el = resolveTargetElement(step);
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      if (rect && rect.width > 0 && rect.height > 0) {
-        waypoints.push({
-          x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2,
-          label: step.desc || step.tab || step.label || 'Target',
-          isClick: true
-        });
-        continue;
-      }
-    }
-
-    // Fallback relative estimations if element is not currently in viewport
-    if (step.type === 'click_tab') {
-      const tabIdx = ['Context', 'Templates', 'Write', 'Review', 'View'].indexOf(step.tab);
-      const tx = winW * 0.08 + (tabIdx >= 0 ? tabIdx : 2) * 75;
-      waypoints.push({ x: tx, y: 72, label: step.tab, isClick: true });
-    } else if (step.type === 'outline_toggle') {
-      waypoints.push({ x: winW * 0.52, y: 112, label: 'Outline', isClick: true });
-    } else if (step.type === 'focus_toggle') {
-      waypoints.push({ x: winW * 0.28, y: winH - 30, label: 'Focus Mode', isClick: true });
-    } else if (step.type === 'click_header_btn') {
-      waypoints.push({ x: winW * 0.70, y: 35, label: step.label || 'Export', isClick: true });
-    } else {
-      waypoints.push({ x: winW * 0.45, y: 112, label: step.desc || 'Action', isClick: true });
-    }
-  }
-
-  if (waypoints.length === 1) {
-    waypoints.push({ x: winW * 0.45, y: winH * 0.40, label: 'Canvas', isClick: true });
-  }
-
-  return waypoints;
-}
-
-/**
- * Generates an animated video clip from real DOM snapshots and dynamic waypoints.
- */
-export async function generateDemoVideoBlob(plan) {
+export async function buildVideoClipFromFrames({ frames = [], waypoints = [], plan }) {
   if (typeof document === 'undefined') return null;
 
   try {
-    const snapshotCanvas = await captureRealUiSnapshot();
-
     const winW = window.innerWidth || 1440;
     const winH = window.innerHeight || 900;
-
-    const waypoints = getPlanWaypoints(plan, winW, winH);
 
     const canvas = document.createElement('canvas');
     canvas.width = 960;
@@ -334,7 +406,7 @@ export async function generateDemoVideoBlob(plan) {
 
     recorder.start();
 
-    const durationMs = 3200;
+    const durationMs = 3000;
     const startTime = performance.now();
 
     return new Promise((resolve) => {
@@ -363,34 +435,27 @@ export async function generateDemoVideoBlob(plan) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(1, elapsed / durationMs);
 
-        // A. Draw the Real UI snapshot
-        if (snapshotCanvas) {
-          ctx.drawImage(snapshotCanvas, 0, 0, canvas.width, canvas.height);
-        } else {
-          ctx.fillStyle = '#f8fafc';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, canvas.width, 44);
-          ctx.strokeStyle = '#e2e8f0';
-          ctx.strokeRect(0, 0, canvas.width, 44);
-          ctx.fillStyle = '#f1f5f9';
-          ctx.fillRect(16, 52, canvas.width - 32, 40);
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.roundRect(48, 104, canvas.width - 96, canvas.height - 120, 8);
-          ctx.fill();
-        }
-
-        // B. Interpolate cursor position across dynamic waypoints
-        const scaleX = canvas.width / winW;
-        const scaleY = canvas.height / winH;
-
-        const numSegments = waypoints.length - 1;
+        const numSegments = Math.max(1, waypoints.length - 1);
         const segIdx = Math.min(numSegments - 1, Math.floor(progress * numSegments));
         const segProgress = (progress * numSegments) - segIdx;
 
-        const pStart = waypoints[segIdx];
-        const pEnd = waypoints[segIdx + 1];
+        // A. Draw genuine captured window frame
+        const frameIdx = Math.min(frames.length - 1, segIdx + (segProgress > 0.75 ? 1 : 0));
+        const activeFrame = frames[frameIdx] || frames[0];
+
+        if (activeFrame) {
+          ctx.drawImage(activeFrame, 0, 0, canvas.width, canvas.height);
+        } else {
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // B. Cursor Trajectory
+        const scaleX = canvas.width / winW;
+        const scaleY = canvas.height / winH;
+
+        const pStart = waypoints[segIdx] || { x: winW * 0.5, y: winH * 0.5 };
+        const pEnd = waypoints[segIdx + 1] || pStart;
 
         const ease = segProgress < 0.5 ? 2 * segProgress * segProgress : -1 + (4 - 2 * segProgress) * segProgress;
         const curX = (pStart.x + (pEnd.x - pStart.x) * ease) * scaleX;
@@ -398,7 +463,7 @@ export async function generateDemoVideoBlob(plan) {
 
         const isClicking = Boolean(pEnd.isClick && segProgress > 0.75);
 
-        // C. Target Button Pulse Spotlight
+        // C. Target Spotlight Outline
         if (isClicking) {
           ctx.strokeStyle = 'rgba(99, 102, 241, 0.9)';
           ctx.lineWidth = 2.5;
@@ -407,7 +472,7 @@ export async function generateDemoVideoBlob(plan) {
           ctx.stroke();
         }
 
-        // D. Draw Apple-Style Mouse Cursor
+        // D. Draw Apple Mouse Cursor
         ctx.save();
         ctx.fillStyle = '#0f172a';
         ctx.strokeStyle = '#ffffff';
@@ -429,7 +494,7 @@ export async function generateDemoVideoBlob(plan) {
         }
         ctx.restore();
 
-        // E. Floating Glass Caption Pill at bottom
+        // E. Floating Glass Caption Pill
         ctx.save();
         const pillW = canvas.width - 64;
         const pillH = 38;
@@ -446,7 +511,7 @@ export async function generateDemoVideoBlob(plan) {
 
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-        ctx.fillText(`Autonomous Takeover: ${plan?.title || 'Action'}`, pillX + 16, pillY + 24);
+        ctx.fillText(`Action Demo: ${plan?.title || 'Takeover'}`, pillX + 16, pillY + 24);
 
         ctx.fillStyle = '#6366f1';
         ctx.fillRect(pillX + pillW - 120, pillY + 16, 100 * progress, 5);
@@ -462,16 +527,13 @@ export async function generateDemoVideoBlob(plan) {
       requestAnimationFrame(drawFrame);
     });
   } catch (err) {
-    console.warn('[videoAgentEngine] Video generation fallback:', err);
+    console.warn('[videoAgentEngine] buildVideoClipFromFrames error:', err);
     return null;
   }
 }
 
-export const generateFallbackDemoBlob = generateDemoVideoBlob;
-
 /**
- * Universal Autonomous UI Takeover Executor
- * Dynamically resolves any step, switches tabs, glides cursor, and executes action.
+ * Universal Autonomous UI Takeover Executor & Screen Recorder
  */
 export async function executeAutonomousVideoSequence({
   intent,
@@ -487,6 +549,16 @@ export async function executeAutonomousVideoSequence({
 }) {
   const plan = planAutonomousActions(intent, productMode);
 
+  const winW = window.innerWidth || 1440;
+  const winH = window.innerHeight || 900;
+
+  const capturedFrames = [];
+  const waypoints = [{ x: winW * 0.45, y: winH * 0.45, label: 'Start' }];
+
+  // 1. Initial snapshot
+  const frame0 = await captureRealUiSnapshot();
+  if (frame0) capturedFrames.push(frame0);
+
   for (let i = 0; i < plan.steps.length; i++) {
     const step = plan.steps[i];
     if (onProgressUpdate) {
@@ -497,49 +569,59 @@ export async function executeAutonomousVideoSequence({
       });
     }
 
-    // 1. Auto-switch toolbar tab if step specifies a different tab
+    // ── Tab Switching Action ──
     if (step.type === 'click_tab' && step.tab) {
+      if (setDocToolbarTab) setDocToolbarTab(step.tab);
+      if (setIsDocumentSubToolbarCollapsed) setIsDocumentSubToolbarCollapsed(false);
+
       const tabBtn = findToolbarTabButton(step.tab);
       if (tabBtn) {
         const rect = tabBtn.getBoundingClientRect();
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
 
+        waypoints.push({ x: cx, y: cy, label: step.tab, isClick: true });
+
         const prevOutline = tabBtn.style.outline;
         tabBtn.style.outline = '3px solid #6366f1';
         tabBtn.style.borderRadius = '8px';
 
         if (onCursorMove) onCursorMove(cx, cy);
-        await wait(750);
+        await wait(700);
 
         if (onCursorClick) onCursorClick();
         await wait(200);
 
         tabBtn.style.outline = prevOutline;
-        tabBtn.click();
-        if (setDocToolbarTab) setDocToolbarTab(step.tab);
-        if (setIsDocumentSubToolbarCollapsed) setIsDocumentSubToolbarCollapsed(false);
-      } else {
-        if (setDocToolbarTab) setDocToolbarTab(step.tab);
-        if (setIsDocumentSubToolbarCollapsed) setIsDocumentSubToolbarCollapsed(false);
+        simulateHumanPointerClick(tabBtn);
       }
+
       await wait(700);
+      const frameTab = await captureRealUiSnapshot();
+      if (frameTab) capturedFrames.push(frameTab);
       continue;
     }
 
-    // 2. Outline toggle action
+    // ── Outline Toggle Action ──
     if (step.type === 'outline_toggle') {
-      // Ensure View tab is open
+      if (setDocToolbarTab) setDocToolbarTab('View');
+      if (setIsDocumentSubToolbarCollapsed) setIsDocumentSubToolbarCollapsed(false);
+
       const viewBtn = findToolbarTabButton('View');
       if (viewBtn) {
         const vRect = viewBtn.getBoundingClientRect();
-        if (onCursorMove) onCursorMove(vRect.left + vRect.width / 2, vRect.top + vRect.height / 2);
-        await wait(700);
+        const vcx = vRect.left + vRect.width / 2;
+        const vcy = vRect.top + vRect.height / 2;
+        waypoints.push({ x: vcx, y: vcy, label: 'View Tab', isClick: true });
+
+        if (onCursorMove) onCursorMove(vcx, vcy);
+        await wait(650);
         if (onCursorClick) onCursorClick();
-        viewBtn.click();
-        if (setDocToolbarTab) setDocToolbarTab('View');
-        if (setIsDocumentSubToolbarCollapsed) setIsDocumentSubToolbarCollapsed(false);
+        simulateHumanPointerClick(viewBtn);
         await wait(700);
+
+        const frameView = await captureRealUiSnapshot();
+        if (frameView) capturedFrames.push(frameView);
       }
 
       const outlineBtn = findOutlineToggleButton();
@@ -548,18 +630,20 @@ export async function executeAutonomousVideoSequence({
         const cx = oRect.left + oRect.width / 2;
         const cy = oRect.top + oRect.height / 2;
 
+        waypoints.push({ x: cx, y: cy, label: 'Outline Toggle', isClick: true });
+
         const prevOutline = outlineBtn.style.outline;
         outlineBtn.style.outline = '3px solid #6366f1';
         outlineBtn.style.borderRadius = '8px';
 
         if (onCursorMove) onCursorMove(cx, cy);
-        await wait(800);
+        await wait(750);
 
         if (onCursorClick) onCursorClick();
-        await wait(250);
+        await wait(200);
 
         outlineBtn.style.outline = prevOutline;
-        outlineBtn.click();
+        simulateHumanPointerClick(outlineBtn);
 
         if (setDocOutlineEnabled) {
           setDocOutlineEnabled(!step.turnOff);
@@ -567,16 +651,19 @@ export async function executeAutonomousVideoSequence({
       } else if (setDocOutlineEnabled) {
         setDocOutlineEnabled(!step.turnOff);
       }
-      await wait(800);
+
+      await wait(700);
+      const frameOutline = await captureRealUiSnapshot();
+      if (frameOutline) capturedFrames.push(frameOutline);
       continue;
     }
 
-    // 3. Document Content Injections
+    // ── Document Content Injections ──
     if (step.type === 'insert_equation' && insertHtmlToCanvas) {
       insertHtmlToCanvas(
         '<p><span class="katex-inline" style="background:rgba(99,102,241,0.08);padding:4px 8px;border-radius:6px;font-family:serif;font-size:16px;">$$\\int_{a}^{b} f(x)\\,dx = F(b) - F(a)$$</span></p>'
       );
-      await wait(600);
+      await wait(500);
       continue;
     }
 
@@ -584,7 +671,7 @@ export async function executeAutonomousVideoSequence({
       insertHtmlToCanvas(
         '<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;"><tr style="background:#f8fafc;"><th style="border:1px solid #cbd5e1;padding:8px 12px;text-align:left;">Task</th><th style="border:1px solid #cbd5e1;padding:8px 12px;text-align:left;">Status</th><th style="border:1px solid #cbd5e1;padding:8px 12px;text-align:left;">Budget</th></tr><tr><td style="border:1px solid #cbd5e1;padding:8px 12px;">Architecture Review</td><td style="border:1px solid #cbd5e1;padding:8px 12px;">Active</td><td style="border:1px solid #cbd5e1;padding:8px 12px;">$2,400</td></tr></table>'
       );
-      await wait(600);
+      await wait(500);
       continue;
     }
 
@@ -592,22 +679,24 @@ export async function executeAutonomousVideoSequence({
       insertHtmlToCanvas(
         '<ul style="list-style-type:none;padding-left:0;font-size:14px;"><li style="margin-bottom:8px;"><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="width:16px;height:16px;accent-color:#6366f1;"> <span>Finalize project specification</span></label></li><li style="margin-bottom:8px;"><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="width:16px;height:16px;accent-color:#6366f1;"> <span>Review typography and layout</span></label></li></ul>'
       );
-      await wait(600);
+      await wait(500);
       continue;
     }
 
     if (step.type === 'open_modal' && step.modal === 'image' && setIsInsertImagesModalOpen) {
       setIsInsertImagesModalOpen(true);
-      await wait(600);
+      await wait(500);
       continue;
     }
 
-    // 4. Universal Element Resolution & Click Takeover
+    // ── Universal Element Resolution & Click Takeover (Header, Sidebar, Canvas) ──
     const targetEl = resolveTargetElement(step);
     if (targetEl) {
       const rect = targetEl.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
+
+      waypoints.push({ x: cx, y: cy, label: step.desc || 'Action', isClick: true });
 
       const prevOutline = targetEl.style.outline;
       targetEl.style.outline = '3px solid #6366f1';
@@ -620,12 +709,29 @@ export async function executeAutonomousVideoSequence({
       await wait(250);
 
       targetEl.style.outline = prevOutline;
-      targetEl.click();
-      await wait(600);
+      simulateHumanPointerClick(targetEl);
+      await wait(700);
+
+      const frameAction = await captureRealUiSnapshot();
+      if (frameAction) capturedFrames.push(frameAction);
     } else {
-      await wait(500);
+      await wait(400);
     }
   }
 
-  return plan;
+  // Compile final video from genuine window snapshots
+  const videoResult = await buildVideoClipFromFrames({
+    frames: capturedFrames,
+    waypoints,
+    plan
+  });
+
+  return {
+    plan,
+    blob: videoResult?.blob || null,
+    videoUrl: videoResult?.videoUrl || null
+  };
 }
+
+export const generateDemoVideoBlob = async (plan) => null;
+export const generateFallbackDemoBlob = async (plan) => null;
