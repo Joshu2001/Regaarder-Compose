@@ -28254,15 +28254,14 @@ Return ONLY valid JSON matching the schema.`;
       setVideoRecordingState({ isRecording: true, label: cleanVideoQuery });
 
       try {
-        const plan = planAutonomousActions(cleanVideoQuery, productMode);
+        // 1. Generate precision AI action script with complete DOM grounding
+        const videoScript = await generateVideoActionScriptViaAI(cleanVideoQuery, productMode, callGemini);
+        const plan = planAutonomousActions(videoScript || cleanVideoQuery, productMode);
 
-        // 1. Prepare video clip and AI action script
-        const [videoRes, videoScript] = await Promise.all([
-          generateDemoVideoBlob(plan),
-          generateVideoActionScriptViaAI(cleanVideoQuery, productMode, callGemini)
-        ]);
+        // 2. Prepare initial demo video clip
+        const videoRes = await generateDemoVideoBlob(plan);
 
-        // 2. Post the assistant response card with video demo immediately
+        // 3. Post the assistant response card with video demo immediately
         const assistantMsg = {
           id: 'msg_' + Date.now(),
           sender: 'assistant',
@@ -28279,11 +28278,11 @@ Return ONLY valid JSON matching the schema.`;
         setIsComposing(false);
         showToast('Autonomous video action ready');
 
-        // 3. Perform live interactive mouse cursor takeover on the real UI
+        // 4. Perform live interactive mouse cursor takeover on the real UI
         setAutonomousCursorPos({ x: window.innerWidth / 2, y: window.innerHeight / 2, visible: true, clicking: false });
 
         const liveVideoRes = await executeAutonomousVideoSequence({
-          intent: cleanVideoQuery,
+          intent: videoScript || cleanVideoQuery,
           productMode,
           setDocToolbarTab,
           setIsDocumentSubToolbarCollapsed,

@@ -240,10 +240,11 @@ async function captureRealUiSnapshot() {
  * Universal Action Planner: Resolves intent against REGAARDER_UI_SITEMAP
  */
 export function planAutonomousActions(intent, productMode = 'compose') {
-  const clean = String(intent || '').toLowerCase().trim();
+  // If a pre-planned structured action object is passed directly from LLM / sitemap
+  const sitemapMatch = (typeof intent === 'object' && intent !== null && intent.actionType)
+    ? intent
+    : findExactUiMatch(String(intent || ''));
 
-  // 1. Match against verified UI Sitemap
-  const sitemapMatch = findExactUiMatch(clean);
   if (sitemapMatch) {
     const steps = [];
 

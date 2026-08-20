@@ -2,13 +2,9 @@
  * tourAndVideoAgentService.js
  * 
  * Regaarder UI Knowledge Base & Autonomous Action Engine
- * Comprehensive canonical UI sitemap covering all workspace controls:
- * - Workspace App Switcher (Compose, Deck, Sheet, Room, Whiteboard, Tasks, Schedule, Memory)
- * - Header Bar Actions (Search/Find, Version History/Replay, Export, Share, Drafts, Undo/Redo)
- * - Segmented Toolbar Modes (Context, Templates, Write, Review, View)
- * - Canvas & Ephemeral Controls (Slash Menu, Table Cell Operations, KaTeX Math Editor)
- * - Sidebar Panels (Assistant, History/Replay, Properties, Source Files)
- * - Status Bar (Focus Mode, Word Count, Language Auto-detect)
+ * Comprehensive canonical UI sitemap and AI Planning Engine:
+ * - High-Precision Semantic Grounding across all workspace controls
+ * - LLM Autonomous Action Planner with complete UI DOM hierarchy
  */
 
 export const REGAARDER_UI_SITEMAP = [
@@ -46,7 +42,7 @@ export const REGAARDER_UI_SITEMAP = [
     description: 'Search for specific words or phrases and navigate through document matches.',
     actionType: 'open_search',
     targetTab: 'Write',
-    highlightSelector: 'button[title*="Search"], [data-tour="search-button"], button:has-text("Search")',
+    highlightSelector: 'button[title*="Find & Replace" i], button[title*="Search" i]',
     steps: [
       { stepNumber: 1, title: 'Open Search in Header', description: 'Click the Magnifying Glass search icon in the top header bar, or press Ctrl+F / Cmd+F.' },
       { stepNumber: 2, title: 'Enter Search Term', description: 'Type the word or phrase you want to locate in the search input box.' },
@@ -64,7 +60,7 @@ export const REGAARDER_UI_SITEMAP = [
     description: 'Inspect previous document revisions and replay past edits with the Time Machine.',
     actionType: 'open_history',
     targetTab: 'Write',
-    highlightSelector: 'button[title*="History"], button:has-text("History"), [data-tour="history-button"]',
+    highlightSelector: 'button[title*="replay" i], button[title*="history" i], button:has-text("History")',
     steps: [
       { stepNumber: 1, title: 'Open History in Header or Sidebar', description: 'Click the Clock icon in the top header, or select the "History" tab in the right sidebar.' },
       { stepNumber: 2, title: 'Browse Version Snapshots', description: 'Review the chronological timeline of auto-saved versions and edit diffs.' },
@@ -96,7 +92,7 @@ export const REGAARDER_UI_SITEMAP = [
     description: 'Export to PDF Document, Microsoft Word (.docx), or Clean Markdown.',
     actionType: 'open_export',
     targetTab: 'Write',
-    highlightSelector: '[data-tour="export-button"], button:has-text("Export")',
+    highlightSelector: 'button[title*="Export" i], button:has-text("Export")',
     steps: [
       { stepNumber: 1, title: 'Click Export in Top Header', description: 'Locate and click the "Export" button in the upper right navigation header.' },
       { stepNumber: 2, title: 'Select File Format', description: 'Choose your desired format: PDF Document, Microsoft Word (.docx), or Markdown.' },
@@ -137,7 +133,7 @@ export const REGAARDER_UI_SITEMAP = [
     description: 'Step backwards or forwards through your recent editing changes.',
     actionType: 'undo_action',
     targetTab: 'Write',
-    highlightSelector: 'button[title*="Undo"], button[title*="Redo"]',
+    highlightSelector: 'button[title*="Undo" i], button[title*="Redo" i]',
     steps: [
       { stepNumber: 1, title: 'Use Header Buttons', description: 'Click the curved left arrow to Undo, or curved right arrow to Redo in the top header.' },
       { stepNumber: 2, title: 'Use Keyboard Shortcuts', description: 'Press Ctrl+Z / Cmd+Z to undo, or Ctrl+Shift+Z / Cmd+Shift+Z to redo.' }
@@ -441,6 +437,41 @@ export function findExactUiMatch(intent) {
   return bestScore >= 4 ? bestMatch : null;
 }
 
+const UI_GROUNDING_PROMPT = `
+ACTUAL REGAARDER COMPOSE CONTROLS DIRECTORY:
+- Top Header Left:
+  * Workspace Switcher (Compose, Deck, Sheet, Room, Whiteboard, Tasks): selector 'button[title*="Switch Workspace App" i]', actionType 'open_workspace_switcher'
+  * Document Title / Rename: selector '[data-tour="document-title"]', actionType 'rename_title'
+  * Saved Drafts: selector 'button:has-text("Saved Drafts")', actionType 'saved_drafts'
+- Top Header Right:
+  * Undo Edit: selector 'button[title*="Undo" i]', actionType 'undo_action'
+  * Redo Edit: selector 'button[title*="Redo" i]', actionType 'redo_action'
+  * Version History & Time Machine: selector 'button[title*="replay" i]', actionType 'open_history'
+  * Find & Replace (Search): selector 'button[title*="Find & Replace" i]', actionType 'open_search'
+  * Export (PDF, Word DOCX, Markdown): selector 'button[title*="Export" i]', actionType 'open_export'
+  * Share & Collaboration: selector 'button:has-text("Share")', actionType 'open_share'
+- Right Sidebar Tabs:
+  * Assistant: 'button:has-text("Assistant")'
+  * History: 'button:has-text("History")'
+  * Properties (Word/Char Count): 'button:has-text("Properties")', actionType 'open_properties'
+  * Tasks, Schedule, Room, Memory
+- Segmented Mode Bar:
+  * Context Tab: '[data-toolbar-tab="Context"]' -> '+ Add Source File'
+  * Templates Tab: '[data-toolbar-tab="Templates"]' -> Curated template picker
+  * Write Tab: '[data-toolbar-tab="Write"]' -> Font Family, Font Size, Alignment, Lists, + Insert (Images, Equations, Table Grid, Charts, Shapes)
+  * Review Tab: '[data-toolbar-tab="Review"]' -> Track changes, Comments
+  * View Tab: '[data-toolbar-tab="View"]' -> Margins (1.0 in, 0.5 in, 1.5 in), Paper Size (A4, Letter), Outline Toggle ('[data-toolbar-action="outline-toggle"]'), Light/Dark Mode
+- Canvas & Ephemeral Controls:
+  * Slash Commands (/table, /image, /checklist, /math, /browser): actionType 'trigger_slash'
+  * Data Tables: actionType 'insert_table'
+  * Equations & LaTeX: actionType 'open_equation'
+  * Task Checklists: actionType 'find_checklist'
+  * Image Upload: actionType 'open_image_modal'
+- Footer:
+  * Focus Mode: 'button:has-text("Focus Mode")', actionType 'toggle_focus'
+  * Word Count / Character Count / Language
+`;
+
 export async function generateTourGuideViaAI(intent, productMode = 'compose', callGemini = null) {
   const exactMatch = findExactUiMatch(intent);
   if (exactMatch) {
@@ -448,25 +479,22 @@ export async function generateTourGuideViaAI(intent, productMode = 'compose', ca
   }
 
   if (typeof callGemini === 'function') {
-    const prompt = `You are the Regaarder Compose Tour Guide Agent.
+    const prompt = `You are the Regaarder Compose Senior UI Architect and Tour Guide Agent.
 The user is asking: "${intent}" in ${productMode} mode.
 
-ACTUAL REGAARDER COMPOSE CONTROLS:
-- Header: Switch Workspace Apps (9-dot icon), Search (Ctrl+F), Version History (Replay edits), Export (PDF, DOCX, MD), Share, Saved Drafts, Undo/Redo.
-- Sidebar: Assistant AI chat, History / Replay tab, Properties panel.
-- Top Mode Bar: Context, Templates, Write, Review, View.
-- Write Tab Toolbar: Font (Manrope, Inter, DM Sans), Font Size (14pt), Alignment, Lists (Bullet, Numbered, Checklist), + Insert (Images, Emoji, Equations, Table Grid, Charts, Shapes).
-- View Tab Toolbar: Margins (Normal 1.0 in, Narrow 0.5 in, Wide 1.5 in), Paper Size (A4, Letter), Outline On/Off, Dark Mode, Focus Mode.
-- Canvas: Slash commands (/table, /image, /checklist, /math, /browser, /tour, /video).
+${UI_GROUNDING_PROMPT}
 
 CRITICAL RULE: Return strict JSON without markdown code fences:
 {
   "title": "Concise walkthrough title",
   "description": "1-sentence summary",
+  "actionType": "open_workspace_switcher" | "open_history" | "open_search" | "open_export" | "insert_table" | "insert_equation" | "insert_checklist" | "outline_toggle" | "open_image_modal" | "open_share" | "open_properties" | "select_model" | "trigger_slash" | "custom",
+  "targetTab": "Write" | "View" | "Context" | "Templates" | "Review" | null,
+  "highlightSelector": "CSS selector to highlight",
   "steps": [
-    { "stepNumber": 1, "title": "Step 1", "description": "Instruction" },
-    { "stepNumber": 2, "title": "Step 2", "description": "Instruction" },
-    { "stepNumber": 3, "title": "Step 3", "description": "Instruction" }
+    { "stepNumber": 1, "title": "Step 1", "description": "Specific UI instruction" },
+    { "stepNumber": 2, "title": "Step 2", "description": "Specific UI instruction" },
+    { "stepNumber": 3, "title": "Step 3", "description": "Specific UI instruction" }
   ]
 }`;
 
@@ -504,11 +532,47 @@ export async function generateVideoActionScriptViaAI(intent, productMode = 'comp
       duration: 6,
       actionType: exactMatch.actionType,
       targetTab: exactMatch.targetTab,
+      highlightSelector: exactMatch.highlightSelector,
       captions: exactMatch.steps.map((s, idx) => ({
         time: idx * 2,
         text: `${s.stepNumber}. ${s.title}: ${s.description}`
       }))
     };
+  }
+
+  if (typeof callGemini === 'function') {
+    const prompt = `You are the Regaarder Compose Video Agent Architect.
+The user is requesting an automated demonstration for: "${intent}" in ${productMode} mode.
+
+${UI_GROUNDING_PROMPT}
+
+CRITICAL: Return strict JSON only matching this schema:
+{
+  "title": "Action Demo: Descriptive Title",
+  "actionType": "open_workspace_switcher" | "open_history" | "open_search" | "open_export" | "insert_table" | "insert_equation" | "insert_checklist" | "outline_toggle" | "open_image_modal" | "open_share" | "open_properties" | "select_model" | "trigger_slash" | "custom",
+  "targetTab": "Write" | "View" | "Context" | "Templates" | "Review" | null,
+  "highlightSelector": "CSS selector to highlight",
+  "duration": 6,
+  "captions": [
+    { "time": 0, "text": "1. Step description..." },
+    { "time": 2, "text": "2. Step description..." },
+    { "time": 4, "text": "3. Step description..." }
+  ]
+}`;
+
+    try {
+      const res = await callGemini({
+        userPrompt: prompt,
+        systemPrompt: 'You are the Senior UI Architect for Regaarder Compose. Return strict JSON only.'
+      });
+      let raw = String(res?.text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      const parsed = typeof res?.parsed === 'object' && res?.parsed !== null ? res.parsed : JSON.parse(raw);
+      if (parsed && parsed.title && Array.isArray(parsed.captions) && parsed.captions.length > 0) {
+        return parsed;
+      }
+    } catch (err) {
+      console.warn('[VideoAgent] AI generation fallback:', err);
+    }
   }
 
   return {
