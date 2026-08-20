@@ -1,13 +1,8 @@
 /**
  * videoAgentEngine.js
  *
- * Universal Autonomous Video Recording & Live UI Takeover Engine for Regaarder Compose
- *
- * Guaranteed Multi-Action Resolver:
- * - Top Header: Edit Replay (Clock), Find & Replace (Search), Export, Undo/Redo, Share, Drafts
- * - Sidebar Panels: Assistant, History, Properties, Tasks, Schedule, Room, Memory
- * - Document Modes: Context, Templates, Write, Review, View
- * - Canvas Actions: Slash Commands (/), Tables, Equations, Checklists, Images
+ * Universal Autonomous Video Recording & Live UI Takeover Engine for Regaarder Workspace
+ * Multi-Product Support: Compose, Sheets, Deck, Whiteboard, Schedule, Tasks, Room, Memory
  */
 
 import html2canvas from 'html2canvas';
@@ -102,8 +97,8 @@ export function findButton(label, mode = 'includes') {
 }
 
 /**
- * Universal DOM Element Resolver
- * Accurately finds Header, Sidebar, Canvas, and Toolbar controls.
+ * Universal DOM Element Resolver Across All 8 Products:
+ * Global, Compose, Sheets, Deck, Whiteboard, Schedule, Tasks, Room, Memory.
  */
 export function resolveTargetElement(step) {
   if (typeof document === 'undefined') return null;
@@ -114,6 +109,7 @@ export function resolveTargetElement(step) {
     if (tabBtn) return tabBtn;
   }
 
+  // 2. Global Header Resolvers
   if (step?.type === 'open_workspace_switcher' || step?.actionType === 'open_workspace_switcher') {
     return (
       document.querySelector('button[title*="Switch Workspace App" i]') ||
@@ -163,6 +159,11 @@ export function resolveTargetElement(step) {
     return findButton('Properties', 'includes');
   }
 
+  if (step?.type === 'select_model' || step?.actionType === 'select_model') {
+    return findButton('gemma', 'includes') || findButton('gemini', 'includes');
+  }
+
+  // 3. Compose (Documents) Resolvers
   if (step?.type === 'outline_toggle' || step?.actionType === 'outline_toggle') {
     return findOutlineToggleButton();
   }
@@ -171,11 +172,74 @@ export function resolveTargetElement(step) {
     return findButton('Focus Mode', 'includes');
   }
 
-  if (step?.type === 'select_model' || step?.actionType === 'select_model') {
-    return findButton('gemma', 'includes') || findButton('gemini', 'includes');
+  // 4. Sheets Resolvers
+  if (step?.type === 'sheets_formula' || step?.actionType === 'sheets_formula') {
+    return document.querySelector('input[placeholder*="Formula" i]') || document.querySelector('.formula-bar-input');
   }
 
-  // 3. Highlight Selectors
+  if (step?.type === 'sheets_format' || step?.actionType === 'sheets_format') {
+    return findButton('%', 'includes') || findButton('$', 'includes') || document.querySelector('[data-tour="sheets-number-format"]');
+  }
+
+  if (step?.type === 'sheets_grid_modify' || step?.actionType === 'sheets_grid_modify') {
+    return findButton('+ Row', 'includes') || findButton('+ Col', 'includes') || document.querySelector('[data-tour="sheets-rows-cols"]');
+  }
+
+  if (step?.type === 'sheets_chart' || step?.actionType === 'sheets_chart') {
+    return findButton('Chart', 'includes') || document.querySelector('button[title*="Chart" i]');
+  }
+
+  // 5. Deck Resolvers
+  if (step?.type === 'deck_add_slide' || step?.actionType === 'deck_add_slide') {
+    return findButton('+ Slide', 'includes') || document.querySelector('button[title*="Add Slide" i]');
+  }
+
+  if (step?.type === 'deck_present' || step?.actionType === 'deck_present') {
+    return findButton('Present', 'includes') || document.querySelector('button[title*="Present" i]');
+  }
+
+  if (step?.type === 'deck_insert_element' || step?.actionType === 'deck_insert_element') {
+    return findButton('Text', 'includes') || findButton('Shape', 'includes');
+  }
+
+  // 6. Whiteboard Resolvers
+  if (step?.type === 'whiteboard_tool' || step?.actionType === 'whiteboard_tool') {
+    return document.querySelector('button[title*="Pen" i]') || document.querySelector('button[title*="Highlighter" i]');
+  }
+
+  if (step?.type === 'whiteboard_sticky' || step?.actionType === 'whiteboard_sticky') {
+    return document.querySelector('button[title*="Sticky" i]') || findButton('Sticky', 'includes');
+  }
+
+  if (step?.type === 'whiteboard_shapes' || step?.actionType === 'whiteboard_shapes') {
+    return document.querySelector('button[title*="Shapes" i]') || document.querySelector('button[title*="Zoom" i]');
+  }
+
+  // 7. Schedule Resolvers
+  if (step?.type === 'schedule_create' || step?.actionType === 'schedule_create') {
+    return findButton('+ New Event', 'includes') || findButton('New Event', 'includes');
+  }
+
+  if (step?.type === 'schedule_views' || step?.actionType === 'schedule_views') {
+    return findButton('Week', 'includes') || findButton('Month', 'includes') || findButton('Day', 'includes');
+  }
+
+  // 8. Tasks Resolvers
+  if (step?.type === 'tasks_kanban' || step?.actionType === 'tasks_kanban') {
+    return findButton('+ Add Task', 'includes') || findButton('Add Task', 'includes');
+  }
+
+  // 9. Room Resolvers
+  if (step?.type === 'room_controls' || step?.actionType === 'room_controls') {
+    return document.querySelector('button[title*="Mic" i]') || document.querySelector('button[title*="Camera" i]');
+  }
+
+  // 10. Memory Resolvers
+  if (step?.type === 'memory_explore' || step?.actionType === 'memory_explore') {
+    return document.querySelector('input[placeholder*="Search memory" i]');
+  }
+
+  // 11. Highlight Selectors fallback
   const selectorCandidates = [step?.highlightSelector, step?.selector].filter(Boolean);
   for (const rawSel of selectorCandidates) {
     for (const subSel of rawSel.split(',')) {
@@ -195,7 +259,7 @@ export function resolveTargetElement(step) {
     }
   }
 
-  // 4. Semantic Text Matching
+  // 12. Semantic Text Matching
   const label = step?.label || step?.title || step?.desc || step?.text;
   if (label) {
     const btn = findButton(label, 'includes');
@@ -237,26 +301,29 @@ async function captureRealUiSnapshot() {
 }
 
 /**
- * Universal Action Planner: Resolves intent against REGAARDER_UI_SITEMAP
+ * Universal Action Planner: Resolves intent against REGAARDER_UI_SITEMAP across all 8 products
  */
 export function planAutonomousActions(intent, productMode = 'compose') {
   // If a pre-planned structured action object is passed directly from LLM / sitemap
   const sitemapMatch = (typeof intent === 'object' && intent !== null && intent.actionType)
     ? intent
-    : findExactUiMatch(String(intent || ''));
+    : findExactUiMatch(String(intent || ''), productMode);
 
   if (sitemapMatch) {
     const steps = [];
 
-    // Header actions do not need tab switches
-    const isHeaderOrSidebarAction = [
+    // Header, Sheets, Deck, Whiteboard, Schedule, Tasks, Room actions do not need Compose toolbar tab switches
+    const isNonComposeToolbarAction = [
       'open_workspace_switcher', 'open_history', 'open_search', 'open_export', 'open_share',
       'undo_action', 'open_properties', 'select_model', 'trigger_slash',
-      'rename_title', 'manage_tabs'
+      'rename_title', 'manage_tabs', 'sheets_formula', 'sheets_format', 'sheets_grid_modify',
+      'sheets_chart', 'sheets_slash', 'deck_add_slide', 'deck_present', 'deck_insert_element',
+      'whiteboard_tool', 'whiteboard_sticky', 'whiteboard_shapes', 'schedule_create',
+      'schedule_views', 'tasks_kanban', 'room_controls', 'memory_explore'
     ].includes(sitemapMatch.actionType);
 
-    // Step A: Switch tab if required
-    if (sitemapMatch.targetTab && !isHeaderOrSidebarAction) {
+    // Step A: Switch tab if required in Compose mode
+    if (sitemapMatch.targetTab && !isNonComposeToolbarAction && productMode === 'compose') {
       steps.push({
         type: 'click_tab',
         tab: sitemapMatch.targetTab,
@@ -265,120 +332,25 @@ export function planAutonomousActions(intent, productMode = 'compose') {
     }
 
     // Step B: Target Action
-    if (sitemapMatch.actionType === 'open_workspace_switcher') {
-      steps.push({
-        type: 'open_workspace_switcher',
-        desc: 'Opening Workspace App Switcher (Compose, Deck, Sheet, Room, Whiteboard)',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'open_history') {
-      steps.push({
-        type: 'open_history',
-        desc: 'Opening Version History & Edit Replay',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'open_search') {
-      steps.push({
-        type: 'open_search',
-        desc: 'Opening Document Search & Find (Ctrl+F)',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'open_export') {
-      steps.push({
-        type: 'open_export',
-        desc: 'Opening Export dropdown options',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'open_share') {
-      steps.push({
-        type: 'open_share',
-        desc: 'Opening Share & Collaboration modal',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'trigger_slash') {
-      steps.push({
-        type: 'trigger_slash',
-        desc: 'Focusing canvas and typing "/" command',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'open_properties') {
-      steps.push({
-        type: 'open_properties',
-        desc: 'Opening Document Properties tab',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'undo_action') {
-      steps.push({
-        type: 'undo_action',
-        desc: 'Clicking Undo edit',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'outline_toggle') {
-      const isOff = clean.includes('off') || clean.includes('disable') || clean.includes('hide');
-      steps.push({
-        type: 'outline_toggle',
-        turnOff: isOff,
-        desc: `Toggling Outline ${isOff ? 'Off' : 'On'}`,
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'toggle_focus') {
-      steps.push({
-        type: 'focus_toggle',
-        desc: 'Toggling Focus Mode',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'theme_toggle') {
-      steps.push({
-        type: 'theme_toggle',
-        desc: 'Toggling Light/Dark mode',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'open_image_modal') {
-      steps.push({
-        type: 'open_modal',
-        modal: 'image',
-        desc: 'Launching Image Upload modal',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'insert_table') {
-      steps.push({
-        type: 'insert_table',
-        desc: 'Inserting interactive 3x3 data table',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'find_checklist') {
-      steps.push({
-        type: 'insert_checklist',
-        desc: 'Inserting interactive checklist checkboxes',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else if (sitemapMatch.actionType === 'open_equation') {
-      steps.push({
-        type: 'insert_equation',
-        desc: 'Inserting LaTeX math formula',
-        highlightSelector: sitemapMatch.highlightSelector
-      });
-    } else {
-      steps.push({
-        type: 'highlight_element',
-        selector: sitemapMatch.highlightSelector,
-        desc: sitemapMatch.title
-      });
-    }
+    steps.push({
+      type: sitemapMatch.actionType,
+      desc: sitemapMatch.title || 'Executing action',
+      highlightSelector: sitemapMatch.highlightSelector
+    });
 
     steps.push({
       type: 'complete',
-      text: `${sitemapMatch.title} executed successfully.`
+      text: `${sitemapMatch.title || 'Action'} executed successfully.`
     });
 
     return {
-      title: sitemapMatch.title,
+      title: sitemapMatch.title || 'Action Demo',
       targetTab: sitemapMatch.targetTab || 'Write',
       steps
     };
   }
 
-  // 2. Generic fallback plan
+  // Generic fallback plan
   return {
     title: `Demonstrate: ${intent || 'Workflow'}`,
     targetTab: 'Write',
@@ -418,7 +390,7 @@ export async function buildVideoClipFromFrames({ frames = [], waypoints = [], pl
       if (e.data && e.data.size > 0) chunks.push(e.data);
     };
 
-    recorder.start();
+    recorder.start(100);
 
     const durationMs = 3000;
     const startTime = performance.now();
@@ -547,7 +519,7 @@ export async function buildVideoClipFromFrames({ frames = [], waypoints = [], pl
 }
 
 /**
- * Universal Autonomous UI Takeover Executor & Screen Recorder
+ * Universal Autonomous UI Takeover Executor & Screen Recorder Across All 8 Products
  */
 export async function executeAutonomousVideoSequence({
   intent,
@@ -583,7 +555,7 @@ export async function executeAutonomousVideoSequence({
       });
     }
 
-    // ── Tab Switching Action ──
+    // ── Compose Tab Switching Action ──
     if (step.type === 'click_tab' && step.tab) {
       if (setDocToolbarTab) setDocToolbarTab(step.tab);
       if (setIsDocumentSubToolbarCollapsed) setIsDocumentSubToolbarCollapsed(false);
@@ -616,7 +588,7 @@ export async function executeAutonomousVideoSequence({
       continue;
     }
 
-    // ── Outline Toggle Action ──
+    // ── Compose Outline Toggle Action ──
     if (step.type === 'outline_toggle') {
       if (setDocToolbarTab) setDocToolbarTab('View');
       if (setIsDocumentSubToolbarCollapsed) setIsDocumentSubToolbarCollapsed(false);
@@ -672,7 +644,7 @@ export async function executeAutonomousVideoSequence({
       continue;
     }
 
-    // ── Document Content Injections ──
+    // ── Compose Injections ──
     if (step.type === 'insert_equation' && insertHtmlToCanvas) {
       insertHtmlToCanvas(
         '<p><span class="katex-inline" style="background:rgba(99,102,241,0.08);padding:4px 8px;border-radius:6px;font-family:serif;font-size:16px;">$$\\int_{a}^{b} f(x)\\,dx = F(b) - F(a)$$</span></p>'
@@ -703,7 +675,7 @@ export async function executeAutonomousVideoSequence({
       continue;
     }
 
-    // ── Universal Element Resolution & Click Takeover (Header, Sidebar, Canvas) ──
+    // ── Universal Element Resolution & Click Takeover Across All 8 Products ──
     const targetEl = resolveTargetElement(step);
     if (targetEl) {
       const rect = targetEl.getBoundingClientRect();
