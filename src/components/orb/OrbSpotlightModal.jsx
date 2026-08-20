@@ -83,17 +83,15 @@ export default function OrbSpotlightModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Ingest live workspace context and merge with organizational memory
+  // Ingest live workspace context - strictly real data only
   const { allEntities, allEdges } = useMemo(() => {
     const { liveEntities, liveEdges } = extractLiveEntitiesFromWorkspace(liveWorkspaceContext);
     
     // Deduplicate by ID
     const entityMap = new Map();
-    INITIAL_ORB_ENTITIES.forEach(e => entityMap.set(e.id, e));
     liveEntities.forEach(e => entityMap.set(e.id, e));
 
     const edgeMap = new Map();
-    INITIAL_ORB_EDGES.forEach(edge => edgeMap.set(edge.id, edge));
     liveEdges.forEach(edge => edgeMap.set(edge.id, edge));
 
     return {

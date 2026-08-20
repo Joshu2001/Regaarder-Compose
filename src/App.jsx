@@ -1525,6 +1525,7 @@ const getFilteredSheetSlashOptions = (filterText = '', copiedStyle = null) => {
 };
 
 const SLASH_OPTIONS = [
+  { key: 'orb', label: 'Orb Intelligence', desc: 'Cross-workspace RAG: cite Sheets, Decks & Tasks', category: 'AI', icon: Sparkles, tag: '/orb' },
   // AI
   { key: 'table', label: 'Table (AI)', desc: 'Generate an AI table from context', category: 'AI', icon: Table, tag: '/table' },
   { key: 'proofread', label: 'Proofread', desc: 'Improve spelling & style', category: 'AI', icon: CheckCircle2, tag: '/proofread' },
@@ -1557,6 +1558,7 @@ const SLASH_OPTIONS = [
 ];
 
 const PROMPT_SLASH_OPTIONS = [
+  { key: 'orb', label: 'Orb Agent (@orb)', desc: 'Ground AI in full workspace context (Docs, Sheets, Decks, Tasks)', category: 'AI', icon: Sparkles, agentKey: 'orb', tag: '/orb' },
   { key: 'ask', label: 'Ask', desc: 'Ask a quick question without interrupting context', category: 'AI', icon: MessageSquare, agentKey: 'ask', tag: '/ask' },
   { key: 'goal', label: 'Goal', desc: 'Run until the specified goal is completed', category: 'AI', icon: Target, agentKey: 'goal', tag: '/goal' },
   { key: 'schedule', label: 'Schedule', desc: 'Run an instruction on a recurring schedule', category: 'AI', icon: Clock, agentKey: 'schedule', tag: '/schedule' },
@@ -22982,7 +22984,23 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
   async function callGemini({ userPrompt, systemPrompt, schema, attachments = [], customModel, customApiKey, customProvider }) {
     const todayDateString = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const fullSystemPrompt = (systemPrompt ? `${systemPrompt}\n\n` : '') + `CURRENT DATE CONTEXT: Today is ${todayDateString}. All current-event research, dates, and sports transfer updates must reflect the current year 2026.`;
+    const isOrbRequested = hasOrbMention(userPrompt) || hasOrbMention(systemPrompt);
+    const orbContext = isOrbRequested ? buildOrbWorkspacePromptContext({
+      documents,
+      activeDocId,
+      docTitle,
+      docBodyHtml,
+      docSubtitle,
+      sheetsTitle,
+      sheetGrids,
+      activeSheetId,
+      deckTitle,
+      deckSlidesData,
+      activeDeckSlideId,
+      tasks: initiatives,
+      scheduleAgendaItems
+    }) : '';
+    const fullSystemPrompt = (systemPrompt ? `${systemPrompt}\n\n` : '') + (orbContext ? `${orbContext}\n\n` : '') + `CURRENT DATE CONTEXT: Today is ${todayDateString}. All current-event research, dates, and sports transfer updates must reflect the current year 2026.`;
 
     // ⚡ Local LLM Execution Path (Ollama / LM Studio / llama.cpp)
     if (composeSelectedModel?.isLocal && composeSelectedModel?.endpoint) {
@@ -25197,6 +25215,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     // Below this point, commands require an active selection range
 
 
+    if (key === 'orb') { setOrbInitialMode('search'); setOrbInitialQuery(''); setOrbOpen(true); return; }
     if (key === 'insert_table') {
       if (allRanges.length === 1 && allRanges[0].startRow === allRanges[0].endRow && allRanges[0].startCol === allRanges[0].endCol && !sheetDrawTableMode) {
         setSheetDrawTableMode(true);
@@ -77942,6 +77961,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onClose={() => setOrbOpen(false)}
         initialQuery={orbInitialQuery}
         initialMode={orbInitialMode}
+        onCallAi={callGemini}
+        aiProviderConfig={aiProviderConfig}
         liveWorkspaceContext={{
           documents,
           activeDocId,

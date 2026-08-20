@@ -84,79 +84,104 @@ export default function OrbUnderstandPanel({
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2 thin-scrollbar">
-          {edges.map(edge => {
-            const isSelected = activeEdge?.id === edge.id;
-            const src = entities.find(e => e.id === edge.sourceId);
-            const tgt = entities.find(e => e.id === edge.targetId);
+          {edges.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-6 text-center text-slate-400 dark:text-zinc-500 h-full min-h-[220px]">
+              <Layers size={24} className="mb-2 opacity-40 text-slate-400" />
+              <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300">No Semantic Linkages</span>
+              <span className="text-[11px] mt-1 text-slate-500 max-w-[200px] leading-relaxed">
+                Linkages and evidence will appear as workspace artifacts reference each other.
+              </span>
+            </div>
+          ) : (
+            edges.map(edge => {
+              const isSelected = activeEdge?.id === edge.id;
+              const src = entities.find(e => e.id === edge.sourceId);
+              const tgt = entities.find(e => e.id === edge.targetId);
 
-            const statusKey = edge.epistemicStatus || (edge.isAiInferred ? 'inferred' : 'verified');
-            const statusConfig = EPISTEMIC_CONFIG[statusKey] || EPISTEMIC_CONFIG.verified;
-            const StatusIcon = statusConfig.icon;
-            const isExplicit = statusKey === 'verified' || edge.evidence?.formula;
+              const statusKey = edge.epistemicStatus || (edge.isAiInferred ? 'inferred' : 'verified');
+              const statusConfig = EPISTEMIC_CONFIG[statusKey] || EPISTEMIC_CONFIG.verified;
+              const StatusIcon = statusConfig.icon;
+              const isExplicit = statusKey === 'verified' || edge.evidence?.formula;
 
-            return (
-              <button
-                key={edge.id}
-                type="button"
-                onClick={() => onSelectEdge(edge)}
-                className={`w-full text-left p-3 rounded-xl transition-all duration-150 cursor-pointer ${
-                  isSelected
-                    ? highContrast
-                      ? 'border-2 border-violet-500 bg-slate-100 dark:bg-zinc-800 shadow-sm'
-                      : 'border border-violet-300/80 dark:border-violet-700/60 bg-violet-50/70 dark:bg-violet-950/40 shadow-xs'
-                    : highContrast
-                    ? 'border-2 border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-slate-400'
-                    : 'border border-slate-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-700/60'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-1 mb-1.5">
-                  <span className={`inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded border ${
-                    highContrast
-                      ? statusConfig.badgeClass
-                      : isSelected
-                      ? 'bg-violet-100/90 dark:bg-violet-900/60 text-[#7C5ACF] dark:text-violet-200 border-violet-200 dark:border-violet-800'
-                      : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-700'
+              return (
+                <button
+                  key={edge.id}
+                  type="button"
+                  onClick={() => onSelectEdge(edge)}
+                  className={`w-full text-left p-3 rounded-xl transition-all duration-150 cursor-pointer ${
+                    isSelected
+                      ? highContrast
+                        ? 'border-2 border-violet-500 bg-slate-100 dark:bg-zinc-800 shadow-sm'
+                        : 'border border-violet-300/80 dark:border-violet-700/60 bg-violet-50/70 dark:bg-violet-950/40 shadow-xs'
+                      : highContrast
+                      ? 'border-2 border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-slate-400'
+                      : 'border border-slate-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-700/60'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1 mb-1.5">
+                    <span className={`inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded border ${
+                      highContrast
+                        ? statusConfig.badgeClass
+                        : isSelected
+                        ? 'bg-violet-100/90 dark:bg-violet-900/60 text-[#7C5ACF] dark:text-violet-200 border-violet-200 dark:border-violet-800'
+                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-700'
+                    }`}>
+                      <StatusIcon size={10} />
+                      <span>{statusConfig.label}</span>
+                    </span>
+                    <span className={`text-[10px] font-mono ${highContrast ? 'text-slate-900 dark:text-zinc-100 font-bold' : 'text-slate-500 font-medium'}`}>
+                      {isExplicit ? 'Explicit' : `${Math.round((edge.confidenceScore || 0.88) * 100)}% conf`}
+                    </span>
+                  </div>
+
+                  <div className={`text-xs line-clamp-2 mb-1.5 leading-snug ${
+                    highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-800 dark:text-zinc-200'
                   }`}>
-                    <StatusIcon size={10} />
-                    <span>{statusConfig.label}</span>
-                  </span>
-                  <span className={`text-[10px] font-mono ${highContrast ? 'text-slate-900 dark:text-zinc-100 font-bold' : 'text-slate-500 font-medium'}`}>
-                    {isExplicit ? 'Explicit' : `${Math.round((edge.confidenceScore || 0.88) * 100)}% conf`}
-                  </span>
-                </div>
+                    {edge.label || edge.relationType}
+                  </div>
 
-                <div className={`text-xs line-clamp-2 mb-1.5 leading-snug ${
-                  highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-800 dark:text-zinc-200'
-                }`}>
-                  {edge.label || edge.relationType}
-                </div>
-
-                <div className={`flex items-center gap-1 text-[11px] truncate ${
-                  highContrast ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-500 dark:text-zinc-400'
-                }`}>
-                  <span className={`truncate max-w-[90px] ${highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-zinc-300'}`}>
-                    {src?.title || 'Source'}
-                  </span>
-                  <ArrowRight size={11} className="shrink-0 text-slate-400" />
-                  <span className={`truncate max-w-[90px] ${highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-zinc-300'}`}>
-                    {tgt?.title || 'Target'}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
+                  <div className={`flex items-center gap-1 text-[11px] truncate ${
+                    highContrast ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-500 dark:text-zinc-400'
+                  }`}>
+                    <span className={`truncate max-w-[90px] ${highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-zinc-300'}`}>
+                      {src?.title || 'Source'}
+                    </span>
+                    <ArrowRight size={11} className="shrink-0 text-slate-400" />
+                    <span className={`truncate max-w-[90px] ${highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-zinc-300'}`}>
+                      {tgt?.title || 'Target'}
+                    </span>
+                  </div>
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
 
       {/* ── Right Panel: Deep Relationship Inspector & Evidence View ── */}
-      <div className="flex-1 overflow-y-auto p-8 thin-scrollbar">
+      <div className="flex-1 overflow-y-auto p-8 thin-scrollbar flex flex-col justify-center">
         {!activeEdge ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 dark:text-zinc-400">
-            <Compass size={38} strokeWidth={1.3} className="mb-2 text-slate-400 dark:text-zinc-500" />
-            <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">Select a relationship to inspect evidence</span>
+          <div className={`max-w-md mx-auto p-8 rounded-3xl text-center flex flex-col items-center ${
+            highContrast
+              ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600'
+              : 'bg-white/60 dark:bg-zinc-900/50 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08]'
+          }`}>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-violet-100 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] mb-3.5 border border-violet-200/80 dark:border-violet-800/60">
+              <Layers size={22} strokeWidth={1.8} />
+            </div>
+            <h4 className={`text-sm font-semibold mb-1 ${
+              highContrast ? 'text-black dark:text-white font-extrabold' : 'text-slate-900 dark:text-zinc-100'
+            }`}>
+              Relationship Provenance Inspector
+            </h4>
+            <p className={`text-xs leading-relaxed max-w-sm ${
+              highContrast ? 'text-slate-800 dark:text-zinc-300 font-medium' : 'text-slate-500 dark:text-zinc-400'
+            }`}>
+              Select any semantic linkage from the left rail or knowledge graph to inspect explicit formulas, direct citations, origin and destination artifacts.
+            </p>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto space-y-6">
+          <div className="max-w-3xl mx-auto space-y-6 w-full">
             {/* Header: Epistemic Status & Modality */}
             <div className={`p-6 rounded-2xl ${
               highContrast

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { RegaarderProductIcon, RegaarderAiIcon } from '../RegaarderProductIcons';
 import { synthesizeStrategicDecision } from '../../services/orbKnowledgeGraphService';
+import { generateOrbDecisionSynthesis } from '../../services/orbAiService';
 
 export default function OrbDecideSynthesizer({
   initialQuestion = '',
@@ -16,18 +17,19 @@ export default function OrbDecideSynthesizer({
   onNavigateToWorkspace,
   onAddActionToTasks
 }) {
-  const [question, setQuestion] = useState(initialQuestion || 'What should I know before making the Q3 Nvidia GPU and TSMC capacity decision?');
-  const [activeQuery, setActiveQuery] = useState(initialQuestion || 'What should I know before making the Q3 Nvidia GPU and TSMC capacity decision?');
+  const [question, setQuestion] = useState(initialQuestion || '');
+  const [activeQuery, setActiveQuery] = useState(initialQuestion || '');
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [synthesisStepText, setSynthesisStepText] = useState('');
   const [addedTaskIds, setAddedTaskIds] = useState(new Set());
+  const [liveSynthesis, setLiveSynthesis] = useState(null);
   const timerRef = useRef(null);
 
   // Sync external question if provided
   useEffect(() => {
     if (initialQuestion && initialQuestion.trim() && initialQuestion !== activeQuery) {
       setQuestion(initialQuestion.trim());
-      setActiveQuery(initialQuestion.trim());
+      triggerSynthesize(initialQuestion.trim());
     }
   }, [initialQuestion]);
 
@@ -39,30 +41,44 @@ export default function OrbDecideSynthesizer({
   }, []);
 
   const synthesis = useMemo(() => {
+    if (liveSynthesis) return liveSynthesis;
+    if (!activeQuery) return null;
     return synthesizeStrategicDecision(activeQuery, { entities, edges });
-  }, [activeQuery, entities, edges]);
+  }, [liveSynthesis, activeQuery, entities, edges]);
 
-  // Multi-stage animated synthesis execution
-  const triggerSynthesize = (targetQuery) => {
+  // Multi-stage animated synthesis execution with real AI integration
+  const triggerSynthesize = async (targetQuery) => {
     const queryText = (targetQuery || question).trim();
     if (!queryText) return;
 
     setIsSynthesizing(true);
-    setSynthesisStepText('Accessing cross-workspace organizational memory...');
+    setSynthesisStepText('Accessing live workspace intelligence...');
 
     setTimeout(() => {
-      setSynthesisStepText('Cross-referencing financial models, board decks & transcripts...');
-    }, 160);
+      setSynthesisStepText('Extracting spreadsheet formulas, documents & task dependencies...');
+    }, 200);
 
     setTimeout(() => {
-      setSynthesisStepText('Formulating strategic recommendation & sensitivity triggers...');
-    }, 320);
+      setSynthesisStepText('Synthesizing executive recommendation with AI reasoning model...');
+    }, 450);
 
-    timerRef.current = setTimeout(() => {
+    try {
+      const result = await generateOrbDecisionSynthesis({
+        question: queryText,
+        entities,
+        edges
+      });
+      setLiveSynthesis(result);
       setActiveQuery(queryText);
+    } catch (err) {
+      console.warn('Live AI synthesis failed, falling back to deterministic synthesis:', err);
+      const fallback = synthesizeStrategicDecision(queryText, { entities, edges });
+      setLiveSynthesis(fallback);
+      setActiveQuery(queryText);
+    } finally {
       setIsSynthesizing(false);
       setSynthesisStepText('');
-    }, 480);
+    }
   };
 
   const handleQuerySubmit = (e) => {
@@ -88,7 +104,7 @@ export default function OrbDecideSynthesizer({
               type="text"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Ask a strategic decision question across all workspace intelligence..."
+              placeholder="Ask an executive decision question..."
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-slate-400 dark:focus:border-zinc-500 shadow-xs"
             />
           </div>
@@ -141,7 +157,7 @@ export default function OrbDecideSynthesizer({
         </div>
       </div>
 
-      {/* ── Synthesis Content Dashboard ── */}
+      {/* ── Synthesis Content Dashboard or Empty State ── */}
       <div className="flex-1 overflow-y-auto p-8 thin-scrollbar">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Real-time Synthesis Progress Indicator */}
@@ -178,6 +194,57 @@ export default function OrbDecideSynthesizer({
               </div>
             </div>
           )}
+
+          {/* ── Empty State when no query is active ── */}
+          {!activeQuery && !isSynthesizing && (
+            <div className={`flex flex-col items-center justify-center py-16 px-6 rounded-3xl text-center ${
+              highContrast
+                ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600'
+                : 'bg-white/60 dark:bg-zinc-900/50 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08]'
+            }`}>
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-violet-100 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] mb-4 border border-violet-200/80 dark:border-violet-800/60">
+                <Compass size={24} strokeWidth={1.8} />
+              </div>
+              <h3 className={`text-base font-semibold mb-1.5 ${
+                highContrast ? 'text-black dark:text-white font-extrabold' : 'text-slate-900 dark:text-zinc-100'
+              }`}>
+                Strategic Decision Synthesizer
+              </h3>
+              <p className={`text-xs max-w-md leading-relaxed mb-6 ${
+                highContrast ? 'text-slate-800 dark:text-zinc-300 font-medium' : 'text-slate-500 dark:text-zinc-400'
+              }`}>
+                Synthesize cross-workspace reasoning, evaluate critical constraints, and uncover required decision conditions across all connected models and transcripts.
+              </p>
+
+              <div className="w-full max-w-lg space-y-2 text-left">
+                <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-zinc-500 block text-center mb-2">
+                  Select a strategic inquiry to synthesize
+                </span>
+                {samplePrompts.slice(0, 3).map((prompt, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setQuestion(prompt);
+                      triggerSynthesize(prompt);
+                    }}
+                    className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all cursor-pointer ${
+                      highContrast
+                        ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 hover:border-violet-500 font-bold text-black dark:text-white'
+                        : 'bg-white/80 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/60 hover:border-violet-300 text-slate-800 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    <span className="text-xs font-medium">{prompt}</span>
+                    <ArrowRight size={13} className="text-[#7C5ACF] dark:text-[#a78bfa] shrink-0 ml-2" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Active Synthesis Briefing */}
+          {synthesis && !isSynthesizing && (
+            <>
 
           {/* Executive Strategic Decision Briefing Card */}
           <div className={`p-6 rounded-3xl space-y-4 ${
@@ -597,6 +664,8 @@ export default function OrbDecideSynthesizer({
               ))}
             </div>
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>

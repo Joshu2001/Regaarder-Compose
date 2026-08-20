@@ -17,6 +17,41 @@ export const WORKSPACE_LABELS = {
   browser: 'Research'
 };
 
+export const FILTER_EMPTY_STATES = {
+  all: {
+    title: 'No Workspace Intelligence Yet',
+    desc: 'Documents, spreadsheets, slides, meetings, and tasks will be indexed as you create or import them.'
+  },
+  compose: {
+    title: 'No Documents Yet',
+    desc: 'Compose strategic memos, briefs, and notes in your workspace to search across written content.'
+  },
+  sheets: {
+    title: 'No Spreadsheets Yet',
+    desc: 'Create financial models, tables, and formula sheets to search across numbers and cell calculations.'
+  },
+  deck: {
+    title: 'No Presentation Decks Yet',
+    desc: 'Create slide decks to search across presentation topics, outlines, and charts.'
+  },
+  room: {
+    title: 'No Meeting Transcripts Yet',
+    desc: 'Audio discussions and transcripts from Room meetings will appear here when recorded.'
+  },
+  tasks: {
+    title: 'No Action Items Yet',
+    desc: 'Task initiatives and project deliverables will be indexed as you assign them.'
+  },
+  schedule: {
+    title: 'No Calendar Events Yet',
+    desc: 'Scheduled meetings and milestones will be mapped here as dates are added.'
+  },
+  browser: {
+    title: 'No Research Notes Yet',
+    desc: 'Web research and market intelligence saved from the browser will appear here.'
+  }
+};
+
 export default function OrbSearchResultsView({
   query,
   results = [],
@@ -69,8 +104,8 @@ export default function OrbSearchResultsView({
 
       {/* ── Results Container ── */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4 thin-scrollbar">
-        {/* Suggested Queries Chips with clear AI Primary vs Secondary Hierarchy */}
-        {suggestedQuestions?.length > 0 && (() => {
+        {/* Suggested Queries Chips when real results are present */}
+        {results.length > 0 && suggestedQuestions?.length > 0 && (() => {
           const primaryInquiries = suggestedQuestions.slice(0, 2);
           const secondaryInquiries = suggestedQuestions.slice(2);
 
@@ -135,16 +170,37 @@ export default function OrbSearchResultsView({
           );
         })()}
 
-        {/* Results List */}
-        {results.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center text-slate-500 dark:text-zinc-400">
-            <Compass size={38} strokeWidth={1.3} className="mb-3 text-slate-400 dark:text-zinc-500" />
-            <div className="text-sm font-bold text-slate-800 dark:text-zinc-200">No workspace objects found</div>
-            <div className="text-xs max-w-sm mt-1 text-slate-500 dark:text-zinc-400 font-normal">
-              Try searching for concepts like "Nvidia revenue", "Taiwan semiconductor risk", "Capex", or person names.
+        {/* Results List or Contextual Empty State */}
+        {results.length === 0 ? (() => {
+          const emptyInfo = FILTER_EMPTY_STATES[workspaceFilter] || FILTER_EMPTY_STATES.all;
+          return (
+            <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${
+                highContrast
+                  ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-400 text-black dark:text-white'
+                  : 'bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/80 text-slate-500 dark:text-zinc-400'
+              }`}>
+                {workspaceFilter !== 'all' ? (
+                  <RegaarderProductIcon name={workspaceFilter} size={24} />
+                ) : (
+                  <Compass size={26} strokeWidth={1.5} />
+                )}
+              </div>
+              <h3 className={`text-base mb-1.5 ${
+                highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-900 dark:text-zinc-100'
+              }`}>
+                {query ? `No matching objects for "${query}"` : emptyInfo.title}
+              </h3>
+              <p className={`text-xs max-w-sm leading-relaxed ${
+                highContrast ? 'text-slate-800 dark:text-zinc-300 font-medium' : 'text-slate-500 dark:text-zinc-400'
+              }`}>
+                {query
+                  ? 'Try adjusting your search terms or clearing the workspace filter.'
+                  : emptyInfo.desc}
+              </p>
             </div>
-          </div>
-        ) : (
+          );
+        })() : (
           results.map(({ entity, relevanceScore, relevanceRationale, connectedCount }) => {
             const cleanRationale = relevanceRationale?.replace(/organizational memory/gi, 'workspace intelligence') || 'Indexed workspace entity across connected documents and models.';
 

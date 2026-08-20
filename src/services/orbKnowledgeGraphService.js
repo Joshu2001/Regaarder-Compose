@@ -643,320 +643,6 @@ export const INITIAL_ORB_EDGES = [
   }
 ];
 
-// ─── LIVE WORKSPACE INGESTION HELPER ─────────────────────────────────────────
-export function extractLiveEntitiesFromWorkspace({
-  documents = [],
-  activeDocId,
-  docTitle,
-  docBodyHtml,
-  docSubtitle,
-  sheetsTitle,
-  sheetGrids,
-  activeSheetId,
-  deckTitle,
-  deckSlidesData,
-  activeDeckSlideId,
-  tasks = [],
-  scheduleItems = [],
-  meetings = []
-}) {
-  const liveEntities = [];
-  const liveEdges = [];
-
-  // 1. Ingest current Compose Document
-  if (docTitle?.trim()) {
-    const cleanText = (docBodyHtml || '').replace(/<[^>]*>?/gm, ' ').trim();
-    const docEntityId = `live_doc_${activeDocId || 'current'}`;
-    
-    liveEntities.push({
-      id: docEntityId,
-      type: 'document',
-      workspace: 'compose',
-      title: docTitle.trim(),
-      author: 'You (Active Session)',
-      authorRole: 'Author',
-      updatedAt: new Date().toISOString(),
-      project: 'Active Session',
-      tags: ['Live', 'Compose', 'Document', ...extractKeywords(docTitle + ' ' + cleanText)],
-      excerpt: cleanText.slice(0, 180) || (docSubtitle || 'Active live document in editor...'),
-      content: cleanText || docTitle,
-      metadata: {
-        isLive: true,
-        docId: activeDocId,
-        length: cleanText.length
-      }
-    });
-
-    // Ingest other saved documents
-    documents.forEach((doc, idx) => {
-      if (doc.id && doc.id !== activeDocId && doc.title?.trim()) {
-        const otherDocId = `live_doc_${doc.id}`;
-        liveEntities.push({
-          id: otherDocId,
-          type: 'document',
-          workspace: 'compose',
-          title: doc.title,
-          author: 'Workspace Member',
-          authorRole: 'Collaborator',
-          updatedAt: doc.updatedAt || new Date(Date.now() - (idx + 1) * 3600000).toISOString(),
-          project: 'Workspace Documents',
-          tags: ['Compose', 'Document', ...extractKeywords(doc.title)],
-          excerpt: doc.excerpt || `Saved document in workspace: ${doc.title}`,
-          content: doc.content || doc.title,
-          metadata: { isLive: true, docId: doc.id }
-        });
-      }
-    });
-  }
-
-  // 2. Ingest current Sheets Model
-  if (sheetsTitle?.trim() || sheetGrids) {
-    const sheetEntityId = `live_sheet_${activeSheetId || 'current'}`;
-    const title = sheetsTitle?.trim() || 'Active Financial Sheet';
-    
-    liveEntities.push({
-      id: sheetEntityId,
-      type: 'sheet',
-      workspace: 'sheets',
-      title: title,
-      author: 'You (Active Session)',
-      authorRole: 'Analyst',
-      updatedAt: new Date().toISOString(),
-      project: 'Active Session',
-      tags: ['Live', 'Sheets', 'Grid', 'Formulas', ...extractKeywords(title)],
-      excerpt: `Active spreadsheet containing formulas, calculation tables, and metrics.`,
-      content: `Spreadsheet ${title} with calculation grid.`,
-      metadata: {
-        isLive: true,
-        sheetId: activeSheetId,
-        hasFormulas: true
-      }
-    });
-  }
-
-  // 3. Ingest current Deck
-  if (deckTitle?.trim() || deckSlidesData?.length) {
-    const deckEntityId = `live_deck_active`;
-    const title = deckTitle?.trim() || 'Active Presentation Deck';
-    
-    liveEntities.push({
-      id: deckEntityId,
-      type: 'slide',
-      workspace: 'deck',
-      title: title,
-      author: 'You (Active Session)',
-      authorRole: 'Presenter',
-      updatedAt: new Date().toISOString(),
-      project: 'Active Session',
-      tags: ['Live', 'Deck', 'Presentation', ...extractKeywords(title)],
-      excerpt: `Active presentation deck with ${deckSlidesData?.length || 1} slides.`,
-      content: `Presentation deck ${title}.`,
-      metadata: {
-        isLive: true,
-        slideCount: deckSlidesData?.length || 1
-      }
-    });
-  }
-
-  return { liveEntities, liveEdges };
-}
-
-function extractKeywords(text) {
-  if (!text) return [];
-  const words = text.toLowerCase()
-    .replace(/[^\w\s]/g, '')
-    .split(/\s+/)
-    .filter(w => w.length > 3 && !['this', 'that', 'with', 'from', 'have', 'were', 'which', 'your', 'about'].includes(w));
-  return Array.from(new Set(words)).slice(0, 6);
-}
-
-// ─── SEMANTIC SEARCH & RELEVANCE ENGINE ──────────────────────────────────────
-export function searchWorkspaceIntelligence(query, {
-  workspaceFilter = 'all',
-  lensFilter = 'all',
-  entities = INITIAL_ORB_ENTITIES,
-  edges = INITIAL_ORB_EDGES
-} = {}) {
-  // Helper to match workspace identity
-  const matchesWorkspace = (entity, filterKey) => {
-    if (!filterKey || filterKey === 'all') return true;
-    const ws = (entity.workspace || '').toLowerCase();
-    const type = (entity.type || '').toLowerCase();
-
-    switch (filterKey.toLowerCase()) {
-      case 'compose':
-      case 'docs':
-      case 'doc':
-        return ws === 'compose' || type === 'document' || type === 'decision';
-      case 'sheets':
-      case 'sheet':
-        return ws === 'sheets' || ws === 'sheet' || type === 'sheet';
-      case 'deck':
-      case 'decks':
-        return ws === 'deck' || ws === 'decks' || type === 'slide';
-      case 'room':
-      case 'meetings':
-      case 'meeting':
-        return ws === 'room' || type === 'meeting';
-      case 'tasks':
-      case 'task':
-        return ws === 'tasks' || type === 'task';
-      case 'schedule':
-        return ws === 'schedule' || type === 'schedule_event';
-      case 'browser':
-      case 'research':
-        return ws === 'browser' || type === 'research_note';
-      default:
-        return ws === filterKey.toLowerCase();
-    }
-  };
-
-  if (!query || !query.trim()) {
-    const filteredEntities = entities.filter(e => matchesWorkspace(e, workspaceFilter));
-    const resultEntityIds = new Set(filteredEntities.map(e => e.id));
-    const matchedEdges = edges.filter(e => resultEntityIds.has(e.sourceId) || resultEntityIds.has(e.targetId));
-
-    return {
-      query: '',
-      results: filteredEntities.map(e => ({
-        entity: e,
-        relevanceScore: 1.0,
-        relevanceRationale: `Recent ${e.workspace ? (e.workspace.charAt(0).toUpperCase() + e.workspace.slice(1)) : 'workspace'} entity in organizational memory.`,
-        connectedCount: edges.filter(edge => edge.sourceId === e.id || edge.targetId === e.id).length
-      })),
-      matchedEdges,
-      suggestedQuestions: [
-        'What should I know before expanding Nvidia GPU commitments?',
-        'What evidence supports our Q3 revenue forecast of $48.2B?',
-        'What are the primary risks associated with Taiwan semiconductor single-sourcing?',
-        'What decisions resulted from the Executive Sync on packaging bottlenecks?'
-      ]
-    };
-  }
-
-  const cleanQuery = query.toLowerCase().trim();
-  const queryTokens = cleanQuery.split(/\s+/).filter(t => t.length > 1);
-
-  // Score each entity
-  const scored = entities.map(entity => {
-    let score = 0;
-    const rationaleParts = [];
-
-    const titleLower = (entity.title || '').toLowerCase();
-    const contentLower = (entity.content || '').toLowerCase();
-    const excerptLower = (entity.excerpt || '').toLowerCase();
-    const tagsLower = (entity.tags || []).join(' ').toLowerCase();
-    const authorLower = (entity.author || '').toLowerCase();
-    const projectLower = (entity.project || '').toLowerCase();
-
-    // Exact phrase match in title
-    if (titleLower.includes(cleanQuery)) {
-      score += 60;
-      rationaleParts.push(`Direct title match for "${query}"`);
-    }
-
-    // Exact phrase in content / excerpt
-    if (contentLower.includes(cleanQuery) || excerptLower.includes(cleanQuery)) {
-      score += 35;
-      rationaleParts.push(`Explicit mention in content and excerpt`);
-    }
-
-    // Tag matches
-    if (tagsLower.includes(cleanQuery)) {
-      score += 25;
-      rationaleParts.push(`Categorized under ${query} topics`);
-    }
-
-    // Token overlap matches
-    queryTokens.forEach(token => {
-      if (titleLower.includes(token)) score += 18;
-      if (tagsLower.includes(token)) score += 12;
-      if (contentLower.includes(token)) score += 8;
-      if (authorLower.includes(token)) score += 15;
-      if (projectLower.includes(token)) score += 14;
-    });
-
-    // Special concept heuristics
-    if (/nvidia|gpu|capex|revenue|h200|b200|blackwell/i.test(cleanQuery) && entity.project === 'GPU Infrastructure 2026') {
-      score += 30;
-      if (!rationaleParts.length) rationaleParts.push(`Part of GPU Infrastructure & Capex workspace cluster`);
-    }
-    if (/taiwan|tsmc|semiconductor|cowos|packaging|fab/i.test(cleanQuery) && entity.project === 'Supply Chain Resilience') {
-      score += 30;
-      if (!rationaleParts.length) rationaleParts.push(`Connected to Taiwan Foundry Resilience & Packaging assessment`);
-    }
-
-    // Apply Workspace filter
-    if (!matchesWorkspace(entity, workspaceFilter)) {
-      score = 0;
-    }
-
-    // Calculate connected edges
-    const connectedEdges = edges.filter(e => e.sourceId === entity.id || e.targetId === entity.id);
-
-    // Formulate intelligent explanation
-    let rationale = rationaleParts.join(' • ');
-    if (!rationale) {
-      if (connectedEdges.length > 0) {
-        rationale = `Semantically linked to ${connectedEdges.length} related workspace artifact${connectedEdges.length > 1 ? 's' : ''}`;
-      } else {
-        rationale = `Matches semantic context around "${query}"`;
-      }
-    }
-
-    return {
-      entity,
-      relevanceScore: Math.min(100, score),
-      relevanceRationale: rationale,
-      connectedCount: connectedEdges.length
-    };
-  });
-
-  // Filter & sort
-  const results = scored
-    .filter(item => item.relevanceScore > 10)
-    .sort((a, b) => b.relevanceScore - a.relevanceScore);
-
-  // Find all matched edges between top results
-  const resultEntityIds = new Set(results.map(r => r.entity.id));
-  const matchedEdges = edges.filter(e => resultEntityIds.has(e.sourceId) || resultEntityIds.has(e.targetId));
-
-  // Dynamic suggested strategic questions
-  const suggestedQuestions = generateSuggestedQuestions(cleanQuery);
-
-  return {
-    query,
-    results,
-    matchedEdges,
-    suggestedQuestions
-  };
-}
-
-function generateSuggestedQuestions(query) {
-  if (/nvidia|revenue|gpu|capex/i.test(query)) {
-    return [
-      'What evidence supports the $48.2B Q3 Nvidia revenue forecast?',
-      'What dependencies could delay our Blackwell GPU deployment?',
-      'What decision resulted from the packaging bottleneck meeting?',
-      'Who are the key stakeholders on the GPU Infrastructure initiative?'
-    ];
-  }
-  if (/taiwan|tsmc|semiconductor|risk|packaging/i.test(query)) {
-    return [
-      'What should I know before making a dual-sourcing decision for TSMC?',
-      'What are the EBITDA implications of a 30-day Taiwan port disruption?',
-      'Which tasks are currently in progress to qualify secondary OSAT packaging?',
-      'What contradictions exist between our sheet yield matrix and board deck?'
-    ];
-  }
-  return [
-    `What decisions have been made regarding "${query}"?`,
-    `What downstream tasks or dependencies rely on "${query}"?`,
-    `Which team members have authored content connected to "${query}"?`,
-    `What are the financial or timeline impacts of "${query}"?`
-  ];
-}
-
 // ─── 9 ANALYTICAL LENS COORDINATE LAYOUT ENGINES ─────────────────────────────
 
 /**
@@ -1265,7 +951,7 @@ export function computeLensLayout(lensKey, entities = [], edges = [], { width = 
           return { ...entity, x, y, isAiFocal: true, lensRole: 'AI Latent Bridge Node' };
         } else {
           const idx = regularNodes.indexOf(entity);
-          const count = Math.max(1, regularNodes.length);
+const count = Math.max(1, regularNodes.length);
           const angle = (idx / count) * 2 * Math.PI - Math.PI / 2;
           const radius = Math.min(usableWidth, usableHeight) * 0.38;
           const x = centerX + Math.cos(angle) * radius;
@@ -1299,261 +985,575 @@ export function computeLensLayout(lensKey, entities = [], edges = [], { width = 
   return { nodes: positionedNodes, links, canvasWidth, canvasHeight };
 }
 
-// ─── DECIDE MODE STRATEGIC SYNTHESIZER ───────────────────────────────────────
-export function synthesizeStrategicDecision(topicOrQuestion, {
-  entities = INITIAL_ORB_ENTITIES,
-  edges = INITIAL_ORB_EDGES
+// ─── LIVE WORKSPACE INGESTION & RELATIONSHIP DISCOVERY ENGINE ────────────────
+export function extractLiveEntitiesFromWorkspace({
+  documents = [],
+  activeDocId,
+  docTitle,
+  docBodyHtml,
+  docSubtitle,
+  sheetsTitle,
+  sheetGrids,
+  activeSheetId,
+  deckTitle,
+  deckSlidesData,
+  activeDeckSlideId,
+  tasks = [],
+  scheduleItems = [],
+  scheduleAgendaItems = [],
+  meetings = []
 } = {}) {
-  const clean = (topicOrQuestion || '').toLowerCase();
+  const liveEntities = [];
+  const liveEdges = [];
 
-  // Scenario 1: Nvidia GPU / Capex / Revenue Decision
-  if (/nvidia|gpu|capex|revenue|blackwell|h200|\$48/i.test(clean)) {
-    return {
-      topic: 'Q3 Nvidia GPU Allocation & Capex Authorization ($48.2B Forecast)',
-      status: 'AI Recommendation • Pending Executive Review',
-      confidenceScore: 0.94,
-      recommendationTitle: 'Blackwell Allocation & Packaging Mitigation',
-      recommendedCourse: 'Proceed with the Blackwell allocation, contingent on securing secondary packaging capacity.',
-      why: '+28% QoQ demand growth in datacenter compute models supports expansion.',
-      criticalConstraint: 'TSMC packaging concentration creates a potential $6.7B delivery risk if single-source packaging slips.',
-      requiredCondition: 'Secure secondary ASE Group packaging allocation before September 10.',
-      coreRecommendation: 'Proceed with the Blackwell allocation, contingent on securing secondary packaging capacity.',
-      executiveSummary: 'Cross-workspace intelligence validates strong hyperscale demand (+28% QoQ), supporting the $48.2B gross revenue target in Sheets. However, single-source packaging bottlenecks at TSMC create a critical delivery slippage risk of $6.7B if secondary packaging is not locked immediately.',
-      evidenceToChangeRecommendation: [
-        {
-          trigger: 'TSMC CoWoS packaging slippage exceeds 14 days',
-          currentAssumption: 'TSMC packaging slips at most 1-2 weeks, covered by ASE secondary qualification by Sep 10.',
-          counterEvidence: 'If ASE qualification extends beyond Sep 10 or secondary yield drops below 78%, deliverable Q3 volume contracts by $6.7B.',
-          contingentAction: 'Immediately divert 35% of Q3 wafer allocations to standard H200 module packaging to preserve cash flow and delivery schedules.'
-        },
-        {
-          trigger: 'Hyperscale Capex revisions below +20% QoQ',
-          currentAssumption: 'Baseline demand expands by +28% based on Elena Rostova\'s memo and Sheets cell C14.',
-          counterEvidence: 'If top 2 cloud customers slow cluster deployment rates below 20%, inventory carrying costs rise to $140M/month.',
-          contingentAction: 'Exercise partial cancellation clause in Blackwell prepayment agreement prior to Aug 31.'
-        },
-        {
-          trigger: 'Secondary packaging unit cost delta exceeds +$450/die',
-          currentAssumption: 'Cost variance capped at +$340/die (blended net margin remains above 70.6%).',
-          counterEvidence: 'If substrate shortages push ASE pricing higher, gross margin drops below the corporate threshold of 68%.',
-          contingentAction: 'Trigger joint pricing pass-through clause with top 4 cloud CSPs to share 50% of packaging cost premium.'
-        }
-      ],
-      keyEvidence: [
-        {
-          source: 'Compose Strategic Memo (Elena Rostova)',
-          type: 'document',
-          detail: 'Hyperscale datacenter expansion models 28% quarter-over-quarter accelerator demand growth across top 4 CSPs.'
-        },
-        {
-          source: 'Sheets Model Cell C14 (Alex Vance)',
-          type: 'sheet',
-          detail: 'Calculates $48.20B gross revenue based on formula =$B$4*(1+$C$2) at 74.8% projected gross margin.'
-        },
-        {
-          source: 'Deck Slide 4 (Board Review)',
-          type: 'slide',
-          detail: 'Visualizes $32.4B Blackwell B200 and $15.8B H200 revenue distribution across server configurations.'
-        },
-        {
-          source: 'Executive Sync Room Transcript',
-          type: 'meeting',
-          detail: 'Michelle Chen confirmed 120k wafer baseline but warned that 3-week packaging slippage reduces realized revenue to $41.5B.'
-        }
-      ],
-      contradictions: [
-        {
-          id: 'contra_1',
-          severity: 'High',
-          title: 'Packaging Delay Revenue Mismatch',
-          description: 'Deck Slide 4 reports an unhedged $48.2B forecast, while the Room transcript audio flags a $6.7B downside risk under TSMC packaging delays.',
-          resolution: 'Task assigned to Marcus Vance to finalize ASE Group secondary packaging contract before Sep 10.'
-        },
-        {
-          id: 'contra_2',
-          severity: 'Medium',
-          title: 'Secondary Sourcing Gross Margin Delta',
-          description: 'Sheets model uses 74.8% gross margin based solely on TSMC yields; alternative OSAT packaging adds +$340/die, compressing net margin to 70.6%.',
-          resolution: 'Alex Vance to update cell F18 with blend margin formula.'
-        }
-      ],
-      dependencies: [
-        {
-          item: 'Secondary OSAT wafer agreement with ASE Group',
-          status: 'In Progress (Due Sep 10)',
-          owner: 'Marcus Vance',
-          criticality: 'Blocking Q3 Blackwell Mass Shipping'
-        },
-        {
-          item: '$1.8B binding inventory advance commitment execution',
-          status: 'Recorded Decision (Board Approved Aug 18)',
-          owner: 'Executive Committee',
-          criticality: 'Prerequisite for Tier-1 Allocation Priority'
-        }
-      ],
-      emergingTrends: [
-        'Tier-1 cloud hyperscalers are transitioning 40% of planned H200 cluster orders to Blackwell B200 configurations.',
-        'Secondary advanced packaging qualification cycle times have dropped from 6 months to 75 days across OSAT vendors.'
-      ],
-      missingInformation: [
-        'Confirmed yield rates on 2.5D packaging lines at ASE Kaohsiung facility.',
-        'Final power supply unit (PSU) lead times for liquid-cooled rack integrations.'
-      ],
-      recommendedActions: [
-        {
-          id: 'rec_act_1',
-          title: 'Lock secondary OSAT wafer contract with ASE Group before Sep 10',
-          assignee: 'Marcus Vance',
-          workspace: 'tasks',
-          priority: 'Urgent'
-        },
-        {
-          id: 'rec_act_2',
-          title: 'Update Sheets model (cell F18) to reflect blended secondary packaging cost structure',
-          assignee: 'Alex Vance',
-          workspace: 'sheets',
-          priority: 'High'
-        },
-        {
-          id: 'rec_act_3',
-          title: 'Schedule Stage 2 supply risk review in Room with Hardware Operations',
-          assignee: 'Elena Rostova',
-          workspace: 'room',
-          priority: 'Medium'
-        }
-      ]
-    };
+  // Helper to extract numbers, currency, and percentages
+  const extractNumericMetrics = (text) => {
+    if (!text) return [];
+    const matches = text.match(/\$[\d,]+(\.\d+)?([BMKbmk])?|\b\d+(\.\d+)?%|\b\d+([BMKbmk])\b/g);
+    return matches ? Array.from(new Set(matches)).slice(0, 5) : [];
+  };
+
+  // Helper to extract key concepts
+  const extractTokens = (text) => {
+    if (!text) return [];
+    return text.toLowerCase()
+      .replace(/[^\w\s]/g, '')
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !['this', 'that', 'with', 'from', 'have', 'were', 'which', 'your', 'about', 'their', 'there'].includes(w));
+  };
+
+  // 1. Ingest Active Compose Document
+  if (docTitle?.trim() && docTitle.trim() !== 'Untitled Document') {
+    const cleanText = (docBodyHtml || '').replace(/<[^>]*>?/gm, ' ').trim();
+    const docEntityId = `live_doc_${activeDocId || 'active'}`;
+    const metrics = extractNumericMetrics(cleanText);
+    const keywords = Array.from(new Set(extractTokens(docTitle + ' ' + cleanText))).slice(0, 8);
+    
+    liveEntities.push({
+      id: docEntityId,
+      type: 'document',
+      workspace: 'compose',
+      title: docTitle.trim(),
+      author: 'You (Active Author)',
+      authorRole: 'Document Author',
+      updatedAt: new Date().toISOString(),
+      project: 'Active Session',
+      tags: ['Compose', 'Document', ...keywords],
+      excerpt: cleanText.slice(0, 180) || (docSubtitle || 'Active live document in Compose editor.'),
+      content: cleanText || docTitle,
+      metrics,
+      metadata: {
+        isLive: true,
+        docId: activeDocId,
+        length: cleanText.length,
+        metrics
+      }
+    });
   }
 
-  // Scenario 2: Taiwan Semiconductor Risk / Dual-Sourcing Decision
-  if (/taiwan|tsmc|semiconductor|risk|foundry|fab/i.test(clean)) {
-    return {
-      topic: 'Taiwan Semiconductor Supply Chain Resilience & Dual-Sourcing Strategy',
-      status: 'Under Review • Strategic Decision Required',
-      confidenceScore: 0.91,
-      recommendationTitle: 'Authorize $45M Secondary Foundry Qualification while Maintaining 75% Primary TSMC Flow',
-      coreRecommendation: 'Fund engineering wafer qualification runs with secondary foundry partners (Intel 18A / Samsung SF2) to begin operational hedge, but maintain primary volume commitments with TSMC to protect baseline cost targets through 2026.',
-      executiveSummary: 'Concentration of 88% leading-edge logic and 92% advanced packaging in Taiwan exposes the enterprise to a $1.4B quarterly EBITDA disruption risk. Sourcing from Intel 18A or Samsung SF2 mitigates geographic exposure but introduces a 12.2% yield gap and +$340/die cost delta.',
-      evidenceToChangeRecommendation: [
-        {
-          trigger: 'Secondary foundry yield parity exceeds 82%',
-          currentAssumption: 'Secondary foundries average 74.2% wafer yield compared to TSMC\'s 86.4%.',
-          counterEvidence: 'If Intel 18A or Samsung SF2 achieves >82% yield on pilot runs, per-die cost penalty drops from $340 to below $110.',
-          contingentAction: 'Increase secondary volume allocation from 25% to 45% ahead of the 2027 Long-Range Plan target.'
-        },
-        {
-          trigger: 'Geopolitical disruption index rises above 8.8/10',
-          currentAssumption: 'Regional transport corridors remain operational with standard transit times.',
-          counterEvidence: 'If port delays or airspace restrictions escalate transit times past 21 days, downtime costs will exceed secondary qualification premiums.',
-          contingentAction: 'Authorize emergency dual-sourcing acceleration with immediate volume shift to Arizona and European foundry hubs.'
-        },
-        {
-          trigger: 'Customer dual-source acceptance rate below 60%',
-          currentAssumption: 'Customers will accept a 3-5% price adjustment for guaranteed supply resilience.',
-          counterEvidence: 'If enterprise customers reject pass-through pricing, margins will compress by 3.8%.',
-          contingentAction: 'Re-negotiate volume tiers to absorb resilience costs across multi-year software-attached contracts.'
-        }
-      ],
-      keyEvidence: [
-        {
-          source: 'Browser Geopolitical Briefing (Dr. Sarah Lin)',
-          type: 'research_note',
-          detail: 'Documents that 92% of world advanced CoWoS packaging capacity is within a 45-mile radius in Western Taiwan.'
-        },
-        {
-          source: 'Procurement Protocol Memo (Marcus Vance)',
+  // 2. Ingest Other Saved Workspace Documents
+  if (Array.isArray(documents)) {
+    documents.forEach((doc, idx) => {
+      if (doc?.id && doc.id !== activeDocId && doc.title?.trim() && doc.title.trim() !== 'Untitled Document') {
+        const cleanDocText = (doc.bodyHtml || doc.content || '').replace(/<[^>]*>?/gm, ' ').trim();
+        const otherDocId = `live_doc_${doc.id}`;
+        const metrics = extractNumericMetrics(cleanDocText);
+        const keywords = Array.from(new Set(extractTokens(doc.title + ' ' + cleanDocText))).slice(0, 8);
+
+        liveEntities.push({
+          id: otherDocId,
           type: 'document',
-          detail: 'Mandates an operational ceiling of maximum 60% single-source foundry concentration by Q4 2027.'
-        },
-        {
-          source: 'Sheets Fab Capacity Matrix (Alex Vance)',
-          type: 'sheet',
-          detail: 'Calculates TSMC Fab 18 yield at 86.4% vs secondary foundries averaging 74.2%, creating a +$340 cost delta per good die.'
-        },
-        {
-          source: 'Deck Risk Briefing Slide 7 (Dr. Sarah Lin)',
-          type: 'slide',
-          detail: 'Shows 30-day port stoppage scenario generates $1.4B EBITDA disruption across core product lines.'
-        }
-      ],
-      contradictions: [
-        {
-          id: 'contra_tsmc_1',
-          severity: 'High',
-          title: 'Target Date vs Qualification Velocity',
-          description: 'Procurement Memo targets 60% ceiling by Q4 2027, but current secondary foundry qualification milestones are running 4 months behind schedule.',
-          resolution: 'Accelerate engineering wafer test runs at Intel Foundry Services.'
-        }
-      ],
-      dependencies: [
-        {
-          item: 'Secondary packaging pilot run validation',
-          status: 'In Progress',
-          owner: 'Hardware Operations',
-          criticality: 'Required before board dual-source ratification'
-        }
-      ],
-      emergingTrends: [
-        'Arizona Fab 21 tooling installation has reached 78% completion, reducing reliance on Taiwan-only wafer transport.',
-        'Customer willingness to absorb 3-5% dual-source resilience premium in multi-year service contracts.'
-      ],
-      missingInformation: [
-        'Definitive wafer pricing contracts for 2nm process nodes beyond 2027.',
-        'Thermal dissipation benchmarks on secondary foundry packaging prototypes.'
-      ],
-      recommendedActions: [
-        {
-          id: 'rec_tsmc_1',
-          title: 'Authorize $45M pilot qualification run with secondary foundry partner',
-          assignee: 'Executive Committee',
           workspace: 'compose',
-          priority: 'Urgent'
-        },
-        {
-          id: 'rec_tsmc_2',
-          title: 'Incorporate blended packaging cost curve into 2027 Long-Range Plan in Sheets',
-          assignee: 'Alex Vance',
-          workspace: 'sheets',
-          priority: 'High'
+          title: doc.title.trim(),
+          author: doc.author || 'Workspace Member',
+          authorRole: 'Collaborator',
+          updatedAt: doc.updatedAt || new Date(Date.now() - (idx + 1) * 3600000).toISOString(),
+          project: doc.project || 'Workspace Documents',
+          tags: ['Compose', 'Document', ...keywords],
+          excerpt: doc.excerpt || cleanDocText.slice(0, 180) || `Saved document in workspace: ${doc.title}`,
+          content: cleanDocText || doc.title,
+          metrics,
+          metadata: { isLive: true, docId: doc.id, metrics }
+        });
+      }
+    });
+  }
+
+  // 3. Ingest Sheets Calculation Models & Formula Matrices
+  if (sheetsTitle?.trim() && sheetsTitle.trim() !== 'Untitled Sheet' || (sheetGrids && Object.keys(sheetGrids).length > 0)) {
+    const sheetEntityId = `live_sheet_${activeSheetId || 'active'}`;
+    const title = sheetsTitle?.trim() && sheetsTitle.trim() !== 'Untitled Sheet' ? sheetsTitle.trim() : 'Financial Model & Data Grid';
+    
+    // Parse sheet data grid for formulas and metrics
+    const formulasFound = [];
+    const cellValues = [];
+    if (sheetGrids && typeof sheetGrids === 'object') {
+      Object.entries(sheetGrids).forEach(([tabName, grid]) => {
+        if (Array.isArray(grid)) {
+          grid.slice(0, 15).forEach((row, rIdx) => {
+            if (Array.isArray(row)) {
+              row.slice(0, 10).forEach((cell, cIdx) => {
+                if (typeof cell === 'string') {
+                  if (cell.startsWith('=')) formulasFound.push({ tab: tabName, row: rIdx + 1, col: cIdx + 1, formula: cell });
+                  if (cell.trim()) cellValues.push(cell.trim());
+                } else if (typeof cell === 'number') {
+                  cellValues.push(String(cell));
+                }
+              });
+            }
+          });
         }
-      ]
+      });
+    }
+
+    const cellText = cellValues.join(' ');
+    const metrics = extractNumericMetrics(cellText);
+    const keywords = Array.from(new Set(extractTokens(title + ' ' + cellText))).slice(0, 8);
+
+    liveEntities.push({
+      id: sheetEntityId,
+      type: 'sheet',
+      workspace: 'sheets',
+      title: title,
+      author: 'You (Model Analyst)',
+      authorRole: 'Financial Analyst',
+      updatedAt: new Date().toISOString(),
+      project: 'Active Session',
+      tags: ['Sheets', 'Financial Model', 'Formulas', ...keywords],
+      excerpt: formulasFound.length > 0
+        ? `Spreadsheet model containing ${formulasFound.length} active formulas including ${formulasFound[0].formula}.`
+        : `Spreadsheet model containing numerical data tables and calculated metrics.`,
+      content: `Spreadsheet ${title}. Formulas: ${formulasFound.map(f => f.formula).join(', ')}. Metrics: ${metrics.join(', ')}`,
+      metrics,
+      metadata: {
+        isLive: true,
+        sheetId: activeSheetId,
+        hasFormulas: formulasFound.length > 0,
+        formulas: formulasFound.slice(0, 5),
+        metrics
+      }
+    });
+  }
+
+  // 4. Ingest Presentation Decks & Slide Briefings
+  if (deckTitle?.trim() && deckTitle.trim() !== 'Untitled Deck' || (Array.isArray(deckSlidesData) && deckSlidesData.length > 0)) {
+    const deckEntityId = `live_deck_active`;
+    const title = deckTitle?.trim() && deckTitle.trim() !== 'Untitled Deck' ? deckTitle.trim() : 'Executive Presentation Deck';
+    
+    const slideSummaries = [];
+    if (Array.isArray(deckSlidesData)) {
+      deckSlidesData.forEach((s, idx) => {
+        if (s) {
+          const sTitle = s.title || s.headline || `Slide ${idx + 1}`;
+          const sContent = s.content || s.text || s.notes || '';
+          slideSummaries.push(`${sTitle}: ${sContent}`);
+        }
+      });
+    }
+
+    const deckText = slideSummaries.join(' ');
+    const metrics = extractNumericMetrics(deckText);
+    const keywords = Array.from(new Set(extractTokens(title + ' ' + deckText))).slice(0, 8);
+
+    liveEntities.push({
+      id: deckEntityId,
+      type: 'slide',
+      workspace: 'deck',
+      title: title,
+      author: 'You (Presenter)',
+      authorRole: 'Presenter',
+      updatedAt: new Date().toISOString(),
+      project: 'Active Session',
+      tags: ['Deck', 'Presentation', 'Executive Review', ...keywords],
+      excerpt: slideSummaries.length > 0
+        ? `Presentation deck with ${slideSummaries.length} slides: ${slideSummaries[0].slice(0, 100)}...`
+        : `Presentation deck containing executive overview and visual roadmap slides.`,
+      content: `Presentation deck ${title}. Slides: ${deckText}`,
+      metrics,
+      metadata: {
+        isLive: true,
+        slideCount: deckSlidesData?.length || 1,
+        metrics
+      }
+    });
+  }
+
+  // 5. Ingest Tasks / Action Item Initiatives
+  if (Array.isArray(tasks) && tasks.length > 0) {
+    tasks.forEach((t, idx) => {
+      if (t && (t.title || t.text || t.name)) {
+        const title = (t.title || t.text || t.name).trim();
+        if (title && title !== 'New Task') {
+          const desc = t.description || t.notes || '';
+          const metrics = extractNumericMetrics(title + ' ' + desc);
+          const keywords = Array.from(new Set(extractTokens(title + ' ' + desc))).slice(0, 6);
+
+          liveEntities.push({
+            id: `live_task_${t.id || idx}`,
+            type: 'task',
+            workspace: 'tasks',
+            title: title,
+            author: t.assignee || 'You',
+            authorRole: 'Assignee',
+            updatedAt: t.updatedAt || new Date().toISOString(),
+            project: t.project || 'Active Initiatives',
+            tags: ['Task', 'Action Item', ...keywords],
+            excerpt: desc ? `${title} — ${desc}` : `Task initiative: ${title} (${t.priority || 'Normal'} priority)`,
+            content: `${title}. ${desc}. Priority: ${t.priority || 'Normal'}. Status: ${t.status || 'In Progress'}.`,
+            metrics,
+            metadata: {
+              isLive: true,
+              priority: t.priority || 'Normal',
+              status: t.status || 'Active',
+              dueDate: t.dueDate || t.deadline
+            }
+          });
+        }
+      }
+    });
+  }
+
+  // 6. Ingest Calendar Schedule Agenda
+  const schedList = (scheduleItems?.length ? scheduleItems : scheduleAgendaItems) || [];
+  if (Array.isArray(schedList) && schedList.length > 0) {
+    schedList.forEach((s, idx) => {
+      if (s && (s.title || s.summary || s.label)) {
+        const title = (s.title || s.summary || s.label).trim();
+        if (title) {
+          liveEntities.push({
+            id: `live_sched_${s.id || idx}`,
+            type: 'schedule_event',
+            workspace: 'schedule',
+            title: title,
+            author: s.organizer || 'Calendar',
+            authorRole: 'Organizer',
+            updatedAt: new Date().toISOString(),
+            project: s.project || 'Calendar Schedule',
+            tags: ['Schedule', 'Event', 'Milestone'],
+            excerpt: s.time ? `${s.time}: ${title}` : `Calendar event: ${title}`,
+            content: `${title}. Time: ${s.time || 'Scheduled'}. Location: ${s.location || 'Meeting'}.`,
+            metadata: { isLive: true, time: s.time, location: s.location }
+          });
+        }
+      }
+    });
+  }
+
+  // ─── AUTOMATIC MULTI-DIMENSIONAL RELATIONSHIP DISCOVERY ──────────────────
+  if (liveEntities.length > 1) {
+    for (let i = 0; i < liveEntities.length; i++) {
+      for (let j = i + 1; j < liveEntities.length; j++) {
+        const a = liveEntities[i];
+        const b = liveEntities[j];
+
+        // 1. Shared Numeric Metrics / Currency Link
+        const sharedMetrics = (a.metrics || []).filter(m => (b.metrics || []).includes(m));
+        if (sharedMetrics.length > 0) {
+          liveEdges.push({
+            id: `edge_num_${a.id}_${b.id}`,
+            sourceId: a.id,
+            targetId: b.id,
+            relationType: ORB_RELATION_TYPES.FORMULA_DERIVES_FROM,
+            label: `Quantitative Alignment: Shared figure (${sharedMetrics[0]}) verified across artifacts`,
+            epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
+            modality: 'Deterministic Numeric Match',
+            epistemicRationale: `Explicit match on metric ${sharedMetrics[0]} between ${a.title} and ${b.title}.`,
+            evidence: {
+              sourceSnippet: `Contains figure ${sharedMetrics[0]}`,
+              targetSnippet: `Reconciled against ${sharedMetrics[0]} in ${b.title}`,
+              formula: sharedMetrics[0],
+              date: new Date().toISOString().split('T')[0]
+            },
+            isAiInferred: false,
+            confidenceScore: 0.99,
+            lenses: ['financial', 'dependencies', 'causal']
+          });
+          continue;
+        }
+
+        // 2. Keyword & Concept Overlap
+        const aTags = a.tags || [];
+        const bTags = b.tags || [];
+        const sharedTags = aTags.filter(t => bTags.includes(t) && !['Compose', 'Document', 'Sheets', 'Deck', 'Task', 'Live'].includes(t));
+
+        if (sharedTags.length >= 2) {
+          liveEdges.push({
+            id: `edge_concept_${a.id}_${b.id}`,
+            sourceId: a.id,
+            targetId: b.id,
+            relationType: ORB_RELATION_TYPES.REFERENCES,
+            label: `Topic Intersection: Shared workstream (${sharedTags.slice(0, 2).join(', ')})`,
+            epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
+            modality: 'Semantic Concept Extraction',
+            epistemicRationale: `Both artifacts reference shared strategic concepts (${sharedTags.join(', ')}).`,
+            evidence: {
+              sourceSnippet: a.excerpt.slice(0, 100),
+              targetSnippet: b.excerpt.slice(0, 100),
+              date: new Date().toISOString().split('T')[0]
+            },
+            isAiInferred: false,
+            confidenceScore: 0.95,
+            lenses: ['projects', 'knowledge', 'dependencies']
+          });
+          continue;
+        }
+
+        // 3. Task to Document / Sheet Assignment Link
+        if ((a.type === 'task' && b.type !== 'task') || (b.type === 'task' && a.type !== 'task')) {
+          const taskEnt = a.type === 'task' ? a : b;
+          const otherEnt = a.type === 'task' ? b : a;
+
+          const hasOverlap = extractTokens(taskEnt.title).some(t => extractTokens(otherEnt.title + ' ' + otherEnt.content).includes(t));
+          if (hasOverlap) {
+            liveEdges.push({
+              id: `edge_task_${taskEnt.id}_${otherEnt.id}`,
+              sourceId: otherEnt.id,
+              targetId: taskEnt.id,
+              relationType: ORB_RELATION_TYPES.ASSIGNED_TO,
+              label: `Action Item: Delivers on requirements from ${otherEnt.title}`,
+              epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
+              modality: 'Action Item Association',
+              epistemicRationale: `Task "${taskEnt.title}" tracks execution of deliverables defined in ${otherEnt.title}.`,
+              evidence: {
+                sourceSnippet: otherEnt.excerpt.slice(0, 100),
+                targetSnippet: taskEnt.excerpt.slice(0, 100),
+                date: new Date().toISOString().split('T')[0]
+              },
+              isAiInferred: false,
+              confidenceScore: 0.96,
+              lenses: ['timeline', 'dependencies', 'people', 'projects']
+            });
+            continue;
+          }
+        }
+
+        // 4. Default Chronological Flow for Timeline Lens
+        if (i === j - 1) {
+          liveEdges.push({
+            id: `edge_chrono_${a.id}_${b.id}`,
+            sourceId: a.id,
+            targetId: b.id,
+            relationType: ORB_RELATION_TYPES.CHRONOLOGY_BEFORE,
+            label: `Milestone Progression: ${a.title} precedes ${b.title}`,
+            epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
+            modality: 'Chronological Sequence',
+            epistemicRationale: 'Sequential artifact creation and session updates.',
+            evidence: {
+              sourceSnippet: `Created/Updated: ${a.updatedAt || 'Recent'}`,
+              targetSnippet: `Sequenced Milestone: ${b.updatedAt || 'Recent'}`,
+              date: new Date().toISOString().split('T')[0]
+            },
+            isAiInferred: false,
+            confidenceScore: 0.90,
+            lenses: ['timeline', 'projects']
+          });
+        }
+      }
+    }
+  }
+
+  return { liveEntities, liveEdges };
+}
+
+// ─── SEMANTIC SEARCH & RELEVANCE ENGINE ──────────────────────────────────────
+export function searchWorkspaceIntelligence(query, {
+  workspaceFilter = 'all',
+  lensFilter = 'all',
+  entities = [],
+  edges = []
+} = {}) {
+  const matchesWorkspace = (entity, filterKey) => {
+    if (!filterKey || filterKey === 'all') return true;
+    const ws = (entity.workspace || '').toLowerCase();
+    const type = (entity.type || '').toLowerCase();
+
+    switch (filterKey.toLowerCase()) {
+      case 'compose':
+      case 'docs':
+      case 'doc':
+        return ws === 'compose' || type === 'document' || type === 'decision';
+      case 'sheets':
+      case 'sheet':
+        return ws === 'sheets' || ws === 'sheet' || type === 'sheet';
+      case 'deck':
+      case 'decks':
+        return ws === 'deck' || ws === 'decks' || type === 'slide';
+      case 'room':
+      case 'meetings':
+      case 'meeting':
+        return ws === 'room' || type === 'meeting';
+      case 'tasks':
+      case 'task':
+        return ws === 'tasks' || type === 'task';
+      case 'schedule':
+        return ws === 'schedule' || type === 'schedule_event';
+      case 'browser':
+      case 'research':
+        return ws === 'browser' || type === 'research_note';
+      default:
+        return ws === filterKey.toLowerCase();
+    }
+  };
+
+  if (!query || !query.trim()) {
+    const filteredEntities = entities.filter(e => matchesWorkspace(e, workspaceFilter));
+    const resultEntityIds = new Set(filteredEntities.map(e => e.id));
+    const matchedEdges = edges.filter(e => resultEntityIds.has(e.sourceId) || resultEntityIds.has(e.targetId));
+
+    // Dynamic suggested questions from real workspace entities
+    const dynamicQuestions = [];
+    if (entities.length >= 2) {
+      dynamicQuestions.push(`What are the key dependencies between ${entities[0].title} and ${entities[1].title}?`);
+      dynamicQuestions.push(`What evidence supports the commitments across our active workspace documents?`);
+    } else if (entities.length === 1) {
+      dynamicQuestions.push(`What strategic decisions or actions are required for ${entities[0].title}?`);
+    }
+
+    return {
+      query: '',
+      results: filteredEntities.map(e => ({
+        entity: e,
+        relevanceScore: 1.0,
+        relevanceRationale: `Live ${e.workspace ? (e.workspace.charAt(0).toUpperCase() + e.workspace.slice(1)) : 'workspace'} entity indexed in active session.`,
+        connectedCount: edges.filter(edge => edge.sourceId === e.id || edge.targetId === e.id).length
+      })),
+      matchedEdges,
+      suggestedQuestions: dynamicQuestions
     };
   }
 
-  // Default Universal Workspace Synthesis
+  const cleanQuery = query.toLowerCase().trim();
+  const queryTokens = cleanQuery.split(/\s+/).filter(t => t.length > 1);
+
+  // Score each entity against query tokens
+  const scored = entities.map(entity => {
+    let score = 0;
+    const rationaleParts = [];
+
+    const titleLower = (entity.title || '').toLowerCase();
+    const contentLower = (entity.content || '').toLowerCase();
+    const excerptLower = (entity.excerpt || '').toLowerCase();
+    const tagsLower = (entity.tags || []).join(' ').toLowerCase();
+
+    // Exact phrase match in title
+    if (titleLower.includes(cleanQuery)) {
+      score += 60;
+      rationaleParts.push(`Direct title match for "${query}"`);
+    }
+
+    // Exact phrase in content / excerpt
+    if (contentLower.includes(cleanQuery) || excerptLower.includes(cleanQuery)) {
+      score += 35;
+      rationaleParts.push(`Found in document body and notes`);
+    }
+
+    // Tag matches
+    if (tagsLower.includes(cleanQuery)) {
+      score += 25;
+      rationaleParts.push(`Tagged under ${query}`);
+    }
+
+    // Token overlap matches
+    queryTokens.forEach(token => {
+      if (titleLower.includes(token)) score += 15;
+      if (contentLower.includes(token)) score += 8;
+    });
+
+    return {
+      entity,
+      score,
+      rationale: rationaleParts.join(' • ') || `Semantic relevance match for query "${query}"`
+    };
+  });
+
+  const matchingResults = scored
+    .filter(item => item.score > 0 && matchesWorkspace(item.entity, workspaceFilter))
+    .sort((a, b) => b.score - a.score);
+
+  const matchedEntityIds = new Set(matchingResults.map(r => r.entity.id));
+  const matchedEdges = edges.filter(e => matchedEntityIds.has(e.sourceId) || matchedEntityIds.has(e.targetId));
+
   return {
-    topic: `Strategic Decision Synthesis: "${topicOrQuestion || 'Cross-Workspace Assessment'}"`,
-    status: 'Synthesized Intelligence • Active',
-    confidenceScore: 0.89,
-    recommendationTitle: 'Consolidate Cross-Workspace Intelligence & Align Quantitative Models',
-    coreRecommendation: `Synthesize findings across all ${entities.length} indexed artifacts. Prioritize reconciling spreadsheet formula dependencies against strategic document milestones before authorizing further capital allocation.`,
-    executiveSummary: `Orb has synthesized relevant intelligence across ${entities.length} workspace artifacts in Compose, Sheets, Deck, Tasks, and Room. Key relationships have been traced across upstream assumptions, quantitative models, and downstream task commitments.`,
+    query,
+    results: matchingResults.map(r => ({
+      entity: r.entity,
+      relevanceScore: Math.min(1.0, r.score / 60),
+      relevanceRationale: r.rationale,
+      connectedCount: edges.filter(edge => edge.sourceId === r.entity.id || edge.targetId === r.entity.id).length
+    })),
+    matchedEdges,
+    suggestedQuestions: [
+      `What are the critical constraints affecting "${query}"?`,
+      `What actions are pending regarding "${query}"?`
+    ]
+  };
+}
+
+// ─── DYNAMIC STRATEGIC DECISION SYNTHESIS ENGINE ────────────────────────────
+export function synthesizeStrategicDecision(topicOrQuestion, {
+  entities = [],
+  edges = []
+} = {}) {
+  const queryText = (topicOrQuestion || '').trim();
+  const primaryEntity = entities[0];
+  const secondaryEntity = entities[1] || entities[0];
+
+  const primaryTitle = primaryEntity?.title || 'Active Workspace Strategy';
+  const primaryMetrics = primaryEntity?.metrics || [];
+  const secondaryTitle = secondaryEntity?.title || 'Financial & Operational Plan';
+
+  const docEntities = entities.filter(e => e.workspace === 'compose' || e.type === 'document');
+  const sheetEntities = entities.filter(e => e.workspace === 'sheets' || e.type === 'sheet');
+  const taskEntities = entities.filter(e => e.workspace === 'tasks' || e.type === 'task');
+
+  const keyEvidence = entities.slice(0, 4).map(e => ({
+    source: `${e.title} (${e.author || 'Workspace'})`,
+    type: e.type,
+    detail: e.excerpt || e.content.slice(0, 140)
+  }));
+
+  const recommendedCourse = `Proceed with the strategic execution plan outlined in ${primaryTitle}, reconciling assumptions against quantitative models in ${sheetEntities[0]?.title || secondaryTitle}.`;
+  const why = primaryMetrics.length > 0
+    ? `Validated metrics (${primaryMetrics.join(', ')}) across workspace artifacts corroborate operational milestones.`
+    : `Cross-workspace intelligence links key assumptions in ${primaryTitle} directly to actionable deliverables.`;
+  const criticalConstraint = taskEntities.length > 0
+    ? `Requires completion of ${taskEntities[0].title} before finalizing downstream milestones.`
+    : `Ensure quantitative assumptions in spreadsheet formulas align before capital authorization.`;
+  const requiredCondition = `Complete executive sign-off and verify formula integrity across all connected artifacts.`;
+
+  return {
+    topic: queryText || `Strategic Decision Synthesis: ${primaryTitle}`,
+    status: 'AI Recommendation • Pending Executive Review',
+    confidenceScore: 0.94,
+    recommendationTitle: `Executive Roadmap & Alignment for ${primaryTitle}`,
+    recommendedCourse,
+    why,
+    criticalConstraint,
+    requiredCondition,
+    coreRecommendation: recommendedCourse,
+    executiveSummary: `Orb has synthesized intelligence across ${entities.length} active workspace artifacts. Evidence from ${primaryTitle} has been reconciled against linked models and deliverables, identifying critical execution path dependencies.`,
     evidenceToChangeRecommendation: [
       {
-        trigger: 'Discrepancies identified in linked spreadsheet formulas',
-        currentAssumption: 'Core revenue and capex assumptions are fully synchronized between sheets and presentation decks.',
-        counterEvidence: 'If source cell references are edited or assumptions diverge by >5%, presentation decks will present outdated figures.',
-        contingentAction: 'Trigger automatic Orb cross-workspace synchronization review to flag unlinked dependencies.'
+        trigger: 'Discrepancy in quantitative financial formulas',
+        currentAssumption: `Assumptions in ${sheetEntities[0]?.title || 'Sheets model'} remain within acceptable tolerance.`,
+        counterEvidence: 'If formulas diverge by >5%, presentation and memo revenue figures will become misaligned.',
+        contingentAction: 'Trigger real-time recalculation pass in Sheets and update linked document tables.'
       },
       {
-        trigger: 'Milestone schedule slips exceed 10 business days',
-        currentAssumption: 'Project deliverables are on track for current quarter sign-off.',
-        counterEvidence: 'Task blockers in Room or Tasks will cascade downstream to delay executive review meetings.',
-        contingentAction: 'Escalate critical path dependencies to project leads and adjust roadmap milestones.'
+        trigger: 'Milestone delivery delay exceeds 10 days',
+        currentAssumption: 'Execution timeline aligns with active sprint and calendar commitments.',
+        counterEvidence: 'Blockers in assigned task initiatives will delay executive sign-off meetings.',
+        contingentAction: 'Escalate task prerequisites to lead assignees and adjust milestone schedule.'
       }
     ],
-    keyEvidence: entities.slice(0, 4).map(e => ({
-      source: `${e.title} (${e.author})`,
-      type: e.type,
-      detail: e.excerpt || e.content.slice(0, 140)
-    })),
+    keyEvidence,
     contradictions: [
       {
-        id: 'contra_gen_1',
+        id: 'contra_live_1',
         severity: 'Medium',
-        title: 'Cross-App Assumption Alignment',
-        description: 'Ensure quantitative models in Sheets dynamically mirror the qualitative targets outlined in the latest Compose memos.',
-        resolution: 'Orb real-time sync verified active references.'
+        title: 'Cross-Artifact Assumption Alignment',
+        description: `Ensure targets in ${primaryTitle} dynamically reflect the latest calculated metrics in ${sheetEntities[0]?.title || 'Sheets'}.`,
+        resolution: 'Orb deterministic verification maintains formula and text provenance.'
       }
     ],
     dependencies: [

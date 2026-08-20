@@ -2,10 +2,49 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   ZoomIn, ZoomOut, Maximize2, RefreshCw, Filter, 
   Layers, ArrowRight, CornerDownRight, Info, AlertTriangle, Eye,
-  Hand, Move
+  Hand, Move, Network, Calendar, ChevronLeft, ChevronRight, X, Play, Pause, Clock
 } from 'lucide-react';
 import { RegaarderProductIcon } from '../RegaarderProductIcons';
 import { ORB_LENSES, computeLensLayout } from '../../services/orbKnowledgeGraphService';
+
+export const LENS_EMPTY_STATES = {
+  timeline: {
+    title: 'No Timeline Events Yet',
+    desc: 'Chronological progression from assumptions to decisions and milestones will appear as dated artifacts and meetings are indexed.'
+  },
+  dependencies: {
+    title: 'No Dependencies Connected Yet',
+    desc: 'Upstream prerequisites, blocking deliverables, and formula dependencies between documents and models will be mapped here.'
+  },
+  decisions: {
+    title: 'No Decisions Documented Yet',
+    desc: 'Strategic choices, board resolutions, and rationale memos across your workspace will cluster here.'
+  },
+  projects: {
+    title: 'No Projects Clustered Yet',
+    desc: 'Artifacts grouped by initiative, workstream, or tag will organize into visual project clusters.'
+  },
+  people: {
+    title: 'No Stakeholder Mappings Yet',
+    desc: 'Document authors, assignees, meeting speakers, and collaborators will be mapped around their deliverables.'
+  },
+  financial: {
+    title: 'No Financial Models Connected Yet',
+    desc: 'Spreadsheet models, cell formulas, capex breakdowns, and revenue models will connect here.'
+  },
+  knowledge: {
+    title: 'No Knowledge Clusters Yet',
+    desc: 'Shared concepts, recurring themes, and cross-workspace terminology will emerge as you add content.'
+  },
+  causal: {
+    title: 'No Causal Risk Chains Yet',
+    desc: 'Cause-and-effect pathways, supply chain dependencies, and sensitivity triggers will be traced here.'
+  },
+  ai: {
+    title: 'No AI Inferences Discovered Yet',
+    desc: 'Orb automatically surfaces latent relationships and anomaly patterns between your workspace artifacts.'
+  }
+};
 
 export default function OrbMapCanvas({
   entities = [],
@@ -28,6 +67,12 @@ export default function OrbMapCanvas({
   const [hoveredNodeId, setHoveredNodeId] = useState(null);
   const [hoveredEdgeId, setHoveredEdgeId] = useState(null);
   const [expandedNodeIds, setExpandedNodeIds] = useState(new Set());
+
+  // Timeline Date Search & Time Scrubber State
+  const [timelineDateQuery, setTimelineDateQuery] = useState('');
+  const [timelinePreset, setTimelinePreset] = useState('all'); // 'all' | '7d' | '30d' | 'quarter'
+  const [timelineStepIndex, setTimelineStepIndex] = useState(null);
+  const [isPlayingTimeline, setIsPlayingTimeline] = useState(false);
 
   const activePointersRef = useRef(new Map());
   const pinchStartDistRef = useRef(null);
@@ -54,6 +99,75 @@ export default function OrbMapCanvas({
   const { nodes, links } = useMemo(() => {
     return computeLensLayout(activeLens, entities, edges, dimensions);
   }, [activeLens, entities, edges, dimensions]);
+
+  // Sort timeline nodes chronologically
+  const sortedTimelineNodes = useMemo(() => {
+    return [...nodes].sort((a, b) => new Date(a.updatedAt || 0) - new Date(b.updatedAt || 0));
+  }, [nodes]);
+
+  // Compute active timeline nodes matching date query & horizon presets
+  const timelineFilteredNodes = useMemo(() => {
+    if (activeLens !== 'timeline') return nodes;
+
+    const now = Date.now();
+    return sortedTimelineNodes.filter((node, idx) => {
+      // 1. Step Scrubber filter (if set, nodes after step index are hidden/dimmed)
+      if (timelineStepIndex !== null && idx > timelineStepIndex) return false;
+
+      // 2. Horizon presets filter
+      if (timelinePreset === '7d') {
+        const nodeTime = new Date(node.updatedAt || 0).getTime();
+        if (now - nodeTime > 7 * 24 * 3600 * 1000) return false;
+      } else if (timelinePreset === '30d') {
+        const nodeTime = new Date(node.updatedAt || 0).getTime();
+        if (now - nodeTime > 30 * 24 * 3600 * 1000) return false;
+      } else if (timelinePreset === 'quarter') {
+        const d = new Date(node.updatedAt || 0);
+        const currentQuarter = Math.floor(new Date().getMonth() / 3);
+        const nodeQuarter = Math.floor(d.getMonth() / 3);
+        if (d.getFullYear() !== new Date().getFullYear() || nodeQuarter !== currentQuarter) return false;
+      }
+
+      // 3. Search Date / Text query filter
+      if (timelineDateQuery && timelineDateQuery.trim()) {
+        const q = timelineDateQuery.toLowerCase().trim();
+        const dateStr = (node.updatedAt || '').toLowerCase();
+        const titleStr = (node.title || '').toLowerCase();
+        const contentStr = (node.content || '').toLowerCase();
+        const tagsStr = (node.tags || []).join(' ').toLowerCase();
+        const dueStr = (node.metadata?.dueDate || '').toLowerCase();
+        const timeStr = (node.metadata?.time || '').toLowerCase();
+
+        const matches = dateStr.includes(q) || titleStr.includes(q) || contentStr.includes(q) || tagsStr.includes(q) || dueStr.includes(q) || timeStr.includes(q);
+        if (!matches) return false;
+      }
+
+      return true;
+    });
+  }, [nodes, sortedTimelineNodes, activeLens, timelineStepIndex, timelinePreset, timelineDateQuery]);
+
+  const activeTimelineNodeIds = useMemo(() => {
+    if (activeLens !== 'timeline') return null;
+    return new Set(timelineFilteredNodes.map(n => n.id));
+  }, [activeLens, timelineFilteredNodes]);
+
+  // Auto-advance timeline playback
+  useEffect(() => {
+    if (!isPlayingTimeline || activeLens !== 'timeline' || sortedTimelineNodes.length === 0) return;
+
+    const interval = setInterval(() => {
+      setTimelineStepIndex((prev) => {
+        const next = (prev === null ? 0 : prev + 1);
+        if (next >= sortedTimelineNodes.length) {
+          setIsPlayingTimeline(false);
+          return sortedTimelineNodes.length - 1;
+        }
+        return next;
+      });
+    }, 1100);
+
+    return () => clearInterval(interval);
+  }, [isPlayingTimeline, activeLens, sortedTimelineNodes.length]);
 
   // Non-passive wheel & trackpad listener for 2-finger swipe pan and pinch-zoom
   useEffect(() => {
@@ -436,13 +550,14 @@ export default function OrbMapCanvas({
             const isSelected = selectedEntityId === node.id;
             const isHovered = hoveredNodeId === node.id;
             const isConnected = connectedNodeIds ? connectedNodeIds.has(node.id) : true;
-            const isDimmed = connectedNodeIds && !isConnected;
+            const isTimelineDimmed = activeTimelineNodeIds ? !activeTimelineNodeIds.has(node.id) : false;
+            const isDimmed = (connectedNodeIds && !isConnected) || isTimelineDimmed;
 
             return (
               <g
                 key={node.id}
                 transform={`translate(${node.x}, ${node.y})`}
-                className={`cursor-pointer select-none transition-opacity duration-200 ${isDimmed ? 'opacity-20' : 'opacity-100'}`}
+                className={`cursor-pointer select-none transition-all duration-200 ${isDimmed ? 'opacity-15 pointer-events-none' : 'opacity-100'}`}
                 onClick={(e) => handleNodeClick(e, node)}
                 onMouseEnter={() => setHoveredNodeId(node.id)}
                 onMouseLeave={() => setHoveredNodeId(null)}
@@ -498,11 +613,16 @@ export default function OrbMapCanvas({
 
                 {/* ── DEFAULT MINIMAL LABEL (Keeps Graph Uncluttered) ── */}
                 {!isHovered && !isSelected && (
-                  <foreignObject x={-60} y={23} width={120} height={20} className="overflow-visible pointer-events-none">
-                    <div className="text-center">
-                      <span className="text-[10px] font-medium text-slate-300 truncate max-w-[110px] inline-block">
+                  <foreignObject x={-65} y={23} width={130} height={34} className="overflow-visible pointer-events-none">
+                    <div className="text-center flex flex-col items-center">
+                      <span className="text-[10px] font-medium text-slate-300 truncate max-w-[120px] inline-block">
                         {node.title}
                       </span>
+                      {activeLens === 'timeline' && (
+                        <span className="text-[8.5px] font-mono text-[#a78bfa] font-semibold mt-0.5 px-1.5 py-0.2 rounded bg-violet-950/70 border border-violet-800/40 truncate max-w-[110px]">
+                          {node.lensRole || (node.updatedAt ? new Date(node.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Milestone')}
+                        </span>
+                      )}
                     </div>
                   </foreignObject>
                 )}
@@ -582,6 +702,129 @@ export default function OrbMapCanvas({
             </div>
           );
         })()}
+
+        {/* ── Apple-Style Floating Timeline Date Search & Time Scrubber Toolbar ── */}
+        {activeLens === 'timeline' && nodes.length > 0 && !selectedEntityId && (
+          <div
+            data-no-pan="true"
+            className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[94%] max-w-2xl px-4 py-2.5 rounded-2xl shadow-2xl flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 text-white transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 ${
+              highContrast
+                ? 'bg-black border-2 border-slate-400'
+                : 'bg-slate-950/85 backdrop-blur-2xl border border-white/15'
+            }`}
+          >
+            {/* 1. Date / Query Search Field */}
+            <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border shrink-0 ${
+              highContrast ? 'bg-zinc-900 border-slate-400' : 'bg-white/10 border-white/10'
+            }`}>
+              <Calendar size={13} className="text-[#a78bfa]" />
+              <input
+                type="text"
+                value={timelineDateQuery}
+                onChange={(e) => setTimelineDateQuery(e.target.value)}
+                placeholder="Date or quarter (e.g. Aug, Q3)..."
+                className="bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none w-36 sm:w-44"
+              />
+              {timelineDateQuery && (
+                <button
+                  type="button"
+                  onClick={() => setTimelineDateQuery('')}
+                  className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* 2. Horizon Presets (All Time, 7D, 30D, Quarter) */}
+            <div className="flex items-center gap-1 overflow-x-auto thin-scrollbar py-0.5">
+              {[
+                { id: 'all', label: 'All Time' },
+                { id: '7d', label: 'Past 7D' },
+                { id: '30d', label: 'Past 30D' },
+                { id: 'quarter', label: 'This Quarter' }
+              ].map(p => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setTimelinePreset(p.id)}
+                  className={`px-2.5 py-1 text-[11px] rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                    timelinePreset === p.id
+                      ? highContrast
+                        ? 'bg-white text-black font-extrabold border border-white'
+                        : 'bg-white/25 text-white font-bold border border-white/20 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* 3. Chronological Step Scrubber & Playback */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsPlayingTimeline(p => !p)}
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  isPlayingTimeline
+                    ? 'bg-[#a78bfa] text-slate-950 font-bold'
+                    : 'bg-white/10 hover:bg-white/20 text-white'
+                }`}
+                title={isPlayingTimeline ? 'Pause timeline playback' : 'Play chronological progression'}
+              >
+                {isPlayingTimeline ? <Pause size={12} /> : <Play size={12} />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTimelineStepIndex(idx => Math.max(0, (idx === null ? sortedTimelineNodes.length - 1 : idx) - 1))}
+                disabled={timelineStepIndex !== null && timelineStepIndex <= 0}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 transition-all text-white cursor-pointer"
+                title="Previous milestone"
+              >
+                <ChevronLeft size={13} />
+              </button>
+
+              <span className="text-[11px] font-mono font-medium text-slate-200 px-0.5">
+                {timelineFilteredNodes.length > 0 
+                  ? `${(timelineStepIndex === null ? sortedTimelineNodes.length : timelineStepIndex + 1)} / ${sortedTimelineNodes.length}`
+                  : '0 / 0'}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setTimelineStepIndex(idx => Math.min(sortedTimelineNodes.length - 1, (idx === null ? 0 : idx) + 1))}
+                disabled={timelineStepIndex !== null && timelineStepIndex >= sortedTimelineNodes.length - 1}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 transition-all text-white cursor-pointer"
+                title="Next milestone"
+              >
+                <ChevronRight size={13} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Contextual Empty State when no links exist for this lens ── */}
+        {links.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-6 z-20">
+            <div className={`p-8 rounded-3xl text-center flex flex-col items-center max-w-sm pointer-events-auto shadow-2xl backdrop-blur-2xl ${
+              highContrast
+                ? 'bg-slate-950 border-2 border-slate-400 text-white'
+                : 'bg-slate-900/90 border border-white/15 text-white'
+            }`}>
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white/10 mb-3 border border-white/10 text-[#a78bfa]">
+                <Network size={22} strokeWidth={1.8} />
+              </div>
+              <h4 className={`text-sm mb-1 ${highContrast ? 'font-black text-white' : 'font-semibold text-white'}`}>
+                {LENS_EMPTY_STATES[activeLens]?.title || 'No Connected Relationships Yet'}
+              </h4>
+              <p className={`text-xs leading-relaxed max-w-xs ${highContrast ? 'font-medium text-slate-200' : 'text-slate-300'}`}>
+                {LENS_EMPTY_STATES[activeLens]?.desc || 'Relationships and linkages will appear as you cross-reference workspace artifacts.'}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
