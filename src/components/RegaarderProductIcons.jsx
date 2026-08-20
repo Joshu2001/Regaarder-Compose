@@ -297,6 +297,30 @@ export const BrowserIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...p
   </svg>
 );
 
+export const OrbIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Concentric orbital rings symbolizing cross-workspace intelligence */}
+    <ellipse cx="12" cy="12" rx="9" ry="4.5" transform="rotate(-30 12 12)" />
+    <ellipse cx="12" cy="12" rx="9" ry="4.5" transform="rotate(30 12 12)" opacity="0.6" />
+    {/* Focal intelligence core */}
+    <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+    {/* Cross-context connection nodes */}
+    <circle cx="5" cy="8" r="1" fill="currentColor" stroke="none" />
+    <circle cx="19" cy="16" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 export const RegaarderProductIconMap = {
   Compose: ComposeIcon,
   Deck: DeckIcon,
@@ -310,6 +334,8 @@ export const RegaarderProductIconMap = {
   Assist: AssistIcon,
   Agents: AgentsIcon,
   Browser: BrowserIcon,
+  Orb: OrbIcon,
+  orb: OrbIcon,
   compose: ComposeIcon,
   deck: DeckIcon,
   sheet: SheetIcon,

@@ -41,13 +41,15 @@ import {
   ChatIcon,
   AssistIcon,
   AgentsIcon,
-  BrowserIcon
+  BrowserIcon,
+  OrbIcon
 } from './components/RegaarderProductIcons';
 import RoomLandingPage from './RoomLandingPage';
 import BrowserWorkspace from './components/browser/BrowserWorkspace';
 import PopoverWindowContainer from './components/browser/PopoverWindowContainer';
 import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 import HelpSupportPanel from './components/HelpSupportPanel';
+import OrbSpotlightModal from './components/orb/OrbSpotlightModal';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -7094,6 +7096,9 @@ function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, grid
 function AppCore() {
 
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
+  const [orbOpen, setOrbOpen] = useState(false);
+  const [orbInitialQuery, setOrbInitialQuery] = useState('');
+  const [orbInitialMode, setOrbInitialMode] = useState('search');
   const [sheetGrids, setSheetGrids] = useState(() => {
     const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
     const result = {};
@@ -14641,6 +14646,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
           <div className="w-[220px] rounded-[22px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/85 dark:bg-[#1c1c1e]/85 backdrop-blur-3xl shadow-2xl p-2 font-sans overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="flex flex-col gap-1">
               {[
+                { mode: 'orb', label: 'Orb', desc: 'Unified Intelligence Layer', icon: OrbIcon },
                 { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: ComposeIcon },
                 { mode: 'sheets', label: 'Sheets', desc: 'Grid & Data Analysis', icon: SheetIcon },
                 { mode: 'deck', label: 'Decks', desc: 'Slide & Presentation', icon: DeckIcon },
@@ -14660,6 +14666,10 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                       });
                       if (window.electronAPI?.closePopover) {
                         try { window.electronAPI.closePopover(); } catch (e) {}
+                      }
+                      if (item.mode === 'orb') {
+                        setOrbOpen(true);
+                        return;
                       }
                       if (item.mode !== productMode) {
                         setProductMode(item.mode);
@@ -20000,7 +20010,15 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
         setIsDevConsoleOpen(prev => !prev);
       }
     };
+    const handleOrbGlobalShortcut = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'k' || e.key === 'K' || e.key === 'o' || e.key === 'O')) {
+        e.preventDefault();
+        e.stopPropagation();
+        setOrbOpen(prev => !prev);
+      }
+    };
     window.addEventListener('keydown', handleDevConsoleShortcut);
+    window.addEventListener('keydown', handleOrbGlobalShortcut, true);
 
     return () => {
       delete window.__composeInsertHTML;
@@ -20011,6 +20029,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       delete window.__composeSetCellFillColor;
       delete window.__DOCS_TOOL_HARNESS__;
       window.removeEventListener('keydown', handleDevConsoleShortcut);
+      window.removeEventListener('keydown', handleOrbGlobalShortcut, true);
       if (window.RegaarderAPI) delete window.RegaarderAPI.setCellFillColor;
     };
   }, []);
@@ -30178,6 +30197,10 @@ Answer the user's question, provide an insightful summary, or explain the contex
   // Click handler for Right Mini Sidebar
   const handleMiniSidebarClick = (tabKey) => {
     setWorkspaceLauncherOpen(false);
+    if (tabKey === 'orb') {
+      setOrbOpen(true);
+      return;
+    }
     if (tabKey === 'dm') {
       createDmExperience();
       return;
@@ -40751,7 +40774,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           { key: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon },
           { key: 'people',     label: 'People',     icon: Users },
           { key: 'memory',     label: 'Memory',     icon: MemoryIcon },
-          { key: 'orb',        label: 'Orb',        icon: Cloud },
+          { key: 'orb',        label: 'Orb',        icon: OrbIcon },
           { key: 'manageen',   label: 'Manageen',   icon: ListTodo },
           { key: 'files',      label: 'Files',      icon: File },
         ];
@@ -45217,6 +45240,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   title="Save locally (Ctrl+S)"
                 >
                   <Save size={15} strokeWidth={1.5} />
+                </button>
+
+                {/* Orb Global Intelligence Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => setOrbOpen(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-50/80 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 border border-violet-200/80 dark:border-violet-800/80 transition-all duration-150 active:scale-95 text-xs font-semibold cursor-pointer shadow-2xs mr-1"
+                  title="Orb Cross-Workspace Intelligence (⌘K / Ctrl+K)"
+                >
+                  <OrbIcon size={14} className="text-[#7C5ACF]" />
+                  <span className="hidden sm:inline text-[11.5px]">Orb</span>
+                  <kbd className="text-[9.5px] font-mono px-1 py-0.2 rounded bg-white dark:bg-zinc-800 border border-violet-200 dark:border-violet-700 text-violet-500 dark:text-violet-400">⌘K</kbd>
                 </button>
 
                 {!isSheetsMode && (
@@ -66122,6 +66157,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <Save size={15} strokeWidth={1.5} />
               </button>
 
+              {/* Orb Global Intelligence Trigger Button */}
+              <button
+                type="button"
+                onClick={() => setOrbOpen(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-50/80 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 border border-violet-200/80 dark:border-violet-800/80 transition-all duration-150 active:scale-95 text-xs font-semibold cursor-pointer shadow-2xs mr-1"
+                title="Orb Cross-Workspace Intelligence (⌘K / Ctrl+K)"
+              >
+                <OrbIcon size={14} className="text-[#7C5ACF]" />
+                <span className="hidden sm:inline text-[11.5px]">Orb</span>
+                <kbd className="text-[9.5px] font-mono px-1 py-0.2 rounded bg-white dark:bg-zinc-800 border border-violet-200 dark:border-violet-700 text-violet-500 dark:text-violet-400">⌘K</kbd>
+              </button>
+
               <div className="relative" ref={docSearchPanelRef}>
                 <button
                   type="button"
@@ -77880,6 +77927,72 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <DocsToolDevConsoleModal
         isOpen={isDevConsoleOpen}
         onClose={() => setIsDevConsoleOpen(false)}
+      />
+
+      {/* ── Layer 6.5: Orb Cross-Workspace Intelligence Layer ─────────────── */}
+      <OrbSpotlightModal
+        isOpen={orbOpen}
+        onClose={() => setOrbOpen(false)}
+        initialQuery={orbInitialQuery}
+        initialMode={orbInitialMode}
+        liveWorkspaceContext={{
+          documents,
+          activeDocId,
+          docTitle,
+          docBodyHtml,
+          docSubtitle,
+          sheetsTitle,
+          sheetGrids,
+          activeSheetId,
+          deckTitle,
+          deckSlidesData,
+          activeDeckSlideId,
+          tasks: initiatives,
+          scheduleAgendaItems
+        }}
+        onNavigateToEntity={(entity) => {
+          if (!entity) return;
+          const ws = (entity.workspace || '').toLowerCase();
+          if (ws === 'compose') {
+            if (productMode !== 'compose') setProductMode('compose');
+            if (entity.metadata?.docId) {
+              const targetDoc = documents.find(d => d.id === entity.metadata.docId);
+              if (targetDoc) {
+                setActiveDocId(targetDoc.id);
+                setDocTitle(targetDoc.title || '');
+                setDocSubtitle(targetDoc.subtitle || '');
+                setDocBodyHtml(targetDoc.bodyHtml || '');
+              }
+            }
+            showToast(`Navigated to Document: ${entity.title}`);
+          } else if (ws === 'sheets') {
+            if (productMode !== 'sheets') setProductMode('sheets');
+            showToast(`Navigated to Sheets Model: ${entity.title}`);
+          } else if (ws === 'deck') {
+            if (productMode !== 'deck') setProductMode('deck');
+            if (entity.metadata?.slideNumber) {
+              setActiveDeckSlideId(entity.metadata.slideNumber);
+            }
+            showToast(`Navigated to Deck: ${entity.title}`);
+          } else if (ws === 'room') {
+            if (productMode !== 'room') setProductMode('room');
+            showToast(`Navigated to Meeting: ${entity.title}`);
+          } else if (ws === 'tasks') {
+            handleMiniSidebarClick('tasks');
+            showToast(`Navigated to Tasks: ${entity.title}`);
+          } else if (ws === 'schedule') {
+            handleMiniSidebarClick('calendar');
+            showToast(`Navigated to Schedule: ${entity.title}`);
+          } else if (ws === 'browser') {
+            if (productMode !== 'browser') setProductMode('browser');
+            showToast(`Navigated to Research: ${entity.title}`);
+          } else {
+            showToast(`Opened: ${entity.title}`);
+          }
+        }}
+        onAddTask={(act) => {
+          showToast(`Added action to Tasks: ${act.title}`);
+        }}
       />
 
       {/* ── Layer 7: Presentation Deck Fullscreen Mode Overlay ──────────────── */}
