@@ -29890,7 +29890,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
       let result = null;
       try {
-        setLiveSpeechInterimText('Transcribing audio locally...');
+        // Keep live interim text responsive without static placeholder
         const localTranscription = await transcribeAudioBlobLocally(blob);
         if (localTranscription) {
           result = { ok: true, text: localTranscription };
@@ -30210,7 +30210,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
                   mediaRecorder.stop();
                 }
               } catch (_e) { /* noop */ }
-            }, 1500);
+            }, 750);
           } catch (recErr) {
             console.error('MediaRecorder chunk error:', recErr);
           }
@@ -74182,12 +74182,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
               {isVoiceActive && voiceTarget === 'document' ? (
                 <div className="flex-1 flex flex-col justify-center min-w-0 pr-1">
-                  <div className="flex items-center justify-between gap-1 mb-0.5">
+                  <div className="flex items-center justify-between gap-1.5 mb-0.5">
                     <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 tracking-wider uppercase opacity-95">Dictation Active</span>
                     <span className="w-2 h-2 rounded-full bg-violet-500 animate-ping shrink-0" />
                   </div>
-                  <div className="text-[12px] font-semibold text-slate-800 dark:text-zinc-100 truncate leading-relaxed">
-                    {liveSpeechInterimText || 'Listening... start speaking'}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-0.5 shrink-0 h-3 py-0.5">
+                      <span className="w-0.5 h-2.5 bg-violet-500 rounded-full animate-pulse" />
+                      <span className="w-0.5 h-4 bg-violet-600 dark:bg-violet-400 rounded-full animate-pulse [animation-delay:150ms]" />
+                      <span className="w-0.5 h-3 bg-violet-500 rounded-full animate-pulse [animation-delay:300ms]" />
+                      <span className="w-0.5 h-4.5 bg-violet-600 dark:bg-violet-300 rounded-full animate-pulse [animation-delay:75ms]" />
+                      <span className="w-0.5 h-2 bg-violet-400 rounded-full animate-pulse [animation-delay:225ms]" />
+                    </div>
+                    <div className="text-[12px] font-semibold text-slate-800 dark:text-zinc-100 truncate leading-relaxed">
+                      {liveSpeechInterimText || 'Listening live...'}
+                    </div>
                   </div>
                 </div>
               ) : (
