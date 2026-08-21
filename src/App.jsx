@@ -13181,7 +13181,7 @@ const DEFAULT_DECK_SLIDES = [
       }, 2500);
       return () => clearTimeout(timer);
     }
-  }, [selectedDocId, isReadingAloud]);
+  }, [isReadingAloud]);
 
   const handleTtsToggle = (customSpeed) => {
     if (isReadingAloud) {
