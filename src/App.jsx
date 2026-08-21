@@ -75,6 +75,7 @@ import TemplateChartVisualizer, { extractTemplateChartData } from './components/
 import CitationPopover from './components/CitationPopover';
 import ContextSourcePreviewModal from './components/ContextSourcePreviewModal';
 import TableDropdownPopover, { createDropdownHTML } from './components/TableDropdownPopover';
+import AppleGestureOnboardingHotspots from './components/AppleGestureOnboardingHotspots';
 import { registerDocumentEditorBinding } from './services/docsCommandApi';
 import { executeTool, undoTransaction, getExecutionLogs, getTransactionHistory } from './services/docsToolExecutor';
 import { CANONICAL_DOCS_TOOLS } from './services/docsToolRegistry';
@@ -73623,7 +73624,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
         {activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
         <div
-          className={`fixed bottom-14 ${isPromptSlashMenuOpen ? 'z-[250000]' : 'z-[1210]'} transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 scale-95 translate-y-4 pointer-events-none' : 'opacity-100 scale-100 translate-y-0 pointer-events-auto'}`}
+          className={`fixed bottom-14 ${isPromptSlashMenuOpen ? 'z-[250000]' : 'z-[1210]'} transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || (rightSidebarOpen && (activeRightTab === 'assistant' || activeRightTab === 'chat')) || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 scale-95 translate-y-4 pointer-events-none' : 'opacity-100 scale-100 translate-y-0 pointer-events-auto'}`}
           style={{
             left: `${blurLeftInset}px`,
             right: `${blurRightInset}px`,
@@ -74207,7 +74208,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
 
-        {isPromptMinimized && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !isScheduleSessionModalOpen && (
+        <AppleGestureOnboardingHotspots />
+
+        {(isPromptMinimized || (rightSidebarOpen && (activeRightTab === 'assistant' || activeRightTab === 'chat'))) && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !isScheduleSessionModalOpen && (
           <div
             className="pointer-events-none absolute left-6 top-20 z-[140]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
@@ -74228,6 +74231,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   setAiPulseState('idle');
                   setIsPromptDismissed(false);
                   setIsPromptExpanded(true);
+                  if (rightSidebarOpen && (activeRightTab === 'assistant' || activeRightTab === 'chat')) {
+                    setRightSidebarOpen(false);
+                  }
                   setIsPromptMinimized(false);
                   setIsPromptAutoVisible(true);
                 }}
