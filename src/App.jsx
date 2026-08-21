@@ -11907,9 +11907,16 @@ const DEFAULT_DECK_SLIDES = [
       const isOverScrollbar = e.clientX >= window.innerWidth - 18;
       const rightThreshold = window.innerWidth - 60;
       if (e.clientX >= rightThreshold && !isOverScrollbar) {
+        setMiniSidebarDismissed(false);
         setIsRightSideHovered(true);
-      } else {
-        setIsRightSideHovered(false);
+      } else if (e.clientX < rightThreshold - 20) {
+        // Generous grace latch so it stays stable while scrolling
+        if (!sidebarHoverTimerRef.current) {
+          sidebarHoverTimerRef.current = setTimeout(() => {
+            setIsRightSideHovered(false);
+            sidebarHoverTimerRef.current = null;
+          }, 1200);
+        }
       }
     };
 
@@ -21413,6 +21420,8 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
   const [historySearchQuery, setHistorySearchQuery] = useState('');
   const [historyFilter, setHistoryFilter] = useState('all'); // 'all' | 'recent' | 'date' | 'topic' | 'ai'
+  const [isAiSearchingHistory, setIsAiSearchingHistory] = useState(false);
+  const [historyAiExecutedQuery, setHistoryAiExecutedQuery] = useState('');
 
   const startNewChatSession = () => {
     if (chatMessages && chatMessages.length > 0) {
@@ -36592,7 +36601,17 @@ Respond with a JSON array of slide objects matching the schema.`;
               {/* Search Bar & Granular Filters */}
               {chatSessions.length > 0 && (
                 <div className="p-3 bg-white dark:bg-zinc-900 border-b border-slate-100 dark:border-zinc-800/80 space-y-2">
-                  <div className="relative flex items-center">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (historyFilter === 'ai') {
+                        setHistoryAiExecutedQuery(historySearchQuery.trim());
+                        setIsAiSearchingHistory(true);
+                        setTimeout(() => setIsAiSearchingHistory(false), 350);
+                      }
+                    }}
+                    className="relative flex items-center"
+                  >
                     {historyFilter === 'ai' ? (
                       <RegaarderVectorIcon size={14} className="absolute left-2.5 text-violet-600 dark:text-violet-400 pointer-events-none" />
                     ) : (
@@ -36601,23 +36620,48 @@ Respond with a JSON array of slide objects matching the schema.`;
                     <input
                       type="text"
                       value={historySearchQuery}
-                      onChange={(e) => setHistorySearchQuery(e.target.value)}
-                      placeholder={historyFilter === 'ai' ? "AI Semantic Search: Find conversations by concept or intent..." : "Search past conversations..."}
-                      className={`w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-zinc-800/80 border rounded-lg text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none transition-all ${
+                      onChange={(e) => {
+                        setHistorySearchQuery(e.target.value);
+                        if (historyFilter === 'ai') {
+                          setHistoryAiExecutedQuery(e.target.value.trim());
+                        }
+                      }}
+                      placeholder={historyFilter === 'ai' ? "Ask AI: 'Where did I talk about Gen Z?' or intent..." : "Search past conversations..."}
+                      className={`w-full pl-8 pr-14 py-1.5 text-xs bg-slate-50 dark:bg-zinc-800/80 border rounded-lg text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none transition-all ${
                         historyFilter === 'ai'
                           ? 'border-violet-300 dark:border-violet-700/70 focus:border-violet-500 focus:ring-1 focus:ring-violet-400/20'
                           : 'border-slate-200/80 dark:border-zinc-700 focus:border-violet-500'
                       }`}
                     />
-                    {historySearchQuery && (
-                      <button
-                        onClick={() => setHistorySearchQuery('')}
-                        className="absolute right-2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
-                      >
-                        <X size={12} />
-                      </button>
-                    )}
-                  </div>
+                    <div className="absolute right-1.5 flex items-center gap-1">
+                      {historySearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHistorySearchQuery('');
+                            setHistoryAiExecutedQuery('');
+                          }}
+                          className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                      {historyFilter === 'ai' && (
+                        <button
+                          type="submit"
+                          disabled={!historySearchQuery.trim() || isAiSearchingHistory}
+                          className="p-1 rounded-md bg-violet-600 hover:bg-violet-700 text-white shadow-2xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                          title="Search with AI"
+                        >
+                          {isAiSearchingHistory ? (
+                            <RegaarderVectorIcon size={12} className="animate-spin text-white" />
+                          ) : (
+                            <ArrowRight size={12} strokeWidth={2.5} />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </form>
 
                   {/* Granular Filter Tabs: All, Most Recent, By Date, By Topic, AI */}
                   <div className="flex items-center gap-1 overflow-x-auto thin-scrollbar pb-0.5 select-none">
@@ -36655,14 +36699,46 @@ Respond with a JSON array of slide objects matching the schema.`;
 
               {/* Sessions List or Empty State */}
               <div className="flex-1 overflow-y-auto thin-scrollbar p-3 space-y-2">
-                {/* AI Natural Language Synthesis Response Card */}
-                {historyFilter === 'ai' && historySearchQuery.trim() && (() => {
-                  const q = historySearchQuery.toLowerCase().trim();
-                  const matched = chatSessions.filter(s => {
-                    const titleMatch = (s.title || '').toLowerCase().includes(q);
-                    const msgMatch = (s.messages || []).some(m => (m.text || m.content || '').toLowerCase().includes(q));
-                    return titleMatch || msgMatch;
+                {/* AI Natural Language Synthesis Response Card with Pure Intent Understanding */}
+                {historyFilter === 'ai' && (historyAiExecutedQuery || historySearchQuery.trim()) && (() => {
+                  const rawQuery = (historyAiExecutedQuery || historySearchQuery).trim();
+                  const cleanQ = rawQuery.toLowerCase()
+                    .replace(/^(where is the conversation where i|where did i talk about|where i spoke about|where i spoke|find conversation about|find chat about|find discussion on|show me the chat where i|where is the chat about|where is|find)s*/i, '')
+                    .replace(/[?.,!]/g, '')
+                    .trim();
+
+                  const queryTokens = cleanQ.split(/\s+/).filter(t => t.length >= 2);
+
+                  // Intelligent Semantic Ranking
+                  const scoredSessions = chatSessions.map(session => {
+                    let score = 0;
+                    const titleLower = (session.title || '').toLowerCase();
+                    const messages = session.messages || [];
+                    const allText = messages.map(m => (m.text || m.content || '').toLowerCase()).join(' ');
+
+                    // Exact concept match
+                    if (cleanQ && (titleLower.includes(cleanQ) || allText.includes(cleanQ))) {
+                      score += 100;
+                    }
+
+                    // Token overlap matches
+                    queryTokens.forEach(tok => {
+                      if (titleLower.includes(tok)) score += 40;
+                      if (allText.includes(tok)) score += 20;
+                    });
+
+                    // General speaker / question matches
+                    if (rawQuery.toLowerCase().includes('spoke') || rawQuery.toLowerCase().includes('said') || rawQuery.toLowerCase().includes('ask')) {
+                      if (messages.some(m => m.sender === 'user')) score += 10;
+                    }
+
+                    return { session, score };
                   });
+
+                  const matched = scoredSessions
+                    .filter(item => item.score > 0)
+                    .sort((a, b) => b.score - a.score)
+                    .map(item => item.session);
 
                   if (matched.length === 0) {
                     return (
