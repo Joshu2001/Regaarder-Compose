@@ -29830,14 +29830,18 @@ Answer the user's question, provide an insightful summary, or explain the contex
       if (blankBodyRef.current) {
         const currentText = blankBodyRef.current.innerText.trim();
         const isStarterTemplate = currentText.includes('1. Objective') && currentText.includes('2. Key Initiatives');
-        if (!currentText || isStarterTemplate || isBlankDocument) {
+        if (isStarterTemplate || currentText === AI_NATIVE_PLACEHOLDER) {
           blankBodyRef.current.innerHTML = `<p>${textToInsert} </p>`;
           setDocBodyHtml(blankBodyRef.current.innerHTML);
           setIsBlankDocument(false);
+          commitEditableHtmlForActiveDoc(blankBodyRef.current, setDocBodyHtml);
           return;
         }
       }
       insertTranscriptIntoDocumentRef.current?.(textToInsert + ' ', { forceAppendToEnd: true });
+      if (blankBodyRef.current) {
+        commitEditableHtmlForActiveDoc(blankBodyRef.current, setDocBodyHtml);
+      }
     } else if (activeTarget === 'schedule') {
       setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
     } else if (activeTarget === 'chat') {
@@ -30085,6 +30089,9 @@ Answer the user's question, provide an insightful summary, or explain the contex
         const tracks = audioStreamRef.current?.getTracks();
         if (tracks) tracks.forEach(track => track.stop());
         audioStreamRef.current = null;
+        if (blankBodyRef.current && voiceTarget === 'document') {
+          commitEditableHtmlForActiveDoc(blankBodyRef.current, setDocBodyHtml);
+        }
         interimTranscriptRef.current = '';
         setLiveSpeechInterimText('');
         setIsVoiceActive(false);
