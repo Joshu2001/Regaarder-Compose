@@ -1,6 +1,7 @@
 /**
  * In-Browser WebAssembly Whisper Speech-to-Text Transcription Service
  * Uses quantized Xenova/whisper-tiny.en running 100% locally in browser memory.
+ * Features dynamic peak normalization & auto gain boost for distant speech clarity.
  */
 
 let transcriberInstance = null;
@@ -74,7 +75,7 @@ export async function getLocalWhisperTranscriber(onProgress) {
 }
 
 /**
- * Converts any audio Blob (WebM / Ogg / WAV) to Float32Array PCM at 16kHz for Whisper tensor input
+ * Converts any audio Blob (WebM / Ogg / WAV) to Float32Array PCM at 16kHz with dynamic AGC/Peak Normalization
  */
 async function decodeAudioBlobTo16kHz(audioBlob) {
   const arrayBuffer = await audioBlob.arrayBuffer();
@@ -86,21 +87,39 @@ async function decodeAudioBlobTo16kHz(audioBlob) {
   
   try {
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    
-    // If already 16kHz single channel, return Float32Array directly
+    let pcmData = null;
+
+    // If already 16kHz single channel, clone Float32Array directly
     if (audioBuffer.sampleRate === 16000 && audioBuffer.numberOfChannels === 1) {
-      return audioBuffer.getChannelData(0);
+      pcmData = new Float32Array(audioBuffer.getChannelData(0));
+    } else {
+      // Otherwise resample using OfflineAudioContext to guarantee exact 16kHz mono Float32Array
+      const offlineContext = new OfflineAudioContext(1, Math.ceil(audioBuffer.duration * 16000), 16000);
+      const source = offlineContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(offlineContext.destination);
+      source.start(0);
+
+      const renderedBuffer = await offlineContext.startRendering();
+      pcmData = new Float32Array(renderedBuffer.getChannelData(0));
     }
 
-    // Otherwise resample using OfflineAudioContext to guarantee exact 16kHz mono Float32Array
-    const offlineContext = new OfflineAudioContext(1, Math.ceil(audioBuffer.duration * 16000), 16000);
-    const source = offlineContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(offlineContext.destination);
-    source.start(0);
+    // ⚡ Dynamic Peak Normalization & Distant Speech Booster
+    // Finds the peak amplitude and safely boosts faint room audio to optimal neural network levels (0.85 peak)
+    let maxAmp = 0;
+    for (let i = 0; i < pcmData.length; i++) {
+      const abs = Math.abs(pcmData[i]);
+      if (abs > maxAmp) maxAmp = abs;
+    }
 
-    const renderedBuffer = await offlineContext.startRendering();
-    return renderedBuffer.getChannelData(0);
+    if (maxAmp > 0.0005 && maxAmp < 0.7) {
+      const gainMultiplier = Math.min(12.0, 0.85 / maxAmp);
+      for (let i = 0; i < pcmData.length; i++) {
+        pcmData[i] *= gainMultiplier;
+      }
+    }
+
+    return pcmData;
   } finally {
     try {
       await audioContext.close();
@@ -115,7 +134,7 @@ async function decodeAudioBlobTo16kHz(audioBlob) {
  * @returns {Promise<string>} Transcribed, sanitized text string
  */
 export async function transcribeAudioBlobLocally(audioBlob, onProgress) {
-  if (!audioBlob || audioBlob.size < 400) {
+  if (!audioBlob || audioBlob.size < 300) {
     return '';
   }
 
