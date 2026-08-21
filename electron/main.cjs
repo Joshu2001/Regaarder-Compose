@@ -351,6 +351,49 @@ ipcMain.handle('app:capture-frame', async () => {
   }
 });
 
+// Native OS Dictation Bridge (Windows Win+H / macOS Dictation)
+ipcMain.handle('native:start-dictation', async () => {
+  try {
+    if (process.platform === 'win32') {
+      const { exec } = require('child_process');
+      const triggerScript = `
+        Add-Type -TypeDefinition @"
+        using System;
+        using System.Runtime.InteropServices;
+        public class WinDictate {
+          [DllImport("user32.dll")]
+          public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+          public const int VK_LWIN = 0x5B;
+          public const int VK_H = 0x48;
+          public const int KEYEVENTF_KEYUP = 0x0002;
+          public static void Launch() {
+            keybd_event(VK_LWIN, 0, 0, 0);
+            keybd_event(VK_H, 0, 0, 0);
+            keybd_event(VK_H, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+          }
+        }
+"@
+        [WinDictate]::Launch()
+      `;
+
+      exec(`powershell -NoProfile -NonInteractive -Command "${triggerScript.replace(/\\r?\\n/g, ' ')}"`, (err) => {
+        if (err) console.warn('[Native Dictation] Windows trigger warning:', err);
+      });
+      return { success: true, platform: 'win32' };
+    } else if (process.platform === 'darwin') {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.startDictation();
+        return { success: true, platform: 'darwin' };
+      }
+    }
+    return { success: false, reason: 'unsupported-platform' };
+  } catch (err) {
+    console.warn('[Native Dictation] Error:', err);
+    return { success: false, error: err.message };
+  }
+});
+
 app.whenReady().then(() => {
   createWindow();
 

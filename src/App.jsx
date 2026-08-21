@@ -30113,6 +30113,24 @@ Answer the user's question, provide an insightful summary, or explain the contex
     }
 
     try {
+      // Focus the target text field before launching Native OS dictation
+      if (nextTarget === 'document' && blankBodyRef.current) {
+        blankBodyRef.current.focus();
+        try {
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(blankBodyRef.current);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (_e) {}
+      }
+
+      // If running inside Electron desktop, invoke Native OS Dictation engine (Win+H / macOS Dictation)
+      if (window.electronAPI?.startNativeDictation) {
+        window.electronAPI.startNativeDictation({ target: nextTarget }).catch(() => {});
+      }
+
       await ensureMicrophonePermission();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioStreamRef.current = stream;

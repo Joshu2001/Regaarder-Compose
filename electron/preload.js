@@ -70,6 +70,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pullLocalModel: (params) => ipcRenderer.invoke('localAI:pull-model', params),
 
   // App UI Screen Capture — Video Agent real recording pipeline
-  captureAppFrame: () => ipcRenderer.invoke('app:capture-frame')
+  captureAppFrame: () => ipcRenderer.invoke('app:capture-frame'),
+
+  // Native OS Dictation Bridge (Windows Win+H / macOS Dictation)
+  startNativeDictation: (params) => ipcRenderer.invoke('native:start-dictation', params)
 });
 
