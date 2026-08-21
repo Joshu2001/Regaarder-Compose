@@ -36512,14 +36512,14 @@ Respond with a JSON array of slide objects matching the schema.`;
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
-        <div className="h-14 flex items-center justify-between border-b border-slate-100/40 dark:border-zinc-800/30 text-xs font-semibold select-none bg-slate-50/30 dark:bg-zinc-900/30 px-4 shrink-0">
+        <div className="h-13 flex items-center border-b border-slate-100/60 dark:border-zinc-800/60 text-xs font-semibold select-none bg-slate-50/40 dark:bg-zinc-900/40 px-3.5 shrink-0">
           <div
-            className="flex-1 min-w-0 overflow-x-auto thin-scrollbar py-2"
+            className="w-full min-w-0 py-1.5"
             tabIndex={0}
             onKeyDown={handleRightSidebarTabsKeyDown}
             aria-label="Right panel tabs"
           >
-            <div className="inline-flex items-center gap-2 min-w-max p-1 bg-slate-100/60 dark:bg-zinc-800/60 rounded-xl border border-slate-200/30 dark:border-zinc-700/30">
+            <div className="flex items-center w-full p-1 bg-slate-100/70 dark:bg-zinc-800/70 rounded-xl border border-slate-200/40 dark:border-zinc-700/40 gap-1">
               {[
                 { key: 'assistant', label: 'Assistant' },
                 { key: 'history', label: 'History' },
@@ -36538,7 +36538,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   <button
                     key={tab.key}
                     type="button"
-                    className={`shrink-0 px-5 py-1.5 rounded-lg transition-all text-[12px] cursor-pointer ${
+                    className={`flex-1 min-w-0 px-3 py-1.5 rounded-lg transition-all text-[12px] text-center justify-center flex items-center cursor-pointer ${
                       isActive 
                         ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 font-semibold shadow-2xs border border-slate-200/60 dark:border-zinc-700/60' 
                         : 'text-slate-400 dark:text-zinc-500 font-medium hover:text-slate-700 dark:hover:text-zinc-300'
@@ -36551,29 +36551,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                       setActiveRightTab(tab.key);
                     }}
                   >
-                    {tab.label}
+                    <span className="truncate">{tab.label}</span>
                   </button>
                 );
               })}
             </div>
-          </div>
-          <div className="shrink-0 flex items-center gap-1 pl-2">
-            <button
-              type="button"
-              title="Start New Chat (+)"
-              className="p-1.5 rounded-lg text-slate-500 dark:text-zinc-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer"
-              onClick={startNewChatSession}
-            >
-              <Plus size={15} strokeWidth={2} />
-            </button>
-            <button
-              type="button"
-              title="Close panel"
-              className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 dark:hover:text-zinc-200 transition-all cursor-pointer"
-              onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
-            >
-              <X size={14} strokeWidth={1.75} />
-            </button>
           </div>
         </div>
         )}
@@ -36952,15 +36934,35 @@ Respond with a JSON array of slide objects matching the schema.`;
               <div className="flex-1 overflow-y-auto thin-scrollbar p-4 space-y-3.5">
                 {chatMessages.length === 0 && (
                   <div className="flex flex-col items-start justify-start w-full pt-0.5 pb-2">
-                    {/* Compact Integrated Header */}
-                    <div className="flex items-center gap-2.5 w-full mb-2.5 text-left">
-                      <div className="w-6.5 h-6.5 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 flex items-center justify-center shrink-0">
-                        <Bot size={13} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
+                    {/* Compact Integrated Header with [+] and [X] pushed down */}
+                    <div className="flex items-center justify-between w-full mb-2.5 text-left">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-6.5 h-6.5 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 flex items-center justify-center shrink-0">
+                          <Bot size={13} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight leading-none">
+                            {productMode === 'compose' ? 'Compose Assistant' : productMode === 'sheets' ? 'Sheets Assistant' : 'Deck Assistant'}
+                          </h3>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight leading-none">
-                          {productMode === 'compose' ? 'Compose Assistant' : productMode === 'sheets' ? 'Sheets Assistant' : 'Deck Assistant'}
-                        </h3>
+                      <div className="shrink-0 flex items-center gap-1">
+                        <button
+                          type="button"
+                          title="Start New Chat (+)"
+                          className="p-1 rounded-lg text-slate-400 dark:text-zinc-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer"
+                          onClick={startNewChatSession}
+                        >
+                          <Plus size={14} strokeWidth={2} />
+                        </button>
+                        <button
+                          type="button"
+                          title="Close panel"
+                          className="p-1 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 dark:hover:text-zinc-200 transition-all cursor-pointer"
+                          onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
+                        >
+                          <X size={14} strokeWidth={1.75} />
+                        </button>
                       </div>
                     </div>
 
