@@ -21009,22 +21009,6 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
             selectionScoped: hasSelection,
             skipCommandEngine: false,
           });
-        } else if (voiceTargetRef.current === 'compose' || voiceTargetRef.current === 'agent-chat' || voiceTargetRef.current === 'right-assistant' || isVoiceCommandModeRef.current) {
-          setIsComposing(true);
-          try {
-            const llmProcessed = await callGemini({
-              userPrompt: `Clean up the following voice transcription, correcting spelling, grammar, and formatting errors while preserving the original meaning. Output ONLY the cleaned text:\n\n${normalizedFinal}`,
-              systemPrompt: `You are a voice transcription cleaner. Your ONLY job is to output the corrected text. Do NOT add any conversational padding. Output plain text.`
-            });
-            const cleanedText = (llmProcessed && !llmProcessed.error && typeof llmProcessed.text === 'string' && llmProcessed.text.trim())
-              ? llmProcessed.text.trim()
-              : normalizedFinal;
-            routeTranscriptToTarget(cleanedText, 'final');
-          } catch (e) {
-            routeTranscriptToTarget(normalizedFinal, 'final');
-          } finally {
-            setIsComposing(false);
-          }
         } else {
           routeTranscriptToTarget(normalizedFinal, 'final');
         }
@@ -21041,19 +21025,20 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
         interimTranscriptRef.current = normalizedInterim;
         setLiveSpeechInterimText(normalizedInterim);
 
-        if (activeVoiceTarget === 'document' && normalizedInterim) {
-          pendingInterimTranscriptRef.current = normalizedInterim;
-          if (interimCommitTimerRef.current) {
-            clearTimeout(interimCommitTimerRef.current);
+        if (normalizedInterim) {
+          if (activeVoiceTarget === 'right-chat') {
+            setChatInput(prev => {
+              const base = prev.replace(/ [^ ]*$/, '').trim();
+              return base ? `${base} ${normalizedInterim}` : normalizedInterim;
+            });
+          } else if (activeVoiceTarget === 'right-assistant') {
+            setAssistantQuickPrompt(prev => {
+              const base = prev.replace(/ [^ ]*$/, '').trim();
+              return base ? `${base} ${normalizedInterim}` : normalizedInterim;
+            });
+          } else if (activeVoiceTarget === 'document') {
+            routeTranscriptToTarget(normalizedInterim, 'interim');
           }
-          interimCommitTimerRef.current = setTimeout(() => {
-            const buffered = pendingInterimTranscriptRef.current.trim();
-            if (buffered) {
-              routeTranscriptToTarget(buffered, 'interim');
-              pendingInterimTranscriptRef.current = '';
-            }
-            interimCommitTimerRef.current = null;
-          }, 850);
         }
       }
 
