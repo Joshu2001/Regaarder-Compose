@@ -162,3 +162,34 @@ html.popover-root, body.popover-root, #popover-root {
 .thin-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(100, 116, 139, 0.75) !important;
 }
+
+/* Dynamic Primary & Secondary Accent System */
+:root {
+  --brand-color: #7c3aed;
+  --secondary-color: #6366f1;
+}
+
+.bg-violet-600, .bg-purple-600 {
+  background-color: var(--brand-color, #7c3aed) !important;
+}
+.text-violet-600, .text-purple-600 {
+  color: var(--brand-color, #7c3aed) !important;
+}
+.border-violet-500, .border-violet-600, .border-purple-600 {
+  border-color: var(--brand-color, #7c3aed) !important;
+}
+.ring-violet-500, .ring-violet-400 {
+  --tw-ring-color: var(--brand-color, #7c3aed) !important;
+}
+.bg-violet-50, .bg-purple-50 {
+  background-color: color-mix(in srgb, var(--brand-color, #7c3aed) 10%, transparent) !important;
+}
+.hover\:bg-violet-50:hover {
+  background-color: color-mix(in srgb, var(--brand-color, #7c3aed) 12%, transparent) !important;
+}
+.hover\:text-violet-600:hover {
+  color: var(--brand-color, #7c3aed) !important;
+}
+.hover\:bg-violet-600:hover, .hover\:bg-violet-700:hover {
+  background-color: color-mix(in srgb, var(--brand-color, #7c3aed) 85%, black) !important;
+}

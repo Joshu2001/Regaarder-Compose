@@ -1560,7 +1560,7 @@ const SLASH_OPTIONS = [
 ];
 
 const PROMPT_SLASH_OPTIONS = [
-  { key: 'orb', label: 'Orb Agent (@orb)', desc: 'Ground AI in full workspace context (Docs, Sheets, Decks, Tasks)', category: 'AI', icon: Sparkles, agentKey: 'orb', tag: '/orb' },
+  { key: 'orb', label: 'Orb Agent (@orb)', desc: 'Ground AI in full workspace context (Docs, Sheets, Decks, Tasks)', category: 'AI', icon: RegaarderVectorIcon, agentKey: 'orb', tag: '/orb' },
   { key: 'ask', label: 'Ask', desc: 'Ask a quick question without interrupting context', category: 'AI', icon: MessageSquare, agentKey: 'ask', tag: '/ask' },
   { key: 'goal', label: 'Goal', desc: 'Run until the specified goal is completed', category: 'AI', icon: Target, agentKey: 'goal', tag: '/goal' },
   { key: 'schedule', label: 'Schedule', desc: 'Run an instruction on a recurring schedule', category: 'AI', icon: Clock, agentKey: 'schedule', tag: '/schedule' },
@@ -8648,11 +8648,23 @@ function AppCore() {
   const [listGalleryOpen, setListGalleryOpen] = useState(null); // 'bullet', 'numbered', 'multilevel'
 
   const [pageOptionsMenuOpen, setPageOptionsMenuOpen] = useState(false);
-  const [brandColor, setBrandColor] = useState('#7c3aed');
-  const [secondaryColor, setSecondaryColor] = useState('#6366f1');
-  const [accentGradient, setAccentGradient] = useState('linear-gradient(135deg, #7c3aed, #6366f1)');
+  const [brandColor, setBrandColor] = useState(() => {
+    try { return localStorage.getItem('rc.brandColor') || '#7c3aed'; } catch (_e) { return '#7c3aed'; }
+  });
+  const [secondaryColor, setSecondaryColor] = useState(() => {
+    try { return localStorage.getItem('rc.secondaryColor') || '#6366f1'; } catch (_e) { return '#6366f1'; }
+  });
+  const [accentGradient, setAccentGradient] = useState(() => {
+    try { return localStorage.getItem('rc.accentGradient') || 'linear-gradient(135deg, #7c3aed, #6366f1)'; } catch (_e) { return 'linear-gradient(135deg, #7c3aed, #6366f1)'; }
+  });
 
   useEffect(() => {
+    try {
+      localStorage.setItem('rc.brandColor', brandColor);
+      localStorage.setItem('rc.secondaryColor', secondaryColor);
+      localStorage.setItem('rc.accentGradient', accentGradient || `linear-gradient(135deg, ${brandColor}, ${secondaryColor})`);
+    } catch (_e) {}
+
     const root = document.documentElement;
     root.style.setProperty('--brand-color', brandColor);
     root.style.setProperty('--secondary-color', secondaryColor);
@@ -8662,13 +8674,8 @@ function AppCore() {
     const secondaryShades = generateColorShades(secondaryColor);
 
     [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].forEach(weight => {
-      const isDark = document.documentElement.classList.contains('dark') || document.documentElement.classList.contains('app-dark');
-      const violetFallback = {
-        50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd', 400: '#a78bfa',
-        500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95', 950: '#2e1065'
-      };
-      root.style.setProperty(`--accent-${weight}`, isDark ? violetFallback[weight] : primaryShades[weight]);
-      root.style.setProperty(`--secondary-${weight}`, secondaryShades[weight]);
+      root.style.setProperty(`--accent-${weight}`, primaryShades[weight] || brandColor);
+      root.style.setProperty(`--secondary-${weight}`, secondaryShades[weight] || secondaryColor);
     });
   }, [brandColor, secondaryColor, accentGradient]);
   const [brandColorPickerOpen, setBrandColorPickerOpen] = useState(false);
@@ -37260,7 +37267,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                               }`}
                               title="AI Agents & Slash Commands (/)"
                             >
-                              <Sparkles size={15} strokeWidth={1.5} />
+                              <RegaarderVectorIcon size={15} />
                             </button>
                             <button
                               type="button"
