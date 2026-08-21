@@ -21139,8 +21139,8 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
         try {
           recognition.start();
         } catch (_error) {
-          setIsVoiceActive(false);
-          setLiveSpeechInterimText('');
+          // Native SpeechRecognition error is non-fatal: MediaRecorder + Local Audio pipeline remains active
+          console.warn('[SpeechRecognition] Native loop restart skipped, audio pipeline remains active');
         }
       }
     };
