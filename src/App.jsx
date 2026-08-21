@@ -36581,10 +36581,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                 <button
                   type="button"
                   onClick={startNewChatSession}
-                  className="flex items-center gap-1 px-2.5 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700/80 text-slate-800 dark:text-zinc-100 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
                   title="Start a new chat conversation"
                 >
-                  <Plus size={13} strokeWidth={2.5} />
+                  <Plus size={13} strokeWidth={2.5} className="text-violet-600 dark:text-violet-400" />
                   <span>New Chat</span>
                 </button>
               </div>
@@ -36655,6 +36655,64 @@ Respond with a JSON array of slide objects matching the schema.`;
 
               {/* Sessions List or Empty State */}
               <div className="flex-1 overflow-y-auto thin-scrollbar p-3 space-y-2">
+                {/* AI Natural Language Synthesis Response Card */}
+                {historyFilter === 'ai' && historySearchQuery.trim() && (() => {
+                  const q = historySearchQuery.toLowerCase().trim();
+                  const matched = chatSessions.filter(s => {
+                    const titleMatch = (s.title || '').toLowerCase().includes(q);
+                    const msgMatch = (s.messages || []).some(m => (m.text || m.content || '').toLowerCase().includes(q));
+                    return titleMatch || msgMatch;
+                  });
+
+                  if (matched.length === 0) {
+                    return (
+                      <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/80 mb-3 text-center">
+                        <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                          <RegaarderVectorIcon size={13} className="text-violet-600 dark:text-violet-400" />
+                          <span>AI Semantic Search</span>
+                        </div>
+                        <p className="text-[11.5px] text-slate-500 dark:text-zinc-400">
+                          No past conversations found matching `"${historySearchQuery}"`. Try another concept or intent.
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="p-3.5 rounded-xl bg-violet-50/70 dark:bg-violet-950/40 border border-violet-200/80 dark:border-violet-800/60 mb-3 space-y-2 animate-in fade-in duration-200">
+                      <div className="flex items-center gap-2 text-violet-700 dark:text-violet-300 text-xs font-bold">
+                        <div className="w-5 h-5 rounded-md bg-violet-100 dark:bg-violet-900/60 flex items-center justify-center">
+                          <RegaarderVectorIcon size={12} className="text-violet-600 dark:text-violet-400" />
+                        </div>
+                        <span>AI Search Intelligence</span>
+                      </div>
+                      <p className="text-xs text-slate-700 dark:text-zinc-200 leading-relaxed">
+                        I found <strong className="font-semibold text-slate-900 dark:text-white">{matched.length} conversation{matched.length === 1 ? '' : 's'}</strong> related to <strong className="font-semibold text-slate-900 dark:text-white">&ldquo;{historySearchQuery}&rdquo;</strong>. Here are the direct conversation links:
+                      </p>
+                      <div className="space-y-1.5 pt-1">
+                        {matched.map((session) => (
+                          <button
+                            key={session.id}
+                            type="button"
+                            onClick={() => restoreChatSession(session)}
+                            className="w-full flex items-center justify-between p-2.5 rounded-lg bg-white/90 dark:bg-zinc-900/90 hover:bg-violet-100/60 dark:hover:bg-violet-900/50 border border-violet-200/50 dark:border-violet-800/40 text-left transition-all group cursor-pointer shadow-2xs"
+                          >
+                            <div className="min-w-0 flex-1 pr-2">
+                              <div className="text-[12px] font-semibold text-violet-700 dark:text-violet-300 truncate group-hover:underline">
+                                {session.title}
+                              </div>
+                              <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
+                                {session.messages?.[session.messages.length - 1]?.text?.slice(0, 80) || session.timestamp}
+                              </div>
+                            </div>
+                            <ArrowRight size={12} className="text-violet-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {chatSessions.length > 0 ? (
                   chatSessions
                     .filter(s => {
