@@ -86,12 +86,49 @@ export default function OrbDecideSynthesizer({
     triggerSynthesize(question);
   };
 
-  const samplePrompts = [
-    'What should I know before expanding Nvidia GPU commitments?',
-    'What are the risks of Taiwan semiconductor single-sourcing?',
-    'What evidence supports our Q3 revenue forecast of $48.2B?',
-    'What decisions resulted from the Executive Sync on packaging bottlenecks?'
-  ];
+  // Derive real live strategic inquiries dynamically from connected workspace entities
+  const liveInquiries = useMemo(() => {
+    const inquiries = [];
+    
+    // Categorize live entities from workspace
+    const docEntities = entities.filter(e => e.type === 'document' || e.workspace === 'compose');
+    const sheetEntities = entities.filter(e => e.type === 'sheet' || e.workspace === 'sheets');
+    const deckEntities = entities.filter(e => e.type === 'slide' || e.workspace === 'decks');
+    const taskEntities = entities.filter(e => e.type === 'task');
+
+    // 1. Live document insights
+    if (docEntities.length > 0) {
+      const activeDoc = docEntities[0];
+      inquiries.push(`What strategic insights or risks emerge from "${activeDoc.title || 'Untitled Document'}"?`);
+    }
+
+    // 2. Live sheet calculations & revenue trends
+    if (sheetEntities.length > 0) {
+      const activeSheet = sheetEntities[0];
+      inquiries.push(`Analyze financial calculations and trends in "${activeSheet.title || 'Active Sheet'}"`);
+    }
+
+    // 3. Live presentation messaging & executive alignment
+    if (deckEntities.length > 0) {
+      const activeDeck = deckEntities[0];
+      inquiries.push(`Evaluate executive alignment and key points in "${activeDeck.title || 'Active Deck'}"`);
+    }
+
+    // 4. Live task blockers & deliverables
+    if (taskEntities.length > 0) {
+      inquiries.push('What critical blockers or unassigned tasks require immediate executive action?');
+    }
+
+    // Intelligent fallbacks derived from cross-workspace context
+    if (inquiries.length < 4) {
+      inquiries.push(
+        'What cross-workspace dependencies connect our active documents, sheets, and tasks?',
+        'Synthesize key business risks and required conditions for our active roadmap'
+      );
+    }
+
+    return inquiries.slice(0, 4);
+  }, [entities]);
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-slate-100/30 dark:bg-zinc-950/20">
@@ -137,7 +174,7 @@ export default function OrbDecideSynthesizer({
           }`}>
             Quick Inquiries:
           </span>
-          {samplePrompts.map((prompt, idx) => (
+          {liveInquiries.map((prompt, idx) => (
             <button
               key={idx}
               type="button"
@@ -220,7 +257,7 @@ export default function OrbDecideSynthesizer({
                 <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-zinc-500 block text-center mb-2">
                   Select a strategic inquiry to synthesize
                 </span>
-                {samplePrompts.slice(0, 3).map((prompt, idx) => (
+                {liveInquiries.slice(0, 3).map((prompt, idx) => (
                   <button
                     key={idx}
                     type="button"
