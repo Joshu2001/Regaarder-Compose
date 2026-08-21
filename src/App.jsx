@@ -13095,6 +13095,38 @@ const DEFAULT_DECK_SLIDES = [
   const [isReadingAloud, setIsReadingAloud] = useState(false);
   const [ttsPaused, setTtsPaused] = useState(false);
   const [ttsUtterance, setTtsUtterance] = useState(null);
+  const [showTtsSuggestion, setShowTtsSuggestion] = useState(false);
+
+  const handleTtsPauseResume = () => {
+    if (!window.speechSynthesis) return;
+    if (ttsPaused) {
+      window.speechSynthesis.resume();
+      setTtsPaused(false);
+      showToast('Reading resumed');
+    } else {
+      window.speechSynthesis.pause();
+      setTtsPaused(true);
+      showToast('Reading paused');
+    }
+  };
+
+  const handleTtsStop = () => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setIsReadingAloud(false);
+    setTtsPaused(false);
+    setTtsUtterance(null);
+    showToast('Reading stopped');
+  };
+
+  const handleTtsCycleSpeed = () => {
+    const speeds = [1, 1.25, 1.5, 2];
+    const currentIdx = speeds.indexOf(ttsSpeed);
+    const nextSpeed = speeds[(currentIdx + 1) % speeds.length];
+    setTtsSpeed(nextSpeed);
+    showToast(`Reading speed: ${nextSpeed}x`);
+  };
   const [volumeBtnPos, setVolumeBtnPos] = useState({ x: null, y: null });
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
   const volumeDragStartPos = useRef({ x: 0, y: 0, startX: 0, startY: 0 });
@@ -13133,7 +13165,25 @@ const DEFAULT_DECK_SLIDES = [
     }
   };
 
-  const handleTtsToggle = () => {
+  // Smart Reading Suggestion: Suggest audio reading when text reaches substantial length (> 120 words)
+  useEffect(() => {
+    if (isReadingAloud) return;
+    const bodyText = blankBodyRef.current ? blankBodyRef.current.innerText.trim() : '';
+    const wordCount = bodyText ? bodyText.split(/\s+/).length : 0;
+    const hasBeenSuggested = sessionStorage.getItem('regaarder_tts_suggested');
+    
+    if (wordCount >= 120 && !hasBeenSuggested) {
+      const timer = setTimeout(() => {
+        setShowTtsSuggestion(true);
+        sessionStorage.setItem('regaarder_tts_suggested', 'true');
+        // Auto-dismiss after 6 seconds
+        setTimeout(() => setShowTtsSuggestion(false), 6000);
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedDocId, isReadingAloud]);
+
+  const handleTtsToggle = (customSpeed) => {
     if (isReadingAloud) {
       window.speechSynthesis.cancel();
       setIsReadingAloud(false);
@@ -36565,7 +36615,103 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </button>
                 );
               })}
+          {/* Floating Dynamic Audio Reader Pill & Smart Reading Suggestion */}
+        {isReadingAloud && (
+          <div 
+            className="fixed bottom-12 right-20 z-[450] flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_12px_36px_rgba(0,0,0,0.16)] select-none animate-in fade-in slide-in-from-bottom-3 duration-200"
+          >
+            {/* Animated Waveform Indicator */}
+            <div className="flex items-center gap-1 h-5 px-1.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-950/60 border border-violet-200/60 dark:border-violet-800/40">
+              <span className={`w-0.5 bg-violet-600 dark:bg-violet-400 rounded-full transition-all ${ttsPaused ? 'h-1.5' : 'h-3.5 animate-[pulse_0.6s_ease-in-out_infinite]'}`} />
+              <span className={`w-0.5 bg-violet-600 dark:bg-violet-400 rounded-full transition-all ${ttsPaused ? 'h-2' : 'h-4 animate-[pulse_0.8s_ease-in-out_infinite_150ms]'}`} />
+              <span className={`w-0.5 bg-violet-600 dark:bg-violet-400 rounded-full transition-all ${ttsPaused ? 'h-1.5' : 'h-2.5 animate-[pulse_0.7s_ease-in-out_infinite_300ms]'}`} />
+              <span className={`w-0.5 bg-violet-600 dark:bg-violet-400 rounded-full transition-all ${ttsPaused ? 'h-2.5' : 'h-4 animate-[pulse_0.9s_ease-in-out_infinite_100ms]'}`} />
             </div>
+
+            {/* Status Label */}
+            <div className="flex flex-col pr-1">
+              <span className="text-[11.5px] font-bold text-slate-800 dark:text-zinc-100 leading-tight">
+                {ttsPaused ? 'Reading Paused' : 'Reading Document'}
+              </span>
+              <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 font-medium">
+                {ttsSpeed}x speed
+              </span>
+            </div>
+
+            {/* Controls Divider */}
+            <div className="h-5 w-px bg-slate-200 dark:bg-zinc-800" />
+
+            {/* Play / Pause Toggle */}
+            <button
+              type="button"
+              onClick={handleTtsPauseResume}
+              className="p-1.5 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-violet-50 dark:hover:bg-violet-950/50 text-slate-700 dark:text-zinc-200 hover:text-violet-600 dark:hover:text-violet-400 transition-all active:scale-95 cursor-pointer"
+              title={ttsPaused ? "Resume reading" : "Pause reading"}
+            >
+              {ttsPaused ? <Play size={13} className="fill-current" /> : <Pause size={13} className="fill-current" />}
+            </button>
+
+            {/* Stop Button */}
+            <button
+              type="button"
+              onClick={handleTtsStop}
+              className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-600 dark:text-rose-400 transition-all active:scale-95 cursor-pointer"
+              title="Stop reading"
+            >
+              <Square size={12} className="fill-current" />
+            </button>
+
+            {/* Speed Selector Toggle */}
+            <button
+              type="button"
+              onClick={handleTtsCycleSpeed}
+              className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200/80 text-[10.5px] font-bold text-slate-700 dark:text-zinc-300 transition-all active:scale-95 cursor-pointer"
+              title="Cycle playback speed"
+            >
+              {ttsSpeed}x
+            </button>
+
+            {/* Dismiss Button */}
+            <button
+              type="button"
+              onClick={handleTtsStop}
+              className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded transition-colors cursor-pointer"
+              title="Close audio reader"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        )}
+
+        {/* Smart Reading Suggestion Micro-Pill */}
+        {showTtsSuggestion && !isReadingAloud && (
+          <div className="fixed bottom-12 right-20 z-[440] flex items-center gap-2.5 px-3 py-2 rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-violet-200/80 dark:border-violet-800/80 shadow-[0_8px_28px_rgba(124,58,237,0.18)] animate-in fade-in slide-in-from-bottom-2 duration-300 select-none">
+            <span className="text-sm">🎧</span>
+            <div className="flex flex-col">
+              <span className="text-[11.5px] font-bold text-slate-800 dark:text-zinc-100 leading-tight">Listen to your draft</span>
+              <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 font-medium">Text-to-speech audio reader</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowTtsSuggestion(false);
+                handleTtsToggle();
+              }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[10.5px] font-semibold transition-all active:scale-95 cursor-pointer shadow-2xs"
+            >
+              <Play size={10} className="fill-current" />
+              <span>Play</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowTtsSuggestion(false)}
+              className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded cursor-pointer"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
+          </div>
           </div>
         </div>
         )}
