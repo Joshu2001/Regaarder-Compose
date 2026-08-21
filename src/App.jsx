@@ -36523,16 +36523,8 @@ Respond with a JSON array of slide objects matching the schema.`;
               {[
                 { key: 'assistant', label: 'Assistant' },
                 { key: 'history', label: 'History' },
-                productMode !== 'sheets' && { key: 'properties', label: 'Properties' },
-                { key: 'whiteboard', label: 'Whiteboard' },
                 { key: 'tasks', label: 'Tasks' },
-                { key: 'calendar', label: 'Schedule' },
-                { key: 'room', label: 'Room' },
-                { key: 'help', label: 'Help' },
-                { key: 'manageen', label: 'Manageen' },
-                { key: 'memory', label: 'Memory' },
-                { key: 'orb', label: 'Orb' },
-              ].filter(Boolean).map((tab) => {
+              ].map((tab) => {
                 const isActive = activeRightTab === tab.key || (tab.key === 'assistant' && activeRightTab === 'chat');
                 return (
                   <button
