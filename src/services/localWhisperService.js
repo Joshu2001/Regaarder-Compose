@@ -10,6 +10,32 @@ let initPromise = null;
 const TRANSFORMERS_CDN = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
 
 /**
+ * Strips raw acoustic sound events, hallucinated tokens, and subtitle artifacts
+ */
+export function cleanAndSanitizeTranscription(rawText) {
+  if (!rawText) return '';
+  let text = String(rawText).trim();
+
+  // Strip sound descriptors like *door closes*, *chuckles*, [music], (applause), *sighs*, etc.
+  text = text.replace(/\*[^*]+\*/g, '');
+  text = text.replace(/\[[^\]]+\]/g, '');
+  text = text.replace(/\([^)]+\)/g, '');
+  
+  // Strip repetitive Whisper video subtitle tokens
+  text = text.replace(/\b(you|thank you|thanks for watching|subscribe|subtitles by|subtitled by)\b/gi, '');
+
+  // Normalize spacing
+  text = text.replace(/\s{2,}/g, ' ').trim();
+
+  // If text is only punctuation, special chars, or empty, discard
+  if (!/[a-zA-Z0-9]/.test(text)) {
+    return '';
+  }
+
+  return text;
+}
+
+/**
  * Initializes and caches the local Whisper WebAssembly model pipeline
  */
 export async function getLocalWhisperTranscriber(onProgress) {
@@ -83,13 +109,13 @@ async function decodeAudioBlobTo16kHz(audioBlob) {
 }
 
 /**
- * Transcribes an audio blob into text locally via WebAssembly Whisper
+ * Transcribes an audio blob into text locally via WebAssembly Whisper with Intent & Noise Sanitization
  * @param {Blob} audioBlob - Recorded audio chunk or speech sample
  * @param {Function} [onProgress] - Optional model loading progress callback
- * @returns {Promise<string>} Transcribed text string
+ * @returns {Promise<string>} Transcribed, sanitized text string
  */
 export async function transcribeAudioBlobLocally(audioBlob, onProgress) {
-  if (!audioBlob || audioBlob.size < 500) {
+  if (!audioBlob || audioBlob.size < 400) {
     return '';
   }
 
@@ -109,8 +135,9 @@ export async function transcribeAudioBlobLocally(audioBlob, onProgress) {
       return_timestamps: false
     });
 
-    const transcribedText = String(output?.text || '').trim();
-    return transcribedText;
+    const rawText = String(output?.text || '').trim();
+    const sanitizedText = cleanAndSanitizeTranscription(rawText);
+    return sanitizedText;
   } catch (err) {
     console.warn('[localWhisperService] Error during local transcription:', err);
     return '';

@@ -51,7 +51,7 @@ import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 import HelpSupportPanel from './components/HelpSupportPanel';
 import OrbSpotlightModal from './components/orb/OrbSpotlightModal';
 import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWorkspaceRAG';
-import { transcribeAudioBlobLocally } from './services/localWhisperService';
+import { transcribeAudioBlobLocally, cleanAndSanitizeTranscription } from './services/localWhisperService';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -29916,7 +29916,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
       }
 
       if (result && result.ok && result.text) {
-        const cleanedText = result.text.trim();
+        const cleanedText = cleanAndSanitizeTranscription(result.text);
         if (cleanedText && cleanedText !== '[SILENCE]' && !cleanedText.toLowerCase().includes('[silence]')) {
           lastSpeechTimeRef.current = Date.now();
           
