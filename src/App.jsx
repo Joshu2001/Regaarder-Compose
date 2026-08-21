@@ -50,6 +50,7 @@ import PopoverWindowContainer from './components/browser/PopoverWindowContainer'
 import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 import HelpSupportPanel from './components/HelpSupportPanel';
 import OrbSpotlightModal from './components/orb/OrbSpotlightModal';
+import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWorkspaceRAG';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
