@@ -30210,7 +30210,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
                   mediaRecorder.stop();
                 }
               } catch (_e) { /* noop */ }
-            }, 750);
+            }, 1500);
           } catch (recErr) {
             console.error('MediaRecorder chunk error:', recErr);
           }
