@@ -51,6 +51,7 @@ import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 import HelpSupportPanel from './components/HelpSupportPanel';
 import OrbSpotlightModal from './components/orb/OrbSpotlightModal';
 import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWorkspaceRAG';
+import { transcribeAudioBlobLocally } from './services/localWhisperService';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -20892,12 +20893,10 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
   useEffect(() => {
     const RecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    setSpeechSupported(Boolean(navigator.mediaDevices?.getUserMedia || RecognitionCtor));
     if (!RecognitionCtor) {
-      setSpeechSupported(false);
       return;
     }
-
-    setSpeechSupported(true);
     const recognition = new RecognitionCtor();
     recognition.continuous = true;
     recognition.interimResults = true;
@@ -29863,22 +29862,28 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
       let result = null;
       try {
-        setLiveSpeechInterimText('Processing audio...');
-        const response = await fetch('/api/gemini', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            task: 'transcription',
-            userPrompt: 'Transcribe this audio accurately. Remove repeated wake words and trigger chatter (for example: hey gemini, hey orb, command). If the audio is silent or contains no speech, respond with exactly: [SILENCE]',
-            systemPrompt: 'You are an expert audio transcription tool. Filter out filler words like "umm", "uh", "um", "like", and stutters. Remove repeated wake words when they are not actionable intent. Output only clean text with proper capitalization and punctuation. If there is no speech in the audio, respond with exactly: [SILENCE].',
-            attachments: [{ name: 'audio.webm', mimeType: blob.type || 'audio/webm', data: base64data }]
-          })
-        });
-        if (response.ok) {
-          result = await response.json().catch(() => null);
+        setLiveSpeechInterimText('Transcribing audio locally...');
+        const localTranscription = await transcribeAudioBlobLocally(blob);
+        if (localTranscription) {
+          result = { ok: true, text: localTranscription };
+        } else {
+          // Fallback to cloud proxy if local model was empty
+          const response = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              task: 'transcription',
+              userPrompt: 'Transcribe this audio accurately. If the audio is silent, respond with: [SILENCE]',
+              systemPrompt: 'You are an expert audio transcription tool. Output clean text.',
+              attachments: [{ name: 'audio.webm', mimeType: blob.type || 'audio/webm', data: base64data }]
+            })
+          });
+          if (response.ok) {
+            result = await response.json().catch(() => null);
+          }
         }
       } catch (fetchErr) {
-        console.warn('AI transcription API endpoint unavailable, relying on native speech recognition:', fetchErr?.message);
+        console.warn('Audio transcription error:', fetchErr?.message);
       }
 
       if (result && result.ok && result.text) {

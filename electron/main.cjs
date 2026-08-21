@@ -31,6 +31,16 @@ function createWindow() {
     callback({ cancel: false, responseHeaders });
   });
 
+  // Automatically grant microphone and media permissions for local voice transcription and dictation
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (['media', 'microphone', 'audio-capture'].includes(permission)) {
+      return callback(true);
+    }
+    callback(true);
+  });
+
+  session.defaultSession.setPermissionCheckHandler(() => true);
+
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
