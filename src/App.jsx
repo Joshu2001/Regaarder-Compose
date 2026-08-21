@@ -21412,6 +21412,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   }, [chatSessions]);
 
   const [historySearchQuery, setHistorySearchQuery] = useState('');
+  const [historyFilter, setHistoryFilter] = useState('all'); // 'all' | 'recent' | 'date' | 'topic' | 'ai'
 
   const startNewChatSession = () => {
     if (chatMessages && chatMessages.length > 0) {
@@ -36588,26 +36589,66 @@ Respond with a JSON array of slide objects matching the schema.`;
                 </button>
               </div>
 
-              {/* Search Bar if history exists */}
+              {/* Search Bar & Granular Filters */}
               {chatSessions.length > 0 && (
-                <div className="p-3 bg-white dark:bg-zinc-900 border-b border-slate-100 dark:border-zinc-800/80">
+                <div className="p-3 bg-white dark:bg-zinc-900 border-b border-slate-100 dark:border-zinc-800/80 space-y-2">
                   <div className="relative flex items-center">
-                    <Search size={13} className="absolute left-2.5 text-slate-400 pointer-events-none" />
+                    {historyFilter === 'ai' ? (
+                      <RegaarderVectorIcon size={14} className="absolute left-2.5 text-violet-600 dark:text-violet-400 pointer-events-none" />
+                    ) : (
+                      <Search size={13} className="absolute left-2.5 text-slate-400 pointer-events-none" />
+                    )}
                     <input
                       type="text"
                       value={historySearchQuery}
                       onChange={(e) => setHistorySearchQuery(e.target.value)}
-                      placeholder="Search past conversations..."
-                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-violet-500"
+                      placeholder={historyFilter === 'ai' ? "AI Semantic Search: Find conversations by concept or intent..." : "Search past conversations..."}
+                      className={`w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-zinc-800/80 border rounded-lg text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none transition-all ${
+                        historyFilter === 'ai'
+                          ? 'border-violet-300 dark:border-violet-700/70 focus:border-violet-500 focus:ring-1 focus:ring-violet-400/20'
+                          : 'border-slate-200/80 dark:border-zinc-700 focus:border-violet-500'
+                      }`}
                     />
                     {historySearchQuery && (
                       <button
                         onClick={() => setHistorySearchQuery('')}
-                        className="absolute right-2 text-slate-400 hover:text-slate-600 p-0.5"
+                        className="absolute right-2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
                       >
                         <X size={12} />
                       </button>
                     )}
+                  </div>
+
+                  {/* Granular Filter Tabs: All, Most Recent, By Date, By Topic, AI */}
+                  <div className="flex items-center gap-1 overflow-x-auto thin-scrollbar pb-0.5 select-none">
+                    {[
+                      { key: 'all', label: 'All' },
+                      { key: 'recent', label: 'Most Recent' },
+                      { key: 'date', label: 'By Date' },
+                      { key: 'topic', label: 'By Topic' },
+                      { key: 'ai', label: 'AI Search', isAi: true }
+                    ].map((tab) => {
+                      const isActive = historyFilter === tab.key;
+                      return (
+                        <button
+                          key={tab.key}
+                          type="button"
+                          onClick={() => setHistoryFilter(tab.key)}
+                          className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
+                            isActive
+                              ? tab.isAi
+                                ? 'bg-violet-600 text-white font-semibold shadow-2xs'
+                                : 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold shadow-2xs'
+                              : tab.isAi
+                              ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 border border-violet-200/50 dark:border-violet-800/40'
+                              : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-200/70 dark:hover:bg-zinc-700'
+                          }`}
+                        >
+                          {tab.isAi && <RegaarderVectorIcon size={11} className={isActive ? "text-white" : "text-violet-600 dark:text-violet-400"} />}
+                          <span>{tab.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -36616,7 +36657,22 @@ Respond with a JSON array of slide objects matching the schema.`;
               <div className="flex-1 overflow-y-auto thin-scrollbar p-3 space-y-2">
                 {chatSessions.length > 0 ? (
                   chatSessions
-                    .filter(s => !historySearchQuery || s.title.toLowerCase().includes(historySearchQuery.toLowerCase()))
+                    .filter(s => {
+                      if (!historySearchQuery) return true;
+                      const q = historySearchQuery.toLowerCase().trim();
+                      const titleMatch = (s.title || '').toLowerCase().includes(q);
+                      const msgMatch = (s.messages || []).some(m => (m.text || m.content || '').toLowerCase().includes(q));
+                      return titleMatch || msgMatch;
+                    })
+                    .sort((a, b) => {
+                      if (historyFilter === 'recent') {
+                        return (b.id || 0) - (a.id || 0);
+                      }
+                      if (historyFilter === 'topic') {
+                        return (a.title || '').localeCompare(b.title || '');
+                      }
+                      return 0;
+                    })
                     .map((session) => (
                       <div
                         key={session.id}
@@ -73624,7 +73680,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
         {activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
         <div
-          className={`fixed bottom-14 ${isPromptSlashMenuOpen ? 'z-[250000]' : 'z-[1210]'} transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || (rightSidebarOpen && (activeRightTab === 'assistant' || activeRightTab === 'chat')) || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 scale-95 translate-y-4 pointer-events-none' : 'opacity-100 scale-100 translate-y-0 pointer-events-auto'}`}
+          className={`fixed bottom-14 ${isPromptSlashMenuOpen ? 'z-[250000]' : 'z-[1210]'} transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || rightSidebarOpen || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 scale-95 translate-y-4 pointer-events-none' : 'opacity-100 scale-100 translate-y-0 pointer-events-auto'}`}
           style={{
             left: `${blurLeftInset}px`,
             right: `${blurRightInset}px`,
@@ -74210,7 +74266,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         <AppleGestureOnboardingHotspots />
 
-        {(isPromptMinimized || (rightSidebarOpen && (activeRightTab === 'assistant' || activeRightTab === 'chat'))) && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !isScheduleSessionModalOpen && (
+        {(isPromptMinimized || rightSidebarOpen) && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !isScheduleSessionModalOpen && (
           <div
             className="pointer-events-none absolute left-6 top-20 z-[140]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
@@ -74231,7 +74287,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   setAiPulseState('idle');
                   setIsPromptDismissed(false);
                   setIsPromptExpanded(true);
-                  if (rightSidebarOpen && (activeRightTab === 'assistant' || activeRightTab === 'chat')) {
+                  if (rightSidebarOpen) {
                     setRightSidebarOpen(false);
                   }
                   setIsPromptMinimized(false);
