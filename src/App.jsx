@@ -36699,38 +36699,38 @@ Respond with a JSON array of slide objects matching the schema.`;
 
               {/* Sessions List or Empty State */}
               <div className="flex-1 overflow-y-auto thin-scrollbar p-3 space-y-2">
-                {/* AI Natural Language Synthesis Response Card with Pure Intent Understanding */}
-                {historyFilter === 'ai' && (historyAiExecutedQuery || historySearchQuery.trim()) && (() => {
+                {/* Universal AI Natural Language Synthesis Response Card */}
+                {historySearchQuery.trim() && (() => {
                   const rawQuery = (historyAiExecutedQuery || historySearchQuery).trim();
                   const cleanQ = rawQuery.toLowerCase()
-                    .replace(/^(where is the conversation where i|where did i talk about|where i spoke about|where i spoke|find conversation about|find chat about|find discussion on|show me the chat where i|where is the chat about|where is|find)s*/i, '')
+                    .replace(/^(where is the conversation where i|where did i talk about|where i spoke about|where i spoke|where did i mention|did i speak about|did i talk about|did we talk about|did we discuss|find conversation about|find chat about|find discussion on|show me the chat where i|where is the chat about|where is|find|search for|about)\s*/i, '')
                     .replace(/[?.,!]/g, '')
                     .trim();
 
                   const queryTokens = cleanQ.split(/\s+/).filter(t => t.length >= 2);
 
-                  // Intelligent Semantic Ranking
+                  // Intelligent Semantic Intent Ranking
                   const scoredSessions = chatSessions.map(session => {
                     let score = 0;
                     const titleLower = (session.title || '').toLowerCase();
                     const messages = session.messages || [];
                     const allText = messages.map(m => (m.text || m.content || '').toLowerCase()).join(' ');
 
-                    // Exact concept match
+                    // Exact phrase match in title or body
+                    if (rawQuery && (titleLower.includes(rawQuery.toLowerCase()) || allText.includes(rawQuery.toLowerCase()))) {
+                      score += 150;
+                    }
+
+                    // Intent phrase match (e.g. "gen z")
                     if (cleanQ && (titleLower.includes(cleanQ) || allText.includes(cleanQ))) {
-                      score += 100;
+                      score += 120;
                     }
 
                     // Token overlap matches
                     queryTokens.forEach(tok => {
-                      if (titleLower.includes(tok)) score += 40;
-                      if (allText.includes(tok)) score += 20;
+                      if (titleLower.includes(tok)) score += 50;
+                      if (allText.includes(tok)) score += 30;
                     });
-
-                    // General speaker / question matches
-                    if (rawQuery.toLowerCase().includes('spoke') || rawQuery.toLowerCase().includes('said') || rawQuery.toLowerCase().includes('ask')) {
-                      if (messages.some(m => m.sender === 'user')) score += 10;
-                    }
 
                     return { session, score };
                   });
@@ -36742,20 +36742,22 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                   if (matched.length === 0) {
                     return (
-                      <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/80 mb-3 text-center">
+                      <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/80 mb-3 text-center animate-in fade-in duration-150">
                         <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
                           <RegaarderVectorIcon size={13} className="text-violet-600 dark:text-violet-400" />
-                          <span>AI Semantic Search</span>
+                          <span>AI Conversation Search</span>
                         </div>
                         <p className="text-[11.5px] text-slate-500 dark:text-zinc-400">
-                          No past conversations found matching `"${historySearchQuery}"`. Try another concept or intent.
+                          No past conversations found matching `"${historySearchQuery}"`.
                         </p>
                       </div>
                     );
                   }
 
+                  const primaryMatch = matched[0];
+
                   return (
-                    <div className="p-3.5 rounded-xl bg-violet-50/70 dark:bg-violet-950/40 border border-violet-200/80 dark:border-violet-800/60 mb-3 space-y-2 animate-in fade-in duration-200">
+                    <div className="p-3.5 rounded-xl bg-violet-50/80 dark:bg-violet-950/50 border border-violet-200/90 dark:border-violet-800/70 mb-3 space-y-2 animate-in fade-in duration-200 shadow-2xs">
                       <div className="flex items-center gap-2 text-violet-700 dark:text-violet-300 text-xs font-bold">
                         <div className="w-5 h-5 rounded-md bg-violet-100 dark:bg-violet-900/60 flex items-center justify-center">
                           <RegaarderVectorIcon size={12} className="text-violet-600 dark:text-violet-400" />
@@ -36763,7 +36765,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                         <span>AI Search Intelligence</span>
                       </div>
                       <p className="text-xs text-slate-700 dark:text-zinc-200 leading-relaxed">
-                        I found <strong className="font-semibold text-slate-900 dark:text-white">{matched.length} conversation{matched.length === 1 ? '' : 's'}</strong> related to <strong className="font-semibold text-slate-900 dark:text-white">&ldquo;{historySearchQuery}&rdquo;</strong>. Here are the direct conversation links:
+                        {matched.length === 1 ? (
+                          <>Yes, I found your conversation titled <strong className="font-semibold text-slate-900 dark:text-white">&ldquo;{primaryMatch.title}&rdquo;</strong> from {primaryMatch.timestamp || 'your recent activity'}.</>
+                        ) : (
+                          <>Found <strong className="font-semibold text-slate-900 dark:text-white">{matched.length} conversations</strong> relevant to your inquiry on <strong className="font-semibold text-slate-900 dark:text-white">&ldquo;{cleanQ || rawQuery}&rdquo;</strong>:</>
+                        )}
                       </p>
                       <div className="space-y-1.5 pt-1">
                         {matched.map((session) => (
@@ -36771,14 +36777,17 @@ Respond with a JSON array of slide objects matching the schema.`;
                             key={session.id}
                             type="button"
                             onClick={() => restoreChatSession(session)}
-                            className="w-full flex items-center justify-between p-2.5 rounded-lg bg-white/90 dark:bg-zinc-900/90 hover:bg-violet-100/60 dark:hover:bg-violet-900/50 border border-violet-200/50 dark:border-violet-800/40 text-left transition-all group cursor-pointer shadow-2xs"
+                            className="w-full flex items-center justify-between p-2.5 rounded-lg bg-white/95 dark:bg-zinc-900/95 hover:bg-violet-100/70 dark:hover:bg-violet-900/60 border border-violet-200/60 dark:border-violet-800/50 text-left transition-all group cursor-pointer shadow-2xs"
                           >
                             <div className="min-w-0 flex-1 pr-2">
-                              <div className="text-[12px] font-semibold text-violet-700 dark:text-violet-300 truncate group-hover:underline">
-                                {session.title}
+                              <div className="text-[12px] font-semibold text-violet-700 dark:text-violet-300 truncate group-hover:underline flex items-center gap-1.5">
+                                <span>{session.title}</span>
+                                <span className="text-[9.5px] font-medium px-1.5 py-0.2 rounded bg-violet-100 dark:bg-violet-900/60 text-violet-800 dark:text-violet-200">
+                                  Jump to chat
+                                </span>
                               </div>
                               <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
-                                {session.messages?.[session.messages.length - 1]?.text?.slice(0, 80) || session.timestamp}
+                                {session.messages?.[session.messages.length - 1]?.text?.slice(0, 85) || session.timestamp}
                               </div>
                             </div>
                             <ArrowRight size={12} className="text-violet-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
@@ -36793,10 +36802,20 @@ Respond with a JSON array of slide objects matching the schema.`;
                   chatSessions
                     .filter(s => {
                       if (!historySearchQuery) return true;
-                      const q = historySearchQuery.toLowerCase().trim();
-                      const titleMatch = (s.title || '').toLowerCase().includes(q);
-                      const msgMatch = (s.messages || []).some(m => (m.text || m.content || '').toLowerCase().includes(q));
-                      return titleMatch || msgMatch;
+                      const raw = historySearchQuery.toLowerCase().trim();
+                      const clean = raw
+                        .replace(/^(where is the conversation where i|where did i talk about|where i spoke about|where i spoke|where did i mention|did i speak about|did i talk about|did we talk about|did we discuss|find conversation about|find chat about|find discussion on|show me the chat where i|where is the chat about|where is|find|search for|about)\s*/i, '')
+                        .replace(/[?.,!]/g, '')
+                        .trim();
+                      
+                      const title = (s.title || '').toLowerCase();
+                      const allMsgs = (s.messages || []).map(m => (m.text || m.content || '').toLowerCase()).join(' ');
+
+                      if (title.includes(raw) || allMsgs.includes(raw)) return true;
+                      if (clean && (title.includes(clean) || allMsgs.includes(clean))) return true;
+                      
+                      const tokens = clean.split(/\s+/).filter(t => t.length >= 2);
+                      return tokens.length > 0 && tokens.some(t => title.includes(t) || allMsgs.includes(t));
                     })
                     .sort((a, b) => {
                       if (historyFilter === 'recent') {
