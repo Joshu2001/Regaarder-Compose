@@ -29839,6 +29839,35 @@ Answer the user's question, provide an insightful summary, or explain the contex
     return { matched: false };
   };
 
+  const routeAudioTextToActiveTarget = (textToInsert) => {
+    const activeTarget = voiceTargetRef.current;
+    if (activeTarget === 'document') {
+      if (blankBodyRef.current) {
+        const currentText = blankBodyRef.current.innerText.trim();
+        const isStarterTemplate = currentText.includes('1. Objective') && currentText.includes('2. Key Initiatives');
+        if (!currentText || isStarterTemplate || isBlankDocument) {
+          blankBodyRef.current.innerHTML = `<p>${textToInsert} </p>`;
+          setDocBodyHtml(blankBodyRef.current.innerHTML);
+          setIsBlankDocument(false);
+          return;
+        }
+      }
+      insertTranscriptIntoDocumentRef.current?.(textToInsert + ' ', { forceAppendToEnd: true });
+    } else if (activeTarget === 'schedule') {
+      setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
+    } else if (activeTarget === 'chat') {
+      setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
+    } else if (activeTarget === 'agent-chat') {
+      setDmAiChatInput((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
+    } else if (activeTarget === 'right-chat') {
+      setChatInput((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
+    } else if (activeTarget === 'right-assistant') {
+      setAssistantQuickPrompt((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
+    } else {
+      setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
+    }
+  };
+
   const processAudioWithGemini = async () => {
     const chunks = audioChunksRef.current.splice(0);
     if (chunks.length === 0) return;
@@ -29914,17 +29943,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
           if (escapeCheck.matched) {
             const textToInsert = escapeCheck.remaining;
             setLiveSpeechInterimText(textToInsert);
-            if (voiceTargetRef.current === 'document') {
-              insertTranscriptIntoDocumentRef.current?.(textToInsert + ' ', { forceAppendToEnd: true });
-            } else if (voiceTargetRef.current === 'schedule') {
-              setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
-            } else if (voiceTargetRef.current === 'chat') {
-              setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
-            } else if (voiceTargetRef.current === 'agent-chat') {
-              setDmAiChatInput((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
-            } else {
-              setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
-            }
+            routeAudioTextToActiveTarget(textToInsert);
           } else {
             // Check command triggers
             const commandCheck = detectCommandPrefix(cleanedText);
@@ -29953,17 +29972,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
             } else {
               // Normal transcription
               setLiveSpeechInterimText(cleanedText);
-              if (voiceTargetRef.current === 'document') {
-                insertTranscriptIntoDocumentRef.current?.(cleanedText + ' ', { forceAppendToEnd: true });
-              } else if (voiceTargetRef.current === 'schedule') {
-                setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
-              } else if (voiceTargetRef.current === 'chat') {
-                setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
-              } else if (voiceTargetRef.current === 'agent-chat') {
-                setDmAiChatInput((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
-              } else {
-                setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
-              }
+              routeAudioTextToActiveTarget(cleanedText);
             }
           }
 
@@ -29999,18 +30008,8 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
         if (nativeInterim && !alreadyInserted) {
           // Only insert if this text wasn't already committed by the onresult handler
-          if (voiceTargetRef.current === 'document') {
-            insertTranscriptIntoDocumentRef.current?.(nativeInterim + ' ', { forceAppendToEnd: true });
-            lastDocumentTranscriptRef.current = { text: nativeInterim, source: 'gemini-fallback', at: Date.now() };
-          } else if (voiceTargetRef.current === 'schedule') {
-            setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${nativeInterim}`);
-          } else if (voiceTargetRef.current === 'chat') {
-            setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${nativeInterim}`);
-          } else if (voiceTargetRef.current === 'agent-chat') {
-            setDmAiChatInput((prev) => `${prev}${prev ? ' ' : ''}${nativeInterim}`);
-          } else {
-            setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${nativeInterim}`);
-          }
+          routeAudioTextToActiveTarget(nativeInterim);
+          lastDocumentTranscriptRef.current = { text: nativeInterim, source: 'gemini-fallback', at: Date.now() };
           setLiveSpeechInterimText(nativeInterim);
         } else if (isVoiceActiveRef.current) {
           // Preserve whatever the SpeechRecognition onresult handler already set,
@@ -30022,9 +30021,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
       console.warn('Audio processing fallback active:', e?.message);
       const fallbackText = String(interimTranscriptRef.current || '').trim();
       if (fallbackText) {
-        if (voiceTargetRef.current === 'document') {
-          insertTranscriptIntoDocumentRef.current?.(fallbackText + ' ', { forceAppendToEnd: true });
-        }
+        routeAudioTextToActiveTarget(fallbackText);
       }
       if (isVoiceActiveRef.current) {
         setLiveSpeechInterimText((prev) => prev || 'Listening... start speaking');
@@ -30183,7 +30180,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
                   mediaRecorder.stop();
                 }
               } catch (_e) { /* noop */ }
-            }, 4000);
+            }, 1500);
           } catch (recErr) {
             console.error('MediaRecorder chunk error:', recErr);
           }
