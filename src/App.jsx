@@ -8146,19 +8146,7 @@ function AppCore() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(320);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [isRightSideHovered, setIsRightSideHovered] = useState(false);
-  const [isNearRightEdge, setIsNearRightEdge] = useState(false);
   const sidebarHoverTimerRef = useRef(null);
-
-  useEffect(() => {
-    const handleGlobalPointerMove = (e) => {
-      const isNear = (window.innerWidth - e.clientX) <= 100;
-      setIsNearRightEdge(prev => (prev !== isNear ? isNear : prev));
-    };
-    window.addEventListener('pointermove', handleGlobalPointerMove, { passive: true });
-    return () => {
-      window.removeEventListener('pointermove', handleGlobalPointerMove);
-    };
-  }, []);
 
   const handleRightSidebarMouseEnter = () => {
     if (sidebarHoverTimerRef.current) clearTimeout(sidebarHoverTimerRef.current);
@@ -11933,6 +11921,18 @@ const DEFAULT_DECK_SLIDES = [
   
   // AI State machine
   const [isComposing, setIsComposing] = useState(false);
+  const aiAbortControllerRef = useRef(null);
+
+  const handleStopAiGeneration = () => {
+    if (aiAbortControllerRef.current) {
+      try {
+        aiAbortControllerRef.current.abort();
+      } catch (e) {}
+      aiAbortControllerRef.current = null;
+    }
+    setIsComposing(false);
+    showToast('AI generation stopped');
+  };
   const [hoveredBlockMenu, setHoveredBlockMenu] = useState(null);
   const [isTableLocked, setIsTableLocked] = useState(false);
   const [focusedTableCell, setFocusedTableCell] = useState(null);
@@ -23065,6 +23065,11 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000);
+    if (aiAbortControllerRef.current?.signal) {
+      aiAbortControllerRef.current.signal.addEventListener('abort', () => {
+        try { controller.abort(); } catch (e) {}
+      }, { once: true });
+    }
     try {
       setLastAiError('');
       const provider = customProvider || aiProviderConfig?.provider || 'gemini';
@@ -28171,6 +28176,13 @@ Return ONLY valid JSON matching the schema.`;
   const handleAISubmit = async (promptText, options = {}) => {
     if (!promptText.trim()) return;
 
+    if (aiAbortControllerRef.current) {
+      try { aiAbortControllerRef.current.abort(); } catch (e) {}
+    }
+    const currentAbortController = new AbortController();
+    aiAbortControllerRef.current = currentAbortController;
+    setIsComposing(true);
+
     const source = options.source || 'chat';
     const forceDocBuild = Boolean(options.forceDocBuild);
     const suppressChatEcho = Boolean(options.suppressChatEcho);
@@ -28546,15 +28558,7 @@ Return ONLY valid JSON matching the schema.`;
       [`${requestedLengthMode}`]: requestedLengthValue,
     });
 
-    if (!suppressChatEcho) {
-      const userMsgId = Date.now();
-      setChatMessages((prev) => [...prev, {
-        id: userMsgId,
-        sender: 'user',
-        text: promptText,
-      }]);
-      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-    }
+
 
     try {
 
@@ -28682,7 +28686,7 @@ Return ONLY valid JSON matching the schema.`;
       return !normalized || normalized === 'composed with live ai.' || normalized === 'composed with live ai' || normalized === 'ai response' || normalized === 'generated in normal tone with ~220 words.';
     };
 
-    const isArticleWritingRequest = productMode === 'compose' || shouldBuildDocument || source === 'compose' || source === 'floating' || /\b(write|create|draft|compose|generate|article|essay|post|letter|report|paragraph|content|guide|memo|story)\b/i.test(promptText);
+    const isArticleWritingRequest = shouldBuildDocument || source === 'compose' || source === 'floating' || (!isQueryOrSummary && /\b(write|create|draft|compose|generate|article|essay|post|letter|report|paragraph|content|guide|memo|story)\b/i.test(promptText));
 
     let systemPrompt = '';
     let activeSchemaToUse = null;
@@ -28832,9 +28836,9 @@ Answer the user's question, provide an insightful summary, or explain the contex
         }
 
         // Automatic Document Editor Rendering
-        const isDocumentWritingRequest = productMode === 'compose' || shouldBuildDocument || source === 'compose' || source === 'floating' || /\b(write|create|draft|compose|generate|article|essay|post|letter|report|paragraph|content|add|insert|tell|rewrite|expand)\b/i.test(promptText);
+        const shouldInjectToEditor = (shouldBuildDocument || source === 'compose' || source === 'floating') && !isDeckGeneration;
 
-        if (!docAction && isDocumentWritingRequest && aiResponseText) {
+        if (!docAction && shouldInjectToEditor && aiResponseText) {
           docAction = {
             title: cleanTitle || 'AI Composed Section',
             type: 'text',
@@ -28843,12 +28847,12 @@ Answer the user's question, provide an insightful summary, or explain the contex
         }
 
         // Set clean document and tab title
-        if (cleanTitle && cleanTitle !== 'Untitled Document' && (!docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === 'Untitled Document' || docTitle.startsWith('{'))) {
+        if (shouldInjectToEditor && cleanTitle && cleanTitle !== 'Untitled Document' && (!docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === 'Untitled Document' || docTitle.startsWith('{'))) {
           setDocTitle(cleanTitle);
         }
 
         // Inject cleanly into the document editor canvas
-        if (blankBodyRef.current && (productMode === 'compose' || shouldBuildDocument || isDocumentWritingRequest)) {
+        if (blankBodyRef.current && shouldInjectToEditor) {
           const contentToRender = docAction?.paragraph || aiResponseText;
           const formattedHtml = toParagraphHtml(contentToRender);
 
@@ -29051,10 +29055,16 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     } catch (_fatalError) {
-      const reason = 'AI request failed unexpectedly. Please retry.';
-      setLastAiError(reason);
-      showToast(reason);
+      const isAborted = _fatalError?.name === 'AbortError' || aiAbortControllerRef.current?.signal?.aborted;
+      if (!isAborted) {
+        const reason = 'AI request failed unexpectedly. Please retry.';
+        setLastAiError(reason);
+        showToast(reason);
+      }
     } finally {
+      if (aiAbortControllerRef.current === currentAbortController) {
+        aiAbortControllerRef.current = null;
+      }
       setIsComposing(false);
     }
   };
@@ -29404,8 +29414,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
       const sheetPrompt = `${prompt}\n\nContext: ${contextStr} Assistant mode: analyze spreadsheet data.`;
       handleAISubmit(sheetPrompt, { source: 'chat', attachments: assistantAttachments });
     } else {
-      const docPrompt = `${prompt}\n\nContext: Operate on the active document/text context. Assistant mode: draft and edit.`;
-      handleAISubmit(docPrompt, { source: 'chat', attachments: assistantAttachments });
+      handleAISubmit(prompt, { source: 'chat', attachments: assistantAttachments });
     }
     setAssistantQuickPrompt('');
     setAssistantAttachments([]);
@@ -37256,17 +37265,33 @@ Respond with a JSON array of slide objects matching the schema.`;
                               <Mic size={15} strokeWidth={1.5} />
                             </button>
                           </div>
-                          <button 
-                            type="submit" 
-                            disabled={!chatInput.trim() && !chatAttachments.length && !isDocContextActive && !activeAgentTag}
-                            className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer ${
-                              chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive || activeAgentTag
-                                ? 'opacity-100 bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800' 
-                                : 'opacity-35 cursor-not-allowed bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600'
-                            }`}
-                          >
-                            <Send size={13} strokeWidth={1.75} />
-                          </button>
+                          {isComposing ? (
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleStopAiGeneration();
+                              }}
+                              className="w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 cursor-pointer bg-rose-500 hover:bg-rose-600 active:scale-95 text-white shadow-xs animate-pulse shrink-0"
+                              title="Stop generating"
+                            >
+                              <Square size={11} className="fill-current" />
+                            </button>
+                          ) : (
+                            <button 
+                              type="submit" 
+                              disabled={!chatInput.trim() && !chatAttachments.length && !isDocContextActive && !activeAgentTag}
+                              className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer ${
+                                chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive || activeAgentTag
+                                  ? 'opacity-100 bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800' 
+                                  : 'opacity-35 cursor-not-allowed bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600'
+                              }`}
+                              title="Send message"
+                            >
+                              <Send size={13} strokeWidth={1.75} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </form>
@@ -38073,17 +38098,33 @@ Respond with a JSON array of slide objects matching the schema.`;
                           <Mic size={16} strokeWidth={1.75} />
                         </button>
                       </div>
-                      <button 
-                        type="submit" 
-                        disabled={!chatInput.trim() && !chatAttachments.length && !isDocContextActive}
-                        className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 cursor-pointer ${
-                          chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive
-                            ? 'bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800' 
-                            : 'opacity-50 cursor-not-allowed bg-slate-100/60 dark:bg-zinc-800/40 text-slate-300 dark:text-zinc-600 border border-slate-200/40 dark:border-zinc-800'
-                        }`}
-                      >
-                        <Send size={13} strokeWidth={1.75} className={chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive ? "text-violet-600 dark:text-violet-300" : "text-slate-300 dark:text-zinc-600"} />
-                      </button>
+                      {isComposing ? (
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleStopAiGeneration();
+                          }}
+                          className="w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 cursor-pointer bg-rose-500 hover:bg-rose-600 active:scale-95 text-white shadow-xs animate-pulse shrink-0"
+                          title="Stop generating"
+                        >
+                          <Square size={11} className="fill-current" />
+                        </button>
+                      ) : (
+                        <button 
+                          type="submit" 
+                          disabled={!chatInput.trim() && !chatAttachments.length && !isDocContextActive}
+                          className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                            chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive
+                              ? 'bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800' 
+                              : 'opacity-50 cursor-not-allowed bg-slate-100/60 dark:bg-zinc-800/40 text-slate-300 dark:text-zinc-600 border border-slate-200/40 dark:border-zinc-800'
+                          }`}
+                          title="Send message"
+                        >
+                          <Send size={13} strokeWidth={1.75} className={chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive ? "text-violet-600 dark:text-violet-300" : "text-slate-300 dark:text-zinc-600"} />
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="text-center mt-2 pb-1">
@@ -40894,25 +40935,6 @@ Respond with a JSON array of slide objects matching the schema.`;
 
         return (
           <>
-            {/* ── Floating Sidebar Cue Button (Appears when mouse is within 100px of right edge; hovering opens icon rail) ──────────── */}
-            {productMode !== 'landing' && productMode !== 'browser' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
-              <div
-                onMouseEnter={handleRightSidebarMouseEnter}
-                onMouseLeave={handleRightSidebarMouseLeave}
-                className={`fixed right-3 top-[72px] z-[360] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 dark:bg-zinc-800/95 backdrop-blur-md border border-slate-200/90 dark:border-zinc-700/90 shadow-md cursor-pointer text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:border-violet-300 dark:hover:border-violet-600/60 transition-all duration-300 ease-out select-none ${
-                  (isNearRightEdge || isRightSideHovered)
-                    ? 'opacity-90 translate-x-0 pointer-events-auto'
-                    : 'opacity-0 translate-x-3 pointer-events-none'
-                }`}
-                title="Hover to reveal sidebar icons"
-              >
-                <Sidebar size={14} className="text-slate-400 dark:text-zinc-400 group-hover:text-violet-500 transition-colors" />
-                <span className="text-xs font-medium text-slate-600 dark:text-zinc-300">
-                  Sidebar
-                </span>
-                <ChevronLeft size={13} className="text-slate-400 dark:text-zinc-500" />
-              </div>
-            )}
 
             {/* ── Sleek Sidebar Icon Rail (Full length from top-0 to bottom-0, in front of scrollbar, revealed on hover) ──────────── */}
             {productMode !== 'landing' && productMode !== 'browser' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
@@ -66496,20 +66518,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
             >
               <Settings size={16} />
             </button>
-            {/* Sidebar Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setRightSidebarOpen(prev => !prev)}
-              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-                rightSidebarOpen 
-                  ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/50 dark:text-violet-300' 
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'
-              }`}
-              title={rightSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
-              aria-label="Toggle Sidebar"
-            >
-              <Sidebar size={16} />
-            </button>
           </div>
         </div>
 
@@ -73783,21 +73791,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </>
                       )}
                     </button>
-                    <button
-                      type="submit"
-                      disabled={isComposing || !chatInput.trim()}
-                      className={`w-9 h-9 rounded-lg transition-all duration-200 flex items-center justify-center shrink-0 active:scale-95 ${
-                        isComposing || !chatInput.trim()
-                          ? 'bg-slate-100/60 dark:bg-zinc-800/40 text-slate-300 dark:text-zinc-600 border border-slate-200/40 dark:border-zinc-800 cursor-not-allowed opacity-50'
-                          : 'bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800 cursor-pointer'
-                      }`}
-                    >
-                      {isComposing ? (
-                        <Loader2 size={16} className="animate-spin text-violet-600 dark:text-violet-300" />
-                      ) : (
+                    {isComposing ? (
+                      <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleStopAiGeneration();
+                        }}
+                        className="w-9 h-9 rounded-lg transition-all duration-200 flex items-center justify-center shrink-0 active:scale-95 bg-rose-500 hover:bg-rose-600 text-white shadow-xs animate-pulse cursor-pointer"
+                        title="Stop generating"
+                      >
+                        <Square size={13} className="fill-current" />
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={!chatInput.trim()}
+                        className={`w-9 h-9 rounded-lg transition-all duration-200 flex items-center justify-center shrink-0 active:scale-95 ${
+                          !chatInput.trim()
+                            ? 'bg-slate-100/60 dark:bg-zinc-800/40 text-slate-300 dark:text-zinc-600 border border-slate-200/40 dark:border-zinc-800 cursor-not-allowed opacity-50'
+                            : 'bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800 cursor-pointer'
+                        }`}
+                        title="Send message"
+                      >
                         <Send size={15} strokeWidth={1.75} className={chatInput.trim() ? "text-violet-600 dark:text-violet-300 ml-0.5" : "text-slate-300 dark:text-zinc-600 ml-0.5"} />
-                      )}
-                    </button>
+                      </button>
+                    )}
                   </div>
 
                 </div>
