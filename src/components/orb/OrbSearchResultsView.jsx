@@ -19,36 +19,36 @@ export const WORKSPACE_LABELS = {
 
 export const FILTER_EMPTY_STATES = {
   all: {
-    title: 'No Workspace Intelligence Yet',
-    desc: 'Documents, spreadsheets, slides, meetings, and tasks will be indexed as you create or import them.'
+    title: 'No workspace items indexed yet',
+    desc: 'Create or edit documents, spreadsheets, and tasks to build your live workspace intelligence.'
   },
   compose: {
-    title: 'No Documents Yet',
-    desc: 'Compose strategic memos, briefs, and notes in your workspace to search across written content.'
+    title: 'No documents yet to link',
+    desc: 'Create or edit a document in Compose to index its text, headings, and key insights.'
   },
   sheets: {
-    title: 'No Spreadsheets Yet',
-    desc: 'Create financial models, tables, and formula sheets to search across numbers and cell calculations.'
+    title: 'No spreadsheets yet to link',
+    desc: 'Create or import a spreadsheet to index numerical data grids and calculation formulas.'
   },
   deck: {
-    title: 'No Presentation Decks Yet',
-    desc: 'Create slide decks to search across presentation topics, outlines, and charts.'
+    title: 'No presentation decks yet to link',
+    desc: 'Create presentation slides to index executive summaries, outlines, and metrics.'
   },
   room: {
-    title: 'No Meeting Transcripts Yet',
-    desc: 'Audio discussions and transcripts from Room meetings will appear here when recorded.'
+    title: 'No meeting transcripts yet',
+    desc: 'Recorded discussions and live transcripts from Room will appear here automatically.'
   },
   tasks: {
-    title: 'No Action Items Yet',
-    desc: 'Task initiatives and project deliverables will be indexed as you assign them.'
+    title: 'No tasks or action items yet',
+    desc: 'Create tasks and assign deliverables to map action item dependencies.'
   },
   schedule: {
-    title: 'No Calendar Events Yet',
-    desc: 'Scheduled meetings and milestones will be mapped here as dates are added.'
+    title: 'No calendar events yet',
+    desc: 'Add scheduled events and agenda milestones to track timeline relationships.'
   },
   browser: {
-    title: 'No Research Notes Yet',
-    desc: 'Web research and market intelligence saved from the browser will appear here.'
+    title: 'No research notes yet',
+    desc: 'Save web research and verified sources from the browser to connect external intelligence.'
   }
 };
 
@@ -104,8 +104,25 @@ export default function OrbSearchResultsView({
 
       {/* ── Results Container ── */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4 thin-scrollbar">
-        {/* Suggested Queries Chips when real results are present */}
-        {results.length > 0 && suggestedQuestions?.length > 0 && (() => {
+        {/* Suggested Strategic Inquiries Card or Empty State */}
+        {(() => {
+          if (results.length === 0 || !suggestedQuestions || suggestedQuestions.length === 0) {
+            return (
+              <div className={`p-4 rounded-2xl border text-center select-none ${
+                highContrast
+                  ? 'border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-black dark:text-white'
+                  : 'border-slate-200/80 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-900/40 text-slate-500 dark:text-zinc-400'
+              }`}>
+                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-0.5">
+                  <RegaarderAiIcon size={13} className="text-[#7C5ACF] dark:text-[#a78bfa]" />
+                  <span>No suggestions yet</span>
+                </div>
+                <p className="text-[11.5px] text-slate-400 dark:text-zinc-500">
+                  Create a document or spreadsheet to generate automated strategic inquiries.
+                </p>
+              </div>
+            );
+          }
           const primaryInquiries = suggestedQuestions.slice(0, 2);
           const secondaryInquiries = suggestedQuestions.slice(2);
 

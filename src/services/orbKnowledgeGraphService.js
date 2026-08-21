@@ -1079,33 +1079,32 @@ export function extractLiveEntitiesFromWorkspace({
     });
   }
 
-  // 3. Ingest Sheets Calculation Models & Formula Matrices
-  if (sheetsTitle?.trim() && sheetsTitle.trim() !== 'Untitled Sheet' || (sheetGrids && Object.keys(sheetGrids).length > 0)) {
-    const sheetEntityId = `live_sheet_${activeSheetId || 'active'}`;
-    const title = sheetsTitle?.trim() && sheetsTitle.trim() !== 'Untitled Sheet' ? sheetsTitle.trim() : 'Financial Model & Data Grid';
-    
-    // Parse sheet data grid for formulas and metrics
-    const formulasFound = [];
-    const cellValues = [];
-    if (sheetGrids && typeof sheetGrids === 'object') {
-      Object.entries(sheetGrids).forEach(([tabName, grid]) => {
-        if (Array.isArray(grid)) {
-          grid.slice(0, 15).forEach((row, rIdx) => {
-            if (Array.isArray(row)) {
-              row.slice(0, 10).forEach((cell, cIdx) => {
-                if (typeof cell === 'string') {
-                  if (cell.startsWith('=')) formulasFound.push({ tab: tabName, row: rIdx + 1, col: cIdx + 1, formula: cell });
-                  if (cell.trim()) cellValues.push(cell.trim());
-                } else if (typeof cell === 'number') {
-                  cellValues.push(String(cell));
-                }
-              });
-            }
-          });
-        }
-      });
-    }
+  // 3. Ingest Sheets Calculation Models & Formula Matrices (Only if real non-empty cells or custom title exist)
+  const formulasFound = [];
+  const cellValues = [];
+  if (sheetGrids && typeof sheetGrids === 'object') {
+    Object.entries(sheetGrids).forEach(([tabName, grid]) => {
+      if (Array.isArray(grid)) {
+        grid.slice(0, 15).forEach((row, rIdx) => {
+          if (Array.isArray(row)) {
+            row.slice(0, 10).forEach((cell, cIdx) => {
+              if (typeof cell === 'string') {
+                if (cell.startsWith('=')) formulasFound.push({ tab: tabName, row: rIdx + 1, col: cIdx + 1, formula: cell });
+                if (cell.trim()) cellValues.push(cell.trim());
+              } else if (typeof cell === 'number') {
+                cellValues.push(String(cell));
+              }
+            });
+          }
+        });
+      }
+    });
+  }
 
+  const hasRealSheetData = cellValues.length > 0 || (sheetsTitle?.trim() && sheetsTitle.trim() !== 'Untitled Sheet');
+  if (hasRealSheetData) {
+    const sheetEntityId = `live_sheet_${activeSheetId || 'active'}`;
+    const title = (sheetsTitle?.trim() && sheetsTitle.trim() !== 'Untitled Sheet') ? sheetsTitle.trim() : (cellValues[0] ? `Spreadsheet (${cellValues[0]})` : 'Active Spreadsheet');
     const cellText = cellValues.join(' ');
     const metrics = extractNumericMetrics(cellText);
     const keywords = Array.from(new Set(extractTokens(title + ' ' + cellText))).slice(0, 8);
@@ -1115,15 +1114,15 @@ export function extractLiveEntitiesFromWorkspace({
       type: 'sheet',
       workspace: 'sheets',
       title: title,
-      author: 'You (Model Analyst)',
-      authorRole: 'Financial Analyst',
+      author: 'You',
+      authorRole: 'Model Author',
       updatedAt: new Date().toISOString(),
-      project: 'Active Session',
-      tags: ['Sheets', 'Financial Model', 'Formulas', ...keywords],
+      project: 'Spreadsheet Workspace',
+      tags: ['Sheets', 'Spreadsheet', ...keywords],
       excerpt: formulasFound.length > 0
         ? `Spreadsheet model containing ${formulasFound.length} active formulas including ${formulasFound[0].formula}.`
-        : `Spreadsheet model containing numerical data tables and calculated metrics.`,
-      content: `Spreadsheet ${title}. Formulas: ${formulasFound.map(f => f.formula).join(', ')}. Metrics: ${metrics.join(', ')}`,
+        : `Spreadsheet model containing ${cellValues.length} active data cells.`,
+      content: `Spreadsheet ${title}. Data: ${cellText}`,
       metrics,
       metadata: {
         isLive: true,
@@ -1135,22 +1134,24 @@ export function extractLiveEntitiesFromWorkspace({
     });
   }
 
-  // 4. Ingest Presentation Decks & Slide Briefings
-  if (deckTitle?.trim() && deckTitle.trim() !== 'Untitled Deck' || (Array.isArray(deckSlidesData) && deckSlidesData.length > 0)) {
-    const deckEntityId = `live_deck_active`;
-    const title = deckTitle?.trim() && deckTitle.trim() !== 'Untitled Deck' ? deckTitle.trim() : 'Executive Presentation Deck';
-    
-    const slideSummaries = [];
-    if (Array.isArray(deckSlidesData)) {
-      deckSlidesData.forEach((s, idx) => {
-        if (s) {
-          const sTitle = s.title || s.headline || `Slide ${idx + 1}`;
-          const sContent = s.content || s.text || s.notes || '';
-          slideSummaries.push(`${sTitle}: ${sContent}`);
+  // 4. Ingest Presentation Decks (Only if customized slides exist)
+  const slideSummaries = [];
+  if (Array.isArray(deckSlidesData)) {
+    deckSlidesData.forEach((s, idx) => {
+      if (s) {
+        const sTitle = s.title || s.headline || '';
+        const sContent = s.content || s.text || s.notes || '';
+        if (sTitle.trim() || sContent.trim()) {
+          slideSummaries.push(`${sTitle || `Slide ${idx + 1}`}: ${sContent}`);
         }
-      });
-    }
+      }
+    });
+  }
 
+  const hasRealDeckData = slideSummaries.length > 0 || (deckTitle?.trim() && deckTitle.trim() !== 'Untitled Deck');
+  if (hasRealDeckData) {
+    const deckEntityId = `live_deck_active`;
+    const title = (deckTitle?.trim() && deckTitle.trim() !== 'Untitled Deck') ? deckTitle.trim() : 'Active Presentation';
     const deckText = slideSummaries.join(' ');
     const metrics = extractNumericMetrics(deckText);
     const keywords = Array.from(new Set(extractTokens(title + ' ' + deckText))).slice(0, 8);
@@ -1160,19 +1161,19 @@ export function extractLiveEntitiesFromWorkspace({
       type: 'slide',
       workspace: 'deck',
       title: title,
-      author: 'You (Presenter)',
+      author: 'You',
       authorRole: 'Presenter',
       updatedAt: new Date().toISOString(),
-      project: 'Active Session',
-      tags: ['Deck', 'Presentation', 'Executive Review', ...keywords],
+      project: 'Presentation Deck',
+      tags: ['Deck', 'Presentation', ...keywords],
       excerpt: slideSummaries.length > 0
-        ? `Presentation deck with ${slideSummaries.length} slides: ${slideSummaries[0].slice(0, 100)}...`
-        : `Presentation deck containing executive overview and visual roadmap slides.`,
+        ? `Presentation deck with ${slideSummaries.length} customized slides.`
+        : `Presentation deck: ${title}`,
       content: `Presentation deck ${title}. Slides: ${deckText}`,
       metrics,
       metadata: {
         isLive: true,
-        slideCount: deckSlidesData?.length || 1,
+        slideCount: slideSummaries.length || 1,
         metrics
       }
     });
