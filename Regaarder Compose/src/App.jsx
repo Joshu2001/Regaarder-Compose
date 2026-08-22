@@ -9017,6 +9017,8 @@ const DEFAULT_DECK_SLIDES = [
   const [selectedShapeIndex, setSelectedShapeIndex] = useState(null);
   const [whiteboardShapeVariant, setWhiteboardShapeVariant] = useState('line');
   const [whiteboardShapeMenuOpen, setWhiteboardShapeMenuOpen] = useState(false);
+  const [whiteboardShapeFillMenuFor, setWhiteboardShapeFillMenuFor] = useState(null);
+  const [whiteboardShapeStrokeMenuFor, setWhiteboardShapeStrokeMenuFor] = useState(null);
   const [isWhiteboardDrawing, setIsWhiteboardDrawing] = useState(false);
   const [whiteboardWidgets, setWhiteboardWidgets] = useState([]);
   const [whiteboardMoreMenuOpen, setWhiteboardMoreMenuOpen] = useState(false);
@@ -9046,6 +9048,7 @@ const DEFAULT_DECK_SLIDES = [
   const [whiteboardTemplatePrompt, setWhiteboardTemplatePrompt] = useState('');
   const [whiteboardTemplateSources, setWhiteboardTemplateSources] = useState([]);
   const [whiteboardCustomTemplates, setWhiteboardCustomTemplates] = useState([]);
+  const [isGeneratingAiTemplate, setIsGeneratingAiTemplate] = useState(false);
   const [whiteboardTaskPreviewOpen, setWhiteboardTaskPreviewOpen] = useState(false);
   const [whiteboardTaskPreview, setWhiteboardTaskPreview] = useState({
     projectName: 'Whiteboard Project',
@@ -9055,6 +9058,7 @@ const DEFAULT_DECK_SLIDES = [
   });
   const [isWhiteboardImmersive, setIsWhiteboardImmersive] = useState(false);
   const [isHoverNavVisible, setIsHoverNavVisible] = useState(false);
+  const [isWhiteboardTopNavHovered, setIsWhiteboardTopNavHovered] = useState(false);
   const [whiteboardCollaborationOpen, setWhiteboardCollaborationOpen] = useState(false);
   const [whiteboardShareAccess, setWhiteboardShareAccess] = useState('Editor');
   const [whiteboardCollaborators, setWhiteboardCollaborators] = useState([
@@ -9063,6 +9067,7 @@ const DEFAULT_DECK_SLIDES = [
     { id: 'collab-maya', name: 'Maya', color: '#f97316', access: 'Commenter', x: 620, y: 340, online: true },
   ]);
   const [isWhiteboardPanning, setIsWhiteboardPanning] = useState(false);
+  const [whiteboardPanOffset, setWhiteboardPanOffset] = useState({ x: 0, y: 0 });
   const callRecognitionRef = useRef(null);
   const coPilotRecognitionRef = useRef(null);
   const whiteboardCanvasRef = useRef(null);
@@ -9558,10 +9563,12 @@ const DEFAULT_DECK_SLIDES = [
       type,
       x: options.x ?? defaultX,
       y: options.y ?? defaultY,
-      width: options.width ?? (type === 'text' ? 260 : 170),
-      height: options.height ?? 120,
+      width: options.width ?? (type === 'text' ? 260 : type === 'image' ? 260 : 170),
+      height: options.height ?? (type === 'image' ? 180 : 120),
       color: options.color ?? whiteboardStickyColor,
       text: options.text ?? '',
+      imageUrl: options.imageUrl ?? '',
+      objectFit: options.objectFit ?? 'cover',
       fontFamily: options.fontFamily ?? 'Calibri',
       fontSize: options.fontSize ?? 14,
       isBold: options.isBold ?? false,
@@ -9577,7 +9584,7 @@ const DEFAULT_DECK_SLIDES = [
       title:
         type === 'sticky' ? 'New sticky note'
         : type === 'text' ? 'Text block'
-        : type === 'image' ? 'Image placeholder'
+        : type === 'image' ? 'Image asset'
         : 'Connector note',
       body:
         type === 'sticky' ? 'Capture key idea...'
@@ -9586,6 +9593,9 @@ const DEFAULT_DECK_SLIDES = [
         : 'Link to related node',
     };
     setWhiteboardWidgets((prev) => [...prev, nextWidget]);
+    setSelectedWidgetId(nextWidget.id);
+    setSelectedShapeIndex(null);
+    setWhiteboardTool('select');
     if (type === 'sticky' || type === 'text') {
       setWhiteboardEditingWidgetId(nextWidget.id);
       showToast(type === 'text' ? 'Text box ready to edit' : 'Sticky note ready to edit');
@@ -9691,53 +9701,6 @@ const DEFAULT_DECK_SLIDES = [
     setWhiteboardTemplateSources((prev) => [...prev, ...uploaded].slice(-8));
     showToast(`${uploaded.length} source file${uploaded.length > 1 ? 's' : ''} attached`);
     event.target.value = '';
-  };
-
-  const generateAiWhiteboardTemplate = () => {
-    const prompt = whiteboardTemplatePrompt.trim();
-    if (!prompt && !whiteboardTemplateSources.length) {
-      showToast('Add customer input or attach source files first');
-      return;
-    }
-    const templateKey = `ai-template-${Date.now()}`;
-    const normalizedSignal = `${prompt} ${whiteboardTemplateSources.map((source) => source.name).join(' ')}`.toLowerCase();
-    const category = /personal|habit|routine|journal|self/.test(normalizedSignal)
-      ? 'Personal'
-      : /enterprise|stakeholder|department|okr|team|company/.test(normalizedSignal)
-        ? 'Enterprise'
-        : 'Startup';
-    const labelCore = (prompt || whiteboardTemplateSources[0]?.name || 'Custom board')
-      .replace(/\.[a-z0-9]+$/i, '')
-      .slice(0, 28)
-      .trim();
-    const widgets = buildAiTemplateWidgets(prompt, whiteboardTemplateSources);
-    const nextTemplate = {
-      key: templateKey,
-      category,
-      label: `AI ${labelCore || 'Template'}`,
-      detail: `Generated from customer input${whiteboardTemplateSources.length ? ' + files' : ''}`,
-      preview: ['#bfdbfe', '#fde68a', '#bbf7d0', '#fbcfe8'],
-      widgets,
-      sourceSummary: {
-        prompt,
-        files: whiteboardTemplateSources.map((source) => source.name),
-      },
-    };
-    setWhiteboardCustomTemplates((prev) => [nextTemplate, ...prev].slice(0, 24));
-    setWhiteboardWidgets(widgets);
-    setWhiteboardStrokes([]);
-    setWhiteboardShapes([]);
-    setWhiteboardRedoStrokes([]);
-    setWhiteboardCurrentStroke('');
-    setWhiteboardCurrentShape(null);
-    setWhiteboardComments([]);
-    setWhiteboardActiveCommentId(null);
-    setSelectedWidgetId(null);
-    setSelectedShapeIndex(null);
-    setWhiteboardTemplatePrompt('');
-    setWhiteboardTemplateSources([]);
-    setWhiteboardTemplateMenuOpen(false);
-    showToast('AI template generated and saved');
   };
 
   const saveCurrentWhiteboardAsTemplate = () => {
@@ -10036,6 +9999,7 @@ const DEFAULT_DECK_SLIDES = [
       return;
     }
     if (toolKey === 'text' || toolKey === 'image' || toolKey === 'link') {
+      setWhiteboardTool('select');
       addWhiteboardWidget(toolKey);
       return;
     }
@@ -10416,20 +10380,51 @@ const DEFAULT_DECK_SLIDES = [
   };
 
   const exportWhiteboardQuick = async (mode = 'png') => {
-    // Specifically target the canvas itself, ignoring external toolbars and menus in the parent element
-    const target = whiteboardCanvasRef.current;
+    const target = document.getElementById('whiteboard-export-container') || whiteboardCanvasRef.current;
     if (!target) {
       showToast('Whiteboard is not ready for export yet');
       return;
     }
 
+    const savedSelectedWidgetId = selectedWidgetId;
+    const savedSelectedShapeIndex = selectedShapeIndex;
+    const savedActiveCommentId = whiteboardActiveCommentId;
+    const savedEditingWidgetId = whiteboardEditingWidgetId;
+
+    setSelectedWidgetId(null);
+    setSelectedShapeIndex(null);
+    setWhiteboardActiveCommentId(null);
+    setWhiteboardEditingWidgetId(null);
+    setWhiteboardHoveredObject(null);
+    setWhiteboardMoreMenuOpen(false);
+
     try {
-      showToast(mode === 'pdf' ? 'Exporting whiteboard PDF...' : 'Snapping whiteboard...');
+      showToast(mode === 'pdf' ? 'Exporting whiteboard PDF...' : 'Creating snapshot...');
+      
+      // Wait for React to apply clean state without selection boxes or toolbars
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       const canvas = await html2canvas(target, {
         scale: 2,
-        backgroundColor: '#ffffff',
+        backgroundColor: isDarkMode ? '#0d0d0f' : '#FAFAFC',
         useCORS: true,
         allowTaint: true,
+        logging: false,
+        ignoreElements: (el) => {
+          if (!el || !el.classList) return false;
+          if (
+            el.classList.contains('no-export') ||
+            el.classList.contains('whiteboard-ui-chrome') ||
+            el.classList.contains('whiteboard-widget-controls') ||
+            el.classList.contains('whiteboard-placeholder-empty')
+          ) {
+            return true;
+          }
+          if (el.getAttribute && (el.getAttribute('data-no-export') === 'true' || el.getAttribute('data-widget-interactive') === 'true')) {
+            return true;
+          }
+          return false;
+        },
       });
 
       const safeStamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -10462,6 +10457,11 @@ const DEFAULT_DECK_SLIDES = [
     } catch (error) {
       console.error('Whiteboard export error:', error);
       showToast(`Whiteboard export failed: ${error.message}`);
+    } finally {
+      setSelectedWidgetId(savedSelectedWidgetId);
+      setSelectedShapeIndex(savedSelectedShapeIndex);
+      setWhiteboardActiveCommentId(savedActiveCommentId);
+      setWhiteboardEditingWidgetId(savedEditingWidgetId);
     }
   };
 
@@ -13167,6 +13167,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                 { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: ComposeIcon },
                 { mode: 'sheets', label: 'Sheets', desc: 'Grid & Data Analysis', icon: SheetIcon },
                 { mode: 'deck', label: 'Decks', desc: 'Slide & Presentation', icon: DeckIcon },
+                { mode: 'whiteboard', label: 'Whiteboard', desc: 'Brainstorm & Visual Canvas', icon: WhiteboardIcon },
                 { mode: 'room', label: 'Room', desc: 'Team Video & Meetings', icon: RoomIcon },
                 { mode: 'browser', label: 'Research', desc: 'AI Knowledge Browser', icon: BrowserIcon }
               ].map((item) => {
@@ -13186,6 +13187,10 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                       }
                       if (item.mode !== productMode) {
                         setProductMode(item.mode);
+                        if (item.mode === 'whiteboard') {
+                          enterFullscreen();
+                          setActiveRightTab('whiteboard');
+                        }
                         showToast(`Switched to ${item.label}`);
                       }
                     }}
@@ -29016,6 +29021,9 @@ Rules:
     if (targetDoc.deckTitle !== undefined) setDeckTitle(targetDoc.deckTitle);
     if (targetDoc.deckSlidesData) setDeckSlidesData(targetDoc.deckSlidesData);
     if (targetDoc.activeDeckSlideId !== undefined) setActiveDeckSlideId(targetDoc.activeDeckSlideId);
+    if (targetDoc.whiteboardWidgets !== undefined) setWhiteboardWidgets(targetDoc.whiteboardWidgets || []);
+    if (targetDoc.whiteboardStrokes !== undefined) setWhiteboardStrokes(targetDoc.whiteboardStrokes || []);
+    if (targetDoc.whiteboardShapes !== undefined) setWhiteboardShapes(targetDoc.whiteboardShapes || []);
   };
 
   const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
@@ -29202,6 +29210,7 @@ Rules:
     setWhiteboardCurrentStroke('');
     setWhiteboardCurrentShape(null);
     setWhiteboardWidgets([]);
+    setWhiteboardPanOffset({ x: 0, y: 0 });
     setWhiteboardComments([]);
     setWhiteboardActiveCommentId(null);
     setIsWhiteboardDrawing(false);
@@ -29337,14 +29346,291 @@ Rules:
     showToast(`${selectedMeta?.label || 'Template'} loaded`);
   };
 
-  const createWhiteboardExperience = () => {
+  const generateAiWhiteboardTemplate = async () => {
+    const prompt = whiteboardTemplatePrompt.trim();
+    if (!prompt && !whiteboardTemplateSources.length) {
+      showToast('Add customer input or attach source files first');
+      return;
+    }
+    setIsGeneratingAiTemplate(true);
+    showToast(`Generating board with ${composeSelectedModel?.name || 'AI'}...`);
+
+    try {
+      const systemPrompt = `You are an expert visual workspace and agile whiteboard architect. Given the user's objective, generate a comprehensive visual whiteboard template with 4 to 8 distinct, content-rich sticky notes organized across logical categories or phases. Output strictly JSON with this schema:
+{
+  "category": "Startup" | "Enterprise" | "Personal" | "Engineering",
+  "title": "Creative Title of Board",
+  "summary": "Brief 1-sentence summary",
+  "widgets": [
+    {
+      "title": "Sticky Note Header",
+      "text": "Concrete, actionable bullet points, insights, or descriptions specifically about the user topic...",
+      "color": "#fef08a" | "#bbf7d0" | "#bfdbfe" | "#fbcfe8" | "#fed7aa" | "#ddd6fe",
+      "phase": "Column or Phase Name"
+    }
+  ]
+}`;
+
+      const userPrompt = `Generate a structured, professional whiteboard canvas for this request:\n"""${prompt}"""\nAttached context:\n${whiteboardTemplateSources.map(s => s.name).join(', ') || 'None'}`;
+
+      const res = await callGemini({
+        userPrompt,
+        systemPrompt,
+        schema: {
+          type: 'object',
+          properties: {
+            category: { type: 'string' },
+            title: { type: 'string' },
+            summary: { type: 'string' },
+            widgets: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string' },
+                  text: { type: 'string' },
+                  color: { type: 'string' },
+                  phase: { type: 'string' }
+                },
+                required: ['text']
+              }
+            }
+          },
+          required: ['widgets']
+        }
+      });
+
+      let parsedData = res?.parsed;
+      if (!parsedData && res?.text) {
+        parsedData = parseJsonSafely(res.text);
+      }
+
+      if (parsedData?.widgets && Array.isArray(parsedData.widgets) && parsedData.widgets.length > 0) {
+        const colors = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa', '#ddd6fe'];
+        const startX = 140;
+        const startY = 60;
+        const colWidth = 245;
+        const rowHeight = 210;
+        const cols = Math.min(4, Math.max(2, Math.ceil(Math.sqrt(parsedData.widgets.length))));
+
+        const widgets = parsedData.widgets.map((w, idx) => {
+          const col = idx % cols;
+          const row = Math.floor(idx / cols);
+          const header = w.title ? `${w.title}\n\n` : '';
+          const body = w.text || '';
+          return {
+            id: `ai-sticky-${Date.now()}-${idx}`,
+            type: 'sticky',
+            text: `${header}${body}`.trim(),
+            color: w.color || colors[idx % colors.length],
+            x: startX + col * colWidth,
+            y: startY + row * rowHeight,
+            w: 225,
+            h: 185,
+            rotation: 0,
+            phase: w.phase || ''
+          };
+        });
+
+        const templateKey = `ai-template-${Date.now()}`;
+        const category = parsedData.category || 'Startup';
+        const nextTemplate = {
+          key: templateKey,
+          category,
+          label: parsedData.title || `AI ${prompt.slice(0, 24)}`,
+          detail: parsedData.summary || `Generated with ${composeSelectedModel?.name || 'AI'}`,
+          preview: widgets.slice(0, 4).map(w => w.color),
+          widgets,
+          sourceSummary: { prompt, files: whiteboardTemplateSources.map(s => s.name) }
+        };
+
+        setWhiteboardCustomTemplates(prev => [nextTemplate, ...prev].slice(0, 24));
+        setWhiteboardWidgets(widgets);
+        setWhiteboardStrokes([]);
+        setWhiteboardShapes([]);
+        setWhiteboardRedoStrokes([]);
+        setWhiteboardCurrentStroke('');
+        setWhiteboardCurrentShape(null);
+        setWhiteboardComments([]);
+        setWhiteboardActiveCommentId(null);
+        setSelectedWidgetId(null);
+        setSelectedShapeIndex(null);
+        setWhiteboardTemplatePrompt('');
+        setWhiteboardTemplateSources([]);
+        setWhiteboardTemplateMenuOpen(false);
+        setIsGeneratingAiTemplate(false);
+        showToast(`AI Whiteboard generated with ${composeSelectedModel?.name || 'AI'}`);
+        return;
+      }
+    } catch (err) {
+      console.warn('AI live generation fallback to heuristic:', err);
+    } finally {
+      setIsGeneratingAiTemplate(false);
+    }
+
+    // Fallback heuristic generator if offline
+    const templateKey = `ai-template-${Date.now()}`;
+    const normalizedSignal = `${prompt} ${whiteboardTemplateSources.map((source) => source.name).join(' ')}`.toLowerCase();
+    const category = /personal|habit|routine|journal|self/.test(normalizedSignal)
+      ? 'Personal'
+      : /enterprise|stakeholder|department|okr|team|company/.test(normalizedSignal)
+        ? 'Enterprise'
+        : 'Startup';
+    const labelCore = (prompt || whiteboardTemplateSources[0]?.name || 'Custom board')
+      .replace(/\.[a-z0-9]+$/i, '')
+      .slice(0, 28)
+      .trim();
+    const widgets = buildAiTemplateWidgets(prompt, whiteboardTemplateSources);
+    const nextTemplate = {
+      key: templateKey,
+      category,
+      label: `AI ${labelCore || 'Template'}`,
+      detail: `Generated from customer input${whiteboardTemplateSources.length ? ' + files' : ''}`,
+      preview: ['#bfdbfe', '#fde68a', '#bbf7d0', '#fbcfe8'],
+      widgets,
+      sourceSummary: {
+        prompt,
+        files: whiteboardTemplateSources.map((source) => source.name),
+      },
+    };
+    setWhiteboardCustomTemplates((prev) => [nextTemplate, ...prev].slice(0, 24));
+    setWhiteboardWidgets(widgets);
+    setWhiteboardStrokes([]);
+    setWhiteboardShapes([]);
+    setWhiteboardRedoStrokes([]);
+    setWhiteboardCurrentStroke('');
+    setWhiteboardCurrentShape(null);
+    setWhiteboardComments([]);
+    setWhiteboardActiveCommentId(null);
+    setSelectedWidgetId(null);
+    setSelectedShapeIndex(null);
+    setWhiteboardTemplatePrompt('');
+    setWhiteboardTemplateSources([]);
+    setWhiteboardTemplateMenuOpen(false);
+    showToast('AI template generated and saved');
+  };
+
+  const createWhiteboardExperience = (initialTitle = '') => {
+    enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('whiteboard');
     setLeftSidebarOpen(false);
     setRightSidebarOpen(false);
     setActiveRightTab('whiteboard');
-    resetWhiteboardCanvas({ toastMessage: 'New whiteboard created' });
+    
+    const count = documents.filter(d => getDocMode(d) === 'whiteboard').length;
+    const title = initialTitle || (count === 0 ? 'Untitled Whiteboard' : `Whiteboard ${count + 1}`);
+    const newDoc = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      mode: 'whiteboard',
+      title: title,
+      subtitle: '',
+      whiteboardStrokes: [],
+      whiteboardShapes: [],
+      whiteboardWidgets: [],
+      whiteboardConnectors: [],
+      isBlank: true,
+      pinned: false,
+    };
+    setDocuments((prev) => [...prev, newDoc]);
+    setActiveDocId(newDoc.id);
+    setDocTitle(title);
+    resetWhiteboardCanvas({ toastMessage: `${title} created` });
+    return newDoc.id;
   };
+
+  // Expose Whiteboard actions to AI Agents and global window API
+  useEffect(() => {
+    window.whiteboardAPI = {
+      getCanvasObjects: () => ({
+        widgets: whiteboardWidgets,
+        strokes: whiteboardStrokes,
+        shapes: whiteboardShapes,
+      }),
+      addStickyNote: (text, color = '#fef08a', x = 300, y = 200) => {
+        const id = `sticky-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        setWhiteboardWidgets(prev => [...prev, {
+          id,
+          type: 'sticky',
+          text: text || 'New note',
+          color,
+          x,
+          y,
+          w: 200,
+          h: 160,
+          rotation: 0,
+        }]);
+        showToast('Sticky note added');
+        return id;
+      },
+      addTextBlock: (text, x = 300, y = 200, fontSize = 16) => {
+        const id = `text-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        setWhiteboardWidgets(prev => [...prev, {
+          id,
+          type: 'text',
+          text: text || 'Text block',
+          x,
+          y,
+          fontSize,
+        }]);
+        return id;
+      },
+      addShape: (shapeType = 'rectangle', x = 300, y = 200, w = 180, h = 120, color = '#8b5cf6') => {
+        const shape = {
+          type: shapeType,
+          x,
+          y,
+          width: w,
+          height: h,
+          stroke: color,
+          fill: 'transparent',
+          strokeWidth: 2,
+        };
+        setWhiteboardShapes(prev => [...prev, shape]);
+        return shape;
+      },
+      addConnector: (fromId, toId, label = '') => {
+        const id = `connector-${Date.now()}`;
+        setWhiteboardWidgets(prev => [...prev, {
+          id,
+          type: 'connector',
+          fromId,
+          toId,
+          label,
+        }]);
+        return id;
+      },
+      applyTemplate: (templateKey) => {
+        applyWhiteboardTemplate(templateKey);
+      },
+      generateAiTemplate: (prompt) => {
+        setWhiteboardTemplatePrompt(prompt);
+        generateAiWhiteboardTemplate();
+      },
+      clearCanvas: () => {
+        resetWhiteboardCanvas();
+      },
+      convertToTasks: () => {
+        openWhiteboardTaskPreview();
+      }
+    };
+    return () => {
+      delete window.whiteboardAPI;
+    };
+  }, [whiteboardWidgets, whiteboardStrokes, whiteboardShapes, activeDocId]);
+
+  // Keep active Whiteboard document state synced
+  useEffect(() => {
+    if (productMode === 'whiteboard' && activeDocId) {
+      setDocuments(prev => prev.map(d => d.id === activeDocId ? {
+        ...d,
+        whiteboardWidgets,
+        whiteboardStrokes,
+        whiteboardShapes,
+      } : d));
+    }
+  }, [whiteboardWidgets, whiteboardStrokes, whiteboardShapes, productMode, activeDocId]);
+
 
   const createItemForCurrentContext = () => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
@@ -29441,7 +29727,8 @@ Rules:
     }
 
     if (target === 'whiteboard') {
-      setActivePrimaryNav('home'); // or whiteboards
+      enterFullscreen();
+      setActivePrimaryNav('home');
       createWhiteboardExperience();
       return;
     }
@@ -31707,6 +31994,8 @@ Respond with a JSON array of slide objects matching the schema.`;
   }, [deckSlidesData, activeDocId]);
 
     const isSheetsMode = productMode === 'sheets';
+    const isWhiteboardWorkspace = productMode === 'whiteboard' || activeRightTab === 'whiteboard';
+    const isWhiteboardTopNavRevealed = !isWhiteboardWorkspace || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || docMenuPos !== null;
   const updateDeckSlideField = (slideId, field, value) => {
     markUserHasEdited();
     setDeckSlidesData((prev) => prev.map((slide) => {
@@ -42419,7 +42708,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
                 <button
                   type="button"
                   onClick={createComposeExperience}
@@ -42454,6 +42743,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                   <div className="text-sm font-semibold text-gray-900 mb-1">Sheets</div>
                   <p className="text-xs text-gray-600">Our spreadsheet workspace for AI-native analysis, modeling, and planning.</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={createWhiteboardExperience}
+                  className="group text-left rounded-xl border border-amber-200 bg-amber-50/50 p-4 hover:bg-amber-50 transition-colors"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-amber-500 text-white flex items-center justify-center mb-3">
+                    <WhiteboardIcon size={18} />
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 mb-1">Whiteboard</div>
+                  <p className="text-xs text-gray-600">Our free-form spatial canvas for brainstorming, diagrams, and visual thinking.</p>
                 </button>
 
                 <button
@@ -56369,8 +56670,45 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
         
+        {/* Top Header & Document Tab Strip Auto-Hide Container for Whiteboard */}
+        {isWhiteboardWorkspace && (
+          <>
+            {/* Thin hover zone at the very top */}
+            <div 
+              onMouseEnter={() => setIsWhiteboardTopNavHovered(true)} 
+              className="absolute top-0 left-0 right-0 h-3 z-[360] cursor-default pointer-events-auto" 
+            />
+
+            {/* Subtle floating title indicator when chrome recedes */}
+            {!isWhiteboardTopNavRevealed && (
+              <div
+                onMouseEnter={() => setIsWhiteboardTopNavHovered(true)}
+                className="absolute top-3 left-1/2 -translate-x-1/2 z-[340] flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/60 dark:border-zinc-800/60 text-slate-700 dark:text-zinc-300 shadow-2xs hover:shadow-xs hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 cursor-pointer select-none group/pill animate-in fade-in slide-in-from-top-1"
+                title="Hover to reveal workspace tabs, export, and controls"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                <span className="text-[11.5px] font-semibold tracking-tight">{docTitle || 'Untitled Whiteboard'}</span>
+                <ChevronDown size={11} className="text-slate-400 dark:text-zinc-500 group-hover/pill:translate-y-0.5 transition-transform" />
+              </div>
+            )}
+          </>
+        )}
+
+        <div
+          onMouseEnter={() => { if (isWhiteboardWorkspace) setIsWhiteboardTopNavHovered(true); }}
+          onMouseLeave={() => { if (isWhiteboardWorkspace) setIsWhiteboardTopNavHovered(false); }}
+          className={`flex flex-col select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            isWhiteboardWorkspace
+              ? `absolute top-0 left-0 right-0 z-[370] shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] ${
+                  isWhiteboardTopNavRevealed 
+                    ? 'translate-y-0 opacity-100 pointer-events-auto' 
+                    : '-translate-y-full opacity-0 pointer-events-none'
+                }`
+              : 'relative z-[350]'
+          }`}
+        >
         {/* Top Header */}
-        <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/70 dark:bg-[#111111] backdrop-blur-xl shrink-0 select-none group/header relative z-[350] transition-all duration-200">
+        <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/85 dark:bg-[#111111]/85 backdrop-blur-2xl shrink-0 select-none group/header relative z-[350] transition-all duration-200">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -56494,25 +56832,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <Save size={15} strokeWidth={1.5} />
               </button>
 
-              <div className="relative" ref={docSearchPanelRef}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeTransientMenus();
-                    setDocSearchPanelOpen((prev) => !prev);
-                    setDocSearchAutoPlay(false);
-                  }}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${docSearchPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400 font-semibold shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
-                  title="Find & Replace (Ctrl+F)"
-                >
-                  <Search size={15} strokeWidth={1.5} />
-                </button>
-                {docSearchPanelOpen && renderDocSearchPanel()}
-              </div>
+              {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && (
+                <div className="relative" ref={docSearchPanelRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeTransientMenus();
+                      setDocSearchPanelOpen((prev) => !prev);
+                      setDocSearchAutoPlay(false);
+                    }}
+                    className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${docSearchPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400 font-semibold shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
+                    title="Find & Replace (Ctrl+F)"
+                  >
+                    <Search size={15} strokeWidth={1.5} />
+                  </button>
+                  {docSearchPanelOpen && renderDocSearchPanel()}
+                </div>
+              )}
 
             </div>
             {/* Export Dropdown Button in Top Header */}
-            {productMode === 'compose' && (
+            {(productMode === 'compose' || productMode === 'whiteboard') && (
               <div className="relative export-menu-container">
                 <button
                   onClick={() => {
@@ -56520,7 +56860,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     setComposeExportMenuOpen(!composeExportMenuOpen);
                   }}
                   className={`text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] border cursor-pointer select-none ${composeExportMenuOpen ? 'border-violet-600 dark:border-violet-500 bg-violet-600 text-white shadow-xs' : 'text-slate-700 dark:text-white hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-violet-700 border-slate-200/80 dark:border-violet-500/80 bg-white dark:bg-violet-600 shadow-2xs'}`}
-                  title="Export Document"
+                  title={productMode === 'whiteboard' ? 'Export Whiteboard' : 'Export Document'}
                 >
                   <Download size={13} strokeWidth={1.5} className="text-slate-500 dark:text-white" />
                   <span>Export</span>
@@ -56532,38 +56872,102 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       className="fixed inset-0 z-[360] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
                       onClick={() => setComposeExportMenuOpen(false)}
                     />
-                    <div className="absolute top-11 right-0 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
-                      <div className="flex flex-col gap-2">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Export as File</span>
-                        {[
-                          { format: 'Compose', label: 'Compose Document', desc: '.compose' },
-                          { format: 'Word', label: 'Microsoft Word', desc: '.docx' },
-                          { format: 'Docs', label: 'Google Docs Cloud', desc: 'Cloud Format' },
-                          { format: 'PDF', label: 'PDF Document', desc: '.pdf' },
-                          { format: 'Markdown', label: 'Markdown File', desc: '.md' }
-                        ].map(f => (
-                          <button 
-                            key={f.format}
-                            disabled={isExporting}
-                            onClick={async () => {
-                              setIsExporting(true);
-                              try {
-                                await exportCompose(f.format, blankBodyRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
-                                showToast('Exported as ' + f.format);
-                              } catch (e) {
-                                showToast('Export failed: ' + e.message);
-                              } finally {
-                                setIsExporting(false);
-                                setComposeExportMenuOpen(false);
-                              }
-                            }}
-                            className="w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                          >
-                            <span>{f.label}</span>
-                            <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
-                          </button>
-                        ))}
-                      </div>
+                    <div className="absolute top-11 right-0 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-3.5 font-sans animate-in fade-in zoom-in-95 duration-150">
+                      {productMode === 'whiteboard' ? (
+                        <>
+                          <div className="flex flex-col gap-2">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Export as File</span>
+                            {[
+                              { format: 'Whiteboard', label: 'Whiteboard File', desc: '.whiteboard' },
+                              { format: 'PNG', label: 'PNG Image', desc: '.png' },
+                              { format: 'SVG', label: 'SVG Vector', desc: '.svg' },
+                              { format: 'PDF', label: 'PDF Document', desc: '.pdf' }
+                            ].map(f => (
+                              <button 
+                                key={f.format}
+                                disabled={isExporting}
+                                onClick={async () => {
+                                  setIsExporting(true);
+                                  try {
+                                    await exportWhiteboard(f.format, [...whiteboardShapes, ...whiteboardStrokes, ...whiteboardWidgets], whiteboardCanvasRef.current, 'Whiteboard_Export');
+                                    showToast('Exported as ' + f.format);
+                                  } catch (e) {
+                                    showToast('Export failed: ' + e.message);
+                                  } finally {
+                                    setIsExporting(false);
+                                    setComposeExportMenuOpen(false);
+                                  }
+                                }}
+                                className="w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                              >
+                                <span>{f.label}</span>
+                                <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full"></div>
+                          <div className="flex flex-col gap-2">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Convert to</span>
+                            {[
+                              { target: 'Docs', mode: 'compose', icon: ComposeIcon, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
+                              { target: 'Sheets', mode: 'sheets', icon: SheetIcon, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40' },
+                              { target: 'Deck', mode: 'deck', icon: DeckIcon, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' }
+                            ].map(t => (
+                              <button 
+                                key={t.target}
+                                disabled={isExporting}
+                                onClick={() => {
+                                  setIsExporting(true);
+                                  setTimeout(() => { 
+                                    setIsExporting(false); 
+                                    setComposeExportMenuOpen(false); 
+                                    setProductMode(t.mode);
+                                    showToast('Converted to ' + t.target); 
+                                  }, 600);
+                                }}
+                                className="w-full flex items-center gap-3 p-1.5 px-2.5 text-xs rounded-xl hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 transition-colors font-semibold text-slate-700 dark:text-zinc-200"
+                              >
+                                <div className={`p-1.5 rounded-lg ${t.color}`}>
+                                  <t.icon size={14} />
+                                </div>
+                                <span>{t.target}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Export as File</span>
+                          {[
+                            { format: 'Compose', label: 'Compose Document', desc: '.compose' },
+                            { format: 'Word', label: 'Microsoft Word', desc: '.docx' },
+                            { format: 'Docs', label: 'Google Docs Cloud', desc: 'Cloud Format' },
+                            { format: 'PDF', label: 'PDF Document', desc: '.pdf' },
+                            { format: 'Markdown', label: 'Markdown File', desc: '.md' }
+                          ].map(f => (
+                            <button 
+                              key={f.format}
+                              disabled={isExporting}
+                              onClick={async () => {
+                                setIsExporting(true);
+                                try {
+                                  await exportCompose(f.format, blankBodyRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
+                                  showToast('Exported as ' + f.format);
+                                } catch (e) {
+                                  showToast('Export failed: ' + e.message);
+                                } finally {
+                                  setIsExporting(false);
+                                  setComposeExportMenuOpen(false);
+                                }
+                              }}
+                              className="w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                            >
+                              <span>{f.label}</span>
+                              <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -57669,9 +58073,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
           >
             {orderedDocuments.map((doc, docIndex) => {
               const rawTitle = doc.title?.trim();
-              const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
-                ? UNTITLED_WHITEBOARD_LABEL
-                : (rawTitle ? rawTitle : `Tab ${docIndex + 1}`);
+              const isWbDoc = getDocMode(doc) === 'whiteboard' || productMode === 'whiteboard';
+              const label = rawTitle || (isWbDoc ? (docIndex === 0 ? 'Untitled Whiteboard' : `Whiteboard ${docIndex + 1}`) : `Tab ${docIndex + 1}`);
               const isActive = activeDocId === doc.id;
 
               return (
@@ -57844,6 +58247,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           >
             <ChevronRight size={16} />
           </button>
+        </div>
         </div>
 
         {/* Full-width Sub-Header Toolbar (Matches Sheets Toolbar system) */}
@@ -59333,11 +59737,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setRoomPanelMode('expanded');
                       setIsRoomRightSidebarOpen(true);
                     }}
-                    className="flex items-center bg-white/95 backdrop-blur border border-slate-200/80 px-3.5 py-2.5 rounded-[22px] w-full shadow-[0_12px_32px_rgba(0,0,0,0.06)] hover:border-violet-300 transition-all pointer-events-auto cursor-pointer"
+                    className="flex items-center bg-slate-900/90 dark:bg-zinc-900/90 text-white backdrop-blur border border-slate-700/80 dark:border-zinc-700/80 px-3.5 py-2.5 rounded-[22px] w-full shadow-[0_12px_32px_rgba(0,0,0,0.18)] hover:border-violet-400 transition-all pointer-events-auto cursor-pointer"
                   >
-                    <Sparkles size={14} className="text-violet-650 mr-2 shrink-0 animate-pulse" />
-                    <span className="text-xs text-slate-450 text-left flex-1 font-medium select-none">Ask Room AI...</span>
-                    <div className="w-5 h-5 rounded-full bg-violet-50 flex items-center justify-center text-[#7C3AED]">
+                    <RegaarderAiIcon size={15} className="text-violet-400 mr-2 shrink-0 animate-pulse" />
+                    <span className="text-xs text-slate-300 dark:text-zinc-300 text-left flex-1 font-medium select-none">Ask Room AI...</span>
+                    <div className="w-5 h-5 rounded-full bg-violet-950/80 flex items-center justify-center text-violet-300 border border-violet-700/40">
                       <ArrowUpRight size={12} />
                     </div>
                   </div>
@@ -59384,52 +59788,29 @@ if (productMode === 'deck' || productMode === 'sheets') {
             className="flex-1 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 pt-14 md:pt-14 transition-opacity duration-300 opacity-100"
           >
           {(productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
-            <div className={`absolute inset-0 ${isWhiteboardImmersive ? 'z-[340] p-0 bg-white' : isWhiteboardFloatingUiOpen ? 'z-[320] p-6 md:p-8 bg-[#F7F7F9]' : 'z-30 p-6 md:p-8 bg-[#F7F7F9]'}`}>
-              <div className={`h-full w-full bg-white overflow-hidden flex flex-col ${isWhiteboardImmersive ? 'rounded-none border-0 shadow-none' : 'rounded-[24px] border border-violet-100/50 shadow-[0_20px_50px_-30px_rgba(124,58,237,0.15)]'}`}>
-                <div className="h-14 border-b border-gray-100 px-5 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-lg bg-violet-50 text-violet-700 flex items-center justify-center">
-                      <PenTool size={15} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">Whiteboard</p>
-                      <p className="text-[11px] text-gray-500">Brainstorm & map ideas</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsDarkMode((prev) => !prev)}
-                      className="h-8 w-8 rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors"
-                      title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                      aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                    >
-                      {isDarkMode ? <Sun size={15} strokeWidth={1.5} /> : <Moon size={15} strokeWidth={1.5} />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsWhiteboardImmersive((prev) => !prev)}
-                      className={`h-8 w-8 rounded-lg border flex items-center justify-center ${isWhiteboardImmersive ? 'border-violet-200 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                      title={isWhiteboardImmersive ? 'Collapse whiteboard' : 'Expand whiteboard'}
-                    >
-                      {isWhiteboardImmersive ? <Minimize2 size={14} /> : <Maximize size={14} />}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setWhiteboardTool('sticky');
-                        setWhiteboardStickyPaletteOpen(true);
-                        showToast('Sticky note tool active');
-                      }}
-                      className="px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1.5"
-                    >
-                      <StickyNote size={13} />
-                      Sticky notes
-                    </button>
-                    <button onClick={openWhiteboardTaskPreview} className="px-2.5 py-1.5 text-xs rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100/80 border border-violet-200/60 font-semibold transition-colors shadow-sm">Convert to Tasks</button>
-                  </div>
-                </div>
-                <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#ececf6_1px,transparent_0)] bg-[size:24px_24px]" style={{ zoom: whiteboardZoomScale }}>
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.06)] p-2 flex flex-col gap-1.5">
+            <div className="absolute inset-0 z-30 bg-[#FAFAFC] dark:bg-[#0d0d0f] overflow-hidden flex flex-col">
+              <div className="h-full w-full bg-[#FAFAFC] dark:bg-[#0d0d0f] overflow-hidden flex flex-col relative">
+                <div 
+                  id="whiteboard-export-container"
+                  className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#d4d4e8_1px,transparent_0)] dark:bg-[radial-gradient(circle_at_1px_1px,#2a2a35_1px,transparent_0)] bg-[size:24px_24px] overflow-hidden select-none" 
+                  style={{ 
+                    zoom: whiteboardZoomScale,
+                    backgroundPosition: `${whiteboardPanOffset.x}px ${whiteboardPanOffset.y}px`
+                  }}
+                  onWheel={(event) => {
+                    if (event.ctrlKey || event.metaKey) {
+                      event.preventDefault();
+                      const zoomDelta = event.deltaY < 0 ? 5 : -5;
+                      setWhiteboardZoomLevel(prev => Math.min(250, Math.max(25, prev + zoomDelta)));
+                    } else {
+                      setWhiteboardPanOffset(prev => ({
+                        x: prev.x - event.deltaX,
+                        y: prev.y - event.deltaY
+                      }));
+                    }
+                  }}
+                >
+                  <div className="no-export whiteboard-ui-chrome absolute left-5 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-2 flex flex-col gap-1.5 select-none">
                     {[
                       { key: 'select', label: 'Select', icon: MousePointer2 },
                       { key: 'hand', label: 'Hand (pan)', icon: Hand },
@@ -59439,6 +59820,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       { key: 'link', label: 'Connector', icon: LinkIcon },
                       { key: 'sticky', label: 'Sticky note', icon: StickyNote },
                       { key: 'comment', label: 'Comment', icon: MessageCircle },
+                      { key: 'eraser', label: 'Eraser', icon: Eraser },
+                      { key: 'image', label: 'Image', icon: ImageIcon },
                       { key: 'more', label: 'More', icon: MoreHorizontal },
                     ].map((tool) => {
                       const ToolIcon = tool.key === 'pen' ? activeWhiteboardPen.icon : tool.icon;
@@ -59464,15 +59847,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               showToast('Pen tool active');
                               return;
                             }
-                            activateWhiteboardTool(tool.key);
                             if (tool.key === 'eraser') {
-                              setWhiteboardEraserMenuOpen(true);
+                              activateWhiteboardTool('eraser');
+                              setWhiteboardEraserMenuOpen((prev) => !prev);
+                              return;
                             }
+                            if (tool.key === 'shapes') {
+                              if (whiteboardTool === 'shapes' && whiteboardShapeMenuOpen) {
+                                setWhiteboardShapeMenuOpen(false);
+                                setWhiteboardTool('select');
+                              } else {
+                                activateWhiteboardTool('shapes');
+                                setWhiteboardShapeMenuOpen(true);
+                              }
+                              return;
+                            }
+                            if (tool.key === 'image') {
+                              setWhiteboardTool('select');
+                              activateWhiteboardTool('image');
+                              return;
+                            }
+                            if (tool.key === 'text') {
+                              setWhiteboardTool('select');
+                              activateWhiteboardTool('text');
+                              return;
+                            }
+                            activateWhiteboardTool(tool.key);
                           }}
-                          className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === tool.key ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                          className={`h-9 w-9 rounded-xl flex items-center justify-center transition-colors ${whiteboardTool === tool.key ? 'border border-violet-200 dark:border-violet-700/60 text-violet-700 dark:text-violet-300 bg-violet-50/60 dark:bg-violet-950/40 shadow-xs' : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-800 dark:hover:text-zinc-100'}`}
                           title={tool.label}
                         >
-                          <ToolIcon size={15} style={toolIconStyle} />
+                          <ToolIcon size={16} strokeWidth={1.6} style={toolIconStyle} />
                         </button>
                       );
                     })}
@@ -59694,7 +60099,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   )}
                   {whiteboardMoreMenuOpen && (
-                    <div className="absolute left-20 top-[72%] -translate-y-1/2 z-20 rounded-xl border border-gray-200 bg-white shadow-lg p-1.5 w-40">
+                    <div 
+                      className="no-export whiteboard-ui-chrome absolute left-20 bottom-12 z-30 w-56 rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.5)] p-1.5 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150 select-none"
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
                       <button
                         type="button"
                         onClick={() => {
@@ -59704,28 +60112,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           setWhiteboardCurrentStroke('');
                           setWhiteboardCurrentShape(null);
                           setWhiteboardWidgets([]);
+                          setWhiteboardComments([]);
+                          setSelectedWidgetId(null);
                           setSelectedShapeIndex(null);
+                          setWhiteboardActiveCommentId(null);
+                          setWhiteboardEditingWidgetId(null);
                           setWhiteboardStickyDragStart(null);
                           setWhiteboardStickyPreview(null);
-                          setWhiteboardActiveCommentId(null);
+                          setWhiteboardLineAnchor(null);
+                          setWhiteboardPanOffset({ x: 0, y: 0 });
+                          setWhiteboardZoomLevel(100);
                           setWhiteboardMoreMenuOpen(false);
-                          showToast('Whiteboard reset');
+                          showToast('Whiteboard canvas cleared');
                         }}
-                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50 inline-flex items-center gap-1.5"
+                        className="w-full h-9 px-3 rounded-xl flex items-center gap-2.5 text-[12px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                       >
-                        <RefreshCcw size={12} />
-                        Reset whiteboard
+                        <RefreshCcw size={14} strokeWidth={1.8} />
+                        <span>Reset whiteboard</span>
                       </button>
+
+                      <div className="h-px bg-slate-100 dark:bg-zinc-800 my-0.5" />
+
                       <button
                         type="button"
                         onClick={() => {
                           exportWhiteboardQuick('png');
                           setWhiteboardMoreMenuOpen(false);
                         }}
-                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50 inline-flex items-center gap-1.5"
+                        className="w-full h-9 px-3 rounded-xl flex items-center gap-2.5 text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
                       >
-                        <ImageIcon size={12} />
-                        Quick snapshot (PNG)
+                        <ImageIcon size={14} strokeWidth={1.8} />
+                        <span>Quick snapshot (PNG)</span>
                       </button>
                       <button
                         type="button"
@@ -59733,22 +60150,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           exportWhiteboardQuick('pdf');
                           setWhiteboardMoreMenuOpen(false);
                         }}
-                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50 inline-flex items-center gap-1.5"
+                        className="w-full h-9 px-3 rounded-xl flex items-center gap-2.5 text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
                       >
-                        <File size={12} />
-                        Quick export (single PDF)
+                        <File size={14} strokeWidth={1.8} />
+                        <span>Quick export (single PDF)</span>
                       </button>
+
+                      <div className="h-px bg-slate-100 dark:bg-zinc-800 my-0.5" />
+
                       <button
                         type="button"
                         onClick={() => {
+                          setRightSidebarOpen(true);
                           setActiveRightTab('assistant');
                           setWhiteboardMoreMenuOpen(false);
                           showToast('Assistant opened');
                         }}
-                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50 inline-flex items-center gap-1.5"
+                        className="w-full h-9 px-3 rounded-xl flex items-center gap-2.5 text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
                       >
-                        <Sparkles size={12} />
-                        Open assistant
+                        <span className="w-3.5 h-3.5 rounded-full border-[1.8px] border-violet-500 dark:border-violet-400 flex items-center justify-center shrink-0" />
+                        <span>Open assistant</span>
                       </button>
                       <button
                         type="button"
@@ -59756,25 +60177,79 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           openWhiteboardTaskPreview();
                           setWhiteboardMoreMenuOpen(false);
                         }}
-                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50 inline-flex items-center gap-1.5"
+                        className="w-full h-9 px-3 rounded-xl flex items-center gap-2.5 text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
                       >
-                        <CheckSquare size={12} />
-                        Convert to tasks
+                        <CheckSquare size={14} strokeWidth={1.8} />
+                        <span>Convert to tasks</span>
                       </button>
                     </div>
                   )}
+                  {/* Panned World Canvas Layer */}
+                  <div 
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      transform: `translate(${whiteboardPanOffset.x}px, ${whiteboardPanOffset.y}px)`
+                    }}
+                  >
                   <div
                     ref={whiteboardCanvasRef}
-                    className="absolute inset-0"
+                    className="absolute inset-0 pointer-events-auto"
                     style={{
                       cursor: getWhiteboardCursor(),
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'copy';
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files?.[0];
+                      if (file && file.type.startsWith('image/')) {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const dropX = e.clientX - rect.left - whiteboardPanOffset.x - 130;
+                        const dropY = e.clientY - rect.top - whiteboardPanOffset.y - 90;
+                        const reader = new FileReader();
+                        reader.onload = (re) => {
+                          const img = new window.Image();
+                          img.onload = () => {
+                            const maxW = 340;
+                            const aspect = img.width / (img.height || 1);
+                            const nextW = Math.min(maxW, Math.max(180, img.width));
+                            const nextH = Math.round(nextW / aspect);
+                            addWhiteboardWidget('image', {
+                              x: Math.max(20, dropX),
+                              y: Math.max(20, dropY),
+                              width: nextW,
+                              height: nextH,
+                              imageUrl: re.target?.result,
+                            });
+                            showToast('Image added to whiteboard');
+                          };
+                          img.src = re.target?.result;
+                        };
+                        reader.readAsDataURL(file);
+                      }
                     }}
                     onPointerDown={(event) => {
                       setWhiteboardReactionMenuOpen(false);
                       setWhiteboardReactionTarget(null);
                       const rect = event.currentTarget.getBoundingClientRect();
-                      const startX = event.clientX - rect.left;
-                      const startY = event.clientY - rect.top;
+                      const rawX = event.clientX - rect.left;
+                      const rawY = event.clientY - rect.top;
+                      const startX = rawX - whiteboardPanOffset.x;
+                      const startY = rawY - whiteboardPanOffset.y;
+
+                      if (whiteboardTool === 'hand' || event.button === 1) {
+                        setIsWhiteboardPanning(true);
+                        panDragRef.current = {
+                          startX: event.clientX,
+                          startY: event.clientY,
+                          initialPanX: whiteboardPanOffset.x,
+                          initialPanY: whiteboardPanOffset.y
+                        };
+                        event.currentTarget.setPointerCapture(event.pointerId);
+                        return;
+                      }
                       if (whiteboardTool === 'sticky') {
                         setWhiteboardStickyDragStart({ x: startX, y: startY });
                         setWhiteboardStickyPreview({ x: startX, y: startY, width: 0, height: 0 });
@@ -59783,12 +60258,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       if (whiteboardTool === 'select') {
                         setSelectedWidgetId(null);
                         setSelectedShapeIndex(null);
-                        return;
-                      }
-                      if (whiteboardTool === 'hand') {
-                        setIsWhiteboardPanning(true);
-                        panDragRef.current = { startX, startY };
-                        event.currentTarget.setPointerCapture(event.pointerId);
                         return;
                       }
                       if (whiteboardTool === 'comment') {
@@ -59804,6 +60273,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         };
                         setWhiteboardComments((prev) => [...prev, newComment]);
                         setWhiteboardActiveCommentId(newComment.id);
+                        setWhiteboardTool('select');
                         showToast('Comment placed');
                         return;
                       }
@@ -59839,9 +60309,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setWhiteboardCurrentStroke(`M ${startX} ${startY}`);
                     }}
                     onPointerMove={(event) => {
+                      if (isWhiteboardPanning && panDragRef.current) {
+                        const dx = event.clientX - panDragRef.current.startX;
+                        const dy = event.clientY - panDragRef.current.startY;
+                        setWhiteboardPanOffset({
+                          x: panDragRef.current.initialPanX + dx,
+                          y: panDragRef.current.initialPanY + dy
+                        });
+                        return;
+                      }
                       const rect = event.currentTarget.getBoundingClientRect();
-                      const x = event.clientX - rect.left;
-                      const y = event.clientY - rect.top;
+                      const rawX = event.clientX - rect.left;
+                      const rawY = event.clientY - rect.top;
+                      const x = rawX - whiteboardPanOffset.x;
+                      const y = rawY - whiteboardPanOffset.y;
                       setWhiteboardStickyCursorPosition({ x, y });
                       if (whiteboardTool === 'sticky' && whiteboardStickyDragStart) {
                         const deltaX = x - whiteboardStickyDragStart.x;
@@ -59882,14 +60363,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setWhiteboardCurrentStroke((prev) => `${prev} L ${x} ${y}`);
                     }}
                     onPointerUp={(event) => {
-                      const rect = event.currentTarget.getBoundingClientRect();
-                      const x = event.clientX - rect.left;
-                      const y = event.clientY - rect.top;
-                      if (whiteboardTool === 'hand') {
+                      if (isWhiteboardPanning) {
                         setIsWhiteboardPanning(false);
                         panDragRef.current = null;
                         return;
                       }
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      const rawX = event.clientX - rect.left;
+                      const rawY = event.clientY - rect.top;
+                      const x = rawX - whiteboardPanOffset.x;
+                      const y = rawY - whiteboardPanOffset.y;
                       if (whiteboardTool === 'eraser') {
                         eraserActiveRef.current = false;
                         eraserLastPointRef.current = null;
@@ -59911,14 +60394,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         }
                         setWhiteboardStickyDragStart(null);
                         setWhiteboardStickyPreview(null);
+                        setWhiteboardTool('select');
+                        setWhiteboardStickyPaletteOpen(false);
                         return;
                       }
                       if (whiteboardTool === 'shapes' && isWhiteboardDrawing && whiteboardCurrentShape) {
-                        setWhiteboardShapes((prev) => [...prev, whiteboardCurrentShape]);
+                        const isTinyClick = (whiteboardCurrentShape.width < 12 && whiteboardCurrentShape.height < 12) &&
+                          (whiteboardCurrentShape.type !== 'line' && whiteboardCurrentShape.type !== 'arrow');
+                        
+                        const finalShape = isTinyClick ? {
+                          ...whiteboardCurrentShape,
+                          x: whiteboardCurrentShape.x - 60,
+                          y: whiteboardCurrentShape.y - 60,
+                          width: 120,
+                          height: 120,
+                        } : whiteboardCurrentShape;
+
+                        setWhiteboardShapes((prev) => {
+                          const nextIdx = prev.length;
+                          setTimeout(() => {
+                            setSelectedShapeIndex(nextIdx);
+                            setSelectedWidgetId(null);
+                          }, 0);
+                          return [...prev, finalShape];
+                        });
                         setWhiteboardCurrentShape(null);
                         setIsWhiteboardDrawing(false);
                         setWhiteboardLineAnchor(null);
                         setWhiteboardRedoStrokes([]);
+                        setWhiteboardTool('select');
+                        setWhiteboardShapeMenuOpen(false);
+                        showToast('Shape placed');
                         return;
                       }
                       if (!isWhiteboardDrawing || !whiteboardCurrentStroke) return;
@@ -59938,7 +60444,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setWhiteboardLineAnchor(null);
                     }}
                     onPointerLeave={() => {
-                      if (whiteboardTool === 'hand') {
+                      if (isWhiteboardPanning) {
                         setIsWhiteboardPanning(false);
                         panDragRef.current = null;
                         return;
@@ -59964,11 +60470,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }
                       if (whiteboardTool === 'shapes') {
                         if (whiteboardCurrentShape) {
-                          setWhiteboardShapes((prev) => [...prev, whiteboardCurrentShape]);
+                          const finalShape = whiteboardCurrentShape;
+                          setWhiteboardShapes((prev) => {
+                            const nextIdx = prev.length;
+                            setTimeout(() => {
+                              setSelectedShapeIndex(nextIdx);
+                              setSelectedWidgetId(null);
+                            }, 0);
+                            return [...prev, finalShape];
+                          });
                         }
                         setWhiteboardCurrentShape(null);
                         setIsWhiteboardDrawing(false);
                         setWhiteboardLineAnchor(null);
+                        setWhiteboardTool('select');
+                        setWhiteboardShapeMenuOpen(false);
                         return;
                       }
                       if (!isWhiteboardDrawing || !whiteboardCurrentStroke) return;
@@ -60022,17 +60538,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       { key: 'bottom', x: (widget.width || 170) / 2, y: (widget.height || 120) + 8, cursor: 'ns-resize', icon: '嚙踝蕭', kind: 'resize' },
                       { key: 'left', x: -8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: '嚙踝蕭', kind: 'resize' },
                     ];
+                    const isEmptyImagePlaceholder = widget.type === 'image' && !widget.imageUrl;
                     return (
                     <div
                       key={widget.id}
-                      className={`absolute rounded-xl px-3 py-2 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border ${
+                      data-no-export={isEmptyImagePlaceholder ? 'true' : undefined}
+                      className={`absolute pointer-events-auto z-20 rounded-xl shadow-[0_8px_30px_rgba(124,58,237,0.06)] border ${isEmptyImagePlaceholder ? 'no-export whiteboard-placeholder-empty ' : ''}${
                         widget.type === 'sticky'
-                          ? 'bg-amber-100 border-amber-200'
+                          ? 'px-3 py-2 bg-amber-100 border-amber-200'
                           : widget.type === 'text'
-                            ? 'bg-violet-100 border-violet-200'
+                            ? 'px-3 py-2 bg-violet-100 border-violet-200'
                             : widget.type === 'image'
-                              ? 'bg-emerald-100 border-emerald-200'
-                              : 'bg-blue-100 border-blue-200'
+                              ? 'p-0 bg-transparent border-transparent'
+                              : 'px-3 py-2 bg-blue-100 border-blue-200'
                       } ${isSelected ? 'ring-2 ring-violet-500' : ''}`}
                       style={{
                         left: `${widget.x}px`,
@@ -60040,11 +60558,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         width: `${widget.width || 170}px`,
                         height: `${widget.height || 120}px`,
                         backgroundColor: widget.type === 'sticky' ? widget.color || '#fde047' : undefined,
-                        cursor: whiteboardTool === 'pen'
-                          ? getWhiteboardCursor()
-                          : ['eraser', 'hand'].includes(whiteboardTool)
-                            ? undefined
-                            : (isSelected ? 'move' : 'pointer'),
+                        cursor: widget.type === 'image' && !widget.imageUrl
+                          ? 'pointer'
+                          : whiteboardTool === 'pen'
+                            ? getWhiteboardCursor()
+                            : ['eraser', 'hand'].includes(whiteboardTool)
+                              ? undefined
+                              : (isSelected ? 'move' : 'pointer'),
                         userSelect: 'none',
                         touchAction: 'none',
                       }}
@@ -60309,6 +60829,160 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             }
                           }}
                         />
+                      ) : widget.type === 'image' ? (
+                        widget.imageUrl ? (
+                          <div className="relative w-full h-full rounded-xl overflow-hidden group/img select-none">
+                            <img
+                              src={widget.imageUrl}
+                              alt="Uploaded asset"
+                              className={`w-full h-full ${widget.objectFit === 'contain' ? 'object-contain' : 'object-cover'} rounded-xl select-none pointer-events-none`}
+                              draggable={false}
+                            />
+                            {/* Floating Context Pill */}
+                            {(isSelected || isWidgetHovered) && (
+                              <div
+                                data-widget-interactive="true"
+                                className="absolute top-2 right-2 z-40 flex items-center gap-1 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-lg p-1 shadow-md border border-slate-200/80 dark:border-zinc-800"
+                                onPointerDown={(e) => e.stopPropagation()}
+                              >
+                                <div
+                                  className="relative h-6 px-1.5 rounded text-[10px] font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-1 cursor-pointer overflow-hidden"
+                                  title="Replace Image"
+                                >
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = (re) => {
+                                          const img = new window.Image();
+                                          img.onload = () => {
+                                            const aspect = img.width / (img.height || 1);
+                                            const nextW = widget.width || 260;
+                                            const nextH = Math.round(nextW / aspect);
+                                            setWhiteboardWidgets((prev) => prev.map((w) => w.id === widget.id ? { ...w, imageUrl: re.target?.result, height: nextH } : w));
+                                            showToast('Image updated');
+                                          };
+                                          img.src = re.target?.result;
+                                        };
+                                        reader.readAsDataURL(file);
+                                      }
+                                    }}
+                                  />
+                                  <Upload size={11} className="pointer-events-none" />
+                                  <span className="pointer-events-none">Replace</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setWhiteboardWidgets((prev) => prev.map((w) => w.id === widget.id ? { ...w, objectFit: w.objectFit === 'contain' ? 'cover' : 'contain' } : w));
+                                  }}
+                                  className="h-6 px-1.5 rounded text-[10px] font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-1 cursor-pointer"
+                                  title="Toggle Fit / Cover"
+                                >
+                                  <span>{widget.objectFit === 'contain' ? 'Fit' : 'Cover'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setWhiteboardWidgets((prev) => prev.filter((w) => w.id !== widget.id));
+                                    setSelectedWidgetId(null);
+                                    showToast('Image deleted');
+                                  }}
+                                  className="h-6 w-6 rounded flex items-center justify-center text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 cursor-pointer"
+                                  title="Delete"
+                                >
+                                  <Trash2 size={11} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div
+                            data-widget-interactive="true"
+                            className="relative w-full h-full rounded-xl border-2 border-dashed border-violet-300 dark:border-violet-700/60 bg-violet-50/50 dark:bg-violet-950/30 flex flex-col items-center justify-center p-3 text-center transition-all hover:bg-violet-100/60 dark:hover:bg-violet-950/50 hover:border-violet-500 group/drop cursor-pointer select-none overflow-hidden"
+                            style={{ cursor: 'pointer' }}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              document.getElementById(`wb-image-upload-${widget.id}`)?.click();
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              e.dataTransfer.dropEffect = 'copy';
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const file = e.dataTransfer.files?.[0];
+                              if (file && file.type.startsWith('image/')) {
+                                const reader = new FileReader();
+                                reader.onload = (re) => {
+                                  const img = new window.Image();
+                                  img.onload = () => {
+                                    const maxW = 340;
+                                    const aspect = img.width / (img.height || 1);
+                                    const nextW = Math.min(maxW, Math.max(180, img.width));
+                                    const nextH = Math.round(nextW / aspect);
+                                    setWhiteboardWidgets((prev) => prev.map((w) => w.id === widget.id ? { ...w, imageUrl: re.target?.result, width: nextW, height: nextH } : w));
+                                    showToast('Image uploaded');
+                                  };
+                                  img.src = re.target?.result;
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          >
+                            <input
+                              type="file"
+                              id={`wb-image-upload-${widget.id}`}
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(ev) => {
+                                const file = ev.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (re) => {
+                                    const img = new window.Image();
+                                    img.onload = () => {
+                                      const maxW = 340;
+                                      const aspect = img.width / (img.height || 1);
+                                      const nextW = Math.min(maxW, Math.max(180, img.width));
+                                      const nextH = Math.round(nextW / aspect);
+                                      setWhiteboardWidgets((prev) => prev.map((w) => w.id === widget.id ? { ...w, imageUrl: re.target?.result, width: nextW, height: nextH } : w));
+                                      showToast('Image uploaded');
+                                    };
+                                    img.src = re.target?.result;
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                            <div 
+                              className="h-12 w-12 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm border border-violet-200/80 dark:border-violet-700/60 flex items-center justify-center text-violet-600 dark:text-violet-400 group-hover/drop:scale-110 group-hover/drop:shadow-md transition-all mb-2 pointer-events-none"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              <ImageIcon size={24} strokeWidth={1.8} style={{ cursor: 'pointer' }} />
+                            </div>
+                            <p 
+                              className="text-[13px] font-bold text-slate-800 dark:text-zinc-200 leading-tight group-hover/drop:text-violet-600 dark:group-hover/drop:text-violet-400 transition-colors pointer-events-none"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              Upload Image
+                            </p>
+                            <p 
+                              className="mt-1 text-[11px] text-slate-500 dark:text-zinc-400 font-medium pointer-events-none"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              Click to browse or drop file here
+                            </p>
+                          </div>
+                        )
                       ) : (
                         <>
                           <p className="text-[11px] font-semibold text-gray-900">{widget.title}</p>
@@ -60361,7 +61035,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       {isSelected && !['eraser', 'hand'].includes(whiteboardTool) && (
                         <div
                           data-widget-interactive="true"
-                          className="absolute left-1/2 -translate-x-1/2 z-30 rounded-xl border border-gray-200 bg-white shadow-[0_8px_30px_rgba(124,58,237,0.06)] px-2 py-1.5"
+                          data-no-export="true"
+                          className="no-export whiteboard-widget-controls absolute left-1/2 -translate-x-1/2 z-30 rounded-xl border border-gray-200 bg-white shadow-[0_8px_30px_rgba(124,58,237,0.06)] px-2 py-1.5"
                           style={{ top: `${(widget.height || 120) + 14}px` }}
                           onPointerDown={(e) => e.stopPropagation()}
                         >
@@ -60622,26 +61297,39 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     const isShapeSelected = selectedShapeIndex === shapeIndex;
                     const isShapeHovered = whiteboardHoveredObject?.kind === 'shape' && whiteboardHoveredObject?.id === shapeIndex;
                     const isShapeReactionMenuOpen = whiteboardReactionMenuOpen && whiteboardReactionTarget?.kind === 'shape' && whiteboardReactionTarget?.id === shapeIndex;
+                    const isShapeMenuOpen = whiteboardShapeFillMenuFor === shapeIndex || whiteboardShapeStrokeMenuFor === shapeIndex;
+                    const isShapeActive = isShapeSelected || isShapeHovered || isShapeMenuOpen;
                     const showShapeReactionControls = (isShapeHovered || isShapeSelected || isShapeReactionMenuOpen) && whiteboardTool !== 'hand' && whiteboardTool !== 'eraser';
-                    const hitPadding = 8;
                     return (
-                      <React.Fragment key={`whiteboard-shape-hit-${shapeIndex}`}>
+                      <div
+                        key={`whiteboard-shape-unit-${shapeIndex}`}
+                        className="absolute z-[20]"
+                        style={{
+                          left: `${bounds.x}px`,
+                          top: `${bounds.y}px`,
+                          width: `${Math.max(bounds.width, 24)}px`,
+                          height: `${Math.max(bounds.height, 24)}px`,
+                          pointerEvents: 'auto',
+                        }}
+                        onMouseEnter={() => setWhiteboardObjectHover('shape', shapeIndex)}
+                        onMouseLeave={() => {
+                          if (selectedShapeIndex !== shapeIndex && !isShapeMenuOpen) {
+                            clearWhiteboardObjectHover('shape', shapeIndex);
+                          }
+                        }}
+                      >
+                        {/* Shape Hit Area for selection & dragging */}
                         <div
-                          className="absolute z-[14]"
+                          className="absolute inset-0 z-[10]"
                           style={{
-                            left: `${bounds.x - hitPadding}px`,
-                            top: `${bounds.y - hitPadding}px`,
-                            width: `${Math.max(bounds.width + hitPadding * 2, 18)}px`,
-                            height: `${Math.max(bounds.height + hitPadding * 2, 18)}px`,
                             cursor: whiteboardTool === 'pen'
                               ? getWhiteboardCursor()
                               : (isShapeSelected ? 'move' : 'pointer'),
                           }}
-                          onMouseEnter={() => setWhiteboardObjectHover('shape', shapeIndex)}
-                          onMouseLeave={() => clearWhiteboardObjectHover('shape', shapeIndex)}
                           onPointerDown={(event) => {
+                            if (['eraser', 'hand'].includes(whiteboardTool)) return;
+                            if (event.target.closest('[data-shape-interactive="true"]')) return;
                             event.stopPropagation();
-                            event.preventDefault();
                             setSelectedShapeIndex(shapeIndex);
                             setSelectedWidgetId(null);
                             setWhiteboardEditingWidgetId(null);
@@ -60677,10 +61365,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             setWhiteboardAlignmentGuides([]);
                           }}
                         />
+
+                        {/* Quick Reaction Button */}
                         {showShapeReactionControls && (
                           <div
-                            className="absolute z-[17]"
-                            style={{ left: `${bounds.x + 4}px`, top: `${bounds.y + bounds.height - 20}px` }}
+                            className="absolute -bottom-8 left-1 z-[17]"
                             onPointerDown={(event) => event.stopPropagation()}
                           >
                             <button
@@ -60696,7 +61385,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 setWhiteboardEmojiSearch('');
                                 setWhiteboardReactionMenuOpen(true);
                               }}
-                              className="relative h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-[0_8px_30px_rgba(124,58,237,0.06)] hover:bg-slate-50 inline-flex items-center justify-center"
+                              className="relative h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-[0_8px_30px_rgba(124,58,237,0.06)] hover:bg-slate-50 inline-flex items-center justify-center cursor-pointer"
                               title="Quick reactions"
                             >
                               <span className="text-[14px] leading-none">?</span>
@@ -60712,118 +61401,316 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     setWhiteboardEmojiModalOpen(true);
                                     setWhiteboardEmojiSearch('');
                                   }}
-                                  className="h-8 w-8 rounded-lg text-slate-700 hover:bg-slate-100 text-[22px] leading-none"
+                                  className="h-8 w-8 rounded-lg text-slate-700 hover:bg-slate-100 text-[22px] leading-none cursor-pointer"
                                   title="All emojis"
                                 >
                                   +
                                 </button>
-                                  {orderedWhiteboardEmojis.slice(0, 8).map((emojiItem) => (
-                                    <button
-                                      key={`${shapeIndex}-${emojiItem.emoji}`}
-                                      type="button"
-                                      onClick={() => applyWhiteboardReaction(emojiItem.emoji)}
-                                      className="h-8 w-8 rounded-lg text-lg hover:bg-slate-100"
-                                      title={`React with ${emojiItem.emoji}`}
-                                    >
-                                      {emojiItem.emoji}
-                                    </button>
-                                  ))}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setWhiteboardReactionTarget({ kind: 'shape', id: shapeIndex });
-                                    setWhiteboardReactionMenuOpen(false);
-                                    setWhiteboardEmojiModalOpen(true);
-                                    setWhiteboardEmojiSearch('');
-                                  }}
-                                  className="h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100 text-[18px]"
-                                  title="More"
-                                >
-                                  ?
-                                </button>
+                                {orderedWhiteboardEmojis.slice(0, 8).map((emojiItem) => (
+                                  <button
+                                    key={`${shapeIndex}-${emojiItem.emoji}`}
+                                    type="button"
+                                    onClick={() => applyWhiteboardReaction(emojiItem.emoji)}
+                                    className="h-8 w-8 rounded-lg text-lg hover:bg-slate-100 cursor-pointer"
+                                    title={`React with ${emojiItem.emoji}`}
+                                  >
+                                    {emojiItem.emoji}
+                                  </button>
+                                ))}
                               </div>
                             )}
                           </div>
                         )}
+
+                        {/* Shape Selection Bounding Box */}
                         {isShapeSelected && (
-                          <>
-                            <div
-                              className="absolute pointer-events-none z-[15] rounded-sm border-2 border-violet-500"
-                              style={{
-                                left: `${bounds.x}px`,
-                                top: `${bounds.y}px`,
-                                width: `${Math.max(bounds.width, 1)}px`,
-                                height: `${Math.max(bounds.height, 1)}px`,
-                              }}
-                            />
-                            {[
-                              { corner: 'tl', style: { top: -5, left: -5, cursor: 'nwse-resize' }, dw: -1, dh: -1, ox: 1, oy: 1 },
-                              { corner: 'tr', style: { top: -5, right: -5, cursor: 'nesw-resize' }, dw: 1, dh: -1, ox: 0, oy: 1 },
-                              { corner: 'bl', style: { bottom: -5, left: -5, cursor: 'nesw-resize' }, dw: -1, dh: 1, ox: 1, oy: 0 },
-                              { corner: 'br', style: { bottom: -5, right: -5, cursor: 'nwse-resize' }, dw: 1, dh: 1, ox: 0, oy: 0 },
-                            ].map(({ corner, style, dw, dh, ox, oy }) => (
-                              <div
-                                key={`${shapeIndex}-${corner}`}
-                                className="absolute z-[16]"
-                                style={{
-                                  left: `${bounds.x}px`,
-                                  top: `${bounds.y}px`,
-                                  width: `${Math.max(bounds.width, 1)}px`,
-                                  height: `${Math.max(bounds.height, 1)}px`,
-                                }}
-                              >
-                                <div
-                                  className="absolute w-3 h-3 bg-white border-2 border-violet-500 rounded-sm"
-                                  style={style}
-                                  onPointerDown={(event) => {
-                                    event.stopPropagation();
-                                    event.preventDefault();
-                                    shapeResizeRef.current = {
-                                      shapeIndex,
-                                      startX: event.clientX,
-                                      startY: event.clientY,
-                                      sourceBounds: bounds,
-                                      originalShape: { ...shape },
-                                      dw,
-                                      dh,
-                                      ox,
-                                      oy,
-                                    };
-                                    event.currentTarget.setPointerCapture(event.pointerId);
-                                  }}
-                                  onPointerMove={(event) => {
-                                    const resizeState = shapeResizeRef.current;
-                                    if (!resizeState || resizeState.shapeIndex !== shapeIndex) {
-                                      return;
-                                    }
-                                    const dx = (event.clientX - resizeState.startX) * resizeState.dw;
-                                    const dy = (event.clientY - resizeState.startY) * resizeState.dh;
-                                    const nextWidth = Math.max(24, resizeState.sourceBounds.width + dx);
-                                    const nextHeight = Math.max(24, resizeState.sourceBounds.height + dy);
-                                    const nextX = resizeState.sourceBounds.x - (nextWidth - resizeState.sourceBounds.width) * resizeState.ox;
-                                    const nextY = resizeState.sourceBounds.y - (nextHeight - resizeState.sourceBounds.height) * resizeState.oy;
-                                    setWhiteboardShapes((prev) => prev.map((existingShape, existingIndex) => (
-                                      existingIndex === shapeIndex
-                                        ? resizeShapeFromBounds(
-                                          resizeState.originalShape,
-                                          resizeState.sourceBounds,
-                                          { x: nextX, y: nextY, width: nextWidth, height: nextHeight },
-                                        )
-                                        : existingShape
-                                    )));
-                                  }}
-                                  onPointerUp={() => {
-                                    shapeResizeRef.current = null;
-                                  }}
-                                  onPointerCancel={() => {
-                                    shapeResizeRef.current = null;
-                                  }}
-                                />
-                              </div>
-                            ))}
-                          </>
+                          <div
+                            className="absolute inset-0 pointer-events-none z-[15] rounded-sm border-2 border-violet-500 shadow-2xs"
+                          />
                         )}
-                      </React.Fragment>
+
+                        {/* Corner Resize Handles */}
+                        {isShapeSelected && [
+                          { corner: 'tl', style: { top: -6, left: -6, cursor: 'nwse-resize' }, dw: -1, dh: -1, ox: 1, oy: 1 },
+                          { corner: 'tr', style: { top: -6, right: -6, cursor: 'nesw-resize' }, dw: 1, dh: -1, ox: 0, oy: 1 },
+                          { corner: 'bl', style: { bottom: -6, left: -6, cursor: 'nesw-resize' }, dw: -1, dh: 1, ox: 1, oy: 0 },
+                          { corner: 'br', style: { bottom: -6, right: -6, cursor: 'nwse-resize' }, dw: 1, dh: 1, ox: 0, oy: 0 },
+                        ].map(({ corner, style, dw, dh, ox, oy }) => (
+                          <div
+                            key={`${shapeIndex}-${corner}`}
+                            className="absolute w-3.5 h-3.5 bg-white dark:bg-zinc-800 border-2 border-violet-500 rounded-sm shadow-xs z-[25] pointer-events-auto hover:scale-125 transition-transform"
+                            style={style}
+                            onPointerDown={(event) => {
+                              event.stopPropagation();
+                              event.preventDefault();
+                              shapeResizeRef.current = {
+                                shapeIndex,
+                                startX: event.clientX,
+                                startY: event.clientY,
+                                sourceBounds: bounds,
+                                originalShape: { ...shape },
+                                dw,
+                                dh,
+                                ox,
+                                oy,
+                              };
+                              event.currentTarget.setPointerCapture(event.pointerId);
+                            }}
+                            onPointerMove={(event) => {
+                              const resizeState = shapeResizeRef.current;
+                              if (!resizeState || resizeState.shapeIndex !== shapeIndex) {
+                                return;
+                              }
+                              const dx = (event.clientX - resizeState.startX) * resizeState.dw;
+                              const dy = (event.clientY - resizeState.startY) * resizeState.dh;
+                              const nextWidth = Math.max(24, resizeState.sourceBounds.width + dx);
+                              const nextHeight = Math.max(24, resizeState.sourceBounds.height + dy);
+                              const nextX = resizeState.sourceBounds.x - (nextWidth - resizeState.sourceBounds.width) * resizeState.ox;
+                              const nextY = resizeState.sourceBounds.y - (nextHeight - resizeState.sourceBounds.height) * resizeState.oy;
+                              setWhiteboardShapes((prev) => prev.map((existingShape, existingIndex) => (
+                                existingIndex === shapeIndex
+                                  ? resizeShapeFromBounds(
+                                    resizeState.originalShape,
+                                    resizeState.sourceBounds,
+                                    { x: nextX, y: nextY, width: nextWidth, height: nextHeight },
+                                  )
+                                  : existingShape
+                              )));
+                            }}
+                            onPointerUp={() => {
+                              shapeResizeRef.current = null;
+                            }}
+                            onPointerCancel={() => {
+                              shapeResizeRef.current = null;
+                            }}
+                          />
+                        ))}
+
+                        {/* Shape Context Toolbar */}
+                        {isShapeActive && (
+                          <div
+                            data-shape-interactive="true"
+                            className="absolute left-1/2 -translate-x-1/2 -top-12 z-[35] rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl px-2 py-1 flex items-center gap-1.5 select-none font-sans"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setSelectedShapeIndex(shapeIndex);
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedShapeIndex(shapeIndex);
+                            }}
+                          >
+                            {/* Fill Color */}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedShapeIndex(shapeIndex);
+                                  setWhiteboardShapeFillMenuFor(prev => prev === shapeIndex ? null : shapeIndex);
+                                  setWhiteboardShapeStrokeMenuFor(null);
+                                }}
+                                className="h-7 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 text-xs text-slate-700 dark:text-zinc-300 font-medium cursor-pointer"
+                                title="Fill Color"
+                              >
+                                <span 
+                                  className="h-3.5 w-3.5 rounded border border-slate-300 dark:border-zinc-600 shadow-2xs" 
+                                  style={{ backgroundColor: shape.fill && shape.fill !== 'transparent' ? shape.fill : '#7c3aed22' }} 
+                                />
+                                <span className="text-[11px]">Fill</span>
+                              </button>
+                              {whiteboardShapeFillMenuFor === shapeIndex && (
+                                <div 
+                                  className="absolute left-0 mt-1.5 w-44 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl z-50 p-2 font-sans" 
+                                  onPointerDown={(e) => e.stopPropagation()}
+                                >
+                                  <div className="text-[10px] font-semibold text-slate-500 mb-1.5">Preset Fills</div>
+                                  <div className="grid grid-cols-6 gap-1">
+                                    {['transparent', '#7c3aed22', '#3b82f622', '#10b98122', '#f59e0b22', '#ef444422', '#ec489922', '#6366f122', '#14b8a622', '#8b5cf622', '#f9731622', '#64748b22'].map((color) => (
+                                      <button
+                                        key={color}
+                                        type="button"
+                                        onPointerDown={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedShapeIndex(shapeIndex);
+                                          setWhiteboardShapes(prev => prev.map((s, idx) => idx === shapeIndex ? { ...s, fill: color } : s));
+                                          setWhiteboardShapeFillMenuFor(null);
+                                        }}
+                                        className={`h-5 w-5 rounded-md border flex items-center justify-center cursor-pointer ${shape.fill === color ? 'border-violet-500 ring-1 ring-violet-300' : 'border-slate-200 dark:border-zinc-700'}`}
+                                        style={{ backgroundColor: color === 'transparent' ? '#ffffff' : color }}
+                                        title={color}
+                                      >
+                                        {color === 'transparent' && <span className="text-[9px] text-rose-500 font-bold">/</span>}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <div className="mt-2 border-t border-slate-100 dark:border-zinc-800 pt-2 flex items-center gap-1.5">
+                                    <span className="text-[10px] text-slate-500">Custom:</span>
+                                    <input 
+                                      type="color" 
+                                      value={shape.fill && shape.fill.startsWith('#') && shape.fill.length === 7 ? shape.fill : '#7c3aed'} 
+                                      onChange={(e) => {
+                                        const val = `${e.target.value}33`;
+                                        setSelectedShapeIndex(shapeIndex);
+                                        setWhiteboardShapes(prev => prev.map((s, idx) => idx === shapeIndex ? { ...s, fill: val } : s));
+                                      }} 
+                                      className="h-6 w-full rounded border border-slate-200 cursor-pointer" 
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Stroke / Border Color */}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedShapeIndex(shapeIndex);
+                                  setWhiteboardShapeStrokeMenuFor(prev => prev === shapeIndex ? null : shapeIndex);
+                                  setWhiteboardShapeFillMenuFor(null);
+                                }}
+                                className="h-7 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 text-xs text-slate-700 dark:text-zinc-300 font-medium cursor-pointer"
+                                title="Border Stroke Color"
+                              >
+                                <span 
+                                  className="h-3.5 w-3.5 rounded border-2 shadow-2xs" 
+                                  style={{ borderColor: shape.stroke || '#7c3aed' }} 
+                                />
+                                <span className="text-[11px]">Stroke</span>
+                              </button>
+                              {whiteboardShapeStrokeMenuFor === shapeIndex && (
+                                <div 
+                                  className="absolute left-0 mt-1.5 w-44 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl z-50 p-2 font-sans" 
+                                  onPointerDown={(e) => e.stopPropagation()}
+                                >
+                                  <div className="text-[10px] font-semibold text-slate-500 mb-1.5">Stroke Color</div>
+                                  <div className="grid grid-cols-6 gap-1">
+                                    {['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6', '#0f172a', '#64748b', '#d97706', '#059669'].map((color) => (
+                                      <button
+                                        key={color}
+                                        type="button"
+                                        onPointerDown={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedShapeIndex(shapeIndex);
+                                          setWhiteboardShapes(prev => prev.map((s, idx) => idx === shapeIndex ? { ...s, stroke: color } : s));
+                                          setWhiteboardShapeStrokeMenuFor(null);
+                                        }}
+                                        className={`h-5 w-5 rounded-md border flex items-center justify-center cursor-pointer ${shape.stroke === color ? 'border-violet-500 ring-1 ring-violet-300' : 'border-slate-200 dark:border-zinc-700'}`}
+                                        style={{ backgroundColor: color }}
+                                        title={color}
+                                      />
+                                    ))}
+                                  </div>
+                                  <div className="mt-2 border-t border-slate-100 dark:border-zinc-800 pt-2 flex items-center gap-1.5">
+                                    <span className="text-[10px] text-slate-500">Custom:</span>
+                                    <input 
+                                      type="color" 
+                                      value={shape.stroke || '#7c3aed'} 
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setSelectedShapeIndex(shapeIndex);
+                                        setWhiteboardShapes(prev => prev.map((s, idx) => idx === shapeIndex ? { ...s, stroke: val } : s));
+                                      }} 
+                                      className="h-6 w-full rounded border border-slate-200 cursor-pointer" 
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Dash Style (Solid, Dashed, Dotted) */}
+                            <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-zinc-800 rounded-lg p-0.5">
+                              {[
+                                { label: 'Solid', dash: '', icon: '―' },
+                                { label: 'Dashed', dash: '6 4', icon: '╌' },
+                                { label: 'Dotted', dash: '2 3', icon: '┄' }
+                              ].map((styleOpt) => {
+                                const isCurrentDash = (shape.dashArray || '') === styleOpt.dash;
+                                return (
+                                  <button
+                                    key={styleOpt.label}
+                                    type="button"
+                                    onPointerDown={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedShapeIndex(shapeIndex);
+                                      setWhiteboardShapes(prev => prev.map((s, idx) => idx === shapeIndex ? { ...s, dashArray: styleOpt.dash } : s));
+                                    }}
+                                    className={`h-6 px-1.5 rounded text-[11px] font-semibold transition-colors cursor-pointer ${isCurrentDash ? 'bg-white dark:bg-zinc-700 text-violet-600 dark:text-violet-300 shadow-2xs' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'}`}
+                                    title={`${styleOpt.label} border`}
+                                  >
+                                    {styleOpt.icon}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Stroke Width Selector */}
+                            <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-zinc-800 rounded-lg p-0.5">
+                              {[1.5, 3, 5].map((w) => {
+                                const isCurrentWidth = Math.abs((shape.strokeWidth || 2) - w) < 0.8;
+                                return (
+                                  <button
+                                    key={w}
+                                    type="button"
+                                    onPointerDown={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedShapeIndex(shapeIndex);
+                                      setWhiteboardShapes(prev => prev.map((s, idx) => idx === shapeIndex ? { ...s, strokeWidth: w } : s));
+                                    }}
+                                    className={`h-6 w-6 rounded flex items-center justify-center transition-colors cursor-pointer ${isCurrentWidth ? 'bg-white dark:bg-zinc-700 text-violet-600 dark:text-violet-300 shadow-2xs font-bold' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900'}`}
+                                    title={`${w}px width`}
+                                  >
+                                    <span className="rounded-full bg-current" style={{ width: `${w * 1.5 + 2}px`, height: `${w * 1.5 + 2}px` }} />
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-0.5" />
+
+                            {/* Duplicate Shape */}
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.stopPropagation();
+                                const clone = { 
+                                  ...shape, 
+                                  x: typeof shape.x === 'number' ? shape.x + 20 : shape.x, 
+                                  y: typeof shape.y === 'number' ? shape.y + 20 : shape.y,
+                                  x1: typeof shape.x1 === 'number' ? shape.x1 + 20 : shape.x1,
+                                  y1: typeof shape.y1 === 'number' ? shape.y1 + 20 : shape.y1,
+                                  x2: typeof shape.x2 === 'number' ? shape.x2 + 20 : shape.x2,
+                                  y2: typeof shape.y2 === 'number' ? shape.y2 + 20 : shape.y2,
+                                };
+                                setWhiteboardShapes(prev => [...prev, clone]);
+                                setSelectedShapeIndex(whiteboardShapes.length);
+                                showToast('Shape duplicated');
+                              }}
+                              className="h-7 w-7 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-center cursor-pointer"
+                              title="Duplicate Shape"
+                            >
+                              <Plus size={13} strokeWidth={2} />
+                            </button>
+
+                            {/* Delete Shape */}
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.stopPropagation();
+                                setWhiteboardShapes(prev => prev.filter((_, idx) => idx !== shapeIndex));
+                                setSelectedShapeIndex(null);
+                                showToast('Shape deleted');
+                              }}
+                              className="h-7 w-7 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 flex items-center justify-center cursor-pointer"
+                              title="Delete Shape"
+                            >
+                              <Trash2 size={13} strokeWidth={1.8} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                   <svg className="absolute inset-0 w-full h-full pointer-events-none">
@@ -61063,35 +61950,54 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     );
                   })()}
-                  <div className="absolute left-1/2 bottom-4 -translate-x-1/2 z-20 rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.08)] px-2.5 py-2 flex items-center gap-1.5">
-                    <button type="button" onClick={handleWhiteboardUndo} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Undo (Ctrl+Z)"><Undo2 size={15} /></button>
-                    <button type="button" onClick={handleWhiteboardRedo} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Redo (Ctrl+Shift+Z)"><Redo2 size={15} /></button>
-                    <div className="w-px h-5 bg-gray-200 mx-0.5" />
-                    <button type="button" onClick={() => { activateWhiteboardTool('pen'); setWhiteboardPenVariant('highlighter'); showToast('Highlighter active'); }} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'pen' && whiteboardPenVariant === 'highlighter' ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Highlighter"><Highlighter size={15} /></button>
-                    <div className="h-9 rounded-lg border border-gray-200 bg-gray-50/50 px-1.5 flex items-center gap-1">
-                      <button type="button" onClick={() => setWhiteboardZoomLevel((prev) => Math.max(30, prev - 10))} className="h-7 w-7 rounded-md text-gray-600 hover:bg-white hover:text-gray-800 flex items-center justify-center" title="Zoom out">-</button>
-                      <span className="min-w-[42px] text-center text-[13px] font-semibold text-gray-700 select-none">{whiteboardZoomLevel}%</span>
-                      <button type="button" onClick={() => setWhiteboardZoomLevel((prev) => Math.min(200, prev + 10))} className="h-7 w-7 rounded-md text-gray-600 hover:bg-white hover:text-gray-800 flex items-center justify-center" title="Zoom in">+</button>
+                  </div>
+
+                  {/* Contextual Floating Bottom Dock */}
+                  <div className="no-export whiteboard-ui-chrome absolute left-1/2 bottom-5 -translate-x-1/2 z-20 rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] px-3 py-1.5 flex items-center gap-1.5 select-none">
+                    <button type="button" onClick={handleWhiteboardUndo} className="h-8 w-8 rounded-lg text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors" title="Undo (Ctrl+Z)"><Undo2 size={15} strokeWidth={1.6} /></button>
+                    <button type="button" onClick={handleWhiteboardRedo} className="h-8 w-8 rounded-lg text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors" title="Redo (Ctrl+Shift+Z)"><Redo2 size={15} strokeWidth={1.6} /></button>
+                    <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-0.5" />
+                    <button type="button" onClick={() => { activateWhiteboardTool('pen'); setWhiteboardPenVariant('highlighter'); showToast('Highlighter active'); }} className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === 'pen' && whiteboardPenVariant === 'highlighter' ? 'border border-violet-200 dark:border-violet-700/60 text-violet-700 dark:text-violet-300 bg-violet-50/60 dark:bg-violet-950/40 shadow-xs' : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-800 dark:hover:text-zinc-100'}`} title="Highlighter"><Highlighter size={15} strokeWidth={1.6} /></button>
+                    <div className="h-8 rounded-lg border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-800/60 px-1.5 flex items-center gap-1">
+                      <button type="button" onClick={() => setWhiteboardZoomLevel((prev) => Math.max(30, prev - 10))} className="h-6 w-6 rounded-md text-slate-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center justify-center text-xs transition-colors" title="Zoom out">-</button>
+                      <span className="min-w-[40px] text-center text-[12px] font-semibold text-slate-700 dark:text-zinc-300 select-none">{whiteboardZoomLevel}%</span>
+                      <button type="button" onClick={() => setWhiteboardZoomLevel((prev) => Math.min(200, prev + 10))} className="h-6 w-6 rounded-md text-slate-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center justify-center text-xs transition-colors" title="Zoom in">+</button>
                     </div>
-                    <div className="w-px h-5 bg-gray-200 mx-0.5" />
-                    <button type="button" onClick={() => showToast('Collaboration: invite collaborators from the Rooms panel')} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Collaboration"><Users size={15} /></button>
+                    <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-0.5" />
+                    {/* Templates Button */}
                     <div className="relative">
                       <button
                         type="button"
                         onClick={() => setWhiteboardTemplateMenuOpen((prev) => !prev)}
-                        className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardTemplateMenuOpen ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
-                        title="Templates"
+                        className={`h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-xs font-medium transition-colors ${whiteboardTemplateMenuOpen ? 'border border-violet-200 dark:border-violet-700/60 text-violet-700 dark:text-violet-300 bg-violet-50/60 dark:bg-violet-950/40 shadow-xs' : 'border border-transparent text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100'}`}
+                        title="Templates library"
                       >
-                        <LayoutGrid size={15} />
+                        <LayoutGrid size={14} strokeWidth={1.6} />
+                        <span>Templates</span>
                       </button>
                       {whiteboardTemplateMenuOpen && (
-                        <div className="absolute bottom-11 right-0 z-[360] rounded-xl border border-gray-200 bg-white shadow-lg p-2 w-[332px] max-h-[420px] overflow-y-auto thin-scrollbar">
-                          <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-2 mb-2">
-                            <div className="text-[11px] font-semibold text-slate-700 mb-1">AI template generator</div>
+                        <div className="absolute bottom-11 left-1/2 -translate-x-1/2 z-[360] rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-2xl p-2 w-[340px] max-h-[420px] overflow-y-auto thin-scrollbar">
+                          <div className="rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-800/60 p-2.5 mb-2">
+                            <div className="text-[11px] font-bold text-slate-750 dark:text-zinc-200 mb-1.5 flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <RegaarderAiIcon size={13} className="text-violet-600 dark:text-violet-400" />
+                                <span>AI template generator</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={toggleComposeModelPicker}
+                                className="compose-model-picker-trigger h-5 px-2 rounded-full bg-white dark:bg-zinc-750 text-slate-700 dark:text-zinc-200 text-[9.5px] font-semibold flex items-center gap-1 border border-slate-200 dark:border-zinc-700 shadow-2xs hover:border-violet-300 cursor-pointer"
+                                title="Select AI Model"
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
+                                <span className="max-w-[70px] truncate">{composeSelectedModel.name}</span>
+                                <ChevronDown size={8} className="text-slate-400 shrink-0" />
+                              </button>
+                            </div>
                             <textarea
                               value={whiteboardTemplatePrompt}
                               onChange={(event) => setWhiteboardTemplatePrompt(event.target.value)}
-                              className="w-full h-16 resize-none rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-700 outline-none focus:border-gray-300"
+                              className="w-full h-16 resize-none rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-850 px-2.5 py-1.5 text-[11px] text-slate-800 dark:text-zinc-200 outline-none focus:border-violet-400 dark:focus:border-violet-500"
                               placeholder="Describe customer input, use case, or desired structure..."
                             />
                             <input
@@ -61102,26 +62008,31 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               className="hidden"
                               onChange={handleWhiteboardTemplateSourceUpload}
                             />
-                            <div className="mt-1.5 flex items-center gap-1.5">
+                            <div className="mt-2 flex items-center gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => whiteboardTemplateSourceInputRef.current?.click()}
-                                className="text-[10px] px-2 py-1 rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                                className="text-[10px] px-2 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-750"
                               >
-                                Attach UI/docs
+                                Attach files
                               </button>
                               <button
                                 type="button"
+                                disabled={isGeneratingAiTemplate}
                                 onClick={generateAiWhiteboardTemplate}
-                                className="text-[10px] px-2 py-1 rounded-md bg-slate-900 text-white hover:bg-slate-800 inline-flex items-center gap-1 transition-colors"
+                                className="text-[10px] px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-semibold hover:bg-black dark:hover:bg-zinc-100 inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                               >
-                                <Sparkles size={10} />
-                                Generate
+                                {isGeneratingAiTemplate ? (
+                                  <Loader2 size={11} className="animate-spin" />
+                                ) : (
+                                  <RegaarderAiIcon size={11} />
+                                )}
+                                <span>{isGeneratingAiTemplate ? 'Generating...' : 'Generate'}</span>
                               </button>
                               <button
                                 type="button"
                                 onClick={saveCurrentWhiteboardAsTemplate}
-                                className="text-[10px] px-2 py-1 rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="text-[10px] px-2 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-750 transition-colors"
                               >
                                 Save current
                               </button>
@@ -61129,18 +62040,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             {whiteboardTemplateSources.length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-1">
                                 {whiteboardTemplateSources.map((source) => (
-                                  <span key={source.id} className="inline-flex items-center rounded-full bg-white border border-gray-200 px-2 py-0.5 text-[10px] text-gray-600">
+                                  <span key={source.id} className="inline-flex items-center rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 px-2 py-0.5 text-[10px] text-slate-600 dark:text-zinc-300">
                                     {source.name}
                                   </span>
                                 ))}
                               </div>
                             )}
                           </div>
-                          <div className="px-1 pb-1 text-[11px] font-semibold text-gray-700">Prebuilt templates</div>
+                          <div className="px-1 pb-1 text-[11px] font-bold text-slate-700 dark:text-zinc-200">Prebuilt templates</div>
                           {Array.from(new Set(['Startup', 'Enterprise', 'Personal', 'Saved', ...whiteboardTemplateCatalog.map((template) => template.category)])).map((category) => (
                             <div key={category} className="mt-1.5">
-                              <div className="px-1 py-1 text-[10px] uppercase tracking-wide text-gray-400">{category}</div>
-                              <div className="grid grid-cols-2 gap-2">
+                              <div className="px-1 py-0.5 text-[10px] uppercase tracking-wide text-slate-400 dark:text-zinc-500 font-semibold">{category}</div>
+                              <div className="grid grid-cols-2 gap-2 mt-1">
                                 {whiteboardTemplateCatalog
                                   .filter((template) => template.category === category)
                                   .map((template) => (
@@ -61148,15 +62059,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       key={template.key}
                                       type="button"
                                       onClick={() => applyWhiteboardTemplate(template.key)}
-                                      className="w-full text-left p-2 rounded-lg border border-gray-200 hover:border-slate-350 hover:bg-slate-50"
+                                      className="w-full text-left p-2 rounded-xl border border-slate-200 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-600 hover:bg-violet-50/40 dark:hover:bg-zinc-800/60 transition-colors group"
                                     >
-                                      <div className="mb-2 h-20 rounded-md bg-gray-100 p-2 flex items-end gap-1 overflow-hidden">
+                                      <div className="mb-1.5 h-16 rounded-lg bg-slate-100 dark:bg-zinc-800 p-1.5 flex items-end gap-1 overflow-hidden">
                                         {(template.preview || ['#c4b5fd', '#93c5fd', '#fcd34d', '#86efac']).map((swatch, index) => (
-                                          <div key={`${template.key}-swatch-${index}`} className="flex-1 rounded-sm" style={{ backgroundColor: swatch, height: `${58 + (index % 3) * 8}px` }} />
+                                          <div key={`${template.key}-swatch-${index}`} className="flex-1 rounded-sm" style={{ backgroundColor: swatch, height: `${40 + (index % 3) * 8}px` }} />
                                         ))}
                                       </div>
-                                      <div className="text-xs font-semibold text-gray-800">{template.label}</div>
-                                      <div className="text-[10px] text-gray-500 mt-0.5">{template.detail}</div>
+                                      <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300">{template.label}</div>
+                                      <div className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 line-clamp-1">{template.detail}</div>
                                     </button>
                                   ))}
                               </div>
@@ -61165,181 +62076,92 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       )}
                     </div>
+                    {/* Quick Add Object Menu */}
                     <div className="relative">
                       <button
                         type="button"
                         onClick={() => setWhiteboardAddMenuOpen((prev) => !prev)}
-                        className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors shadow-sm ${whiteboardAddMenuOpen ? 'border border-violet-200 text-violet-700 bg-violet-50/30' : 'bg-violet-50 text-violet-700 hover:bg-violet-100/80 border border-violet-200/60 font-semibold'}`}
+                        className={`h-8 px-2.5 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-all duration-150 active:scale-95 border cursor-pointer select-none ${
+                          whiteboardAddMenuOpen
+                            ? 'border-violet-300 dark:border-violet-600 text-violet-700 dark:text-violet-300 bg-violet-100/70 dark:bg-violet-950/70 shadow-xs'
+                            : 'bg-violet-50/80 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 border-violet-200/80 dark:border-violet-800/80 shadow-2xs'
+                        }`}
                         title="Add object"
                       >
-                        <Plus size={15} />
+                        <Plus size={13} strokeWidth={2} className="text-[#7C5ACF] dark:text-violet-400" />
+                        <span>Add</span>
                       </button>
                       {whiteboardAddMenuOpen && (
-                        <div className="absolute bottom-11 right-0 z-[360] rounded-xl border border-gray-200 bg-white shadow-lg p-1.5 w-44">
+                        <div className="absolute bottom-11 left-1/2 -translate-x-1/2 z-[360] rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-2xl p-1.5 w-48 font-sans animate-in fade-in zoom-in-95 duration-150">
                           {[
                             { label: 'Sticky Note', icon: StickyNote, action: () => { activateWhiteboardTool('sticky'); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Text', icon: Type, action: () => { activateWhiteboardTool('text'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'Text Block', icon: Type, action: () => { activateWhiteboardTool('text'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Shape', icon: Shapes, action: () => { activateWhiteboardTool('shapes'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Image', icon: ImageIcon, action: () => { activateWhiteboardTool('image'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Connector', icon: LinkIcon, action: () => { activateWhiteboardTool('link'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Comment', icon: MessageCircle, action: () => { activateWhiteboardTool('comment'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Task Card', icon: CheckSquare, action: () => { addWhiteboardWidget('task'); setWhiteboardAddMenuOpen(false); showToast('Task card added'); } },
-                            { label: 'AI Workflow', icon: Bot, action: () => { showToast('AI Workflow coming soon'); setWhiteboardAddMenuOpen(false); } },
                           ].map((item) => (
                             <button
                               key={item.label}
                               type="button"
                               onClick={item.action}
-                              className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-violet-50/50 hover:text-violet-700 inline-flex items-center gap-1.5 transition-colors"
+                              className="w-full text-left text-xs px-2.5 py-1.5 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 text-slate-700 dark:text-zinc-200 font-medium inline-flex items-center gap-2 transition-colors"
                             >
-                              <item.icon size={12} />
+                              <item.icon size={13} className="text-slate-400 dark:text-zinc-500" />
                               {item.label}
                             </button>
                           ))}
                         </div>
                       )}
                     </div>
+                    {/* Convert to Tasks */}
+                    <button
+                      type="button"
+                      onClick={openWhiteboardTaskPreview}
+                      className="h-8 px-2.5 rounded-lg text-xs font-medium text-slate-600 dark:text-zinc-300 hover:text-violet-700 dark:hover:text-violet-300 hover:bg-violet-50/60 dark:hover:bg-violet-950/40 flex items-center gap-1.5 transition-colors"
+                      title="Convert board to Tasks"
+                    >
+                      <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400" />
+                      <span>Tasks</span>
+                    </button>
+                    <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-0.5" />
+                    {/* Clear Board */}
                     <button
                       type="button"
                       onClick={() => resetWhiteboardCanvas()}
-                      className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center font-sans"
+                      className="h-8 w-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center justify-center transition-colors"
                       title="Clear board"
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={14} strokeWidth={1.6} />
                     </button>
-                    <div className="w-px h-5 bg-gray-200 mx-0.5" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        activateWhiteboardTool('eraser');
-                        setWhiteboardEraserMenuOpen(true);
-                      }}
-                      className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === 'eraser' ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
-                      title="Eraser"
-                    >
-                      <Eraser size={15} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => activateWhiteboardTool('image')}
-                      className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === 'image' ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
-                      title="Image"
-                    >
-                      <ImageIcon size={15} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setWhiteboardMoreMenuOpen((prev) => !prev)}
-                      className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardMoreMenuOpen ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
-                      title="More"
-                    >
-                      <MoreHorizontal size={15} />
-                    </button>
-                    <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                    <div className="relative export-menu-container">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          closeTransientMenus();
-                          setWhiteboardExportMenuOpen(!whiteboardExportMenuOpen);
-                        }}
-                        className={`h-9 px-2.5 rounded-lg flex items-center justify-center gap-1 text-[11px] font-semibold transition-colors ${whiteboardExportMenuOpen ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
-                        title="Export options"
-                      >
-                        Export {whiteboardExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                      </button>
-                      {whiteboardExportMenuOpen && (
-                        <>
-                          <div
-                            className="fixed inset-0 z-[220] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
-                            onClick={() => setWhiteboardExportMenuOpen(false)}
-                          />
-                          <div className="absolute bottom-12 left-0 z-[230] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-3.5 font-sans animate-in fade-in zoom-in-95 duration-150">
-                            <div className="flex flex-col gap-2">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Export as File</span>
-                              {[
-                                { format: 'Whiteboard', label: 'Whiteboard', desc: 'Original' },
-                                { format: 'PNG', label: 'PNG Image', desc: '.png' },
-                                { format: 'SVG', label: 'SVG Vector', desc: '.svg' },
-                                { format: 'PDF', label: 'PDF Document', desc: '.pdf' }
-                              ].map(f => (
-                                <button 
-                                  key={f.format}
-                                  disabled={isExporting}
-                                  onClick={async () => {
-                                    setIsExporting(true);
-                                    try {
-                                      await exportWhiteboard(f.format, [...whiteboardShapes, ...whiteboardStrokes, ...whiteboardWidgets], whiteboardCanvasRef.current, 'Whiteboard_Export');
-                                      showToast('Exported as ' + f.format);
-                                    } catch (e) {
-                                      showToast('Export failed: ' + e.message);
-                                    } finally {
-                                      setIsExporting(false);
-                                      setWhiteboardExportMenuOpen(false);
-                                    }
-                                  }}
-                                  className="w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                                >
-                                  <span>{f.label}</span>
-                                  <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
-                                </button>
-                              ))}
-                            </div>
-                            <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full"></div>
-                            <div className="flex flex-col gap-2">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Convert to</span>
-                              {[
-                                { target: 'Compose', icon: ComposeIcon, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
-                                { target: 'Deck', icon: DeckIcon, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
-                                { target: 'Sheets', icon: SheetIcon, color: 'text-violet-500 bg-violet-50 dark:bg-violet-950/40' }
-                              ].map(t => (
-                                <button 
-                                  key={t.target}
-                                  disabled={isExporting}
-                                  onClick={() => {
-                                    setIsExporting(true);
-                                    setTimeout(() => { 
-                                      setIsExporting(false); 
-                                      setWhiteboardExportMenuOpen(false); 
-                                      setProductMode(t.target.toLowerCase());
-                                      showToast('Converted to ' + t.target); 
-                                    }, 1500);
-                                  }}
-                                  className="w-full flex items-center gap-3 p-1.5 px-2.5 text-xs rounded-xl hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 transition-colors font-semibold text-slate-700 dark:text-zinc-200"
-                                >
-                                  <div className={`p-1.5 rounded-lg ${t.color}`}>
-                                    <t.icon size={14} />
-                                  </div>
-                                  {t.target}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
                   </div>
 
-                  {whiteboardTaskPreviewOpen && (
-                    <div className="fixed inset-0 z-30 bg-slate-950/28 backdrop-blur-[2px] flex items-center justify-center p-4">
-                      <div className="w-[920px] max-w-[96vw] max-h-[88vh] overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_30px_90px_-40px_rgba(15,23,42,0.55)] flex flex-col">
-                        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
-                          <div>
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-violet-600">AI Task Conversion Preview</div>
-                            <div className="mt-1 text-lg font-semibold text-slate-900">{whiteboardTaskPreview.projectName || 'Whiteboard Project'}</div>
-                            <div className="mt-1 text-sm text-slate-500">{whiteboardTaskPreview.summary}</div>
+                  {whiteboardTaskPreviewOpen && createPortal(
+                    <div className="fixed inset-0 z-[100000] bg-slate-950/40 dark:bg-black/70 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200 select-none">
+                      <div className="w-[880px] max-w-[96vw] max-h-[88vh] overflow-hidden rounded-[28px] border border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl shadow-2xl flex flex-col font-sans">
+                        {/* Header */}
+                        <div className="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-zinc-800 px-6 py-4.5 bg-slate-50/50 dark:bg-zinc-900/50">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-violet-600 dark:text-violet-400">
+                              <span className="w-3.5 h-3.5 rounded-full border-[1.8px] border-violet-500 dark:border-violet-400 flex items-center justify-center shrink-0" />
+                              <span>AI Task Conversion</span>
+                            </div>
+                            <h2 className="mt-1 text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{whiteboardTaskPreview.projectName || 'Whiteboard Project'}</h2>
+                            <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400 line-clamp-1">{whiteboardTaskPreview.summary}</p>
                           </div>
                           <button
                             type="button"
                             onClick={() => setWhiteboardTaskPreviewOpen(false)}
-                            className="h-9 w-9 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 flex items-center justify-center"
-                            title="Close preview"
+                            className="h-8 w-8 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 dark:hover:text-zinc-200 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                            title="Close"
                           >
-                            <X size={16} />
+                            <X size={15} />
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-5 gap-2 border-b border-slate-100 px-5 py-3 bg-slate-50/70">
+                        {/* Stats Metrics Bar */}
+                        <div className="grid grid-cols-5 gap-2 border-b border-slate-100 dark:border-zinc-800 px-6 py-3 bg-slate-50/30 dark:bg-zinc-900/30">
                           {[
                             { label: 'Tasks', value: whiteboardTaskPreviewStats.tasks },
                             { label: 'Milestones', value: whiteboardTaskPreviewStats.milestones },
@@ -61347,45 +62169,49 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             { label: 'Phases', value: whiteboardTaskPreviewStats.phases },
                             { label: 'Dependencies', value: whiteboardTaskPreviewStats.dependencies },
                           ].map((stat) => (
-                            <div key={stat.label} className="rounded-2xl border border-slate-200 bg-white px-3 py-2">
-                              <div className="text-[11px] font-medium text-slate-500">{stat.label}</div>
-                              <div className="mt-1 text-lg font-semibold text-slate-900">{stat.value}</div>
+                            <div key={stat.label} className="rounded-xl border border-slate-200/60 dark:border-zinc-800 bg-white/80 dark:bg-zinc-800/80 px-3 py-1.5 shadow-2xs">
+                              <div className="text-[10px] font-semibold text-slate-400 dark:text-zinc-400 uppercase tracking-wider">{stat.label}</div>
+                              <div className="mt-0.5 text-base font-bold text-slate-800 dark:text-zinc-100">{stat.value}</div>
                             </div>
                           ))}
                         </div>
 
-                        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-slate-100">
-                          <div className="text-sm text-slate-500">Review detected work items before sending them into Tasks.</div>
+                        {/* Action Subheader */}
+                        <div className="flex items-center justify-between gap-3 px-6 py-2.5 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                          <div className="text-[11.5px] text-slate-500 dark:text-zinc-400">Review and customize items before importing into your task board.</div>
                           <button
                             type="button"
                             onClick={mergeWhiteboardTaskPreviewDuplicates}
-                            className="inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-100"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200/80 dark:border-violet-800 bg-violet-50/70 dark:bg-violet-950/40 px-2.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 hover:bg-violet-100 transition-colors cursor-pointer"
                           >
-                            <Sparkles size={13} />
-                            Merge duplicates
+                            <RegaarderAiIcon size={12} />
+                            <span>Merge duplicates</span>
                           </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto thin-scrollbar px-5 py-4 space-y-3 bg-[#fbfbfe]">
+                        {/* Item Cards List */}
+                        <div className="flex-1 overflow-y-auto thin-scrollbar px-6 py-4 space-y-3 bg-[#FAFAFC] dark:bg-[#121214]">
                           {whiteboardTaskPreview.items.map((item) => (
-                            <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
-                              <div className="grid grid-cols-[minmax(0,1.6fr)_130px_130px_130px_auto] gap-2 items-start">
+                            <div key={item.id} className="rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:border-slate-300 dark:hover:border-zinc-700 transition-colors">
+                              <div className="grid grid-cols-[minmax(0,1.6fr)_120px_120px_120px_auto] gap-2.5 items-start">
                                 <div>
                                   <input
                                     value={item.title}
                                     onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { title: event.target.value })}
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-violet-300"
+                                    placeholder="Task title"
+                                    className="w-full rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-slate-50/40 dark:bg-zinc-800/40 px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-zinc-100 outline-none focus:border-violet-400 focus:bg-white dark:focus:bg-zinc-800 transition-all"
                                   />
                                   <textarea
                                     value={item.notes || ''}
                                     onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { notes: event.target.value })}
-                                    className="mt-2 h-20 w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 outline-none focus:border-violet-300"
+                                    placeholder="Add notes or description..."
+                                    className="mt-2 h-16 w-full resize-none rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-slate-50/40 dark:bg-zinc-800/40 px-3 py-1.5 text-[11px] text-slate-600 dark:text-zinc-300 outline-none focus:border-violet-400 focus:bg-white dark:focus:bg-zinc-800 transition-all"
                                   />
                                 </div>
                                 <select
                                   value={item.type}
                                   onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { type: event.target.value })}
-                                  className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                                  className="rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-400 cursor-pointer"
                                 >
                                   <option value="task">Task</option>
                                   <option value="milestone">Milestone</option>
@@ -61395,84 +62221,86 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   value={item.phase || ''}
                                   onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { phase: event.target.value })}
                                   placeholder="Phase"
-                                  className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                                  className="rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-400"
                                 />
                                 <input
                                   value={item.assignee || ''}
                                   onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { assignee: event.target.value })}
                                   placeholder="Assignee"
-                                  className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                                  className="rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-400"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => removeWhiteboardTaskPreviewItem(item.id)}
-                                  className="h-9 w-9 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center"
-                                  title="Remove item"
+                                  className="h-8 w-8 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                  title="Delete item"
                                 >
-                                  <Trash2 size={14} />
+                                  <Trash2 size={13} />
                                 </button>
                               </div>
 
-                              <div className="mt-2 grid grid-cols-[140px_140px_minmax(0,1fr)] gap-2">
+                              <div className="mt-2.5 grid grid-cols-[130px_130px_minmax(0,1fr)] gap-2.5">
                                 <select
                                   value={item.priority || 'low'}
                                   onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { priority: event.target.value })}
-                                  className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                                  className="rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-400 cursor-pointer"
                                 >
-                                  <option value="low">Low priority</option>
-                                  <option value="medium">Medium priority</option>
-                                  <option value="high">High priority</option>
+                                  <option value="low">Low Priority</option>
+                                  <option value="medium">Medium Priority</option>
+                                  <option value="high">High Priority</option>
                                 </select>
                                 <input
                                   value={item.dueLabel || ''}
                                   onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { dueLabel: event.target.value })}
                                   placeholder="Due date"
-                                  className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                                  className="rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-400"
                                 />
                                 <input
                                   value={(item.dependencies || []).join(', ')}
-                                  onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { dependencies: event.target.value.split(',').map((value) => value.trim()).filter(Boolean) })}
-                                  placeholder="Dependencies"
-                                  className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                                  onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { dependencies: event.target.value.split(',').map((val) => val.trim()).filter(Boolean) })}
+                                  placeholder="Dependencies (comma separated)"
+                                  className="rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-400"
                                 />
                               </div>
 
-                              <div className="mt-2 flex flex-wrap gap-1.5">
+                              <div className="mt-2.5 flex flex-wrap gap-1.5">
                                 {(item.subtasks || []).map((subtask) => (
-                                  <span key={`${item.id}-${subtask}`} className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
+                                  <span key={`${item.id}-${subtask}`} className="inline-flex items-center rounded-lg border border-slate-200/80 dark:border-zinc-750 bg-slate-50/80 dark:bg-zinc-800/80 px-2 py-0.5 text-[10.5px] font-medium text-slate-600 dark:text-zinc-300">
                                     {subtask}
                                   </span>
                                 ))}
                                 {!item.subtasks?.length && (
-                                  <span className="text-[11px] text-slate-400">No subtasks detected</span>
+                                  <span className="text-[10.5px] text-slate-400 dark:text-zinc-500">No subtasks detected</span>
                                 )}
                               </div>
                             </div>
                           ))}
                         </div>
 
-                        <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-4 bg-white">
-                          <div className="text-xs text-slate-500">AI considered sticky notes, text blocks, comments, connectors, and board layout before building this plan.</div>
+                        {/* Footer */}
+                        <div className="flex items-center justify-between gap-4 border-t border-slate-100 dark:border-zinc-800 px-6 py-3.5 bg-white dark:bg-zinc-900">
+                          <div className="text-[11.5px] text-slate-500 dark:text-zinc-400">Structured automatically from board shapes, stickies, and notes.</div>
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
                               onClick={() => setWhiteboardTaskPreviewOpen(false)}
-                              className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                              className="h-9 px-4 rounded-xl border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                             >
                               Cancel
                             </button>
                             <button
                               type="button"
                               onClick={importWhiteboardPreviewToTasks}
-                              className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-700"
+                              className="h-9 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold inline-flex items-center gap-2 transition-colors cursor-pointer shadow-sm shadow-violet-600/20"
                             >
-                              <CheckSquare size={13} />
-                              Import to Tasks
+                              <CheckSquare size={13} strokeWidth={2} />
+                              <span>Import to Tasks</span>
                             </button>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </div>,
+                    document.body
                   )}
                 </div>
                 
@@ -63790,7 +64618,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {/* Persistent Floating AI Prompt Bar */}
         {/* Subtle dimming backdrop overlay: active when prompt is expanded or slash menu is open */}
-        {(isAnySlashMenuOpen || shouldShowPromptBackdrop) && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
+        {(isAnySlashMenuOpen || shouldShowPromptBackdrop) && productMode !== 'whiteboard' && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
           <div
             aria-hidden
             onClick={() => {
@@ -63817,7 +64645,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             />
           </div>
         )}
-        {activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
+        {productMode !== 'whiteboard' && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
         <div
           className={`fixed bottom-14 ${isPromptSlashMenuOpen ? 'z-[250000]' : 'z-[1210]'} transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 scale-95 translate-y-4 pointer-events-none' : 'opacity-100 scale-100 translate-y-0 pointer-events-auto'}`}
           style={{
@@ -64310,7 +65138,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
 
 
-        {!isComposing && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
+        {!isComposing && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
           <div 
             className="pointer-events-none fixed z-[15000] flex items-center justify-center animate-in fade-in zoom-in-95 duration-200"
             style={{
@@ -64460,7 +65288,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
 
         {/* Bottom Status Bar */}
-        {activeRightTab !== 'whiteboard' && (
+        {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && (
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
           <div className="flex items-center gap-6">
             <span title="Real-time document stats">{documentStats.words} words - {documentStats.characters} characters</span>
@@ -64929,7 +65757,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </div>
                           </>
                         )}
-                        <Sparkles size={18} strokeWidth={1.5} className="text-violet-400 shrink-0" />
+                        <RegaarderAiIcon size={18} className="text-violet-400 shrink-0" />
                         <input 
                           type="text"
                           value={roomAIPrompt}
