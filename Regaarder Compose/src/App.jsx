@@ -26437,82 +26437,7 @@ Return ONLY valid JSON matching the schema.`;
     return false;
   }, [callGemini, computeDocumentOutline, computeDocumentStats, injectIntoSavedSelection, replaceEntireCompositionText, standardizeChartData, renderBlockInPreview]);
 
-  // Expose Whiteboard API globally to LLMs, Assistant, and Developer Tools
-  useEffect(() => {
-    window.whiteboardAPI = {
-      getWidgets: () => whiteboardWidgets,
-      setWidgets: (widgets) => setWhiteboardWidgets(widgets),
-      addStickyNote: ({ text, color, x = 100, y = 100, width = 240, height = 180 }) => {
-        const id = `sticky-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-        const next = {
-          id,
-          type: 'sticky',
-          text: text || 'New Sticky Note',
-          color: color || '#fde047',
-          x,
-          y,
-          width,
-          height,
-          fontFamily: 'Calibri',
-          fontSize: 12,
-        };
-        setWhiteboardWidgets((prev) => [...prev, next]);
-        return next;
-      },
-      addTextBlock: ({ text, x = 100, y = 100, fontSize = 16, width = 300, height = 100 }) => {
-        const id = `text-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-        const next = {
-          id,
-          type: 'text',
-          text: text || 'Text Block',
-          x,
-          y,
-          width,
-          height,
-          fontSize,
-          fontFamily: 'Calibri',
-        };
-        setWhiteboardWidgets((prev) => [...prev, next]);
-        return next;
-      },
-      addImageWidget: ({ imageUrl, x = 100, y = 100, width = 300, height = 200 }) => {
-        const id = `image-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-        const next = {
-          id,
-          type: 'image',
-          imageUrl: imageUrl || '',
-          x,
-          y,
-          width,
-          height,
-        };
-        setWhiteboardWidgets((prev) => [...prev, next]);
-        return next;
-      },
-      clearBoard: () => {
-        setWhiteboardStrokes([]);
-        setWhiteboardShapes([]);
-        setWhiteboardRedoStrokes([]);
-        setWhiteboardCurrentStroke('');
-        setWhiteboardCurrentShape(null);
-        setWhiteboardWidgets([]);
-        setWhiteboardComments([]);
-        setSelectedWidgetId(null);
-        setSelectedShapeIndex(null);
-        setWhiteboardActiveCommentId(null);
-        setWhiteboardPanOffset({ x: 0, y: 0 });
-      },
-      generateAiTemplate: (prompt) => {
-        return generateAiWhiteboardTemplate(prompt);
-      },
-      openTaskPreview: () => {
-        openWhiteboardTaskPreview();
-      },
-      exportSnapshot: (mode = 'png') => {
-        return exportWhiteboardQuick(mode);
-      }
-    };
-  }, [whiteboardWidgets, whiteboardShapes, whiteboardComments, generateAiWhiteboardTemplate, openWhiteboardTaskPreview, exportWhiteboardQuick]);
+
 
   // Function to process AI prompt and generate structured output
   const handleAISubmit = async (promptText, options = {}) => {
@@ -29662,8 +29587,11 @@ Respond with valid JSON formatted like this:
         widgets: whiteboardWidgets,
         strokes: whiteboardStrokes,
         shapes: whiteboardShapes,
+        comments: whiteboardComments,
       }),
-      addStickyNote: (text, color = '#fef08a', x = 300, y = 200) => {
+      getWidgets: () => whiteboardWidgets,
+      setWidgets: (widgets) => setWhiteboardWidgets(widgets),
+      addStickyNote: (text, color = '#fef08a', x = 300, y = 200, width = 240, height = 180) => {
         const id = `sticky-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         setWhiteboardWidgets(prev => [...prev, {
           id,
@@ -29672,14 +29600,15 @@ Respond with valid JSON formatted like this:
           color,
           x,
           y,
-          w: 200,
-          h: 160,
-          rotation: 0,
+          width,
+          height,
+          fontFamily: 'Calibri',
+          fontSize: 12,
         }]);
         showToast('Sticky note added');
         return id;
       },
-      addTextBlock: (text, x = 300, y = 200, fontSize = 16) => {
+      addTextBlock: (text, x = 300, y = 200, fontSize = 16, width = 280, height = 100) => {
         const id = `text-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         setWhiteboardWidgets(prev => [...prev, {
           id,
@@ -29688,6 +29617,22 @@ Respond with valid JSON formatted like this:
           x,
           y,
           fontSize,
+          width,
+          height,
+          fontFamily: 'Calibri',
+        }]);
+        return id;
+      },
+      addImageWidget: (imageUrl, x = 300, y = 200, width = 300, height = 200) => {
+        const id = `image-${Date.now()}`;
+        setWhiteboardWidgets(prev => [...prev, {
+          id,
+          type: 'image',
+          imageUrl: imageUrl || '',
+          x,
+          y,
+          width,
+          height,
         }]);
         return id;
       },
@@ -29705,35 +29650,36 @@ Respond with valid JSON formatted like this:
         setWhiteboardShapes(prev => [...prev, shape]);
         return shape;
       },
-      addConnector: (fromId, toId, label = '') => {
-        const id = `connector-${Date.now()}`;
-        setWhiteboardWidgets(prev => [...prev, {
-          id,
-          type: 'connector',
-          fromId,
-          toId,
-          label,
-        }]);
-        return id;
-      },
       applyTemplate: (templateKey) => {
         applyWhiteboardTemplate(templateKey);
       },
       generateAiTemplate: (prompt) => {
-        setWhiteboardTemplatePrompt(prompt);
-        generateAiWhiteboardTemplate();
+        return generateAiWhiteboardTemplate(prompt);
       },
-      clearCanvas: () => {
-        resetWhiteboardCanvas();
+      clearBoard: () => {
+        setWhiteboardStrokes([]);
+        setWhiteboardShapes([]);
+        setWhiteboardRedoStrokes([]);
+        setWhiteboardCurrentStroke('');
+        setWhiteboardCurrentShape(null);
+        setWhiteboardWidgets([]);
+        setWhiteboardComments([]);
+        setSelectedWidgetId(null);
+        setSelectedShapeIndex(null);
+        setWhiteboardActiveCommentId(null);
+        setWhiteboardPanOffset({ x: 0, y: 0 });
       },
-      convertToTasks: () => {
+      openTaskPreview: () => {
         openWhiteboardTaskPreview();
+      },
+      exportSnapshot: (format = 'png') => {
+        return exportWhiteboardQuick(format);
       }
     };
     return () => {
       delete window.whiteboardAPI;
     };
-  }, [whiteboardWidgets, whiteboardStrokes, whiteboardShapes, activeDocId]);
+  }, [whiteboardWidgets, whiteboardStrokes, whiteboardShapes, whiteboardComments, activeDocId]);
 
   // Keep active Whiteboard document state synced
   useEffect(() => {
