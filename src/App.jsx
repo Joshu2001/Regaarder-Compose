@@ -14850,7 +14850,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
             }`}
             title="Toggle AI-assisted semantic search"
           >
-            <Sparkles size={12} className={docSearchAiEnabled ? 'text-violet-600 animate-pulse' : 'text-slate-400'} />
+            <RegaarderAiIcon size={13} className={docSearchAiEnabled ? 'text-violet-600 dark:text-violet-300 animate-pulse' : 'text-slate-400 dark:text-zinc-500'} />
             <span>AI {docSearchAiEnabled ? 'On' : 'Off'}</span>
           </button>
         </div>
