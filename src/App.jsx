@@ -10772,76 +10772,74 @@ const DEFAULT_DECK_SLIDES = [
   })), []);
 
   const buildAiTemplateWidgets = useCallback((prompt, sources = []) => {
+    const topic = String(prompt || 'Strategic Brainstorm').trim();
     const sourceNames = sources.map((item) => item.name).filter(Boolean);
-    const chunks = String(prompt || '')
-      .split(/\n|,|;|\.|\|/)
-      .map((segment) => segment.trim())
-      .filter(Boolean);
-    const base = chunks.length ? chunks.slice(0, 4) : ['Goals', 'Audience', 'Flow', 'Deliverables'];
-    const widgets = [
-      {
-        type: 'text',
-        x: 56,
-        y: 36,
-        width: 340,
-        height: 100,
-        text: `AI Template\n${prompt.trim() || 'Generated from attached sources'}`,
-        fontFamily: 'Calibri',
-        fontSize: 15,
-        isBold: true,
-        isItalic: false,
-        isUnderline: false,
-        textAlign: 'left',
-        textColor: '#111827',
-        highlightColor: '#ffffff',
-        opacity: 100,
-        hasList: false,
-        listType: 'bullet',
-        linkedUrl: '',
-      },
-      {
-        type: 'sticky',
-        x: 430,
-        y: 36,
-        width: 280,
-        height: 100,
-        color: '#bfdbfe',
-        text: sourceNames.length ? `Sources\n${sourceNames.slice(0, 5).join('\n')}` : 'Sources\nCustomer input',
-        fontFamily: 'Calibri',
-        fontSize: 13,
-        isBold: false,
-        isItalic: false,
-        isUnderline: false,
-        textAlign: 'left',
-        textColor: '#111827',
-        highlightColor: '#ffffff',
-        opacity: 100,
-        hasList: false,
-        listType: 'bullet',
-        linkedUrl: '',
-      },
-      ...base.map((item, index) => ({
-        type: 'sticky',
-        x: 56 + index * 220,
-        y: 170,
-        width: 200,
-        height: 120,
-        color: ['#fde68a', '#bbf7d0', '#fbcfe8', '#c4b5fd'][index % 4],
-        text: `${item}\nAction items\nOwner\nTimeline`,
-        fontFamily: 'Calibri',
-        fontSize: 13,
-        isBold: false,
-        isItalic: false,
-        isUnderline: false,
-        textAlign: 'left',
-        textColor: '#111827',
-        highlightColor: '#ffffff',
-        opacity: 100,
-        hasList: false,
-        listType: 'bullet',
-        linkedUrl: '',
-      })),
+    const colors = ['#bfdbfe', '#fde68a', '#bbf7d0', '#fbcfe8', '#fed7aa', '#ddd6fe'];
+
+    // Topic-aware intelligent categories
+    const isStartup = /startup|business|saas|app|idea|venture|product/i.test(topic);
+    const isMarketing = /marketing|growth|campaign|social|brand|seo/i.test(topic);
+    const isTech = /eng|code|tech|arch|infra|api|db|system/i.test(topic);
+
+    const sections = isStartup ? [
+      { title: '1. Problem & Customer Pain', items: ['Core underserved customer pain points in current workflows', 'Target ICP demographics, company size, and budget', 'Urgency, frequency, and market willingness to pay'] },
+      { title: '2. Value Prop & 10x Moat', items: ['Unfair technological or distribution advantage', 'Primary workflow transformation and speed improvement', 'Competitive barriers against fast-follower alternatives'] },
+      { title: '3. Monetization Model', items: ['Tiered SaaS subscription or usage-based pricing', 'Projected customer lifetime value (LTV) and CAC payback', 'High-margin enterprise expansion and add-ons'] },
+      { title: '4. Go-To-Market Engine', items: ['High-intent organic search & social distribution', 'Targeted outbound and early pilot partner acquisition', 'Product-led growth loops & collaborative viral invites'] },
+      { title: '5. Key Risks & Mitigations', items: ['Platform dependency & third-party API exposure', 'Technical scalability and latency bottlenecks', 'Contingency plans & early validation checkpoints'] },
+      { title: '6. MVP Scope & Milestones', items: ['Must-have v1 features for private beta release', '30-60-90 day milestone delivery targets', 'Core activation, retention, and NPS indicators'] }
+    ] : isMarketing ? [
+      { title: '1. Campaign Objectives', items: ['Qualified pipeline and customer acquisition goals', 'Brand visibility across key vertical channels', 'Target blended CAC and ROI metrics'] },
+      { title: '2. Audience Segmentation', items: ['Primary decision-maker persona and pain triggers', 'Secondary technical and financial evaluators', 'High-converting messaging angles and copy hooks'] },
+      { title: '3. Channels & Distribution', items: ['Organic educational content and case studies', 'Targeted paid acquisition across search and LinkedIn', 'Automated email onboarding and nurture sequence'] },
+      { title: '4. Creative Assets Needed', items: ['Interactive product tours and live demo recordings', 'Comparison landing pages and customer proof points', 'High-impact ad visuals and multi-variant copy tests'] },
+      { title: '5. KPIs & Analytics', items: ['Funnel conversion rate at each milestone stage', 'Cost per acquisition (CPA) and demo booked rate', 'Customer retention and referral velocity'] }
+    ] : isTech ? [
+      { title: '1. Architecture & Boundaries', items: ['Decoupled service contracts and modular APIs', 'State caching, consistency, and replication topology', 'Identity, token authentication, and RBAC policies'] },
+      { title: '2. Core Ingestion & Engine', items: ['Asynchronous event streaming and message queuing', 'High-throughput execution orchestrator', 'Real-time state sync and WebSocket transport'] },
+      { title: '3. Data Layer & Indexing', items: ['Schema design and query performance indexing', 'Read-replica routing and cold storage archival', 'Automated backups and disaster recovery runbooks'] },
+      { title: '4. Observability & CI/CD', items: ['Comprehensive distributed tracing and error alerting', 'Automated regression test suites and canary deploys', 'Zero-downtime database migrations'] }
+    ] : [
+      { title: '1. Strategic Objectives', items: [`Define primary goals for ${topic}`, 'Stakeholder alignment and resource allocation', 'Clear deliverables and criteria for success'] },
+      { title: '2. Insights & Opportunities', items: ['Key user research findings and behavioral signals', 'High-impact market trends and leverage points', 'Prioritized quick wins vs. long-term initiatives'] },
+      { title: '3. Execution Roadmap', items: ['Immediate action items for Phase 1 kickoff', 'Core sprint execution and team deliverables', 'Final review, QA, and launch readiness'] },
+      { title: '4. Risks & Dependencies', items: ['Critical path blockers across cross-functional teams', 'Resource constraints and mitigation tactics', 'Contingency milestones and fallback plans'] }
     ];
+
+    const colWidth = 260;
+    const rowHeight = 220;
+    const cols = 3;
+    const startX = 60;
+    const startY = 60;
+
+    const widgets = sections.map((sec, index) => {
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      const formattedBody = sec.items.map(item => `• ${item}`).join('\n');
+      return {
+        id: `ai-sticky-${Date.now()}-${index}`,
+        type: 'sticky',
+        x: startX + col * colWidth,
+        y: startY + row * rowHeight,
+        width: 240,
+        height: 195,
+        color: colors[index % colors.length],
+        text: `${sec.title}\n\n${formattedBody}`,
+        fontFamily: 'Calibri',
+        fontSize: 12,
+        isBold: false,
+        isItalic: false,
+        isUnderline: false,
+        textAlign: 'left',
+        textColor: '#111827',
+        highlightColor: '#ffffff',
+        opacity: 100,
+        hasList: false,
+        listType: 'bullet',
+        linkedUrl: '',
+      };
+    });
+
     return cloneTemplateWidgets(widgets, 'ai-generated');
   }, [cloneTemplateWidgets]);
 
@@ -28229,6 +28227,83 @@ Return ONLY valid JSON matching the schema.`;
     return false;
   }, [callGemini, computeDocumentOutline, computeDocumentStats, injectIntoSavedSelection, replaceEntireCompositionText, standardizeChartData, renderBlockInPreview]);
 
+  // Expose Whiteboard API globally to LLMs, Assistant, and Developer Tools
+  useEffect(() => {
+    window.whiteboardAPI = {
+      getWidgets: () => whiteboardWidgets,
+      setWidgets: (widgets) => setWhiteboardWidgets(widgets),
+      addStickyNote: ({ text, color, x = 100, y = 100, width = 240, height = 180 }) => {
+        const id = `sticky-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+        const next = {
+          id,
+          type: 'sticky',
+          text: text || 'New Sticky Note',
+          color: color || '#fde047',
+          x,
+          y,
+          width,
+          height,
+          fontFamily: 'Calibri',
+          fontSize: 12,
+        };
+        setWhiteboardWidgets((prev) => [...prev, next]);
+        return next;
+      },
+      addTextBlock: ({ text, x = 100, y = 100, fontSize = 16, width = 300, height = 100 }) => {
+        const id = `text-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+        const next = {
+          id,
+          type: 'text',
+          text: text || 'Text Block',
+          x,
+          y,
+          width,
+          height,
+          fontSize,
+          fontFamily: 'Calibri',
+        };
+        setWhiteboardWidgets((prev) => [...prev, next]);
+        return next;
+      },
+      addImageWidget: ({ imageUrl, x = 100, y = 100, width = 300, height = 200 }) => {
+        const id = `image-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+        const next = {
+          id,
+          type: 'image',
+          imageUrl: imageUrl || '',
+          x,
+          y,
+          width,
+          height,
+        };
+        setWhiteboardWidgets((prev) => [...prev, next]);
+        return next;
+      },
+      clearBoard: () => {
+        setWhiteboardStrokes([]);
+        setWhiteboardShapes([]);
+        setWhiteboardRedoStrokes([]);
+        setWhiteboardCurrentStroke('');
+        setWhiteboardCurrentShape(null);
+        setWhiteboardWidgets([]);
+        setWhiteboardComments([]);
+        setSelectedWidgetId(null);
+        setSelectedShapeIndex(null);
+        setWhiteboardActiveCommentId(null);
+        setWhiteboardPanOffset({ x: 0, y: 0 });
+      },
+      generateAiTemplate: (prompt) => {
+        return generateAiWhiteboardTemplate(prompt);
+      },
+      openTaskPreview: () => {
+        openWhiteboardTaskPreview();
+      },
+      exportSnapshot: (mode = 'png') => {
+        return exportWhiteboardQuick(mode);
+      }
+    };
+  }, [whiteboardWidgets, whiteboardShapes, whiteboardComments, generateAiWhiteboardTemplate, openWhiteboardTaskPreview, exportWhiteboardQuick]);
+
   // Function to process AI prompt and generate structured output
   const handleAISubmit = async (promptText, options = {}) => {
     if (!promptText.trim()) return;
@@ -31509,32 +31584,42 @@ Answer the user's question, provide an insightful summary, or explain the contex
     showToast(`${selectedMeta?.label || 'Template'} loaded`);
   };
 
-  const generateAiWhiteboardTemplate = async () => {
-    const prompt = whiteboardTemplatePrompt.trim();
+  const generateAiWhiteboardTemplate = async (overridePrompt) => {
+    const rawPrompt = typeof overridePrompt === 'string' ? overridePrompt : whiteboardTemplatePrompt;
+    const prompt = (rawPrompt || '').trim();
     if (!prompt && !whiteboardTemplateSources.length) {
-      showToast('Add customer input or attach source files first');
+      showToast('Add a topic or attach source files first');
       return;
     }
     setIsGeneratingAiTemplate(true);
     showToast(`Generating board with ${composeSelectedModel?.name || 'AI'}...`);
 
+    const colors = ['#bfdbfe', '#fde68a', '#bbf7d0', '#fbcfe8', '#fed7aa', '#ddd6fe'];
+
     try {
-      const systemPrompt = `You are an expert visual workspace and agile whiteboard architect. Given the user's objective, generate a comprehensive visual whiteboard template with 4 to 8 distinct, content-rich sticky notes organized across logical categories or phases. Output strictly JSON with this schema:
+      const systemPrompt = `You are an elite agile workspace architect and strategic visual thinker.
+Given the user's objective, generate a comprehensive visual whiteboard template containing 4 to 8 rich, actionable, and topic-specific sticky notes.
+Each sticky note must contain high-value, realistic bullet points or strategic details (never placeholder generic text).
+
+Respond with valid JSON formatted like this:
 {
-  "category": "Startup" | "Enterprise" | "Personal" | "Engineering",
   "title": "Creative Title of Board",
-  "summary": "Brief 1-sentence summary",
-  "widgets": [
+  "category": "Startup" | "Product" | "Strategy" | "Engineering" | "Personal",
+  "summary": "Brief 1-sentence summary of the board structure",
+  "stickies": [
     {
-      "title": "Sticky Note Header",
-      "text": "Concrete, actionable bullet points, insights, or descriptions specifically about the user topic...",
-      "color": "#fef08a" | "#bbf7d0" | "#bfdbfe" | "#fbcfe8" | "#fed7aa" | "#ddd6fe",
-      "phase": "Column or Phase Name"
+      "title": "Topic Section Title",
+      "items": [
+        "Concrete actionable insight or specification",
+        "Key execution step or metric",
+        "Critical detail or decision point"
+      ],
+      "color": "#bfdbfe" | "#fde68a" | "#bbf7d0" | "#fbcfe8" | "#fed7aa" | "#ddd6fe"
     }
   ]
 }`;
 
-      const userPrompt = `Generate a structured, professional whiteboard canvas for this request:\n"""${prompt}"""\nAttached context:\n${whiteboardTemplateSources.map(s => s.name).join(', ') || 'None'}`;
+      const userPrompt = `Generate a high-tier strategic whiteboard for this objective:\n"""${prompt}"""\nAttached context: ${whiteboardTemplateSources.map(s => s.name).join(', ') || 'None'}`;
 
       const res = await callGemini({
         userPrompt,
@@ -31542,64 +31627,95 @@ Answer the user's question, provide an insightful summary, or explain the contex
         schema: {
           type: 'object',
           properties: {
-            category: { type: 'string' },
             title: { type: 'string' },
+            category: { type: 'string' },
             summary: { type: 'string' },
-            widgets: {
+            stickies: {
               type: 'array',
               items: {
                 type: 'object',
                 properties: {
                   title: { type: 'string' },
-                  text: { type: 'string' },
-                  color: { type: 'string' },
-                  phase: { type: 'string' }
+                  items: { type: 'array', items: { type: 'string' } },
+                  color: { type: 'string' }
                 },
-                required: ['text']
+                required: ['title', 'items']
               }
             }
           },
-          required: ['widgets']
+          required: ['stickies']
         }
       });
 
       let parsedData = res?.parsed;
       if (!parsedData && res?.text) {
-        parsedData = parseJsonSafely(res.text);
+        try {
+          const jsonMatch = res.text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) parsedData = JSON.parse(jsonMatch[0]);
+        } catch (e) {
+          // If JSON parse fails, attempt markdown section parsing
+          const sections = res.text.split(/\n#{1,3}\s+|\n\*\*\d+\.\s+/).filter(Boolean);
+          if (sections.length >= 2) {
+            parsedData = {
+              title: `AI ${prompt.slice(0, 24)}`,
+              stickies: sections.slice(0, 8).map((sec, i) => {
+                const lines = sec.split('\n').map(l => l.trim()).filter(Boolean);
+                return {
+                  title: lines[0] || `Section ${i + 1}`,
+                  items: lines.slice(1, 5).map(l => l.replace(/^[-*•]\s*/, '')),
+                  color: colors[i % colors.length]
+                };
+              })
+            };
+          }
+        }
       }
 
-      if (parsedData?.widgets && Array.isArray(parsedData.widgets) && parsedData.widgets.length > 0) {
-        const colors = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa', '#ddd6fe'];
-        const startX = 140;
+      const rawStickies = parsedData?.stickies || parsedData?.widgets;
+      if (rawStickies && Array.isArray(rawStickies) && rawStickies.length > 0) {
+        const startX = 60;
         const startY = 60;
-        const colWidth = 245;
-        const rowHeight = 210;
-        const cols = Math.min(4, Math.max(2, Math.ceil(Math.sqrt(parsedData.widgets.length))));
+        const colWidth = 260;
+        const rowHeight = 220;
+        const cols = Math.min(3, Math.max(2, Math.ceil(Math.sqrt(rawStickies.length))));
 
-        const widgets = parsedData.widgets.map((w, idx) => {
+        const widgets = rawStickies.map((s, idx) => {
           const col = idx % cols;
           const row = Math.floor(idx / cols);
-          const header = w.title ? `${w.title}\n\n` : '';
-          const body = w.text || '';
+          const title = s.title || `Section ${idx + 1}`;
+          const itemsText = Array.isArray(s.items) 
+            ? s.items.map(item => `• ${item}`).join('\n')
+            : (s.text || '');
+          const combinedText = itemsText ? `${title}\n\n${itemsText}` : title;
+
           return {
             id: `ai-sticky-${Date.now()}-${idx}`,
             type: 'sticky',
-            text: `${header}${body}`.trim(),
-            color: w.color || colors[idx % colors.length],
+            text: combinedText.trim(),
+            color: s.color || colors[idx % colors.length],
             x: startX + col * colWidth,
             y: startY + row * rowHeight,
-            w: 225,
-            h: 185,
-            rotation: 0,
-            phase: w.phase || ''
+            width: 240,
+            height: 195,
+            fontFamily: 'Calibri',
+            fontSize: 12,
+            isBold: false,
+            isItalic: false,
+            isUnderline: false,
+            textAlign: 'left',
+            textColor: '#111827',
+            highlightColor: '#ffffff',
+            opacity: 100,
+            hasList: false,
+            listType: 'bullet',
+            linkedUrl: '',
           };
         });
 
         const templateKey = `ai-template-${Date.now()}`;
-        const category = parsedData.category || 'Startup';
         const nextTemplate = {
           key: templateKey,
-          category,
+          category: parsedData.category || 'Strategy',
           label: parsedData.title || `AI ${prompt.slice(0, 24)}`,
           detail: parsedData.summary || `Generated with ${composeSelectedModel?.name || 'AI'}`,
           preview: widgets.slice(0, 4).map(w => w.color),
@@ -31626,7 +31742,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
         return;
       }
     } catch (err) {
-      console.warn('AI live generation fallback to heuristic:', err);
+      console.warn('AI live generation fallback:', err);
     } finally {
       setIsGeneratingAiTemplate(false);
     }
