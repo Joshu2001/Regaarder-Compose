@@ -14809,7 +14809,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
           </div>
         </div>
       </>,
-      document.body
+      typeof document !== 'undefined' ? (document.fullscreenElement ?? document.body) : null
     );
   };
 
@@ -45905,11 +45905,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   type="button"
                   data-workspace-switcher="true"
-                  onClick={(e) => {
+                  onPointerDown={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     const rect = e.currentTarget.getBoundingClientRect();
                     setWorkspaceSwitcherAnchorRect(rect);
                     setWorkspaceSwitcherOpen((prev) => !prev);
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
                   }}
                   className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 cursor-pointer ${
                     workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
@@ -66859,11 +66863,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <button
                 type="button"
                 data-workspace-switcher="true"
-                onClick={(e) => {
+                onPointerDown={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   const rect = e.currentTarget.getBoundingClientRect();
                   setWorkspaceSwitcherAnchorRect(rect);
                   setWorkspaceSwitcherOpen((prev) => !prev);
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
                 }}
                 className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 cursor-pointer ${
                   workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
@@ -70648,7 +70656,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       const rawY = event.clientY - rect.top;
                       const x = rawX - whiteboardPanOffset.x;
                       const y = rawY - whiteboardPanOffset.y;
-                      setWhiteboardStickyCursorPosition({ x, y });
+                      if (whiteboardTool === 'sticky') {
+                        setWhiteboardStickyCursorPosition({ x, y });
+                      } else if (whiteboardStickyCursorPosition !== null) {
+                        setWhiteboardStickyCursorPosition(null);
+                      }
                       if (whiteboardTool === 'sticky' && whiteboardStickyDragStart) {
                         const deltaX = x - whiteboardStickyDragStart.x;
                         const deltaY = y - whiteboardStickyDragStart.y;
@@ -70827,6 +70839,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setWhiteboardCurrentStroke('');
                       setIsWhiteboardDrawing(false);
                       setWhiteboardLineAnchor(null);
+                    }}
+                    onPointerLeave={() => {
+                      if (whiteboardStickyCursorPosition !== null) {
+                        setWhiteboardStickyCursorPosition(null);
+                      }
                     }}
                   />
                   {whiteboardTool === 'sticky' && whiteboardStickyCursorPosition && (
@@ -72625,7 +72642,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       </div>
                     </div>,
-                    document.body
+                    typeof document !== 'undefined' ? (document.fullscreenElement ?? document.body) : null
                   )}
                 </div>
                 
