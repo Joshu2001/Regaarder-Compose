@@ -10777,11 +10777,32 @@ const DEFAULT_DECK_SLIDES = [
     const colors = ['#bfdbfe', '#fde68a', '#bbf7d0', '#fbcfe8', '#fed7aa', '#ddd6fe'];
 
     // Topic-aware intelligent categories
-    const isStartup = /startup|business|saas|app|idea|venture|product/i.test(topic);
+    const isHabit = /habit|lazy|procrastinat|routine|dopamine|focus|discipline|mindset|overcome|distract/i.test(topic);
+    const isFitness = /fitness|workout|gym|diet|nutrition|health|training|weight/i.test(topic);
+    const isStartup = /startup|business|saas|app|idea|venture|product|monetiz/i.test(topic);
     const isMarketing = /marketing|growth|campaign|social|brand|seo/i.test(topic);
-    const isTech = /eng|code|tech|arch|infra|api|db|system/i.test(topic);
+    const isTech = /eng|code|tech|arch|infra|api|db|system|backend|frontend/i.test(topic);
+    const isLearning = /learn|study|exam|course|skill|read|book/i.test(topic);
 
-    const sections = isStartup ? [
+    const sections = isHabit ? [
+      { title: '1. Cue & Trigger Audit', items: ['Identify high-risk procrastination triggers (boredom, fatigue, phone notifications)', 'Map the exact time of day when friction is highest', 'Isolate avoidance patterns and emotional resistance triggers'] },
+      { title: '2. The 2-Minute Micro Habit', items: ['Reduce entry barrier: start with 120 seconds of focused action', 'Focus purely on initiating the task rather than finishing it', 'Celebrate micro-wins immediately to generate positive dopamine loops'] },
+      { title: '3. Environment & Friction Design', items: ['Place phone in another room during scheduled focus blocks', 'Prepare workspace and open needed tabs the night before', 'Add friction to time-wasting apps and social media loops'] },
+      { title: '4. Habit Stacking & Anchors', items: ['Attach new disciplined habit immediately after an established daily anchor', 'Example: After morning coffee -> 25 minutes of deep priority work', 'Use visual checklists or sticky trackers on your desk'] },
+      { title: '5. Distraction Diet & Reset', items: ['Implement 50/10 Pomodoro sprints with zero browser tab clutter', 'Set strict boundaries for dopamine consumption (video feeds/gaming)', 'Replace passive scrolling with a 5-minute walk or hydration break'] },
+      { title: '6. Never Miss Twice Protocol', items: ['Permit one off-day without guilt, but strictly enforce no consecutive misses', 'Plan emergency backup routine (5-min minimum) for chaotic days', 'Review weekly adherence score every Sunday evening'] }
+    ] : isFitness ? [
+      { title: '1. Baseline & Clear Targets', items: ['Establish measurable 60-day strength, endurance, or weight targets', 'Calculate maintenance calories, protein intake, and hydration goals', 'Schedule 3-4 non-negotiable weekly training slots'] },
+      { title: '2. Progressive Overload Program', items: ['Compound movement foundations (Squat, Hinge, Push, Pull)', 'Track rep ranges, sets, and weight increments weekly', 'Prioritize strict form and time-under-tension over ego lifting'] },
+      { title: '3. Nutrition & Meal Prep', items: ['Batch cook high-protein foundational meals on Sundays', 'Keep pre-portioned healthy snacks readily accessible', 'Eliminate liquid sugar and ultra-processed trigger foods'] },
+      { title: '4. Recovery & Sleep Hygiene', items: ['Target 7.5 to 8.5 hours of dark, cool, consistent sleep', 'Hydrate with electrolytes upon waking and pre-workout', 'Active recovery days: mobility drills, stretching, and 10k steps'] },
+      { title: '5. Accountability & Tracking', items: ['Log every workout in a dedicated notebook or tracking app', 'Take weekly progress photos and body circumference measurements', 'Partner with a gym buddy or community accountability group'] }
+    ] : isLearning ? [
+      { title: '1. Skill Deconstruction', items: ['Break broad topic into 3-5 core sub-skills that deliver 80% of value', 'Identify top textbooks, documentation, and expert case studies', 'Define an ambitious tangible capstone project to build'] },
+      { title: '2. Active Recall & Retrieval', items: ['Test understanding with flashcards and self-quizzing rather than passive reading', 'Use the Feynman Technique: explain complex concepts simply in plain words', 'Build practical code/exercises immediately after reading theory'] },
+      { title: '3. Spaced Repetition Schedule', items: ['Review new concepts at 1-day, 3-day, 7-day, and 21-day intervals', 'Maintain a single centralized knowledge base with atomic notes', 'Revisit missed problems to identify cognitive blind spots'] },
+      { title: '4. Capstone Portfolio Build', items: ['Translate theoretical knowledge into a public production project', 'Publish documented walkthroughs or open-source repositories', 'Gather peer feedback and iterate on core weaknesses'] }
+    ] : isStartup ? [
       { title: '1. Problem & Customer Pain', items: ['Core underserved customer pain points in current workflows', 'Target ICP demographics, company size, and budget', 'Urgency, frequency, and market willingness to pay'] },
       { title: '2. Value Prop & 10x Moat', items: ['Unfair technological or distribution advantage', 'Primary workflow transformation and speed improvement', 'Competitive barriers against fast-follower alternatives'] },
       { title: '3. Monetization Model', items: ['Tiered SaaS subscription or usage-based pricing', 'Projected customer lifetime value (LTV) and CAC payback', 'High-margin enterprise expansion and add-ons'] },
@@ -23062,19 +23083,18 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     if (composeSelectedModel?.isLocal && composeSelectedModel?.endpoint) {
       try {
         const isOllama = composeSelectedModel.provider === 'Ollama' || composeSelectedModel.endpoint.includes('11434');
+        const baseEndpoint = composeSelectedModel.endpoint.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '');
         const targetUrl = isOllama
-          ? `${composeSelectedModel.endpoint.replace(/\/v1$/, '')}/api/chat`
+          ? `${baseEndpoint}/api/chat`
           : `${composeSelectedModel.endpoint.endsWith('/v1') ? composeSelectedModel.endpoint : composeSelectedModel.endpoint + '/v1'}/chat/completions`;
 
         const requestBody = isOllama
           ? {
               model: composeSelectedModel.id,
               messages: [
-                ...(fullSystemPrompt ? [{ role: 'system', content: fullSystemPrompt }] : []),
-                { role: 'user', content: userPrompt }
+                { role: 'user', content: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt }
               ],
               stream: false,
-              format: schema ? 'json' : undefined
             }
           : {
               model: composeSelectedModel.id || 'default',
@@ -23086,17 +23106,31 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
               response_format: schema ? { type: 'json_object' } : undefined
             };
 
-        const localRes = await fetch(targetUrl, {
+        let localRes = await fetch(targetUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
-        });
+        }).catch(() => null);
 
-        if (localRes.ok) {
+        // Fallback for Ollama /api/generate if /api/chat fails
+        if ((!localRes || !localRes.ok) && isOllama) {
+          const genUrl = `${baseEndpoint}/api/generate`;
+          localRes = await fetch(genUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: composeSelectedModel.id,
+              prompt: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt,
+              stream: false
+            })
+          }).catch(() => null);
+        }
+
+        if (localRes && localRes.ok) {
           const data = await localRes.json();
           let text = '';
-          if (isOllama && data.message?.content) {
-            text = data.message.content.trim();
+          if (isOllama) {
+            text = (data.message?.content || data.response || '').trim();
           } else if (data.choices?.[0]?.message?.content) {
             text = data.choices[0].message.content.trim();
           }
@@ -23105,6 +23139,14 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
             let parsed = null;
             if (schema) {
               parsed = parseJsonSafely(text);
+              if (!parsed) {
+                const codeMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+                if (codeMatch) parsed = parseJsonSafely(codeMatch[1]);
+              }
+              if (!parsed) {
+                const objMatch = text.match(/\{[\s\S]*\}/);
+                if (objMatch) parsed = parseJsonSafely(objMatch[0]);
+              }
             }
             return {
               text,
@@ -31577,22 +31619,29 @@ Respond with valid JSON formatted like this:
         try {
           const jsonMatch = res.text.match(/\{[\s\S]*\}/);
           if (jsonMatch) parsedData = JSON.parse(jsonMatch[0]);
-        } catch (e) {
-          // If JSON parse fails, attempt markdown section parsing
-          const sections = res.text.split(/\n#{1,3}\s+|\n\*\*\d+\.\s+/).filter(Boolean);
-          if (sections.length >= 2) {
-            parsedData = {
-              title: `AI ${prompt.slice(0, 24)}`,
-              stickies: sections.slice(0, 8).map((sec, i) => {
-                const lines = sec.split('\n').map(l => l.trim()).filter(Boolean);
-                return {
-                  title: lines[0] || `Section ${i + 1}`,
-                  items: lines.slice(1, 5).map(l => l.replace(/^[-*•]\s*/, '')),
-                  color: colors[i % colors.length]
-                };
-              })
-            };
-          }
+        } catch (e) {}
+      }
+
+      // If JSON parse was not available, dynamically parse LLM text into sticky cards
+      if (!parsedData?.stickies && !parsedData?.widgets && res?.text) {
+        const rawText = res.text.trim();
+        // Split by numbered lists ("1. ", "2. "), markdown headers ("# ", "## "), or bullet clusters
+        const rawSections = rawText.split(/(?=\n(?:\d+\.|#{1,4}|\*\*\d+\.)\s+)/g).filter(s => s.trim().length > 10);
+        if (rawSections.length >= 2) {
+          parsedData = {
+            title: `AI ${prompt.slice(0, 28)}`,
+            category: 'Strategy',
+            stickies: rawSections.slice(0, 8).map((sec, i) => {
+              const lines = sec.trim().split('\n').map(l => l.trim()).filter(Boolean);
+              const header = (lines[0] || `Step ${i + 1}`).replace(/^(\d+\.|#{1,4}|\*\*\d+\.)\s*/, '').replace(/\*\*/g, '');
+              const bullets = lines.slice(1).map(l => l.replace(/^[-*•\d.]+\s*/, '').replace(/\*\*/g, '')).filter(b => b.length > 3);
+              return {
+                title: header,
+                items: bullets.length ? bullets.slice(0, 4) : [lines.slice(1).join(' ') || header],
+                color: colors[i % colors.length]
+              };
+            })
+          };
         }
       }
 
