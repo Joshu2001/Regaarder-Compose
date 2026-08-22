@@ -66799,18 +66799,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
         {/* Top Header & Document Tab Strip Auto-Hide Container for Whiteboard */}
         {isWhiteboardWorkspace && (
           <>
-            {/* Thin hover zone at the very top */}
+            {/* Top trigger zone to smoothly reveal navigation when hovering near top edge */}
             <div 
               onMouseEnter={() => setIsWhiteboardTopNavHovered(true)} 
-              className="absolute top-0 left-0 right-0 h-3 z-[360] cursor-default pointer-events-auto" 
+              className="absolute top-0 left-0 right-0 h-6 z-[380] cursor-default pointer-events-auto" 
             />
 
-            {/* Subtle floating title indicator when chrome recedes */}
+            {/* Subtle floating title indicator when top nav is autohidden */}
             {!isWhiteboardTopNavRevealed && (
               <div
                 onMouseEnter={() => setIsWhiteboardTopNavHovered(true)}
-                className="absolute top-3 left-1/2 -translate-x-1/2 z-[340] flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/60 dark:border-zinc-800/60 text-slate-700 dark:text-zinc-300 shadow-2xs hover:shadow-xs hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 cursor-pointer select-none group/pill animate-in fade-in slide-in-from-top-1"
-                title="Hover to reveal workspace tabs, export, and controls"
+                onClick={() => setIsWhiteboardTopNavHovered(true)}
+                className="absolute top-2.5 left-1/2 -translate-x-1/2 z-[340] flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300 shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 cursor-pointer select-none group/pill animate-in fade-in slide-in-from-top-1"
+                title="Hover or click to reveal workspace tabs, export, and controls"
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
                 <span className="text-[11.5px] font-semibold tracking-tight">{docTitle || 'Untitled Whiteboard'}</span>
@@ -70107,6 +70108,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="h-full w-full bg-[#FAFAFC] dark:bg-[#0d0d0f] overflow-hidden flex flex-col relative">
                 <div 
                   id="whiteboard-export-container"
+                  onPointerMove={(e) => {
+                    if (e.clientY > 60 && isWhiteboardTopNavHovered) {
+                      setIsWhiteboardTopNavHovered(false);
+                    }
+                  }}
                   className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#d4d4e8_1px,transparent_0)] dark:bg-[radial-gradient(circle_at_1px_1px,#2a2a35_1px,transparent_0)] bg-[size:24px_24px] overflow-hidden select-none" 
                   style={{ 
                     zoom: whiteboardZoomScale,
@@ -70546,6 +70552,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }
                     }}
                     onPointerDown={(event) => {
+                      setIsWhiteboardTopNavHovered(false);
+                      setWhiteboardExportMenuOpen(false);
+                      setOpenDocMenuId(null);
+                      setDocMenuPos(null);
                       setWhiteboardReactionMenuOpen(false);
                       setWhiteboardReactionTarget(null);
                       const rect = event.currentTarget.getBoundingClientRect();
