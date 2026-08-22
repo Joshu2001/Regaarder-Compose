@@ -15646,6 +15646,12 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   }, [gestureNotification]);
 
   useEffect(() => {
+    if (productMode !== 'compose') {
+      gestureHistory.current = [];
+      setGestureNotification(null);
+      return;
+    }
+
     const handleMouseMove = (e) => {
       const now = Date.now();
       gestureHistory.current.push({ x: e.clientX, y: e.clientY, t: now });
@@ -15732,7 +15738,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [isPromptMinimized, isDictationHiddenByGesture, isVoiceActive, voiceTarget]);
+  }, [productMode, isPromptMinimized, isDictationHiddenByGesture, isVoiceActive, voiceTarget]);
 
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
