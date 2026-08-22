@@ -33895,6 +33895,35 @@ Respond with a JSON array of slide objects matching the schema.`;
     return { noun: 'document', title: 'Close this document?', button: 'Close Document' };
   }, [closeConfirmDocId, documents, activeWorkspaceMode, getDocMode]);
 
+  const renderCloseConfirmModal = () => {
+    if (!closeConfirmDocId) return null;
+    return createPortal(
+      <div className="fixed inset-0 z-[100000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 select-none">
+        <div className="w-[420px] max-w-[90vw] rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl p-5 animate-in fade-in zoom-in-95 duration-150 font-sans">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-1.5">{closeConfirmTerm.title}</h3>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 mb-4 leading-relaxed">You can still create a new one after closing. This action will remove the selected tab.</p>
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setCloseConfirmDocId(null)}
+              className="px-3.5 py-1.5 rounded-xl text-xs border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 font-semibold transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={confirmCloseDocument}
+              className="px-4 py-1.5 rounded-xl text-xs bg-violet-600 hover:bg-violet-700 text-white font-bold shadow-sm transition-colors cursor-pointer"
+            >
+              {closeConfirmTerm.button}
+            </button>
+          </div>
+        </div>
+      </div>,
+      typeof document !== 'undefined' ? (document.fullscreenElement ?? document.body) : null
+    );
+  };
+
   const canShowComposeActions = Boolean(
     lastComposeRun
     && lastComposeRun.documentId === activeDocId
@@ -45784,30 +45813,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
 
-        {closeConfirmDocId && (
-          <div className="fixed inset-0 z-[100000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-[420px] max-w-[90vw] rounded-xl bg-white border border-gray-100 shadow-2xl p-5 animate-in fade-in zoom-in-95 duration-150">
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">{closeConfirmTerm.title}</h3>
-              <p className="text-xs text-gray-500 mb-4">You can still create a new one after closing. This action will remove the selected tab.</p>
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCloseConfirmDocId(null)}
-                  className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={confirmCloseDocument}
-                  className="px-3 py-1.5 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700 font-medium shadow-sm transition-colors"
-                >
-                  {closeConfirmTerm.button}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {renderCloseConfirmModal()}
 
         {creationPickerOpen && (
           <div className="fixed inset-0 z-[620] bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
@@ -79635,6 +79641,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
       )}
+
+      {/* Close Document / Whiteboard Confirmation Modal */}
+      {renderCloseConfirmModal()}
 
       {/* Global Workspace Switcher Popover (Available across Docs, Sheets, Decks, Room, Research) */}
       {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
