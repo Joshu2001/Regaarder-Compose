@@ -297,6 +297,31 @@ export const BrowserIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...p
   </svg>
 );
 
+/**
+ * Proprietary Regaarder Signature AI Glyph
+ * Metaphor: The iconic spiral intelligence swirl from the doc floating AI assistant.
+ */
+export const RegaarderAiIcon = ({ size = 24, className = "", strokeWidth = 1.8, style = {}, ...props }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    className={className}
+    style={style}
+    {...props}
+  >
+    <path
+      d="M12 3.75C7.44 3.75 3.75 7.44 3.75 12C3.75 16.56 7.44 20.25 12 20.25C16.56 20.25 20.25 16.56 20.25 12C20.25 9.1 18.75 6.55 16.4 5.2C14.05 3.85 11.15 3.9 8.85 5.3C6.55 6.7 5.25 9.25 5.35 12C5.5 15.65 8.45 18.55 12.1 18.55C14.55 18.55 16.75 17.15 17.85 15"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 export const RegaarderProductIconMap = {
   Compose: ComposeIcon,
   Deck: DeckIcon,
@@ -310,6 +335,9 @@ export const RegaarderProductIconMap = {
   Assist: AssistIcon,
   Agents: AgentsIcon,
   Browser: BrowserIcon,
+  Orb: OrbIcon,
+  AI: RegaarderAiIcon,
+  orb: OrbIcon,
   compose: ComposeIcon,
   deck: DeckIcon,
   sheet: SheetIcon,
@@ -324,6 +352,9 @@ export const RegaarderProductIconMap = {
   assistant: AssistIcon,
   agents: AgentsIcon,
   'ai-studio': AgentsIcon,
+  ai: RegaarderAiIcon,
+  'regaarder-ai': RegaarderAiIcon,
+  decide: RegaarderAiIcon,
   browser: BrowserIcon,
 };
 

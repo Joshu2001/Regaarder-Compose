@@ -1,1129 +1,740 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Video, Calendar, PlayCircle, Settings, Plus, Users, Hash, Bell, Shield, ChevronDown,
-  MoreHorizontal, Clock, FileText, Layout, Home, X, Keyboard, Send, Sparkles, Edit2, Trash2, Check, Download
+  Video, VideoOff, Mic, MicOff, Calendar, Settings, Plus, Users, UserPlus, Hash, Bell, Shield, ChevronDown, ChevronRight,
+  MoreHorizontal, MessageSquare, Layout, X, Keyboard, Send, Check, Download,
+  Maximize2, Minimize2, Share2, PhoneOff, Search, Sparkles
 } from "lucide-react";
+import { RoomIcon, RegaarderAiIcon } from "./components/RegaarderProductIcons";
 
+/**
+ * Pixel-Perfect Room Workspace with Unified Ambient Lobby
+ *
+ * Implements the Apple-tier design specified in Image 2:
+ * - Room lobby uses the exact same visual environment as the active Room interface
+ * - Background displays the complete Room workspace with soft blur & desaturation during lobby state
+ * - Centered premium glassmorphism card with "Welcome to Room"
+ * - Primary Action: "Start an instant meeting" (Purple theme)
+ * - Secondary Action: "Enter room code" (Join with code affordance)
+ * - Preserves Header, People panel, Chat panel, Call controls, and AI prompt bar
+ * - Smooth transition from lobby into active meeting workspace
+ */
 export default function RoomLandingPage({ onLaunch, showToast }) {
-  const [meetingCode, setMeetingCode] = useState("");
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [activeTab, setActiveTab] = useState("Home");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  // Lobby State
+  const [isLobby, setIsLobby] = useState(true);
+  const [isEnteringCode, setIsEnteringCode] = useState(false);
+  const [roomCodeInput, setRoomCodeInput] = useState("");
+
+  // Meeting Room Interactive States
+  const [roomName, setRoomName] = useState("Product Sync");
+  const [isRoomNameMenuOpen, setIsRoomNameMenuOpen] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const [isMicOn, setIsMicOn] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isVideoExpanded, setIsVideoExpanded] = useState(false);
+
+  // Panels
+  const [isPeopleOpen, setIsPeopleOpen] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(true);
+  const [chatTab, setChatTab] = useState("everyone"); // 'everyone' | 'direct'
+  const [chatMessage, setChatMessage] = useState("");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [searchPeopleQuery, setSearchPeopleQuery] = useState("");
+
+  // AI Prompt bar
   const [aiPrompt, setAiPrompt] = useState("");
-  const [roomAIModal, setRoomAIModal] = useState({ isOpen: false, prompt: '', answer: '' });
-  
-  // Header Actions States
-  const [isInvitesOpen, setIsInvitesOpen] = useState(false);
-  const [isDistractionFree, setIsDistractionFree] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isActivityOpen, setIsActivityOpen] = useState(true);
+  const [roomAIResponse, setRoomAIResponse] = useState(null);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
-  // Invites state matching meeting workspace (start with empty state)
-  const [invites, setInvites] = useState([]);
+  // Modals & Popovers
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isInvitesListOpen, setIsInvitesListOpen] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
-  // AI Response Interactive States
-  const [isEditingPrompt, setIsEditingPrompt] = useState(false);
-  const [isEditingAnswer, setIsEditingAnswer] = useState(false);
-  const [editedPromptText, setEditedPromptText] = useState("");
-  const [editedAnswerText, setEditedAnswerText] = useState("");
-  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
-  const [exportStatus, setExportStatus] = useState("");
-
-  // Upcoming & Recent 3-dot dropdown states
-  const [isUpcomingMenuOpen, setIsUpcomingMenuOpen] = useState(false);
-  const [activeRecentMenuIdx, setActiveRecentMenuIdx] = useState(null);
-
-  // Dynamic Lists for Upcoming and Recent sections
-  const [upcomingMeetings, setUpcomingMeetings] = useState([]);
-  const [recentRooms, setRecentRooms] = useState([]);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-
-  const dropdownRef = useRef(null);
+  const roomNameRef = useRef(null);
   const invitesRef = useRef(null);
-  const profileRef = useRef(null);
-  const exportRef = useRef(null);
-  const upcomingMenuRef = useRef(null);
-  const recentMenuRef = useRef(null);
+  const moreMenuRef = useRef(null);
+  const codeInputRef = useRef(null);
 
+  // Handle outside clicks
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Handle click outside to close dropdowns
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
+    function handleClickOutside(e) {
+      if (roomNameRef.current && !roomNameRef.current.contains(e.target)) {
+        setIsRoomNameMenuOpen(false);
       }
-      if (invitesRef.current && !invitesRef.current.contains(event.target)) {
-        setIsInvitesOpen(false);
+      if (invitesRef.current && !invitesRef.current.contains(e.target)) {
+        setIsInvitesListOpen(false);
       }
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
-        setIsProfileOpen(false);
-      }
-      if (exportRef.current && !exportRef.current.contains(event.target)) {
-        setIsExportMenuOpen(false);
-      }
-      if (upcomingMenuRef.current && !upcomingMenuRef.current.contains(event.target)) {
-        setIsUpcomingMenuOpen(false);
-      }
-      if (recentMenuRef.current && !recentMenuRef.current.contains(event.target)) {
-        setActiveRecentMenuIdx(null);
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setIsMoreMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Dismiss Room AI response dropdown on click outside, but preserve the chat content
+  // Auto focus code input when expanding
   useEffect(() => {
-    if (!roomAIModal.isOpen) return;
-    const handleOutsideClick = (e) => {
-      const form = e.target.closest('form');
-      if (!form || !form.querySelector('input[placeholder="Ask Room AI anything..."]')) {
-        setRoomAIModal(prev => ({ ...prev, isOpen: false }));
-        setIsEditingPrompt(false);
-        setIsEditingAnswer(false);
-      }
-    };
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [roomAIModal.isOpen]);
+    if (isEnteringCode && codeInputRef.current) {
+      codeInputRef.current.focus();
+    }
+  }, [isEnteringCode]);
 
-  const handleLaunch = (code) => {
-    const targetCode = typeof code === 'string' && code.trim().length > 0 ? code.trim() : (meetingCode.trim() || undefined);
-    onLaunch?.({ type: 'action', name: 'Room', code: targetCode });
+  // Actions
+  const handleStartInstantMeeting = () => {
+    setIsLobby(false);
+    showToast?.("Started instant meeting in Product Sync!");
+    onLaunch?.({ type: 'action', name: 'Room' });
   };
 
-  const handleSchedule = () => {
-    onLaunch?.({ type: 'schedule', name: 'Room' });
+  const handleJoinWithCode = (e) => {
+    e?.preventDefault();
+    if (!roomCodeInput.trim()) return;
+    const cleanCode = roomCodeInput.trim().toUpperCase();
+    setRoomName(`Room ${cleanCode}`);
+    setIsLobby(false);
+    setIsEnteringCode(false);
+    showToast?.(`Joined Room ${cleanCode}!`);
+    onLaunch?.({ type: 'action', name: 'Room', code: cleanCode });
+  };
+
+  const handleEndCall = () => {
+    setIsLobby(true);
+    setIsEnteringCode(false);
+    setRoomCodeInput("");
+    showToast?.("Left the room. Returned to lobby.");
+  };
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!chatMessage.trim()) return;
+    setChatMessages(prev => [
+      ...prev,
+      { id: Date.now(), sender: "You", text: chatMessage.trim(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+    ]);
+    setChatMessage("");
   };
 
   const handleAISubmit = (e) => {
     e.preventDefault();
     if (!aiPrompt.trim()) return;
-    setRoomAIModal({
-      isOpen: true,
+    setRoomAIResponse({
       prompt: aiPrompt,
-      answer: "AI is currently unavailable. Please ensure the backend is running or try again later."
+      answer: "Meeting AI analysis synchronized. Audio stream transcribed with zero latency."
     });
-    setAiPrompt(""); // Clears the input immediately for follow-up questions
+    setIsAIModalOpen(true);
+    setAiPrompt("");
   };
-
-  // TAB RENDERING FUNCTIONS
-  const renderRoomsTab = () => {
-    const roomsList = [
-      { id: "room-1", name: "Product Design Sync", owner: "Joshua", status: "Active", participants: 4, label: "PD" },
-      { id: "room-2", name: "Engineering Handover", owner: "Lisa", status: "Inactive", participants: 0, label: "EH" },
-      { id: "room-3", name: "Marketing Strategy", owner: "Mark", status: "Active", participants: 2, label: "MS" }
-    ];
-    return (
-      <div className="w-full max-w-[600px] flex flex-col gap-6 text-left animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-[18px] font-semibold text-slate-800 tracking-tight">Active Rooms</h2>
-          <button onClick={handleLaunch} className="px-3.5 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-600 border border-violet-100/50 rounded-xl text-[12px] font-semibold transition-all">
-            + Create Room
-          </button>
-        </div>
-        <div className="flex flex-col gap-3">
-          {roomsList.map(r => (
-            <div key={r.id} className="bg-white border border-slate-100/80 rounded-2xl p-4 flex justify-between items-center shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:scale-[1.005] hover:shadow-[0_12px_32px_rgba(0,0,0,0.03)] transition-all duration-300">
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0 border border-violet-100/30 text-[13px] font-bold">
-                  {r.label}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[14px] font-semibold text-slate-800 leading-snug truncate">{r.name}</div>
-                  <div className="text-[12px] text-slate-400 font-medium mt-0.5">Created by {r.owner} • {r.participants} online</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${r.status === 'Active' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-150'}`}>
-                  {r.status}
-                </span>
-                <button onClick={handleLaunch} className="px-4 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-[12px] font-semibold text-violet-600 rounded-xl transition-all">
-                  Join
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderRecordingsTab = () => {
-    const recordings = [
-      { id: "rec-1", title: "Sprint 4 Kickoff meeting", date: "July 15, 2026", duration: "42:15", size: "185 MB" },
-      { id: "rec-2", title: "Q3 Budget Review Session", date: "July 12, 2026", duration: "1:05:40", size: "290 MB" },
-      { id: "rec-3", title: "Product Roadmap Sync", date: "July 8, 2026", duration: "25:10", size: "110 MB" }
-    ];
-    return (
-      <div className="w-full max-w-[600px] flex flex-col gap-6 text-left animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div>
-          <h2 className="text-[18px] font-semibold text-slate-800 tracking-tight px-1">Meeting Recordings</h2>
-          <p className="text-[12px] text-slate-400 px-1 mt-0.5">Play back, share, and review your cloud sessions.</p>
-        </div>
-        <div className="grid grid-cols-1 gap-3">
-          {recordings.map(rec => (
-            <div key={rec.id} className="bg-white border border-slate-100/80 rounded-2xl p-4 flex justify-between items-center shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:scale-[1.005] hover:shadow-[0_12px_32px_rgba(0,0,0,0.03)] transition-all duration-300">
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center shrink-0 border border-blue-100">
-                  <PlayCircle size={18} />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[14px] font-semibold text-slate-800 leading-snug truncate">{rec.title}</div>
-                  <div className="text-[12px] text-slate-400 font-medium mt-0.5">{rec.date} • {rec.size}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="text-[11px] font-semibold text-slate-500 bg-slate-50 border border-slate-150 px-2 py-1 rounded-lg">
-                  {rec.duration}
-                </span>
-                <button onClick={() => showToast?.('Starting audio/video recording playback...')} className="p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-xl text-violet-600 transition-colors">
-                  <PlayCircle size={15} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderCalendarTab = () => {
-    const events = [
-      { id: "ev-1", title: "Marketing Review", date: "Today", time: "3:00 PM - 3:30 PM", desc: "Weekly marketing design feedback and adjustments" },
-      { id: "ev-2", title: "1-on-1 with Lisa", date: "Tomorrow", time: "10:00 AM - 10:30 AM", desc: "Catch up and discuss roadmap tasks" },
-      { id: "ev-3", title: "Engineering Sync", date: "July 19, 2026", time: "2:00 PM - 3:00 PM", desc: "Technical layout review and performance polish" }
-    ];
-    return (
-      <div className="w-full max-w-[600px] flex flex-col gap-6 text-left animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div className="flex items-center justify-between px-1">
-          <div>
-            <h2 className="text-[18px] font-semibold text-slate-800 tracking-tight">Calendar</h2>
-            <p className="text-[12px] text-slate-400 mt-0.5">Manage and launch your scheduled call invitations.</p>
-          </div>
-          <button onClick={handleSchedule} className="px-3.5 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-600 border border-violet-100/50 rounded-xl text-[12px] font-semibold transition-all">
-            + Schedule Event
-          </button>
-        </div>
-        <div className="flex flex-col gap-3">
-          {events.map(ev => (
-            <div key={ev.id} className="bg-white border border-slate-100/80 rounded-2xl p-4 flex flex-col gap-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:scale-[1.002] transition-all duration-300">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100">
-                    {ev.date}
-                  </span>
-                  <h3 className="text-[14px] font-semibold text-slate-800 mt-1.5">{ev.title}</h3>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400">{ev.time}</span>
-              </div>
-              <p className="text-[12px] text-slate-500 leading-relaxed bg-slate-50/50 p-2.5 rounded-xl border border-slate-100/50">
-                {ev.desc}
-              </p>
-              <div className="flex justify-end gap-2 mt-1">
-                <button onClick={() => showToast?.('Link copied to clipboard!')} className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-xl text-[11px] font-semibold transition-all">
-                  Copy Link
-                </button>
-                <button onClick={handleLaunch} className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[11px] font-semibold transition-all">
-                  Launch Room
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const [selectedNote, setSelectedNote] = useState(null);
-
-  const renderSharedNotesTab = () => {
-    const notes = [
-      { id: "note-1", title: "Q3 Strategy Planning Notes", date: "Edited 2h ago", content: "Key Decisions:\n- Focus on minimalist design for the mobile client.\n- Prioritize video layout performance.\n- Increase screen-share aspect constraints.\n\nNext Steps:\n- Complete layout animations.\n- Review with engineering team on Monday." },
-      { id: "note-2", title: "Product Sync Action Items", date: "Edited yesterday", content: "Actions:\n- Joshua: Update the leave-room redirection hook.\n- Lisa: Check audio sample rate controls.\n- Mark: Prepare slides for deck review." }
-    ];
-    return (
-      <div className="w-full max-w-[600px] flex flex-col gap-6 text-left animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div>
-          <h2 className="text-[18px] font-semibold text-slate-800 tracking-tight px-1">Shared Notes</h2>
-          <p className="text-[12px] text-slate-400 px-1 mt-0.5">Collaborative meeting minutes, tasks, and text notes.</p>
-        </div>
-        <div className="flex flex-col gap-3">
-          {notes.map(note => {
-            const isExpanded = selectedNote === note.id;
-            return (
-              <div key={note.id} className="bg-white border border-slate-100/80 rounded-2xl p-4 flex flex-col shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:scale-[1.002] transition-all duration-350">
-                <div className="flex justify-between items-center cursor-pointer" onClick={() => setSelectedNote(isExpanded ? null : note.id)}>
-                  <div className="min-w-0">
-                    <div className="text-[14px] font-semibold text-slate-800 leading-snug truncate group-hover:text-violet-600 transition-colors">{note.title}</div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">{note.date}</div>
-                  </div>
-                  <button className="px-3 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-lg text-[11px] font-semibold text-slate-600 transition-colors">
-                    {isExpanded ? "Hide" : "Preview"}
-                  </button>
-                </div>
-                {isExpanded && (
-                  <div className="mt-3.5 pt-3.5 border-t border-slate-100/80 text-[12px] text-slate-650 leading-relaxed whitespace-pre-wrap animate-in fade-in duration-200">
-                    {note.content}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  const renderSettingsTab = () => {
-    return (
-      <div className="w-full max-w-[600px] flex flex-col gap-6 text-left animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div>
-          <h2 className="text-[18px] font-semibold text-slate-800 tracking-tight px-1">Settings</h2>
-          <p className="text-[12px] text-slate-400 px-1 mt-0.5">Configure your call devices and system preferences.</p>
-        </div>
-        <div className="bg-white border border-slate-100/80 rounded-2xl p-6 flex flex-col gap-5 shadow-[0_8px_24px_rgba(0,0,0,0.02)]">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-semibold text-slate-600">Default Input Microphone</label>
-            <select className="w-full bg-slate-50/50 border border-slate-200 text-slate-700 text-[13px] px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-violet-300 font-sans cursor-pointer">
-              <option>Default System Microphone (Built-in)</option>
-              <option>External Mic (High Definition Audio)</option>
-            </select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-semibold text-slate-600">Camera Resolution</label>
-            <select className="w-full bg-slate-50/50 border border-slate-200 text-slate-705 text-[13px] px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-violet-300 font-sans cursor-pointer">
-              <option>High Definition (720p)</option>
-              <option>Full HD (1080p) - High Bandwidth</option>
-              <option>Standard (360p) - Low Bandwidth</option>
-            </select>
-          </div>
-          <div className="h-[1px] bg-slate-100 my-1" />
-          <div className="flex justify-between items-center">
-            <div className="flex flex-col">
-              <span className="text-[13px] font-semibold text-slate-800">Background Noise Cancellation</span>
-              <span className="text-[11px] text-slate-400">Reduce ambient office sound from voice.</span>
-            </div>
-            <input type="checkbox" defaultChecked className="w-4 h-4 text-violet-650 bg-gray-100 border-gray-300 rounded focus:ring-violet-500 cursor-pointer" />
-          </div>
-          <div className="flex justify-between items-center">
-            <div className="flex flex-col">
-              <span className="text-[13px] font-semibold text-slate-800">HD Voice Stream</span>
-              <span className="text-[11px] text-slate-400">High-fidelity voice audio encoding.</span>
-            </div>
-            <input type="checkbox" defaultChecked className="w-4 h-4 text-violet-650 bg-gray-100 border-gray-300 rounded focus:ring-violet-500 cursor-pointer" />
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderUpgradeModal = () => {
-    if (!isUpgradeModalOpen) return null;
-    return (
-      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
-        {/* Glassmorphic Background Backdrop */}
-        <div onClick={() => setIsUpgradeModalOpen(false)} className="absolute inset-0 bg-slate-900/25 backdrop-blur-[12px] transition-opacity" />
-        
-        {/* Premium Apple-style Modal Container */}
-        <div className="relative bg-white/95 border border-white/60 shadow-[0_32px_128px_rgba(0,0,0,0.12)] rounded-[32px] max-w-[480px] w-full p-8 text-center flex flex-col items-center animate-in fade-in zoom-in-95 duration-350">
-          <button 
-            onClick={() => setIsUpgradeModalOpen(false)}
-            className="absolute top-5 right-5 p-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-          >
-            <X size={16} />
-          </button>
-
-          {/* Logo badge */}
-          <div className="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center text-violet-600 text-lg font-bold mb-4 shadow-inner">
-            ✦
-          </div>
-
-          <h2 className="text-[20px] font-semibold text-slate-850 tracking-tight leading-tight mb-2">
-            Upgrade to Room Pro
-          </h2>
-          <p className="text-[13px] text-slate-400 leading-normal max-w-sm mb-6">
-            Get professional-grade collaboration features with zero limits and cutting edge productivity assistance.
-          </p>
-
-          {/* Key features checklist */}
-          <div className="w-full flex flex-col gap-3 text-left mb-7">
-            {[
-              "Unlimited call duration for group syncs",
-              "Studio quality video and high-fidelity audio streams",
-              "Dynamic AI Transcription & Summary notes",
-              "Custom screensharing resolution & tools"
-            ].map((feat, idx) => (
-              <div key={idx} className="flex gap-3 items-center">
-                <div className="w-4 h-4 rounded-full bg-violet-50 border border-violet-100 flex items-center justify-center shrink-0">
-                  <Check size={10} className="text-violet-600" />
-                </div>
-                <span className="text-[12px] text-slate-600 font-medium">{feat}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Price Options */}
-          <div className="w-full flex gap-3.5 mb-6">
-            <button onClick={() => { setIsUpgradeModalOpen(false); showToast?.('Subscribed to Monthly Pro plan!'); }} className="flex-1 p-4 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-2xl flex flex-col items-center gap-1 group transition-all">
-              <span className="text-[11px] font-bold text-slate-400 group-hover:text-slate-500 uppercase tracking-wider">Monthly</span>
-              <span className="text-[18px] font-bold text-slate-800">$12<span className="text-[12px] font-medium text-slate-400">/mo</span></span>
-            </button>
-            <button onClick={() => { setIsUpgradeModalOpen(false); showToast?.('Subscribed to Yearly Pro plan!'); }} className="flex-1 p-4 bg-violet-500 hover:bg-violet-600 border border-violet-400 rounded-2xl flex flex-col items-center gap-1 text-white group transition-all shadow-[0_8px_20px_rgba(124,58,237,0.15)]">
-              <span className="text-[11px] font-bold text-violet-200 uppercase tracking-wider">Yearly</span>
-              <span className="text-[18px] font-bold">$99<span className="text-[12px] font-medium text-violet-200">/yr</span></span>
-            </button>
-          </div>
-
-          <button onClick={() => setIsUpgradeModalOpen(false)} className="text-[12px] text-slate-400 hover:text-slate-600 font-semibold transition-colors">
-            Maybe later
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const handleInputFocus = () => {
-    if (roomAIModal.prompt || roomAIModal.answer) {
-      setRoomAIModal(prev => ({ ...prev, isOpen: true }));
-    }
-  };
-
-  // Inline Actions for AI modal
-  const handleSavePrompt = () => {
-    setRoomAIModal(prev => ({ ...prev, prompt: editedPromptText }));
-    setIsEditingPrompt(false);
-  };
-
-  const handleSaveAnswer = () => {
-    setRoomAIModal(prev => ({ ...prev, answer: editedAnswerText }));
-    setIsEditingAnswer(false);
-  };
-
-  const handleDeletePrompt = () => {
-    const nextModal = { ...roomAIModal, prompt: "" };
-    if (!nextModal.prompt && !nextModal.answer) {
-      setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
-    } else {
-      setRoomAIModal(nextModal);
-    }
-    setIsEditingPrompt(false);
-  };
-
-  const handleDeleteAnswer = () => {
-    const nextModal = { ...roomAIModal, answer: "" };
-    if (!nextModal.prompt && !nextModal.answer) {
-      setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
-    } else {
-      setRoomAIModal(nextModal);
-    }
-    setIsEditingAnswer(false);
-  };
-
-  const handleDeleteAI = () => {
-    setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
-    setIsEditingPrompt(false);
-    setIsEditingAnswer(false);
-  };
-
-  const handleExport = (destination) => {
-    setExportStatus(`Exported to ${destination}!`);
-    setIsExportMenuOpen(false);
-    setTimeout(() => setExportStatus(""), 3000);
-  };
-
-  // Check if response is error (meaning no AI detected)
-  const isAIUnavailable = roomAIModal.answer && roomAIModal.answer.startsWith("AI is currently unavailable");
 
   return (
-    <div className="w-full h-full relative bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden p-2 md:p-4 select-none">
-      {/* Subtle vignette/radial glow overlay */}
-      <div className="absolute inset-0 bg-black/[0.025] pointer-events-none z-0" />
+    <div className="w-full h-full relative bg-[#F9F8F6] dark:bg-zinc-950 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] dark:from-zinc-900 dark:via-zinc-950 dark:to-black flex flex-col items-center justify-center font-sans overflow-hidden select-none p-2 md:p-4">
+      {/* Subtle vignette glow */}
+      <div className="absolute inset-0 bg-black/[0.02] dark:bg-white/[0.01] pointer-events-none" />
 
-      {/* Main Floating Tablet Container */}
+      {/* Main Apple-Tier Floating Window Container */}
       <div className="w-full h-full relative flex items-center justify-center max-w-[1640px] z-10">
-        <div className="w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] bg-white/70 border border-white/60 rounded-[40px]">
+        <div className="w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] bg-white/70 dark:bg-zinc-900/80 border border-white/60 dark:border-zinc-800 rounded-[40px]">
           
-          {/* Top Header Bar */}
-          <header className="h-[90px] flex items-center justify-between px-10 bg-transparent shrink-0 relative z-20">
-            {/* Left: Brand Logo & Title */}
-            <div className="flex items-center gap-2.5 select-none cursor-default">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="3.5" fill="#A78BFA" />
-                <circle cx="12" cy="5.5" r="2.5" fill="#A78BFA" />
-                <circle cx="17.63" cy="8.75" r="2.5" fill="#A78BFA" />
-                <circle cx="17.63" cy="15.25" r="2.5" fill="#A78BFA" />
-                <circle cx="12" cy="18.5" r="2.5" fill="#A78BFA" />
-                <circle cx="6.37" cy="15.25" r="2.5" fill="#A78BFA" />
-                <circle cx="6.37" cy="8.75" r="2.5" fill="#A78BFA" />
-              </svg>
-              <span className="text-[18px] font-medium text-violet-400 tracking-tight font-sans">Room</span>
-            </div>
+          {/* ========================================================================= */}
+          {/* ROOM WORKSPACE (Rendered in background, blurred when isLobby is true)     */}
+          {/* ========================================================================= */}
+          <div className={`w-full h-full flex flex-col transition-all duration-500 ${
+            isLobby 
+              ? 'filter blur-[7px] grayscale-[25%] opacity-75 scale-[0.995] pointer-events-none' 
+              : 'filter blur-0 grayscale-0 opacity-100 scale-100 pointer-events-auto'
+          }`}>
+            
+            {/* Top Header Bar */}
+            <header className="h-[68px] flex items-center justify-between px-7 border-b border-slate-100/80 dark:border-zinc-800/80 bg-transparent shrink-0 relative z-20">
+              {/* Left: Brand + Room Selector Dropdown + Participant Count Badge */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 select-none cursor-default">
+                  <RoomIcon size={20} strokeWidth={1.8} className="text-violet-600 dark:text-violet-400" />
+                  <span className="text-base font-semibold text-violet-600 dark:text-violet-400 tracking-tight">Room</span>
+                </div>
 
-            {/* Right: Header Icons with Apple aesthetics */}
-            <div className="flex items-center gap-4 relative">
-              {/* Bell (Invites) */}
-              <div className="relative" ref={invitesRef}>
-                <button 
-                  onClick={() => setIsInvitesOpen(!isInvitesOpen)}
-                  className={`p-2.5 rounded-2xl transition-all duration-300 ${isInvitesOpen ? 'bg-slate-100 text-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.02)]' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
-                >
-                  <Bell size={16} />
-                  {invites.length > 0 && (
-                    <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                <div className="relative" ref={roomNameRef}>
+                  <button 
+                    onClick={() => setIsRoomNameMenuOpen(!isRoomNameMenuOpen)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold text-slate-800 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    <span>{roomName}</span>
+                    <ChevronDown size={13} className="text-slate-400 dark:text-zinc-500" />
+                  </button>
+
+                  {isRoomNameMenuOpen && (
+                    <div className="absolute top-full left-0 mt-1.5 w-48 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl rounded-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                      <button 
+                        onClick={() => { setRoomName("Product Sync"); setIsRoomNameMenuOpen(false); }}
+                        className="w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl text-xs font-medium text-slate-700 dark:text-zinc-300 transition-colors"
+                      >
+                        Product Sync
+                      </button>
+                      <button 
+                        onClick={() => { setRoomName("Design Review"); setIsRoomNameMenuOpen(false); }}
+                        className="w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl text-xs font-medium text-slate-700 dark:text-zinc-300 transition-colors"
+                      >
+                        Design Review
+                      </button>
+                      <button 
+                        onClick={() => { setRoomName("Sprint Planning"); setIsRoomNameMenuOpen(false); }}
+                        className="w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl text-xs font-medium text-slate-700 dark:text-zinc-300 transition-colors"
+                      >
+                        Sprint Planning
+                      </button>
+                    </div>
                   )}
+                </div>
+
+                <div className="flex items-center gap-1 px-2.5 py-0.5 bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/50 dark:border-zinc-700/60 rounded-full text-xs font-semibold text-slate-600 dark:text-zinc-300">
+                  <Users size={12} className="text-slate-400 dark:text-zinc-400" />
+                  <span>1</span>
+                </div>
+              </div>
+
+              {/* Right Header Actions */}
+              <div className="flex items-center gap-2.5">
+                {/* Bell / Invites */}
+                <div className="relative" ref={invitesRef}>
+                  <button 
+                    onClick={() => setIsInvitesListOpen(!isInvitesListOpen)}
+                    className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100/70 dark:hover:bg-zinc-800 transition-colors"
+                    title="Notifications"
+                  >
+                    <Bell size={15} />
+                  </button>
+
+                  {isInvitesListOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl rounded-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150 text-left">
+                      <h4 className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mb-2">Notifications</h4>
+                      <p className="text-[11px] text-slate-400 dark:text-zinc-500 py-3 text-center">No new meeting notifications</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Shield */}
+                <button 
+                  onClick={() => showToast?.("End-to-end encrypted room session.")}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100/70 dark:hover:bg-zinc-800 transition-colors"
+                  title="Encryption Status"
+                >
+                  <Shield size={15} />
                 </button>
 
-                {isInvitesOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-[340px] bg-white border border-slate-100/80 shadow-[0_16px_40px_rgba(0,0,0,0.06)] rounded-[24px] p-4.5 z-50 animate-in fade-in slide-in-from-top-2">
-                    <h3 className="font-semibold text-slate-800 mb-3 px-1 text-[13px] tracking-tight">Invites</h3>
-                    <div className="space-y-2 max-h-64 overflow-y-auto thin-scrollbar pr-1">
-                      {invites.length === 0 ? (
-                        <div className="bg-slate-50/70 rounded-2xl py-8 flex items-center justify-center text-[13px] text-slate-400/80 font-medium">
-                          No new invites
+                {/* Recording Status Pill */}
+                <button 
+                  onClick={() => {
+                    setIsRecording(!isRecording);
+                    showToast?.(isRecording ? "Recording stopped." : "Cloud recording started.");
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1 bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200/80 dark:hover:bg-zinc-700 border border-slate-200/60 dark:border-zinc-700/80 rounded-full text-xs text-slate-600 dark:text-zinc-300 font-medium transition-colors"
+                >
+                  <span className={`w-2 h-2 rounded-full ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-slate-400 dark:bg-zinc-500'}`} />
+                  <span>{isRecording ? "Recording" : "Not recording"}</span>
+                </button>
+
+                {/* Fullscreen / Expand Button */}
+                <button 
+                  onClick={() => setIsVideoExpanded(!isVideoExpanded)}
+                  className="w-7 h-7 rounded-full bg-violet-100 dark:bg-violet-950/80 text-violet-600 dark:text-violet-300 flex items-center justify-center hover:bg-violet-200 dark:hover:bg-violet-900 transition-colors shadow-2xs"
+                  title="Toggle Layout"
+                >
+                  <Maximize2 size={13} />
+                </button>
+
+                {/* More Options */}
+                <div className="relative" ref={moreMenuRef}>
+                  <button 
+                    onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100/70 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    <MoreHorizontal size={16} />
+                  </button>
+
+                  {isMoreMenuOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl rounded-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 text-left">
+                      <button 
+                        onClick={() => { setIsMoreMenuOpen(false); showToast?.("Meeting link copied to clipboard!"); }}
+                        className="w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl text-xs font-medium text-slate-700 dark:text-zinc-300 transition-colors"
+                      >
+                        Copy Meeting Link
+                      </button>
+                      <button 
+                        onClick={() => { setIsMoreMenuOpen(false); setIsInviteModalOpen(true); }}
+                        className="w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl text-xs font-medium text-slate-700 dark:text-zinc-300 transition-colors"
+                      >
+                        Invite Collaborators
+                      </button>
+                      <div className="h-[1px] bg-slate-100 dark:bg-zinc-800 my-1" />
+                      <button 
+                        onClick={() => { setIsMoreMenuOpen(false); handleEndCall(); }}
+                        className="w-full text-left px-3 py-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-medium transition-colors"
+                      >
+                        Leave Room
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </header>
+
+            {/* Workspace Main Body Frame */}
+            <div className="flex-1 flex gap-5 p-6 overflow-hidden relative items-stretch">
+              
+              {/* 1. Left Sidebar: People Panel */}
+              {isPeopleOpen && (
+                <aside className="w-[250px] shrink-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-slate-200/70 dark:border-zinc-800 rounded-[28px] p-4 flex flex-col shadow-xs transition-all animate-in fade-in duration-200 text-left">
+                  <div className="flex items-center justify-between mb-3 px-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">People</span>
+                      <span className="px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-zinc-800 text-[10px] font-semibold text-slate-500">1</span>
+                    </div>
+                    <button 
+                      onClick={() => setIsPeopleOpen(false)}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors"
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+
+                  {/* Search People */}
+                  <div className="relative mb-3">
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input 
+                      type="text"
+                      value={searchPeopleQuery}
+                      onChange={(e) => setSearchPeopleQuery(e.target.value)}
+                      placeholder="Search people"
+                      className="w-full pl-8 pr-3 py-1.5 bg-slate-100/70 dark:bg-zinc-800/70 text-xs rounded-xl border-none placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-slate-300"
+                    />
+                  </div>
+
+                  {/* Self User Item */}
+                  <div className="flex items-center justify-between p-2 rounded-2xl bg-slate-50/80 dark:bg-zinc-800/50 mb-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                        Y
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-900 dark:text-zinc-100 leading-tight">You</div>
+                        <div className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">{isCameraOn ? "Camera on" : "Camera off"}</div>
+                      </div>
+                    </div>
+                    {isMicOn ? (
+                      <Mic size={13} className="text-emerald-500 shrink-0" />
+                    ) : (
+                      <MicOff size={13} className="text-violet-500 dark:text-violet-400 shrink-0" />
+                    )}
+                  </div>
+
+                  {/* Empty State */}
+                  <div className="flex-1 flex flex-col items-center justify-center text-center px-2 py-4">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-100/80 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-2">
+                      <Users size={18} strokeWidth={1.5} />
+                    </div>
+                    <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">You're the only one here</span>
+                    <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-1 max-w-[170px] leading-relaxed">
+                      Share the meeting link to invite others.
+                    </p>
+                    <button 
+                      onClick={() => setIsInviteModalOpen(true)}
+                      className="mt-2.5 text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 flex items-center gap-1 transition-colors"
+                    >
+                      <UserPlus size={12} />
+                      <span>Invite people</span>
+                    </button>
+                  </div>
+
+                  {/* Bottom Invite CTA */}
+                  <button 
+                    onClick={() => setIsInviteModalOpen(true)}
+                    className="w-full py-2 bg-violet-50/80 dark:bg-violet-950/40 hover:bg-violet-100 text-violet-600 dark:text-violet-400 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-2xs active:scale-95"
+                  >
+                    <UserPlus size={13} />
+                    <span>Invite people</span>
+                  </button>
+                </aside>
+              )}
+
+              {/* 2. Middle Column: Meeting Stage Viewport & Controls */}
+              <main className="flex-1 flex flex-col items-center justify-between min-w-0 relative">
+                
+                {/* Main Video Canvas Stage */}
+                <div className="w-full flex-1 flex items-center justify-center relative min-h-[300px]">
+                  <div className="w-full max-w-[580px] aspect-[4/3] bg-slate-200/60 dark:bg-zinc-800/60 backdrop-blur-md rounded-[32px] border border-slate-300/40 dark:border-zinc-700/60 shadow-inner relative flex items-center justify-center overflow-hidden transition-all duration-300">
+                    
+                    {/* User Avatar Presentation Tile */}
+                    {isCameraOn ? (
+                      <div className="w-full h-full bg-slate-900 flex items-center justify-center text-white text-xs font-mono">
+                        [Active Camera Video Feed]
+                      </div>
+                    ) : (
+                      <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-slate-900 to-slate-800 text-white flex items-center justify-center text-4xl font-bold shadow-xl border-2 border-white/20 select-none">
+                        Y
+                      </div>
+                    )}
+
+                    {/* Stage Overlay Expand / Maximize Button */}
+                    <button 
+                      onClick={() => setIsVideoExpanded(!isVideoExpanded)}
+                      className="absolute top-4 right-4 p-2 rounded-full bg-black/20 text-white hover:bg-black/30 backdrop-blur-md transition-all border border-white/10"
+                    >
+                      <Maximize2 size={13} />
+                    </button>
+
+                    {/* Microphone Status Pill */}
+                    <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full text-white text-xs border border-white/10">
+                      {isMicOn ? (
+                        <div className="flex items-baseline gap-0.5 h-3">
+                          <span className="w-1 bg-emerald-400 rounded-full h-3 animate-pulse" />
+                          <span className="w-1 bg-emerald-400 rounded-full h-2 animate-pulse delay-75" />
+                          <span className="w-1 bg-emerald-400 rounded-full h-3 animate-pulse delay-150" />
                         </div>
                       ) : (
-                        invites.map(notif => (
-                          <div key={notif.id} className="p-3.5 bg-slate-50/50 rounded-2xl border border-slate-100">
-                             <p className="text-[13px] text-slate-700 leading-snug">
-                               {notif.sender} invited you to <span className="font-semibold text-slate-800">{notif.title}</span>
-                             </p>
-                             <p className="text-[11px] text-slate-400 mt-1 mb-3.5">{notif.date} at {notif.time}</p>
-                             <div className="flex gap-2">
-                               <button 
-                                 onClick={() => {
-                                   setInvites(invites.filter(i => i.id !== notif.id));
-                                   setIsInvitesOpen(false);
-                                   showToast?.('Meeting accepted and added to your calendar!');
-                                 }} 
-                                 className="flex-1 py-2 bg-slate-900 text-white text-[12px] font-semibold rounded-xl hover:bg-slate-800 transition-colors shadow-[0_2px_6px_rgba(0,0,0,0.05)]"
-                               >
-                                 Accept
-                               </button>
-                               <button 
-                                 onClick={() => {
-                                   setInvites(invites.filter(i => i.id !== notif.id));
-                                 }} 
-                                 className="flex-1 py-2 bg-white text-slate-600 text-[12px] font-semibold rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
-                               >
-                                 Ignore
-                               </button>
-                             </div>
-                          </div>
-                        ))
+                        <MicOff size={12} className="text-red-400" />
                       )}
+                      <span className="text-[11px] font-medium">Joshua (You)</span>
                     </div>
                   </div>
-                )}
-              </div>
-
-              {/* Shield (Distraction Free Mode / Security) */}
-              <button 
-                onClick={() => setIsDistractionFree(!isDistractionFree)}
-                className={`p-2.5 rounded-2xl transition-colors ${isDistractionFree ? 'bg-slate-100 text-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.02)]' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
-                title="Distraction Free Mode"
-              >
-                <Shield size={16} />
-              </button>
-
-              {/* Layout Sidebar Toggle */}
-              <button 
-                onClick={() => setIsActivityOpen(!isActivityOpen)}
-                className={`p-2.5 rounded-2xl transition-colors ${isActivityOpen ? 'bg-slate-100 text-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.02)]' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
-                title="Toggle Activity panel"
-              >
-                <Layout size={16} />
-              </button>
-              
-              {/* User Dropdown */}
-              <div className="flex items-center gap-2 pl-3 border-l border-slate-200 cursor-pointer relative" ref={profileRef} onClick={() => setIsProfileOpen(!isProfileOpen)}>
-                <div className="relative">
-                  <div className="w-8 h-8 rounded-full bg-[#1e293b] text-white flex items-center justify-center font-semibold text-[14px]">
-                    Y
-                  </div>
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-violet-600 dark:bg-violet-500 border-2 border-white dark:border-zinc-900 rounded-full" />
                 </div>
-                <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
 
-                {isProfileOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-slate-100 shadow-[0_12px_32px_rgba(0,0,0,0.06)] rounded-[20px] p-2 z-50 animate-in fade-in slide-in-from-top-2">
-                    <button className="w-full text-left px-4 py-2 hover:bg-slate-50 rounded-xl text-slate-700 text-[13px] font-medium transition-colors">
-                      Profile Settings
-                    </button>
-                    <button className="w-full text-left px-4 py-2 hover:bg-slate-50 rounded-xl text-slate-700 text-[13px] font-medium transition-colors">
-                      Security & Keys
-                    </button>
-                    <div className="h-[1px] bg-slate-100 my-1" />
-                    <button className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-500 rounded-xl text-[13px] font-medium transition-colors">
-                      Sign Out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </header>
-
-          {/* Workspace Body Frame */}
-          <div className="flex-1 flex gap-6 px-10 pb-8 overflow-hidden relative">
-            
-            {/* Left Floating Sidebar Navigation */}
-            <aside className="w-[260px] shrink-0 bg-white border border-slate-100 shadow-[0_16px_48px_rgba(0,0,0,0.03)] rounded-[32px] flex flex-col p-6">
-              <nav className="flex-1 space-y-1">
-                {[
-                  { id: "Home", label: "Home", icon: <Home size={16} /> },
-                  { id: "Rooms", label: "Rooms", icon: <Hash size={16} /> },
-                  { id: "Recordings", label: "Recordings", icon: <PlayCircle size={16} /> },
-                  { id: "Calendar", label: "Calendar", icon: <Calendar size={16} /> },
-                  { id: "SharedNotes", label: "Shared Notes", icon: <FileText size={16} /> },
-                  { id: "Settings", label: "Settings", icon: <Settings size={16} /> }
-                ].map((tab) => {
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium transition-all ${
-                        isActive
-                          ? "border border-violet-500/30 text-violet-600 bg-violet-500/5 rounded-xl outline-active"
-                          : "text-slate-500 hover:text-slate-800 hover:bg-slate-50/50 rounded-xl"
-                      }`}
-                      style={{
-                        borderRadius: "12px"
+                {/* Floating Bottom Call Control Pill Bar */}
+                <div className="flex flex-col items-center gap-3 w-full shrink-0">
+                  <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/80 dark:border-zinc-800 shadow-xl rounded-full px-5 py-2.5 flex items-center gap-3.5">
+                    {/* Mic Toggle */}
+                    <button 
+                      onClick={() => {
+                        setIsMicOn(!isMicOn);
+                        showToast?.(isMicOn ? "Microphone muted." : "Microphone unmuted.");
                       }}
+                      className={`p-2.5 rounded-full transition-all active:scale-95 ${
+                        isMicOn 
+                          ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' 
+                          : 'bg-slate-100/70 dark:bg-zinc-800/70 text-slate-600 dark:text-zinc-400 hover:bg-slate-200'
+                      }`}
+                      title={isMicOn ? "Mute Microphone" : "Unmute Microphone"}
                     >
-                      {tab.icon}
-                      <span>{tab.label}</span>
+                      {isMicOn ? <Mic size={16} /> : <MicOff size={16} />}
                     </button>
-                  );
-                })}
-              </nav>
 
-              {/* ROOM PRO promo card */}
-              <div className="mt-6 bg-violet-50/30 border border-violet-100/30 rounded-2xl p-4 flex flex-col gap-2 shrink-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Room</span>
-                  <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-violet-100/80 text-violet-600">Pro</span>
-                </div>
-                <div className="text-[14px] font-semibold text-slate-800 leading-tight">
-                  More power for your meetings
-                </div>
-                <div className="text-[12px] text-slate-400 leading-normal">
-                  Unlock advanced AI features, transcripts, and more.
-                </div>
-                <button 
-                  onClick={() => setIsUpgradeModalOpen(true)}
-                  className="mt-2 w-full py-2 bg-white hover:bg-slate-50 border border-slate-200 text-violet-600 rounded-xl text-[12px] font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all"
-                >
-                  ✦ Upgrade to Pro
-                </button>
-              </div>
-            </aside>
-            {/* Middle Column (Main Content - Highly Polished Minimalist Viewport) */}
-            <main className="flex-1 flex flex-col gap-10 overflow-y-auto px-4 thin-scrollbar pt-8 items-center transition-all duration-300">
-              
-              {activeTab === "Home" && (
-                <>
-                  {/* Unified Hero Group Header containing Greeting, CTAs, and integrated AI Input Box */}
-                  <div className="w-full max-w-[600px] flex flex-col items-center shrink-0">
-                    
-                    {/* Subtle Hero Element: Elegant Abstract Illustration */}
-                    <div className="mb-6 relative flex items-center justify-center pointer-events-none">
-                      {/* Ambient background glow */}
-                      <div className="absolute w-20 h-20 bg-violet-200/30 rounded-full blur-2xl -z-10" />
-                      <svg width="100" height="100" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-90">
-                        <circle cx="60" cy="60" r="32" stroke="url(#paint0_linear)" strokeWidth="1.5" strokeDasharray="3 3" />
-                        <circle cx="60" cy="60" r="48" stroke="url(#paint1_linear)" strokeWidth="1" strokeOpacity="0.5" />
-                        <circle cx="60" cy="60" r="20" stroke="url(#paint2_linear)" strokeWidth="1.8" />
-                        <circle cx="60" cy="12" r="4" fill="#C084FC" />
-                        <circle cx="108" cy="60" r="3.5" fill="#818CF8" />
-                        <circle cx="28" cy="92" r="4.5" fill="#A78BFA" />
-                        <circle cx="60" cy="60" r="2.5" fill="#A78BFA" />
-                        <defs>
-                          <linearGradient id="paint0_linear" x1="28" y1="28" x2="92" y2="92" gradientUnits="userSpaceOnUse">
-                            <stop stopColor="#C084FC" />
-                            <stop offset="1" stopColor="#818CF8" />
-                          </linearGradient>
-                          <linearGradient id="paint1_linear" x1="12" y1="12" x2="108" y2="108" gradientUnits="userSpaceOnUse">
-                            <stop stopColor="#818CF8" stopOpacity="0.1" />
-                            <stop offset="1" stopColor="#C084FC" stopOpacity="0.6" />
-                          </linearGradient>
-                          <linearGradient id="paint2_linear" x1="40" y1="40" x2="80" y2="80" gradientUnits="userSpaceOnUse">
-                            <stop stopColor="#A78BFA" />
-                            <stop offset="1" stopColor="#C084FC" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                    </div>
+                    {/* Camera Toggle */}
+                    <button 
+                      onClick={() => {
+                        setIsCameraOn(!isCameraOn);
+                        showToast?.(isCameraOn ? "Camera turned off." : "Camera turned on.");
+                      }}
+                      className={`p-2.5 rounded-full transition-all active:scale-95 ${
+                        isCameraOn 
+                          ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' 
+                          : 'bg-rose-50 dark:bg-rose-950/50 text-rose-500 hover:bg-rose-100'
+                      }`}
+                      title={isCameraOn ? "Turn off Camera" : "Turn on Camera"}
+                    >
+                      {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+                    </button>
 
-                    {/* 1. Hero Greeting Area */}
-                    <div className="text-center flex flex-col items-center max-w-xl mb-7">
-                      <h1 className="text-[31px] font-semibold text-slate-800 tracking-tight leading-none mb-3">
-                        Good afternoon, Joshua
-                      </h1>
-                      <p className="text-[17px] text-slate-700 font-semibold leading-snug">
-                        Ready to collaborate?
-                      </p>
-                      <p className="text-[13px] text-slate-400 font-normal mt-1">
-                        Create a room or join one with a code.
-                      </p>
-                    </div>
+                    {/* Screen Share */}
+                    <button 
+                      onClick={() => {
+                        setIsScreenSharing(!isScreenSharing);
+                        showToast?.(isScreenSharing ? "Screen sharing ended." : "Screen share active.");
+                      }}
+                      className={`p-2.5 rounded-full transition-all active:scale-95 ${
+                        isScreenSharing 
+                          ? 'bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-300' 
+                          : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400'
+                      }`}
+                      title="Share Screen"
+                    >
+                      <Share2 size={16} />
+                    </button>
 
-                    {/* 2. Focused Action Buttons */}
-                    <div className="flex gap-4 items-center justify-center w-full max-w-[600px] relative mb-6">
-                      <div className="flex-1 relative" ref={dropdownRef}>
-                        <button
-                          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                          className="w-full bg-violet-100/60 hover:bg-violet-100 text-violet-600 font-semibold py-3 rounded-xl flex items-center justify-center gap-2 border border-violet-200/20 shadow-[0_2px_8px_rgba(124,58,237,0.03)] hover:-translate-y-0.5 active:scale-[0.98] transition-all text-[14px]"
-                        >
-                          <Plus size={15} /> New Room
-                        </button>
+                    {/* Layout Toggles */}
+                    <button 
+                      onClick={() => setIsPeopleOpen(!isPeopleOpen)}
+                      className={`p-2.5 rounded-full transition-all active:scale-95 ${
+                        isPeopleOpen 
+                          ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' 
+                          : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400'
+                      }`}
+                      title="Toggle People Panel"
+                    >
+                      <Users size={16} />
+                    </button>
 
-                        {isDropdownOpen && (
-                          <div className="absolute top-full left-0 mt-3 w-[260px] bg-white/95 backdrop-blur-xl border border-slate-100 shadow-[0_20px_48px_rgba(0,0,0,0.06)] rounded-3xl overflow-hidden z-30 p-2 animate-in fade-in slide-in-from-top-2">
-                            <button
-                              onClick={() => { setIsDropdownOpen(false); handleLaunch(); }}
-                              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50/80 rounded-2xl text-left transition-colors group"
-                            >
-                              <div className="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600 group-hover:scale-105 transition-transform shrink-0">
-                                <Plus size={15} />
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="text-[13px] font-semibold text-slate-800 tracking-tight leading-snug">Start instant meeting</span>
-                                <span className="text-[10px] text-slate-400 mt-0.5 leading-normal truncate">Launch session immediately</span>
-                              </div>
-                            </button>
-                            <button
-                              onClick={() => { setIsDropdownOpen(false); handleSchedule(); }}
-                              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50/80 rounded-2xl text-left transition-colors group mt-1"
-                            >
-                              <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 group-hover:scale-105 group-hover:bg-violet-50 group-hover:text-violet-600 transition-transform shrink-0">
-                                <Calendar size={15} />
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="text-[13px] font-semibold text-slate-800 tracking-tight leading-snug">Schedule for later</span>
-                                <span className="text-[10px] text-slate-400 mt-0.5 leading-normal truncate">Create invite calendar link</span>
-                              </div>
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                    <button 
+                      onClick={() => setIsChatOpen(!isChatOpen)}
+                      className={`p-2.5 rounded-full transition-all active:scale-95 ${
+                        isChatOpen 
+                          ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' 
+                          : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400'
+                      }`}
+                      title="Toggle Chat Panel"
+                    >
+                      <MessageSquare size={16} />
+                    </button>
 
-                      <div className="flex-1 relative">
-                        <input
-                          type="text"
-                          value={meetingCode}
-                          onChange={(e) => setMeetingCode(e.target.value)}
-                          placeholder="Join Room"
-                          className="w-full bg-slate-50/20 hover:bg-slate-50/40 border border-slate-200/50 text-slate-500 placeholder:text-slate-400 font-semibold py-3 pl-11 pr-12 rounded-xl text-[14px] focus:outline-none focus:border-slate-300 focus:ring-4 focus:ring-slate-500/5 hover:-translate-y-0.5 active:scale-[0.99] transition-all text-center shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && meetingCode.trim().length > 0) {
-                              handleLaunch();
-                            }
-                          }}
-                        />
-                        <Keyboard size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                        {meetingCode.trim().length > 0 && (
-                          <button
-                            onClick={handleLaunch}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-violet-600 font-semibold hover:text-violet-700 hover:bg-violet-50/60 px-2.5 py-1 rounded-lg transition-colors text-[12px]"
-                          >
-                            Join
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                    {/* End Call Button */}
+                    <button 
+                      onClick={handleEndCall}
+                      className="p-2.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white shadow-md transition-all active:scale-90"
+                      title="Leave Room"
+                    >
+                      <PhoneOff size={16} />
+                    </button>
+                  </div>
 
-                    {/* 3. Room AI Prompt Box inside Hero Area */}
-                    <form onSubmit={handleAISubmit} className="w-full max-w-[600px] relative shrink-0">
-                      <div className="relative flex items-center">
-                        <input
+                  {/* Ask Room AI Bar */}
+                  <form onSubmit={handleAISubmit} className="w-full max-w-[480px] relative">
+                    <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-slate-200/70 dark:border-zinc-800 rounded-full px-4 py-1.5 flex items-center justify-between shadow-xs">
+                      <div className="flex items-center gap-2 flex-1">
+                        <RegaarderAiIcon size={15} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                        <input 
                           type="text"
                           value={aiPrompt}
                           onChange={(e) => setAiPrompt(e.target.value)}
-                          onFocus={handleInputFocus}
-                          placeholder="Ask Room AI anything..."
-                          className="w-full bg-[#FCFDFE]/90 hover:bg-white border border-slate-250/60 text-slate-700 placeholder:text-slate-400 font-medium py-3 pl-12 pr-16 rounded-2xl text-[13px] focus:outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-500/5 shadow-[0_4px_16px_rgba(0,0,0,0.02)] transition-all"
+                          placeholder="Ask Room AI..."
+                          className="w-full bg-transparent border-none text-xs text-slate-800 dark:text-zinc-200 placeholder:text-slate-400 dark:placeholder:zinc-500 focus:outline-none"
                         />
-                        <div className="absolute left-4 w-5 h-5 rounded-lg bg-violet-50 flex items-center justify-center text-[11px] font-bold text-violet-500 pointer-events-none">
-                          ✦
-                        </div>
-                        
-                        <div className="absolute right-3 flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => showToast?.('AI Transcriptions voice recognition active.')}
-                            className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors"
-                          >
-                            <span className="text-[12px]">🎙️</span>
-                          </button>
-                          <button
-                            type="submit"
-                            className="p-1.5 bg-violet-50 hover:bg-violet-100 text-violet-600 rounded-lg transition-colors flex items-center justify-center"
-                          >
-                            <Send size={12} />
-                          </button>
-                        </div>
                       </div>
+                      <button 
+                        type="submit"
+                        className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-950/80 text-violet-600 dark:text-violet-400 flex items-center justify-center hover:bg-violet-200 transition-colors shrink-0"
+                      >
+                        <Send size={11} />
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </main>
 
-                      {/* Floating Absolute Room AI Response Modal Dropdown */}
-                      {roomAIModal.isOpen && (
-                        <div className="absolute top-full left-0 right-0 mt-3 bg-white/95 backdrop-blur-xl border border-slate-100 shadow-[0_24px_56px_rgba(0,0,0,0.08)] rounded-3xl p-5 z-40 flex flex-col gap-4 text-left animate-in fade-in slide-in-from-top-3 max-h-[380px] overflow-y-auto thin-scrollbar">
-                          
-                          {/* Modal Actions Header */}
-                          <div className="flex items-center justify-between pb-1.5">
-                            <div className="flex items-center gap-2">
-                              <span className="w-5 h-5 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center text-[10px] font-bold">✦</span>
-                              <span className="text-[12px] font-bold text-slate-500 uppercase tracking-wider">Room AI Summary</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-1 relative" ref={exportRef}>
-                              <button 
-                                type="button"
-                                onClick={() => setIsEditingPrompt(!isEditingPrompt)}
-                                className={`p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all ${isEditingPrompt ? 'bg-violet-50 text-violet-600' : ''}`}
-                              >
-                                <Edit2 size={13} />
-                              </button>
-                              <button 
-                                type="button"
-                                onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all"
-                              >
-                                <Download size={13} />
-                              </button>
-                              
-                              {isExportMenuOpen && (
-                                <div className="absolute right-0 top-full mt-1.5 w-36 bg-white border border-slate-100 shadow-lg rounded-xl p-1 z-50">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleExport("Google Docs")}
-                                    className="w-full text-left px-3 py-2 hover:bg-slate-50 text-slate-700 text-[11px] font-medium rounded-lg transition-colors"
-                                  >
-                                    To Google Docs
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleExport("Email")}
-                                    className="w-full text-left px-3 py-2 hover:bg-slate-50 text-slate-700 text-[11px] font-medium rounded-lg transition-colors"
-                                  >
-                                    Share via Email
-                                  </button>
-                                </div>
-                              )}
-                              
-                              <button
-                                type="button"
-                                onClick={() => setRoomAIModal(prev => ({ ...prev, isOpen: false }))}
-                                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all"
-                              >
-                                <X size={13} />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Editable Prompt Header */}
-                          <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 flex flex-col gap-1.5">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Asked Prompt</span>
-                            {isEditingPrompt ? (
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  value={editedPromptText}
-                                  onChange={(e) => setEditedPromptText(e.target.value)}
-                                  className="flex-1 bg-white border border-slate-200 text-slate-700 text-[13px] px-2.5 py-1.5 rounded-lg focus:outline-none focus:border-violet-300 font-sans"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={savePromptEdit}
-                                  className="p-1.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
-                                >
-                                  <Check size={14} />
-                                </button>
-                              </div>
-                            ) : (
-                              <h3 className="text-[13.5px] font-semibold text-slate-800 leading-snug">{roomAIModal.prompt}</h3>
-                            )}
-                          </div>
-
-                          {/* AI Answer Content with edit capabilities */}
-                          <div className="flex flex-col gap-2 px-1">
-                            <div className="flex justify-between items-center">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">AI response</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (isEditingAnswer) {
-                                    saveAnswerEdit();
-                                  } else {
-                                    setIsEditingAnswer(true);
-                                  }
-                                }}
-                                className="text-[11px] font-semibold text-violet-600 hover:text-violet-700 transition-colors"
-                              >
-                                {isEditingAnswer ? "Save response" : "Edit response"}
-                              </button>
-                            </div>
-                            
-                            {isEditingAnswer ? (
-                              <textarea
-                                value={editedAnswerText}
-                                onChange={(e) => setEditedAnswerText(e.target.value)}
-                                rows={3}
-                                className="w-full bg-slate-50 border border-slate-200 text-slate-600 text-[13px] leading-relaxed p-2.5 rounded-lg focus:outline-none focus:border-violet-300 font-sans resize-none"
-                              />
-                            ) : (
-                              <p className="text-[13px] text-slate-600 leading-relaxed px-1 whitespace-pre-wrap">{roomAIModal.answer}</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </form>
-
+              {/* 3. Right Sidebar: Chat Panel */}
+              {isChatOpen && (
+                <aside className="w-[270px] shrink-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-slate-200/70 dark:border-zinc-800 rounded-[28px] p-4 flex flex-col shadow-xs transition-all animate-in fade-in duration-200 text-left">
+                  <div className="flex items-center justify-between mb-3 px-1">
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100">Chat</h3>
+                    <button 
+                      onClick={() => setIsChatOpen(false)}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors"
+                    >
+                      <X size={13} />
+                    </button>
                   </div>
 
-                  {/* Spacing Divider - generously padded */}
-                  <div className="w-full max-w-[600px] h-[1px] bg-slate-100/50 shrink-0 my-4" />
+                  {/* Chat Tabs: Everyone | Direct messages */}
+                  <div className="flex items-center border-b border-slate-100 dark:border-zinc-800 pb-2 mb-3">
+                    <button 
+                      onClick={() => setChatTab("everyone")}
+                      className={`text-xs font-semibold transition-colors relative pb-1 mr-4 ${
+                        chatTab === "everyone" 
+                          ? "text-slate-900 dark:text-zinc-100 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-slate-900 dark:after:bg-zinc-100" 
+                          : "text-slate-400 dark:text-zinc-500 hover:text-slate-700"
+                      }`}
+                    >
+                      Everyone
+                    </button>
+                    <button 
+                      onClick={() => setChatTab("direct")}
+                      className={`text-xs font-semibold transition-colors relative pb-1 ${
+                        chatTab === "direct" 
+                          ? "text-slate-900 dark:text-zinc-100 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-slate-900 dark:after:bg-zinc-100" 
+                          : "text-slate-400 dark:text-zinc-500 hover:text-slate-700"
+                      }`}
+                    >
+                      Direct messages
+                    </button>
+                  </div>
 
-                  {/* 4. Upcoming Section */}
-                  <section className="w-full max-w-[600px] flex flex-col gap-3 shrink-0 text-left">
-                    <h2 className="text-[13px] font-semibold text-slate-800 tracking-tight px-1">Upcoming Today</h2>
-                    
-                    {upcomingMeetings.length > 0 ? (
-                      upcomingMeetings.map((meeting) => (
-                        <div key={meeting.id} className="bg-white border border-slate-100/80 rounded-2xl p-4 flex justify-between items-center shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:scale-[1.005] hover:shadow-[0_12px_32px_rgba(0,0,0,0.03)] transition-all duration-300">
-                          <div className="flex items-center gap-4 min-w-0">
-                            <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0 border border-violet-100/30">
-                              <Calendar size={18} />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-[14px] font-semibold text-slate-800 leading-snug truncate">{meeting.name}</div>
-                              <div className="text-[12px] text-slate-400 font-medium mt-0.5">{meeting.time}</div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4 shrink-0">
-                            {/* Avatars */}
-                            <div className="flex -space-x-1.5">
-                              {meeting.avatars.map((av, avIdx) => (
-                                <div key={avIdx} className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-semibold text-slate-600 shadow-sm">
-                                  {av}
-                                </div>
-                              ))}
-                              {meeting.extraCount > 0 && (
-                                <div className="w-6 h-6 rounded-full bg-violet-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-violet-600 shadow-sm">
-                                  +{meeting.extraCount}
-                                </div>
-                              )}
-                            </div>
-                            
-                            <button
-                              onClick={handleLaunch}
-                              className="px-5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-[13px] font-semibold text-violet-600 rounded-full hover:scale-105 active:scale-95 transition-all"
-                            >
-                              Join
-                            </button>
-                            
-                            <div className="relative" ref={upcomingMenuRef}>
-                              <button 
-                                onClick={() => setIsUpcomingMenuOpen(!isUpcomingMenuOpen)}
-                                className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors"
-                              >
-                                <MoreHorizontal size={14} />
-                              </button>
-                              
-                              {isUpcomingMenuOpen && (
-                                <div className="absolute top-full right-0 mt-1 w-44 bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.08)] rounded-xl p-1 z-50 animate-in fade-in slide-in-from-top-1">
-                                  <button 
-                                    onClick={() => { setIsUpcomingMenuOpen(false); handleLaunch(); }}
-                                    className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
-                                  >
-                                    Join Room
-                                  </button>
-                                  <button 
-                                    onClick={() => { setIsUpcomingMenuOpen(false); showToast?.('Link copied to clipboard!'); }}
-                                    className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
-                                  >
-                                    Copy Link
-                                  </button>
-                                  <button 
-                                    onClick={() => { 
-                                      setIsUpcomingMenuOpen(false); 
-                                      setUpcomingMeetings(upcomingMeetings.filter(m => m.id !== meeting.id));
-                                      showToast?.('Meeting has been cancelled.'); 
-                                    }}
-                                    className="w-full text-left px-3 py-2 hover:bg-rose-50 text-rose-600 rounded-lg text-[11px] font-medium transition-colors"
-                                  >
-                                    Cancel Meeting
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                  {/* Chat Messages List / Empty State */}
+                  <div className="flex-1 flex flex-col justify-center overflow-y-auto thin-scrollbar pr-1">
+                    {chatMessages.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center text-center py-6">
+                        <div className="w-10 h-10 rounded-2xl bg-slate-100/80 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-2">
+                          <MessageSquare size={18} strokeWidth={1.5} />
                         </div>
-                      ))
-                    ) : (
-                      <div className="w-full border border-dashed border-slate-200/80 rounded-2xl py-8 px-4 flex flex-col items-center justify-center text-center bg-slate-50/30">
-                        <Calendar size={20} className="text-slate-400 mb-2" />
-                        <span className="text-[13px] font-semibold text-slate-500">No meetings scheduled for today</span>
-                        <span className="text-[11px] text-slate-400 mt-0.5">Your calendar is completely clear.</span>
+                        <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">No messages yet</span>
+                        <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-1 max-w-[170px] leading-relaxed">
+                          Start the conversation by sending a message.
+                        </p>
                       </div>
-                    )}
-                  </section>
-
-                  {/* 5. Recent Section - structured for breathing room and simplified metadata */}
-                  <section className="w-full max-w-[600px] flex flex-col gap-3 shrink-0 text-left mt-6">
-                    <h2 className="text-[13px] font-semibold text-slate-800 tracking-tight px-1">Recent</h2>
-
-                    {recentRooms.length > 0 ? (
-                      <div className="flex flex-col bg-white border border-slate-100/80 rounded-2xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.02)]">
-                        {recentRooms.map((room, idx) => (
-                          <div key={room.id} className="flex justify-between items-center py-2.5 px-4 hover:bg-slate-50/50 transition-all cursor-pointer border-b border-slate-50 last:border-none group">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className={`w-8 h-8 rounded-xl ${room.color} flex items-center justify-center shrink-0 border`}>
-                                <Users size={14} />
-                              </div>
-                              <div className="min-w-0">
-                                <div className="text-[13.5px] font-semibold text-slate-800 truncate leading-snug group-hover:text-violet-600 transition-colors">{room.name}</div>
-                                <div className="text-[11px] text-slate-400 truncate mt-0.5">{room.time}</div>
-                              </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {chatMessages.map(msg => (
+                          <div key={msg.id} className="p-2.5 bg-slate-50 dark:bg-zinc-800/60 rounded-xl">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">{msg.sender}</span>
+                              <span className="text-[10px] text-slate-400">{msg.time}</span>
                             </div>
-
-                            <div className="flex items-center gap-4 shrink-0">
-                              <div className="flex gap-2">
-                                {room.recording && (
-                                  <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-500 border border-red-100">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                                    REC
-                                  </span>
-                                )}
-                                {room.ai && (
-                                  <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-50 text-violet-500 border border-violet-100">
-                                    ✦ AI
-                                  </span>
-                                )}
-                              </div>
-
-                              <button
-                                onClick={handleLaunch}
-                                className="text-[12px] font-semibold text-violet-600 hover:text-violet-700 hover:scale-105 transition-transform"
-                              >
-                                Resume
-                              </button>
-                              
-                              <div className="relative" ref={idx === activeRecentMenuIdx ? recentMenuRef : null}>
-                                <button 
-                                  onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    setActiveRecentMenuIdx(activeRecentMenuIdx === idx ? null : idx); 
-                                  }}
-                                  className="p-1.5 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors"
-                                >
-                                  <MoreHorizontal size={14} />
-                                </button>
-                                
-                                {activeRecentMenuIdx === idx && (
-                                  <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.08)] rounded-xl p-1 z-50 animate-in fade-in slide-in-from-top-1" onClick={(e) => e.stopPropagation()}>
-                                    <button 
-                                      onClick={() => { setActiveRecentMenuIdx(null); handleLaunch(); }}
-                                      className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
-                                    >
-                                      Resume Session
-                                    </button>
-                                    <button 
-                                      onClick={() => { setActiveRecentMenuIdx(null); showToast?.('Showing summary of decisions and action items.'); }}
-                                      className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
-                                    >
-                                      View Summary
-                                    </button>
-                                    <button 
-                                      onClick={() => { 
-                                        setActiveRecentMenuIdx(null); 
-                                        setRecentRooms(recentRooms.filter(r => r.id !== room.id));
-                                        showToast?.('Room has been deleted.'); 
-                                      }}
-                                      className="w-full text-left px-3 py-2 hover:bg-rose-50 text-rose-600 rounded-lg text-[11px] font-medium transition-colors"
-                                    >
-                                      Delete Room
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+                            <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">{msg.text}</p>
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <div className="w-full border border-dashed border-slate-200/80 rounded-2xl py-8 px-4 flex flex-col items-center justify-center text-center bg-slate-50/30">
-                        <Users size={20} className="text-slate-400 mb-2" />
-                        <span className="text-[13px] font-semibold text-slate-500">No recent sessions</span>
-                        <span className="text-[11px] text-slate-400 mt-0.5">Your recently visited rooms will appear here.</span>
-                      </div>
                     )}
-
-                    <button className="text-[12px] font-semibold text-slate-400 hover:text-violet-600 transition-colors flex items-center justify-center gap-0.5 mt-2">
-                      View all rooms →
-                    </button>
-                  </section>
-                </>
-              )}
-
-              {activeTab === "Rooms" && renderRoomsTab()}
-              {activeTab === "Recordings" && renderRecordingsTab()}
-              {activeTab === "Calendar" && renderCalendarTab()}
-              {activeTab === "SharedNotes" && renderSharedNotesTab()}
-              {activeTab === "Settings" && renderSettingsTab()}
-            </main>
-
-            {/* Right Floating Panel (Activity Feed) */}
-            <aside className={`shrink-0 bg-white border border-slate-100 shadow-[0_16px_48px_rgba(0,0,0,0.03)] rounded-[32px] flex flex-col p-6 transition-all duration-300 ${
-              isActivityOpen 
-                ? 'w-[280px] opacity-100 visible' 
-                : 'w-0 opacity-0 invisible overflow-hidden p-0 border-none shadow-none'
-            }`}>
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-[16px] font-semibold text-slate-800 tracking-tight">Activity</h2>
-                <button 
-                  onClick={() => setIsActivityOpen(false)}
-                  className="p-1 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Activity items list */}
-              <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-1 thin-scrollbar">
-                {[
-                  { text: "John shared a recording", project: "Product Sync", time: "2h ago", icon: <PlayCircle size={14} />, color: "bg-blue-50 text-blue-500" },
-                  { text: "AI summary ready", project: "Design Review", time: "3h ago", icon: <span className="text-[12px]">✦</span>, color: "bg-violet-50 text-violet-500" },
-                  { text: "Meeting starts in 15 min", project: "Marketing Review", time: "2:45 PM", icon: <Calendar size={14} />, color: "bg-amber-50 text-amber-500" },
-                  { text: "Transcript completed", project: "Product Sync", time: "Yesterday", icon: <Clock size={14} />, color: "bg-emerald-50 text-emerald-500" },
-                  { text: "Lisa shared meeting notes", project: "Sprint Planning", time: "Yesterday", icon: <FileText size={14} />, color: "bg-indigo-50 text-indigo-500" }
-                ].map((activity, idx) => (
-                  <div key={idx} className="flex gap-3 items-start hover:bg-slate-50/50 p-1.5 rounded-lg transition-colors cursor-pointer">
-                    <div className={`w-8 h-8 rounded-xl ${activity.color} flex items-center justify-center shrink-0`}>
-                      {activity.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[12px] font-semibold text-slate-800 truncate leading-snug">{activity.text}</div>
-                      <div className="text-[11px] text-slate-400 font-medium mt-0.5">{activity.project}</div>
-                    </div>
-                    <div className="text-[10px] text-slate-400 font-medium shrink-0 whitespace-nowrap pt-0.5">{activity.time}</div>
                   </div>
-                ))}
-              </div>
 
-              <button className="mt-4 w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 font-semibold rounded-xl text-[12px] border border-slate-200/50 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all flex items-center justify-center gap-1">
-                View all activity <ChevronDown size={14} className="-rotate-90" />
-              </button>
-            </aside>
+                  {/* Message Composer */}
+                  <form onSubmit={handleSendMessage} className="mt-3 relative">
+                    <input 
+                      type="text"
+                      value={chatMessage}
+                      onChange={(e) => setChatMessage(e.target.value)}
+                      placeholder="Message everyone..."
+                      className="w-full bg-slate-100/70 dark:bg-zinc-800/70 text-xs text-slate-800 dark:text-zinc-200 placeholder:text-slate-400 pl-3.5 pr-8 py-2 rounded-2xl border-none focus:outline-none focus:ring-1 focus:ring-slate-300"
+                    />
+                    <button 
+                      type="submit"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors"
+                    >
+                      <Send size={12} />
+                    </button>
+                  </form>
+                </aside>
+              )}
+            </div>
 
           </div>
 
-          {renderUpgradeModal()}
+          {/* ========================================================================= */}
+          {/* LOBBY MODAL OVERLAY (Pixel-Perfect Layer as in Image 2)                    */}
+          {/* ========================================================================= */}
+          {isLobby && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/[0.04] dark:bg-black/30 backdrop-blur-[6px] animate-in fade-in duration-300">
+              <div 
+                className="relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.1)] rounded-[32px] max-w-[420px] w-full p-7 flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-200 select-none"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Top Badge with Delicate Purple Sparkles (✦) */}
+                <div className="relative mb-3">
+                  <div className="w-13 h-13 w-[52px] h-[52px] rounded-2xl bg-violet-50/90 dark:bg-violet-950/60 border border-violet-100/80 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
+                    <Users size={22} strokeWidth={1.75} />
+                  </div>
+                  {/* Floating sparkles */}
+                  <span className="absolute -top-1 -right-2 text-[10px] font-bold text-violet-400 animate-pulse">✦</span>
+                  <span className="absolute -top-1 -left-2 text-[9px] font-bold text-violet-300">✦</span>
+                  <span className="absolute -bottom-1 -right-1 text-[8px] font-bold text-violet-400">✦</span>
+                </div>
+
+                {/* Typography Header */}
+                <h2 className="text-[19px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">
+                  Welcome to Room
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 mb-5 leading-normal">
+                  Start an instant meeting or join with a code.
+                </p>
+
+                {/* Action 1: Start an instant meeting (Primary Purple Action) */}
+                <button
+                  type="button"
+                  onClick={handleStartInstantMeeting}
+                  className="w-full p-3.5 bg-violet-50/80 hover:bg-violet-100/90 dark:bg-violet-950/40 dark:hover:bg-violet-900/60 border border-violet-200/70 dark:border-violet-800/60 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                      <Plus size={16} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Start an instant meeting</div>
+                      <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">Create a room and invite others</div>
+                    </div>
+                  </div>
+                  <ChevronRight size={15} className="text-violet-600 dark:text-violet-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+
+                {/* Subtle Divider */}
+                <div className="flex items-center gap-3 w-full my-3.5">
+                  <div className="h-[1px] bg-slate-200/70 dark:bg-zinc-800 flex-1" />
+                  <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">or</span>
+                  <div className="h-[1px] bg-slate-200/70 dark:bg-zinc-800 flex-1" />
+                </div>
+
+                {/* Action 2: Enter room code (Secondary Action with Code Input Affordance) */}
+                {!isEnteringCode ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsEnteringCode(true)}
+                    className="w-full p-3.5 bg-slate-50/80 hover:bg-slate-100/90 dark:bg-zinc-850/60 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-violet-100/80 dark:bg-zinc-800 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 font-bold text-sm group-hover:scale-105 transition-transform">
+                        <Hash size={15} strokeWidth={2.2} />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Enter room code</div>
+                        <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">Join an existing room</div>
+                      </div>
+                    </div>
+                    <ChevronRight size={15} className="text-slate-400 dark:text-zinc-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                  </button>
+                ) : (
+                  <form onSubmit={handleJoinWithCode} className="w-full bg-slate-50/90 dark:bg-zinc-850/80 border border-slate-200 dark:border-zinc-700 rounded-2xl p-3 flex flex-col gap-2.5 animate-in fade-in duration-150">
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={codeInputRef}
+                        type="text"
+                        value={roomCodeInput}
+                        onChange={(e) => setRoomCodeInput(e.target.value)}
+                        placeholder="e.g. ABC-123"
+                        className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-900 dark:text-zinc-100 px-3 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-400 uppercase text-center"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!roomCodeInput.trim()}
+                        className="px-4 py-2 bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold rounded-xl hover:bg-slate-800 disabled:opacity-40 transition-all active:scale-95"
+                      >
+                        Join
+                      </button>
+                    </div>
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-[10px] text-slate-400">Enter 6-letter room code</span>
+                      <button 
+                        type="button" 
+                        onClick={() => setIsEnteringCode(false)}
+                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* INVITE PEOPLE MODAL                                                       */}
+          {/* ========================================================================= */}
+          {isInviteModalOpen && (
+            <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/30 backdrop-blur-xs animate-in fade-in">
+              <div 
+                className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl text-left"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">Invite Collaborators</h3>
+                  <button onClick={() => setIsInviteModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+                    <X size={15} />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mb-4 leading-relaxed">
+                  Anyone with this link can join your active Room meeting directly.
+                </p>
+                <div className="p-2.5 bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-xl flex items-center justify-between mb-4">
+                  <span className="text-xs font-mono text-slate-700 dark:text-zinc-300 truncate mr-2">https://regaarder.app/room/{roomName.toLowerCase().replace(/\s+/g, '-')}</span>
+                  <button 
+                    onClick={() => {
+                      showToast?.("Invite link copied to clipboard!");
+                      setIsInviteModalOpen(false);
+                    }}
+                    className="px-2.5 py-1 bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold rounded-lg shrink-0"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </div>

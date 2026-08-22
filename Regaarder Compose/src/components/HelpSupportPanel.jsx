@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
-  Search, Keyboard, Sparkles, ChevronDown, ChevronUp, Check,
+  Search, Keyboard, ChevronDown, ChevronUp, Check,
   X, Paperclip, LifeBuoy, ArrowRight, MessageSquare, FileText, BookOpen, FileQuestion
 } from 'lucide-react';
+import { RegaarderAiIcon } from './RegaarderProductIcons';
 
 const DOC_CATEGORIES = [
   { id: 'faqs', label: 'FAQs' },
@@ -347,7 +348,7 @@ export default function HelpSupportPanel({ onClose, onOpenKeyboardShortcuts, onN
             className="flex-1 px-3 py-2 bg-slate-50 dark:bg-zinc-900/60 hover:bg-slate-100 dark:hover:bg-zinc-800/80 rounded-xl text-left transition-colors flex items-center justify-between group"
           >
             <div className="flex items-center gap-2">
-              <Sparkles size={14} className="text-slate-500 dark:text-zinc-400 group-hover:text-slate-800 dark:group-hover:text-zinc-200 transition-colors" />
+              <RegaarderAiIcon size={14} className="text-slate-500 dark:text-zinc-400 group-hover:text-slate-800 dark:group-hover:text-zinc-200 transition-colors shrink-0" />
               <span className="text-xs font-medium text-slate-700 dark:text-zinc-300">Ask AI</span>
             </div>
             <ArrowRight size={12} className="text-slate-300 dark:text-zinc-600 group-hover:text-slate-600 dark:group-hover:text-zinc-400 transition-colors" />
