@@ -943,16 +943,16 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                     </div>
                   </div>
 
-                  {/* Grid Row 2: Date & Time + Collaborators (Side-by-Side) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {/* Grid Row 2: Date & Time + Collaborators (Side-by-Side with Generous Spacing) */}
+                  <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-3.5">
                     {/* Date & Time Controls */}
                     <div>
                       <label className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1.5">
                         Date & Time
                       </label>
                       <div className="flex items-center gap-2">
-                        {/* 100% Custom Apple Calendar Popover Pill (Zero Native HTML Popup) */}
-                        <div className="relative flex-1">
+                        {/* 100% Custom Apple Calendar Popover Pill */}
+                        <div className="relative shrink-0">
                           <button
                             type="button"
                             onClick={() => {
@@ -961,10 +961,10 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                               setIsEndTimeMenuOpen(false);
                               setIsCollaboratorMenuOpen(false);
                             }}
-                            className="w-full h-11 px-3 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2 text-left cursor-pointer"
+                            className="h-11 px-3 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2 text-left cursor-pointer"
                           >
                             <Calendar size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
-                            <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                            <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 whitespace-nowrap">
                               {formatDisplayDate(scheduleDate)}
                             </span>
                           </button>
@@ -1041,30 +1041,49 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                           )}
                         </div>
 
-                        {/* Custom Time Range with Flexible Typing and Apple Dropdown */}
-                        <div className="h-11 px-2.5 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center justify-between gap-1 flex-1 relative text-xs font-semibold text-slate-700 dark:text-zinc-300">
-                          {/* Start Time with Unconstrained Custom Type */}
-                          <div className="relative flex-1">
-                            <input
-                              type="text"
-                              value={scheduleStartTime}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setScheduleStartTime(val);
-                                const sm = parseTimeToMins(val);
-                                const em = parseTimeToMins(scheduleEndTime);
-                                if (sm && em && em > sm) {
-                                  const diff = em - sm;
-                                  if (diff % 60 === 0) setScheduleDuration(`${diff / 60}h`);
-                                  else if (diff > 60) setScheduleDuration(`${Math.floor(diff / 60)}h ${diff % 60}m`);
-                                  else setScheduleDuration(`${diff} min`);
-                                }
-                              }}
-                              placeholder="10:00 AM"
-                              className="w-full text-center bg-transparent outline-none text-[11px] font-semibold text-slate-800 dark:text-zinc-200 cursor-text"
-                            />
+                        {/* Roomy Start & End Time Fields with Free Typing & Clean Popover */}
+                        <div className="h-11 px-2 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center justify-between gap-1 flex-1">
+                          {/* Start Time Field */}
+                          <div className="relative flex-1 min-w-[70px]">
+                            <div className="flex items-center justify-between">
+                              <input
+                                type="text"
+                                value={scheduleStartTime}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setScheduleStartTime(val);
+                                  const sm = parseTimeToMins(val);
+                                  const em = parseTimeToMins(scheduleEndTime);
+                                  if (sm && em && em > sm) {
+                                    const diff = em - sm;
+                                    if (diff % 60 === 0) setScheduleDuration(`${diff / 60}h`);
+                                    else if (diff > 60) setScheduleDuration(`${Math.floor(diff / 60)}h ${diff % 60}m`);
+                                    else setScheduleDuration(`${diff} min`);
+                                  }
+                                }}
+                                placeholder="10:00 AM"
+                                className="w-full text-center bg-transparent outline-none text-xs font-semibold text-slate-800 dark:text-zinc-100 cursor-text select-text"
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsStartTimeMenuOpen(!isStartTimeMenuOpen);
+                                  setIsEndTimeMenuOpen(false);
+                                  setIsDatePickerOpen(false);
+                                  setIsCollaboratorMenuOpen(false);
+                                }}
+                                className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded cursor-pointer shrink-0"
+                              >
+                                <ChevronDown size={11} />
+                              </button>
+                            </div>
+
                             {isStartTimeMenuOpen && (
-                              <div className="absolute top-full left-0 mt-2 w-32 max-h-48 overflow-y-auto thin-scrollbar bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                              <div 
+                                className="absolute top-full left-0 mt-2 w-32 max-h-48 overflow-y-auto thin-scrollbar bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 {standardTimeOptions.map((timeOption) => (
                                   <button
                                     key={`start-${timeOption}`}
@@ -1073,7 +1092,7 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                                       updateScheduleTimes(timeOption, undefined);
                                       setIsStartTimeMenuOpen(false);
                                     }}
-                                    className={`w-full text-left px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${scheduleStartTime === timeOption ? 'bg-violet-600 text-white' : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
+                                    className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-colors ${scheduleStartTime === timeOption ? 'bg-violet-600 text-white' : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
                                   >
                                     {timeOption}
                                   </button>
@@ -1082,38 +1101,49 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                             )}
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() => { setIsStartTimeMenuOpen(!isStartTimeMenuOpen); setIsEndTimeMenuOpen(false); }}
-                            className="text-slate-400 hover:text-slate-600 text-[10px] px-0.5"
-                          >
-                            ▾
-                          </button>
+                          <span className="text-slate-400 text-xs shrink-0 font-medium">→</span>
 
-                          <span className="text-slate-400 text-[10px] shrink-0">→</span>
+                          {/* End Time Field */}
+                          <div className="relative flex-1 min-w-[70px]">
+                            <div className="flex items-center justify-between">
+                              <input
+                                type="text"
+                                value={scheduleEndTime}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setScheduleEndTime(val);
+                                  const sm = parseTimeToMins(scheduleStartTime);
+                                  const em = parseTimeToMins(val);
+                                  if (sm && em && em > sm) {
+                                    const diff = em - sm;
+                                    if (diff % 60 === 0) setScheduleDuration(`${diff / 60}h`);
+                                    else if (diff > 60) setScheduleDuration(`${Math.floor(diff / 60)}h ${diff % 60}m`);
+                                    else setScheduleDuration(`${diff} min`);
+                                  }
+                                }}
+                                placeholder="11:00 AM"
+                                className="w-full text-center bg-transparent outline-none text-xs font-semibold text-slate-800 dark:text-zinc-100 cursor-text select-text"
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsEndTimeMenuOpen(!isEndTimeMenuOpen);
+                                  setIsStartTimeMenuOpen(false);
+                                  setIsDatePickerOpen(false);
+                                  setIsCollaboratorMenuOpen(false);
+                                }}
+                                className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded cursor-pointer shrink-0"
+                              >
+                                <ChevronDown size={11} />
+                              </button>
+                            </div>
 
-                          {/* End Time with Unconstrained Custom Type */}
-                          <div className="relative flex-1">
-                            <input
-                              type="text"
-                              value={scheduleEndTime}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setScheduleEndTime(val);
-                                const sm = parseTimeToMins(scheduleStartTime);
-                                const em = parseTimeToMins(val);
-                                if (sm && em && em > sm) {
-                                  const diff = em - sm;
-                                  if (diff % 60 === 0) setScheduleDuration(`${diff / 60}h`);
-                                  else if (diff > 60) setScheduleDuration(`${Math.floor(diff / 60)}h ${diff % 60}m`);
-                                  else setScheduleDuration(`${diff} min`);
-                                }
-                              }}
-                              placeholder="11:00 AM"
-                              className="w-full text-center bg-transparent outline-none text-[11px] font-semibold text-slate-800 dark:text-zinc-200 cursor-text"
-                            />
                             {isEndTimeMenuOpen && (
-                              <div className="absolute top-full right-0 mt-2 w-32 max-h-48 overflow-y-auto thin-scrollbar bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                              <div 
+                                className="absolute top-full right-0 mt-2 w-32 max-h-48 overflow-y-auto thin-scrollbar bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 {standardTimeOptions.map((timeOption) => (
                                   <button
                                     key={`end-${timeOption}`}
@@ -1122,7 +1152,7 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                                       updateScheduleTimes(undefined, timeOption);
                                       setIsEndTimeMenuOpen(false);
                                     }}
-                                    className={`w-full text-left px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${scheduleEndTime === timeOption ? 'bg-violet-600 text-white' : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
+                                    className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-colors ${scheduleEndTime === timeOption ? 'bg-violet-600 text-white' : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
                                   >
                                     {timeOption}
                                   </button>
@@ -1130,18 +1160,10 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                               </div>
                             )}
                           </div>
-
-                          <button
-                            type="button"
-                            onClick={() => { setIsEndTimeMenuOpen(!isEndTimeMenuOpen); setIsStartTimeMenuOpen(false); }}
-                            className="text-slate-400 hover:text-slate-600 text-[10px] px-0.5"
-                          >
-                            ▾
-                          </button>
                         </div>
 
                         {/* Roomy Duration Pill */}
-                        <div className="h-11 px-3 min-w-[72px] shrink-0 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-violet-50/60 dark:bg-violet-950/40 flex items-center justify-center gap-1 text-[11px] font-bold text-violet-700 dark:text-violet-300 shadow-2xs">
+                        <div className="h-11 px-2.5 min-w-[68px] shrink-0 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-violet-50/60 dark:bg-violet-950/40 flex items-center justify-center gap-1 text-xs font-bold text-violet-700 dark:text-violet-300 shadow-2xs">
                           <span>⏱</span>
                           <span>{scheduleDuration}</span>
                         </div>
