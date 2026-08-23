@@ -45983,7 +45983,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
 
-        <main className={`flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-[#000000] ${isSheetsPresentationMode || isDeckPresentationMode ? 'fixed inset-0 z-[9999] bg-white dark:bg-[#000000]' : ''}`}>
+        <main 
+          className={`flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-[#000000] ${isSheetsPresentationMode || isDeckPresentationMode ? 'fixed inset-0 z-[9999] bg-white dark:bg-[#000000]' : ''}`}
+          style={{
+            marginLeft: (leftSidebarOpen && !isSheetsPresentationMode && !isDeckPresentationMode && productMode !== 'deck')
+              ? `${leftSidebarWidth}px`
+              : '0px',
+            transition: 'margin-left 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}
+        >
           {!isSheetsPresentationMode && !isDeckPresentationMode && (
             <div data-sheets-toolbar="true" className={`h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/70 dark:bg-[#111111] backdrop-blur-xl shrink-0 select-none group/header relative z-[350] transition-all duration-200 ${
               isSheetZenMode ? 'fixed top-0 left-0 right-0 z-[9000] opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto shadow-md border-b' : ''
@@ -46624,8 +46632,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="flex-1 h-full min-h-0 flex relative">
             {!isSheetsMode && productMode !== 'deck' && (
                     <aside
-                      className="border-r border-gray-100/50 flex flex-col bg-[#FAFAFC]/75 dark:bg-zinc-900/75 backdrop-blur-md shrink-0 select-none overflow-hidden transition-[width] duration-200"
-                      style={{ width: leftSidebarOpen ? `${leftSidebarWidth}px` : '0px' }}
+                      className={`border-r border-slate-200/80 dark:border-zinc-800 flex flex-col bg-[#FAFAFC]/95 dark:bg-zinc-900/95 backdrop-blur-2xl shrink-0 select-none overflow-hidden transition-all duration-200 shadow-[8px_0_30px_-10px_rgba(0,0,0,0.06)] ${
+                        leftSidebarOpen
+                          ? 'fixed top-0 left-0 bottom-0 h-screen z-[450] animate-in fade-in slide-in-from-left-4'
+                          : 'w-0 h-0 hidden overflow-hidden pointer-events-none'
+                      }`}
+                      style={
+                        leftSidebarOpen
+                          ? { width: `${leftSidebarWidth}px`, position: 'fixed', top: 0, left: 0, bottom: 0, height: '100vh', zIndex: 450 }
+                          : { width: '0px', height: '0px', display: 'none' }
+                      }
                     >
                       <div className="h-14 flex items-center justify-between px-4">
                         <div className="flex items-center gap-2 font-bold text-gray-900 text-lg">
