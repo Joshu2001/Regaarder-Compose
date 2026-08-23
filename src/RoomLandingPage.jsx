@@ -34,15 +34,74 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
   const [scheduleDuration, setScheduleDuration] = useState("60 min");
   const [scheduleRoomLink, setScheduleRoomLink] = useState("https://regaarder.app/room/sync-8492");
   const [scheduleCollaborators, setScheduleCollaborators] = useState([
-    { id: 'you', name: 'You', role: 'Host', color: 'bg-violet-600' },
-    { id: 'alex', name: 'Alex', role: 'Editor', color: 'bg-sky-500' },
-    { id: 'maya', name: 'Maya', role: 'Viewer', color: 'bg-amber-500' },
+    { id: 'you', name: 'You', role: 'Host', color: 'bg-violet-600', email: 'you@regaarder.com' },
+    { id: 'alex', name: 'Alex', role: 'Editor', color: 'bg-sky-500', email: 'alex@regaarder.com' },
+    { id: 'maya', name: 'Maya', role: 'Viewer', color: 'bg-amber-500', email: 'maya@regaarder.com' },
   ]);
-  const [scheduleNewCollaboratorInput, setScheduleNewCollaboratorInput] = useState("");
-  const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
+  const [isCollaboratorMenuOpen, setIsCollaboratorMenuOpen] = useState(false);
+  const [collaboratorSearchQuery, setCollaboratorSearchQuery] = useState("");
+  const [isStartTimeMenuOpen, setIsStartTimeMenuOpen] = useState(false);
+  const [isEndTimeMenuOpen, setIsEndTimeMenuOpen] = useState(false);
   const [scheduleAiSummaryEnabled, setScheduleAiSummaryEnabled] = useState(true);
   const [scheduleWhiteboardEnabled, setScheduleWhiteboardEnabled] = useState(true);
   const [scheduleEncryptionEnabled, setScheduleEncryptionEnabled] = useState(true);
+
+  const workspaceDirectoryContacts = [
+    { id: 'joshua', name: 'Joshua', role: 'Host', title: 'Product Lead', email: 'joshua@regaarder.com', color: 'bg-violet-600' },
+    { id: 'mike', name: 'Mike', role: 'Editor', title: 'Design Lead', email: 'mike@regaarder.com', color: 'bg-blue-600' },
+    { id: 'ana', name: 'Ana', role: 'Editor', title: 'Senior Architect', email: 'ana@regaarder.com', color: 'bg-emerald-600' },
+    { id: 'alex', name: 'Alex', role: 'Editor', title: 'Staff Engineer', email: 'alex@regaarder.com', color: 'bg-sky-500' },
+    { id: 'maya', name: 'Maya', role: 'Viewer', title: 'UX Researcher', email: 'maya@regaarder.com', color: 'bg-amber-500' },
+    { id: 'sarah', name: 'Sarah', role: 'Viewer', title: 'Marketing Director', email: 'sarah@regaarder.com', color: 'bg-rose-500' },
+    { id: 'writer-ai', name: 'Writer AI', role: 'AI Assistant', title: 'Intelligence Co-Pilot', email: 'ai@regaarder.com', color: 'bg-purple-600' },
+  ];
+
+  const standardTimeOptions = [
+    '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM', '10:00 AM', '10:15 AM', '10:30 AM', '11:00 AM',
+    '11:30 AM', '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM',
+    '03:30 PM', '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM'
+  ];
+
+  const parseTimeToMins = (timeStr) => {
+    if (!timeStr) return 0;
+    const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+    if (!match) return 0;
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const meridiem = match[3]?.toUpperCase();
+    if (meridiem === 'PM' && hours < 12) hours += 12;
+    if (meridiem === 'AM' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  };
+
+  const updateScheduleTimes = (newStart, newEnd) => {
+    const s = newStart ?? scheduleStartTime;
+    const e = newEnd ?? scheduleEndTime;
+    if (newStart !== undefined) setScheduleStartTime(newStart);
+    if (newEnd !== undefined) setScheduleEndTime(newEnd);
+    
+    const startMins = parseTimeToMins(s);
+    const endMins = parseTimeToMins(e);
+    if (endMins > startMins) {
+      const diff = endMins - startMins;
+      if (diff % 60 === 0) setScheduleDuration(`${diff / 60}h`);
+      else if (diff > 60) setScheduleDuration(`${Math.floor(diff / 60)}h ${diff % 60}m`);
+      else setScheduleDuration(`${diff} min`);
+    } else {
+      setScheduleDuration('60 min');
+    }
+  };
+
+  const formatDisplayDate = (dateStr) => {
+    if (!dateStr) return 'Select date';
+    try {
+      const [year, month, day] = dateStr.split('-');
+      const d = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch (e) {
+      return dateStr;
+    }
+  };
 
   // Meeting Room Interactive States
   const [roomName, setRoomName] = useState("Product Sync");
@@ -803,14 +862,19 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
           {isSchedulingModalOpen && (
             <div 
               className="fixed inset-0 z-[100000] flex items-center justify-center p-4 sm:p-6 bg-black/55 backdrop-blur-xl animate-in fade-in duration-200 select-none"
-              onClick={() => setIsSchedulingModalOpen(false)}
+              onClick={() => {
+                setIsSchedulingModalOpen(false);
+                setIsCollaboratorMenuOpen(false);
+                setIsStartTimeMenuOpen(false);
+                setIsEndTimeMenuOpen(false);
+              }}
             >
               <div 
-                className="relative bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-3xl border border-white/90 dark:border-white/10 shadow-[0_32px_120px_rgba(0,0,0,0.22)] rounded-[36px] max-w-[740px] w-full p-7 sm:p-8 flex flex-col font-sans text-left animate-in fade-in zoom-in-95 duration-200 overflow-visible"
+                className="relative bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-3xl border border-white/90 dark:border-white/10 shadow-[0_32px_120px_rgba(0,0,0,0.22)] rounded-[36px] max-w-[760px] w-full p-7 sm:p-8 flex flex-col font-sans text-left animate-in fade-in zoom-in-95 duration-200 overflow-visible"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Top Badge with Delicate Purple Sparkles (✦) & Title */}
-                <div className="flex items-center justify-between gap-4 mb-6">
+                <div className="flex items-center justify-between gap-4 mb-5">
                   <div className="flex items-center gap-3.5">
                     <div className="relative">
                       <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-950/70 border border-violet-100/80 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
@@ -891,131 +955,259 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                       <label className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1.5">
                         Date & Time
                       </label>
-                      <div className="grid grid-cols-[1.1fr_1.4fr_auto] gap-2">
-                        {/* Date Picker */}
-                        <div className="h-11 px-2.5 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center gap-1.5">
-                          <Calendar size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                      <div className="flex items-center gap-2">
+                        {/* Custom Clickable Date Picker Pill */}
+                        <div 
+                          className="relative h-11 px-3 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2 flex-1 cursor-pointer overflow-hidden"
+                          onClick={() => {
+                            const dateInput = document.getElementById('regaarder-schedule-native-date');
+                            if (dateInput) {
+                              if ('showPicker' in HTMLInputElement.prototype) {
+                                dateInput.showPicker();
+                              } else {
+                                dateInput.focus();
+                              }
+                            }
+                          }}
+                        >
+                          <Calendar size={14} className="text-violet-600 dark:text-violet-400 shrink-0 pointer-events-none" />
+                          <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate pointer-events-none">
+                            {formatDisplayDate(scheduleDate)}
+                          </span>
                           <input
+                            id="regaarder-schedule-native-date"
                             type="date"
                             value={scheduleDate}
                             onChange={(e) => setScheduleDate(e.target.value)}
-                            className="w-full bg-transparent text-[11px] font-semibold text-slate-800 dark:text-zinc-200 outline-none cursor-pointer"
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                           />
                         </div>
 
-                        {/* Time Range */}
-                        <div className="h-11 px-2 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-zinc-300">
-                          <select
-                            value={scheduleStartTime}
-                            onChange={(e) => setScheduleStartTime(e.target.value)}
-                            className="bg-transparent outline-none cursor-pointer pr-0.5"
-                          >
-                            {['09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'].map((t) => (
-                              <option key={t} value={t} className="dark:bg-zinc-900">{t}</option>
-                            ))}
-                          </select>
-                          <span className="text-slate-400 text-[9px]">→</span>
-                          <select
-                            value={scheduleEndTime}
-                            onChange={(e) => setScheduleEndTime(e.target.value)}
-                            className="bg-transparent outline-none cursor-pointer pl-0.5"
-                          >
-                            {['09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '01:30 PM', '02:30 PM', '03:30 PM', '04:30 PM', '05:00 PM'].map((t) => (
-                              <option key={t} value={t} className="dark:bg-zinc-900">{t}</option>
-                            ))}
-                          </select>
+                        {/* Custom Time Range with Typable Inputs and Apple Dropdown */}
+                        <div className="h-11 px-2.5 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center justify-between gap-1 flex-1 relative text-xs font-semibold text-slate-700 dark:text-zinc-300">
+                          {/* Start Time with Custom Type & Dropdown */}
+                          <div className="relative flex-1">
+                            <input
+                              type="text"
+                              value={scheduleStartTime}
+                              onChange={(e) => updateScheduleTimes(e.target.value, undefined)}
+                              onFocus={() => { setIsStartTimeMenuOpen(true); setIsEndTimeMenuOpen(false); }}
+                              placeholder="10:00 AM"
+                              className="w-full text-center bg-transparent outline-none text-[11px] font-semibold text-slate-800 dark:text-zinc-200 cursor-text uppercase"
+                            />
+                            {isStartTimeMenuOpen && (
+                              <div className="absolute top-full left-0 mt-2 w-32 max-h-48 overflow-y-auto thin-scrollbar bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                                {standardTimeOptions.map((timeOption) => (
+                                  <button
+                                    key={`start-${timeOption}`}
+                                    type="button"
+                                    onClick={() => {
+                                      updateScheduleTimes(timeOption, undefined);
+                                      setIsStartTimeMenuOpen(false);
+                                    }}
+                                    className={`w-full text-left px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${scheduleStartTime === timeOption ? 'bg-violet-600 text-white' : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
+                                  >
+                                    {timeOption}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <span className="text-slate-400 text-[10px] shrink-0">→</span>
+
+                          {/* End Time with Custom Type & Dropdown */}
+                          <div className="relative flex-1">
+                            <input
+                              type="text"
+                              value={scheduleEndTime}
+                              onChange={(e) => updateScheduleTimes(undefined, e.target.value)}
+                              onFocus={() => { setIsEndTimeMenuOpen(true); setIsStartTimeMenuOpen(false); }}
+                              placeholder="11:00 AM"
+                              className="w-full text-center bg-transparent outline-none text-[11px] font-semibold text-slate-800 dark:text-zinc-200 cursor-text uppercase"
+                            />
+                            {isEndTimeMenuOpen && (
+                              <div className="absolute top-full right-0 mt-2 w-32 max-h-48 overflow-y-auto thin-scrollbar bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                                {standardTimeOptions.map((timeOption) => (
+                                  <button
+                                    key={`end-${timeOption}`}
+                                    type="button"
+                                    onClick={() => {
+                                      updateScheduleTimes(undefined, timeOption);
+                                      setIsEndTimeMenuOpen(false);
+                                    }}
+                                    className={`w-full text-left px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-colors ${scheduleEndTime === timeOption ? 'bg-violet-600 text-white' : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
+                                  >
+                                    {timeOption}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Duration Pill */}
-                        <div className="h-11 px-2.5 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center justify-center gap-1 text-[11px] font-bold text-violet-600 dark:text-violet-400">
+                        {/* Roomy Duration Pill */}
+                        <div className="h-11 px-3 min-w-[72px] shrink-0 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-violet-50/60 dark:bg-violet-950/40 flex items-center justify-center gap-1 text-[11px] font-bold text-violet-700 dark:text-violet-300 shadow-2xs">
+                          <span>⏱</span>
                           <span>{scheduleDuration}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Collaborators & Invites */}
-                    <div>
+                    {/* Collaborators & Invites with Contact Directory Dropdown */}
+                    <div className="relative">
                       <label className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1.5">
                         Collaborators & Invites
                       </label>
-                      <div className="h-11 px-2.5 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                        {scheduleCollaborators.map((c) => (
-                          <div
-                            key={c.id}
-                            className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/60 shadow-2xs text-[11px] font-medium text-slate-800 dark:text-zinc-200 shrink-0"
-                          >
-                            <div className={`w-4 h-4 rounded-full ${c.color} text-white flex items-center justify-center text-[9px] font-bold`}>
-                              {c.name[0]}
+                      <div className="h-11 px-2.5 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center justify-between gap-1.5">
+                        {/* Avatar Chips */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1 min-w-0">
+                          {scheduleCollaborators.map((c) => (
+                            <div
+                              key={c.id}
+                              className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/60 shadow-2xs text-[11px] font-medium text-slate-800 dark:text-zinc-200 shrink-0"
+                            >
+                              <div className={`w-4 h-4 rounded-full ${c.color} text-white flex items-center justify-center text-[9px] font-bold`}>
+                                {c.name[0]}
+                              </div>
+                              <span className="truncate max-w-[80px]">{c.name}</span>
+                              {c.id !== 'you' && (
+                                <button
+                                  type="button"
+                                  onClick={() => setScheduleCollaborators((prev) => prev.filter((p) => p.id !== c.id))}
+                                  className="text-slate-400 hover:text-rose-500 ml-0.5"
+                                >
+                                  <X size={10} />
+                                </button>
+                              )}
                             </div>
-                            <span>{c.name}</span>
-                            {c.id !== 'you' && (
+                          ))}
+                        </div>
+
+                        {/* + Invite Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCollaboratorMenuOpen(!isCollaboratorMenuOpen);
+                            setCollaboratorSearchQuery("");
+                          }}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 dark:bg-violet-950/60 dark:hover:bg-violet-900/60 border border-violet-200/70 dark:border-violet-800/70 text-[11px] font-bold text-violet-700 dark:text-violet-300 transition-all cursor-pointer shrink-0 active:scale-95"
+                        >
+                          <Plus size={12} strokeWidth={2.5} />
+                          <span>Invite</span>
+                        </button>
+                      </div>
+
+                      {/* Workspace Contacts Directory Dropdown */}
+                      {isCollaboratorMenuOpen && (
+                        <div 
+                          className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-2xl rounded-2xl p-2.5 z-50 animate-in fade-in zoom-in-95 duration-150 text-left"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* Search / Add Input */}
+                          <div className="mb-2">
+                            <div className="h-8 px-2.5 rounded-xl border border-violet-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 flex items-center gap-2">
+                              <Search size={12} className="text-slate-400" />
+                              <input
+                                autoFocus
+                                type="text"
+                                value={collaboratorSearchQuery}
+                                onChange={(e) => setCollaboratorSearchQuery(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && collaboratorSearchQuery.trim()) {
+                                    const customName = collaboratorSearchQuery.trim();
+                                    setScheduleCollaborators((prev) => [
+                                      ...prev,
+                                      { id: `custom-${Date.now()}`, name: customName, role: 'Editor', email: customName, color: 'bg-emerald-600' }
+                                    ]);
+                                    setCollaboratorSearchQuery("");
+                                    setIsCollaboratorMenuOpen(false);
+                                    showToast?.(`Invited ${customName}`);
+                                  }
+                                }}
+                                placeholder="Search contacts or type email..."
+                                className="w-full bg-transparent text-[11px] font-medium text-slate-800 dark:text-zinc-200 outline-none placeholder:text-slate-400"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Suggested Workspace Contacts List */}
+                          <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2 py-1">
+                            Workspace Team & Contacts
+                          </div>
+                          <div className="max-h-44 overflow-y-auto thin-scrollbar space-y-0.5">
+                            {workspaceDirectoryContacts
+                              .filter((contact) => {
+                                const q = collaboratorSearchQuery.toLowerCase();
+                                return (
+                                  !scheduleCollaborators.some((sc) => sc.name.toLowerCase() === contact.name.toLowerCase()) &&
+                                  (contact.name.toLowerCase().includes(q) || contact.email.toLowerCase().includes(q) || contact.title.toLowerCase().includes(q))
+                                );
+                              })
+                              .map((contact) => (
+                                <button
+                                  key={contact.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setScheduleCollaborators((prev) => [...prev, contact]);
+                                    setIsCollaboratorMenuOpen(false);
+                                    showToast?.(`Added ${contact.name} to meeting`);
+                                  }}
+                                  className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/40 text-left transition-colors cursor-pointer group"
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className={`w-6 h-6 rounded-full ${contact.color} text-white flex items-center justify-center text-[10px] font-bold shrink-0`}>
+                                      {contact.name[0]}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-slate-800 dark:text-zinc-200 truncate group-hover:text-violet-600 transition-colors">
+                                        {contact.name}
+                                      </div>
+                                      <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">
+                                        {contact.title}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/60 px-1.5 py-0.5 rounded-md shrink-0">
+                                    + Add
+                                  </span>
+                                </button>
+                              ))}
+                            {collaboratorSearchQuery.trim() && (
                               <button
                                 type="button"
-                                onClick={() => setScheduleCollaborators((prev) => prev.filter((p) => p.id !== c.id))}
-                                className="text-slate-400 hover:text-rose-500"
+                                onClick={() => {
+                                  const customName = collaboratorSearchQuery.trim();
+                                  setScheduleCollaborators((prev) => [
+                                    ...prev,
+                                    { id: `custom-${Date.now()}`, name: customName, role: 'Editor', email: customName, color: 'bg-emerald-600' }
+                                  ]);
+                                  setCollaboratorSearchQuery("");
+                                  setIsCollaboratorMenuOpen(false);
+                                  showToast?.(`Invited ${customName}`);
+                                }}
+                                className="w-full flex items-center gap-2 p-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/40 text-left text-xs font-bold text-violet-600 dark:text-violet-400"
                               >
-                                <X size={10} />
+                                <Plus size={13} strokeWidth={2.5} />
+                                <span>Invite "{collaboratorSearchQuery.trim()}"</span>
                               </button>
                             )}
                           </div>
-                        ))}
-
-                        {!isAddingCollaborator ? (
-                          <button
-                            type="button"
-                            onClick={() => setIsAddingCollaborator(true)}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-violet-50 dark:bg-violet-950/50 border border-violet-200/60 dark:border-violet-800/60 text-[11px] font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-100 transition-colors cursor-pointer shrink-0"
-                          >
-                            <Plus size={11} strokeWidth={2.5} />
-                            <span>Invite</span>
-                          </button>
-                        ) : (
-                          <form
-                            onSubmit={(e) => {
-                              e.preventDefault();
-                              if (scheduleNewCollaboratorInput.trim()) {
-                                const name = scheduleNewCollaboratorInput.trim();
-                                setScheduleCollaborators((prev) => [
-                                  ...prev,
-                                  { id: `collab-${Date.now()}`, name, role: 'Editor', color: 'bg-emerald-500' }
-                                ]);
-                                setScheduleNewCollaboratorInput("");
-                                setIsAddingCollaborator(false);
-                                showToast?.(`Invited ${name}`);
-                              }
-                            }}
-                            className="flex items-center gap-1 shrink-0"
-                          >
-                            <input
-                              autoFocus
-                              type="text"
-                              value={scheduleNewCollaboratorInput}
-                              onChange={(e) => setScheduleNewCollaboratorInput(e.target.value)}
-                              placeholder="Name or email..."
-                              className="h-7 w-28 px-2 text-[11px] bg-white dark:bg-zinc-800 border border-violet-300 rounded-lg outline-none text-slate-800 dark:text-zinc-100"
-                            />
-                            <button
-                              type="submit"
-                              className="h-7 px-2 bg-violet-600 text-white rounded-lg text-[10px] font-bold"
-                            >
-                              Add
-                            </button>
-                          </form>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Meeting Capabilities: Unified Grouped List (macOS/iOS Settings Style) */}
+                  {/* Meeting Capabilities: Unified Grouped List with RegaarderAiIcon */}
                   <div>
                     <label className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1.5">
                       Meeting Capabilities
                     </label>
                     <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 divide-y divide-slate-200/60 dark:divide-zinc-700/60 overflow-hidden">
-                      {/* AI Summary */}
+                      {/* AI Summary with Signature RegaarderAiIcon (circle logo) */}
                       <div className="px-3.5 py-2.5 flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
-                          <Sparkles size={15} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                          <RegaarderAiIcon size={16} strokeWidth={1.8} className="text-violet-600 dark:text-violet-400 shrink-0" />
                           <div>
                             <div className="text-xs font-bold text-slate-800 dark:text-zinc-200 leading-tight">AI Transcription & Real-time Summary</div>
                             <div className="text-[10.5px] text-slate-400 dark:text-zinc-400">Generate instant meeting notes, action items, and insights</div>
@@ -1083,7 +1275,7 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                     onClick={() => {
                       setIsSchedulingModalOpen(false);
                       setIsMeetingOptionsOpen(false);
-                      showToast?.(`Meeting "${scheduleTitle}" scheduled for ${scheduleDate} at ${scheduleStartTime}!`);
+                      showToast?.(`Meeting "${scheduleTitle}" scheduled for ${formatDisplayDate(scheduleDate)} at ${scheduleStartTime}!`);
                     }}
                     className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-bold shadow-[0_4px_14px_rgba(139,92,246,0.3)] transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
                   >
