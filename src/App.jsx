@@ -67438,6 +67438,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <div className="flex-1 flex flex-col min-w-0 bg-white relative">
           <RoomLandingPage 
             showToast={showToast}
+            onSwitchProductMode={(mode) => {
+              setProductMode(mode);
+              const labelMap = { compose: 'Docs', sheets: 'Sheets', deck: 'Decks', room: 'Room', whiteboard: 'Whiteboard', browser: 'Research' };
+              showToast?.(`Switched to ${labelMap[mode] || mode}`);
+            }}
+            onOpenWorkspaceSwitcher={(rect) => {
+              if (rect) setWorkspaceSwitcherAnchorRect(rect);
+              setWorkspaceSwitcherOpen((prev) => !prev);
+            }}
             onLaunch={(action) => {
               if (action && action.name === 'Room') {
                 if (action.type === 'schedule') {

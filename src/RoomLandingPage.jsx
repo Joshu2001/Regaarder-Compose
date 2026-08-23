@@ -4,7 +4,7 @@ import {
   MoreHorizontal, MessageSquare, Layout, X, Keyboard, Send, Check, Download,
   Maximize2, Minimize2, Share2, PhoneOff, Search, Sparkles
 } from "lucide-react";
-import { RoomIcon, RegaarderAiIcon } from "./components/RegaarderProductIcons";
+import { RoomIcon, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon } from "./components/RegaarderProductIcons";
 import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EEText, attachE2EESenderTransform, attachE2EEReceiverTransform } from "./utils/e2eeService";
 
 /**
@@ -19,10 +19,11 @@ import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EET
  * - Preserves Header, People panel, Chat panel, Call controls, and AI prompt bar
  * - Smooth transition from lobby into active meeting workspace
  */
-export default function RoomLandingPage({ onLaunch, showToast }) {
+export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMode, onOpenWorkspaceSwitcher }) {
   // Lobby State
   const [isLobby, setIsLobby] = useState(true);
   const [isEnteringCode, setIsEnteringCode] = useState(false);
+  const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const [isMeetingOptionsOpen, setIsMeetingOptionsOpen] = useState(false);
   const [isSchedulingModalOpen, setIsSchedulingModalOpen] = useState(false);
   const [roomCodeInput, setRoomCodeInput] = useState("");
@@ -239,11 +240,77 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
             
             {/* Top Header Bar */}
             <header className="h-[68px] flex items-center justify-between px-7 border-b border-slate-100/80 dark:border-zinc-800/80 bg-transparent shrink-0 relative z-20">
-              {/* Left: Brand + Room Selector Dropdown + Participant Count Badge */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 select-none cursor-default">
-                  <RoomIcon size={20} strokeWidth={1.8} className="text-violet-600 dark:text-violet-400" />
-                  <span className="text-base font-semibold text-violet-600 dark:text-violet-400 tracking-tight">Room</span>
+              {/* Left: Interactive Workspace Switcher + Room Selector Dropdown */}
+              <div className="flex items-center gap-3 relative">
+                {/* Workspace Switcher Trigger (Works in both Lobby and Live Room) */}
+                <div className="relative">
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen);
+                    }}
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-violet-600 dark:text-violet-400 select-none cursor-pointer group"
+                    title="Switch Workspace"
+                  >
+                    <RoomIcon size={20} strokeWidth={1.8} className="shrink-0" />
+                    <span className="text-base font-bold tracking-tight">Room</span>
+                    <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-200 transition-colors" />
+                  </button>
+
+                  {/* Built-in Apple-Style Workspace Switcher Dropdown */}
+                  {isWorkspaceMenuOpen && (
+                    <div 
+                      className="absolute top-full left-0 mt-2 w-56 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-800 shadow-2xl rounded-2xl p-1.5 z-[100] animate-in fade-in zoom-in-95 duration-150 text-left font-sans"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2.5 py-1">
+                        Workspaces
+                      </div>
+                      {[
+                        { id: 'compose', label: 'Docs', icon: ComposeIcon, color: 'text-violet-600' },
+                        { id: 'sheet', label: 'Sheets', icon: SheetIcon, color: 'text-emerald-600' },
+                        { id: 'deck', label: 'Decks', icon: DeckIcon, color: 'text-amber-600' },
+                        { id: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon, color: 'text-sky-600' },
+                        { id: 'room-landing', label: 'Room', icon: RoomIcon, color: 'text-violet-600', active: true },
+                        { id: 'browser', label: 'Research', icon: BrowserIcon, color: 'text-blue-600' },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setIsWorkspaceMenuOpen(false);
+                            if (item.id === 'compose') {
+                              onSwitchProductMode ? onSwitchProductMode('landing') : (window.location.hash = '#compose');
+                            } else if (item.id === 'whiteboard') {
+                              onSwitchProductMode ? onSwitchProductMode('whiteboard') : (window.location.hash = '#whiteboard');
+                            } else if (item.id === 'sheet') {
+                              onSwitchProductMode ? onSwitchProductMode('sheet') : (window.location.hash = '#sheet');
+                            } else if (item.id === 'deck') {
+                              onSwitchProductMode ? onSwitchProductMode('deck') : (window.location.hash = '#deck');
+                            } else if (item.id === 'browser') {
+                              onSwitchProductMode ? onSwitchProductMode('browser') : (window.location.hash = '#browser');
+                            } else {
+                              onSwitchProductMode?.(item.id);
+                            }
+                          }}
+                          className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                            item.active
+                              ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300'
+                              : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100/70 dark:hover:bg-zinc-800'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <item.icon size={16} strokeWidth={1.8} className={item.color} />
+                            <span>{item.label}</span>
+                          </div>
+                          {item.active && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-violet-600" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="relative" ref={roomNameRef}>
@@ -1399,23 +1466,42 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                       </div>
 
                       {/* Encryption & Waiting Room Row (Entire row instant toggle onPointerDown) */}
-                      <div 
-                        onPointerDown={(e) => {
-                          e.preventDefault();
-                          setScheduleEncryptionEnabled(prev => !prev);
-                        }}
-                        className="px-3.5 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-100/50 dark:hover:bg-zinc-800/40 transition-colors"
-                      >
-                        <div className="flex items-center gap-2.5 pointer-events-none">
-                          <Shield size={15} className="text-violet-600 dark:text-violet-400 shrink-0" />
-                          <div>
-                            <div className="text-xs font-bold text-slate-800 dark:text-zinc-200 leading-tight">End-to-End Encryption & Waiting Room</div>
-                            <div className="text-[10.5px] text-slate-400 dark:text-zinc-400">Host admits guests with encrypted zero-latency audio/video</div>
+                      <div>
+                        <div 
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            const nextState = !scheduleEncryptionEnabled;
+                            setScheduleEncryptionEnabled(nextState);
+                            if (!nextState) {
+                              showToast?.("⚠️ End-to-End Encryption disabled for this session.");
+                            }
+                          }}
+                          className="px-3.5 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-100/50 dark:hover:bg-zinc-800/40 transition-colors"
+                        >
+                          <div className="flex items-center gap-2.5 pointer-events-none">
+                            <Shield size={15} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                            <div>
+                              <div className="text-xs font-bold text-slate-800 dark:text-zinc-200 leading-tight">End-to-End Encryption & Waiting Room</div>
+                              <div className="text-[10.5px] text-slate-400 dark:text-zinc-400">Host admits guests with encrypted zero-latency audio/video</div>
+                            </div>
+                          </div>
+                          <div className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors duration-75 shrink-0 pointer-events-none ${scheduleEncryptionEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}>
+                            <span className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-75 ease-out ${scheduleEncryptionEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
                           </div>
                         </div>
-                        <div className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors duration-75 shrink-0 pointer-events-none ${scheduleEncryptionEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}>
-                          <span className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-75 ease-out ${scheduleEncryptionEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
-                        </div>
+
+                        {/* Non-intrusive warning when untoggled */}
+                        {!scheduleEncryptionEnabled && (
+                          <div className="mx-3.5 mb-2.5 p-2.5 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[11px] flex items-start gap-2 animate-in fade-in duration-150">
+                            <span className="text-amber-600 dark:text-amber-400 text-xs shrink-0 mt-0.5">⚠️</span>
+                            <div>
+                              <div className="font-bold text-[11px]">End-to-End Encryption Disabled</div>
+                              <div className="text-[10px] text-amber-700/90 dark:text-amber-400/90 leading-normal mt-0.5">
+                                Media streams and transcripts will not be encrypted on-device. Audio/video frames can be inspected by network relays and recording servers.
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
