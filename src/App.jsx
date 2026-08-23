@@ -15084,7 +15084,10 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                         return;
                       }
                       if (item.mode === 'room') {
-                        createRoomExperience();
+                        setProductMode('room-landing');
+                        setLeftSidebarOpen(false);
+                        setRightSidebarOpen(false);
+                        showToast('Switched to Room');
                         return;
                       }
                       if (item.mode === 'browser') {
