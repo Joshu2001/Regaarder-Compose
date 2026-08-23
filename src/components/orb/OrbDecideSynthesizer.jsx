@@ -199,7 +199,7 @@ export default function OrbDecideSynthesizer({
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-[#F7F8FA] dark:bg-[#0E1015]">
       {/* ── Query Bar Header: Airy & Floating with Model Selector ── */}
-      <div className="px-7 py-4 border-b border-black/[0.04] dark:border-white/[0.05] bg-white/70 dark:bg-zinc-950/60 backdrop-blur-md shrink-0">
+      <div className="px-7 py-4 border-b border-black/[0.04] dark:border-white/[0.05] bg-white/70 dark:bg-zinc-950/60 backdrop-blur-md shrink-0 relative z-30">
         <form onSubmit={handleQuerySubmit} className="flex items-center gap-2.5 max-w-4xl mx-auto">
           {/* Main Inquiry Input */}
           <div className="relative flex-1">
