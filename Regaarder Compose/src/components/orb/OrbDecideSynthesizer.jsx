@@ -443,66 +443,37 @@ export default function OrbDecideSynthesizer({
           {synthesis && !isSynthesizing && (
             <div className="space-y-6 animate-in fade-in duration-200">
               {/* ── 1. DOMINANT DIRECT PROSE CONCLUSION (Executive Hero) ── */}
-              <div className="p-7 rounded-[22px] bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800/90 shadow-[0_2px_14px_rgba(0,0,0,0.02)] space-y-5">
-                {/* Epistemic Status & Confidence Header */}
-                <div className="flex items-center justify-between gap-4 border-b border-black/[0.04] dark:border-white/[0.04] pb-3.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
-                      Strategic Conclusion
-                    </span>
-                  </div>
-
-                  {/* Dual Confidence Pills */}
-                  <div className="flex items-center gap-2">
-                    {/* Support Quality */}
-                    {synthesis.confidence?.supportQuality && (
-                      <span className={`text-[10.5px] font-semibold px-2.5 py-0.8 rounded-lg ${
-                        synthesis.confidence.supportQuality === 'STRONGLY_EVIDENCED'
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                          : synthesis.confidence.supportQuality === 'PARTIALLY_EVIDENCED'
-                          ? 'bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300'
-                          : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                      }`}>
-                        {synthesis.confidence.supportQuality.replace('_', ' ')}
-                      </span>
-                    )}
-
-                    {/* Evidence Confidence */}
-                    <div 
-                      className="relative cursor-pointer"
-                      onClick={() => setShowConfidenceExplainer(!showConfidenceExplainer)}
-                      title="Click to inspect epistemic confidence breakdown"
-                    >
-                      <span className="text-[10.5px] font-semibold px-2.5 py-0.8 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200 transition-colors flex items-center gap-1">
-                        <span>Confidence:</span>
-                        <strong className="text-[#7C5ACF] dark:text-[#a78bfa]">
-                          {synthesis.confidence?.conclusionConfidence || 'MEDIUM'}
-                        </strong>
-                      </span>
-
-                      {/* Confidence Explainer Dropdown */}
-                      {showConfidenceExplainer && (
-                        <div className="absolute right-0 top-full mt-2 w-72 p-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-xl z-50 text-xs space-y-2">
-                          <div className="font-semibold text-slate-900 dark:text-zinc-100 flex items-center justify-between">
-                            <span>Epistemic Confidence Rationale</span>
-                            <X size={12} className="cursor-pointer text-slate-400" onClick={() => setShowConfidenceExplainer(false)} />
-                          </div>
-                          <div className="text-[11.5px] text-slate-600 dark:text-zinc-300 leading-relaxed">
-                            {synthesis.confidence?.rationale || 'Distinguishes verified source evidence from unvalidated strategic execution assumptions.'}
-                          </div>
-                          <div className="pt-1.5 border-t border-black/[0.04] dark:border-white/[0.04] text-[10.5px] text-slate-500 flex justify-between">
-                            <span>Evidence Record: <strong>{synthesis.confidence?.evidenceConfidence || 'HIGH'}</strong></span>
-                            <span>Strategy Feasibility: <strong>{synthesis.confidence?.conclusionConfidence || 'MEDIUM'}</strong></span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+              <div className="p-7 rounded-[22px] bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800/90 shadow-[0_2px_14px_rgba(0,0,0,0.02)] space-y-4">
+                {/* Subtle Header */}
+                <div className="flex items-center justify-between border-b border-black/[0.03] dark:border-white/[0.03] pb-2.5">
+                  <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                    Strategic Conclusion
+                  </span>
                 </div>
 
-                {/* Natural Executive Prose Answer */}
-                <div className="prose prose-slate dark:prose-invert max-w-none text-[14.5px] leading-relaxed text-slate-800 dark:text-zinc-100 font-normal space-y-3 whitespace-pre-line">
+                {/* Large Uninterrupted Executive Prose Answer */}
+                <div className="prose prose-slate dark:prose-invert max-w-none text-[15px] leading-relaxed text-slate-900 dark:text-zinc-100 font-normal space-y-3.5 whitespace-pre-line">
                   {synthesis.directAnswer || synthesis.recommendedCourse}
+                </div>
+
+                {/* Subdued Epistemic Metadata Footer */}
+                <div className="pt-3.5 border-t border-black/[0.04] dark:border-white/[0.04] flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-500 dark:text-zinc-400">
+                  <div className="flex items-center gap-2.5">
+                    <span>Evidence strength · <strong className="text-slate-700 dark:text-zinc-200">{synthesis.confidence?.evidenceConfidence || 'HIGH'}</strong></span>
+                    <span className="text-slate-300 dark:text-zinc-700">•</span>
+                    <span>Strategic conclusion · <strong className="text-slate-700 dark:text-zinc-200">{synthesis.confidence?.conclusionConfidence || 'MEDIUM'}</strong></span>
+                    {synthesis.confidence?.supportQuality && (
+                      <>
+                        <span className="text-slate-300 dark:text-zinc-700">•</span>
+                        <span>Support quality · <strong className="text-slate-700 dark:text-zinc-200">{synthesis.confidence.supportQuality.replace('_', ' ')}</strong></span>
+                      </>
+                    )}
+                  </div>
+                  {synthesis.confidence?.rationale && (
+                    <span className="text-slate-400 dark:text-zinc-500 text-[10.5px] truncate max-w-sm" title={synthesis.confidence.rationale}>
+                      {synthesis.confidence.rationale}
+                    </span>
+                  )}
                 </div>
               </div>
 
