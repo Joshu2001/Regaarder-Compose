@@ -28733,7 +28733,8 @@ Return ONLY valid JSON matching the schema.`;
     const isQueryOrSummary = /\b(summarize|summary|explain|what\s+is|what\s+are|review|analyze|analysis|insights?|tell\s+me|how\s+many|key\s+takeaways?|overview|details?|read|extract|audit)\b/i.test(promptText);
     
     const isBlankOrNewDoc = !blankBodyRef.current?.innerText || blankBodyRef.current.innerText.trim().length <= 35 || docTitle === 'Untitled Document' || !docTitle;
-    const shouldBuildDocument = !isQueryOrSummary && (forceDocBuild || source === 'compose' || (source === 'chat' && isBlankOrNewDoc && isArticleWritingRequest));
+    const isExplicitArticleIntent = !isQueryOrSummary && /\b(write|create|draft|compose|generate|article|essay|post|letter|report|paragraph|content|guide|memo|story)\b/i.test(promptText);
+    const shouldBuildDocument = !isQueryOrSummary && (forceDocBuild || source === 'compose' || (source === 'chat' && isBlankOrNewDoc && isExplicitArticleIntent));
     const selectionScoped = Boolean(options.selectionScoped);
     const smartActionKey = String(options.smartActionKey || '').toLowerCase();
     const preferredDocType = resolveDocTypeFromComposeFormat(requestedFormat);
@@ -29209,7 +29210,7 @@ Return ONLY valid JSON matching the schema.`;
       return !normalized || normalized === 'composed with live ai.' || normalized === 'composed with live ai' || normalized === 'ai response' || normalized === 'generated in normal tone with ~220 words.';
     };
 
-    const isArticleWritingRequest = shouldBuildDocument || source === 'compose' || source === 'floating' || (!isQueryOrSummary && /\b(write|create|draft|compose|generate|article|essay|post|letter|report|paragraph|content|guide|memo|story)\b/i.test(promptText));
+    const isArticleWritingRequest = shouldBuildDocument || source === 'compose' || source === 'floating' || isExplicitArticleIntent;
 
     let systemPrompt = '';
     let activeSchemaToUse = null;

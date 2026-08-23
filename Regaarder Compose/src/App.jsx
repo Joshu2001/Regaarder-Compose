@@ -42541,11 +42541,14 @@ If requested to draw a chart or graph, append a structured action JSON block:
                 stream: false
               };
 
+          const localController = new AbortController();
+          const localTimer = setTimeout(() => localController.abort(), 30000);
           const localRes = await fetch(targetUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-          });
+            body: JSON.stringify(requestBody),
+            signal: localController.signal
+          }).finally(() => clearTimeout(localTimer));
 
           if (!localRes.ok) throw new Error(`Local LLM error: HTTP ${localRes.status}`);
           const localData = await localRes.json();
