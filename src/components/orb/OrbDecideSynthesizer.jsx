@@ -3,11 +3,19 @@ import {
   AlertTriangle, CheckCircle2, Clock, ArrowRight,
   TrendingUp, HelpCircle, FileText, Table, Presentation, Video,
   CheckSquare, ShieldAlert, Plus, Layers, Search, SlidersHorizontal,
-  GitBranch, Check, Compass, ShieldCheck, Loader2
+  GitBranch, Check, Compass, ShieldCheck, Loader2, ChevronDown,
+  Settings, Server, Cpu, Sparkles, Wifi, WifiOff, X, Key, RefreshCw
 } from 'lucide-react';
 import { RegaarderProductIcon, RegaarderAiIcon } from '../RegaarderProductIcons';
 import { synthesizeStrategicDecision } from '../../services/orbKnowledgeGraphService';
-import { generateOrbDecisionSynthesis } from '../../services/orbAiService';
+import { 
+  generateOrbDecisionSynthesis, 
+  getSavedAiConfig, 
+  saveAiConfig, 
+  detectLocalLLMServers, 
+  CLOUD_AI_MODELS, 
+  DEFAULT_AI_CONFIG 
+} from '../../services/orbAiService';
 
 export default function OrbDecideSynthesizer({
   initialQuestion = '',
@@ -23,7 +31,46 @@ export default function OrbDecideSynthesizer({
   const [synthesisStepText, setSynthesisStepText] = useState('');
   const [addedTaskIds, setAddedTaskIds] = useState(new Set());
   const [liveSynthesis, setLiveSynthesis] = useState(null);
+  
+  // Multi-provider & Local LLM state
+  const [aiConfig, setAiConfig] = useState(getSavedAiConfig);
+  const [localServers, setLocalServers] = useState([]);
+  const [isDetectingServers, setIsDetectingServers] = useState(false);
+  const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  
   const timerRef = useRef(null);
+  const modelPickerRef = useRef(null);
+
+  // Probe local inference servers (Ollama, LM Studio) on mount
+  const refreshLocalServers = async () => {
+    setIsDetectingServers(true);
+    try {
+      const servers = await detectLocalLLMServers();
+      setLocalServers(servers);
+    } catch (e) {
+      console.warn('Failed to detect local LLMs:', e);
+    } finally {
+      setIsDetectingServers(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshLocalServers();
+  }, []);
+
+  // Dismiss model picker on click outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (modelPickerRef.current && !modelPickerRef.current.contains(e.target)) {
+        setIsModelPickerOpen(false);
+      }
+    };
+    if (isModelPickerOpen) {
+      document.addEventListener('pointerdown', handleOutsideClick);
+      return () => document.removeEventListener('pointerdown', handleOutsideClick);
+    }
+  }, [isModelPickerOpen]);
 
   // Sync external question if provided
   useEffect(() => {
@@ -52,21 +99,23 @@ export default function OrbDecideSynthesizer({
     if (!queryText) return;
 
     setIsSynthesizing(true);
-    setSynthesisStepText('Accessing live workspace intelligence...');
+    const activeModelName = aiConfig.activeModel || aiConfig.geminiModel || aiConfig.provider;
+    setSynthesisStepText(`Accessing live workspace intelligence (${activeModelName})...`);
 
     setTimeout(() => {
       setSynthesisStepText('Extracting spreadsheet formulas, documents & task dependencies...');
     }, 200);
 
     setTimeout(() => {
-      setSynthesisStepText('Synthesizing executive recommendation with AI reasoning model...');
+      setSynthesisStepText(`Synthesizing strategic briefing via ${aiConfig.provider.toUpperCase()}...`);
     }, 450);
 
     try {
       const result = await generateOrbDecisionSynthesis({
         question: queryText,
         entities,
-        edges
+        edges,
+        customConfig: aiConfig
       });
       setLiveSynthesis(result);
       setActiveQuery(queryText);
@@ -130,11 +179,29 @@ export default function OrbDecideSynthesizer({
     return inquiries.slice(0, 4);
   }, [entities]);
 
+  // Active Model Label
+  const currentModelLabel = useMemo(() => {
+    if (aiConfig.provider === 'ollama') {
+      return `Ollama (${aiConfig.ollamaModel || 'Local'})`;
+    }
+    if (aiConfig.provider === 'lmstudio') {
+      return `LM Studio (${aiConfig.lmstudioModel || 'Local'})`;
+    }
+    if (aiConfig.provider === 'custom') {
+      return `Custom LLM (${aiConfig.customModel || 'Local'})`;
+    }
+    const found = CLOUD_AI_MODELS.find(m => m.id === (aiConfig.activeModel || aiConfig.geminiModel));
+    return found ? found.name : 'Gemini 1.5 Pro';
+  }, [aiConfig]);
+
+  const isLocalActive = ['ollama', 'lmstudio', 'custom'].includes(aiConfig.provider);
+
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-[#F7F8FA] dark:bg-[#0E1015]">
-      {/* ── Query Bar Header: Airy & Floating ── */}
+      {/* ── Query Bar Header: Airy & Floating with Model Selector ── */}
       <div className="px-7 py-4 border-b border-black/[0.04] dark:border-white/[0.05] bg-white/70 dark:bg-zinc-950/60 backdrop-blur-md shrink-0">
-        <form onSubmit={handleQuerySubmit} className="flex gap-2.5 max-w-4xl mx-auto">
+        <form onSubmit={handleQuerySubmit} className="flex items-center gap-2.5 max-w-4xl mx-auto">
+          {/* Main Inquiry Input */}
           <div className="relative flex-1">
             <RegaarderAiIcon size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
             <input
@@ -145,6 +212,158 @@ export default function OrbDecideSynthesizer({
               className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-[#7C5ACF] dark:focus:border-[#a78bfa] focus:shadow-[0_4px_20px_rgba(124,90,207,0.08)] shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all"
             />
           </div>
+
+          {/* ── Model Selector Pill & Dropdown ── */}
+          <div className="relative shrink-0" ref={modelPickerRef}>
+            <button
+              type="button"
+              onClick={() => setIsModelPickerOpen(!isModelPickerOpen)}
+              className={`flex items-center gap-2 px-3.5 py-3 rounded-2xl border transition-all text-xs font-medium cursor-pointer select-none shadow-2xs ${
+                isModelPickerOpen
+                  ? 'border-[#7C5ACF] bg-white dark:bg-zinc-900 ring-2 ring-[#7C5ACF]/20 text-[#7C5ACF] dark:text-[#a78bfa]'
+                  : 'border-slate-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 hover:border-slate-300 dark:hover:border-zinc-700'
+              }`}
+              title="Select AI Model or Local Inference Engine"
+            >
+              <span className={`w-2 h-2 rounded-full shrink-0 ${isLocalActive ? 'bg-emerald-500 animate-pulse' : 'bg-[#7C5ACF]'}`} />
+              <span className="truncate max-w-[140px] font-semibold">{currentModelLabel}</span>
+              <ChevronDown size={13} className={`text-slate-400 transition-transform ${isModelPickerOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Model Picker Menu */}
+            {isModelPickerOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-2.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="flex items-center justify-between px-2.5 py-1.5 mb-1 border-b border-black/[0.04] dark:border-white/[0.04]">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-500">
+                    Select Inference Engine
+                  </span>
+                  <button
+                    type="button"
+                    onClick={refreshLocalServers}
+                    disabled={isDetectingServers}
+                    className="flex items-center gap-1 text-[10.5px] text-[#7C5ACF] dark:text-[#a78bfa] hover:underline cursor-pointer"
+                  >
+                    <RefreshCw size={11} className={isDetectingServers ? 'animate-spin' : ''} />
+                    <span>Scan Local</span>
+                  </button>
+                </div>
+
+                {/* Local Inference Group */}
+                <div className="mb-2">
+                  <div className="px-2.5 py-1 text-[10px] uppercase font-bold tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                    <Server size={11} />
+                    <span>Local Models (On-Device)</span>
+                  </div>
+
+                  {localServers.length > 0 && localServers.some(s => s.isOnline && s.models.length > 0) ? (
+                    localServers.filter(s => s.isOnline).map(srv => (
+                      <div key={srv.provider} className="space-y-0.5 mt-0.5">
+                        {srv.models.map(m => {
+                          const isSelected = aiConfig.provider === srv.provider && (
+                            srv.provider === 'ollama' ? aiConfig.ollamaModel === m.id : aiConfig.lmstudioModel === m.id
+                          );
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => {
+                                const updated = saveAiConfig({
+                                  provider: srv.provider,
+                                  activeModel: m.id,
+                                  ...(srv.provider === 'ollama' ? { ollamaModel: m.id } : { lmstudioModel: m.id })
+                                });
+                                setAiConfig(updated);
+                                setIsModelPickerOpen(false);
+                              }}
+                              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition-colors cursor-pointer ${
+                                isSelected
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-semibold'
+                                  : 'hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                <span className="truncate">{m.name}</span>
+                              </div>
+                              {isSelected && <Check size={13} className="text-emerald-600 shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-800/40 text-[11px] text-slate-500 dark:text-zinc-400 space-y-1">
+                      <div className="flex items-center gap-1.5 text-slate-600 dark:text-zinc-300 font-medium">
+                        <WifiOff size={12} />
+                        <span>No local server detected</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400">
+                        Start <code className="bg-slate-200/60 dark:bg-zinc-700 px-1 py-0.5 rounded font-mono">ollama serve</code> or LM Studio to use local inference.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Cloud AI Group */}
+                <div className="pt-1.5 border-t border-black/[0.04] dark:border-white/[0.04]">
+                  <div className="px-2.5 py-1 text-[10px] uppercase font-bold tracking-wider text-[#7C5ACF] dark:text-[#a78bfa] flex items-center gap-1.5">
+                    <Sparkles size={11} />
+                    <span>Cloud Intelligence</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    {CLOUD_AI_MODELS.slice(0, 6).map(m => {
+                      const isSelected = aiConfig.provider === m.provider && aiConfig.activeModel === m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => {
+                            const updated = saveAiConfig({
+                              provider: m.provider,
+                              activeModel: m.id,
+                              ...(m.provider === 'gemini' ? { geminiModel: m.id } : {}),
+                              ...(m.provider === 'claude' ? { claudeModel: m.id } : {}),
+                              ...(m.provider === 'openai' ? { openaiModel: m.id } : {})
+                            });
+                            setAiConfig(updated);
+                            setIsModelPickerOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-violet-50 dark:bg-violet-950/40 text-[#7C5ACF] dark:text-[#a78bfa] font-semibold'
+                              : 'hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="truncate">{m.name}</span>
+                            <span className="text-[10px] text-slate-400 font-normal">({m.providerName})</span>
+                          </div>
+                          {isSelected && <Check size={13} className="text-[#7C5ACF] shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Bottom Footer: Configure API Keys */}
+                <div className="mt-2 pt-2 border-t border-black/[0.04] dark:border-white/[0.04]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsModelPickerOpen(false);
+                      setIsConfigModalOpen(true);
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200/80 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Settings size={12} />
+                    <span>Configure API Keys & Local Endpoints</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Synthesize CTA Button */}
           <button
             type="submit"
             disabled={isSynthesizing || !question.trim()}
@@ -796,6 +1015,157 @@ export default function OrbDecideSynthesizer({
           )}
         </div>
       </div>
+
+      {/* ── AI Configuration & Local LLM Endpoints Modal ── */}
+      {isConfigModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div 
+            className="w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-[0_24px_64px_rgba(0,0,0,0.18)] p-6 space-y-5 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.05] pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] flex items-center justify-center">
+                  <Key size={16} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                    AI Providers & Local LLM Setup
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Configure Cloud API keys and local on-device inference endpoints
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsConfigModalOpen(false)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            {/* Inputs */}
+            <div className="space-y-3.5 max-h-[60vh] overflow-y-auto thin-scrollbar pr-1 text-xs">
+              {/* Local Ollama Endpoint */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
+                    <Server size={12} className="text-emerald-600" />
+                    <span>Ollama Local Endpoint</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-mono">Default: http://localhost:11434</span>
+                </div>
+                <input
+                  type="text"
+                  value={aiConfig.ollamaEndpoint || ''}
+                  onChange={(e) => setAiConfig(prev => ({ ...prev, ollamaEndpoint: e.target.value }))}
+                  placeholder="http://localhost:11434"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs text-slate-800 dark:text-zinc-100 focus:outline-none focus:border-[#7C5ACF]"
+                />
+              </div>
+
+              {/* Local LM Studio Endpoint */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
+                    <Cpu size={12} className="text-sky-600" />
+                    <span>LM Studio / LocalAI Endpoint</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-mono">Default: http://localhost:1234/v1</span>
+                </div>
+                <input
+                  type="text"
+                  value={aiConfig.lmstudioEndpoint || ''}
+                  onChange={(e) => setAiConfig(prev => ({ ...prev, lmstudioEndpoint: e.target.value }))}
+                  placeholder="http://localhost:1234/v1"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs text-slate-800 dark:text-zinc-100 focus:outline-none focus:border-[#7C5ACF]"
+                />
+              </div>
+
+              {/* Google Gemini API Key */}
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-800 dark:text-zinc-200 block">
+                  Google Gemini API Key
+                </label>
+                <input
+                  type="password"
+                  value={aiConfig.geminiApiKey || ''}
+                  onChange={(e) => setAiConfig(prev => ({ ...prev, geminiApiKey: e.target.value }))}
+                  placeholder="AIzaSy..."
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs text-slate-800 dark:text-zinc-100 focus:outline-none focus:border-[#7C5ACF]"
+                />
+              </div>
+
+              {/* Anthropic Claude API Key */}
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-800 dark:text-zinc-200 block">
+                  Anthropic Claude API Key
+                </label>
+                <input
+                  type="password"
+                  value={aiConfig.claudeApiKey || ''}
+                  onChange={(e) => setAiConfig(prev => ({ ...prev, claudeApiKey: e.target.value }))}
+                  placeholder="sk-ant-..."
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs text-slate-800 dark:text-zinc-100 focus:outline-none focus:border-[#7C5ACF]"
+                />
+              </div>
+
+              {/* OpenAI API Key */}
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-800 dark:text-zinc-200 block">
+                  OpenAI API Key
+                </label>
+                <input
+                  type="password"
+                  value={aiConfig.openaiApiKey || ''}
+                  onChange={(e) => setAiConfig(prev => ({ ...prev, openaiApiKey: e.target.value }))}
+                  placeholder="sk-..."
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs text-slate-800 dark:text-zinc-100 focus:outline-none focus:border-[#7C5ACF]"
+                />
+              </div>
+
+              {/* DeepSeek API Key */}
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-800 dark:text-zinc-200 block">
+                  DeepSeek API Key
+                </label>
+                <input
+                  type="password"
+                  value={aiConfig.deepseekApiKey || ''}
+                  onChange={(e) => setAiConfig(prev => ({ ...prev, deepseekApiKey: e.target.value }))}
+                  placeholder="sk-..."
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs text-slate-800 dark:text-zinc-100 focus:outline-none focus:border-[#7C5ACF]"
+                />
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-black/[0.04] dark:border-white/[0.05]">
+              <button
+                type="button"
+                onClick={() => setIsConfigModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  saveAiConfig(aiConfig);
+                  refreshLocalServers();
+                  setIsConfigModalOpen(false);
+                }}
+                className="px-5 py-2 rounded-xl bg-[#7C5ACF] hover:bg-[#6c48c5] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              >
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
