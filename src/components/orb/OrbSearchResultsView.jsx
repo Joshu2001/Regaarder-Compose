@@ -192,8 +192,9 @@ export default function OrbSearchResultsView({
         {/* Results List or Contextual Empty State */}
         {results.length === 0 ? (() => {
           const emptyInfo = FILTER_EMPTY_STATES[workspaceFilter] || FILTER_EMPTY_STATES.all;
+          const targetWorkspace = workspaceFilter !== 'all' ? workspaceFilter : 'compose';
           return (
-            <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+            <div className="flex flex-col items-center justify-center py-20 px-6 text-center max-w-md mx-auto">
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${
                 highContrast
                   ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-400 text-black dark:text-white'
@@ -208,15 +209,25 @@ export default function OrbSearchResultsView({
               <h3 className={`text-base mb-1.5 ${
                 highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-900 dark:text-zinc-100'
               }`}>
-                {query ? `No matching objects for "${query}"` : emptyInfo.title}
+                {query ? `No matching content for "${query}"` : emptyInfo.title}
               </h3>
-              <p className={`text-xs max-w-sm leading-relaxed ${
+              <p className={`text-xs leading-relaxed mb-5 ${
                 highContrast ? 'text-slate-800 dark:text-zinc-300 font-medium' : 'text-slate-500 dark:text-zinc-400'
               }`}>
                 {query
-                  ? 'Try adjusting your search terms or clearing the workspace filter.'
+                  ? 'No documents, formulas, or tasks in your workspace match this search term. Add or import relevant notes to search them here.'
                   : emptyInfo.desc}
               </p>
+              {!query && onNavigateToWorkspace && (
+                <button
+                  type="button"
+                  onClick={() => onNavigateToWorkspace({ workspace: targetWorkspace })}
+                  className="px-4 py-2 rounded-xl bg-violet-50 dark:bg-violet-950/60 hover:bg-[#7C5ACF] text-[#7C5ACF] dark:text-[#a78bfa] hover:text-white border border-violet-100 dark:border-violet-900/40 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+                >
+                  <span>Open {WORKSPACE_LABELS[workspaceFilter] || 'Workspace'}</span>
+                  <ArrowRight size={12} />
+                </button>
+              )}
             </div>
           );
         })() : (

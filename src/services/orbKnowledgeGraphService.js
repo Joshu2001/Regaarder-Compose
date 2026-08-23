@@ -1022,75 +1022,82 @@ export function extractLiveEntitiesFromWorkspace({
       .filter(w => w.length > 3 && !['this', 'that', 'with', 'from', 'have', 'were', 'which', 'your', 'about', 'their', 'there'].includes(w));
   };
 
-  // 1. Ingest Active Compose Document
+  // 1. Ingest Active Compose Document (Strictly real content only)
   if (docTitle?.trim() && docTitle.trim() !== 'Untitled Document') {
     const cleanText = (docBodyHtml || '').replace(/<[^>]*>?/gm, ' ').trim();
-    const docEntityId = `live_doc_${activeDocId || 'active'}`;
-    const metrics = extractNumericMetrics(cleanText);
-    const keywords = Array.from(new Set(extractTokens(docTitle + ' ' + cleanText))).slice(0, 8);
-    
-    liveEntities.push({
-      id: docEntityId,
-      type: 'document',
-      workspace: 'compose',
-      title: docTitle.trim(),
-      author: 'You (Active Author)',
-      authorRole: 'Document Author',
-      updatedAt: new Date().toISOString(),
-      project: 'Active Session',
-      tags: ['Compose', 'Document', ...keywords],
-      excerpt: cleanText.slice(0, 180) || (docSubtitle || 'Active live document in Compose editor.'),
-      content: cleanText || docTitle,
-      metrics,
-      metadata: {
-        isLive: true,
-        docId: activeDocId,
-        length: cleanText.length,
-        metrics
-      }
-    });
+    if (cleanText.length > 20 && !cleanText.toLowerCase().includes('type your content here')) {
+      const docEntityId = `live_doc_${activeDocId || 'active'}`;
+      const metrics = extractNumericMetrics(cleanText);
+      const keywords = Array.from(new Set(extractTokens(docTitle + ' ' + cleanText))).slice(0, 8);
+      
+      liveEntities.push({
+        id: docEntityId,
+        type: 'document',
+        workspace: 'compose',
+        title: docTitle.trim(),
+        author: 'You (Active Author)',
+        authorRole: 'Document Author',
+        updatedAt: new Date().toISOString(),
+        project: 'Active Session',
+        tags: ['Compose', 'Document', ...keywords],
+        excerpt: cleanText.slice(0, 180),
+        content: cleanText,
+        metrics,
+        metadata: {
+          isLive: true,
+          docId: activeDocId,
+          length: cleanText.length,
+          metrics
+        }
+      });
+    }
   }
 
-  // 2. Ingest Other Saved Workspace Documents
+  // 2. Ingest Other Saved Workspace Documents (Strictly non-empty)
   if (Array.isArray(documents)) {
     documents.forEach((doc, idx) => {
       if (doc?.id && doc.id !== activeDocId && doc.title?.trim() && doc.title.trim() !== 'Untitled Document') {
         const cleanDocText = (doc.bodyHtml || doc.content || '').replace(/<[^>]*>?/gm, ' ').trim();
-        const otherDocId = `live_doc_${doc.id}`;
-        const metrics = extractNumericMetrics(cleanDocText);
-        const keywords = Array.from(new Set(extractTokens(doc.title + ' ' + cleanDocText))).slice(0, 8);
+        if (cleanDocText.length > 20 && !cleanDocText.toLowerCase().includes('type your content here')) {
+          const otherDocId = `live_doc_${doc.id}`;
+          const metrics = extractNumericMetrics(cleanDocText);
+          const keywords = Array.from(new Set(extractTokens(doc.title + ' ' + cleanDocText))).slice(0, 8);
 
-        liveEntities.push({
-          id: otherDocId,
-          type: 'document',
-          workspace: 'compose',
-          title: doc.title.trim(),
-          author: doc.author || 'Workspace Member',
-          authorRole: 'Collaborator',
-          updatedAt: doc.updatedAt || new Date(Date.now() - (idx + 1) * 3600000).toISOString(),
-          project: doc.project || 'Workspace Documents',
-          tags: ['Compose', 'Document', ...keywords],
-          excerpt: doc.excerpt || cleanDocText.slice(0, 180) || `Saved document in workspace: ${doc.title}`,
-          content: cleanDocText || doc.title,
-          metrics,
-          metadata: { isLive: true, docId: doc.id, metrics }
-        });
+          liveEntities.push({
+            id: otherDocId,
+            type: 'document',
+            workspace: 'compose',
+            title: doc.title.trim(),
+            author: doc.author || 'Workspace Member',
+            authorRole: 'Collaborator',
+            updatedAt: doc.updatedAt || new Date(Date.now() - (idx + 1) * 3600000).toISOString(),
+            project: doc.project || 'Workspace Documents',
+            tags: ['Compose', 'Document', ...keywords],
+            excerpt: doc.excerpt || cleanDocText.slice(0, 180),
+            content: cleanDocText,
+            metrics,
+            metadata: { isLive: true, docId: doc.id, metrics }
+          });
+        }
       }
     });
   }
 
-  // 3. Ingest Sheets Calculation Models & Formula Matrices (Only if real non-empty cells or custom title exist)
+  // 3. Ingest Sheets Calculation Models & Formula Matrices (Strictly non-empty user data)
   const formulasFound = [];
   const cellValues = [];
   if (sheetGrids && typeof sheetGrids === 'object') {
     Object.entries(sheetGrids).forEach(([tabName, grid]) => {
       if (Array.isArray(grid)) {
-        grid.slice(0, 15).forEach((row, rIdx) => {
+        grid.slice(0, 20).forEach((row, rIdx) => {
           if (Array.isArray(row)) {
-            row.slice(0, 10).forEach((cell, cIdx) => {
+            row.slice(0, 15).forEach((cell, cIdx) => {
               if (typeof cell === 'string') {
                 if (cell.startsWith('=')) formulasFound.push({ tab: tabName, row: rIdx + 1, col: cIdx + 1, formula: cell });
-                if (cell.trim()) cellValues.push(cell.trim());
+                const trimmed = cell.trim();
+                if (trimmed && !trimmed.startsWith('=') && !['sheet1', 'column', 'row', 'header'].includes(trimmed.toLowerCase())) {
+                  cellValues.push(trimmed);
+                }
               } else if (typeof cell === 'number') {
                 cellValues.push(String(cell));
               }
@@ -1101,10 +1108,12 @@ export function extractLiveEntitiesFromWorkspace({
     });
   }
 
-  const hasRealSheetData = cellValues.length > 0 || (sheetsTitle?.trim() && sheetsTitle.trim() !== 'Untitled Sheet');
+  const hasRealSheetData = cellValues.length >= 2 || formulasFound.length > 0;
   if (hasRealSheetData) {
     const sheetEntityId = `live_sheet_${activeSheetId || 'active'}`;
-    const title = (sheetsTitle?.trim() && sheetsTitle.trim() !== 'Untitled Sheet') ? sheetsTitle.trim() : (cellValues[0] ? `Spreadsheet (${cellValues[0]})` : 'Active Spreadsheet');
+    const title = (sheetsTitle?.trim() && sheetsTitle.trim() !== 'Untitled Sheet' && sheetsTitle.trim() !== 'Active Spreadsheet') 
+      ? sheetsTitle.trim() 
+      : (cellValues[0] ? `Spreadsheet (${cellValues[0]})` : 'Financial Model');
     const cellText = cellValues.join(' ');
     const metrics = extractNumericMetrics(cellText);
     const keywords = Array.from(new Set(extractTokens(title + ' ' + cellText))).slice(0, 8);
@@ -1120,7 +1129,7 @@ export function extractLiveEntitiesFromWorkspace({
       project: 'Spreadsheet Workspace',
       tags: ['Sheets', 'Spreadsheet', ...keywords],
       excerpt: formulasFound.length > 0
-        ? `Spreadsheet model containing ${formulasFound.length} active formulas including ${formulasFound[0].formula}.`
+        ? `Spreadsheet model containing ${formulasFound.length} active formulas.`
         : `Spreadsheet model containing ${cellValues.length} active data cells.`,
       content: `Spreadsheet ${title}. Data: ${cellText}`,
       metrics,
@@ -1134,24 +1143,25 @@ export function extractLiveEntitiesFromWorkspace({
     });
   }
 
-  // 4. Ingest Presentation Decks (Only if customized slides exist)
+  // 4. Ingest Presentation Decks (Strictly non-template slides with real content)
   const slideSummaries = [];
   if (Array.isArray(deckSlidesData)) {
     deckSlidesData.forEach((s, idx) => {
       if (s) {
-        const sTitle = s.title || s.headline || '';
-        const sContent = s.content || s.text || s.notes || '';
-        if (sTitle.trim() || sContent.trim()) {
+        const sTitle = (s.title || s.headline || '').trim();
+        const sContent = (s.content || s.text || s.notes || '').trim();
+        const isGenericTitle = !sTitle || /^slide\s*\d+$/i.test(sTitle);
+        if ((sTitle && !isGenericTitle) || (sContent && sContent.length > 10)) {
           slideSummaries.push(`${sTitle || `Slide ${idx + 1}`}: ${sContent}`);
         }
       }
     });
   }
 
-  const hasRealDeckData = slideSummaries.length > 0 || (deckTitle?.trim() && deckTitle.trim() !== 'Untitled Deck');
+  const hasRealDeckData = slideSummaries.length > 0 && deckTitle?.trim() && !['untitled deck', 'active presentation', 'presentation deck'].includes(deckTitle.trim().toLowerCase());
   if (hasRealDeckData) {
     const deckEntityId = `live_deck_active`;
-    const title = (deckTitle?.trim() && deckTitle.trim() !== 'Untitled Deck') ? deckTitle.trim() : 'Active Presentation';
+    const title = deckTitle.trim();
     const deckText = slideSummaries.join(' ');
     const metrics = extractNumericMetrics(deckText);
     const keywords = Array.from(new Set(extractTokens(title + ' ' + deckText))).slice(0, 8);
@@ -1166,26 +1176,24 @@ export function extractLiveEntitiesFromWorkspace({
       updatedAt: new Date().toISOString(),
       project: 'Presentation Deck',
       tags: ['Deck', 'Presentation', ...keywords],
-      excerpt: slideSummaries.length > 0
-        ? `Presentation deck with ${slideSummaries.length} customized slides.`
-        : `Presentation deck: ${title}`,
+      excerpt: `Presentation deck with ${slideSummaries.length} customized slide(s).`,
       content: `Presentation deck ${title}. Slides: ${deckText}`,
       metrics,
       metadata: {
         isLive: true,
-        slideCount: slideSummaries.length || 1,
+        slideCount: slideSummaries.length,
         metrics
       }
     });
   }
 
-  // 5. Ingest Tasks / Action Item Initiatives
+  // 5. Ingest Tasks / Action Item Initiatives (Real user tasks only)
   if (Array.isArray(tasks) && tasks.length > 0) {
     tasks.forEach((t, idx) => {
       if (t && (t.title || t.text || t.name)) {
         const title = (t.title || t.text || t.name).trim();
-        if (title && title !== 'New Task') {
-          const desc = t.description || t.notes || '';
+        if (title && !['new task', 'task 1', 'untitled task'].includes(title.toLowerCase())) {
+          const desc = (t.description || t.notes || '').trim();
           const metrics = extractNumericMetrics(title + ' ' + desc);
           const keywords = Array.from(new Set(extractTokens(title + ' ' + desc))).slice(0, 6);
 
@@ -1214,19 +1222,19 @@ export function extractLiveEntitiesFromWorkspace({
     });
   }
 
-  // 6. Ingest Calendar Schedule Agenda
+  // 6. Ingest Calendar Schedule Agenda (Real user meetings & events only)
   const schedList = (scheduleItems?.length ? scheduleItems : scheduleAgendaItems) || [];
   if (Array.isArray(schedList) && schedList.length > 0) {
     schedList.forEach((s, idx) => {
       if (s && (s.title || s.summary || s.label)) {
         const title = (s.title || s.summary || s.label).trim();
-        if (title) {
+        if (title && !['new event', 'event 1', 'beta launch kickoff', 'sample meeting'].includes(title.toLowerCase())) {
           liveEntities.push({
             id: `live_sched_${s.id || idx}`,
             type: 'schedule_event',
             workspace: 'schedule',
             title: title,
-            author: s.organizer || 'Calendar',
+            author: s.organizer || 'You',
             authorRole: 'Organizer',
             updatedAt: new Date().toISOString(),
             project: s.project || 'Calendar Schedule',
@@ -1248,53 +1256,53 @@ export function extractLiveEntitiesFromWorkspace({
         const b = liveEntities[j];
 
         // 1. Shared Numeric Metrics / Currency Link
-        const sharedMetrics = (a.metrics || []).filter(m => (b.metrics || []).includes(m));
-        if (sharedMetrics.length > 0) {
+        const commonMetrics = (a.metrics || []).filter(m => (b.metrics || []).includes(m));
+        if (commonMetrics.length > 0) {
           liveEdges.push({
-            id: `edge_num_${a.id}_${b.id}`,
+            id: `edge_metric_${a.id}_${b.id}`,
             sourceId: a.id,
             targetId: b.id,
-            relationType: ORB_RELATION_TYPES.FORMULA_DERIVES_FROM,
-            label: `Quantitative Alignment: Shared figure (${sharedMetrics[0]}) verified across artifacts`,
+            relationType: ORB_RELATION_TYPES.CALCULATES_FROM,
+            label: `Shared Quantified Metric: ${commonMetrics.join(', ')}`,
             epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
-            modality: 'Deterministic Numeric Match',
-            epistemicRationale: `Explicit match on metric ${sharedMetrics[0]} between ${a.title} and ${b.title}.`,
-            evidence: {
-              sourceSnippet: `Contains figure ${sharedMetrics[0]}`,
-              targetSnippet: `Reconciled against ${sharedMetrics[0]} in ${b.title}`,
-              formula: sharedMetrics[0],
-              date: new Date().toISOString().split('T')[0]
-            },
-            isAiInferred: false,
-            confidenceScore: 0.99,
-            lenses: ['financial', 'dependencies', 'causal']
-          });
-          continue;
-        }
-
-        // 2. Keyword & Concept Overlap
-        const aTags = a.tags || [];
-        const bTags = b.tags || [];
-        const sharedTags = aTags.filter(t => bTags.includes(t) && !['Compose', 'Document', 'Sheets', 'Deck', 'Task', 'Live'].includes(t));
-
-        if (sharedTags.length >= 2) {
-          liveEdges.push({
-            id: `edge_concept_${a.id}_${b.id}`,
-            sourceId: a.id,
-            targetId: b.id,
-            relationType: ORB_RELATION_TYPES.REFERENCES,
-            label: `Topic Intersection: Shared workstream (${sharedTags.slice(0, 2).join(', ')})`,
-            epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
-            modality: 'Semantic Concept Extraction',
-            epistemicRationale: `Both artifacts reference shared strategic concepts (${sharedTags.join(', ')}).`,
+            modality: 'Direct Metric Linkage',
+            epistemicRationale: `Both ${a.title} and ${b.title} cite identical quantitative metrics (${commonMetrics.join(', ')}).`,
             evidence: {
               sourceSnippet: a.excerpt.slice(0, 100),
               targetSnippet: b.excerpt.slice(0, 100),
               date: new Date().toISOString().split('T')[0]
             },
             isAiInferred: false,
-            confidenceScore: 0.95,
-            lenses: ['projects', 'knowledge', 'dependencies']
+            confidenceScore: 0.98,
+            lenses: ['financial', 'dependencies', 'timeline', 'projects']
+          });
+          continue;
+        }
+
+        // 2. Strong Keyword Semantic Overlap Link
+        const aTokens = extractTokens(a.title + ' ' + a.content);
+        const bTokens = extractTokens(b.title + ' ' + b.content);
+        const sharedTokens = aTokens.filter(t => bTokens.includes(t));
+
+        if (sharedTokens.length >= 3) {
+          const topKeywords = Array.from(new Set(sharedTokens)).slice(0, 3).join(', ');
+          liveEdges.push({
+            id: `edge_semantic_${a.id}_${b.id}`,
+            sourceId: a.id,
+            targetId: b.id,
+            relationType: ORB_RELATION_TYPES.REFERENCES,
+            label: `Semantic Link: Correlated via [${topKeywords}]`,
+            epistemicStatus: ORB_EPISTEMIC_STATUS.INFERRED,
+            modality: 'Conceptual Cross-Reference',
+            epistemicRationale: `Orb cross-correlated ${a.title} and ${b.title} based on strong thematic alignment on: ${topKeywords}.`,
+            evidence: {
+              sourceSnippet: a.excerpt.slice(0, 100),
+              targetSnippet: b.excerpt.slice(0, 100),
+              date: new Date().toISOString().split('T')[0]
+            },
+            isAiInferred: true,
+            confidenceScore: 0.88,
+            lenses: ['knowledge', 'dependencies', 'projects', 'ai']
           });
           continue;
         }
@@ -1326,28 +1334,6 @@ export function extractLiveEntitiesFromWorkspace({
             });
             continue;
           }
-        }
-
-        // 4. Default Chronological Flow for Timeline Lens
-        if (i === j - 1) {
-          liveEdges.push({
-            id: `edge_chrono_${a.id}_${b.id}`,
-            sourceId: a.id,
-            targetId: b.id,
-            relationType: ORB_RELATION_TYPES.CHRONOLOGY_BEFORE,
-            label: `Milestone Progression: ${a.title} precedes ${b.title}`,
-            epistemicStatus: ORB_EPISTEMIC_STATUS.VERIFIED,
-            modality: 'Chronological Sequence',
-            epistemicRationale: 'Sequential artifact creation and session updates.',
-            evidence: {
-              sourceSnippet: `Created/Updated: ${a.updatedAt || 'Recent'}`,
-              targetSnippet: `Sequenced Milestone: ${b.updatedAt || 'Recent'}`,
-              date: new Date().toISOString().split('T')[0]
-            },
-            isAiInferred: false,
-            confidenceScore: 0.90,
-            lenses: ['timeline', 'projects']
-          });
         }
       }
     }
@@ -1496,87 +1482,141 @@ export function synthesizeStrategicDecision(topicOrQuestion, {
   edges = []
 } = {}) {
   const queryText = (topicOrQuestion || '').trim();
-  const primaryEntity = entities[0];
-  const secondaryEntity = entities[1] || entities[0];
 
-  const primaryTitle = primaryEntity?.title || 'Active Workspace Strategy';
+  // 1. If Workspace is Empty: Return honest structured unavailable state
+  if (!entities || entities.length === 0) {
+    return {
+      isUnavailable: true,
+      reason: 'NO_WORKSPACE_DATA',
+      topic: queryText || 'Workspace Strategic Intelligence',
+      title: 'No Workspace Intelligence Available',
+      description: queryText
+        ? `Orb searched across all connected Compose Documents, Sheets, Presentation Decks, and Tasks, but found no workspace content to analyze for "${queryText}".`
+        : 'No workspace documents, spreadsheets, presentation decks, or task initiatives have been created or indexed in this session yet.',
+      actionRequired: 'To synthesize strategic briefings and cross-workspace intelligence, create or import documents, financial sheets, or tasks.',
+      missingArtifacts: [
+        { type: 'sheet', workspace: 'sheets', title: 'Spreadsheet Models', desc: 'Add financial tables, formulas, expense models, or KPI metrics in Sheets.' },
+        { type: 'compose', workspace: 'compose', title: 'Strategy & Analysis Documents', desc: 'Write or paste project memos, strategic plans, or meeting notes in Compose.' },
+        { type: 'tasks', workspace: 'tasks', title: 'Initiatives & Deliverables', desc: 'Create actionable tasks with milestones and assignees in Tasks.' }
+      ],
+      willDisplayWhen: 'This decision briefing will automatically compute in real-time as soon as you add content to any document or spreadsheet in your workspace.'
+    };
+  }
+
+  // 2. Evaluate Relevance of Query against Indexed Entities
+  const cleanQuery = queryText.toLowerCase();
+  const queryWords = cleanQuery.split(/\s+/).filter(w => w.length > 2 && !['what', 'when', 'where', 'which', 'have', 'been', 'with', 'from', 'this', 'that', 'your', 'about'].includes(w));
+  
+  // Financial query detection
+  const isFinancialQuery = /(dollar|cost|loss|lost|revenue|profit|margin|spend|expense|financial|budget|burn|cash|quarter|q[1-4]|ebitda)/i.test(cleanQuery);
+  const financialEntities = entities.filter(e => e.workspace === 'sheets' || e.type === 'sheet' || (e.metrics && e.metrics.length > 0));
+
+  if (isFinancialQuery && financialEntities.length === 0) {
+    return {
+      isUnavailable: true,
+      reason: 'NO_MATCHING_FINANCIAL_DATA',
+      topic: queryText,
+      title: `No Financial Records Found for "${queryText}"`,
+      description: `Orb indexed ${entities.length} workspace item(s), but found no financial statements, loss records, currency metrics, or spreadsheet models related to "${queryText}".`,
+      actionRequired: 'To analyze financial metrics or losses, create or import a financial spreadsheet or expense ledger.',
+      missingArtifacts: [
+        { type: 'sheet', workspace: 'sheets', title: 'P&L or Expense Sheet', desc: 'Add a spreadsheet model with cost breakdowns, formulas, or quarterly loss data in Sheets.' },
+        { type: 'compose', workspace: 'compose', title: 'Financial Memo', desc: 'Document quarterly financial commentary, budget allocations, or revenue figures in Compose.' }
+      ],
+      willDisplayWhen: 'Orb will immediately calculate this decision briefing once spreadsheet cells or notes containing financial numbers are added.'
+    };
+  }
+
+  // General topic matching
+  const matchingEntities = queryWords.length === 0 ? entities : entities.filter(e => {
+    const text = `${e.title} ${e.content || ''} ${e.excerpt || ''} ${(e.tags || []).join(' ')}`.toLowerCase();
+    return queryWords.some(w => text.includes(w));
+  });
+
+  if (queryWords.length > 0 && matchingEntities.length === 0) {
+    return {
+      isUnavailable: true,
+      reason: 'NO_MATCHING_TOPIC_DATA',
+      topic: queryText,
+      title: `No Workspace Content Found for "${queryText}"`,
+      description: `Orb searched across ${entities.length} indexed workspace artifact(s), but found no documents, sheets, or tasks mentioning or referencing the key concepts in "${queryText}".`,
+      actionRequired: `To synthesize intelligence for this topic, create or link notes, models, or tasks related to "${queryText}".`,
+      missingArtifacts: [
+        { type: 'compose', workspace: 'compose', title: 'Project Document', desc: `Create a document in Compose covering "${queryText}".` },
+        { type: 'sheet', workspace: 'sheets', title: 'Spreadsheet Model', desc: `Import data or calculations supporting "${queryText}" in Sheets.` }
+      ],
+      willDisplayWhen: `This briefing will automatically compute as soon as relevant documents or data are added to your workspace.`
+    };
+  }
+
+  // 3. Genuine Evidence-Grounded Synthesis
+  const relevantEntities = matchingEntities.length > 0 ? matchingEntities : entities;
+  const primaryEntity = relevantEntities[0];
+  const secondaryEntity = relevantEntities[1] || relevantEntities[0];
+
+  const primaryTitle = primaryEntity?.title || 'Active Strategy';
   const primaryMetrics = primaryEntity?.metrics || [];
-  const secondaryTitle = secondaryEntity?.title || 'Financial & Operational Plan';
+  const secondaryTitle = secondaryEntity?.title || 'Execution Plan';
 
-  const docEntities = entities.filter(e => e.workspace === 'compose' || e.type === 'document');
-  const sheetEntities = entities.filter(e => e.workspace === 'sheets' || e.type === 'sheet');
-  const taskEntities = entities.filter(e => e.workspace === 'tasks' || e.type === 'task');
+  const docEntities = relevantEntities.filter(e => e.workspace === 'compose' || e.type === 'document');
+  const sheetEntities = relevantEntities.filter(e => e.workspace === 'sheets' || e.type === 'sheet');
+  const taskEntities = relevantEntities.filter(e => e.workspace === 'tasks' || e.type === 'task');
 
-  const keyEvidence = entities.slice(0, 4).map(e => ({
-    source: `${e.title} (${e.author || 'Workspace'})`,
+  const keyEvidence = relevantEntities.slice(0, 4).map(e => ({
+    source: `${e.title} (${e.author || 'You'})`,
     type: e.type,
     detail: e.excerpt || e.content.slice(0, 140)
   }));
 
-  const recommendedCourse = `Proceed with the strategic execution plan outlined in ${primaryTitle}, reconciling assumptions against quantitative models in ${sheetEntities[0]?.title || secondaryTitle}.`;
+  const recommendedCourse = `Synthesized roadmap based on ${primaryTitle}, aligning findings with connected deliverables in ${secondaryTitle}.`;
   const why = primaryMetrics.length > 0
-    ? `Validated metrics (${primaryMetrics.join(', ')}) across workspace artifacts corroborate operational milestones.`
-    : `Cross-workspace intelligence links key assumptions in ${primaryTitle} directly to actionable deliverables.`;
+    ? `Verified metrics (${primaryMetrics.join(', ')}) in ${primaryTitle} directly support operational requirements.`
+    : `Cross-workspace intelligence links key assumptions in ${primaryTitle} to active project deliverables.`;
   const criticalConstraint = taskEntities.length > 0
-    ? `Requires completion of ${taskEntities[0].title} before finalizing downstream milestones.`
-    : `Ensure quantitative assumptions in spreadsheet formulas align before capital authorization.`;
-  const requiredCondition = `Complete executive sign-off and verify formula integrity across all connected artifacts.`;
+    ? `Contingent on completion of task "${taskEntities[0].title}".`
+    : (sheetEntities.length > 0 ? `Requires verification of formula outputs in "${sheetEntities[0].title}".` : `Requires stakeholder review on active deliverables.`);
+  const requiredCondition = `Complete operational sign-off across all active workspace owners.`;
 
   return {
+    isUnavailable: false,
     topic: queryText || `Strategic Decision Synthesis: ${primaryTitle}`,
-    status: 'AI Recommendation • Pending Executive Review',
-    confidenceScore: 0.94,
+    status: 'AI Recommendation • Live Workspace Grounded',
+    confidenceScore: 0.95,
     recommendationTitle: `Executive Roadmap & Alignment for ${primaryTitle}`,
     recommendedCourse,
     why,
     criticalConstraint,
     requiredCondition,
     coreRecommendation: recommendedCourse,
-    executiveSummary: `Orb has synthesized intelligence across ${entities.length} active workspace artifacts. Evidence from ${primaryTitle} has been reconciled against linked models and deliverables, identifying critical execution path dependencies.`,
+    executiveSummary: `Orb has synthesized intelligence across ${relevantEntities.length} matching workspace artifact(s). Evidence from ${primaryTitle} has been reconciled against active workspace deliverables.`,
     evidenceToChangeRecommendation: [
       {
         trigger: 'Discrepancy in quantitative financial formulas',
-        currentAssumption: `Assumptions in ${sheetEntities[0]?.title || 'Sheets model'} remain within acceptable tolerance.`,
-        counterEvidence: 'If formulas diverge by >5%, presentation and memo revenue figures will become misaligned.',
+        currentAssumption: `Assumptions in ${sheetEntities[0]?.title || 'workspace models'} remain within acceptable tolerance.`,
+        counterEvidence: 'If formulas diverge, documentation and projections will become misaligned.',
         contingentAction: 'Trigger real-time recalculation pass in Sheets and update linked document tables.'
-      },
-      {
-        trigger: 'Milestone delivery delay exceeds 10 days',
-        currentAssumption: 'Execution timeline aligns with active sprint and calendar commitments.',
-        counterEvidence: 'Blockers in assigned task initiatives will delay executive sign-off meetings.',
-        contingentAction: 'Escalate task prerequisites to lead assignees and adjust milestone schedule.'
       }
     ],
     keyEvidence,
-    contradictions: [
-      {
-        id: 'contra_live_1',
-        severity: 'Medium',
-        title: 'Cross-Artifact Assumption Alignment',
-        description: `Ensure targets in ${primaryTitle} dynamically reflect the latest calculated metrics in ${sheetEntities[0]?.title || 'Sheets'}.`,
-        resolution: 'Orb deterministic verification maintains formula and text provenance.'
-      }
-    ],
+    contradictions: [],
     dependencies: [
       {
-        item: 'Cross-functional sign-off across all active workspace owners',
+        item: `Alignment between ${primaryTitle} and active workspace deliverables`,
         status: 'Active',
-        owner: 'Project Leads',
+        owner: primaryEntity.author || 'You',
         criticality: 'Standard Operational Alignment'
       }
     ],
     emergingTrends: [
-      'High velocity cross-workspace collaboration between Strategy, Finance, and Engineering.'
+      'Active cross-workspace progression across connected artifacts.'
     ],
-    missingInformation: [
-      'External market benchmark validations for long-range 2027 projections.'
-    ],
+    missingInformation: [],
     recommendedActions: [
       {
         id: 'rec_gen_1',
-        title: `Review connected knowledge graph in Orb Map mode for "${topicOrQuestion || 'Active Topic'}"`,
+        title: `Inspect active knowledge connections for "${primaryTitle}"`,
         assignee: 'You',
-        workspace: 'compose',
+        workspace: primaryEntity.workspace || 'compose',
         priority: 'High'
       }
     ]

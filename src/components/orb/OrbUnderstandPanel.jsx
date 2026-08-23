@@ -181,7 +181,7 @@ export default function OrbUnderstandPanel({
       {/* ── Right Panel: Deep Relationship Inspector & Evidence View ── */}
       <div className="flex-1 overflow-y-auto p-8 thin-scrollbar flex flex-col justify-center">
         {!activeEdge ? (
-          <div className={`max-w-md mx-auto p-8 rounded-3xl text-center flex flex-col items-center ${
+          <div className={`max-w-md mx-auto p-8 rounded-[24px] text-center flex flex-col items-center ${
             highContrast
               ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600'
               : 'bg-white dark:bg-zinc-900 shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-slate-200/60 dark:border-zinc-800/80'
@@ -189,16 +189,36 @@ export default function OrbUnderstandPanel({
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-violet-50 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] mb-3.5 border border-violet-100 dark:border-violet-900/60">
               <Layers size={22} strokeWidth={1.8} />
             </div>
-            <h4 className={`text-sm font-semibold mb-1 ${
+            <h4 className={`text-base font-semibold mb-1.5 ${
               highContrast ? 'text-black dark:text-white font-extrabold' : 'text-slate-900 dark:text-zinc-100'
             }`}>
-              Relationship Provenance Inspector
+              No Semantic Linkages Detected Yet
             </h4>
-            <p className={`text-xs leading-relaxed max-w-sm ${
+            <p className={`text-xs leading-relaxed max-w-sm mb-6 ${
               highContrast ? 'text-slate-800 dark:text-zinc-300 font-medium' : 'text-slate-500 dark:text-zinc-400'
             }`}>
-              Select any semantic linkage from the left rail or knowledge graph to inspect explicit formulas, direct citations, origin and destination artifacts.
+              Orb autonomously uncovers provenance linkages when documents, spreadsheets, and tasks share quantified metrics, formulas, or deliverables.
             </p>
+            {onNavigateToWorkspace && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onNavigateToWorkspace({ workspace: 'compose' })}
+                  className="px-3.5 py-2 rounded-xl bg-violet-50 dark:bg-violet-950/60 hover:bg-[#7C5ACF] text-[#7C5ACF] dark:text-[#a78bfa] hover:text-white border border-violet-100 dark:border-violet-900/40 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+                >
+                  <span>Open Docs</span>
+                  <ArrowRight size={12} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigateToWorkspace({ workspace: 'sheets' })}
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <span>Open Sheets</span>
+                  <ArrowRight size={12} />
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="max-w-3xl mx-auto space-y-6 w-full">

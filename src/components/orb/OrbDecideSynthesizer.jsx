@@ -279,8 +279,99 @@ export default function OrbDecideSynthesizer({
             </div>
           )}
 
-          {/* Active Synthesis Briefing */}
-          {synthesis && !isSynthesizing && (
+          {/* ── Unavailable / Empty State when requested intelligence is missing ── */}
+          {synthesis && !isSynthesizing && synthesis.isUnavailable && (
+            <div className={`p-8 rounded-[24px] space-y-6 animate-in fade-in duration-200 ${
+              highContrast
+                ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
+                : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-200/60 dark:border-zinc-800/80'
+            }`}>
+              {/* Header */}
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 shrink-0 border border-amber-200/60 dark:border-amber-900/40">
+                  <ShieldAlert size={22} strokeWidth={1.8} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">
+                    <span>Intelligence Unavailable</span>
+                  </div>
+                  <h2 className={`text-xl mb-1.5 ${
+                    highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-900 dark:text-zinc-100'
+                  }`}>
+                    {synthesis.title}
+                  </h2>
+                  <p className={`text-xs leading-relaxed ${
+                    highContrast ? 'font-medium text-slate-900 dark:text-zinc-300' : 'font-normal text-slate-600 dark:text-zinc-400'
+                  }`}>
+                    {synthesis.description}
+                  </p>
+                </div>
+              </div>
+
+              {/* What to do / Missing Artifacts guidance */}
+              {synthesis.missingArtifacts?.length > 0 && (
+                <div className="space-y-3 pt-2">
+                  <span className={`text-[11px] uppercase tracking-wider block font-semibold ${
+                    highContrast ? 'text-black dark:text-white font-bold' : 'text-slate-500 dark:text-zinc-400'
+                  }`}>
+                    What to add for this briefing to display:
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {synthesis.missingArtifacts.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-4 rounded-2xl flex flex-col justify-between ${
+                          highContrast
+                            ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300'
+                            : 'bg-slate-50/90 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800/80'
+                        }`}
+                      >
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 shadow-2xs">
+                              <RegaarderProductIcon name={item.workspace || item.type} size={13} />
+                            </div>
+                            <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100">
+                              {item.title}
+                            </span>
+                          </div>
+                          <p className="text-[11.5px] leading-relaxed text-slate-500 dark:text-zinc-400">
+                            {item.desc}
+                          </p>
+                        </div>
+                        {onNavigateToWorkspace && (
+                          <button
+                            type="button"
+                            onClick={() => onNavigateToWorkspace({ workspace: item.workspace || item.type })}
+                            className="py-2 px-3 rounded-xl bg-white dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 text-xs font-medium flex items-center justify-center gap-1.5 border border-slate-200/60 dark:border-zinc-700/60 transition-colors cursor-pointer shadow-2xs self-start"
+                          >
+                            <span>Open {item.title.split(' ')[0]}</span>
+                            <ArrowRight size={12} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Real-time sync timeline notification */}
+              <div className={`p-4 rounded-2xl flex items-center gap-3 text-xs ${
+                highContrast
+                  ? 'bg-slate-100 dark:bg-zinc-900 text-black dark:text-white border-2 border-slate-300'
+                  : 'bg-violet-50/70 dark:bg-violet-950/30 text-slate-700 dark:text-zinc-300 border border-violet-100/70 dark:border-violet-900/40'
+              }`}>
+                <Clock size={16} className="text-[#7C5ACF] dark:text-[#a78bfa] shrink-0" />
+                <p className="leading-relaxed">
+                  <strong className="text-[#7C5ACF] dark:text-[#a78bfa] font-semibold">Automatic Real-Time Synthesis: </strong>
+                  {synthesis.willDisplayWhen}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Genuine Active Synthesis Briefing (Only if available) */}
+          {synthesis && !isSynthesizing && !synthesis.isUnavailable && (
             <>
 
           {/* Executive Strategic Decision Briefing Card */}
