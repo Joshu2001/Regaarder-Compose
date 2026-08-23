@@ -37425,7 +37425,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       )}
 
       <div 
-        className={`no-fullscreen-toggle border-l border-slate-200/60 dark:border-zinc-800/80 flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl transition-all duration-200 shadow-[-12px_0_35px_-10px_rgba(15,23,42,0.08)] select-none overflow-hidden ${
+        className={`no-fullscreen-toggle border-l border-slate-200/60 dark:border-zinc-800/80 flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl transition-all duration-200 shadow-[-16px_0_40px_rgba(0,0,0,0.06),-4px_0_12px_rgba(0,0,0,0.03)] dark:shadow-[-16px_0_40px_rgba(0,0,0,0.35)] select-none overflow-hidden ${
           productMode !== 'landing' && rightSidebarOpen && !shareModalOpen 
             ? 'fixed top-0 right-0 bottom-0 animate-in fade-in slide-in-from-right-4'
             : 'w-0 h-0 hidden overflow-hidden border-l-0 pointer-events-none opacity-0'
