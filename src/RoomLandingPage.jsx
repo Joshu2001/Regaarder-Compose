@@ -23,7 +23,26 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
   const [isLobby, setIsLobby] = useState(true);
   const [isEnteringCode, setIsEnteringCode] = useState(false);
   const [isMeetingOptionsOpen, setIsMeetingOptionsOpen] = useState(false);
+  const [isSchedulingModalOpen, setIsSchedulingModalOpen] = useState(false);
   const [roomCodeInput, setRoomCodeInput] = useState("");
+
+  // Fresh Regaarder Schedule Session States
+  const [scheduleTitle, setScheduleTitle] = useState("Product Strategy & Design Sync");
+  const [scheduleDate, setScheduleDate] = useState("2026-11-18");
+  const [scheduleStartTime, setScheduleStartTime] = useState("10:00 AM");
+  const [scheduleEndTime, setScheduleEndTime] = useState("11:00 AM");
+  const [scheduleDuration, setScheduleDuration] = useState("60 min");
+  const [scheduleRoomLink, setScheduleRoomLink] = useState("https://regaarder.app/room/sync-8492");
+  const [scheduleCollaborators, setScheduleCollaborators] = useState([
+    { id: 'you', name: 'You', role: 'Host', color: 'bg-violet-600' },
+    { id: 'alex', name: 'Alex', role: 'Editor', color: 'bg-sky-500' },
+    { id: 'maya', name: 'Maya', role: 'Viewer', color: 'bg-amber-500' },
+  ]);
+  const [scheduleNewCollaboratorInput, setScheduleNewCollaboratorInput] = useState("");
+  const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
+  const [scheduleAiSummaryEnabled, setScheduleAiSummaryEnabled] = useState(true);
+  const [scheduleWhiteboardEnabled, setScheduleWhiteboardEnabled] = useState(true);
+  const [scheduleEncryptionEnabled, setScheduleEncryptionEnabled] = useState(true);
 
   // Meeting Room Interactive States
   const [roomName, setRoomName] = useState("Product Sync");
@@ -648,8 +667,7 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                     <button
                       type="button"
                       onClick={() => {
-                        onLaunch?.({ type: 'schedule', name: 'Room' });
-                        showToast?.("Opening scheduling calendar...");
+                        setIsSchedulingModalOpen(true);
                       }}
                       className="w-full p-3.5 bg-slate-50/80 hover:bg-slate-100/90 dark:bg-zinc-850/60 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer mb-4"
                     >
@@ -775,6 +793,307 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                   </>
                 )}
 
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* FRESH EXECUTIVE REGAARDER SCHEDULE ROOM SESSION MODAL                    */}
+          {/* ========================================================================= */}
+          {isSchedulingModalOpen && (
+            <div 
+              className="fixed inset-0 z-[100000] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xl animate-in fade-in duration-200 select-none"
+              onClick={() => setIsSchedulingModalOpen(false)}
+            >
+              <div 
+                className="relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 shadow-[0_32px_100px_rgba(0,0,0,0.18)] rounded-[36px] max-w-[620px] w-full p-7 sm:p-8 flex flex-col font-sans text-left animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto thin-scrollbar"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Top Badge with Delicate Purple Sparkles (✦) & Title */}
+                <div className="flex items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-3.5">
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-2xl bg-violet-50/90 dark:bg-violet-950/60 border border-violet-100/80 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
+                        <Calendar size={22} strokeWidth={1.8} />
+                      </div>
+                      <span className="absolute -top-1 -right-2 text-[10px] font-bold text-violet-400 animate-pulse">✦</span>
+                      <span className="absolute -bottom-1 -left-1 text-[8px] font-bold text-violet-300">✦</span>
+                    </div>
+                    <div>
+                      <h2 className="text-[19px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">
+                        Schedule Room Session
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5 leading-normal">
+                        Set up a meeting, invite collaborators, and sync with your calendar.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsSchedulingModalOpen(false)}
+                    className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div className="space-y-4.5">
+                  {/* Session Title */}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1.5">
+                      Session Title
+                    </label>
+                    <div className="h-11 px-3.5 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 focus-within:border-violet-500 focus-within:ring-2 focus-within:ring-violet-500/20 focus-within:bg-white dark:focus-within:bg-zinc-900 transition-all flex items-center gap-2.5">
+                      <MessageSquare size={16} className="text-violet-500 shrink-0" />
+                      <input
+                        type="text"
+                        value={scheduleTitle}
+                        onChange={(e) => setScheduleTitle(e.target.value)}
+                        placeholder="e.g. Product Strategy & Architecture Sync"
+                        className="w-full bg-transparent text-xs sm:text-sm font-semibold text-slate-800 dark:text-zinc-100 outline-none placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date & Time Controls */}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1.5">
+                      Date & Time
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {/* Date Picker */}
+                      <div className="h-11 px-3 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center gap-2">
+                        <Calendar size={14} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                        <input
+                          type="date"
+                          value={scheduleDate}
+                          onChange={(e) => setScheduleDate(e.target.value)}
+                          className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-zinc-200 outline-none cursor-pointer"
+                        />
+                      </div>
+
+                      {/* Time Range */}
+                      <div className="h-11 px-3 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-zinc-300">
+                        <select
+                          value={scheduleStartTime}
+                          onChange={(e) => setScheduleStartTime(e.target.value)}
+                          className="bg-transparent outline-none cursor-pointer"
+                        >
+                          {['09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'].map((t) => (
+                            <option key={t} value={t} className="dark:bg-zinc-900">{t}</option>
+                          ))}
+                        </select>
+                        <span className="text-slate-400 text-[10px]">→</span>
+                        <select
+                          value={scheduleEndTime}
+                          onChange={(e) => setScheduleEndTime(e.target.value)}
+                          className="bg-transparent outline-none cursor-pointer"
+                        >
+                          {['09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '01:30 PM', '02:30 PM', '03:30 PM', '04:30 PM', '05:00 PM'].map((t) => (
+                            <option key={t} value={t} className="dark:bg-zinc-900">{t}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Duration Pill */}
+                      <div className="h-11 px-3 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center justify-center gap-1.5 text-xs font-bold text-violet-600 dark:text-violet-400">
+                        <span>⏱</span>
+                        <span>{scheduleDuration}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Shareable Room Link */}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1.5">
+                      Shareable Room Link
+                    </label>
+                    <div className="h-11 px-3.5 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-violet-500 text-xs">🔗</span>
+                        <span className="text-xs font-mono font-medium text-slate-600 dark:text-zinc-300 truncate">
+                          {scheduleRoomLink}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(scheduleRoomLink);
+                          showToast?.("Room link copied to clipboard!");
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900 text-xs font-bold transition-colors cursor-pointer shrink-0 active:scale-95"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Collaborators & Invites */}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1.5">
+                      Collaborators & Invites
+                    </label>
+                    <div className="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex flex-wrap items-center gap-2">
+                      {scheduleCollaborators.map((c) => (
+                        <div
+                          key={c.id}
+                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/60 shadow-2xs text-xs font-medium text-slate-800 dark:text-zinc-200"
+                        >
+                          <div className={`w-5 h-5 rounded-full ${c.color} text-white flex items-center justify-center text-[10px] font-bold`}>
+                            {c.name[0]}
+                          </div>
+                          <span>{c.name}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">({c.role})</span>
+                          {c.id !== 'you' && (
+                            <button
+                              type="button"
+                              onClick={() => setScheduleCollaborators((prev) => prev.filter((p) => p.id !== c.id))}
+                              className="text-slate-400 hover:text-rose-500 ml-0.5"
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+
+                      {!isAddingCollaborator ? (
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingCollaborator(true)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-950/50 border border-violet-200/60 dark:border-violet-800/60 text-xs font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-100 transition-colors cursor-pointer"
+                        >
+                          <Plus size={12} strokeWidth={2.5} />
+                          <span>Invite People</span>
+                        </button>
+                      ) : (
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            if (scheduleNewCollaboratorInput.trim()) {
+                              const name = scheduleNewCollaboratorInput.trim();
+                              setScheduleCollaborators((prev) => [
+                                ...prev,
+                                { id: `collab-${Date.now()}`, name, role: 'Editor', color: 'bg-emerald-500' }
+                              ]);
+                              setScheduleNewCollaboratorInput("");
+                              setIsAddingCollaborator(false);
+                              showToast?.(`Invited ${name}`);
+                            }
+                          }}
+                          className="flex items-center gap-1.5"
+                        >
+                          <input
+                            autoFocus
+                            type="text"
+                            value={scheduleNewCollaboratorInput}
+                            onChange={(e) => setScheduleNewCollaboratorInput(e.target.value)}
+                            placeholder="Name or email..."
+                            className="h-8 px-2.5 text-xs bg-white dark:bg-zinc-800 border border-violet-300 rounded-xl outline-none text-slate-800 dark:text-zinc-100"
+                          />
+                          <button
+                            type="submit"
+                            className="h-8 px-2.5 bg-violet-600 text-white rounded-xl text-xs font-bold"
+                          >
+                            Add
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsAddingCollaborator(false)}
+                            className="h-8 px-2 text-slate-400 hover:text-slate-600 text-xs font-semibold"
+                          >
+                            Cancel
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Meeting Capabilities Toggles */}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1.5">
+                      Meeting Capabilities
+                    </label>
+                    <div className="space-y-2">
+                      {/* AI Summary */}
+                      <div className="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <Sparkles size={16} className="text-violet-600 dark:text-violet-400" />
+                          <div>
+                            <div className="text-xs font-bold text-slate-800 dark:text-zinc-200">AI Transcription & Real-time Summary</div>
+                            <div className="text-[10.5px] text-slate-500 dark:text-zinc-400">Generate instant meeting notes, action items, and insights</div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setScheduleAiSummaryEnabled(!scheduleAiSummaryEnabled)}
+                          className={`w-9 h-5 rounded-full relative transition-colors cursor-pointer ${scheduleAiSummaryEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+                        >
+                          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-xs transition-all ${scheduleAiSummaryEnabled ? 'right-0.5' : 'left-0.5'}`} />
+                        </button>
+                      </div>
+
+                      {/* Whiteboard & Screen Share */}
+                      <div className="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <Layout size={16} className="text-violet-600 dark:text-violet-400" />
+                          <div>
+                            <div className="text-xs font-bold text-slate-800 dark:text-zinc-200">Interactive Whiteboard & Screen Sharing</div>
+                            <div className="text-[10.5px] text-slate-500 dark:text-zinc-400">Allow participants to draw and present canvases simultaneously</div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setScheduleWhiteboardEnabled(!scheduleWhiteboardEnabled)}
+                          className={`w-9 h-5 rounded-full relative transition-colors cursor-pointer ${scheduleWhiteboardEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+                        >
+                          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-xs transition-all ${scheduleWhiteboardEnabled ? 'right-0.5' : 'left-0.5'}`} />
+                        </button>
+                      </div>
+
+                      {/* Encryption & Waiting Room */}
+                      <div className="p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <Shield size={16} className="text-violet-600 dark:text-violet-400" />
+                          <div>
+                            <div className="text-xs font-bold text-slate-800 dark:text-zinc-200">End-to-End Encryption & Waiting Room</div>
+                            <div className="text-[10.5px] text-slate-500 dark:text-zinc-400">Host admits guests with encrypted zero-latency audio/video</div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setScheduleEncryptionEnabled(!scheduleEncryptionEnabled)}
+                          className={`w-9 h-5 rounded-full relative transition-colors cursor-pointer ${scheduleEncryptionEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+                        >
+                          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-xs transition-all ${scheduleEncryptionEnabled ? 'right-0.5' : 'left-0.5'}`} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Action Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-6 mt-2 border-t border-slate-100 dark:border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsSchedulingModalOpen(false)}
+                    className="px-5 py-2.5 rounded-2xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSchedulingModalOpen(false);
+                      setIsMeetingOptionsOpen(false);
+                      showToast?.(`Meeting "${scheduleTitle}" scheduled for ${scheduleDate} at ${scheduleStartTime}!`);
+                    }}
+                    className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-bold shadow-[0_4px_14px_rgba(139,92,246,0.3)] transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>Schedule Meeting</span>
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
               </div>
             </div>
           )}
