@@ -37720,42 +37720,42 @@ Respond with a JSON array of slide objects matching the schema.`;
           {/* A. ACTIVE TAB: AI ASSISTANT / CHAT */}
           {(activeRightTab === 'assistant' || activeRightTab === 'chat') && (
             <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
+              {/* Persistent Integrated Header with [+] New Chat and [X] Close (Always Visible) */}
+              <div className="flex items-center justify-between w-full px-4 py-2.5 text-left shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm z-10">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-6.5 h-6.5 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 flex items-center justify-center shrink-0">
+                    <Bot size={13} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight leading-none">
+                      {productMode === 'compose' ? 'Compose Assistant' : productMode === 'sheets' ? 'Sheets Assistant' : 'Deck Assistant'}
+                    </h3>
+                  </div>
+                </div>
+                <div className="shrink-0 flex items-center gap-1">
+                  <button
+                    type="button"
+                    title="Start New Chat (+)"
+                    className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer flex items-center justify-center"
+                    onClick={startNewChatSession}
+                  >
+                    <Plus size={14} strokeWidth={2} />
+                  </button>
+                  <button
+                    type="button"
+                    title="Close panel"
+                    className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 dark:hover:text-zinc-200 transition-all cursor-pointer flex items-center justify-center"
+                    onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
+                  >
+                    <X size={14} strokeWidth={1.75} />
+                  </button>
+                </div>
+              </div>
+
               {/* Chat Stream & Focal Layout */}
               <div className="flex-1 overflow-y-auto thin-scrollbar p-4 space-y-3.5">
                 {chatMessages.length === 0 && (
                   <div className="flex flex-col items-start justify-start w-full pt-0.5 pb-2">
-                    {/* Compact Integrated Header with [+] and [X] pushed down */}
-                    <div className="flex items-center justify-between w-full mb-2.5 text-left">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-6.5 h-6.5 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 flex items-center justify-center shrink-0">
-                          <Bot size={13} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight leading-none">
-                            {productMode === 'compose' ? 'Compose Assistant' : productMode === 'sheets' ? 'Sheets Assistant' : 'Deck Assistant'}
-                          </h3>
-                        </div>
-                      </div>
-                      <div className="shrink-0 flex items-center gap-1">
-                        <button
-                          type="button"
-                          title="Start New Chat (+)"
-                          className="p-1 rounded-lg text-slate-400 dark:text-zinc-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer"
-                          onClick={startNewChatSession}
-                        >
-                          <Plus size={14} strokeWidth={2} />
-                        </button>
-                        <button
-                          type="button"
-                          title="Close panel"
-                          className="p-1 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 dark:hover:text-zinc-200 transition-all cursor-pointer"
-                          onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
-                        >
-                          <X size={14} strokeWidth={1.75} />
-                        </button>
-                      </div>
-                    </div>
-
                     {/* Integrated Input Area (VS Code Prompt Box Style) */}
                     <form onSubmit={handleSidebarSend} className="w-full mb-3.5 relative">
                       {/* Floating / Slash Command Dropdown (SlashMenuPopover Component) */}
@@ -45994,16 +45994,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 onClick={() => {
                   if (isSheetsMode) {
                     setSheetsSidebarOpen((prev) => !prev);
-                  } else {
+                  } else if (productMode === 'deck') {
                     setDeckSlidesPanelOpen((prev) => !prev);
+                  } else {
+                    setLeftSidebarOpen((prev) => !prev);
                   }
                 }}
-                className="text-gray-400 hover:text-gray-600 dark:text-zinc-400 dark:hover:text-zinc-200 shrink-0 transition-colors"
-                title="Toggle sidebar"
+                className="text-gray-400 hover:text-gray-600 dark:text-zinc-400 dark:hover:text-zinc-200 shrink-0 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer"
+                title={
+                  isSheetsMode 
+                    ? (sheetsSidebarOpen ? "Hide sheets sidebar" : "Show sheets sidebar")
+                    : productMode === 'deck'
+                      ? (deckSlidesPanelOpen ? "Hide slide deck" : "Show slide deck")
+                      : (leftSidebarOpen ? "Hide navigation sidebar" : "Show navigation sidebar")
+                }
               >
                 {isSheetsMode
                   ? (sheetsSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
-                  : (deckSlidesPanelOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
+                  : productMode === 'deck'
+                    ? (deckSlidesPanelOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
+                    : (leftSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
                 }
               </button>
 
