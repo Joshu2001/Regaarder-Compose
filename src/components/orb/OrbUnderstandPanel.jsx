@@ -59,16 +59,16 @@ export default function OrbUnderstandPanel({
 
   return (
     <div className={`flex h-full w-full overflow-hidden ${
-      highContrast ? 'bg-slate-200/50 dark:bg-zinc-950' : 'bg-slate-100/30 dark:bg-zinc-950/20'
+      highContrast ? 'bg-slate-200/50 dark:bg-zinc-950' : 'bg-[#F7F8FA] dark:bg-[#0E1015]'
     }`}>
       {/* ── Left Rail: List of Connected Semantic Relationships ── */}
       <div className={`w-[320px] flex flex-col shrink-0 ${
         highContrast
           ? 'border-r-2 border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-950'
-          : 'border-r border-black/[0.06] dark:border-white/[0.08] bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl'
+          : 'border-r border-black/[0.04] dark:border-white/[0.06] bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md'
       }`}>
         <div className={`p-4 border-b ${
-          highContrast ? 'border-slate-300 dark:border-zinc-700' : 'border-slate-200/60 dark:border-zinc-800/60'
+          highContrast ? 'border-slate-300 dark:border-zinc-700' : 'border-black/[0.04] dark:border-zinc-800/60'
         }`}>
           <div className={`flex items-center gap-2 text-xs uppercase tracking-wider ${
             highContrast ? 'font-black text-black dark:text-white' : 'font-bold text-slate-800 dark:text-zinc-200'
@@ -112,10 +112,10 @@ export default function OrbUnderstandPanel({
                     isSelected
                       ? highContrast
                         ? 'border-2 border-violet-500 bg-slate-100 dark:bg-zinc-800 shadow-sm'
-                        : 'border border-violet-300/80 dark:border-violet-700/60 bg-violet-50/70 dark:bg-violet-950/40 shadow-xs'
+                        : 'border border-violet-200/90 dark:border-violet-700/60 bg-violet-50/60 dark:bg-violet-950/40 shadow-xs'
                       : highContrast
                       ? 'border-2 border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-slate-400'
-                      : 'border border-slate-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-700/60'
+                      : 'border border-slate-100/90 dark:border-zinc-800/80 bg-white dark:bg-zinc-800/50 hover:bg-slate-50 dark:hover:bg-zinc-700/60'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-1 mb-1.5">
@@ -164,9 +164,9 @@ export default function OrbUnderstandPanel({
           <div className={`max-w-md mx-auto p-8 rounded-3xl text-center flex flex-col items-center ${
             highContrast
               ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600'
-              : 'bg-white/60 dark:bg-zinc-900/50 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08]'
+              : 'bg-white dark:bg-zinc-900 shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-slate-200/60 dark:border-zinc-800/80'
           }`}>
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-violet-100 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] mb-3.5 border border-violet-200/80 dark:border-violet-800/60">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-violet-50 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] mb-3.5 border border-violet-100 dark:border-violet-900/60">
               <Layers size={22} strokeWidth={1.8} />
             </div>
             <h4 className={`text-sm font-semibold mb-1 ${
@@ -186,23 +186,23 @@ export default function OrbUnderstandPanel({
             <div className={`p-6 rounded-2xl ${
               highContrast
                 ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
-                : 'bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-xs'
+                : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-200/60 dark:border-zinc-800/80'
             }`}>
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div className="flex items-center gap-2">
                   <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border ${
                     highContrast
                       ? statusConfigBadgeClass(currentEpistemicKey)
-                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80 font-semibold'
+                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200/70 dark:border-emerald-800/80 font-semibold'
                   }`}>
                     <EpistemicIcon size={13} />
                     <span>{currentEpistemic.label} Connection</span>
                   </span>
                   {activeEdge.modality && (
-                    <span className={`text-xs px-2 py-0.5 rounded ${
+                    <span className={`text-xs px-2 py-0.5 rounded-md ${
                       highContrast
                         ? 'font-bold bg-slate-100 dark:bg-zinc-900 text-black dark:text-white border border-slate-300'
-                        : 'font-medium bg-slate-100/70 dark:bg-zinc-800/60 text-slate-600 dark:text-zinc-400 border border-slate-200/60'
+                        : 'font-medium bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200/50'
                     }`}>
                       {activeEdge.modality}
                     </span>
@@ -233,12 +233,12 @@ export default function OrbUnderstandPanel({
 
             {/* AI Inferred Rationale Callout if applicable */}
             {activeEdge.isAiInferred && activeEdge.evidence?.aiRationale && (
-              <div className={`p-4 rounded-2xl ${
+              <div className={`p-5 rounded-2xl ${
                 highContrast
                   ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
-                  : 'bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-xs'
+                  : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-200/60 dark:border-zinc-800/80'
               }`}>
-                <div className="flex items-center gap-2 text-xs font-bold text-[#7C5ACF] dark:text-[#a78bfa] mb-1">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#7C5ACF] dark:text-[#a78bfa] mb-1.5">
                   <RegaarderAiIcon size={14} />
                   <span>AI Semantic Discovery Rationale</span>
                 </div>
@@ -257,7 +257,7 @@ export default function OrbUnderstandPanel({
                 <div className={`p-5 rounded-2xl flex flex-col justify-between ${
                   highContrast
                     ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
-                    : 'bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-xs'
+                    : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.05)] border border-slate-200/60 dark:border-zinc-800/80 transition-all'
                 }`}>
                   <div>
                     <div className="flex items-center justify-between mb-3">
@@ -265,12 +265,12 @@ export default function OrbUnderstandPanel({
                         <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
                           highContrast
                             ? 'bg-slate-100 dark:bg-zinc-800 text-black dark:text-white border-2 border-slate-400'
-                            : 'bg-slate-100/80 dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-slate-200/80'
+                            : 'bg-slate-100/80 dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-slate-200/60'
                         }`}>
                           <RegaarderProductIcon name={sourceEntity.workspace} size={14} />
                         </div>
                         <span className={`text-[11px] uppercase tracking-wider ${
-                          highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-500 dark:text-zinc-400'
+                          highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-semibold text-slate-500 dark:text-zinc-400'
                         }`}>
                           Origin ({sourceEntity.workspace})
                         </span>
@@ -287,10 +287,10 @@ export default function OrbUnderstandPanel({
                       By {sourceEntity.author} • {sourceEntity.authorRole}
                     </div>
 
-                    <div className={`p-3 rounded-xl text-xs italic leading-relaxed mb-4 ${
+                    <div className={`p-3.5 rounded-xl text-xs italic leading-relaxed mb-4 ${
                       highContrast
                         ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 text-black dark:text-white'
-                        : 'bg-slate-50/80 dark:bg-zinc-800/50 border border-slate-200/60 text-slate-700 dark:text-zinc-300'
+                        : 'bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 text-slate-700 dark:text-zinc-300'
                     }`}>
                       "{activeEdge.evidence?.sourceSnippet || sourceEntity.excerpt}"
                     </div>
@@ -300,7 +300,7 @@ export default function OrbUnderstandPanel({
                   <button
                     type="button"
                     onClick={() => onNavigateToWorkspace(sourceEntity)}
-                    className="w-full py-2 rounded-xl border border-slate-200/80 dark:border-zinc-700/60 bg-white/60 dark:bg-zinc-800/60 hover:bg-white dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="w-full py-2 rounded-xl border border-slate-200/80 dark:border-zinc-700/60 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <span>Inspect in {sourceEntity.workspace}</span>
                     <ExternalLink size={12} />
@@ -313,7 +313,7 @@ export default function OrbUnderstandPanel({
                 <div className={`p-5 rounded-2xl flex flex-col justify-between ${
                   highContrast
                     ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
-                    : 'bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-xs'
+                    : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.05)] border border-slate-200/60 dark:border-zinc-800/80 transition-all'
                 }`}>
                   <div>
                     <div className="flex items-center justify-between mb-3">
@@ -321,12 +321,12 @@ export default function OrbUnderstandPanel({
                         <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
                           highContrast
                             ? 'bg-slate-100 dark:bg-zinc-800 text-black dark:text-white border-2 border-slate-400'
-                            : 'bg-slate-100/80 dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-slate-200/80'
+                            : 'bg-slate-100/80 dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-slate-200/60'
                         }`}>
                           <RegaarderProductIcon name={targetEntity.workspace} size={14} />
                         </div>
                         <span className={`text-[11px] uppercase tracking-wider ${
-                          highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-500 dark:text-zinc-400'
+                          highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-semibold text-slate-500 dark:text-zinc-400'
                         }`}>
                           Destination ({targetEntity.workspace})
                         </span>
@@ -343,10 +343,10 @@ export default function OrbUnderstandPanel({
                       By {targetEntity.author} • {targetEntity.authorRole}
                     </div>
 
-                    <div className={`p-3 rounded-xl text-xs italic leading-relaxed mb-4 ${
+                    <div className={`p-3.5 rounded-xl text-xs italic leading-relaxed mb-4 ${
                       highContrast
                         ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 text-black dark:text-white'
-                        : 'bg-slate-50/80 dark:bg-zinc-800/50 border border-slate-200/60 text-slate-700 dark:text-zinc-300'
+                        : 'bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 text-slate-700 dark:text-zinc-300'
                     }`}>
                       "{activeEdge.evidence?.targetSnippet || targetEntity.excerpt}"
                     </div>
@@ -356,7 +356,7 @@ export default function OrbUnderstandPanel({
                       <div className={`p-2.5 rounded-xl font-mono text-xs mb-3 ${
                         highContrast
                           ? 'bg-slate-100 dark:bg-zinc-900 text-black dark:text-white border-2 border-slate-400 font-extrabold'
-                          : 'bg-slate-100/70 dark:bg-zinc-800/60 text-slate-800 dark:text-zinc-200 border border-slate-200/80 font-semibold'
+                          : 'bg-slate-100/70 dark:bg-zinc-800/60 text-slate-800 dark:text-zinc-200 border border-slate-200/60 font-semibold'
                       }`}>
                         <span className="text-slate-500 font-sans text-[10px] uppercase font-bold block mb-0.5">Formula:</span>
                         <span>{activeEdge.evidence.formula}</span>
@@ -368,7 +368,7 @@ export default function OrbUnderstandPanel({
                   <button
                     type="button"
                     onClick={() => onNavigateToWorkspace(targetEntity)}
-                    className="w-full py-2 rounded-xl bg-[#7C5ACF] text-white hover:bg-[#6c48c5] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                    className="w-full py-2.5 rounded-xl bg-[#7C5ACF] text-white hover:bg-[#6c48c5] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                   >
                     <span>Open in {targetEntity.workspace}</span>
                     <ArrowRight size={13} />

@@ -301,14 +301,20 @@ export default function OrbMapCanvas({
   const activeLensMeta = ORB_LENSES.find(l => l.id === activeLens) || ORB_LENSES[0];
 
   return (
-    <div className="flex flex-col h-full w-full select-none overflow-hidden bg-[#161922] relative">
+    <div className="flex flex-col h-full w-full select-none overflow-hidden bg-[#0D0F14] relative">
       {/* ── Top Lens Switcher Toolbar: Floating Glass Bar ── */}
       <div 
         data-no-pan="true"
-        className="flex items-center justify-between px-6 py-2.5 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl z-20 shrink-0"
+        className={`flex items-center justify-between px-7 py-3 border-b z-20 shrink-0 ${
+          highContrast
+            ? 'border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-950'
+            : 'border-black/[0.04] dark:border-white/[0.06] bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl'
+        }`}
       >
         <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar py-0.5">
-          <span className="text-xs font-bold text-slate-400 mr-2 uppercase tracking-wider">
+          <span className={`text-[11px] font-bold mr-2 uppercase tracking-wider ${
+            highContrast ? 'text-black dark:text-white' : 'text-slate-500 dark:text-zinc-400'
+          }`}>
             Lenses:
           </span>
           {ORB_LENSES.map(lens => {
@@ -318,10 +324,14 @@ export default function OrbMapCanvas({
                 key={lens.id}
                 type="button"
                 onClick={() => onSelectLens(lens.id)}
-                className={`px-3 py-1 text-xs rounded-lg transition-all duration-150 whitespace-nowrap cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs rounded-xl transition-all duration-150 whitespace-nowrap cursor-pointer ${
                   isActive
-                    ? 'border-2 border-[#a78bfa] bg-white/20 text-white font-bold shadow-xs'
-                    : 'border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/15 font-medium'
+                    ? highContrast
+                      ? 'border-2 border-slate-900 dark:border-white bg-white dark:bg-zinc-800 text-black dark:text-white font-extrabold shadow-sm'
+                      : 'border border-slate-300/90 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-xs'
+                    : highContrast
+                    ? 'border-2 border-transparent bg-slate-100 dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 hover:border-slate-400 font-bold'
+                    : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800/60 font-medium'
                 }`}
                 title={lens.desc}
               >
@@ -333,26 +343,26 @@ export default function OrbMapCanvas({
 
         {/* Zoom, Gesture & Canvas controls */}
         <div className="flex items-center gap-1.5 shrink-0 pl-3">
-          <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-[11px] text-slate-300 mr-1">
-            <Hand size={12} className={isDragging ? 'text-violet-400 animate-pulse' : 'text-slate-400'} />
-            <span>Hand Pan</span>
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-700/60 text-[11px] text-slate-600 dark:text-zinc-300 mr-1 shadow-2xs">
+            <Hand size={12} className={isDragging ? 'text-[#7C5ACF] animate-pulse' : 'text-slate-400'} />
+            <span className="font-medium">Hand Pan</span>
           </div>
 
           <button
             type="button"
             onClick={() => setZoom(z => Math.max(0.35, z - 0.15))}
-            className="p-1.5 rounded-lg border border-white/15 bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-colors shadow-2xs cursor-pointer"
             title="Zoom Out"
           >
             <ZoomOut size={13} />
           </button>
-          <span className="text-[11px] font-mono font-bold text-white px-1">
+          <span className="text-[11px] font-mono font-bold text-slate-700 dark:text-zinc-200 px-1">
             {Math.round(zoom * 100)}%
           </span>
           <button
             type="button"
             onClick={() => setZoom(z => Math.min(2.5, z + 0.15))}
-            className="p-1.5 rounded-lg border border-white/15 bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-colors shadow-2xs cursor-pointer"
             title="Zoom In"
           >
             <ZoomIn size={13} />
@@ -360,7 +370,7 @@ export default function OrbMapCanvas({
           <button
             type="button"
             onClick={handleResetView}
-            className="p-1.5 rounded-lg border border-white/15 bg-white/10 hover:bg-white/20 text-white transition-colors ml-1 cursor-pointer"
+            className="p-1.5 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-colors shadow-2xs ml-0.5 cursor-pointer"
             title="Reset Pan & Zoom"
           >
             <RefreshCw size={13} />
@@ -369,11 +379,11 @@ export default function OrbMapCanvas({
       </div>
 
       {/* ── Active Lens Contextual Description Banner ── */}
-      <div className="absolute top-14 left-6 z-10 pointer-events-none">
-        <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/90 backdrop-blur-md border border-white/15 shadow-lg text-xs text-slate-200 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#a78bfa]" />
-          <span className="font-bold text-white">{activeLensMeta.label} Lens:</span>
-          <span className="text-slate-300 font-medium">{activeLensMeta.desc}</span>
+      <div className="absolute top-16 left-7 z-10 pointer-events-none">
+        <div className="px-4 py-2 rounded-2xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-slate-200/60 dark:border-zinc-800 shadow-[0_4px_20px_rgba(0,0,0,0.06)] text-xs text-slate-800 dark:text-zinc-200 flex items-center gap-2.5">
+          <span className="w-2 h-2 rounded-full bg-[#7C5ACF]" />
+          <span className="font-semibold text-slate-900 dark:text-white">{activeLensMeta.label} Lens:</span>
+          <span className="text-slate-500 dark:text-zinc-400 font-normal">{activeLensMeta.desc}</span>
         </div>
       </div>
 
@@ -707,29 +717,29 @@ export default function OrbMapCanvas({
         {activeLens === 'timeline' && nodes.length > 0 && !selectedEntityId && (
           <div
             data-no-pan="true"
-            className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[94%] max-w-2xl px-4 py-2.5 rounded-2xl shadow-2xl flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 text-white transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 ${
+            className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[94%] max-w-2xl px-4 py-2.5 rounded-2xl shadow-[0_16px_50px_rgba(0,0,0,0.18)] flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 ${
               highContrast
-                ? 'bg-black border-2 border-slate-400'
-                : 'bg-slate-950/85 backdrop-blur-2xl border border-white/15'
+                ? 'bg-black border-2 border-slate-400 text-white'
+                : 'bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/60 dark:border-zinc-800 text-slate-800 dark:text-zinc-100'
             }`}
           >
             {/* 1. Date / Query Search Field */}
-            <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border shrink-0 ${
-              highContrast ? 'bg-zinc-900 border-slate-400' : 'bg-white/10 border-white/10'
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl shrink-0 ${
+              highContrast ? 'bg-zinc-900 border border-slate-400' : 'bg-slate-100 dark:bg-zinc-800'
             }`}>
-              <Calendar size={13} className="text-[#a78bfa]" />
+              <Calendar size={13} className="text-[#7C5ACF] dark:text-[#a78bfa]" />
               <input
                 type="text"
                 value={timelineDateQuery}
                 onChange={(e) => setTimelineDateQuery(e.target.value)}
                 placeholder="Date or quarter (e.g. Aug, Q3)..."
-                className="bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none w-36 sm:w-44"
+                className="bg-transparent text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none w-36 sm:w-44"
               />
               {timelineDateQuery && (
                 <button
                   type="button"
                   onClick={() => setTimelineDateQuery('')}
-                  className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
                 >
                   <X size={12} />
                 </button>
@@ -748,12 +758,12 @@ export default function OrbMapCanvas({
                   key={p.id}
                   type="button"
                   onClick={() => setTimelinePreset(p.id)}
-                  className={`px-2.5 py-1 text-[11px] rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                  className={`px-3 py-1 text-xs rounded-xl transition-all whitespace-nowrap cursor-pointer ${
                     timelinePreset === p.id
                       ? highContrast
                         ? 'bg-white text-black font-extrabold border border-white'
-                        : 'bg-white/25 text-white font-bold border border-white/20 shadow-xs'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                        : 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold shadow-xs'
+                      : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 font-medium'
                   }`}
                 >
                   {p.label}
@@ -762,14 +772,14 @@ export default function OrbMapCanvas({
             </div>
 
             {/* 3. Chronological Step Scrubber & Playback */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsPlayingTimeline(p => !p)}
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                className={`p-1.5 rounded-xl transition-all cursor-pointer ${
                   isPlayingTimeline
-                    ? 'bg-[#a78bfa] text-slate-950 font-bold'
-                    : 'bg-white/10 hover:bg-white/20 text-white'
+                    ? 'bg-[#7C5ACF] text-white font-bold'
+                    : 'bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200'
                 }`}
                 title={isPlayingTimeline ? 'Pause timeline playback' : 'Play chronological progression'}
               >
@@ -780,13 +790,13 @@ export default function OrbMapCanvas({
                 type="button"
                 onClick={() => setTimelineStepIndex(idx => Math.max(0, (idx === null ? sortedTimelineNodes.length - 1 : idx) - 1))}
                 disabled={timelineStepIndex !== null && timelineStepIndex <= 0}
-                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 transition-all text-white cursor-pointer"
+                className="p-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 disabled:opacity-30 transition-all text-slate-700 dark:text-zinc-200 cursor-pointer"
                 title="Previous milestone"
               >
                 <ChevronLeft size={13} />
               </button>
 
-              <span className="text-[11px] font-mono font-medium text-slate-200 px-0.5">
+              <span className="text-xs font-mono font-medium text-slate-700 dark:text-zinc-300 px-1">
                 {timelineFilteredNodes.length > 0 
                   ? `${(timelineStepIndex === null ? sortedTimelineNodes.length : timelineStepIndex + 1)} / ${sortedTimelineNodes.length}`
                   : '0 / 0'}
@@ -796,7 +806,7 @@ export default function OrbMapCanvas({
                 type="button"
                 onClick={() => setTimelineStepIndex(idx => Math.min(sortedTimelineNodes.length - 1, (idx === null ? 0 : idx) + 1))}
                 disabled={timelineStepIndex !== null && timelineStepIndex >= sortedTimelineNodes.length - 1}
-                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 transition-all text-white cursor-pointer"
+                className="p-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 disabled:opacity-30 transition-all text-slate-700 dark:text-zinc-200 cursor-pointer"
                 title="Next milestone"
               >
                 <ChevronRight size={13} />

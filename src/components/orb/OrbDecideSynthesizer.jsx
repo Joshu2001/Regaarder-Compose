@@ -131,24 +131,24 @@ export default function OrbDecideSynthesizer({
   }, [entities]);
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-slate-100/30 dark:bg-zinc-950/20">
-      {/* ── Query Bar Header ── */}
-      <div className="p-5 border-b border-slate-200/80 dark:border-zinc-800/80 bg-slate-50/70 dark:bg-zinc-900/70 backdrop-blur-xl shrink-0">
-        <form onSubmit={handleQuerySubmit} className="flex gap-2 max-w-4xl mx-auto">
+    <div className="flex flex-col h-full w-full overflow-hidden bg-[#F7F8FA] dark:bg-[#0E1015]">
+      {/* ── Query Bar Header: Airy & Floating ── */}
+      <div className="px-7 py-4 border-b border-black/[0.04] dark:border-white/[0.05] bg-white/70 dark:bg-zinc-950/60 backdrop-blur-md shrink-0">
+        <form onSubmit={handleQuerySubmit} className="flex gap-2.5 max-w-4xl mx-auto">
           <div className="relative flex-1">
-            <RegaarderAiIcon size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+            <RegaarderAiIcon size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
             <input
               type="text"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Ask an executive decision question..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-slate-400 dark:focus:border-zinc-500 shadow-xs"
+              className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-[#7C5ACF] dark:focus:border-[#a78bfa] focus:shadow-[0_4px_20px_rgba(124,90,207,0.08)] shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all"
             />
           </div>
           <button
             type="submit"
             disabled={isSynthesizing || !question.trim()}
-            className={`px-5 py-2.5 rounded-xl bg-[#7C5ACF] text-white text-xs font-semibold hover:bg-[#6c48c5] active:scale-[0.98] transition-all shrink-0 shadow-xs flex items-center gap-2 cursor-pointer ${
+            className={`px-5 py-3 rounded-2xl bg-[#7C5ACF] text-white text-xs font-semibold hover:bg-[#6c48c5] active:scale-[0.98] transition-all shrink-0 shadow-xs flex items-center gap-2 cursor-pointer ${
               isSynthesizing ? 'opacity-90 cursor-wait' : ''
             }`}
             title="Synthesize strategic decision briefing"
@@ -168,9 +168,9 @@ export default function OrbDecideSynthesizer({
         </form>
 
         {/* Quick Sample Prompts */}
-        <div className="flex items-center gap-2 mt-3 max-w-4xl mx-auto overflow-x-auto thin-scrollbar pb-1">
+        <div className="flex items-center gap-2 mt-3 max-w-4xl mx-auto overflow-x-auto thin-scrollbar pb-0.5">
           <span className={`text-[11px] uppercase tracking-wider shrink-0 ${
-            highContrast ? 'font-bold text-slate-800 dark:text-zinc-200' : 'font-medium text-slate-500 dark:text-zinc-400'
+            highContrast ? 'font-bold text-slate-800 dark:text-zinc-200' : 'font-semibold text-slate-500 dark:text-zinc-400'
           }`}>
             Quick Inquiries:
           </span>
@@ -182,10 +182,10 @@ export default function OrbDecideSynthesizer({
                 setQuestion(prompt);
                 triggerSynthesize(prompt);
               }}
-              className={`px-2.5 py-1 rounded-lg text-xs whitespace-nowrap transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-colors cursor-pointer ${
                 highContrast
                   ? 'font-bold border-2 border-slate-400 dark:border-zinc-600 bg-white dark:bg-zinc-900 text-black dark:text-white hover:border-violet-500'
-                  : 'font-medium border border-slate-200/80 dark:border-zinc-700/80 bg-white/70 dark:bg-zinc-800/60 text-slate-700 dark:text-zinc-300 hover:text-black dark:hover:text-white hover:bg-white dark:hover:bg-zinc-700'
+                  : 'font-medium border border-transparent hover:border-slate-200/80 bg-slate-100/80 hover:bg-white dark:bg-zinc-800/60 dark:hover:bg-zinc-700/60 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               {prompt}
@@ -284,15 +284,15 @@ export default function OrbDecideSynthesizer({
             <>
 
           {/* Executive Strategic Decision Briefing Card */}
-          <div className={`p-6 rounded-3xl space-y-4 ${
+          <div className={`p-6 rounded-2xl space-y-4 ${
             highContrast
               ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
-              : 'bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.08] shadow-xs'
+              : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-200/60 dark:border-zinc-800/80'
           }`}>
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className={`flex items-center gap-2 text-xs uppercase tracking-wider mb-1 ${
-                  highContrast ? 'font-bold text-slate-900 dark:text-zinc-200' : 'font-medium text-slate-500 dark:text-zinc-400'
+                  highContrast ? 'font-bold text-slate-900 dark:text-zinc-200' : 'font-semibold text-slate-500 dark:text-zinc-400'
                 }`}>
                   <Compass size={14} className="text-[#7C5ACF] dark:text-[#a78bfa]" />
                   <span>Strategic Decision Briefing</span>
@@ -304,10 +304,10 @@ export default function OrbDecideSynthesizer({
                 </h2>
               </div>
               <div className="flex flex-col items-end shrink-0">
-                <span className={`text-xs px-2.5 py-1 rounded-full shadow-2xs ${
+                <span className={`text-xs px-3 py-1 rounded-full ${
                   highContrast
                     ? 'font-extrabold bg-violet-100 dark:bg-violet-950 text-violet-950 dark:text-violet-200 border-2 border-violet-500'
-                    : 'font-semibold bg-violet-50 dark:bg-violet-950/40 text-[#7C5ACF] dark:text-[#a78bfa] border border-violet-200 dark:border-violet-800/60'
+                    : 'font-semibold bg-violet-50 dark:bg-violet-950/40 text-[#7C5ACF] dark:text-[#a78bfa] border border-violet-200/70 dark:border-violet-800/60'
                 }`}>
                   {synthesis.status || 'AI Recommendation • Pending Review'}
                 </span>
@@ -323,7 +323,7 @@ export default function OrbDecideSynthesizer({
             <div className={`p-5 rounded-2xl space-y-3.5 ${
               highContrast
                 ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 dark:border-zinc-700'
-                : 'bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-700/60'
+                : 'bg-slate-50 dark:bg-zinc-800/40 border border-slate-100 dark:border-zinc-800'
             }`}>
               {/* 1. Recommended Course */}
               <div>
