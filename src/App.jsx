@@ -14862,14 +14862,33 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                         setOrbOpen(true);
                         return;
                       }
-                      if (item.mode !== productMode) {
-                        setProductMode(item.mode);
-                        if (item.mode === 'whiteboard') {
-                          enterFullscreen();
-                          setActiveRightTab('whiteboard');
-                        }
-                        showToast(`Switched to ${item.label}`);
+                      if (item.mode === 'whiteboard') {
+                        createWhiteboardExperience();
+                        return;
                       }
+                      if (item.mode === 'deck') {
+                        createDeckExperience();
+                        return;
+                      }
+                      if (item.mode === 'sheets') {
+                        createSheetsExperience();
+                        return;
+                      }
+                      if (item.mode === 'compose') {
+                        createComposeExperience();
+                        return;
+                      }
+                      if (item.mode === 'room') {
+                        createRoomExperience();
+                        return;
+                      }
+                      if (item.mode === 'browser') {
+                        setProductMode('browser');
+                        showToast('Switched to Research');
+                        return;
+                      }
+                      setProductMode(item.mode);
+                      showToast(`Switched to ${item.label}`);
                     }}
                     onPointerDown={(e) => e.preventDefault()}
                     className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-left select-none transition-all duration-150 w-full cursor-pointer ${
