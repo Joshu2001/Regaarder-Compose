@@ -1377,9 +1377,9 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                         <button
                           type="button"
                           onClick={() => setScheduleAiSummaryEnabled(!scheduleAiSummaryEnabled)}
-                          className={`w-9 h-5 rounded-full relative transition-colors cursor-pointer shrink-0 ${scheduleAiSummaryEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+                          className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors duration-150 cursor-pointer shrink-0 ${scheduleAiSummaryEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
                         >
-                          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-xs transition-all ${scheduleAiSummaryEnabled ? 'right-0.5' : 'left-0.5'}`} />
+                          <span className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-150 ease-out ${scheduleAiSummaryEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
                         </button>
                       </div>
 
@@ -1395,9 +1395,9 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                         <button
                           type="button"
                           onClick={() => setScheduleWhiteboardEnabled(!scheduleWhiteboardEnabled)}
-                          className={`w-9 h-5 rounded-full relative transition-colors cursor-pointer shrink-0 ${scheduleWhiteboardEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+                          className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors duration-150 cursor-pointer shrink-0 ${scheduleWhiteboardEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
                         >
-                          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-xs transition-all ${scheduleWhiteboardEnabled ? 'right-0.5' : 'left-0.5'}`} />
+                          <span className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-150 ease-out ${scheduleWhiteboardEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
                         </button>
                       </div>
 
@@ -1413,9 +1413,9 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                         <button
                           type="button"
                           onClick={() => setScheduleEncryptionEnabled(!scheduleEncryptionEnabled)}
-                          className={`w-9 h-5 rounded-full relative transition-colors cursor-pointer shrink-0 ${scheduleEncryptionEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+                          className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors duration-150 cursor-pointer shrink-0 ${scheduleEncryptionEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
                         >
-                          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-xs transition-all ${scheduleEncryptionEnabled ? 'right-0.5' : 'left-0.5'}`} />
+                          <span className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-150 ease-out ${scheduleEncryptionEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
                         </button>
                       </div>
                     </div>

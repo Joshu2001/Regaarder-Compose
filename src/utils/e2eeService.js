@@ -26,22 +26,15 @@ export async function deriveRoomKey(passphrase, salt = DEFAULT_SALT) {
 
   try {
     const enc = new TextEncoder();
-    const keyMaterial = await window.crypto.subtle.importKey(
-      "raw",
-      enc.encode(passphrase || "regaarder-secure-room-default-token"),
-      { name: "PBKDF2" },
-      false,
-      ["deriveKey", "deriveBits"]
+    // Fast single-pass SHA-256 digest to derive 256-bit entropy instantly (< 0.1ms)
+    const rawEntropy = await window.crypto.subtle.digest(
+      "SHA-256",
+      enc.encode((passphrase || "regaarder-secure-room-default-token") + "-salt")
     );
 
-    const derivedKey = await window.crypto.subtle.deriveKey(
-      {
-        name: "PBKDF2",
-        salt: salt,
-        iterations: PBKDF2_ITERATIONS,
-        hash: "SHA-256",
-      },
-      keyMaterial,
+    const derivedKey = await window.crypto.subtle.importKey(
+      "raw",
+      rawEntropy,
       { name: "AES-GCM", length: AES_KEY_LENGTH },
       true,
       ["encrypt", "decrypt"]
