@@ -12070,13 +12070,8 @@ const DEFAULT_DECK_SLIDES = [
   const [voiceTarget, setVoiceTarget] = useState('compose');
   const [scheduleInput, setScheduleInput] = useState('');
   const [scheduleOutput, setScheduleOutput] = useState([]);
-  const [upcomingEvents, setUpcomingEvents] = useState([
-    { id: 1, title: 'Beta Launch Kickoff', slotLabel: 'May 15 - 10:00 AM', slot: '10:00 AM', dueDate: '2026-05-15T10:00:00', durationMinutes: 60, category: 'General' },
-    { id: 2, title: 'Product Hunt Checklist Finalization', slotLabel: 'June 14 - 2:30 PM', slot: '2:30 PM', dueDate: '2026-06-14T14:30:00', durationMinutes: 60, category: 'General' },
-  ]);
-  const [relatedDocuments, setRelatedDocuments] = useState([
-    { id: 'doc-1', title: 'Product Hunt Launch Plan', dateStr: '2026-05-15', dueDate: 'May 15', status: 'On Track' },
-  ]);
+    const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [relatedDocuments, setRelatedDocuments] = useState([]);
   const [scheduleForm, setScheduleForm] = useState({
     startDate: '2026-05-29',
     startTime: '10:00',
@@ -21599,66 +21594,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   ], []);
 
   // Integrated Tasks workspace state
-  const [tasks, setTasks] = useState([
-    { 
-      id: 1, 
-      text: 'Confirm final beta signup workflow with design team', 
-      completed: false, 
-      owner: 'user',
-      assignees: [
-        { id: 'u-1', name: 'You', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80', type: 'user' }
-      ],
-      dueDate: 'Tomorrow',
-      priority: 'High',
-      project: 'Compose Beta',
-      sourceContext: { type: 'compose', id: 'doc-1', title: 'Beta Signup Spec' },
-      isAiCreated: false,
-    },
-    { 
-      id: 2, 
-      text: 'Draft launch announcements for Twitter and LinkedIn', 
-      completed: true, 
-      owner: 'agent',
-      assignees: [
-        { id: 'ai-1', name: 'Antigravity AI', avatar: null, type: 'agent' }
-      ],
-      dueDate: 'Today',
-      priority: 'Medium',
-      project: 'Marketing',
-      sourceContext: { type: 'compose', id: 'doc-2', title: 'Social Copy' },
-      isAiCreated: true,
-    },
-    { 
-      id: 3, 
-      text: 'Coordinate with marketing for Creator pricing model tier', 
-      completed: false, 
-      owner: 'team',
-      assignees: [
-        { id: 'u-2', name: 'Sarah Chen', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80', type: 'user' },
-        { id: 'u-3', name: 'Alex Miller', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80', type: 'user' },
-        { id: 'u-1', name: 'You', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80', type: 'user' }
-      ],
-      dueDate: 'Jul 26',
-      priority: 'High',
-      project: 'Pricing Tier',
-      sourceContext: { type: 'crm', id: 'deal-9', title: 'Creator Plan CRM' },
-      isAiCreated: false,
-    },
-    { 
-      id: 4, 
-      text: 'Check analytics dashboard integration is live', 
-      completed: false, 
-      owner: 'agent',
-      assignees: [
-        { id: 'ai-1', name: 'Antigravity AI', avatar: null, type: 'agent' }
-      ],
-      dueDate: 'Jul 28',
-      priority: 'Low',
-      project: 'Infrastructure',
-      sourceContext: { type: 'room', id: 'room-3', title: 'Sync Room' },
-      isAiCreated: true,
-    },
-  ]);
+  const [tasks, setTasks] = useState([]);
   const [taskOwnerFilter, setTaskOwnerFilter] = useState('all');
   const [assigneePickerTaskId, setAssigneePickerTaskId] = useState(null);
   const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
@@ -40101,9 +40037,16 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </div>
                 ))}
                 {visibleTasks.length === 0 && (
-                  <div className="py-12 text-center space-y-1">
-                    <div className="text-xs text-slate-400 dark:text-zinc-500 font-medium">No tasks in this view</div>
-                    <div className="text-[11px] text-slate-300 dark:text-zinc-600">Drag or create tasks to organize</div>
+                  <div className="py-16 px-4 flex flex-col items-center justify-center text-center select-none">
+                    <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-violet-500/10 to-indigo-500/20 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(139,92,246,0.08)] mb-3.5">
+                      <CheckCircle2 size={24} className="text-violet-600 dark:text-violet-400" />
+                    </div>
+                    <div className="text-[13.5px] font-bold text-slate-800 dark:text-zinc-100 tracking-tight">
+                      No tasks available yet
+                    </div>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 max-w-[230px] leading-relaxed">
+                      Add a new task using the input above or convert action items directly from your document.
+                    </p>
                   </div>
                 )}
               </div>
@@ -40224,9 +40167,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </button>
                 </div>
                 {comments.filter(c => !c.isDraft && (showResolvedComments || !c.resolved)).length === 0 ? (
-                  <div className="text-center py-10 px-4 text-slate-400 text-xs">
-                    <MessageSquareText size={24} className="mx-auto mb-2 opacity-50" />
-                    No comments found. Highlight text and click Comment to start a discussion.
+                  <div className="flex flex-col items-center justify-center py-16 px-6 text-center select-none">
+                    <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-violet-500/10 to-indigo-500/20 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(139,92,246,0.08)] mb-3.5">
+                      <MessageSquareText size={24} className="text-violet-600 dark:text-violet-400" />
+                    </div>
+                    <div className="text-[13.5px] font-bold text-slate-800 dark:text-zinc-100 tracking-tight">No comments yet</div>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 max-w-[220px] leading-relaxed">
+                      Highlight any text in your document and click Comment to start a contextual discussion.
+                    </p>
                   </div>
                 ) : (
                   comments.filter(c => !c.isDraft && (showResolvedComments || !c.resolved)).map(c => (
@@ -40617,13 +40565,13 @@ Respond with a JSON array of slide objects matching the schema.`;
                       })}
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-6 px-4 text-center rounded-2xl border border-dashed border-slate-200/80 bg-slate-50/50 my-1">
-                      <div className="w-8 h-8 rounded-full bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-500 mb-2 shadow-2xs">
-                        <Calendar size={15} />
+                    <div className="flex flex-col items-center justify-center py-10 px-4 text-center rounded-2xl border border-dashed border-slate-200/80 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/30 my-1 select-none">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-violet-500/10 to-indigo-500/20 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-2xs mb-2.5">
+                        <Calendar size={20} className="text-violet-600 dark:text-violet-400" />
                       </div>
-                      <div className="text-[12.5px] font-semibold text-slate-800 tracking-tight">No Events Scheduled</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5 max-w-[210px] leading-relaxed">
-                        No events set for {selectedCalendarDate ? selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'this date'}. Add a task below to plan your schedule.
+                      <div className="text-[13px] font-bold text-slate-800 dark:text-zinc-100 tracking-tight">No events scheduled yet</div>
+                      <div className="text-[11.5px] text-slate-400 dark:text-zinc-500 mt-1 max-w-[220px] leading-relaxed">
+                        No events set for {selectedCalendarDate ? selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'this date'}. Add a scheduled task to organize your timeline.
                       </div>
                     </div>
                   )}
