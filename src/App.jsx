@@ -10189,6 +10189,8 @@ const DEFAULT_DECK_SLIDES = [
   const [whiteboardComments, setWhiteboardComments] = useState([]);
   const [whiteboardActiveCommentId, setWhiteboardActiveCommentId] = useState(null);
   const [whiteboardAddMenuOpen, setWhiteboardAddMenuOpen] = useState(false);
+  const [whiteboardMediaModalOpen, setWhiteboardMediaModalOpen] = useState(false);
+  const [whiteboardMediaUrlInput, setWhiteboardMediaUrlInput] = useState('');
   const [whiteboardStickyColorMenuFor, setWhiteboardStickyColorMenuFor] = useState(null);
   const [whiteboardMoreTextMenuFor, setWhiteboardMoreTextMenuFor] = useState(null);
   const [whiteboardTextColorMenuFor, setWhiteboardTextColorMenuFor] = useState(null);
@@ -10711,6 +10713,198 @@ const DEFAULT_DECK_SLIDES = [
     return () => window.clearInterval(timer);
   }, [activeRightTab]);
 
+  const parseWhiteboardMediaUrl = (inputUrl) => {
+    if (!inputUrl || typeof inputUrl !== 'string') return null;
+    const url = inputUrl.trim();
+    if (!url) return null;
+
+    // 1. Direct Image
+    if (url.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)(\?.*)?$/i) || url.includes('images.unsplash.com')) {
+      return {
+        type: 'image',
+        url,
+        title: url.split('/').pop().split('?')[0] || 'Image Asset'
+      };
+    }
+
+    // 2. YouTube
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      let videoId = '';
+      if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1].split('?')[0].split('&')[0];
+      } else if (url.includes('/shorts/')) {
+        videoId = url.split('/shorts/')[1].split('?')[0].split('&')[0];
+      } else if (url.includes('v=')) {
+        videoId = url.split('v=')[1].split('&')[0];
+      } else if (url.includes('/embed/')) {
+        videoId = url.split('/embed/')[1].split('?')[0].split('&')[0];
+      }
+      if (videoId) {
+        return {
+          type: 'video',
+          provider: 'youtube',
+          videoId,
+          embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=0`,
+          url,
+          title: 'YouTube Video'
+        };
+      }
+    }
+
+    // 3. Vimeo
+    if (url.includes('vimeo.com/')) {
+      const parts = url.split('vimeo.com/');
+      const vimeoId = parts[1]?.split('?')[0]?.split('/')[0];
+      if (vimeoId && /^\d+$/.test(vimeoId)) {
+        return {
+          type: 'video',
+          provider: 'vimeo',
+          videoId: vimeoId,
+          embedUrl: `https://player.vimeo.com/video/${vimeoId}`,
+          url,
+          title: 'Vimeo Video'
+        };
+      }
+    }
+
+    // 4. Direct HTML5 Video
+    if (url.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i)) {
+      return {
+        type: 'video',
+        provider: 'html5',
+        url,
+        embedUrl: url,
+        title: url.split('/').pop().split('?')[0] || 'Video Player'
+      };
+    }
+
+    // 5. General Web Bookmark
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('www.')) {
+      const fullUrl = url.startsWith('www.') ? `https://${url}` : url;
+      let domain = fullUrl;
+      try {
+        domain = new URL(fullUrl).hostname.replace(/^www\./, '');
+      } catch (e) {}
+      return {
+        type: 'link',
+        url: fullUrl,
+        title: domain || 'Web Bookmark'
+      };
+    }
+
+    return null;
+  };
+
+  const addWhiteboardMediaFromUrl = (rawUrl, customCoords = {}) => {
+    const parsed = parseWhiteboardMediaUrl(rawUrl);
+    if (!parsed) {
+      showToast('Please enter a valid media or web URL');
+      return;
+    }
+
+    const index = whiteboardWidgets.length;
+    const defaultX = customCoords.x ?? (180 + (index % 3) * 220);
+    const defaultY = customCoords.y ?? (140 + Math.floor(index / 3) * 160);
+
+    if (parsed.type === 'image') {
+      const img = new window.Image();
+      img.onload = () => {
+        const aspect = img.width / (img.height || 1);
+        const w = Math.min(460, Math.max(260, img.width || 320));
+        const h = Math.round(w / aspect);
+        addWhiteboardWidget('image', {
+          x: defaultX,
+          y: defaultY,
+          width: w,
+          height: h,
+          imageUrl: parsed.url,
+          title: parsed.title,
+        });
+        showToast('Image link embedded');
+      };
+      img.onerror = () => {
+        addWhiteboardWidget('image', {
+          x: defaultX,
+          y: defaultY,
+          width: 320,
+          height: 200,
+          imageUrl: parsed.url,
+          title: parsed.title,
+        });
+        showToast('Image link embedded');
+      };
+      img.src = parsed.url;
+      return;
+    }
+
+    if (parsed.type === 'video') {
+      addWhiteboardWidget('video', {
+        x: defaultX,
+        y: defaultY,
+        width: 420,
+        height: 250,
+        videoUrl: parsed.url,
+        embedUrl: parsed.embedUrl,
+        videoProvider: parsed.provider,
+        title: parsed.title,
+      });
+      showToast(`Embedded ${parsed.provider === 'youtube' ? 'YouTube' : parsed.provider === 'vimeo' ? 'Vimeo' : 'video'} player`);
+      return;
+    }
+
+    if (parsed.type === 'link') {
+      addWhiteboardWidget('link', {
+        x: defaultX,
+        y: defaultY,
+        width: 320,
+        height: 110,
+        linkedUrl: parsed.url,
+        title: parsed.title,
+      });
+      showToast('Web link card added');
+      return;
+    }
+  };
+
+  const handleWhiteboardPaste = (e) => {
+    if (!e.clipboardData) return;
+    
+    // Check for image file in clipboard
+    const items = Array.from(e.clipboardData.items || []);
+    const imageItem = items.find(item => item.type.startsWith('image/'));
+    if (imageItem) {
+      e.preventDefault();
+      const file = imageItem.getAsFile();
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          const img = new window.Image();
+          img.onload = () => {
+            const aspect = img.width / (img.height || 1);
+            const w = Math.min(460, Math.max(260, img.width || 320));
+            const h = Math.round(w / aspect);
+            addWhiteboardWidget('image', {
+              imageUrl: re.target?.result,
+              width: w,
+              height: h
+            });
+            showToast('Image pasted to whiteboard');
+          };
+          img.src = re.target?.result;
+        };
+        reader.readAsDataURL(file);
+      }
+      return;
+    }
+
+    // Check for text/URL in clipboard
+    const pastedText = e.clipboardData.getData('text/plain')?.trim();
+    if (pastedText && (pastedText.startsWith('http://') || pastedText.startsWith('https://') || pastedText.includes('youtube.com') || pastedText.includes('youtu.be') || pastedText.includes('vimeo.com') || pastedText.match(/\.(jpeg|jpg|gif|png|webp|mp4|webm)/i))) {
+      e.preventDefault();
+      addWhiteboardMediaFromUrl(pastedText);
+    }
+  };
+
   const addWhiteboardWidget = (type, options = {}) => {
     const index = whiteboardWidgets.length;
     const defaultX = 130 + (index % 4) * 188;
@@ -10720,11 +10914,14 @@ const DEFAULT_DECK_SLIDES = [
       type,
       x: options.x ?? defaultX,
       y: options.y ?? defaultY,
-      width: options.width ?? (type === 'text' ? 260 : type === 'image' ? 260 : 170),
-      height: options.height ?? (type === 'image' ? 180 : 120),
+      width: options.width ?? (type === 'text' ? 260 : type === 'image' ? 320 : type === 'video' ? 420 : type === 'link' ? 320 : 170),
+      height: options.height ?? (type === 'image' ? 200 : type === 'video' ? 250 : type === 'link' ? 110 : 120),
       color: options.color ?? whiteboardStickyColor,
       text: options.text ?? '',
       imageUrl: options.imageUrl ?? '',
+      videoUrl: options.videoUrl ?? '',
+      embedUrl: options.embedUrl ?? '',
+      videoProvider: options.videoProvider ?? '',
       objectFit: options.objectFit ?? 'cover',
       fontFamily: options.fontFamily ?? 'Calibri',
       fontSize: options.fontSize ?? 14,
@@ -10739,15 +10936,23 @@ const DEFAULT_DECK_SLIDES = [
       listType: options.listType ?? 'bullet',
       linkedUrl: options.linkedUrl ?? '',
       title:
-        type === 'sticky' ? 'New sticky note'
-        : type === 'text' ? 'Text block'
-        : type === 'image' ? 'Image asset'
-        : 'Connector note',
+        options.title || (
+          type === 'sticky' ? 'New sticky note'
+          : type === 'text' ? 'Text block'
+          : type === 'image' ? 'Image asset'
+          : type === 'video' ? 'Video Player'
+          : type === 'link' ? 'Web Link'
+          : 'Connector note'
+        ),
       body:
-        type === 'sticky' ? 'Capture key idea...'
-        : type === 'text' ? 'Type your annotation...'
-        : type === 'image' ? 'Drop an image here'
-        : 'Link to related node',
+        options.body || (
+          type === 'sticky' ? 'Capture key idea...'
+          : type === 'text' ? 'Type your annotation...'
+          : type === 'image' ? 'Drop an image here'
+          : type === 'video' ? 'Playable video embed'
+          : type === 'link' ? 'Open link'
+          : 'Link to related node'
+        ),
     };
     setWhiteboardWidgets((prev) => [...prev, nextWidget]);
     setSelectedWidgetId(nextWidget.id);
@@ -70979,6 +71184,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="h-full w-full bg-[#FAFAFC] dark:bg-[#0d0d0f] overflow-hidden flex flex-col relative">
                 <div 
                   id="whiteboard-export-container"
+                  tabIndex={0}
+                  onPaste={handleWhiteboardPaste}
                   onPointerMove={(e) => {
                     if (e.clientY > 60 && isWhiteboardTopNavHovered) {
                       setIsWhiteboardTopNavHovered(false);
@@ -72188,6 +72395,88 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             </p>
                           </div>
                         )
+                      ) : widget.type === 'video' ? (
+                        <div className="relative w-full h-full rounded-xl overflow-hidden bg-black flex flex-col group/video select-none shadow-md border border-slate-800">
+                          {widget.videoProvider === 'html5' ? (
+                            <video
+                              controls
+                              src={widget.embedUrl || widget.videoUrl}
+                              className="w-full h-full object-contain rounded-xl bg-black"
+                            />
+                          ) : (
+                            <iframe
+                              src={widget.embedUrl}
+                              title={widget.title || "Video Player"}
+                              className="w-full h-full rounded-xl border-0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          )}
+                          {/* Context Actions Pill */}
+                          {(isSelected || isWidgetHovered) && (
+                            <div
+                              data-widget-interactive="true"
+                              className="absolute top-2 right-2 z-40 flex items-center gap-1 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-lg p-1 shadow-md border border-slate-200/80 dark:border-zinc-800"
+                              onPointerDown={(e) => e.stopPropagation()}
+                            >
+                              <span className="text-[9.5px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400 px-1.5">
+                                {widget.videoProvider === 'youtube' ? 'YouTube' : widget.videoProvider === 'vimeo' ? 'Vimeo' : 'Video'}
+                              </span>
+                              {widget.videoUrl && (
+                                <a
+                                  href={widget.videoUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="h-6 px-1.5 rounded text-[10px] font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-1 cursor-pointer"
+                                  title="Open original video"
+                                >
+                                  <ArrowUpRight size={11} />
+                                </a>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setWhiteboardWidgets((prev) => prev.filter((w) => w.id !== widget.id));
+                                  setSelectedWidgetId(null);
+                                  showToast('Video deleted');
+                                }}
+                                className="h-6 w-6 rounded flex items-center justify-center text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 cursor-pointer"
+                                title="Delete video"
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : widget.type === 'link' ? (
+                        <div
+                          className="relative w-full h-full rounded-xl p-3 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200/80 dark:border-zinc-800 shadow-sm flex flex-col justify-between select-none group/link cursor-pointer hover:border-violet-300 transition-colors"
+                          onClick={() => {
+                            if (widget.linkedUrl) window.open(widget.linkedUrl, '_blank', 'noopener,noreferrer');
+                          }}
+                        >
+                          <div className="flex items-start gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 border border-violet-100 dark:border-violet-900/40">
+                              <LinkIcon size={14} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-[12px] font-bold text-slate-800 dark:text-zinc-100 truncate leading-tight">
+                                {widget.title || widget.linkedUrl}
+                              </h4>
+                              <p className="text-[10px] text-slate-400 dark:text-zinc-500 truncate mt-0.5 font-mono">
+                                {widget.linkedUrl}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 dark:border-zinc-800">
+                            <span className="text-[9.5px] font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-wider flex items-center gap-1">
+                              <Globe size={10} /> Web Bookmark
+                            </span>
+                            <span className="text-[9.5px] text-slate-400 hover:text-slate-700 flex items-center gap-0.5 font-medium">
+                              Open <ArrowUpRight size={9} />
+                            </span>
+                          </div>
+                        </div>
                       ) : (
                         <>
                           <p className="text-[11px] font-semibold text-gray-900">{widget.title}</p>
@@ -73303,6 +73592,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             { label: 'Text Block', icon: Type, action: () => { activateWhiteboardTool('text'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Shape', icon: Shapes, action: () => { activateWhiteboardTool('shapes'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Image', icon: ImageIcon, action: () => { activateWhiteboardTool('image'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'Embed Link / Video', icon: Video, action: () => { setWhiteboardMediaModalOpen(true); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Connector', icon: LinkIcon, action: () => { activateWhiteboardTool('link'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Comment', icon: MessageCircle, action: () => { activateWhiteboardTool('comment'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Task Card', icon: CheckSquare, action: () => { addWhiteboardWidget('task'); setWhiteboardAddMenuOpen(false); showToast('Task card added'); } },
@@ -73341,6 +73631,85 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <Trash2 size={14} strokeWidth={1.6} />
                     </button>
                   </div>
+
+                  {whiteboardMediaModalOpen && createPortal(
+                    <div className="fixed inset-0 z-[100000] bg-slate-950/45 dark:bg-black/70 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-150 select-none">
+                      <div className="w-[520px] max-w-[95vw] rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl shadow-2xl p-6 flex flex-col font-sans">
+                        <div className="flex items-center justify-between gap-4 mb-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                              <Video size={16} />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-800 dark:text-zinc-100">Embed Media or Link</h3>
+                              <p className="text-xs text-slate-400 dark:text-zinc-500">Paste YouTube, Vimeo, MP4 video, image, or website URL</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => { setWhiteboardMediaModalOpen(false); setWhiteboardMediaUrlInput(''); }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            if (whiteboardMediaUrlInput.trim()) {
+                              addWhiteboardMediaFromUrl(whiteboardMediaUrlInput.trim());
+                              setWhiteboardMediaModalOpen(false);
+                              setWhiteboardMediaUrlInput('');
+                            }
+                          }}
+                          className="space-y-4"
+                        >
+                          <div className="relative">
+                            <input
+                              autoFocus
+                              type="url"
+                              value={whiteboardMediaUrlInput}
+                              onChange={(e) => setWhiteboardMediaUrlInput(e.target.value)}
+                              placeholder="https://www.youtube.com/watch?v=... or image URL"
+                              className="w-full h-11 px-4 text-sm bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                            />
+                          </div>
+
+                          {/* Instant detection cue */}
+                          {whiteboardMediaUrlInput.trim() && (() => {
+                            const parsed = parseWhiteboardMediaUrl(whiteboardMediaUrlInput.trim());
+                            return (
+                              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-50/70 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-900/40 text-xs">
+                                <Sparkles size={13} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                                <span className="font-medium text-slate-700 dark:text-zinc-300">
+                                  Detected: <strong className="text-violet-700 dark:text-violet-300 capitalize">{parsed?.type === 'video' ? `${parsed.provider} Video Embed` : parsed?.type === 'image' ? 'Image Asset' : 'Web Bookmark'}</strong>
+                                </span>
+                              </div>
+                            );
+                          })()}
+
+                          <div className="flex items-center justify-end gap-2 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => { setWhiteboardMediaModalOpen(false); setWhiteboardMediaUrlInput(''); }}
+                              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={!whiteboardMediaUrlInput.trim()}
+                              className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-sm active:scale-95"
+                            >
+                              Embed to Whiteboard
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>,
+                    document.body
+                  )}
 
                   {whiteboardTaskPreviewOpen && createPortal(
                     <div className="fixed inset-0 z-[100000] bg-slate-950/40 dark:bg-black/70 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200 select-none">
