@@ -66965,15 +66965,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
 
-      {/* 1. Left Navigation Sidebar — collapses to 0px when floating Document Outline is active to avoid squeezing canvas */}
+      {/* 1. Left Navigation Sidebar — Full length (top to bottom) */}
       <div
-        className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-white border-r border-gray-100"
-        style={{ width: (productMode === 'whiteboard' || activeRightTab === 'whiteboard' || showDocumentOutlineView) ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
+        className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-[#FAFAFC] dark:bg-[#18181b] border-r border-slate-200/80 dark:border-zinc-800/80 h-full z-[380]"
+        style={{ width: (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
-        {!showDocumentOutlineView && (
-          <>
-
-            <div className="h-16 flex items-center justify-between px-4">
+        <>
+            <div className="h-14 flex items-center justify-between px-4 border-b border-slate-100 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 text-white flex items-center justify-center shadow-[0_12px_24px_-14px_rgba(139,92,246,0.95)]">
                   <Sparkles size={16} />
@@ -67007,12 +67005,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">Ctrl K</span>
               </div>
             </div>
-          </>
-        )}
+        </>
 
         {/* Main Nav Links */}
-        {!showDocumentOutlineView ? (
-          <div className="flex-1 overflow-y-auto px-3 space-y-4 thin-scrollbar">
+        <div className="flex-1 overflow-y-auto px-3 space-y-4 thin-scrollbar">
+          {/* Integrated Document Outline if in document */}
+          {docOutlineEnabled && documentOutlineItems && documentOutlineItems.length > 1 && (
+            <div className="rounded-xl border border-violet-100/80 dark:border-violet-950/60 bg-violet-50/30 dark:bg-violet-950/20 p-2.5 my-1">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 dark:text-violet-400 uppercase">Document Outline</span>
+                <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/50 rounded-full px-2 py-0.5">{Math.max(0, documentOutlineItems.length - 1)}</span>
+              </div>
+              <div className="max-h-40 overflow-y-auto pr-1 space-y-0.5 thin-scrollbar">
+                {documentOutlineItems.map((item, index) => (
+                  <button
+                    key={`item-${item.id}-${index}`}
+                    type="button"
+                    onClick={() => jumpToOutlineItem(item)}
+                    className={`w-full text-left rounded-md py-1 text-xs transition-colors cursor-pointer ${item.isTitle ? 'font-semibold text-gray-800 dark:text-zinc-200 hover:bg-violet-100/50 px-2' : 'text-gray-600 dark:text-zinc-400 hover:bg-violet-50 dark:hover:bg-zinc-800'}`}
+                    style={item.isTitle ? undefined : { paddingLeft: `${10 + Math.max(0, item.level - 1) * 12}px`, paddingRight: '6px' }}
+                    title={item.label}
+                  >
+                    <span className="block truncate">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
             <div className="space-y-0.5">
               <button
                 onClick={() => setActivePrimaryNav('my-orb')}
@@ -67119,7 +67138,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </button>
             </div>
           </div>
-        ) : null}
 
         {/* Footer Settings */}
         <div className="p-4 border-t border-gray-100 bg-[#FAFAFC]">
@@ -67129,8 +67147,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       </div>
 
-      {/* Document Outline — full-height floating edge drawer overlay at z-[260] */}
-      {showDocumentOutlineView && productMode === 'compose' && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
+      {/* Document Outline — full-height floating edge drawer overlay at z-[260] (disabled in favor of integrated full-length sidebar) */}
+      {false && showDocumentOutlineView && productMode === 'compose' && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
         <div
           ref={documentOutlineDrawerRef}
           className="fixed top-0 left-0 bottom-0 z-[260] flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border-r border-slate-200/60 dark:border-zinc-800/80 shadow-[12px_0_35px_-10px_rgba(15,23,42,0.08)] select-none overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-left-4"
