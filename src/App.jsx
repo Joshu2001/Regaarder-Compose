@@ -28637,7 +28637,8 @@ Return ONLY valid JSON matching the schema.`;
     // Strict Guard: Identify informational, Q&A, review, or summarization queries
     const isQueryOrSummary = /\b(summarize|summary|explain|what\s+is|what\s+are|review|analyze|analysis|insights?|tell\s+me|how\s+many|key\s+takeaways?|overview|details?|read|extract|audit)\b/i.test(promptText);
     
-    const shouldBuildDocument = !isQueryOrSummary && (forceDocBuild || source === 'compose');
+    const isBlankOrNewDoc = !blankBodyRef.current?.innerText || blankBodyRef.current.innerText.trim().length <= 35 || docTitle === 'Untitled Document' || !docTitle;
+    const shouldBuildDocument = !isQueryOrSummary && (forceDocBuild || source === 'compose' || (source === 'chat' && isBlankOrNewDoc && isArticleWritingRequest));
     const selectionScoped = Boolean(options.selectionScoped);
     const smartActionKey = String(options.smartActionKey || '').toLowerCase();
     const preferredDocType = resolveDocTypeFromComposeFormat(requestedFormat);
@@ -38545,22 +38546,33 @@ Respond with a JSON array of slide objects matching the schema.`;
                         />
                       )}
 
-                      {/* Browser Research Action Bar */}
-                      {msg.isBrowserResearch && (
-                        <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between gap-2">
+                      {/* Action Bar for AI Responses (Browser Research & Assistant Messages) */}
+                      {msg.sender !== 'user' && (
+                        <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-zinc-700/60 flex items-center justify-between gap-2">
                           <button
                             type="button"
                             onClick={() => {
-                              const formattedHtml = toParagraphHtml(msg.text);
+                              const formattedHtml = toParagraphHtml(msg.text || '');
                               if (window.__composeInsertHTML) {
                                 window.__composeInsertHTML(formattedHtml);
                               } else if (blankBodyRef.current) {
-                                blankBodyRef.current.innerHTML += formattedHtml;
+                                const isDocEmpty = !blankBodyRef.current.innerText || blankBodyRef.current.innerText.trim().length <= 30;
+                                if (isDocEmpty) {
+                                  blankBodyRef.current.innerHTML = formattedHtml;
+                                } else {
+                                  blankBodyRef.current.innerHTML += `<div style="margin-top: 24px;"></div>` + formattedHtml;
+                                }
                                 setDocBodyHtml(blankBodyRef.current.innerHTML);
                               }
-                              showToast('Inserted live research into document');
+                              // Auto-update document title if empty or Untitled Document
+                              const matchTitle = (msg.text || '').match(/^(?:#\s*|Title:\s*)([^\n]+)/i);
+                              if (matchTitle && (!docTitle || docTitle === 'Untitled Document' || docTitle === 'Compose Draft')) {
+                                setDocTitle(matchTitle[1].trim());
+                              }
+                              showToast('Injected into document');
                             }}
-                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg shadow-xs transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-[#7C5ACF] hover:bg-[#6c48c5] text-white px-2.5 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                            title="Inject AI text into the active document"
                           >
                             <Plus size={12} />
                             <span>Insert into Document</span>
@@ -38568,10 +38580,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                           <button
                             type="button"
                             onClick={() => {
-                              navigator.clipboard.writeText(msg.text);
-                              showToast('Copied research to clipboard');
+                              navigator.clipboard.writeText(msg.text || '');
+                              showToast('Copied to clipboard');
                             }}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 px-2 py-1.5 rounded-lg hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 transition-colors cursor-pointer"
+                            title="Copy response to clipboard"
                           >
                             <Copy size={11} />
                             <span>Copy</span>
@@ -38618,6 +38631,17 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </div>
 
                     <div className="mt-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(msg.text || '');
+                          showToast('Copied to clipboard');
+                        }}
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                        title="Copy message"
+                      >
+                        <Copy size={12} strokeWidth={1.75} />
+                      </button>
                       <button
                         type="button"
                         onClick={() => retryMessageAction(msg)}
