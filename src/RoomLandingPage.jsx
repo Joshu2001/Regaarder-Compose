@@ -22,6 +22,7 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
   // Lobby State
   const [isLobby, setIsLobby] = useState(true);
   const [isEnteringCode, setIsEnteringCode] = useState(false);
+  const [isMeetingOptionsOpen, setIsMeetingOptionsOpen] = useState(false);
   const [roomCodeInput, setRoomCodeInput] = useState("");
 
   // Meeting Room Interactive States
@@ -603,98 +604,175 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                 className="relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.1)] rounded-[32px] max-w-[420px] w-full p-7 flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-200 select-none"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Top Badge with Delicate Purple Sparkles (✦) */}
-                <div className="relative mb-3">
-                  <div className="w-13 h-13 w-[52px] h-[52px] rounded-2xl bg-violet-50/90 dark:bg-violet-950/60 border border-violet-100/80 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
-                    <Users size={22} strokeWidth={1.75} />
-                  </div>
-                  {/* Floating sparkles */}
-                  <span className="absolute -top-1 -right-2 text-[10px] font-bold text-violet-400 animate-pulse">✦</span>
-                  <span className="absolute -top-1 -left-2 text-[9px] font-bold text-violet-300">✦</span>
-                  <span className="absolute -bottom-1 -right-1 text-[8px] font-bold text-violet-400">✦</span>
-                </div>
-
-                {/* Typography Header */}
-                <h2 className="text-[19px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">
-                  Welcome to Room
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 mb-5 leading-normal">
-                  Start an instant meeting or join with a code.
-                </p>
-
-                {/* Action 1: Start an instant meeting (Primary Purple Action) */}
-                <button
-                  type="button"
-                  onClick={handleStartInstantMeeting}
-                  className="w-full p-3.5 bg-violet-50/80 hover:bg-violet-100/90 dark:bg-violet-950/40 dark:hover:bg-violet-900/60 border border-violet-200/70 dark:border-violet-800/60 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                      <Plus size={16} strokeWidth={2.5} />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Start an instant meeting</div>
-                      <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">Create a room and invite others</div>
-                    </div>
-                  </div>
-                  <ChevronRight size={15} className="text-violet-600 dark:text-violet-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
-                </button>
-
-                {/* Subtle Divider */}
-                <div className="flex items-center gap-3 w-full my-3.5">
-                  <div className="h-[1px] bg-slate-200/70 dark:bg-zinc-800 flex-1" />
-                  <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">or</span>
-                  <div className="h-[1px] bg-slate-200/70 dark:bg-zinc-800 flex-1" />
-                </div>
-
-                {/* Action 2: Enter room code (Secondary Action with Code Input Affordance) */}
-                {!isEnteringCode ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsEnteringCode(true)}
-                    className="w-full p-3.5 bg-slate-50/80 hover:bg-slate-100/90 dark:bg-zinc-850/60 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-violet-100/80 dark:bg-zinc-800 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 font-bold text-sm group-hover:scale-105 transition-transform">
-                        <Hash size={15} strokeWidth={2.2} />
+                {isMeetingOptionsOpen ? (
+                  /* ========================================================= */
+                  /* PROGRESSIVE DISCLOSURE: INSTANT VS SCHEDULE OPTIONS       */
+                  /* ========================================================= */
+                  <div className="w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-150">
+                    {/* Top Badge with Delicate Purple Sparkles (✦) */}
+                    <div className="relative mb-3">
+                      <div className="w-[52px] h-[52px] rounded-2xl bg-violet-50/90 dark:bg-violet-950/60 border border-violet-100/80 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
+                        <Video size={22} strokeWidth={1.75} />
                       </div>
-                      <div>
-                        <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Enter room code</div>
-                        <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">Join an existing room</div>
-                      </div>
+                      <span className="absolute -top-1 -right-2 text-[10px] font-bold text-violet-400 animate-pulse">✦</span>
+                      <span className="absolute -top-1 -left-2 text-[9px] font-bold text-violet-300">✦</span>
                     </div>
-                    <ChevronRight size={15} className="text-slate-400 dark:text-zinc-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
-                  </button>
+
+                    {/* Typography Header */}
+                    <h2 className="text-[19px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">
+                      Create a Meeting
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 mb-5 leading-normal">
+                      Choose whether to start right now or schedule for later.
+                    </p>
+
+                    {/* Option 1: Start Meeting Now */}
+                    <button
+                      type="button"
+                      onClick={handleStartInstantMeeting}
+                      className="w-full p-3.5 bg-violet-50/80 hover:bg-violet-100/90 dark:bg-violet-950/40 dark:hover:bg-violet-900/60 border border-violet-200/70 dark:border-violet-800/60 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer mb-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                          <Video size={16} strokeWidth={2.2} />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Start meeting now</div>
+                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">Launch room and invite others immediately</div>
+                        </div>
+                      </div>
+                      <ChevronRight size={15} className="text-violet-600 dark:text-violet-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                    </button>
+
+                    {/* Option 2: Schedule for Later */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onLaunch?.({ type: 'schedule', name: 'Room' });
+                        showToast?.("Opening scheduling calendar...");
+                      }}
+                      className="w-full p-3.5 bg-slate-50/80 hover:bg-slate-100/90 dark:bg-zinc-850/60 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer mb-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-violet-100/80 dark:bg-zinc-800 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                          <Calendar size={15} strokeWidth={2.2} />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Schedule for later</div>
+                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">Pick a date, time, and invite teammates</div>
+                        </div>
+                      </div>
+                      <ChevronRight size={15} className="text-slate-400 dark:text-zinc-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                    </button>
+
+                    {/* Back Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsMeetingOptionsOpen(false)}
+                      className="text-xs font-semibold text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors py-1 cursor-pointer"
+                    >
+                      ‹ Back to options
+                    </button>
+                  </div>
                 ) : (
-                  <form onSubmit={handleJoinWithCode} className="w-full bg-slate-50/90 dark:bg-zinc-850/80 border border-slate-200 dark:border-zinc-700 rounded-2xl p-3 flex flex-col gap-2.5 animate-in fade-in duration-150">
-                    <div className="flex items-center gap-2">
-                      <input
-                        ref={codeInputRef}
-                        type="text"
-                        value={roomCodeInput}
-                        onChange={(e) => setRoomCodeInput(e.target.value)}
-                        placeholder="e.g. ABC-123"
-                        className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-900 dark:text-zinc-100 px-3 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-400 uppercase text-center"
-                      />
+                  /* ========================================================= */
+                  /* DEFAULT WELCOME TO ROOM LOBBY SCREEN                      */
+                  /* ========================================================= */
+                  <>
+                    {/* Top Badge with Delicate Purple Sparkles (✦) */}
+                    <div className="relative mb-3">
+                      <div className="w-13 h-13 w-[52px] h-[52px] rounded-2xl bg-violet-50/90 dark:bg-violet-950/60 border border-violet-100/80 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
+                        <Users size={22} strokeWidth={1.75} />
+                      </div>
+                      {/* Floating sparkles */}
+                      <span className="absolute -top-1 -right-2 text-[10px] font-bold text-violet-400 animate-pulse">✦</span>
+                      <span className="absolute -top-1 -left-2 text-[9px] font-bold text-violet-300">✦</span>
+                      <span className="absolute -bottom-1 -right-1 text-[8px] font-bold text-violet-400">✦</span>
+                    </div>
+
+                    {/* Typography Header */}
+                    <h2 className="text-[19px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">
+                      Welcome to Room
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 mb-5 leading-normal">
+                      Start an instant meeting or join with a code.
+                    </p>
+
+                    {/* Action 1: Start an instant meeting (Opens Options) */}
+                    <button
+                      type="button"
+                      onClick={() => setIsMeetingOptionsOpen(true)}
+                      className="w-full p-3.5 bg-violet-50/80 hover:bg-violet-100/90 dark:bg-violet-950/40 dark:hover:bg-violet-900/60 border border-violet-200/70 dark:border-violet-800/60 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                          <Plus size={16} strokeWidth={2.5} />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Start an instant meeting</div>
+                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">Create a room and invite others</div>
+                        </div>
+                      </div>
+                      <ChevronRight size={15} className="text-violet-600 dark:text-violet-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                    </button>
+
+                    {/* Subtle Divider */}
+                    <div className="flex items-center gap-3 w-full my-3.5">
+                      <div className="h-[1px] bg-slate-200/70 dark:bg-zinc-800 flex-1" />
+                      <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">or</span>
+                      <div className="h-[1px] bg-slate-200/70 dark:bg-zinc-800 flex-1" />
+                    </div>
+
+                    {/* Action 2: Enter room code (Secondary Action with Code Input Affordance) */}
+                    {!isEnteringCode ? (
                       <button
-                        type="submit"
-                        disabled={!roomCodeInput.trim()}
-                        className="px-4 py-2 bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold rounded-xl hover:bg-slate-800 disabled:opacity-40 transition-all active:scale-95"
+                        type="button"
+                        onClick={() => setIsEnteringCode(true)}
+                        className="w-full p-3.5 bg-slate-50/80 hover:bg-slate-100/90 dark:bg-zinc-850/60 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer"
                       >
-                        Join
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-violet-100/80 dark:bg-zinc-800 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 font-bold text-sm group-hover:scale-105 transition-transform">
+                            <Hash size={15} strokeWidth={2.2} />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Enter room code</div>
+                            <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">Join an existing room</div>
+                          </div>
+                        </div>
+                        <ChevronRight size={15} className="text-slate-400 dark:text-zinc-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
                       </button>
-                    </div>
-                    <div className="flex justify-between items-center px-1">
-                      <span className="text-[10px] text-slate-400">Enter 6-letter room code</span>
-                      <button 
-                        type="button" 
-                        onClick={() => setIsEnteringCode(false)}
-                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
+                    ) : (
+                      <form onSubmit={handleJoinWithCode} className="w-full bg-slate-50/90 dark:bg-zinc-850/80 border border-slate-200 dark:border-zinc-700 rounded-2xl p-3 flex flex-col gap-2.5 animate-in fade-in duration-150">
+                        <div className="flex items-center gap-2">
+                          <input
+                            ref={codeInputRef}
+                            type="text"
+                            value={roomCodeInput}
+                            onChange={(e) => setRoomCodeInput(e.target.value)}
+                            placeholder="e.g. ABC-123"
+                            className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-900 dark:text-zinc-100 px-3 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-400 uppercase text-center"
+                          />
+                          <button
+                            type="submit"
+                            disabled={!roomCodeInput.trim()}
+                            className="px-4 py-2 bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold rounded-xl hover:bg-slate-800 disabled:opacity-40 transition-all active:scale-95"
+                          >
+                            Join
+                          </button>
+                        </div>
+                        <div className="flex justify-between items-center px-1">
+                          <span className="text-[10px] text-slate-400">Enter 6-letter room code</span>
+                          <button 
+                            type="button" 
+                            onClick={() => setIsEnteringCode(false)}
+                            className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </>
                 )}
 
               </div>
