@@ -37430,7 +37430,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             ? 'fixed top-0 right-0 bottom-0 animate-in fade-in slide-in-from-right-4'
             : 'w-0 h-0 hidden overflow-hidden border-l-0 pointer-events-none opacity-0'
         }`}
-        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: productMode === 'compose' ? '380px' : `${rightSidebarWidth}px`, position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
+        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: productMode === 'compose' ? `${rightSidebarWidth || 380}px` : `${rightSidebarWidth}px`, position: 'fixed', top: 0, right: 0, bottom: 0, height: '100vh', minHeight: '100vh', zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
@@ -38291,7 +38291,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         );
                       })()}
 
-                      <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all duration-200 shadow-2xs overflow-hidden">
+                      <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.05),0_1px_3px_rgba(0,0,0,0.02)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden">
                         {/* Top Context Attachment Chips inside container (VS Code / Apple Token Style) */}
                         {(isDocContextActive || activeAgentTag || chatAttachments.length > 0) && (
                           <div className="px-2.5 pt-2 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
@@ -38540,7 +38540,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-tr-xs shadow-2xs font-medium' 
                         : msg.isBrowserResearch
                           ? 'bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 border border-indigo-200/70 dark:border-indigo-900/60 rounded-tl-xs shadow-sm w-full'
-                          : 'bg-slate-100/80 dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-200 border border-slate-200/50 dark:border-zinc-700/50 rounded-tl-xs shadow-2xs'
+                          : 'bg-slate-100/80 dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-200 border border-slate-200/50 dark:border-zinc-700/50 rounded-tl-xs shadow-[0_4px_20px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.25)]'
                     }`}>
                       {/* Live Sources Bar if Browser Research */}
                       {msg.isBrowserResearch && Array.isArray(msg.sources) && msg.sources.length > 0 && (
@@ -39058,7 +39058,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </div>
                   )}
 
-                  <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all shadow-2xs overflow-hidden">
+                  <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.05),0_1px_3px_rgba(0,0,0,0.02)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden">
                     {(isDocContextActive || activeAgentTag || chatAttachments.length > 0) && (
                       <div className="px-2.5 pt-2 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
                         {activeAgentTag && (
@@ -67383,7 +67383,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* 1. Left Navigation Sidebar — Full length (top to bottom) */}
       <div
-        className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-[#FAFAFC] dark:bg-[#18181b] border-r border-slate-200/80 dark:border-zinc-800/80 h-full z-[380]"
+        className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-[#FAFAFC] dark:bg-[#18181b] border-r border-slate-200/80 dark:border-zinc-800/80 h-screen min-h-screen h-full z-[380]"
         style={{ width: (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
         <>
@@ -80820,7 +80820,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           deckSlidesData,
           activeDeckSlideId,
           tasks: initiatives,
-          scheduleAgendaItems
+          scheduleAgendaItems,
+          whiteboardWidgets,
+          whiteboardShapes
         }}
         onNavigateToEntity={(entity) => {
           if (!entity) return;
