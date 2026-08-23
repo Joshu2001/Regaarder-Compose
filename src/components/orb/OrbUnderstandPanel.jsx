@@ -35,6 +35,26 @@ const EPISTEMIC_CONFIG = {
   }
 };
 
+function formatSnippetText(text) {
+  if (!text) return '';
+  return text.replace(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)/g, (match) => {
+    try {
+      const d = new Date(match);
+      if (isNaN(d.getTime())) return match;
+      return d.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (_) {
+      return match;
+    }
+  });
+}
+
 export default function OrbUnderstandPanel({
   selectedEdge,
   selectedEntity,
@@ -108,46 +128,46 @@ export default function OrbUnderstandPanel({
                   key={edge.id}
                   type="button"
                   onClick={() => onSelectEdge(edge)}
-                  className={`w-full text-left p-3 rounded-xl transition-all duration-150 cursor-pointer ${
+                  className={`w-full text-left p-3.5 rounded-2xl transition-all duration-150 cursor-pointer ${
                     isSelected
                       ? highContrast
-                        ? 'border-2 border-violet-500 bg-slate-100 dark:bg-zinc-800 shadow-sm'
-                        : 'border border-violet-200/90 dark:border-violet-700/60 bg-violet-50/60 dark:bg-violet-950/40 shadow-xs'
+                        ? 'border-2 border-slate-900 dark:border-white bg-white dark:bg-zinc-800 shadow-sm'
+                        : 'border border-slate-300/90 dark:border-zinc-600 bg-white dark:bg-zinc-800 shadow-xs ring-1 ring-black/[0.04]'
                       : highContrast
                       ? 'border-2 border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-slate-400'
-                      : 'border border-slate-100/90 dark:border-zinc-800/80 bg-white dark:bg-zinc-800/50 hover:bg-slate-50 dark:hover:bg-zinc-700/60'
+                      : 'border border-transparent bg-transparent hover:bg-white/80 dark:hover:bg-zinc-800/60 text-slate-600 dark:text-zinc-400'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-1 mb-1.5">
-                    <span className={`inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded border ${
+                    <span className={`inline-flex items-center gap-1 text-[10px] uppercase font-semibold tracking-wider px-2 py-0.5 rounded-md ${
                       highContrast
                         ? statusConfig.badgeClass
                         : isSelected
-                        ? 'bg-violet-100/90 dark:bg-violet-900/60 text-[#7C5ACF] dark:text-violet-200 border-violet-200 dark:border-violet-800'
-                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-700'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-0'
+                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border-0'
                     }`}>
                       <StatusIcon size={10} />
                       <span>{statusConfig.label}</span>
                     </span>
-                    <span className={`text-[10px] font-mono ${highContrast ? 'text-slate-900 dark:text-zinc-100 font-bold' : 'text-slate-500 font-medium'}`}>
+                    <span className={`text-[10px] font-mono ${highContrast ? 'text-slate-900 dark:text-zinc-100 font-bold' : 'text-slate-400 font-medium'}`}>
                       {isExplicit ? 'Explicit' : `${Math.round((edge.confidenceScore || 0.88) * 100)}% conf`}
                     </span>
                   </div>
 
                   <div className={`text-xs line-clamp-2 mb-1.5 leading-snug ${
-                    highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-800 dark:text-zinc-200'
+                    highContrast ? 'font-black text-black dark:text-white' : isSelected ? 'font-semibold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-700 dark:text-zinc-300'
                   }`}>
                     {edge.label || edge.relationType}
                   </div>
 
                   <div className={`flex items-center gap-1 text-[11px] truncate ${
-                    highContrast ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-500 dark:text-zinc-400'
+                    highContrast ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-400 dark:text-zinc-500'
                   }`}>
-                    <span className={`truncate max-w-[90px] ${highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-zinc-300'}`}>
+                    <span className={`truncate max-w-[90px] ${highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-600 dark:text-zinc-400'}`}>
                       {src?.title || 'Source'}
                     </span>
                     <ArrowRight size={11} className="shrink-0 text-slate-400" />
-                    <span className={`truncate max-w-[90px] ${highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-zinc-300'}`}>
+                    <span className={`truncate max-w-[90px] ${highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-600 dark:text-zinc-400'}`}>
                       {tgt?.title || 'Target'}
                     </span>
                   </div>
@@ -183,26 +203,26 @@ export default function OrbUnderstandPanel({
         ) : (
           <div className="max-w-3xl mx-auto space-y-6 w-full">
             {/* Header: Epistemic Status & Modality */}
-            <div className={`p-6 rounded-2xl ${
+            <div className={`p-6 rounded-[24px] ${
               highContrast
                 ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
                 : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-200/60 dark:border-zinc-800/80'
             }`}>
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div className="flex items-center gap-2">
-                  <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border ${
+                  <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-xl ${
                     highContrast
                       ? statusConfigBadgeClass(currentEpistemicKey)
-                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200/70 dark:border-emerald-800/80 font-semibold'
+                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold'
                   }`}>
                     <EpistemicIcon size={13} />
                     <span>{currentEpistemic.label} Connection</span>
                   </span>
                   {activeEdge.modality && (
-                    <span className={`text-xs px-2 py-0.5 rounded-md ${
+                    <span className={`text-xs px-2.5 py-1 rounded-xl ${
                       highContrast
                         ? 'font-bold bg-slate-100 dark:bg-zinc-900 text-black dark:text-white border border-slate-300'
-                        : 'font-medium bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200/50'
+                        : 'font-medium bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400'
                     }`}>
                       {activeEdge.modality}
                     </span>
@@ -233,7 +253,7 @@ export default function OrbUnderstandPanel({
 
             {/* AI Inferred Rationale Callout if applicable */}
             {activeEdge.isAiInferred && activeEdge.evidence?.aiRationale && (
-              <div className={`p-5 rounded-2xl ${
+              <div className={`p-6 rounded-[24px] ${
                 highContrast
                   ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
                   : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-200/60 dark:border-zinc-800/80'
@@ -254,7 +274,7 @@ export default function OrbUnderstandPanel({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Origin / Source Card */}
               {sourceEntity && (
-                <div className={`p-5 rounded-2xl flex flex-col justify-between ${
+                <div className={`p-6 rounded-[24px] flex flex-col justify-between ${
                   highContrast
                     ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
                     : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.05)] border border-slate-200/60 dark:border-zinc-800/80 transition-all'
@@ -287,12 +307,12 @@ export default function OrbUnderstandPanel({
                       By {sourceEntity.author} • {sourceEntity.authorRole}
                     </div>
 
-                    <div className={`p-3.5 rounded-xl text-xs italic leading-relaxed mb-4 ${
+                    <div className={`p-4 rounded-2xl text-xs italic leading-relaxed mb-4 border-0 ${
                       highContrast
-                        ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 text-black dark:text-white'
-                        : 'bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 text-slate-700 dark:text-zinc-300'
+                        ? 'bg-slate-100 dark:bg-zinc-900 text-black dark:text-white'
+                        : 'bg-slate-50/90 dark:bg-zinc-800/50 text-slate-700 dark:text-zinc-300'
                     }`}>
-                      "{activeEdge.evidence?.sourceSnippet || sourceEntity.excerpt}"
+                      "{formatSnippetText(activeEdge.evidence?.sourceSnippet || sourceEntity.excerpt)}"
                     </div>
                   </div>
 
@@ -300,7 +320,7 @@ export default function OrbUnderstandPanel({
                   <button
                     type="button"
                     onClick={() => onNavigateToWorkspace(sourceEntity)}
-                    className="w-full py-2 rounded-xl border border-slate-200/80 dark:border-zinc-700/60 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="w-full py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-700/60 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
                   >
                     <span>Inspect in {sourceEntity.workspace}</span>
                     <ExternalLink size={12} />
@@ -310,7 +330,7 @@ export default function OrbUnderstandPanel({
 
               {/* Destination / Target Card */}
               {targetEntity && (
-                <div className={`p-5 rounded-2xl flex flex-col justify-between ${
+                <div className={`p-6 rounded-[24px] flex flex-col justify-between ${
                   highContrast
                     ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
                     : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.05)] border border-slate-200/60 dark:border-zinc-800/80 transition-all'
@@ -343,20 +363,20 @@ export default function OrbUnderstandPanel({
                       By {targetEntity.author} • {targetEntity.authorRole}
                     </div>
 
-                    <div className={`p-3.5 rounded-xl text-xs italic leading-relaxed mb-4 ${
+                    <div className={`p-4 rounded-2xl text-xs italic leading-relaxed mb-4 border-0 ${
                       highContrast
-                        ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 text-black dark:text-white'
-                        : 'bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 text-slate-700 dark:text-zinc-300'
+                        ? 'bg-slate-100 dark:bg-zinc-900 text-black dark:text-white'
+                        : 'bg-slate-50/90 dark:bg-zinc-800/50 text-slate-700 dark:text-zinc-300'
                     }`}>
-                      "{activeEdge.evidence?.targetSnippet || targetEntity.excerpt}"
+                      "{formatSnippetText(activeEdge.evidence?.targetSnippet || targetEntity.excerpt)}"
                     </div>
 
                     {/* Specific Formula Snippet */}
                     {activeEdge.evidence?.formula && (
-                      <div className={`p-2.5 rounded-xl font-mono text-xs mb-3 ${
+                      <div className={`p-3 rounded-xl font-mono text-xs mb-3 ${
                         highContrast
                           ? 'bg-slate-100 dark:bg-zinc-900 text-black dark:text-white border-2 border-slate-400 font-extrabold'
-                          : 'bg-slate-100/70 dark:bg-zinc-800/60 text-slate-800 dark:text-zinc-200 border border-slate-200/60 font-semibold'
+                          : 'bg-slate-100/70 dark:bg-zinc-800/60 text-slate-800 dark:text-zinc-200 border-0 font-semibold'
                       }`}>
                         <span className="text-slate-500 font-sans text-[10px] uppercase font-bold block mb-0.5">Formula:</span>
                         <span>{activeEdge.evidence.formula}</span>
@@ -364,11 +384,11 @@ export default function OrbUnderstandPanel({
                     )}
                   </div>
 
-                  {/* Primary Action: Filled Purple */}
+                  {/* Primary Action: Apple-style Refined Button */}
                   <button
                     type="button"
                     onClick={() => onNavigateToWorkspace(targetEntity)}
-                    className="w-full py-2.5 rounded-xl bg-[#7C5ACF] text-white hover:bg-[#6c48c5] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                    className="w-full py-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/60 hover:bg-[#7C5ACF] text-[#7C5ACF] dark:text-[#a78bfa] hover:text-white border border-violet-100 dark:border-violet-900/40 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
                   >
                     <span>Open in {targetEntity.workspace}</span>
                     <ArrowRight size={13} />

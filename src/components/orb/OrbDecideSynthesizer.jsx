@@ -148,14 +148,14 @@ export default function OrbDecideSynthesizer({
           <button
             type="submit"
             disabled={isSynthesizing || !question.trim()}
-            className={`px-5 py-3 rounded-2xl bg-[#7C5ACF] text-white text-xs font-semibold hover:bg-[#6c48c5] active:scale-[0.98] transition-all shrink-0 shadow-xs flex items-center gap-2 cursor-pointer ${
+            className={`px-5 py-3 rounded-2xl bg-violet-50 dark:bg-violet-950/60 hover:bg-[#7C5ACF] text-[#7C5ACF] dark:text-[#a78bfa] hover:text-white border border-violet-100 dark:border-violet-900/40 text-xs font-semibold active:scale-[0.98] transition-all shrink-0 shadow-2xs hover:shadow-xs flex items-center gap-2 cursor-pointer ${
               isSynthesizing ? 'opacity-90 cursor-wait' : ''
             }`}
             title="Synthesize strategic decision briefing"
           >
             {isSynthesizing ? (
               <>
-                <RegaarderAiIcon size={14} className="animate-spin text-white shrink-0" />
+                <RegaarderAiIcon size={14} className="animate-spin text-current shrink-0" />
                 <span>Synthesizing...</span>
               </>
             ) : (
@@ -182,10 +182,10 @@ export default function OrbDecideSynthesizer({
                 setQuestion(prompt);
                 triggerSynthesize(prompt);
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-colors cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition-colors cursor-pointer ${
                 highContrast
                   ? 'font-bold border-2 border-slate-400 dark:border-zinc-600 bg-white dark:bg-zinc-900 text-black dark:text-white hover:border-violet-500'
-                  : 'font-medium border border-transparent hover:border-slate-200/80 bg-slate-100/80 hover:bg-white dark:bg-zinc-800/60 dark:hover:bg-zinc-700/60 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white'
+                  : 'font-medium bg-slate-100/90 dark:bg-zinc-800/80 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-zinc-700/80 border-0'
               }`}
             >
               {prompt}
@@ -265,10 +265,10 @@ export default function OrbDecideSynthesizer({
                       setQuestion(prompt);
                       triggerSynthesize(prompt);
                     }}
-                    className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all cursor-pointer ${
+                    className={`w-full flex items-center justify-between p-3.5 rounded-2xl transition-all cursor-pointer ${
                       highContrast
                         ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 hover:border-violet-500 font-bold text-black dark:text-white'
-                        : 'bg-white/80 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/60 hover:border-violet-300 text-slate-800 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800'
+                        : 'bg-white dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/60 hover:border-violet-300 text-slate-800 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800 shadow-2xs'
                     }`}
                   >
                     <span className="text-xs font-medium">{prompt}</span>
@@ -284,7 +284,7 @@ export default function OrbDecideSynthesizer({
             <>
 
           {/* Executive Strategic Decision Briefing Card */}
-          <div className={`p-6 rounded-2xl space-y-4 ${
+          <div className={`p-6 rounded-[24px] space-y-4 ${
             highContrast
               ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
               : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-200/60 dark:border-zinc-800/80'
@@ -304,15 +304,15 @@ export default function OrbDecideSynthesizer({
                 </h2>
               </div>
               <div className="flex flex-col items-end shrink-0">
-                <span className={`text-xs px-3 py-1 rounded-full ${
+                <span className={`text-xs px-3 py-1 rounded-xl ${
                   highContrast
                     ? 'font-extrabold bg-violet-100 dark:bg-violet-950 text-violet-950 dark:text-violet-200 border-2 border-violet-500'
-                    : 'font-semibold bg-violet-50 dark:bg-violet-950/40 text-[#7C5ACF] dark:text-[#a78bfa] border border-violet-200/70 dark:border-violet-800/60'
+                    : 'font-semibold bg-violet-50/90 dark:bg-violet-950/50 text-[#7C5ACF] dark:text-[#a78bfa] border-0'
                 }`}>
                   {synthesis.status || 'AI Recommendation • Pending Review'}
                 </span>
                 <span className={`text-[10px] font-mono mt-1 ${
-                  highContrast ? 'font-bold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-500'
+                  highContrast ? 'font-bold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-400'
                 }`}>
                   {Math.round((synthesis.confidenceScore || 0.94) * 100)}% Cross-Workspace Alignment
                 </span>
@@ -320,10 +320,10 @@ export default function OrbDecideSynthesizer({
             </div>
 
             {/* ── Structured Reasoning & Recommendation Architecture ── */}
-            <div className={`p-5 rounded-2xl space-y-3.5 ${
+            <div className={`p-6 rounded-[22px] space-y-4 ${
               highContrast
                 ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 dark:border-zinc-700'
-                : 'bg-slate-50 dark:bg-zinc-800/40 border border-slate-100 dark:border-zinc-800'
+                : 'bg-slate-50/90 dark:bg-zinc-800/40 border-0'
             }`}>
               {/* 1. Recommended Course */}
               <div>
@@ -338,9 +338,9 @@ export default function OrbDecideSynthesizer({
               </div>
 
               {/* 2. Structured Sub-points: Why • Critical Constraint • Required Condition */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200/60 dark:border-zinc-700/50">
-                <div className="space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 block">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-black/[0.04] dark:border-white/[0.04]">
+                <div className="p-3.5 rounded-xl bg-white/80 dark:bg-zinc-800/60 space-y-1 shadow-2xs">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-zinc-400 block tracking-wider">
                     Evidence / Why
                   </span>
                   <p className={`text-xs leading-relaxed ${
@@ -350,8 +350,8 @@ export default function OrbDecideSynthesizer({
                   </p>
                 </div>
 
-                <div className="space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 block">
+                <div className="p-3.5 rounded-xl bg-white/80 dark:bg-zinc-800/60 space-y-1 shadow-2xs">
+                  <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 block tracking-wider">
                     Critical Constraint
                   </span>
                   <p className={`text-xs leading-relaxed ${
@@ -361,8 +361,8 @@ export default function OrbDecideSynthesizer({
                   </p>
                 </div>
 
-                <div className="space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-violet-700 dark:text-violet-400 block">
+                <div className="p-3.5 rounded-xl bg-white/80 dark:bg-zinc-800/60 space-y-1 shadow-2xs">
+                  <span className="text-[10px] uppercase font-bold text-violet-700 dark:text-violet-400 block tracking-wider">
                     Required Condition
                   </span>
                   <p className={`text-xs leading-relaxed ${
