@@ -35,9 +35,10 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
   const [scheduleRoomLink, setScheduleRoomLink] = useState("https://regaarder.app/room/sync-8492");
   const [scheduleCollaborators, setScheduleCollaborators] = useState([
     { id: 'you', name: 'You', role: 'Host', color: 'bg-violet-600', email: 'you@regaarder.com' },
-    { id: 'alex', name: 'Alex', role: 'Editor', color: 'bg-sky-500', email: 'alex@regaarder.com' },
-    { id: 'maya', name: 'Maya', role: 'Viewer', color: 'bg-amber-500', email: 'maya@regaarder.com' },
   ]);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [calYear, setCalYear] = useState(2026);
+  const [calMonth, setCalMonth] = useState(10); // 10 = November
   const [isCollaboratorMenuOpen, setIsCollaboratorMenuOpen] = useState(false);
   const [collaboratorSearchQuery, setCollaboratorSearchQuery] = useState("");
   const [isStartTimeMenuOpen, setIsStartTimeMenuOpen] = useState(false);
@@ -46,15 +47,8 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
   const [scheduleWhiteboardEnabled, setScheduleWhiteboardEnabled] = useState(true);
   const [scheduleEncryptionEnabled, setScheduleEncryptionEnabled] = useState(true);
 
-  const workspaceDirectoryContacts = [
-    { id: 'joshua', name: 'Joshua', role: 'Host', title: 'Product Lead', email: 'joshua@regaarder.com', color: 'bg-violet-600' },
-    { id: 'mike', name: 'Mike', role: 'Editor', title: 'Design Lead', email: 'mike@regaarder.com', color: 'bg-blue-600' },
-    { id: 'ana', name: 'Ana', role: 'Editor', title: 'Senior Architect', email: 'ana@regaarder.com', color: 'bg-emerald-600' },
-    { id: 'alex', name: 'Alex', role: 'Editor', title: 'Staff Engineer', email: 'alex@regaarder.com', color: 'bg-sky-500' },
-    { id: 'maya', name: 'Maya', role: 'Viewer', title: 'UX Researcher', email: 'maya@regaarder.com', color: 'bg-amber-500' },
-    { id: 'sarah', name: 'Sarah', role: 'Viewer', title: 'Marketing Director', email: 'sarah@regaarder.com', color: 'bg-rose-500' },
-    { id: 'writer-ai', name: 'Writer AI', role: 'AI Assistant', title: 'Intelligence Co-Pilot', email: 'ai@regaarder.com', color: 'bg-purple-600' },
-  ];
+  // Dynamic Workspace Contacts (empty by default until real registered users are loaded)
+  const [workspaceDirectoryContacts, setWorkspaceDirectoryContacts] = useState([]);
 
   const standardTimeOptions = [
     '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM', '10:00 AM', '10:15 AM', '10:30 AM', '11:00 AM',
@@ -864,6 +858,7 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
               className="fixed inset-0 z-[100000] flex items-center justify-center p-4 sm:p-6 bg-black/55 backdrop-blur-xl animate-in fade-in duration-200 select-none"
               onClick={() => {
                 setIsSchedulingModalOpen(false);
+                setIsDatePickerOpen(false);
                 setIsCollaboratorMenuOpen(false);
                 setIsStartTimeMenuOpen(false);
                 setIsEndTimeMenuOpen(false);
@@ -956,44 +951,117 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                         Date & Time
                       </label>
                       <div className="flex items-center gap-2">
-                        {/* Custom Clickable Date Picker Pill */}
-                        <div 
-                          className="relative h-11 px-3 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2 flex-1 cursor-pointer overflow-hidden"
-                          onClick={() => {
-                            const dateInput = document.getElementById('regaarder-schedule-native-date');
-                            if (dateInput) {
-                              if ('showPicker' in HTMLInputElement.prototype) {
-                                dateInput.showPicker();
-                              } else {
-                                dateInput.focus();
-                              }
-                            }
-                          }}
-                        >
-                          <Calendar size={14} className="text-violet-600 dark:text-violet-400 shrink-0 pointer-events-none" />
-                          <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate pointer-events-none">
-                            {formatDisplayDate(scheduleDate)}
-                          </span>
-                          <input
-                            id="regaarder-schedule-native-date"
-                            type="date"
-                            value={scheduleDate}
-                            onChange={(e) => setScheduleDate(e.target.value)}
-                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                          />
+                        {/* 100% Custom Apple Calendar Popover Pill (Zero Native HTML Popup) */}
+                        <div className="relative flex-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsDatePickerOpen(!isDatePickerOpen);
+                              setIsStartTimeMenuOpen(false);
+                              setIsEndTimeMenuOpen(false);
+                              setIsCollaboratorMenuOpen(false);
+                            }}
+                            className="w-full h-11 px-3 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2 text-left cursor-pointer"
+                          >
+                            <Calendar size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                            <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                              {formatDisplayDate(scheduleDate)}
+                            </span>
+                          </button>
+
+                          {/* Custom Apple-Style Month/Day Grid Popover */}
+                          {isDatePickerOpen && (
+                            <div 
+                              className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-2xl rounded-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150 text-left font-sans"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* Month / Year Header with Nav */}
+                              <div className="flex items-center justify-between mb-2.5 px-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (calMonth === 0) { setCalMonth(11); setCalYear(prev => prev - 1); }
+                                    else { setCalMonth(prev => prev - 1); }
+                                  }}
+                                  className="w-6 h-6 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-center text-slate-600 dark:text-zinc-300 text-xs font-bold"
+                                >
+                                  ‹
+                                </button>
+                                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100">
+                                  {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][calMonth]} {calYear}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (calMonth === 11) { setCalMonth(0); setCalYear(prev => prev + 1); }
+                                    else { setCalMonth(prev => prev + 1); }
+                                  }}
+                                  className="w-6 h-6 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-center text-slate-600 dark:text-zinc-300 text-xs font-bold"
+                                >
+                                  ›
+                                </button>
+                              </div>
+
+                              {/* Day of Week Headers */}
+                              <div className="grid grid-cols-7 gap-1 text-center mb-1 text-[10px] font-bold text-slate-400 dark:text-zinc-500">
+                                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+                                  <div key={d}>{d}</div>
+                                ))}
+                              </div>
+
+                              {/* Days Matrix */}
+                              <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                                {Array.from({ length: new Date(calYear, calMonth, 1).getDay() }).map((_, i) => (
+                                  <div key={`empty-${i}`} className="h-7 w-7" />
+                                ))}
+                                {Array.from({ length: new Date(calYear, calMonth + 1, 0).getDate() }).map((_, i) => {
+                                  const dayNum = i + 1;
+                                  const formattedDateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                                  const isSelected = scheduleDate === formattedDateStr;
+                                  return (
+                                    <button
+                                      key={`day-${dayNum}`}
+                                      type="button"
+                                      onClick={() => {
+                                        setScheduleDate(formattedDateStr);
+                                        setIsDatePickerOpen(false);
+                                      }}
+                                      className={`h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-semibold transition-all cursor-pointer ${
+                                        isSelected
+                                          ? 'bg-violet-600 text-white font-bold shadow-xs'
+                                          : 'text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-zinc-800 hover:text-violet-600'
+                                      }`}
+                                    >
+                                      {dayNum}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
-                        {/* Custom Time Range with Typable Inputs and Apple Dropdown */}
+                        {/* Custom Time Range with Flexible Typing and Apple Dropdown */}
                         <div className="h-11 px-2.5 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 flex items-center justify-between gap-1 flex-1 relative text-xs font-semibold text-slate-700 dark:text-zinc-300">
-                          {/* Start Time with Custom Type & Dropdown */}
+                          {/* Start Time with Unconstrained Custom Type */}
                           <div className="relative flex-1">
                             <input
                               type="text"
                               value={scheduleStartTime}
-                              onChange={(e) => updateScheduleTimes(e.target.value, undefined)}
-                              onFocus={() => { setIsStartTimeMenuOpen(true); setIsEndTimeMenuOpen(false); }}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setScheduleStartTime(val);
+                                const sm = parseTimeToMins(val);
+                                const em = parseTimeToMins(scheduleEndTime);
+                                if (sm && em && em > sm) {
+                                  const diff = em - sm;
+                                  if (diff % 60 === 0) setScheduleDuration(`${diff / 60}h`);
+                                  else if (diff > 60) setScheduleDuration(`${Math.floor(diff / 60)}h ${diff % 60}m`);
+                                  else setScheduleDuration(`${diff} min`);
+                                }
+                              }}
                               placeholder="10:00 AM"
-                              className="w-full text-center bg-transparent outline-none text-[11px] font-semibold text-slate-800 dark:text-zinc-200 cursor-text uppercase"
+                              className="w-full text-center bg-transparent outline-none text-[11px] font-semibold text-slate-800 dark:text-zinc-200 cursor-text"
                             />
                             {isStartTimeMenuOpen && (
                               <div className="absolute top-full left-0 mt-2 w-32 max-h-48 overflow-y-auto thin-scrollbar bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100">
@@ -1014,17 +1082,35 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                             )}
                           </div>
 
+                          <button
+                            type="button"
+                            onClick={() => { setIsStartTimeMenuOpen(!isStartTimeMenuOpen); setIsEndTimeMenuOpen(false); }}
+                            className="text-slate-400 hover:text-slate-600 text-[10px] px-0.5"
+                          >
+                            ▾
+                          </button>
+
                           <span className="text-slate-400 text-[10px] shrink-0">→</span>
 
-                          {/* End Time with Custom Type & Dropdown */}
+                          {/* End Time with Unconstrained Custom Type */}
                           <div className="relative flex-1">
                             <input
                               type="text"
                               value={scheduleEndTime}
-                              onChange={(e) => updateScheduleTimes(undefined, e.target.value)}
-                              onFocus={() => { setIsEndTimeMenuOpen(true); setIsStartTimeMenuOpen(false); }}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setScheduleEndTime(val);
+                                const sm = parseTimeToMins(scheduleStartTime);
+                                const em = parseTimeToMins(val);
+                                if (sm && em && em > sm) {
+                                  const diff = em - sm;
+                                  if (diff % 60 === 0) setScheduleDuration(`${diff / 60}h`);
+                                  else if (diff > 60) setScheduleDuration(`${Math.floor(diff / 60)}h ${diff % 60}m`);
+                                  else setScheduleDuration(`${diff} min`);
+                                }
+                              }}
                               placeholder="11:00 AM"
-                              className="w-full text-center bg-transparent outline-none text-[11px] font-semibold text-slate-800 dark:text-zinc-200 cursor-text uppercase"
+                              className="w-full text-center bg-transparent outline-none text-[11px] font-semibold text-slate-800 dark:text-zinc-200 cursor-text"
                             />
                             {isEndTimeMenuOpen && (
                               <div className="absolute top-full right-0 mt-2 w-32 max-h-48 overflow-y-auto thin-scrollbar bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100">
@@ -1044,6 +1130,14 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                               </div>
                             )}
                           </div>
+
+                          <button
+                            type="button"
+                            onClick={() => { setIsEndTimeMenuOpen(!isEndTimeMenuOpen); setIsStartTimeMenuOpen(false); }}
+                            className="text-slate-400 hover:text-slate-600 text-[10px] px-0.5"
+                          >
+                            ▾
+                          </button>
                         </div>
 
                         {/* Roomy Duration Pill */}
@@ -1054,7 +1148,7 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                       </div>
                     </div>
 
-                    {/* Collaborators & Invites with Contact Directory Dropdown */}
+                    {/* Collaborators & Invites with Contact Directory Dropdown + Empty State */}
                     <div className="relative">
                       <label className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1.5">
                         Collaborators & Invites
@@ -1067,8 +1161,8 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                               key={c.id}
                               className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/60 shadow-2xs text-[11px] font-medium text-slate-800 dark:text-zinc-200 shrink-0"
                             >
-                              <div className={`w-4 h-4 rounded-full ${c.color} text-white flex items-center justify-center text-[9px] font-bold`}>
-                                {c.name[0]}
+                              <div className={`w-4 h-4 rounded-full ${c.color || 'bg-violet-600'} text-white flex items-center justify-center text-[9px] font-bold`}>
+                                {c.name[0]?.toUpperCase() || 'U'}
                               </div>
                               <span className="truncate max-w-[80px]">{c.name}</span>
                               {c.id !== 'you' && (
@@ -1090,6 +1184,9 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                           onClick={() => {
                             setIsCollaboratorMenuOpen(!isCollaboratorMenuOpen);
                             setCollaboratorSearchQuery("");
+                            setIsDatePickerOpen(false);
+                            setIsStartTimeMenuOpen(false);
+                            setIsEndTimeMenuOpen(false);
                           }}
                           className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 dark:bg-violet-950/60 dark:hover:bg-violet-900/60 border border-violet-200/70 dark:border-violet-800/70 text-[11px] font-bold text-violet-700 dark:text-violet-300 transition-all cursor-pointer shrink-0 active:scale-95"
                         >
@@ -1101,7 +1198,7 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                       {/* Workspace Contacts Directory Dropdown */}
                       {isCollaboratorMenuOpen && (
                         <div 
-                          className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-2xl rounded-2xl p-2.5 z-50 animate-in fade-in zoom-in-95 duration-150 text-left"
+                          className="absolute top-full right-0 mt-2 w-76 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-2xl rounded-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150 text-left"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {/* Search / Add Input */}
@@ -1118,7 +1215,7 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                                     const customName = collaboratorSearchQuery.trim();
                                     setScheduleCollaborators((prev) => [
                                       ...prev,
-                                      { id: `custom-${Date.now()}`, name: customName, role: 'Editor', email: customName, color: 'bg-emerald-600' }
+                                      { id: `custom-${Date.now()}`, name: customName.split('@')[0], role: 'Editor', email: customName, color: 'bg-emerald-600' }
                                     ]);
                                     setCollaboratorSearchQuery("");
                                     setIsCollaboratorMenuOpen(false);
@@ -1131,48 +1228,62 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                             </div>
                           </div>
 
-                          {/* Suggested Workspace Contacts List */}
-                          <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2 py-1">
+                          {/* Contact Directory Section */}
+                          <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 py-1">
                             Workspace Team & Contacts
                           </div>
-                          <div className="max-h-44 overflow-y-auto thin-scrollbar space-y-0.5">
-                            {workspaceDirectoryContacts
-                              .filter((contact) => {
-                                const q = collaboratorSearchQuery.toLowerCase();
-                                return (
-                                  !scheduleCollaborators.some((sc) => sc.name.toLowerCase() === contact.name.toLowerCase()) &&
-                                  (contact.name.toLowerCase().includes(q) || contact.email.toLowerCase().includes(q) || contact.title.toLowerCase().includes(q))
-                                );
-                              })
-                              .map((contact) => (
-                                <button
-                                  key={contact.id}
-                                  type="button"
-                                  onClick={() => {
-                                    setScheduleCollaborators((prev) => [...prev, contact]);
-                                    setIsCollaboratorMenuOpen(false);
-                                    showToast?.(`Added ${contact.name} to meeting`);
-                                  }}
-                                  className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/40 text-left transition-colors cursor-pointer group"
-                                >
-                                  <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className={`w-6 h-6 rounded-full ${contact.color} text-white flex items-center justify-center text-[10px] font-bold shrink-0`}>
-                                      {contact.name[0]}
-                                    </div>
-                                    <div className="min-w-0">
-                                      <div className="text-xs font-bold text-slate-800 dark:text-zinc-200 truncate group-hover:text-violet-600 transition-colors">
-                                        {contact.name}
+                          <div className="max-h-48 overflow-y-auto thin-scrollbar space-y-1">
+                            {workspaceDirectoryContacts.length > 0 ? (
+                              workspaceDirectoryContacts
+                                .filter((contact) => {
+                                  const q = collaboratorSearchQuery.toLowerCase();
+                                  return (
+                                    !scheduleCollaborators.some((sc) => sc.name.toLowerCase() === contact.name.toLowerCase()) &&
+                                    (contact.name.toLowerCase().includes(q) || contact.email?.toLowerCase().includes(q) || contact.title?.toLowerCase().includes(q))
+                                  );
+                                })
+                                .map((contact) => (
+                                  <button
+                                    key={contact.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setScheduleCollaborators((prev) => [...prev, contact]);
+                                      setIsCollaboratorMenuOpen(false);
+                                      showToast?.(`Added ${contact.name} to meeting`);
+                                    }}
+                                    className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/40 text-left transition-colors cursor-pointer group"
+                                  >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      <div className={`w-6 h-6 rounded-full ${contact.color || 'bg-violet-600'} text-white flex items-center justify-center text-[10px] font-bold shrink-0`}>
+                                        {contact.name[0]?.toUpperCase() || 'U'}
                                       </div>
-                                      <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">
-                                        {contact.title}
+                                      <div className="min-w-0">
+                                        <div className="text-xs font-bold text-slate-800 dark:text-zinc-200 truncate group-hover:text-violet-600 transition-colors">
+                                          {contact.name}
+                                        </div>
+                                        <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">
+                                          {contact.title || contact.email}
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                  <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/60 px-1.5 py-0.5 rounded-md shrink-0">
-                                    + Add
-                                  </span>
-                                </button>
-                              ))}
+                                    <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/60 px-1.5 py-0.5 rounded-md shrink-0">
+                                      + Add
+                                    </span>
+                                  </button>
+                                ))
+                            ) : (
+                              /* Clean Apple Empty State */
+                              <div className="py-4 px-2 flex flex-col items-center justify-center text-center">
+                                <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 flex items-center justify-center mb-1.5">
+                                  <Users size={15} />
+                                </div>
+                                <p className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300">No Contacts in Workspace</p>
+                                <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5 leading-snug">
+                                  Type an email above to invite external collaborators.
+                                </p>
+                              </div>
+                            )}
+
                             {collaboratorSearchQuery.trim() && (
                               <button
                                 type="button"
@@ -1180,16 +1291,16 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                                   const customName = collaboratorSearchQuery.trim();
                                   setScheduleCollaborators((prev) => [
                                     ...prev,
-                                    { id: `custom-${Date.now()}`, name: customName, role: 'Editor', email: customName, color: 'bg-emerald-600' }
+                                    { id: `custom-${Date.now()}`, name: customName.split('@')[0], role: 'Editor', email: customName, color: 'bg-emerald-600' }
                                   ]);
                                   setCollaboratorSearchQuery("");
                                   setIsCollaboratorMenuOpen(false);
                                   showToast?.(`Invited ${customName}`);
                                 }}
-                                className="w-full flex items-center gap-2 p-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/40 text-left text-xs font-bold text-violet-600 dark:text-violet-400"
+                                className="w-full flex items-center gap-2 p-2 rounded-xl bg-violet-50/80 dark:bg-violet-950/40 hover:bg-violet-100 text-left text-xs font-bold text-violet-600 dark:text-violet-400 transition-colors"
                               >
                                 <Plus size={13} strokeWidth={2.5} />
-                                <span>Invite "{collaboratorSearchQuery.trim()}"</span>
+                                <span className="truncate">Invite "{collaboratorSearchQuery.trim()}"</span>
                               </button>
                             )}
                           </div>
