@@ -21792,13 +21792,81 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   };
 
   // Conversational state with pre-loaded AI response cards and device/localStorage persistence
-  const [chatMessages, setChatMessages] = useState(() => {
+  const [expandedMessageIds, setExpandedMessageIds] = useState(new Set());
+  const [chatTabs, setChatTabs] = useState(() => {
+    try {
+      const stored = localStorage.getItem('rc.ai_chat_tabs');
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return [{ id: 'tab_default', title: 'Chat 1', messages: [], isComposing: false, selectedModel: null }];
+  });
+  const [activeChatTabId, setActiveChatTabId] = useState('tab_default');
+
+  // Sync active chatMessages with activeChatTab
+  const [chatMessages, setChatMessagesInternal] = useState(() => {
     try {
       const stored = localStorage.getItem('rc.ai_chat_messages');
       if (stored) return JSON.parse(stored);
     } catch (e) {}
     return [];
   });
+
+  const setChatMessages = (updater) => {
+    setChatMessagesInternal((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      setChatTabs((prevTabs) => prevTabs.map((t) => (t.id === activeChatTabId ? { ...t, messages: next } : t)));
+      return next;
+    });
+  };
+
+  const handleSwitchChatTab = (tabId) => {
+    setActiveChatTabId(tabId);
+    const targetTab = chatTabs.find((t) => t.id === tabId);
+    if (targetTab) {
+      setChatMessagesInternal(targetTab.messages || []);
+    }
+  };
+
+  const handleCreateNewChatTab = () => {
+    const nextIdx = chatTabs.length + 1;
+    const newTabId = 'tab_' + Date.now();
+    const newTab = {
+      id: newTabId,
+      title: `Chat ${nextIdx}`,
+      messages: [],
+      isComposing: false,
+      selectedModel: composeSelectedModel
+    };
+    setChatTabs((prev) => [...prev, newTab]);
+    setActiveChatTabId(newTabId);
+    setChatMessagesInternal([]);
+    setChatInput('');
+    showToast(`Opened new chat tab (${newTab.title})`);
+  };
+
+  const handleCloseChatTab = (tabId, e) => {
+    e?.stopPropagation();
+    if (chatTabs.length <= 1) {
+      // If only one tab, clear it instead of deleting
+      setChatMessagesInternal([]);
+      setChatTabs([{ id: 'tab_default', title: 'Chat 1', messages: [] }]);
+      setActiveChatTabId('tab_default');
+      return;
+    }
+    const remaining = chatTabs.filter((t) => t.id !== tabId);
+    setChatTabs(remaining);
+    if (activeChatTabId === tabId) {
+      const nextActive = remaining[0];
+      setActiveChatTabId(nextActive.id);
+      setChatMessagesInternal(nextActive.messages || []);
+    }
+  };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rc.ai_chat_tabs', JSON.stringify(chatTabs));
+    } catch (e) {}
+  }, [chatTabs]);
 
   useEffect(() => {
     try {
@@ -23409,19 +23477,26 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
     // ⚡ Local LLM Execution Path (Ollama / LM Studio / llama.cpp)
     if (composeSelectedModel?.isLocal && composeSelectedModel?.endpoint) {
+      const localAbortController = new AbortController();
+      const localTimeout = setTimeout(() => localAbortController.abort(), 35000);
+      if (aiAbortControllerRef.current?.signal) {
+        aiAbortControllerRef.current.signal.addEventListener('abort', () => {
+          try { localAbortController.abort(); } catch (e) {}
+        }, { once: true });
+      }
+
       try {
         const isOllama = composeSelectedModel.provider === 'Ollama' || composeSelectedModel.endpoint.includes('11434');
         const baseEndpoint = composeSelectedModel.endpoint.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '');
         const targetUrl = isOllama
-          ? `${baseEndpoint}/api/chat`
+          ? `${baseEndpoint}/api/generate`
           : `${composeSelectedModel.endpoint.endsWith('/v1') ? composeSelectedModel.endpoint : composeSelectedModel.endpoint + '/v1'}/chat/completions`;
 
         const requestBody = isOllama
           ? {
               model: composeSelectedModel.id,
-              messages: [
-                { role: 'user', content: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt }
-              ],
+              prompt: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt,
+              format: schema ? 'json' : undefined,
               stream: false,
             }
           : {
@@ -23437,28 +23512,37 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
         let localRes = await fetch(targetUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
-        }).catch(() => null);
+          body: JSON.stringify(requestBody),
+          signal: localAbortController.signal
+        }).catch((e) => {
+          console.warn('Local primary fetch error:', e);
+          return null;
+        });
 
-        // Fallback for Ollama /api/generate if /api/chat fails
+        // Fallback for Ollama /api/chat if /api/generate fails
         if ((!localRes || !localRes.ok) && isOllama) {
-          const genUrl = `${baseEndpoint}/api/generate`;
-          localRes = await fetch(genUrl, {
+          const chatUrl = `${baseEndpoint}/api/chat`;
+          localRes = await fetch(chatUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               model: composeSelectedModel.id,
-              prompt: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt,
+              messages: [
+                { role: 'user', content: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt }
+              ],
               stream: false
-            })
+            }),
+            signal: localAbortController.signal
           }).catch(() => null);
         }
+
+        clearTimeout(localTimeout);
 
         if (localRes && localRes.ok) {
           const data = await localRes.json();
           let text = '';
           if (isOllama) {
-            text = (data.message?.content || data.response || '').trim();
+            text = (data.response || data.message?.content || '').trim();
           } else if (data.choices?.[0]?.message?.content) {
             text = data.choices[0].message.content.trim();
           }
@@ -23482,9 +23566,20 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
               modelName: composeSelectedModel.name
             };
           }
+        } else {
+          const statusText = localRes ? `HTTP ${localRes.status}` : 'Connection Refused';
+          return {
+            text: `⚠️ Unable to reach local inference model (${composeSelectedModel.name}) at ${composeSelectedModel.endpoint} (${statusText}). Please verify that Ollama or LM Studio is running ("ollama serve") or select a cloud AI model from the picker.`,
+            modelName: composeSelectedModel.name
+          };
         }
       } catch (localErr) {
-        console.warn('Local LLM call failed, falling back to cloud endpoint:', localErr);
+        clearTimeout(localTimeout);
+        console.warn('Local LLM call failed:', localErr);
+        return {
+          text: `⚠️ Local model request timed out or was interrupted (${localErr.message || 'Timeout'}). Please ensure Ollama is actively running.`,
+          modelName: composeSelectedModel.name
+        };
       }
     }
 
@@ -37948,34 +38043,70 @@ Respond with a JSON array of slide objects matching the schema.`;
           {/* A. ACTIVE TAB: AI ASSISTANT / CHAT */}
           {(activeRightTab === 'assistant' || activeRightTab === 'chat') && (
             <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
-              {/* Persistent Integrated Header with [+] New Chat and [X] Close (Always Visible) */}
-              <div className="flex items-center justify-between w-full px-4 py-2.5 text-left shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm z-10">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-6.5 h-6.5 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 flex items-center justify-center shrink-0">
-                    <Bot size={13} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight leading-none">
+              {/* Persistent Multi-Tab Concurrent Header */}
+              <div className="flex flex-col w-full shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm z-10">
+                <div className="flex items-center justify-between w-full px-3.5 py-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 flex items-center justify-center shrink-0">
+                      <Bot size={12} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
+                    </div>
+                    <h3 className="text-xs font-semibold text-slate-800 dark:text-zinc-100 tracking-tight truncate">
                       {productMode === 'compose' ? 'Compose Assistant' : productMode === 'sheets' ? 'Sheets Assistant' : 'Deck Assistant'}
                     </h3>
                   </div>
+                  <div className="shrink-0 flex items-center gap-1">
+                    <button
+                      type="button"
+                      title="Add New Independent Chat Tab (+)"
+                      className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer flex items-center justify-center"
+                      onClick={handleCreateNewChatTab}
+                    >
+                      <Plus size={13} strokeWidth={2} />
+                    </button>
+                    <button
+                      type="button"
+                      title="Close panel"
+                      className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 dark:hover:text-zinc-200 transition-all cursor-pointer flex items-center justify-center"
+                      onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
+                    >
+                      <X size={13} strokeWidth={1.75} />
+                    </button>
+                  </div>
                 </div>
-                <div className="shrink-0 flex items-center gap-1">
+
+                {/* Multi-Tab Switcher Bar */}
+                <div className="flex items-center gap-1 px-2.5 pb-1.5 overflow-x-auto thin-scrollbar">
+                  {chatTabs.map((tab) => {
+                    const isActive = tab.id === activeChatTabId;
+                    return (
+                      <div
+                        key={tab.id}
+                        onClick={() => handleSwitchChatTab(tab.id)}
+                        className={`group flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-medium transition-all cursor-pointer shrink-0 border select-none ${
+                          isActive
+                            ? 'bg-violet-50 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] border-violet-200/80 dark:border-violet-800/80 shadow-2xs font-semibold'
+                            : 'bg-slate-50 dark:bg-zinc-800/50 text-slate-600 dark:text-zinc-400 border-slate-200/50 dark:border-zinc-700/40 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${tab.isComposing ? 'bg-violet-500 animate-spin' : isActive ? 'bg-[#7C5ACF]' : 'bg-slate-300 dark:bg-zinc-600'}`} />
+                        <span className="truncate max-w-[85px]">{tab.title || 'Chat'}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleCloseChatTab(tab.id, e)}
+                          className="w-3.5 h-3.5 rounded flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10"
+                        >
+                          <X size={9} />
+                        </button>
+                      </div>
+                    );
+                  })}
                   <button
                     type="button"
-                    title="Start New Chat (+)"
-                    className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer flex items-center justify-center"
-                    onClick={startNewChatSession}
+                    onClick={handleCreateNewChatTab}
+                    className="p-1 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs shrink-0 cursor-pointer"
+                    title="New Chat Tab"
                   >
-                    <Plus size={14} strokeWidth={2} />
-                  </button>
-                  <button
-                    type="button"
-                    title="Close panel"
-                    className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 dark:hover:text-zinc-200 transition-all cursor-pointer flex items-center justify-center"
-                    onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
-                  >
-                    <X size={14} strokeWidth={1.75} />
+                    <Plus size={11} />
                   </button>
                 </div>
               </div>
@@ -38534,17 +38665,42 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </div>
                       )}
 
-                      {/* Main Message Content */}
+                      {/* Main Message Content with Progressive Disclosure */}
                       {msg.sender === 'user' ? (
                         <div className="whitespace-pre-wrap break-words max-w-full text-[13px] font-normal leading-relaxed text-white dark:text-zinc-900 select-text">
                           {msg.text}
                         </div>
-                      ) : (
-                        <div 
-                          className="whitespace-pre-wrap selection-ai-rendered prose-sm dark:prose-invert break-words max-w-full overflow-hidden text-slate-800 dark:text-zinc-200"
-                          dangerouslySetInnerHTML={{ __html: toParagraphHtml(msg.text) }}
-                        />
-                      )}
+                      ) : (() => {
+                        const rawText = String(msg.text || '');
+                        const isLong = rawText.length > 450;
+                        const isExpanded = expandedMessageIds.has(msg.id);
+                        const displayText = (isLong && !isExpanded) ? (rawText.slice(0, 380) + '...') : rawText;
+                        const lineCount = rawText.split('\n').length;
+                        return (
+                          <div className="space-y-1">
+                            <div 
+                              className="whitespace-pre-wrap selection-ai-rendered prose-sm dark:prose-invert break-words max-w-full overflow-hidden text-slate-800 dark:text-zinc-200"
+                              dangerouslySetInnerHTML={{ __html: toParagraphHtml(displayText) }}
+                            />
+                            {isLong && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setExpandedMessageIds((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(msg.id)) next.delete(msg.id);
+                                    else next.add(msg.id);
+                                    return next;
+                                  });
+                                }}
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#7C5ACF] dark:text-[#a78bfa] hover:underline cursor-pointer select-none pt-1"
+                              >
+                                <span>{isExpanded ? 'Show less ▴' : `Show full response (${lineCount} lines) ▾`}</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Action Bar for AI Responses (Browser Research & Assistant Messages) */}
                       {msg.sender !== 'user' && (
