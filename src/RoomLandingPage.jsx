@@ -53,26 +53,19 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
   const [e2eeFingerprint, setE2eeFingerprint] = useState("4892 1042 8831 6509");
   const [isE2EEVerifiedModalOpen, setIsE2EEVerifiedModalOpen] = useState(false);
 
-  // Initialize or re-derive room E2EE key on room code or encryption toggle change
+  // Initialize room E2EE key once on mount
   useEffect(() => {
     let isMounted = true;
-    async function initRoomE2EE() {
-      if (scheduleEncryptionEnabled) {
-        const { key } = await deriveRoomKey(scheduleRoomLink || "regaarder-room-secure-key");
-        if (isMounted && key) {
-          setE2eeSessionKey(key);
-          const fingerprint = await generateSafetyFingerprint(key);
-          if (isMounted) setE2eeFingerprint(fingerprint);
-        }
-      } else {
-        if (isMounted) {
-          setE2eeSessionKey(null);
-        }
+    deriveRoomKey("regaarder-room-secure-key").then(({ key }) => {
+      if (isMounted && key) {
+        setE2eeSessionKey(key);
+        generateSafetyFingerprint(key).then(fp => {
+          if (isMounted && fp) setE2eeFingerprint(fp);
+        });
       }
-    }
-    initRoomE2EE();
+    });
     return () => { isMounted = false; };
-  }, [scheduleEncryptionEnabled, scheduleRoomLink]);
+  }, []);
 
   // Dynamic Workspace Contacts (empty by default until real registered users are loaded)
   const [workspaceDirectoryContacts, setWorkspaceDirectoryContacts] = useState([]);
@@ -1364,59 +1357,65 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
                     <label className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1.5">
                       Meeting Capabilities
                     </label>
-                    <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 divide-y divide-slate-200/60 dark:divide-zinc-700/60 overflow-hidden">
-                      {/* AI Summary with Signature RegaarderAiIcon (circle logo) */}
-                      <div className="px-3.5 py-2.5 flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
+                    <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-850/60 divide-y divide-slate-200/60 dark:divide-zinc-700/60 overflow-hidden select-none">
+                      {/* AI Summary Row (Entire row instant toggle onPointerDown) */}
+                      <div 
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          setScheduleAiSummaryEnabled(prev => !prev);
+                        }}
+                        className="px-3.5 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-100/50 dark:hover:bg-zinc-800/40 transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5 pointer-events-none">
                           <RegaarderAiIcon size={16} strokeWidth={1.8} className="text-violet-600 dark:text-violet-400 shrink-0" />
                           <div>
                             <div className="text-xs font-bold text-slate-800 dark:text-zinc-200 leading-tight">AI Transcription & Real-time Summary</div>
                             <div className="text-[10.5px] text-slate-400 dark:text-zinc-400">Generate instant meeting notes, action items, and insights</div>
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setScheduleAiSummaryEnabled(!scheduleAiSummaryEnabled)}
-                          className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors duration-150 cursor-pointer shrink-0 ${scheduleAiSummaryEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
-                        >
-                          <span className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-150 ease-out ${scheduleAiSummaryEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
-                        </button>
+                        <div className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors duration-75 shrink-0 pointer-events-none ${scheduleAiSummaryEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}>
+                          <span className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-75 ease-out ${scheduleAiSummaryEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
                       </div>
 
-                      {/* Whiteboard & Screen Share */}
-                      <div className="px-3.5 py-2.5 flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
+                      {/* Whiteboard & Screen Share Row (Entire row instant toggle onPointerDown) */}
+                      <div 
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          setScheduleWhiteboardEnabled(prev => !prev);
+                        }}
+                        className="px-3.5 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-100/50 dark:hover:bg-zinc-800/40 transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5 pointer-events-none">
                           <Layout size={15} className="text-violet-600 dark:text-violet-400 shrink-0" />
                           <div>
                             <div className="text-xs font-bold text-slate-800 dark:text-zinc-200 leading-tight">Interactive Whiteboard & Screen Sharing</div>
                             <div className="text-[10.5px] text-slate-400 dark:text-zinc-400">Allow participants to draw and present canvases simultaneously</div>
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setScheduleWhiteboardEnabled(!scheduleWhiteboardEnabled)}
-                          className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors duration-150 cursor-pointer shrink-0 ${scheduleWhiteboardEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
-                        >
-                          <span className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-150 ease-out ${scheduleWhiteboardEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
-                        </button>
+                        <div className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors duration-75 shrink-0 pointer-events-none ${scheduleWhiteboardEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}>
+                          <span className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-75 ease-out ${scheduleWhiteboardEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
                       </div>
 
-                      {/* Encryption & Waiting Room */}
-                      <div className="px-3.5 py-2.5 flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
+                      {/* Encryption & Waiting Room Row (Entire row instant toggle onPointerDown) */}
+                      <div 
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          setScheduleEncryptionEnabled(prev => !prev);
+                        }}
+                        className="px-3.5 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-100/50 dark:hover:bg-zinc-800/40 transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5 pointer-events-none">
                           <Shield size={15} className="text-violet-600 dark:text-violet-400 shrink-0" />
                           <div>
                             <div className="text-xs font-bold text-slate-800 dark:text-zinc-200 leading-tight">End-to-End Encryption & Waiting Room</div>
                             <div className="text-[10.5px] text-slate-400 dark:text-zinc-400">Host admits guests with encrypted zero-latency audio/video</div>
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setScheduleEncryptionEnabled(!scheduleEncryptionEnabled)}
-                          className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors duration-150 cursor-pointer shrink-0 ${scheduleEncryptionEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
-                        >
-                          <span className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-150 ease-out ${scheduleEncryptionEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
-                        </button>
+                        <div className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors duration-75 shrink-0 pointer-events-none ${scheduleEncryptionEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-700'}`}>
+                          <span className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-75 ease-out ${scheduleEncryptionEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
                       </div>
                     </div>
                   </div>
