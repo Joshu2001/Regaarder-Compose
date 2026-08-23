@@ -40917,9 +40917,9 @@ Respond with a JSON array of slide objects matching the schema.`;
             </div>
           )}
 
-          {isScheduleSessionModalOpen && (
+          {isScheduleSessionModalOpen && createPortal(
             <div
-              className="fixed inset-0 z-[1350] bg-black/70 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150 select-none"
               onClick={closeScheduleSessionModal}
             >
               <div
@@ -40931,11 +40931,18 @@ Respond with a JSON array of slide objects matching the schema.`;
                     <div className="text-[24px] font-semibold text-slate-900 leading-tight">Schedule a session</div>
                     <div className="text-[11px] text-slate-500 mt-1">Plan ahead and invite others to collaborate.</div>
                   </div>
-                  <div className="flex items-center">
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={closeScheduleSessionModal}
+                      className="h-10 px-4 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
                     <button
                       type="button"
                       onClick={handleScheduleSessionSave}
-                      className="h-10 px-5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700"
+                      className="h-10 px-5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 transition-colors shadow-sm active:scale-95"
                     >
                       Save
                     </button>
@@ -41202,7 +41209,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </div>
                 </div>
               </div>
-            </div>
+            </div>,
+            document.body
           )}
 
           {activeRightTab === 'room' && (
