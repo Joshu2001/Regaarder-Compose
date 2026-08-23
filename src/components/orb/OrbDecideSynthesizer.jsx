@@ -6,9 +6,10 @@ import {
   GitBranch, Check, Compass, ShieldCheck, Loader2, ChevronDown,
   Settings, Server, Cpu, Sparkles, Wifi, WifiOff, X, Key, RefreshCw,
   ExternalLink, Eye, Maximize2, Minimize2, Network, Shield, Scale,
-  BookOpen, Target, Activity, AlertCircle, ArrowUpRight, Zap
+  BookOpen, Target, Activity, AlertCircle, ArrowUpRight, Zap, MessageSquare
 } from 'lucide-react';
 import { RegaarderProductIcon, RegaarderAiIcon } from '../RegaarderProductIcons';
+import OrbDecideSelectionPill from './OrbDecideSelectionPill';
 import { synthesizeStrategicDecision } from '../../services/orbKnowledgeGraphService';
 import { 
   generateOrbDecisionSynthesis, 
@@ -47,9 +48,15 @@ export default function OrbDecideSynthesizer({
   const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [showConfidenceExplainer, setShowConfidenceExplainer] = useState(false);
+
+  // Text selection & Quote Reply state
+  const [selectionState, setSelectionState] = useState(null);
+  const [activeQuoteContext, setActiveQuoteContext] = useState(null);
   
   const timerRef = useRef(null);
   const modelPickerRef = useRef(null);
+  const decideContainerRef = useRef(null);
+  const queryInputRef = useRef(null);
 
   // Probe local inference servers (Ollama, LM Studio) on mount
   const refreshLocalServers = async () => {
@@ -95,6 +102,105 @@ export default function OrbDecideSynthesizer({
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
+
+  // ── Highlight / Text Selection Detection ──
+  useEffect(() => {
+    const handleSelectionCheck = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed) {
+        return;
+      }
+      const text = selection.toString().trim();
+      if (text.length < 2) {
+        setSelectionState(null);
+        return;
+      }
+
+      // Ensure selection originated within the reasoning canvas
+      const anchorNode = selection.anchorNode;
+      if (!decideContainerRef.current || !anchorNode || !decideContainerRef.current.contains(anchorNode)) {
+        return;
+      }
+
+      try {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) return;
+
+        const centerX = rect.left + rect.width / 2;
+        const isFlipped = rect.top < 120;
+        const targetY = isFlipped ? rect.bottom : rect.top;
+        const clampedX = Math.max(190, Math.min(window.innerWidth - 190, centerX));
+
+        setSelectionState({
+          text,
+          x: clampedX,
+          y: targetY,
+          isFlipped
+        });
+      } catch (err) {
+        console.warn('Failed to calculate selection position:', err);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setTimeout(handleSelectionCheck, 30);
+    };
+
+    const handleDocPointerDown = (e) => {
+      // If clicking outside and selection is collapsed
+      const selection = window.getSelection();
+      if (selection && selection.isCollapsed) {
+        setSelectionState(null);
+      }
+    };
+
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('pointerup', handleMouseUp);
+    document.addEventListener('pointerdown', handleDocPointerDown);
+    return () => {
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('pointerup', handleMouseUp);
+      document.removeEventListener('pointerdown', handleDocPointerDown);
+    };
+  }, []);
+
+  // Selection Action Handlers
+  const handleSelectionReply = (quoteText) => {
+    setActiveQuoteContext(quoteText);
+    setSelectionState(null);
+    window.getSelection()?.removeAllRanges();
+    setTimeout(() => {
+      queryInputRef.current?.focus();
+    }, 50);
+  };
+
+  const handleSelectionExplain = (quoteText) => {
+    setActiveQuoteContext(quoteText);
+    setSelectionState(null);
+    window.getSelection()?.removeAllRanges();
+    const prompt = `Explain the strategic significance, context, and implications of: "${quoteText}"`;
+    setQuestion(prompt);
+    triggerSynthesize(prompt);
+  };
+
+  const handleSelectionChallenge = (quoteText) => {
+    setActiveQuoteContext(quoteText);
+    setSelectionState(null);
+    window.getSelection()?.removeAllRanges();
+    const prompt = `Challenge this claim, stress-test the underlying assumptions, and evaluate counter-evidence for: "${quoteText}"`;
+    setQuestion(prompt);
+    triggerSynthesize(prompt);
+  };
+
+  const handleSelectionAskQuestion = (inquiryPrompt, quoteText) => {
+    setActiveQuoteContext(quoteText);
+    setSelectionState(null);
+    window.getSelection()?.removeAllRanges();
+    const combinedPrompt = `[Regarding "${quoteText}"]: ${inquiryPrompt}`;
+    setQuestion(inquiryPrompt);
+    triggerSynthesize(combinedPrompt);
+  };
 
   const synthesis = useMemo(() => {
     if (liveSynthesis) return liveSynthesis;
@@ -144,7 +250,11 @@ export default function OrbDecideSynthesizer({
 
   const handleQuerySubmit = (e) => {
     e?.preventDefault();
-    triggerSynthesize(question);
+    if (!question.trim()) return;
+    const finalQuery = activeQuoteContext 
+      ? `[Regarding "${activeQuoteContext}"]: ${question.trim()}`
+      : question.trim();
+    triggerSynthesize(finalQuery);
   };
 
   // Derive genuine inquiries from workspace entities
@@ -210,18 +320,43 @@ export default function OrbDecideSynthesizer({
     <div className="flex flex-col h-full w-full overflow-hidden bg-[#FAFAFC] dark:bg-[#0C0D11]">
       {/* ── Query Bar Header: Airy & Floating with Model Selector ── */}
       <div className="px-7 py-3.5 border-b border-black/[0.04] dark:border-white/[0.05] bg-white/70 dark:bg-zinc-950/60 backdrop-blur-md shrink-0 relative z-30">
-        <form onSubmit={handleQuerySubmit} className="flex items-center gap-2.5 max-w-4xl mx-auto">
-          {/* Main Inquiry Input */}
-          <div className="relative flex-1">
-            <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-            <input
-              type="text"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Ask an executive question or evaluate strategy..."
-              className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-[#7C5ACF] dark:focus:border-[#a78bfa] focus:shadow-[0_4px_16px_rgba(124,90,207,0.06)] transition-all"
-            />
-          </div>
+        <form onSubmit={handleQuerySubmit} className="flex flex-col gap-2 max-w-4xl mx-auto">
+          {/* Active Quoted Selection Context Pill */}
+          {activeQuoteContext && (
+            <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-violet-50/90 dark:bg-violet-950/60 border border-violet-200/80 dark:border-violet-800/60 text-xs text-violet-950 dark:text-violet-200 animate-in fade-in duration-150">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#7C5ACF] dark:bg-[#a78bfa] shrink-0" />
+                <span className="font-semibold text-[10.5px] uppercase tracking-wider text-[#7C5ACF] dark:text-[#a78bfa] shrink-0">
+                  Replying to Selection:
+                </span>
+                <span className="truncate italic text-[11.5px] text-slate-700 dark:text-zinc-300">
+                  "{activeQuoteContext}"
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveQuoteContext(null)}
+                className="p-1 rounded-lg hover:bg-violet-200/60 dark:hover:bg-violet-900/60 text-violet-600 dark:text-violet-400 transition-colors cursor-pointer shrink-0 ml-2"
+                title="Remove quoted selection"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2.5">
+            {/* Main Inquiry Input */}
+            <div className="relative flex-1">
+              <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+              <input
+                ref={queryInputRef}
+                type="text"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder={activeQuoteContext ? "Ask a follow-up inquiry about this selection..." : "Ask an executive question or evaluate strategy..."}
+                className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-[#7C5ACF] dark:focus:border-[#a78bfa] focus:shadow-[0_4px_16px_rgba(124,90,207,0.06)] transition-all"
+              />
+            </div>
 
           {/* Model Selector Pill */}
           <div className="relative shrink-0" ref={modelPickerRef}>
@@ -358,7 +493,8 @@ export default function OrbDecideSynthesizer({
               </>
             )}
           </button>
-        </form>
+        </div>
+      </form>
 
         {/* Quick Sample Prompts */}
         <div className="flex items-center gap-2 mt-2.5 max-w-4xl mx-auto overflow-x-auto thin-scrollbar pb-0.5">
@@ -382,7 +518,7 @@ export default function OrbDecideSynthesizer({
       </div>
 
       {/* ── Main Executive Reasoning Canvas ── */}
-      <div className="flex-1 overflow-y-auto px-7 py-6 thin-scrollbar">
+      <div ref={decideContainerRef} className="flex-1 overflow-y-auto px-7 py-6 thin-scrollbar">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Active Synthesis Progress Indicator */}
           {isSynthesizing && (
@@ -1195,6 +1331,19 @@ export default function OrbDecideSynthesizer({
           </div>
         </div>
       )}
+
+      {/* ── Apple-Style Floating Selection Action Pill ── */}
+      <OrbDecideSelectionPill
+        selectionState={selectionState}
+        onReply={handleSelectionReply}
+        onExplain={handleSelectionExplain}
+        onChallenge={handleSelectionChallenge}
+        onAskQuestion={handleSelectionAskQuestion}
+        onDismiss={() => {
+          setSelectionState(null);
+          window.getSelection()?.removeAllRanges();
+        }}
+      />
     </div>
   );
 }
