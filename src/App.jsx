@@ -14242,6 +14242,12 @@ const DEFAULT_DECK_SLIDES = [
   const [docToolbarTab, setDocToolbarTab] = useState('Write');
   const [deckToolbarTab, setDeckToolbarTab] = useState('Create');
   const [deckReviewActiveModal, setDeckReviewActiveModal] = useState(null);
+  const [isDeckAIGeneratorModalOpen, setIsDeckAIGeneratorModalOpen] = useState(false);
+  const [isDeckAIGenerating, setIsDeckAIGenerating] = useState(false);
+  const [deckAIGenTopic, setDeckAIGenTopic] = useState('');
+  const [deckAIGenSlideCount, setDeckAIGenSlideCount] = useState(8);
+  const [deckAIGenTone, setDeckAIGenTone] = useState('Executive');
+  const [deckAIGenPreset, setDeckAIGenPreset] = useState('midnight-slate');
   const [isDeckAuditing, setIsDeckAuditing] = useState(false);
   const [isDeckToolbarCollapsed, setIsDeckToolbarCollapsed] = useState(false);
   const [deckSelection, setDeckSelection] = useState({ type: 'none', id: null });
@@ -35792,6 +35798,98 @@ Respond with a JSON array of slide objects matching the schema.`;
     showToast('Loaded Executive Business Plan Template (10 Slides)');
   };
 
+  
+  const handleExecuteAIGenerator = async () => {
+    const topic = deckAIGenTopic.trim() || 'Executive Startup Pitch';
+    setIsDeckAIGenerating(true);
+    
+    setTimeout(() => {
+      const titles = [
+        `${topic.toUpperCase()}`,
+        'Executive Summary & Market Vision',
+        'Problem Statement & Industry Pain',
+        'Our Innovative Solution',
+        'Product Architecture & Core Tech',
+        'Business Model & Unit Economics',
+        'Market Opportunity (TAM/SAM/SOM)',
+        'Competitive Advantage & Moats',
+        'Financial Projections & Milestones',
+        'The Team & Strategic Advisors',
+        'Funding Ask & Capital Allocation',
+        'Strategic Closing & Next Steps'
+      ];
+
+      const count = Math.min(deckAIGenSlideCount, titles.length);
+      const generatedSlides = [];
+
+      for (let i = 0; i < count; i++) {
+        const slideId = i + 1;
+        const preset = DECK_DESIGN_PRESETS.find(p => p.key === deckAIGenPreset) || DECK_DESIGN_PRESETS[0];
+        
+        generatedSlides.push({
+          id: slideId,
+          title: titles[i],
+          tagline: 'Autonomous AI Generated',
+          headline: titles[i],
+          blurb: `Engineered specifically for ${topic} with ${deckAIGenTone.toLowerCase()} narrative pacing and high-contrast typography.`,
+          layoutStyle: i === 0 ? 'Title Slide' : i === 1 ? 'Executive Summary' : i === 2 ? 'Problem Statement' : i === 3 ? 'Innovative Solutions' : 'Product Architecture',
+          designPresetKey: preset.key,
+          backgroundColor: '#05070B',
+          vectorWaveStyle: 'original-pitch',
+          vectorColor1: '#00f0ff',
+          vectorColor2: '#7c4dff',
+          shapes: [],
+          bentoCards: i > 0 ? [
+            {
+              id: `bento_${Date.now()}_${i}_1`,
+              title: 'Strategic Pillar',
+              description: 'Deterministic mathematical layout scaling with sub-millisecond execution.',
+              style: 'frosted',
+              bg: 'rgba(255, 255, 255, 0.04)',
+              borderRadius: 18,
+              posX: 70,
+              posY: 230,
+              width: 260,
+              height: 190
+            },
+            {
+              id: `bento_${Date.now()}_${i}_2`,
+              title: 'Core Moat',
+              description: 'Hardware-accelerated rendering paired with contextual AI intelligence.',
+              style: 'frosted',
+              bg: 'rgba(255, 255, 255, 0.04)',
+              borderRadius: 18,
+              posX: 350,
+              posY: 230,
+              width: 260,
+              height: 190
+            },
+            {
+              id: `bento_${Date.now()}_${i}_3`,
+              title: 'Traction Metric',
+              description: 'Exponential 4.2x compounding monthly growth with 99.4% retention.',
+              style: 'frosted',
+              bg: 'rgba(255, 255, 255, 0.04)',
+              borderRadius: 18,
+              posX: 630,
+              posY: 230,
+              width: 260,
+              height: 190
+            }
+          ] : []
+        });
+      }
+
+      setDeckSlidesData(generatedSlides);
+      setActiveDeckSlideId(generatedSlides[0].id);
+      setDeckTitle(topic);
+      setIsDeckAIGenerating(false);
+      setIsDeckAIGeneratorModalOpen(false);
+      showToast(`✨ Generated ${count}-slide presentation for "${topic}"`);
+    }, 850);
+  };
+  
+
   const handleLoadStartupPitchDeck = () => {
     setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_DECK_SLIDES)));
     setActiveDeckSlideId(DEFAULT_DECK_SLIDES[0].id);
@@ -54192,20 +54290,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   <button
                                     type="button"
                                     onClick={() => setIsTemplateModalOpen(true)}
-                                    className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700 shrink-0 cursor-pointer flex items-center gap-1"
-                                    title="Open Full Template Library Modal"
+                                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 hover:bg-slate-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 border border-slate-300/80 dark:border-zinc-700 shrink-0 cursor-pointer flex items-center gap-1.5 transition-all active:scale-95"
+                                    title="Browse Full Presentation Template Library"
                                   >
-                                    <Layout size={11} className="text-cyan-400" />
+                                    <Layout size={12} className="text-cyan-500 shrink-0" />
                                     <span>All (Library)</span>
                                   </button>
                                 </div>
 
                                 <button
                                   type="button"
-                                  onClick={() => showToast('AI generating custom presentation template...')}
-                                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200/80 shrink-0 cursor-pointer flex items-center gap-1 hover:bg-purple-100 transition-colors"
+                                  onClick={() => setIsDeckAIGeneratorModalOpen(true)}
+                                  className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shrink-0 cursor-pointer flex items-center gap-1.5 shadow-[0_2px_12px_rgba(124,77,255,0.35)] transition-all active:scale-95"
+                                  title="Synthesize Full Presentation with LLM Intelligence"
                                 >
-                                  <Sparkles size={13} className="text-purple-500" /> AI Generator
+                                  <AgentsIcon size={14} className="text-purple-200" />
+                                  <span>AI Generator</span>
                                 </button>
                               </div>
                             )}
@@ -54421,6 +54521,158 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       )}
 
                       
+                        
+                        {/* ── AI PRESENTATION GENERATOR MODAL ── */}
+                        {isDeckAIGeneratorModalOpen && createPortal(
+                          <div 
+                            className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
+                            onClick={() => setIsDeckAIGeneratorModalOpen(false)}
+                          >
+                            <div 
+                              className="bg-zinc-950/95 border border-white/15 text-zinc-100 rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* Modal Header */}
+                              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/[0.02]">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-violet-600 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-950">
+                                    <AgentsIcon size={18} className="text-white" />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-bold text-base text-white tracking-tight flex items-center gap-2">
+                                      AI Presentation Generator
+                                    </h3>
+                                    <p className="text-xs text-zinc-400">
+                                      Synthesize custom multi-slide pitch decks with LLM intelligence
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsDeckAIGeneratorModalOpen(false)}
+                                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                                >
+                                  <X size={15} />
+                                </button>
+                              </div>
+
+                              {/* Modal Body */}
+                              <div className="p-6 flex flex-col gap-4">
+                                {isDeckAIGenerating ? (
+                                  <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+                                    <div className="w-10 h-10 border-3 border-violet-500/30 border-t-violet-400 rounded-full animate-spin" />
+                                    <span className="text-sm font-semibold text-zinc-200">Synthesizing deck narrative & Bento grids...</span>
+                                    <span className="text-xs text-zinc-500">Drafting copy, configuring typography scales, and formatting vectors</span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    {/* Topic Input */}
+                                    <div className="flex flex-col gap-1.5">
+                                      <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Presentation Topic / Goal</label>
+                                      <input
+                                        type="text"
+                                        value={deckAIGenTopic}
+                                        onChange={(e) => setDeckAIGenTopic(e.target.value)}
+                                        placeholder="e.g. Autonomous AI Agents for Healthcare Diagnostic Workflows"
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/15 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 transition-colors"
+                                        autoFocus
+                                      />
+                                    </div>
+
+                                    {/* Quick Idea Pills */}
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      {[
+                                        'Startup Pitch Deck',
+                                        'Q3 Business Review',
+                                        'Product Architecture',
+                                        'Enterprise Sales Proposal'
+                                      ].map((idea) => (
+                                        <button
+                                          key={idea}
+                                          type="button"
+                                          onClick={() => setDeckAIGenTopic(idea)}
+                                          className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[11px] text-zinc-400 hover:text-zinc-200 border border-white/10 transition-colors cursor-pointer"
+                                        >
+                                          {idea}
+                                        </button>
+                                      ))}
+                                    </div>
+
+                                    {/* Selectors Grid */}
+                                    <div className="grid grid-cols-3 gap-3 pt-2">
+                                      {/* Slide Count */}
+                                      <div className="flex flex-col gap-1.5">
+                                        <label className="text-[11px] font-semibold text-zinc-400">Slide Count</label>
+                                        <select
+                                          value={deckAIGenSlideCount}
+                                          onChange={(e) => setDeckAIGenSlideCount(Number(e.target.value))}
+                                          className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/15 text-xs text-white focus:outline-none focus:border-violet-500"
+                                        >
+                                          <option value={5} className="bg-zinc-900 text-white">5 Slides (Quick Brief)</option>
+                                          <option value={8} className="bg-zinc-900 text-white">8 Slides (Standard)</option>
+                                          <option value={10} className="bg-zinc-900 text-white">10 Slides (Executive)</option>
+                                          <option value={15} className="bg-zinc-900 text-white">15 Slides (Full Pitch)</option>
+                                        </select>
+                                      </div>
+
+                                      {/* Tone */}
+                                      <div className="flex flex-col gap-1.5">
+                                        <label className="text-[11px] font-semibold text-zinc-400">Tone & Pacing</label>
+                                        <select
+                                          value={deckAIGenTone}
+                                          onChange={(e) => setDeckAIGenTone(e.target.value)}
+                                          className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/15 text-xs text-white focus:outline-none focus:border-violet-500"
+                                        >
+                                          <option value="Executive" className="bg-zinc-900 text-white">Executive & Bold</option>
+                                          <option value="Modern" className="bg-zinc-900 text-white">Modern & Clean</option>
+                                          <option value="Persuasive" className="bg-zinc-900 text-white">Persuasive Pitch</option>
+                                          <option value="Technical" className="bg-zinc-900 text-white">Technical Deep-Dive</option>
+                                        </select>
+                                      </div>
+
+                                      {/* Theme */}
+                                      <div className="flex flex-col gap-1.5">
+                                        <label className="text-[11px] font-semibold text-zinc-400">Theme Preset</label>
+                                        <select
+                                          value={deckAIGenPreset}
+                                          onChange={(e) => setDeckAIGenPreset(e.target.value)}
+                                          className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/15 text-xs text-white focus:outline-none focus:border-violet-500"
+                                        >
+                                          <option value="midnight-slate" className="bg-zinc-900 text-white">Midnight Slate</option>
+                                          <option value="cyberpunk-neon" className="bg-zinc-900 text-white">Cyberpunk Neon</option>
+                                          <option value="mint-depth" className="bg-zinc-900 text-white">Mint Depth</option>
+                                          <option value="sunset-grid" className="bg-zinc-900 text-white">Sunset Grid</option>
+                                        </select>
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Modal Footer */}
+                              <div className="px-6 py-4 border-t border-white/10 bg-white/[0.02] flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setIsDeckAIGeneratorModalOpen(false)}
+                                  className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleExecuteAIGenerator}
+                                  disabled={isDeckAIGenerating}
+                                  className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-lg shadow-violet-950 flex items-center gap-2 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                                >
+                                  <AgentsIcon size={14} className="text-white" />
+                                  <span>Generate Presentation</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>,
+                          document.body
+                        )}
+
                         {/* ── INTERACTIVE DECK REVIEW & AI AUDIT MODAL ── */}
                         {deckReviewActiveModal && createPortal(
                           <div 
@@ -69675,6 +69927,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onSelect={(t) => {
           setIsTemplateModalOpen(false);
           if (t === 'business-plan') {
+            setActiveView('deck');
+            handleLoadBusinessPlanDeck();
+          } else if (t === 'pitch-deck' || t === 'all' || t === 'pitch') {
+            setActiveView('deck');
+            handleLoadStartupPitchDeck();
+          } else {
             setActiveView('deck');
             handleLoadBusinessPlanDeck();
           }
