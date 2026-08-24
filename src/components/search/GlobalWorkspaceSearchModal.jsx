@@ -6,8 +6,7 @@ import {
   buildWorkspaceIndex,
   queryWorkspace,
   groupResultsByCategory,
-  synthesizeWorkspaceKnowledge,
-  WORKSPACE_PEOPLE
+  synthesizeWorkspaceKnowledge
 } from '../../services/GlobalWorkspaceSearchEngine';
 import {
   ComposeIcon,
@@ -64,6 +63,50 @@ const FILTER_TABS = [
   { id: 'people', label: 'People', icon: PeopleIcon }
 ];
 
+// Context-aware empty state configurations per category
+const EMPTY_STATE_CONFIG = {
+  all: {
+    icon: OrbIcon,
+    title: 'No recent items in workspace',
+    description: 'Create a document, spreadsheet, presentation, or task to see items here.'
+  },
+  compose: {
+    icon: ComposeIcon,
+    title: 'No documents added yet',
+    description: 'Draft and organize rich documents in Compose to view them here.'
+  },
+  sheets: {
+    icon: SheetIcon,
+    title: 'No spreadsheets added yet',
+    description: 'Build calculation models and formula data grids in Sheets.'
+  },
+  deck: {
+    icon: DeckIcon,
+    title: 'No presentations created yet',
+    description: 'Design slides and executive decks to view them here.'
+  },
+  tasks: {
+    icon: TasksIcon,
+    title: 'No tasks or initiatives',
+    description: 'Add project deliverables and action items to track progress.'
+  },
+  room: {
+    icon: RoomIcon,
+    title: 'No meeting rooms active',
+    description: 'Start a video call or ambient room to generate meeting records.'
+  },
+  browser: {
+    icon: BrowserIcon,
+    title: 'No research notes saved',
+    description: 'Browse live web sources and save citations to your notes.'
+  },
+  people: {
+    icon: PeopleIcon,
+    title: 'No collaborators added',
+    description: 'Invite teammates and assign roles across projects.'
+  }
+};
+
 // Compact primary quick action chips with native Regaarder SVG product icons
 const COMPACT_QUICK_ACTIONS = [
   {
@@ -110,9 +153,9 @@ const COMPACT_QUICK_ACTIONS = [
 
 // Suggested Ask AI prompt queries for Deck mode
 const SUGGESTED_AI_PROMPTS = [
-  "What did we decide about the pricing strategy?",
-  "What is our Q3 GPU revenue & margin forecast?",
-  "Who is leading hardware supply chain operations?",
+  "Summarize key decisions across recent documents",
+  "What are the active milestones and deliverables?",
+  "Review open items in my workspace",
   "Show high-priority tasks and upcoming deadlines"
 ];
 
@@ -143,7 +186,7 @@ export default function GlobalWorkspaceSearchModal({
   const inputRef = useRef(null);
   const resultsContainerRef = useRef(null);
 
-  // Build the complete searchable workspace index
+  // Build the complete searchable workspace index strictly from real state
   const workspaceIndex = useMemo(() => {
     return buildWorkspaceIndex(liveWorkspaceContext);
   }, [liveWorkspaceContext]);
@@ -200,7 +243,7 @@ export default function GlobalWorkspaceSearchModal({
 
   if (!isOpen) return null;
 
-  // Execute AI Workspace Synthesis (Deck mode)
+  // Execute AI Workspace Synthesis
   const handleRunAiSynthesis = async (promptQuery) => {
     const targetQ = promptQuery || query;
     if (!targetQ || !targetQ.trim()) return;
@@ -307,6 +350,9 @@ export default function GlobalWorkspaceSearchModal({
 
   const categoryBarClasses = 'bg-slate-50/70 dark:bg-zinc-900/50 border-b border-slate-200/60 dark:border-zinc-800/60';
   const footerClasses = 'bg-slate-50/80 dark:bg-zinc-900/70 border-t border-slate-200/60 dark:border-zinc-800/60';
+
+  const currentEmptyState = EMPTY_STATE_CONFIG[activeFilter] || EMPTY_STATE_CONFIG.all;
+  const EmptyIcon = currentEmptyState.icon;
 
   return (
     <div
@@ -439,7 +485,7 @@ export default function GlobalWorkspaceSearchModal({
           className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 thin-scrollbar"
         >
           {/* ══════════════════════════════════════════════════════════
-              MODE A: ASK AI WORKSPACE SYNTHESIS (Deck Presentation Mode)
+              MODE A: ASK AI WORKSPACE SYNTHESIS
              ══════════════════════════════════════════════════════════ */}
           {mode === 'ai' && (
             <div className="space-y-4">
@@ -545,7 +591,7 @@ export default function GlobalWorkspaceSearchModal({
           )}
 
           {/* ══════════════════════════════════════════════════════════
-              MODE B: SEARCH MODE - EMPTY QUERY (Suggested & Actions)
+              MODE B: SEARCH MODE - EMPTY QUERY (Quick Actions & Real Items)
              ══════════════════════════════════════════════════════════ */}
           {mode === 'search' && !query.trim() && (
             <div className="space-y-4">
@@ -585,98 +631,82 @@ export default function GlobalWorkspaceSearchModal({
                 </div>
               </div>
 
-              {/* Continue Where You Left Off (Recent & Suggested Workspace Hierarchy) */}
-              <div>
-                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1">
-                  <RegaarderHistoryIcon size={13} strokeWidth={1.7} className="text-slate-400 dark:text-zinc-500" />
-                  <span>Continue where you left off</span>
-                </div>
-                <div className="space-y-1">
-                  {searchResults.slice(0, 5).map((res, itemIdx) => {
-                    const globalIdx = COMPACT_QUICK_ACTIONS.length + itemIdx;
-                    const isSelected = selectedIndex === globalIdx;
-                    const entity = res.entity;
+              {/* Real Items: Continue Where You Left Off */}
+              {searchResults.length > 0 ? (
+                <div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1">
+                    <RegaarderHistoryIcon size={13} strokeWidth={1.7} className="text-slate-400 dark:text-zinc-500" />
+                    <span>Continue where you left off</span>
+                  </div>
+                  <div className="space-y-1">
+                    {searchResults.slice(0, 6).map((res, itemIdx) => {
+                      const globalIdx = COMPACT_QUICK_ACTIONS.length + itemIdx;
+                      const isSelected = selectedIndex === globalIdx;
+                      const entity = res.entity;
 
-                    return (
-                      <div
-                        key={entity.id}
-                        data-selected={isSelected}
-                        onClick={() => handleActivateItem({ type: 'entity', data: entity })}
-                        onMouseEnter={() => setSelectedIndex(globalIdx)}
-                        className={`flex items-center justify-between p-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
-                          isSelected
-                            ? 'bg-violet-500/8 dark:bg-violet-500/15 border border-violet-500/25 shadow-2xs'
-                            : 'hover:bg-slate-50 dark:hover:bg-zinc-800/40 border border-transparent'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-slate-200/60 dark:border-zinc-700/60">
-                            <RegaarderProductIcon name={entity.workspace} size={14} strokeWidth={1.6} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate">
-                                {entity.title}
-                              </span>
-                              {entity.isCurrent && (
-                                <span className="text-[9.5px] font-semibold uppercase px-1.5 py-0.5 rounded bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
-                                  Active Now
+                      return (
+                        <div
+                          key={entity.id}
+                          data-selected={isSelected}
+                          onClick={() => handleActivateItem({ type: 'entity', data: entity })}
+                          onMouseEnter={() => setSelectedIndex(globalIdx)}
+                          className={`flex items-center justify-between p-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
+                            isSelected
+                              ? 'bg-violet-500/8 dark:bg-violet-500/15 border border-violet-500/25 shadow-2xs'
+                              : 'hover:bg-slate-50 dark:hover:bg-zinc-800/40 border border-transparent'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-slate-200/60 dark:border-zinc-700/60">
+                              <RegaarderProductIcon name={entity.workspace} size={14} strokeWidth={1.6} />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                                  {entity.title}
                                 </span>
-                              )}
-                            </div>
-                            <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
-                              {entity.location} • {entity.author}
+                                {entity.isCurrent && (
+                                  <span className="text-[9.5px] font-semibold uppercase px-1.5 py-0.5 rounded bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                                    Active Now
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
+                                {entity.location} • {entity.author}
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[11px] text-slate-400 dark:text-zinc-500">
-                            {entity.updatedAt}
-                          </span>
-                          <ArrowRight
-                            size={12}
-                            className={`transition-transform duration-150 ${
-                              isSelected ? 'translate-x-0.5 text-violet-600 dark:text-violet-400' : 'text-slate-300 dark:text-zinc-600'
-                            }`}
-                          />
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[11px] text-slate-400 dark:text-zinc-500">
+                              {entity.updatedAt}
+                            </span>
+                            <ArrowRight
+                              size={12}
+                              className={`transition-transform duration-150 ${
+                                isSelected ? 'translate-x-0.5 text-violet-600 dark:text-violet-400' : 'text-slate-300 dark:text-zinc-600'
+                              }`}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-
-              {/* People & Teammates Directory */}
-              <div>
-                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1">
-                  <PeopleIcon size={13} strokeWidth={1.7} className="text-slate-400 dark:text-zinc-500" />
-                  <span>Teammates & Collaborators</span>
+              ) : (
+                /* ── Context-Aware Empty State When No Real Data Exists ── */
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center rounded-xl bg-slate-50/50 dark:bg-zinc-800/20 border border-slate-200/50 dark:border-zinc-800/40 my-1">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-2.5 border border-slate-200/60 dark:border-zinc-700/60 shadow-2xs">
+                    <EmptyIcon size={18} strokeWidth={1.5} />
+                  </div>
+                  <h4 className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-200 mb-1">
+                    {currentEmptyState.title}
+                  </h4>
+                  <p className="text-[11.5px] text-slate-400 dark:text-zinc-500 max-w-xs leading-relaxed">
+                    {currentEmptyState.description}
+                  </p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {WORKSPACE_PEOPLE.slice(0, 4).map((person) => (
-                    <div
-                      key={person.id}
-                      onClick={() => handleActivateItem({ type: 'entity', data: person })}
-                      className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800/40 border border-slate-200/50 dark:border-zinc-800/50 cursor-pointer transition-colors"
-                    >
-                      <img
-                        src={person.avatar}
-                        alt={person.title}
-                        className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200 dark:ring-zinc-700 shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <div className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
-                          {person.title}
-                        </div>
-                        <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 truncate">
-                          {person.role}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -776,7 +806,7 @@ export default function GlobalWorkspaceSearchModal({
                                   ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 border border-rose-200/60'
                                   : 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300 border border-amber-200/60'
                               }`}>
-                                {entity.metadata?.priority}
+                                {entity.metadata.priority}
                               </span>
                             )}
                             {entity.metadata?.status && (
