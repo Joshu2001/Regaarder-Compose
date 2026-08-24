@@ -54645,23 +54645,51 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <div 
                                   ref={deckCanvasPreviewRef}
                                   onClick={(e) => {
+                                    if (isDeckPresentationMode) return;
                                     if (e.target === e.currentTarget || e.target.getAttribute('data-canvas-bg')) {
                                       setDeckSelection({ type: 'none', id: null });
                                       setDeckFloatingMenuOpen(null);
                                     }
                                   }}
                                   data-canvas-bg="true"
-                                  className={`aspect-[16/9] ${customBg ? '' : (currentPresetObj.background || 'bg-white')} rounded-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] border border-slate-200/80 dark:border-zinc-800 relative overflow-hidden flex flex-col justify-between p-[32px] md:p-[48px] select-text mx-auto my-auto transition-all duration-300`}
+                                  className={`${customBg ? '' : (currentPresetObj.background || 'bg-white')} relative overflow-hidden flex flex-col justify-between p-[32px] md:p-[48px] mx-auto my-auto transition-all duration-300 ${
+                                    isDeckPresentationMode 
+                                      ? (isDeckPresentationFocus 
+                                          ? 'fixed inset-0 z-10 !w-screen !h-screen !max-w-none !max-h-none !rounded-none !border-0 shadow-none select-none !p-6 md:!p-12' 
+                                          : 'aspect-[16/9] !w-full !rounded-xl !border-0 shadow-[0_25px_80px_rgba(0,0,0,0.95)] select-none') 
+                                      : 'aspect-[16/9] rounded-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] border border-slate-200/80 dark:border-zinc-800 select-text'
+                                  }`}
                                   style={{ 
-                                    width: 'min(100%, 820px)',
-                                    aspectRatio: '16/9',
-                                    transform: `scale(${deckZoomLevel / 100})`, 
+                                    width: isDeckPresentationMode ? (isDeckPresentationFocus ? '100vw' : 'min(96vw, calc(94vh * 16 / 9))') : 'min(100%, 820px)',
+                                    height: isDeckPresentationMode ? (isDeckPresentationFocus ? '100vh' : 'min(calc(96vw * 9 / 16), 94vh)') : 'auto',
+                                    maxWidth: isDeckPresentationMode ? (isDeckPresentationFocus ? 'none' : '177.7vh') : '820px',
+                                    maxHeight: isDeckPresentationMode ? (isDeckPresentationFocus ? 'none' : '94vh') : 'none',
+                                    aspectRatio: isDeckPresentationMode && isDeckPresentationFocus ? 'auto' : '16/9',
+                                    transform: isDeckPresentationMode ? 'none' : `scale(${deckZoomLevel / 100})`, 
                                     transformOrigin: 'center center', 
-                                    transition: 'transform 140ms ease, background-color 300ms ease',
+                                    transition: 'transform 140ms ease, background-color 300ms ease, width 220ms ease, height 220ms ease',
                                     backgroundColor: customBg || undefined,
                                     fontFamily: selectedBrandKit?.font || 'inherit'
                                   }}
                                 >
+                                  {/* Corner Fill/Fit Button on Slide Canvas in Presentation Mode */}
+                                  {isDeckPresentationMode && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsDeckPresentationFocus((prev) => !prev);
+                                      }}
+                                      className={`absolute top-4 right-4 z-40 p-2 rounded-xl backdrop-blur-md border shadow-lg cursor-pointer transition-all duration-200 hover:scale-105 ${
+                                        isDeckPresentationFocus 
+                                          ? 'bg-violet-600/90 text-white border-violet-400/50 ring-2 ring-violet-400/30' 
+                                          : 'bg-black/40 hover:bg-black/70 text-white/80 hover:text-white border-white/20'
+                                      }`}
+                                      title={isDeckPresentationFocus ? "Fit to 16:9 Screen (F)" : "Fill Full Screen (F)"}
+                                    >
+                                      <Expand size={16} />
+                                    </button>
+                                  )}
                                   {/* Interactive Draggable & Resizable Background spline wave decoration */}
                                   {(() => {
                                     const isVectorSelected = !isDeckPresentationMode && deckSelection.type === 'vector';
@@ -65720,7 +65748,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           >
                             <div className="flex items-center gap-3 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/70 px-3.5 py-1.5 rounded-2xl shadow-2xl">
                               <div className="flex items-center gap-2">
-                                <DeckIcon size={16} className="text-violet-400 shrink-0" />
+                                <DeckIcon size={20} className="text-violet-400 shrink-0" />
                                 <span className="font-bold text-xs text-zinc-100 tracking-tight">{deckTitle || 'Startup Pitch Deck'}</span>
                               </div>
                               <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-violet-950/60 text-violet-300 border border-violet-800/50 flex items-center gap-1">
@@ -65775,7 +65803,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   }
                                 }}
                                 className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-950/80 hover:text-red-300 text-zinc-300 transition-colors cursor-pointer"
-                                title="Exit Presentation (Esc)"
+                                title="Exit Presentation"
                               >
                                 <X size={13} />
                               </button>
@@ -65862,7 +65890,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-red-950/80 hover:text-red-300 text-zinc-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                             >
                               <X size={14} />
-                              <span>Exit (Esc)</span>
+                              <span>Exit</span>
                             </button>
                           </div>
                         ) : (
