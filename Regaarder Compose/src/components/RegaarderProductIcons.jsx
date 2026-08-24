@@ -342,7 +342,66 @@ export const RegaarderAiIcon = ({ size = 24, className = "", strokeWidth = 1.8, 
   </svg>
 );
 
+
+/**
+ * Regaarder Custom Styles & Theme Presets Icon
+ * Metaphor: Architectural slide theme card with diagonal aesthetic swatch divider and style spark
+ */
+export const RegaarderStylesIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Architectural theme card frame */}
+    <rect x="3" y="3.5" width="18" height="17" rx="3.5" />
+    {/* Diagonal split swatch baseline */}
+    <path d="M3 14.5L14.5 3" />
+    {/* Swatch color node */}
+    <circle cx="7.5" cy="7.5" r="1.25" fill="currentColor" stroke="none" />
+    {/* Micro style star spark in lower corner */}
+    <path d="M15.5 12.5v5M13 15h5" />
+    <circle cx="15.5" cy="15" r="0.75" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+/**
+ * Regaarder Custom Media & Logo Asset Icon
+ * Metaphor: Precision viewport frame with mountain horizon contour and elevated circular logo emblem
+ */
+export const RegaarderMediaIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Media container canvas frame */}
+    <rect x="3" y="3.5" width="18" height="17" rx="3.5" />
+    {/* Brand emblem badge */}
+    <circle cx="8" cy="8.5" r="2" />
+    {/* Precision image landscape curves */}
+    <path d="M21 16.5l-6-5.5a1.8 1.8 0 0 0-2.4 0L3 19" />
+    <path d="M14 14.5l2-1.8a1.5 1.5 0 0 1 2 0L21 15.5" />
+  </svg>
+);
+
 export const RegaarderProductIconMap = {
+  Styles: RegaarderStylesIcon,
+  Media: RegaarderMediaIcon,
   Compose: ComposeIcon,
   Deck: DeckIcon,
   Sheet: SheetIcon,

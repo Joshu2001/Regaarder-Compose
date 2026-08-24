@@ -1561,7 +1561,9 @@ const SLASH_OPTIONS = [
 ];
 
 const PROMPT_SLASH_OPTIONS = [
-  { key: 'orb', label: 'Orb Agent (@orb)', desc: 'Ground AI in full workspace context (Docs, Sheets, Decks, Tasks)', category: 'AI', icon: RegaarderVectorIcon, agentKey: 'orb', tag: '/orb' },
+  { key: 'orb', label: 'Orb Agent (@orb)', desc: 'Ground AI in full workspace context (Docs, Sheets, Decks, Tasks)', category: 'AI', icon: RegaarderVectorIcon,
+  RegaarderStylesIcon,
+  RegaarderMediaIcon, agentKey: 'orb', tag: '/orb' },
   { key: 'ask', label: 'Ask', desc: 'Ask a quick question without interrupting context', category: 'AI', icon: MessageSquare, agentKey: 'ask', tag: '/ask' },
   { key: 'goal', label: 'Goal', desc: 'Run until the specified goal is completed', category: 'AI', icon: Target, agentKey: 'goal', tag: '/goal' },
   { key: 'schedule', label: 'Schedule', desc: 'Run an instruction on a recurring schedule', category: 'AI', icon: Clock, agentKey: 'schedule', tag: '/schedule' },
@@ -51510,8 +51512,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                          }
                                        },
                                        { 
-                                         label: 'Styles', 
-                                         icon: Sparkles,
+                                         label: 'Styles',
+                                          icon: RegaarderStylesIcon,
                                          menuItems: ['Deep Cyber Glow (#05070B)', 'Aurora Gradient Wave', 'Midnight Slate Clean', 'Neon Electric Cyan', 'Minimalist Mono Dark'],
                                          onSelect: (item) => {
                                            if (item.includes('Deep Cyber Glow')) {
@@ -51556,8 +51558,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           }
                                        },
                                        { 
-                                         label: 'Media & Logo', 
-                                         icon: Sparkles,
+                                         label: 'Media & Logo',
+                                          icon: RegaarderMediaIcon,
                                          menuItems: ['Upload Picture / Image', 'Upload Brand Logo', 'Convert PNG/JPG to Vector (SVG)', 'Preset Monogram Logo'],
                                          onSelect: (item) => {
                                            if (item.includes('Picture / Image')) {
