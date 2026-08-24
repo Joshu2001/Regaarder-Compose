@@ -46,7 +46,10 @@ import {
   OrbIcon,
   RegaarderStylesIcon,
   RegaarderMediaIcon,
-  RegaarderFitScreenIcon
+  RegaarderFitScreenIcon,
+  RegaarderHistoryIcon,
+  RegaarderSaveCloudIcon,
+  RegaarderNotificationIcon
 } from './components/RegaarderProductIcons';
 import RoomLandingPage from './RoomLandingPage';
 import BrowserWorkspace from './components/browser/BrowserWorkspace';
