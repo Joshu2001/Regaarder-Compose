@@ -242,29 +242,53 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
 /**
  * Builds a unified index of real workspace entities strictly from live app state.
  * Returns only genuine user-created documents, sheets, slides, tasks, rooms, and notes.
+ * Filters out all blank, initial template, untitled placeholders, and dummy data.
  */
 export function buildWorkspaceIndex(context = {}) {
   const items = [];
 
-  // 1. Documents & Active Files
+  // 1. Real Documents & Active Files
   const docs = context.documents || [];
   const activeDocId = context.activeDocId;
-  const currentDocTitle = context.docTitle || '';
-  const currentDocSubtitle = context.docSubtitle || '';
-  const currentDocBodyHtml = context.docBodyHtml || '';
+  const currentDocTitle = (context.docTitle || '').trim();
+  const currentDocSubtitle = (context.docSubtitle || '').trim();
+  const currentDocBodyHtml = (context.docBodyHtml || '').trim();
   const currentProductMode = (context.productMode || '').toLowerCase();
+  const currentPlainText = stripHtml(currentDocBodyHtml).trim();
 
-  // Add currently open document / deck / sheet if non-empty or initialized
-  if (currentDocTitle || currentDocBodyHtml || activeDocId) {
+  // Known template / placeholder names
+  const placeholderTitles = new Set([
+    'untitled document',
+    'untitled deck',
+    'untitled sheet',
+    'untitled',
+    'untitled whiteboard',
+    'untitled task',
+    'beta launch',
+    'creator outreach',
+    'product hunt launch',
+    'paid campaigns'
+  ]);
+
+  const isRealTitle = (title) => {
+    if (!title || typeof title !== 'string') return false;
+    const lower = title.trim().toLowerCase();
+    return lower.length > 0 && !placeholderTitles.has(lower) && !lower.startsWith('untitled');
+  };
+
+  // Add currently open document / deck / sheet ONLY if it has real user content or custom title
+  const hasActiveContent = currentPlainText.length > 0 || (currentDocTitle && isRealTitle(currentDocTitle));
+  if (hasActiveContent && activeDocId) {
     const activeRes = resolveWorkspaceForEntity(currentDocTitle || 'Untitled Document', '', currentProductMode);
+    const titleToUse = currentDocTitle || `${activeRes.prefix === 'Deck' ? 'Deck' : activeRes.prefix === 'Sheets' ? 'Sheet' : 'Document'}`;
     items.push({
       id: `doc-active-${activeDocId || 'current'}`,
       type: activeRes.type,
       workspace: activeRes.workspace,
-      title: currentDocTitle || `Untitled ${activeRes.prefix === 'Deck' ? 'Deck' : activeRes.prefix === 'Sheets' ? 'Sheet' : 'Document'}`,
+      title: titleToUse,
       subtitle: currentDocSubtitle || `Currently open in ${activeRes.prefix}`,
-      location: `${activeRes.prefix} > ${currentDocTitle || 'Untitled Document'}`,
-      content: stripHtml(currentDocBodyHtml),
+      location: `${activeRes.prefix} > ${titleToUse}`,
+      content: currentPlainText,
       rawHtml: currentDocBodyHtml,
       author: 'You (Author)',
       authorRole: 'Editor',
@@ -277,18 +301,22 @@ export function buildWorkspaceIndex(context = {}) {
     });
   }
 
-  // Add other saved documents in the user's document list
+  // Add other saved documents ONLY if they have real content or a real custom title
   docs.forEach((doc, idx) => {
     if (doc.id === activeDocId) return; // avoid duplicate with active document
-    const plainText = stripHtml(doc.bodyHtml || doc.content || '');
-    const docRes = resolveWorkspaceForEntity(doc.title || '', doc.type || doc.format || '');
+    const plainText = stripHtml(doc.bodyHtml || doc.content || '').trim();
+    const rawTitle = (doc.title || '').trim();
+    if (!plainText && (!rawTitle || !isRealTitle(rawTitle))) {
+      return; // Skip empty / placeholder documents
+    }
+    const docRes = resolveWorkspaceForEntity(rawTitle || '', doc.type || doc.format || '');
     items.push({
       id: `doc-${doc.id || idx}`,
       type: docRes.type,
       workspace: docRes.workspace,
-      title: doc.title || `${docRes.prefix} ${idx + 1}`,
+      title: rawTitle || `${docRes.prefix} ${idx + 1}`,
       subtitle: doc.subtitle || `${docRes.prefix} File`,
-      location: `${docRes.prefix} > ${doc.title || `${docRes.prefix} ${idx + 1}`}`,
+      location: `${docRes.prefix} > ${rawTitle || `${docRes.prefix} ${idx + 1}`}`,
       content: plainText,
       rawHtml: doc.bodyHtml || '',
       author: doc.author || 'You (Author)',
@@ -302,73 +330,81 @@ export function buildWorkspaceIndex(context = {}) {
 
   // 2. Real Spreadsheets
   if (context.sheetsTitle && currentProductMode === 'sheets') {
-    const sheetTitle = context.sheetsTitle;
-    const exists = items.some(i => i.title === sheetTitle && i.workspace === 'sheets');
-    if (!exists) {
-      items.push({
-        id: `sheet-active-${context.activeSheetId || 'current'}`,
-        type: 'sheet',
-        workspace: 'sheets',
-        title: sheetTitle,
-        subtitle: 'Spreadsheet Calculation Grid',
-        location: `Sheets > ${sheetTitle}`,
-        content: 'Active spreadsheet calculations and cell data.',
-        author: 'You (Author)',
-        authorRole: 'Editor',
-        updatedAt: 'Just now',
-        isCurrent: true,
-        metadata: {
-          sheetId: context.activeSheetId
-        }
-      });
+    const sheetTitle = context.sheetsTitle.trim();
+    if (isRealTitle(sheetTitle) || context.hasImportedData || (context.sheetGrids && Object.keys(context.sheetGrids).length > 0)) {
+      const exists = items.some(i => i.title === sheetTitle && i.workspace === 'sheets');
+      if (!exists) {
+        items.push({
+          id: `sheet-active-${context.activeSheetId || 'current'}`,
+          type: 'sheet',
+          workspace: 'sheets',
+          title: sheetTitle,
+          subtitle: 'Spreadsheet Calculation Grid',
+          location: `Sheets > ${sheetTitle}`,
+          content: 'Active spreadsheet calculations and cell data.',
+          author: 'You (Author)',
+          authorRole: 'Editor',
+          updatedAt: 'Just now',
+          isCurrent: true,
+          metadata: {
+            sheetId: context.activeSheetId
+          }
+        });
+      }
     }
   }
 
   // 3. Real Presentations & Slides
   if (context.deckTitle && currentProductMode === 'deck') {
-    const deckTitle = context.deckTitle;
-    const exists = items.some(i => i.title === deckTitle && i.workspace === 'deck');
-    if (!exists) {
-      const slides = context.deckSlidesData || [];
-      items.push({
-        id: `deck-active-${context.activeDeckSlideId || 'current'}`,
-        type: 'deck',
-        workspace: 'deck',
-        title: deckTitle,
-        subtitle: `Presentation (${slides.length > 0 ? slides.length : 1} Slides)`,
-        location: `Deck > ${deckTitle}`,
-        content: slides.map((s, idx) => `Slide ${idx + 1}: ${s.title || ''} ${s.content || ''}`).join('. '),
-        author: 'You (Author)',
-        authorRole: 'Editor',
-        updatedAt: 'Just now',
-        isCurrent: true,
-        metadata: {
-          slideCount: slides.length
-        }
-      });
+    const deckTitle = context.deckTitle.trim();
+    if (isRealTitle(deckTitle)) {
+      const exists = items.some(i => i.title === deckTitle && i.workspace === 'deck');
+      if (!exists) {
+        const slides = context.deckSlidesData || [];
+        items.push({
+          id: `deck-active-${context.activeDeckSlideId || 'current'}`,
+          type: 'deck',
+          workspace: 'deck',
+          title: deckTitle,
+          subtitle: `Presentation (${slides.length > 0 ? slides.length : 1} Slides)`,
+          location: `Deck > ${deckTitle}`,
+          content: slides.map((s, idx) => `Slide ${idx + 1}: ${s.title || ''} ${s.content || ''}`).join('. '),
+          author: 'You (Author)',
+          authorRole: 'Editor',
+          updatedAt: 'Just now',
+          isCurrent: true,
+          metadata: {
+            slideCount: slides.length
+          }
+        });
+      }
     }
   }
 
-  // 4. Real Tasks & Action Items
+  // 4. Real Tasks & Action Items (Only genuine user-created tasks, excluding default placeholder initiatives)
   const tasks = context.tasks || [];
   if (Array.isArray(tasks) && tasks.length > 0) {
     tasks.forEach((t) => {
+      const taskTitle = (t.title || t.name || '').trim();
+      if (!isRealTitle(taskTitle)) {
+        return; // Filter out default/placeholder initiatives (e.g. Beta Launch, Creator Outreach, etc.)
+      }
       items.push({
-        id: `task-${t.id || t.title}`,
+        id: `task-${t.id || taskTitle}`,
         type: 'task',
         workspace: 'tasks',
-        title: t.title || 'Untitled Task',
-        subtitle: `${t.assignee || 'Unassigned'} • ${t.priority || 'Normal'} Priority • ${t.status || 'Active'}`,
+        title: taskTitle,
+        subtitle: `${t.assignee || t.owner || 'Unassigned'} • ${t.priority || 'Normal'} Priority • ${t.status || 'Active'}`,
         location: `Tasks > ${t.project || 'Initiatives'}`,
-        content: `${t.description || t.title}. Due date: ${t.due || 'Upcoming'}. Status: ${t.status || 'Active'}. Assignee: ${t.assignee || 'Team'}.`,
-        author: t.assignee || 'Assigned',
+        content: `${t.description || taskTitle}. Due date: ${t.due || t.timeline || 'Upcoming'}. Status: ${t.status || 'Active'}. Assignee: ${t.assignee || t.owner || 'Team'}.`,
+        author: t.assignee || t.owner || 'Assigned',
         authorRole: t.tag || 'Deliverable',
-        updatedAt: t.due ? `Due ${t.due}` : 'Active',
+        updatedAt: t.due ? `Due ${t.due}` : t.timeline ? `Due ${t.timeline}` : (t.status || 'Active'),
         metadata: {
           taskId: t.id,
           priority: t.priority,
           status: t.status,
-          assignee: t.assignee,
+          assignee: t.assignee || t.owner,
           progress: t.progress
         }
       });
@@ -379,13 +415,15 @@ export function buildWorkspaceIndex(context = {}) {
   const rooms = context.rooms || [];
   if (Array.isArray(rooms) && rooms.length > 0) {
     rooms.forEach((r) => {
+      const roomTitle = (r.title || '').trim();
+      if (!isRealTitle(roomTitle)) return;
       items.push({
-        id: `room-${r.id || r.title}`,
+        id: `room-${r.id || roomTitle}`,
         type: 'meeting',
         workspace: 'room',
-        title: r.title || 'Room Meeting',
+        title: roomTitle,
         subtitle: r.subtitle || 'Active Meeting Room',
-        location: `Room > ${r.title || 'Meeting'}`,
+        location: `Room > ${roomTitle}`,
         content: r.transcript || r.content || '',
         author: r.host || 'You',
         authorRole: 'Host',
@@ -401,13 +439,15 @@ export function buildWorkspaceIndex(context = {}) {
   const researchNotes = context.researchNotes || [];
   if (Array.isArray(researchNotes) && researchNotes.length > 0) {
     researchNotes.forEach((n) => {
+      const noteTitle = (n.title || '').trim();
+      if (!noteTitle && !n.content) return;
       items.push({
-        id: `note-${n.id || n.title}`,
+        id: `note-${n.id || noteTitle}`,
         type: 'research_note',
         workspace: 'browser',
-        title: n.title || 'Research Note',
+        title: noteTitle || 'Research Note',
         subtitle: n.subtitle || 'Web Source',
-        location: `Research > ${n.title || 'Notes'}`,
+        location: `Research > ${noteTitle || 'Notes'}`,
         content: n.content || '',
         author: 'You',
         authorRole: 'Researcher',
@@ -423,18 +463,20 @@ export function buildWorkspaceIndex(context = {}) {
   const people = context.collaborators || context.teamMembers || [];
   if (Array.isArray(people) && people.length > 0) {
     people.forEach((p) => {
+      const personName = (p.name || p.title || '').trim();
+      if (!personName) return;
       items.push({
         id: `person-${p.id || p.email}`,
         type: 'person',
         workspace: 'people',
-        title: p.name || p.title || 'Collaborator',
+        title: personName,
         subtitle: p.role || p.subtitle || 'Team Member',
         role: p.role || 'Member',
         email: p.email || '',
         avatar: p.avatar || '',
         department: p.department || 'Workspace',
         location: `People > ${p.department || 'Team'}`,
-        content: `${p.name || ''} ${p.role || ''} ${p.email || ''}`
+        content: `${personName} ${p.role || ''} ${p.email || ''}`
       });
     });
   }

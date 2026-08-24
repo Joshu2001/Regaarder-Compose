@@ -14,6 +14,7 @@ import {
   SheetIcon,
   RoomIcon,
   TasksIcon,
+  MemoryIcon,
   BrowserIcon,
   PeopleIcon,
   OrbIcon,
@@ -53,7 +54,7 @@ function HighlightedText({ text = '', query = '', className = '' }) {
 
 // Category filter tabs definition using native Regaarder SVG product icons
 const FILTER_TABS = [
-  { id: 'all', label: 'All', icon: OrbIcon },
+  { id: 'all', label: 'All', icon: MemoryIcon },
   { id: 'compose', label: 'Docs', icon: ComposeIcon },
   { id: 'sheets', label: 'Sheets', icon: SheetIcon },
   { id: 'deck', label: 'Decks', icon: DeckIcon },
@@ -66,7 +67,7 @@ const FILTER_TABS = [
 // Context-aware empty state configurations per category
 const EMPTY_STATE_CONFIG = {
   all: {
-    icon: OrbIcon,
+    icon: MemoryIcon,
     title: 'No recent items in workspace',
     description: 'Create a document, spreadsheet, presentation, or task to see items here.'
   },
