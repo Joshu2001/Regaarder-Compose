@@ -12021,6 +12021,9 @@ const DEFAULT_DECK_SLIDES = [
   const [isSheetZenMode, setIsSheetZenMode] = useState(false);
   const [isDeckPresentationMode, setIsDeckPresentationMode] = useState(false);
   const [presentationSlideIndex, setPresentationSlideIndex] = useState(0);
+  const [isDeckPresentationFocus, setIsDeckPresentationFocus] = useState(false);
+  const [isDeckChromeVisible, setIsDeckChromeVisible] = useState(true);
+  const deckChromeTimerRef = useRef(null);
   const [sheetZoomDropdownOpen, setSheetZoomDropdownOpen] = useState(false);
   const [deckZoomDropdownOpen, setDeckZoomDropdownOpen] = useState(false);
 
@@ -12059,7 +12062,10 @@ const DEFAULT_DECK_SLIDES = [
           setIsSheetZenMode(false);
         }
       } else if (isDeckPresentationMode) {
-        if (['ArrowRight', 'ArrowDown', 'Space', 'PageDown'].includes(e.key)) {
+        if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault();
+          setIsDeckPresentationFocus((prev) => !prev);
+        } else if (['ArrowRight', 'ArrowDown', 'Space', 'PageDown'].includes(e.key)) {
           e.preventDefault();
           setPresentationSlideIndex((prev) => {
             const nextIdx = Math.min((deckSlidesData?.length || 1) - 1, prev + 1);
@@ -54083,7 +54089,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       )}
 
                       {/* Presentation Editor Main Workspace Canvas */}
-                      <div className={`flex-1 flex flex-col justify-between items-center min-h-0 relative transition-all duration-300 ${isDeckPresentationMode ? 'fixed inset-0 z-[999999] w-screen h-screen bg-[#05070B] p-4 md:p-8 overflow-hidden' : 'p-3 overflow-y-auto thin-scrollbar bg-[#F7F8FB]'}`}>
+                      <div className={`flex-1 flex flex-col justify-between items-center min-h-0 relative transition-all duration-300 ${isDeckPresentationMode ? `fixed inset-0 z-[999999] w-screen h-screen bg-[#05070B] ${isDeckPresentationFocus ? 'p-0' : 'p-2 md:p-6'} overflow-hidden` : 'p-3 overflow-y-auto thin-scrollbar bg-[#F7F8FB]'}`}>
                         {/* Hidden File Pickers for Slide Deck Media, Logos, and Vectorizer */}
                         <input
                           ref={imageFileInputRef}
@@ -65703,13 +65709,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         {/* Top Presentation Header Bar when in Presentation Mode */}
                         {isDeckPresentationMode && (
-                          <div className="fixed top-4 left-6 right-6 z-[9999999] flex items-center justify-between pointer-events-auto select-none animate-in fade-in duration-200">
-                            <div className="flex items-center gap-3 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/80 px-4 py-2 rounded-2xl shadow-2xl">
+                          <div 
+                            onMouseEnter={() => {
+                              setIsDeckChromeVisible(true);
+                              if (deckChromeTimerRef.current) clearTimeout(deckChromeTimerRef.current);
+                            }}
+                            className={`fixed top-4 left-6 right-6 z-[9999999] flex items-center justify-between pointer-events-auto select-none transition-all duration-300 ${
+                              isDeckChromeVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3 pointer-events-none'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/70 px-3.5 py-1.5 rounded-2xl shadow-2xl">
                               <div className="flex items-center gap-2">
-                                <svg className="w-4 h-4 text-violet-400" viewBox="0 0 24 24" fill="currentColor">
-                                  <rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(45 12 12)" />
-                                  <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                                </svg>
+                                <DeckIcon size={16} className="text-violet-400 shrink-0" />
                                 <span className="font-bold text-xs text-zinc-100 tracking-tight">{deckTitle || 'Startup Pitch Deck'}</span>
                               </div>
                               <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-violet-950/60 text-violet-300 border border-violet-800/50 flex items-center gap-1">
@@ -65718,11 +65729,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/80 px-3 py-1.5 rounded-2xl shadow-2xl">
+                            <div className="flex items-center gap-2 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/70 px-3 py-1.5 rounded-2xl shadow-2xl">
                               <span className="text-xs font-semibold text-zinc-400">
                                 Slide <span className="text-zinc-100 font-bold">{presentationSlideIndex + 1}</span> of {deckSlidesData?.length || 1}
                               </span>
                               <div className="w-px h-3.5 bg-zinc-700 mx-1" />
+                              
+                              {/* Focus / Screen Fill Toggle */}
+                              <button
+                                type="button"
+                                onClick={() => setIsDeckPresentationFocus((prev) => !prev)}
+                                className={`p-1.5 px-2.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 text-xs font-medium ${
+                                  isDeckPresentationFocus 
+                                    ? 'bg-violet-600 text-white shadow-sm' 
+                                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white'
+                                }`}
+                                title={isDeckPresentationFocus ? "Fit 16:9 (F)" : "Fill Screen (F)"}
+                              >
+                                <Expand size={13} />
+                                <span className="text-[10.5px] hidden sm:inline">{isDeckPresentationFocus ? 'Fit' : 'Fill'}</span>
+                              </button>
+
                               <button
                                 type="button"
                                 onClick={() => {
@@ -65737,7 +65764,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
                                 title="Toggle Native Fullscreen"
                               >
-                                <Maximize size={14} />
+                                <Maximize size={13} />
                               </button>
                               <button
                                 type="button"
@@ -65750,7 +65777,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-950/80 hover:text-red-300 text-zinc-300 transition-colors cursor-pointer"
                                 title="Exit Presentation (Esc)"
                               >
-                                <X size={14} />
+                                <X size={13} />
                               </button>
                             </div>
                           </div>
@@ -65758,7 +65785,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         {/* Bottom Status Bar & Floating Presentation Controls */}
                         {isDeckPresentationMode ? (
-                          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999999] flex items-center gap-3 px-5 py-2.5 bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/80 rounded-2xl shadow-2xl pointer-events-auto select-none animate-in fade-in slide-in-from-bottom-2 duration-200">
+                          <div 
+                            onMouseEnter={() => {
+                              setIsDeckChromeVisible(true);
+                              if (deckChromeTimerRef.current) clearTimeout(deckChromeTimerRef.current);
+                            }}
+                            className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999999] flex items-center gap-3 px-5 py-2.5 bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/70 rounded-2xl shadow-2xl pointer-events-auto select-none transition-all duration-300 ${
+                              isDeckChromeVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
+                            }`}>
                             <button
                               type="button"
                               disabled={presentationSlideIndex <= 0}
