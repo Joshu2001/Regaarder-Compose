@@ -44,7 +44,8 @@ import {
   BrowserIcon,
   OrbIcon,
   RegaarderStylesIcon,
-  RegaarderMediaIcon
+  RegaarderMediaIcon,
+  RegaarderFitScreenIcon
 } from './components/RegaarderProductIcons';
 import RoomLandingPage from './RoomLandingPage';
 import BrowserWorkspace from './components/browser/BrowserWorkspace';
@@ -12019,27 +12020,7 @@ const DEFAULT_DECK_SLIDES = [
   const [activeAgentTag, setActiveAgentTag] = useState(null);
   const [isSheetsPresentationMode, setIsSheetsPresentationMode] = useState(false);
   const [isSheetZenMode, setIsSheetZenMode] = useState(false);
-  // Custom Regaarder 16:9 Aspect & Screen Fit Icon
-const RegaarderFitScreenIcon = ({ isFilled = false, size = 14, className = "" }) => {
-  if (isFilled) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-        <rect x="2.5" y="4.5" width="15" height="11" rx="2" stroke="currentColor" strokeWidth="1.4" />
-        <path d="M6 10H14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-        <path d="M8 8L6 10L8 12M12 8L14 10L12 12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  }
-  return (
-    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-      <rect x="3.5" y="4.5" width="13" height="11" rx="1.8" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M1.5 10H4.5M15.5 10H18.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M2.5 8.5L1 10L2.5 11.5M17.5 8.5L19 10L17.5 11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-};
-
-  const [isDeckPresentationMode, setIsDeckPresentationMode] = useState(false);
+    const [isDeckPresentationMode, setIsDeckPresentationMode] = useState(false);
   const [presentationSlideIndex, setPresentationSlideIndex] = useState(0);
   const [isDeckPresentationFocus, setIsDeckPresentationFocus] = useState(false);
   const [isDeckChromeVisible, setIsDeckChromeVisible] = useState(true);
@@ -54660,7 +54641,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         )}
 
                         {/* Centered Presentation Canvas */}
-                        <div className="w-full flex-1 flex items-center justify-center relative min-h-[320px] py-4">
+                        <div className={`w-full flex-1 flex items-center justify-center relative ${isDeckPresentationMode ? (isDeckPresentationFocus ? 'p-0 m-0 !min-h-0' : 'p-2 md:p-4') : 'min-h-[320px] py-4'}`}>
                           {!activeDeckSlide ? (
                             <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-3xl border border-gray-150 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-sm z-10">
                               <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center text-[#7C4DFF] mb-4">
@@ -54698,22 +54679,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }
                                   }}
                                   data-canvas-bg="true"
-                                  className={`${customBg ? '' : (currentPresetObj.background || 'bg-white')} relative overflow-hidden flex flex-col justify-between p-[32px] md:p-[48px] mx-auto my-auto ${isDeckPresentationMode ? 'transition-none' : 'transition-all duration-300'} ${
+                                  className={`${customBg ? '' : (currentPresetObj.background || 'bg-white')} relative overflow-hidden flex flex-col justify-between mx-auto my-auto ${
                                     isDeckPresentationMode 
                                       ? (isDeckPresentationFocus 
-                                          ? 'fixed inset-0 z-10 !w-screen !h-screen !max-w-none !max-h-none !rounded-none !border-0 shadow-none select-none !p-6 md:!p-12' 
-                                          : 'aspect-[16/9] !w-full !rounded-xl !border-0 shadow-[0_25px_80px_rgba(0,0,0,0.95)] select-none') 
-                                      : 'aspect-[16/9] rounded-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] border border-slate-200/80 dark:border-zinc-800 select-text'
+                                          ? 'fixed inset-0 z-10 !w-screen !h-screen !max-w-none !max-h-none !rounded-none !border-0 shadow-none select-none p-6 md:p-12' 
+                                          : 'aspect-[16/9] !w-full !rounded-xl !border-0 shadow-[0_25px_80px_rgba(0,0,0,0.95)] select-none p-[32px] md:p-[48px]') 
+                                      : 'aspect-[16/9] rounded-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] border border-slate-200/80 dark:border-zinc-800 select-text p-[32px] md:p-[48px]'
                                   }`}
                                   style={{ 
-                                    width: isDeckPresentationMode ? (isDeckPresentationFocus ? '100vw' : 'min(90vw, calc(84vh * 16 / 9))') : 'min(100%, 820px)',
-                                    height: isDeckPresentationMode ? (isDeckPresentationFocus ? '100vh' : 'min(calc(90vw * 9 / 16), 84vh)') : 'auto',
-                                    maxWidth: isDeckPresentationMode ? (isDeckPresentationFocus ? 'none' : '149.3vh') : '820px',
-                                    maxHeight: isDeckPresentationMode ? (isDeckPresentationFocus ? 'none' : '84vh') : 'none',
+                                    width: isDeckPresentationMode ? (isDeckPresentationFocus ? '100vw' : 'min(92vw, calc(86vh * 16 / 9))') : 'min(100%, 820px)',
+                                    height: isDeckPresentationMode ? (isDeckPresentationFocus ? '100vh' : 'min(calc(92vw * 9 / 16), 86vh)') : 'auto',
+                                    maxWidth: isDeckPresentationMode ? (isDeckPresentationFocus ? 'none' : '152.8vh') : '820px',
+                                    maxHeight: isDeckPresentationMode ? (isDeckPresentationFocus ? 'none' : '86vh') : 'none',
                                     aspectRatio: isDeckPresentationMode && isDeckPresentationFocus ? 'auto' : '16/9',
                                     transform: isDeckPresentationMode ? 'none' : `scale(${deckZoomLevel / 100})`, 
                                     transformOrigin: 'center center', 
-                                    transition: 'transform 140ms ease, background-color 300ms ease, width 220ms ease, height 220ms ease',
+                                    transition: isDeckPresentationMode ? 'none' : 'transform 140ms ease, background-color 300ms ease',
                                     backgroundColor: customBg || undefined,
                                     fontFamily: selectedBrandKit?.font || 'inherit'
                                   }}

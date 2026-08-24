@@ -403,6 +403,26 @@ export const RegaarderMediaIcon = ({ size = 24, className = "", strokeWidth = 1.
   </svg>
 );
 
+
+export const RegaarderFitScreenIcon = ({ isFilled = false, size = 20, className = "", strokeWidth = 1.6, ...props }) => {
+  if (isFilled) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+        <rect x="3" y="5" width="18" height="14" rx="2.5" />
+        <path d="M7 12h10" />
+        <path d="M9.5 9.5L7 12l2.5 2.5M14.5 9.5L17 12l-2.5 2.5" />
+      </svg>
+    );
+  }
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <rect x="4.5" y="5" width="15" height="14" rx="2.5" />
+      <path d="M2 12h2.5M19.5 12H22" />
+      <path d="M3.5 10.5L2 12l1.5 1.5M20.5 10.5L22 12l-1.5 1.5" />
+    </svg>
+  );
+};
+
 export const RegaarderProductIconMap = {
   Styles: RegaarderStylesIcon,
   Media: RegaarderMediaIcon,
@@ -436,6 +456,8 @@ export const RegaarderProductIconMap = {
   agents: AgentsIcon,
   'ai-studio': AgentsIcon,
   ai: RegaarderAiIcon,
+  fit: RegaarderFitScreenIcon,
+  fitscreen: RegaarderFitScreenIcon,
   'regaarder-ai': RegaarderAiIcon,
   decide: RegaarderAiIcon,
   browser: BrowserIcon,
