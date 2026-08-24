@@ -52456,14 +52456,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     ? 'left-1/2 -translate-x-1/2' 
                                                     : 'left-0'
                                                 } top-9 ${
-                                                  btn.label === 'Vector & Wave' ? 'w-[420px] max-h-[480px]' : 
-                                                  btn.label === 'Background' ? 'w-[410px] max-h-[480px]' : 
-                                                  btn.label === 'Styles' ? 'w-[380px] max-h-[440px]' : 
-                                                  btn.label === 'Animation' ? 'w-[430px] max-h-[480px]' : 
-                                                  btn.label === 'Insert' ? 'w-[390px] max-h-[480px]' : 
-                                                  btn.label === 'Media & Logo' ? 'w-[360px]' : 
-                                                  btn.label === 'AI' ? 'w-[380px]' : 'w-60'
-                                                } flex flex-col bg-white/98 dark:bg-[#13151b]/98 border border-slate-200/90 dark:border-zinc-800/90 ring-1 ring-black/[0.05] dark:ring-white/[0.08] rounded-[15px] shadow-[0_20px_50px_rgba(0,0,0,0.14),0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.7),0_4px_20px_rgba(0,0,0,0.4)] z-[9999] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-xl`}
+                                                  btn.label === 'Vector & Wave' ? 'w-[370px] max-h-[390px]' : 
+                                                  btn.label === 'Background' ? 'w-[360px] max-h-[390px]' : 
+                                                  btn.label === 'Styles' ? 'w-[340px] max-h-[370px]' : 
+                                                  btn.label === 'Animation' ? 'w-[370px] max-h-[390px]' : 
+                                                  btn.label === 'Insert' ? 'w-[350px] max-h-[390px]' : 
+                                                  btn.label === 'Media & Logo' ? 'w-[330px]' : 
+                                                  btn.label === 'AI' ? 'w-[345px] max-h-[380px]' : 'w-60'
+                                                } flex flex-col bg-[#ffffff] dark:bg-[#13151b] border border-slate-200/90 dark:border-zinc-800/90 ring-1 ring-black/[0.04] dark:ring-white/[0.05] rounded-[15px] shadow-[0_16px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7)] z-[9999] overflow-hidden transition-all duration-150 animate-in fade-in`}
                                               >
                                                 {btn.label === 'Animation' ? (
                                                   <>
@@ -52501,20 +52501,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     `}</style>
 
                                                     {/* Monochromatic Header Strip */}
-                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 shrink-0 space-y-2 select-none font-sans">
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
-                                                          <Wand2 size={13} className="text-slate-600 dark:text-zinc-300" />
-                                                          <span className="text-[10px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                          <Wand2 size={13} className="text-slate-700 dark:text-zinc-300" />
+                                                          <span className="text-[10px] font-bold tracking-wider text-slate-600 dark:text-zinc-400 uppercase">
                                                             MOTION & ENTRANCE PHYSICS
                                                           </span>
                                                         </div>
-                                                        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-mono">
+                                                        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
                                                           {ALL_DECK_ANIMATION_OPTIONS.filter(a => (deckAnimationFilter === 'All' || (deckAnimationFilter === 'Entrances' && (a.id.includes('whip') || a.id.includes('zoom') || a.id.includes('dissolve'))) || (deckAnimationFilter === 'Loops' && a.id.includes('float')) || (deckAnimationFilter === 'Kinetic' && (a.id.includes('shake') || a.id.includes('stagger')))) && (!deckAnimationSearch || a.label.toLowerCase().includes(deckAnimationSearch.toLowerCase()) || a.desc.toLowerCase().includes(deckAnimationSearch.toLowerCase()))).length} PRESETS
                                                         </span>
                                                       </div>
 
-                                                      {/* Monochromatic Search Bar */}
+                                                      {/* Search Bar */}
                                                       <div className="relative flex items-center">
                                                         <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
                                                         <input
@@ -52522,7 +52522,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           value={deckAnimationSearch}
                                                           onChange={(e) => setDeckAnimationSearch(e.target.value)}
                                                           placeholder="Search animations, physics cues…"
-                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100/60 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/60 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
+                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
                                                         />
                                                         {deckAnimationSearch && (
                                                           <button
@@ -52535,7 +52535,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         )}
                                                       </div>
 
-                                                      {/* Monochromatic Apple Filter Tabs */}
+                                                      {/* Filter Tabs */}
                                                       <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
                                                         {['All', 'Entrances', 'Loops', 'Kinetic'].map((cat) => {
                                                           const isTabActive = deckAnimationFilter === cat;
@@ -52549,8 +52549,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               }}
                                                               className={`px-2 py-0.5 text-[9.5px] font-medium rounded-md whitespace-nowrap transition-all cursor-pointer ${
                                                                 isTabActive
-                                                                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-zinc-700 font-semibold'
-                                                                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40 border border-transparent'
+                                                                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs border border-slate-200 dark:border-zinc-700 font-semibold'
+                                                                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
                                                               }`}
                                                             >
                                                               {cat}
@@ -52561,7 +52561,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     </div>
 
                                                     {/* Content Cards */}
-                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-2.5 max-h-[340px]">
+                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-2 max-h-[260px] bg-white dark:bg-[#13151b]">
                                                       {ALL_DECK_ANIMATION_OPTIONS
                                                         .filter(a => (deckAnimationFilter === 'All' || (deckAnimationFilter === 'Entrances' && (a.id.includes('whip') || a.id.includes('zoom') || a.id.includes('dissolve'))) || (deckAnimationFilter === 'Loops' && a.id.includes('float')) || (deckAnimationFilter === 'Kinetic' && (a.id.includes('shake') || a.id.includes('stagger')))) && (!deckAnimationSearch || a.label.toLowerCase().includes(deckAnimationSearch.toLowerCase()) || a.desc.toLowerCase().includes(deckAnimationSearch.toLowerCase())))
                                                         .map((animOpt) => {
@@ -52577,14 +52577,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                 setDeckActiveToolbarMenu(null);
                                                                 showToast(`Animation entrance set to: ${animOpt.label}`);
                                                               }}
-                                                              className={`group relative flex flex-col p-1.5 rounded-[12px] text-left transition-all duration-150 cursor-pointer ${
+                                                              className={`group relative flex flex-col p-1.5 rounded-[11px] text-left transition-all duration-150 cursor-pointer ${
                                                                 isCurrent 
                                                                   ? 'ring-[1.5px] ring-[#7C4DFF] shadow-xs' 
-                                                                  : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-100 dark:border-zinc-800/40 hover:border-slate-200/80 dark:hover:border-zinc-700/60'
+                                                                  : 'hover:bg-slate-50 dark:hover:bg-zinc-850 border border-slate-100 dark:border-zinc-800/50 hover:border-slate-200 dark:hover:border-zinc-700'
                                                               }`}
                                                             >
                                                               <div 
-                                                                className={`w-full aspect-[16/10] rounded-[9px] relative overflow-hidden transition-all duration-150 p-2.5 flex flex-col justify-between select-none bg-[#090C15] border border-white/10 ${
+                                                                className={`w-full aspect-[16/10] rounded-[8px] relative overflow-hidden transition-all duration-150 p-2 flex flex-col justify-between select-none bg-[#090C15] border border-white/10 ${
                                                                   isCurrent ? 'ring-1 ring-[#7C4DFF]' : 'group-hover:border-white/20'
                                                                 }`}
                                                               >
@@ -52666,13 +52666,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               </div>
 
                                                               <div className="mt-1.5 px-0.5 flex flex-col gap-0.5 w-full">
-                                                                <span className={`text-[10.5px] font-semibold truncate ${isCurrent ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
+                                                                <span className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-slate-950 dark:text-white font-bold' : 'text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white'}`}>
                                                                   {animOpt.label}
                                                                 </span>
-                                                                <span className="text-[8px] text-slate-400 dark:text-zinc-500 line-clamp-1">
+                                                                <span className="text-[8.5px] text-slate-500 dark:text-zinc-400 line-clamp-1">
                                                                   {animOpt.desc}
                                                                 </span>
-                                                             </div>
+                                                              </div>
                                                             </button>
                                                           );
                                                         })}
@@ -52682,20 +52682,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 : btn.label === 'Vector & Wave' ? (
                                                   <>
                                                     {/* Monochromatic Header Strip */}
-                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 shrink-0 space-y-2 select-none font-sans">
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
-                                                          <RegaarderVectorIcon size={13} className="text-slate-600 dark:text-zinc-300" />
-                                                          <span className="text-[10px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                          <RegaarderVectorIcon size={13} className="text-slate-700 dark:text-zinc-300" />
+                                                          <span className="text-[10px] font-bold tracking-wider text-slate-600 dark:text-zinc-400 uppercase">
                                                             VECTOR MESHES & WAVES
                                                           </span>
                                                         </div>
-                                                        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-mono">
+                                                        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
                                                           {ALL_INDUSTRY_VECTOR_STYLES.filter((s) => (deckVectorFilter === 'All' || s.category === deckVectorFilter) && (!vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase()))).length} STYLES
                                                         </span>
                                                       </div>
 
-                                                      {/* Monochromatic Search Bar */}
+                                                      {/* Search Bar */}
                                                       <div className="relative flex items-center">
                                                         <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
                                                         <input
@@ -52703,7 +52703,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           value={vectorWaveSearch}
                                                           onChange={(e) => setVectorWaveSearch(e.target.value)}
                                                           placeholder="Search 3D meshes, waves, shapes…"
-                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100/60 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/60 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
+                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
                                                         />
                                                         {vectorWaveSearch && (
                                                           <button
@@ -52716,7 +52716,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         )}
                                                       </div>
 
-                                                      {/* Monochromatic Filter Tabs */}
+                                                      {/* Filter Tabs */}
                                                       <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
                                                         {['All', 'Startup Specials', '3D Shapes', 'Featured Waves', 'Deep-Tech & Systems', 'Sports & Athletics', 'Faith & Spiritual'].map((cat) => {
                                                           const isTabActive = deckVectorFilter === cat;
@@ -52730,8 +52730,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               }}
                                                               className={`px-2 py-0.5 text-[9.5px] font-medium rounded-md whitespace-nowrap transition-all cursor-pointer ${
                                                                 isTabActive
-                                                                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-zinc-700 font-semibold'
-                                                                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40 border border-transparent'
+                                                                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs border border-slate-200 dark:border-zinc-700 font-semibold'
+                                                                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
                                                               }`}
                                                             >
                                                               {cat === 'Deep-Tech & Systems' ? 'Deep-Tech' : cat === 'Sports & Athletics' ? 'Sports' : cat === 'Faith & Spiritual' ? 'Faith' : cat}
@@ -52742,7 +52742,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     </div>
 
                                                     {/* Content Cards */}
-                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-3 max-h-[340px]">
+                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-2.5 max-h-[260px] bg-white dark:bg-[#13151b]">
                                                       {ALL_INDUSTRY_VECTOR_STYLES
                                                         .filter((s) => (deckVectorFilter === 'All' || s.category === deckVectorFilter) && (!vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase())))
                                                         .map((styleObj) => {
@@ -52756,14 +52756,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                 btn.onSelect(styleObj.label);
                                                                 setDeckActiveToolbarMenu(null);
                                                               }}
-                                                              className={`group relative flex flex-col p-1.5 rounded-[12px] text-left transition-all duration-150 cursor-pointer ${
+                                                              className={`group relative flex flex-col p-1.5 rounded-[11px] text-left transition-all duration-150 cursor-pointer ${
                                                                 isCurrent 
                                                                   ? 'ring-[1.5px] ring-[#7C4DFF] shadow-xs' 
-                                                                  : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-100 dark:border-zinc-800/40 hover:border-slate-200/80 dark:hover:border-zinc-700/60'
+                                                                  : 'hover:bg-slate-50 dark:hover:bg-zinc-850 border border-slate-100 dark:border-zinc-800/50 hover:border-slate-200 dark:hover:border-zinc-700'
                                                               }`}
                                                             >
                                                               <div 
-                                                                className={`w-full aspect-[16/10] rounded-[9px] relative overflow-hidden transition-all duration-150 p-2 flex flex-col justify-between shadow-xs select-none bg-[#07090E] ${
+                                                                className={`w-full aspect-[16/10] rounded-[8px] relative overflow-hidden transition-all duration-150 p-2 flex flex-col justify-between shadow-xs select-none bg-[#07090E] ${
                                                                   isCurrent 
                                                                     ? 'ring-1 ring-[#7C4DFF]' 
                                                                     : 'border border-white/10 group-hover:shadow-xs'
@@ -52791,13 +52791,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                   </div>
                                                                   <span className="text-[6.5px] font-mono text-slate-400">3D Mesh</span>
                                                                 </div>
-                                                             </div>
+                                                              </div>
 
                                                               <div className="mt-1.5 px-0.5 flex flex-col gap-0.5 w-full">
-                                                                <span className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
+                                                                <span className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-slate-950 dark:text-white font-bold' : 'text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white'}`}>
                                                                   {styleObj.label}
                                                                 </span>
-                                                                <span className="text-[8.5px] text-slate-400 dark:text-zinc-500 line-clamp-1">
+                                                                <span className="text-[8.5px] text-slate-500 dark:text-zinc-400 line-clamp-1">
                                                                   {styleObj.desc}
                                                                 </span>
                                                               </div>
@@ -52809,20 +52809,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 ) : btn.label === 'Background' ? (
                                                   <>
                                                     {/* Monochromatic Header Strip */}
-                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 shrink-0 space-y-2 select-none font-sans">
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
-                                                          <Palette size={13} className="text-slate-600 dark:text-zinc-300" />
-                                                          <span className="text-[10px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                          <Palette size={13} className="text-slate-700 dark:text-zinc-300" />
+                                                          <span className="text-[10px] font-bold tracking-wider text-slate-600 dark:text-zinc-400 uppercase">
                                                             KEYNOTE THEMES & BACKGROUNDS
                                                           </span>
                                                         </div>
-                                                        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-mono">
+                                                        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
                                                           {ALL_DECK_BACKGROUND_OPTIONS.filter(b => (deckBgFilter === 'All' || b.category.toLowerCase().includes(deckBgFilter.toLowerCase())) && (!deckBgSearch || b.label.toLowerCase().includes(deckBgSearch.toLowerCase()) || b.value.toLowerCase().includes(deckBgSearch.toLowerCase()))).length} THEMES
                                                         </span>
                                                       </div>
 
-                                                      {/* Monochromatic Search Bar */}
+                                                      {/* Search Bar */}
                                                       <div className="relative flex items-center">
                                                         <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
                                                         <input
@@ -52830,7 +52830,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           value={deckBgSearch}
                                                           onChange={(e) => setDeckBgSearch(e.target.value)}
                                                           placeholder="Search background colors, gradients…"
-                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100/60 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/60 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
+                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
                                                         />
                                                         {deckBgSearch && (
                                                           <button
@@ -52843,7 +52843,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         )}
                                                       </div>
 
-                                                      {/* Monochromatic Filter Tabs */}
+                                                      {/* Filter Tabs */}
                                                       <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
                                                         {['All', 'Dark', 'Gradient', 'Neon', 'Slate'].map((cat) => {
                                                           const isTabActive = deckBgFilter === cat;
@@ -52857,8 +52857,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               }}
                                                               className={`px-2 py-0.5 text-[9.5px] font-medium rounded-md whitespace-nowrap transition-all cursor-pointer ${
                                                                 isTabActive
-                                                                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-zinc-700 font-semibold'
-                                                                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40 border border-transparent'
+                                                                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs border border-slate-200 dark:border-zinc-700 font-semibold'
+                                                                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
                                                               }`}
                                                             >
                                                               {cat}
@@ -52869,7 +52869,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     </div>
 
                                                     {/* Content Cards */}
-                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-3 max-h-[340px]">
+                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-2.5 max-h-[260px] bg-white dark:bg-[#13151b]">
                                                       {ALL_DECK_BACKGROUND_OPTIONS
                                                         .filter(b => (deckBgFilter === 'All' || b.category.toLowerCase().includes(deckBgFilter.toLowerCase())) && (!deckBgSearch || b.label.toLowerCase().includes(deckBgSearch.toLowerCase()) || b.value.toLowerCase().includes(deckBgSearch.toLowerCase())))
                                                         .map((bgOpt) => {
@@ -52889,14 +52889,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                 btn.onSelect(bgOpt.label);
                                                                 setDeckActiveToolbarMenu(null);
                                                               }}
-                                                              className={`group relative flex flex-col p-1.5 rounded-[12px] text-left transition-all duration-150 cursor-pointer ${
+                                                              className={`group relative flex flex-col p-1.5 rounded-[11px] text-left transition-all duration-150 cursor-pointer ${
                                                                 isCurrent 
                                                                   ? 'ring-[1.5px] ring-[#7C4DFF] shadow-xs' 
-                                                                  : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-100 dark:border-zinc-800/40 hover:border-slate-200/80 dark:hover:border-zinc-700/60'
+                                                                  : 'hover:bg-slate-50 dark:hover:bg-zinc-850 border border-slate-100 dark:border-zinc-800/50 hover:border-slate-200 dark:hover:border-zinc-700'
                                                               }`}
                                                             >
                                                               <div 
-                                                                className={`w-full aspect-[16/10] rounded-[9px] relative overflow-hidden transition-all duration-150 p-2.5 flex flex-col justify-between shadow-xs select-none ${
+                                                                className={`w-full aspect-[16/10] rounded-[8px] relative overflow-hidden transition-all duration-150 p-2 flex flex-col justify-between shadow-xs select-none ${
                                                                   isCurrent 
                                                                     ? 'ring-1 ring-[#7C4DFF]' 
                                                                     : 'border border-black/10 dark:border-white/10 group-hover:shadow-xs'
@@ -52937,10 +52937,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               </div>
 
                                                               <div className="mt-1.5 px-0.5 flex items-center justify-between gap-1 w-full">
-                                                                <span className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
+                                                                <span className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-slate-950 dark:text-white font-bold' : 'text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white'}`}>
                                                                   {bgOpt.label.replace(/\s*\([^)]*\)/, '')}
                                                                 </span>
-                                                                <span className="text-[9px] font-mono text-slate-400 dark:text-zinc-500 shrink-0">
+                                                                <span className="text-[9px] font-mono text-slate-500 dark:text-zinc-400 shrink-0">
                                                                   {bgOpt.value.startsWith('#') ? bgOpt.value : 'Grad'}
                                                                 </span>
                                                               </div>
@@ -52953,20 +52953,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 : btn.label === 'Styles' ? (
                                                   <>
                                                     {/* Monochromatic Header Strip */}
-                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 shrink-0 space-y-2 select-none font-sans">
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
-                                                          <RegaarderStylesIcon size={13} className="text-slate-600 dark:text-zinc-300" />
-                                                          <span className="text-[10px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                          <RegaarderStylesIcon size={13} className="text-slate-700 dark:text-zinc-300" />
+                                                          <span className="text-[10px] font-bold tracking-wider text-slate-600 dark:text-zinc-400 uppercase">
                                                             STYLE PRESETS
                                                           </span>
                                                         </div>
-                                                        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-mono">
+                                                        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
                                                           {btn.menuItems.filter(item => !deckStyleSearch || item.toLowerCase().includes(deckStyleSearch.toLowerCase())).length} PRESETS
                                                         </span>
                                                       </div>
 
-                                                      {/* Monochromatic Search Bar */}
+                                                      {/* Search Bar */}
                                                       <div className="relative flex items-center">
                                                         <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
                                                         <input
@@ -52974,7 +52974,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           value={deckStyleSearch}
                                                           onChange={(e) => setDeckStyleSearch(e.target.value)}
                                                           placeholder="Search color schemes, palettes…"
-                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100/60 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/60 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
+                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
                                                         />
                                                         {deckStyleSearch && (
                                                           <button
@@ -52989,7 +52989,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     </div>
 
                                                     {/* Content Cards */}
-                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-2.5 max-h-[340px]">
+                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-2 max-h-[250px] bg-white dark:bg-[#13151b]">
                                                       {btn.menuItems
                                                         .filter(item => !deckStyleSearch || item.toLowerCase().includes(deckStyleSearch.toLowerCase()))
                                                         .map((item) => {
@@ -53011,10 +53011,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                 btn.onSelect(item);
                                                                 setDeckActiveToolbarMenu(null);
                                                               }}
-                                                              className="group relative flex flex-col p-1.5 rounded-[12px] text-left hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-100 dark:border-zinc-800/40 hover:border-slate-200/80 dark:hover:border-zinc-700/60 transition-all cursor-pointer"
+                                                              className="group relative flex flex-col p-1.5 rounded-[11px] text-left hover:bg-slate-50 dark:hover:bg-zinc-850 border border-slate-100 dark:border-zinc-800/50 hover:border-slate-200 dark:hover:border-zinc-700 transition-all cursor-pointer"
                                                             >
                                                               <div 
-                                                                className="w-full aspect-[16/10] rounded-[9px] relative overflow-hidden p-2 flex flex-col justify-between border border-white/10 shadow-xs"
+                                                                className="w-full aspect-[16/10] rounded-[8px] relative overflow-hidden p-2 flex flex-col justify-between border border-white/10 shadow-xs"
                                                                 style={{ backgroundColor: styleBg }}
                                                               >
                                                                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: waveColor1 }} />
@@ -53023,7 +53023,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                 </div>
                                                                 <div className="w-full h-0.5 rounded-full" style={{ background: `linear-gradient(90deg, ${waveColor1}, ${waveColor2})` }} />
                                                               </div>
-                                                              <span className="mt-1 text-[10.5px] font-semibold text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white truncate">
+                                                              <span className="mt-1 text-[10.5px] font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">
                                                                 {item.split('(')[0].trim()}
                                                               </span>
                                                             </button>
@@ -53034,20 +53034,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 ) : btn.label === 'Media & Logo' ? (
                                                   <>
                                                     {/* Monochromatic Header Strip */}
-                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 shrink-0 space-y-2 select-none font-sans">
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
-                                                          <RegaarderMediaIcon size={13} className="text-slate-600 dark:text-zinc-300" />
-                                                          <span className="text-[10px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                          <RegaarderMediaIcon size={13} className="text-slate-700 dark:text-zinc-300" />
+                                                          <span className="text-[10px] font-bold tracking-wider text-slate-600 dark:text-zinc-400 uppercase">
                                                             MEDIA & BRAND ASSETS
                                                           </span>
                                                         </div>
-                                                        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-mono">
+                                                        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
                                                           4 ASSETS
                                                         </span>
                                                       </div>
 
-                                                      {/* Monochromatic Search Bar */}
+                                                      {/* Search Bar */}
                                                       <div className="relative flex items-center">
                                                         <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
                                                         <input
@@ -53055,7 +53055,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           value={deckMediaSearch}
                                                           onChange={(e) => setDeckMediaSearch(e.target.value)}
                                                           placeholder="Search media, logos, uploads…"
-                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100/60 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/60 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
+                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
                                                         />
                                                         {deckMediaSearch && (
                                                           <button
@@ -53069,7 +53069,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       </div>
                                                     </div>
 
-                                                    <div className="p-1.5 space-y-1">
+                                                    <div className="p-1.5 space-y-1 bg-white dark:bg-[#13151b]">
                                                       {[
                                                         { label: 'Upload Picture / Image', icon: ImageIcon, badge: 'JPG / PNG', desc: 'Insert photography or graphic asset' },
                                                         { label: 'Upload Brand Logo', icon: Award, badge: 'SVG / PNG', desc: 'Place high-res company emblem' },
@@ -53088,22 +53088,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                 btn.onSelect(mediaItem.label);
                                                                 setDeckActiveToolbarMenu(null);
                                                               }}
-                                                              className="w-full text-left p-2 rounded-[11px] hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-all flex items-center justify-between group cursor-pointer border border-transparent hover:border-slate-200/80 dark:hover:border-zinc-700/80"
+                                                              className="w-full text-left p-2 rounded-[10px] hover:bg-slate-50 dark:hover:bg-zinc-850 transition-all flex items-center justify-between group cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-zinc-700"
                                                             >
                                                               <div className="flex items-center gap-2.5 min-w-0">
-                                                                <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 group-hover:text-slate-900 dark:group-hover:text-white group-hover:bg-slate-200/80 dark:group-hover:bg-zinc-700 flex items-center justify-center shrink-0 transition-colors">
-                                                                  <MediaIcon size={14} />
+                                                                <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 group-hover:text-slate-950 dark:group-hover:text-white group-hover:bg-slate-200/80 dark:group-hover:bg-zinc-700 flex items-center justify-center shrink-0 transition-colors">
+                                                                  <MediaIcon size={13} />
                                                                 </div>
                                                                 <div className="flex flex-col min-w-0">
                                                                   <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">
                                                                     {mediaItem.label}
                                                                   </span>
-                                                                  <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 truncate">
+                                                                  <span className="text-[9px] text-slate-500 dark:text-zinc-400 truncate">
                                                                     {mediaItem.desc}
                                                                   </span>
                                                                 </div>
                                                               </div>
-                                                              <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 shrink-0">
+                                                              <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 shrink-0">
                                                                 {mediaItem.badge}
                                                               </span>
                                                             </button>
@@ -53114,20 +53114,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 ) : btn.label === 'Insert' ? (
                                                   <>
                                                     {/* Monochromatic Header Strip */}
-                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 shrink-0 space-y-2 select-none font-sans">
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
-                                                          <Plus size={13} className="text-slate-600 dark:text-zinc-300" />
-                                                          <span className="text-[10px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                          <Plus size={13} className="text-slate-700 dark:text-zinc-300" />
+                                                          <span className="text-[10px] font-bold tracking-wider text-slate-600 dark:text-zinc-400 uppercase">
                                                             INSERT SLIDE OBJECTS
                                                           </span>
                                                         </div>
-                                                        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-mono">
+                                                        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
                                                           OBJECTS
                                                         </span>
                                                       </div>
 
-                                                      {/* Monochromatic Search Bar */}
+                                                      {/* Search Bar */}
                                                       <div className="relative flex items-center">
                                                         <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
                                                         <input
@@ -53135,7 +53135,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           value={deckInsertSearch}
                                                           onChange={(e) => setDeckInsertSearch(e.target.value)}
                                                           placeholder="Search shapes, text, media, badges…"
-                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100/60 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/60 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
+                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
                                                         />
                                                         {deckInsertSearch && (
                                                           <button
@@ -53148,7 +53148,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         )}
                                                       </div>
 
-                                                      {/* Monochromatic Filter Tabs */}
+                                                      {/* Filter Tabs */}
                                                       <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
                                                         {['All', 'Media', 'Shapes', 'Typography'].map((cat) => {
                                                           const isTabActive = deckInsertFilter === cat;
@@ -53162,8 +53162,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               }}
                                                               className={`px-2 py-0.5 text-[9.5px] font-medium rounded-md whitespace-nowrap transition-all cursor-pointer ${
                                                                 isTabActive
-                                                                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-zinc-700 font-semibold'
-                                                                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40 border border-transparent'
+                                                                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs border border-slate-200 dark:border-zinc-700 font-semibold'
+                                                                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
                                                               }`}
                                                             >
                                                               {cat}
@@ -53173,11 +53173,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       </div>
                                                     </div>
 
-                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2 space-y-2.5 max-h-[340px]">
+                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2 space-y-2 max-h-[260px] bg-white dark:bg-[#13151b]">
                                                       {/* Section 1: Media & Vector */}
                                                       {(deckInsertFilter === 'All' || deckInsertFilter === 'Media') && (
                                                         <div>
-                                                          <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">Media & Vectors</span>
+                                                          <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">Media & Vectors</span>
                                                           <div className="grid grid-cols-2 gap-1.5">
                                                             {[
                                                               { label: 'Picture / Image', icon: ImageIcon, desc: 'Photo upload' },
@@ -53197,14 +53197,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                       btn.onSelect(item.label);
                                                                       setDeckActiveToolbarMenu(null);
                                                                     }}
-                                                                    className="flex items-center gap-2 p-1.5 rounded-[9px] bg-slate-50/70 dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 text-left border border-slate-200/50 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 transition-all cursor-pointer group"
+                                                                    className="flex items-center gap-2 p-1.5 rounded-[8px] bg-slate-50 dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 text-left border border-slate-100 dark:border-zinc-800/50 hover:border-slate-200 dark:hover:border-zinc-700 transition-all cursor-pointer group"
                                                                   >
-                                                                    <div className="w-6 h-6 rounded-md bg-slate-200/70 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 group-hover:text-slate-900 dark:group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                                                                    <div className="w-6 h-6 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 group-hover:text-slate-950 dark:group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
                                                                       <ItemIcon size={12} />
                                                                     </div>
                                                                     <div className="flex flex-col min-w-0">
-                                                                      <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white truncate">{item.label}</span>
-                                                                      <span className="text-[8px] text-slate-400 dark:text-zinc-500 truncate">{item.desc}</span>
+                                                                      <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">{item.label}</span>
+                                                                      <span className="text-[8px] text-slate-500 dark:text-zinc-400 truncate">{item.desc}</span>
                                                                     </div>
                                                                   </button>
                                                                 );
@@ -53216,7 +53216,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       {/* Section 2: Shapes & Badges */}
                                                       {(deckInsertFilter === 'All' || deckInsertFilter === 'Shapes') && (
                                                         <div>
-                                                          <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">Geometric Shapes & Badges</span>
+                                                          <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">Geometric Shapes & Badges</span>
                                                           <div className="grid grid-cols-2 gap-1.5">
                                                             {[
                                                               { label: 'Presenter Pill Badge', icon: Shield, desc: 'Speaker bio' },
@@ -53238,14 +53238,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                       btn.onSelect(item.label);
                                                                       setDeckActiveToolbarMenu(null);
                                                                     }}
-                                                                    className="flex items-center gap-2 p-1.5 rounded-[9px] bg-slate-50/70 dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 text-left border border-slate-200/50 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 transition-all cursor-pointer group"
+                                                                    className="flex items-center gap-2 p-1.5 rounded-[8px] bg-slate-50 dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 text-left border border-slate-100 dark:border-zinc-800/50 hover:border-slate-200 dark:hover:border-zinc-700 transition-all cursor-pointer group"
                                                                   >
-                                                                    <div className="w-6 h-6 rounded-md bg-slate-200/70 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 group-hover:text-slate-900 dark:group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                                                                    <div className="w-6 h-6 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 group-hover:text-slate-950 dark:group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
                                                                       <ItemIcon size={12} />
                                                                     </div>
                                                                     <div className="flex flex-col min-w-0">
-                                                                      <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white truncate">{item.label}</span>
-                                                                      <span className="text-[8px] text-slate-400 dark:text-zinc-500 truncate">{item.desc}</span>
+                                                                      <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">{item.label}</span>
+                                                                      <span className="text-[8px] text-slate-500 dark:text-zinc-400 truncate">{item.desc}</span>
                                                                     </div>
                                                                   </button>
                                                                 );
@@ -53257,7 +53257,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       {/* Section 3: Typography & Structure */}
                                                       {(deckInsertFilter === 'All' || deckInsertFilter === 'Typography') && (
                                                         <div>
-                                                          <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">Typography & Lines</span>
+                                                          <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">Typography & Lines</span>
                                                           <div className="grid grid-cols-2 gap-1.5">
                                                             {[
                                                               { label: 'Heading H1', icon: Heading1, desc: 'Headline text' },
@@ -53277,14 +53277,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                       btn.onSelect(item.label);
                                                                       setDeckActiveToolbarMenu(null);
                                                                     }}
-                                                                    className="flex items-center gap-2 p-1.5 rounded-[9px] bg-slate-50/70 dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 text-left border border-slate-200/50 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 transition-all cursor-pointer group"
+                                                                    className="flex items-center gap-2 p-1.5 rounded-[8px] bg-slate-50 dark:bg-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-800 text-left border border-slate-100 dark:border-zinc-800/50 hover:border-slate-200 dark:hover:border-zinc-700 transition-all cursor-pointer group"
                                                                   >
-                                                                    <div className="w-6 h-6 rounded-md bg-slate-200/70 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 group-hover:text-slate-900 dark:group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                                                                    <div className="w-6 h-6 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 group-hover:text-slate-950 dark:group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
                                                                       <ItemIcon size={12} />
                                                                     </div>
                                                                     <div className="flex flex-col min-w-0">
-                                                                      <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white truncate">{item.label}</span>
-                                                                      <span className="text-[8px] text-slate-400 dark:text-zinc-500 truncate">{item.desc}</span>
+                                                                      <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">{item.label}</span>
+                                                                      <span className="text-[8px] text-slate-500 dark:text-zinc-400 truncate">{item.desc}</span>
                                                                     </div>
                                                                   </button>
                                                                 );
@@ -53297,18 +53297,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 ) : btn.label === 'AI' ? (
                                                   <>
                                                     {/* Elevated Apple Intelligence Intelligence Layer */}
-                                                    <div className="p-3 border-b border-slate-100 dark:border-zinc-800/80 bg-gradient-to-b from-slate-50/80 to-transparent dark:from-zinc-900/60 shrink-0 space-y-2.5 select-none font-sans">
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex items-center gap-1.5">
                                                           <div className="w-5 h-5 rounded-md bg-[#7C4DFF]/10 dark:bg-violet-400/10 text-[#7C4DFF] dark:text-violet-300 flex items-center justify-center">
                                                             <Sparkles size={11} />
                                                           </div>
-                                                          <span className="text-[10.5px] font-bold tracking-wider text-slate-700 dark:text-zinc-200 uppercase">
+                                                          <span className="text-[10px] font-bold tracking-wider text-slate-700 dark:text-zinc-200 uppercase">
                                                             DECK INTELLIGENCE
                                                           </span>
                                                         </div>
-                                                        <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 font-mono">
-                                                          SLIDE {activeDeckSlide?.id || 1} CONTEXT
+                                                        <span className="text-[8.5px] font-medium px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-mono">
+                                                          SLIDE {activeDeckSlide?.id || 1}
                                                         </span>
                                                       </div>
 
@@ -53327,7 +53327,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                             }
                                                           }}
                                                           placeholder="What would you like to improve on this slide?"
-                                                          className="w-full h-8 pl-3 pr-8 text-xs bg-white dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/80 focus:outline-none focus:border-[#7C4DFF] dark:focus:border-violet-500 focus:ring-1 focus:ring-[#7C4DFF]/30 transition-all font-sans shadow-xs"
+                                                          className="w-full h-7 pl-2.5 pr-7 text-xs bg-white dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-[#7C4DFF] dark:focus:border-violet-500 focus:ring-1 focus:ring-[#7C4DFF]/30 transition-all font-sans"
                                                         />
                                                         <button
                                                           type="button"
@@ -53338,7 +53338,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               setDeckAiSearch('');
                                                             }
                                                           }}
-                                                          className="absolute right-1.5 w-5 h-5 rounded-md bg-[#7C4DFF] text-white flex items-center justify-center cursor-pointer hover:bg-violet-600 transition-colors shadow-xs"
+                                                          className="absolute right-1.5 w-4.5 h-4.5 rounded-md bg-[#7C4DFF] text-white flex items-center justify-center cursor-pointer hover:bg-violet-600 transition-colors shadow-xs"
                                                           title="Run AI action"
                                                         >
                                                           <ArrowRight size={10} />
@@ -53346,18 +53346,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       </div>
                                                     </div>
 
-                                                    <div className="p-2 space-y-2 max-h-[350px] overflow-y-auto thin-scrollbar">
+                                                    <div className="p-2 space-y-2 max-h-[260px] overflow-y-auto thin-scrollbar bg-white dark:bg-[#13151b]">
                                                       {/* Section 1: Contextual Suggestions */}
                                                       <div>
-                                                        <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">
+                                                        <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">
                                                           Contextual Slide Actions
                                                         </span>
                                                         <div className="space-y-1">
                                                           {[
-                                                            { label: 'Auto-Design Slide 1 Cover', icon: Sparkles, badge: 'Executive Cover', desc: 'Synthesize title hierarchy, badges & glowing mesh' },
+                                                            { label: 'Auto-Design Slide 1 Cover', icon: Sparkles, badge: 'Executive Cover', desc: 'Synthesize title hierarchy & glowing mesh' },
                                                             { label: 'Improve Typography Hierarchy', icon: Type, badge: 'Hierarchy', desc: 'Rebalance headline scale, tracking & contrast' },
                                                             { label: 'Auto-Retheme Presentation', icon: Palette, badge: 'Brand Theme', desc: 'Harmonize chromatic styling & glow hues' },
-                                                            { label: 'Transform into Visual Bento Grid', icon: LayoutGrid, badge: 'Cards', desc: 'Format narrative bullets into structured visual cards' }
+                                                            { label: 'Transform into Visual Bento Grid', icon: LayoutGrid, badge: 'Cards', desc: 'Format narrative bullets into structured cards' }
                                                           ]
                                                             .filter(ai => !deckAiSearch || ai.label.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.desc.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.badge.toLowerCase().includes(deckAiSearch.toLowerCase()))
                                                             .map((aiItem) => {
@@ -53371,22 +53371,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                     btn.onSelect(aiItem.label);
                                                                     setDeckActiveToolbarMenu(null);
                                                                   }}
-                                                                  className="w-full text-left p-2 rounded-[10px] hover:bg-slate-100/90 dark:hover:bg-zinc-800/90 transition-all flex items-center justify-between group cursor-pointer border border-transparent hover:border-slate-200/80 dark:hover:border-zinc-700/80"
+                                                                  className="w-full text-left p-1.5 rounded-[8px] hover:bg-slate-50 dark:hover:bg-zinc-850 transition-all flex items-center justify-between group cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-zinc-700"
                                                                 >
-                                                                  <div className="flex items-center gap-2.5 min-w-0">
-                                                                    <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 group-hover:text-slate-900 dark:group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
-                                                                      <AiIcon size={12} />
+                                                                  <div className="flex items-center gap-2 min-w-0">
+                                                                    <div className="w-5.5 h-5.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 group-hover:text-slate-950 dark:group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                                                                      <AiIcon size={11} />
                                                                     </div>
                                                                     <div className="flex flex-col min-w-0">
                                                                       <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">
                                                                         {aiItem.label}
                                                                       </span>
-                                                                      <span className="text-[9px] text-slate-400 dark:text-zinc-500 truncate">
+                                                                      <span className="text-[8.5px] text-slate-500 dark:text-zinc-400 truncate">
                                                                         {aiItem.desc}
                                                                       </span>
                                                                     </div>
                                                                   </div>
-                                                                  <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 shrink-0">
+                                                                  <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 shrink-0">
                                                                     {aiItem.badge}
                                                                   </span>
                                                                 </button>
@@ -53397,7 +53397,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                                       {/* Section 2: Generative Intelligence */}
                                                       <div className="pt-1 border-t border-slate-100 dark:border-zinc-800/60">
-                                                        <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">
+                                                        <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">
                                                           Generative Intelligence
                                                         </span>
                                                         <div className="space-y-1">
@@ -53417,22 +53417,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                     btn.onSelect(aiItem.label);
                                                                     setDeckActiveToolbarMenu(null);
                                                                   }}
-                                                                  className="w-full text-left p-2 rounded-[10px] hover:bg-slate-100/90 dark:hover:bg-zinc-800/90 transition-all flex items-center justify-between group cursor-pointer border border-transparent hover:border-slate-200/80 dark:hover:border-zinc-700/80"
+                                                                  className="w-full text-left p-1.5 rounded-[8px] hover:bg-slate-50 dark:hover:bg-zinc-850 transition-all flex items-center justify-between group cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-zinc-700"
                                                                 >
-                                                                  <div className="flex items-center gap-2.5 min-w-0">
-                                                                    <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 group-hover:text-slate-900 dark:group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
-                                                                      <AiIcon size={12} />
+                                                                  <div className="flex items-center gap-2 min-w-0">
+                                                                    <div className="w-5.5 h-5.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 group-hover:text-slate-950 dark:group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+                                                                      <AiIcon size={11} />
                                                                     </div>
                                                                     <div className="flex flex-col min-w-0">
                                                                       <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">
                                                                         {aiItem.label}
                                                                       </span>
-                                                                      <span className="text-[9px] text-slate-400 dark:text-zinc-500 truncate">
+                                                                      <span className="text-[8.5px] text-slate-500 dark:text-zinc-400 truncate">
                                                                         {aiItem.desc}
                                                                       </span>
                                                                     </div>
                                                                   </div>
-                                                                  <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 shrink-0">
+                                                                  <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 shrink-0">
                                                                     {aiItem.badge}
                                                                   </span>
                                                                 </button>
@@ -53444,12 +53444,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   </>
                                                 ) : (
                                                   <>
-                                                    <div className="px-3 py-1.5 border-b border-slate-100 dark:border-zinc-800/60 flex items-center justify-between shrink-0 select-none font-sans bg-white/40 dark:bg-zinc-900/40">
-                                                      <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-zinc-500 uppercase">
+                                                    <div className="px-3 py-1.5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0 select-none font-sans bg-slate-50 dark:bg-zinc-900">
+                                                      <span className="text-[10px] font-bold tracking-wider text-slate-600 dark:text-zinc-400 uppercase">
                                                         {btn.label} Options
                                                       </span>
                                                     </div>
-                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-1 space-y-0.5 max-h-[220px]">
+                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-1 space-y-0.5 max-h-[220px] bg-white dark:bg-[#13151b]">
                                                       {btn.menuItems.map((item) => (
                                                         <button
                                                           key={item}
@@ -53459,7 +53459,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                             btn.onSelect(item);
                                                             setDeckActiveToolbarMenu(null);
                                                           }}
-                                                          className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                                                          className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-800 dark:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-950 dark:hover:text-white rounded-lg transition-colors flex items-center justify-between cursor-pointer"
                                                         >
                                                           <span>{item}</span>
                                                         </button>
