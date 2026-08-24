@@ -70119,70 +70119,94 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {creationPickerOpen && (
-        <div className="fixed inset-0 z-[620] bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-[680px] max-w-[95vw] rounded-2xl bg-white border border-gray-200 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.8)] p-6">
-            <div className="flex items-start justify-between gap-4 mb-5">
+        <div 
+          className="fixed inset-0 z-[620] bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setCreationPickerOpen(false);
+          }}
+        >
+          <div 
+            className="w-[720px] max-w-[95vw] rounded-3xl bg-white/95 dark:bg-zinc-950/95 border border-violet-500/25 text-zinc-900 dark:text-zinc-100 shadow-[0_0_70px_rgba(124,77,255,0.28)] p-7 animate-in zoom-in-95 duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 mb-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Create New Project</h3>
-                <p className="text-sm text-gray-500 mt-1">Choose your workspace type to start with the right canvas.</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Create New Workspace</h3>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">Choose your workspace type to start with the right canvas.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setCreationPickerOpen(false)}
-                className="p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/15 text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                 title="Close"
               >
                 <X size={16} />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
+              {/* Compose */}
               <button
                 type="button"
                 onClick={createComposeExperience}
-                className="group text-left rounded-xl border border-violet-300 bg-violet-50/50 p-4 hover:bg-violet-50 transition-colors"
+                className="group text-left rounded-2xl border border-violet-500/30 bg-violet-500/[0.04] p-4.5 hover:border-violet-500/60 hover:shadow-[0_0_24px_rgba(124,77,255,0.25)] active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer flex flex-col justify-between"
               >
-                <div className="w-9 h-9 rounded-lg bg-violet-600 text-white flex items-center justify-center mb-3">
-                  <FileText size={18} />
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center mb-3 shadow-md shadow-violet-950/30 group-hover:scale-105 transition-transform duration-200">
+                    <FileText size={19} />
+                  </div>
+                  <div className="text-sm font-bold text-gray-900 dark:text-white mb-1">Compose</div>
+                  <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-relaxed">Document workspace for writing, planning, and AI editing.</p>
                 </div>
-                <div className="text-sm font-semibold text-gray-900 mb-1">Compose</div>
-                <p className="text-xs text-gray-600">Our document workspace for writing, planning, and AI-assisted editing.</p>
+                <div className="mt-3 text-[10.5px] font-semibold text-violet-600 dark:text-violet-400">Open Doc →</div>
               </button>
 
+              {/* Deck */}
               <button
                 type="button"
                 onClick={createDeckExperience}
-                className="group text-left rounded-xl border border-gray-200 p-4 hover:border-violet-300 hover:bg-violet-50/40 transition-colors"
+                className="group text-left rounded-2xl border border-purple-500/25 bg-purple-500/[0.04] p-4.5 hover:border-purple-400/60 hover:shadow-[0_0_24px_rgba(168,85,247,0.25)] active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer flex flex-col justify-between"
               >
-                <div className="w-9 h-9 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center mb-3">
-                  <LayoutGrid size={18} />
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-purple-600 text-white flex items-center justify-center mb-3 shadow-md shadow-purple-950/30 group-hover:scale-105 transition-transform duration-200">
+                    <LayoutGrid size={19} />
+                  </div>
+                  <div className="text-sm font-bold text-gray-900 dark:text-white mb-1">Deck</div>
+                  <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-relaxed">Slide-first storytelling and Bento presentation intelligence.</p>
                 </div>
-                <div className="text-sm font-semibold text-gray-900 mb-1">Deck</div>
-                <p className="text-xs text-gray-600">Our presentation workspace for slide-first storytelling and AI deck intelligence.</p>
+                <div className="mt-3 text-[10.5px] font-semibold text-purple-600 dark:text-purple-400">Open Deck →</div>
               </button>
 
+              {/* Sheets */}
               <button
                 type="button"
                 onClick={createSheetsExperience}
-                className="group text-left rounded-xl border border-gray-200 p-4 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors"
+                className="group text-left rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.04] p-4.5 hover:border-emerald-400/60 hover:shadow-[0_0_24px_rgba(16,185,129,0.25)] active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer flex flex-col justify-between"
               >
-                <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
-                  <Database size={18} />
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3 shadow-md shadow-emerald-950/30 group-hover:scale-105 transition-transform duration-200">
+                    <Database size={19} />
+                  </div>
+                  <div className="text-sm font-bold text-gray-900 dark:text-white mb-1">Sheets</div>
+                  <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-relaxed">Spreadsheet workspace for AI analytics and data modeling.</p>
                 </div>
-                <div className="text-sm font-semibold text-gray-900 mb-1">Sheets</div>
-                <p className="text-xs text-gray-600">Our spreadsheet workspace for AI-native analysis, modeling, and planning.</p>
+                <div className="mt-3 text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400">Open Sheets →</div>
               </button>
 
+              {/* DMs */}
               <button
                 type="button"
                 onClick={createDmExperience}
-                className="group text-left rounded-xl border border-gray-200 p-4 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
+                className="group text-left rounded-2xl border border-indigo-500/25 bg-indigo-500/[0.04] p-4.5 hover:border-indigo-400/60 hover:shadow-[0_0_24px_rgba(99,102,241,0.25)] active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer flex flex-col justify-between"
               >
-                <div className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center mb-3">
-                  <MessageCircle size={18} />
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center mb-3 shadow-md shadow-indigo-950/30 group-hover:scale-105 transition-transform duration-200">
+                    <MessageCircle size={19} />
+                  </div>
+                  <div className="text-sm font-bold text-gray-900 dark:text-white mb-1">DMs</div>
+                  <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-relaxed">Team chat and specialized multi-agent conversation hubs.</p>
                 </div>
-                <div className="text-sm font-semibold text-gray-900 mb-1">DMs</div>
-                <p className="text-xs text-gray-600">Dedicated team chat workspace with searchable conversation intelligence.</p>
+                <div className="mt-3 text-[10.5px] font-semibold text-indigo-600 dark:text-indigo-400">Open Chat →</div>
               </button>
             </div>
           </div>
@@ -70190,15 +70214,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {workspaceModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
-          <div className="w-[420px] max-w-[90vw] rounded-xl bg-white border border-gray-100 shadow-xl p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">
-              {workspaceModalMode === 'create' ? 'Create workspace' : 'Rename workspace'}
+        <div 
+          className="fixed inset-0 z-[650] bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setWorkspaceModalOpen(false); }}
+        >
+          <div 
+            className="w-[440px] max-w-[90vw] rounded-3xl bg-white/95 dark:bg-zinc-950/95 border border-violet-500/25 text-zinc-900 dark:text-zinc-100 shadow-[0_0_60px_rgba(124,77,255,0.26)] p-6 animate-in zoom-in-95 duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1.5 tracking-tight">
+              {workspaceModalMode === 'create' ? 'Create Workspace' : 'Rename Workspace'}
             </h3>
-            <p className="text-xs text-gray-500 mb-4">
+            <p className="text-xs text-gray-500 dark:text-zinc-400 mb-5">
               {workspaceModalMode === 'create'
-                ? 'Give your new workspace a clear name.'
-                : 'Update the workspace name.'}
+                ? 'Give your new workspace an executive-tier name.'
+                : 'Update the workspace display title.'}
             </p>
             <input
               value={workspaceNameInput}
@@ -70211,20 +70241,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }}
               autoFocus
               placeholder="Workspace name"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 mb-4 outline-none focus:border-violet-400"
+              className="w-full bg-white/80 dark:bg-zinc-900/80 border border-gray-300 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-gray-800 dark:text-zinc-100 mb-5 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
             />
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2.5">
               <button
+                type="button"
                 onClick={() => setWorkspaceModalOpen(false)}
-                className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={submitWorkspaceModal}
-                className="px-3 py-1.5 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700"
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-violet-600 hover:bg-violet-500 text-white shadow-md shadow-violet-950/40 transition-all active:scale-95 cursor-pointer"
               >
-                {workspaceModalMode === 'create' ? 'Create' : 'Save'}
+                {workspaceModalMode === 'create' ? 'Create Workspace' : 'Save Changes'}
               </button>
             </div>
           </div>

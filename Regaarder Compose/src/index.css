@@ -45,3 +45,38 @@
 [data-enterprise-page="true"]:focus-within .doc-header-chrome:hover {
   opacity: 1;
 }
+
+/* ── Apple Spring Physics & Cognitive Halo Glow Design System ── */
+.apple-spring {
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.apple-spring-fast {
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.halo-glow-violet {
+  box-shadow: 0 0 60px rgba(124, 77, 255, 0.26) !important;
+}
+
+.halo-glow-cyan {
+  box-shadow: 0 0 60px rgba(6, 182, 212, 0.24) !important;
+}
+
+.halo-glow-emerald {
+  box-shadow: 0 0 60px rgba(16, 185, 129, 0.24) !important;
+}
+
+.halo-glow-indigo {
+  box-shadow: 0 0 60px rgba(99, 102, 241, 0.24) !important;
+}
+
+.halo-card-hover {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.halo-card-hover:hover {
+  transform: translateY(-2px);
+}
+.halo-card-hover:active {
+  transform: scale(0.96);
+}
