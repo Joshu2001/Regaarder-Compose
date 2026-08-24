@@ -35952,7 +35952,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       setIsDeckAIGenerating(false);
       setIsDeckAIGeneratorModalOpen(false);
       showToast(`✨ Generated ${count}-slide presentation for "${topic}"`);
-    }, 850);
+    }, 100);
   };
   
 
@@ -54636,7 +54636,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             }}
                           >
                             <div 
-                              className="bg-zinc-950 border border-white/15 text-zinc-100 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
+                              className="bg-zinc-950/95 border border-violet-500/30 text-zinc-100 rounded-3xl shadow-[0_0_60px_rgba(124,77,255,0.28)] w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
                               onMouseDown={(e) => e.stopPropagation()}
                               onClick={(e) => e.stopPropagation()}
                             >
@@ -54673,7 +54673,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     setIsDeckCreationChoiceModalOpen(false);
                                     setIsDeckTemplateLibraryModalOpen(true);
                                   }}
-                                  className="group p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-cyan-500/40 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:shadow-cyan-950/30 active:scale-[0.98]"
+                                  className="group p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-cyan-400/60 hover:shadow-[0_0_24px_rgba(6,182,212,0.25)] active:scale-95 text-left transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col justify-between cursor-pointer"
                                 >
                                   <div>
                                     <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-3 group-hover:scale-105 transition-transform">
@@ -54697,7 +54697,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     e.stopPropagation();
                                     handleCreateBlankDeck();
                                   }}
-                                  className="group p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-violet-500/40 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:shadow-violet-950/30 active:scale-[0.98]"
+                                  className="group p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-violet-400/60 hover:shadow-[0_0_24px_rgba(124,77,255,0.25)] active:scale-95 text-left transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col justify-between cursor-pointer"
                                 >
                                   <div>
                                     <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 mb-3 group-hover:scale-105 transition-transform">
@@ -54726,7 +54726,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             onClick={() => setIsDeckTemplateLibraryModalOpen(false)}
                           >
                             <div 
-                              className="bg-zinc-950 border border-white/15 text-zinc-100 rounded-3xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+                              className="bg-zinc-950/95 border border-cyan-500/25 text-zinc-100 rounded-3xl shadow-[0_0_70px_rgba(6,182,212,0.22)] w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                              onMouseDown={(e) => e.stopPropagation()}
                               onClick={(e) => e.stopPropagation()}
                             >
                               {/* Modal Header */}
@@ -54838,7 +54839,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             onClick={() => setIsDeckAIGeneratorModalOpen(false)}
                           >
                             <div 
-                              className="bg-zinc-950/95 border border-white/15 text-zinc-100 rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
+                              className="bg-zinc-950/95 border border-violet-500/30 text-zinc-100 rounded-3xl shadow-[0_0_70px_rgba(124,77,255,0.32)] w-full max-w-xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                              onMouseDown={(e) => e.stopPropagation()}
                               onClick={(e) => e.stopPropagation()}
                             >
                               {/* Modal Header */}
