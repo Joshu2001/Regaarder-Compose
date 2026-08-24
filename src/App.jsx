@@ -14204,6 +14204,15 @@ const DEFAULT_DECK_SLIDES = [
   // ── CLIENT-SIDE RASTER TO VECTOR (JPG/PNG to SVG) TRACER ENGINE ──
   const [vectorWaveSearch, setVectorWaveSearch] = useState('');
   const [deckVectorFilter, setDeckVectorFilter] = useState('All');
+  const [deckAnimationSearch, setDeckAnimationSearch] = useState('');
+  const [deckAnimationFilter, setDeckAnimationFilter] = useState('All');
+  const [deckBgSearch, setDeckBgSearch] = useState('');
+  const [deckBgFilter, setDeckBgFilter] = useState('All');
+  const [deckStyleSearch, setDeckStyleSearch] = useState('');
+  const [deckInsertSearch, setDeckInsertSearch] = useState('');
+  const [deckInsertFilter, setDeckInsertFilter] = useState('All');
+  const [deckMediaSearch, setDeckMediaSearch] = useState('');
+  const [deckAiSearch, setDeckAiSearch] = useState('');
 
 const renderMiniVectorWaveGraphic = (styleId, c1 = '#00f0ff', c2 = '#7c4dff') => {
   const strandCount = 14;
@@ -52329,751 +52338,971 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           </button>
 
                                            {/* Compact Slash-Style Dropdown Menu */}
-                                           {isOpen && (
-                                             <div 
-                                               onClick={(e) => e.stopPropagation()}
-                                               className={`absolute ${
-    btn.label === 'Media & Logo' || btn.label === 'Insert' || btn.label === 'AI' 
-      ? 'right-0' 
-      : btn.label === 'Background' || btn.label === 'Vector & Wave' || btn.label === 'Styles' || btn.label === 'Animation' 
-      ? 'left-1/2 -translate-x-1/2' 
-      : 'left-0'
-  } top-9 ${
-    btn.label === 'Vector & Wave' ? 'w-[420px] max-h-[480px]' : 
-    btn.label === 'Background' ? 'w-[400px] max-h-[480px]' : 
-    btn.label === 'Styles' ? 'w-[380px] max-h-[420px]' : 
-    btn.label === 'Animation' ? 'w-[430px] max-h-[480px]' : 
-    btn.label === 'Insert' ? 'w-[380px] max-h-[480px]' : 
-    btn.label === 'Media & Logo' ? 'w-[340px]' : 
-    btn.label === 'AI' ? 'w-[340px]' : 'w-60'
-  } flex flex-col bg-white dark:bg-[#12141c] border border-slate-200/90 dark:border-zinc-800 ring-1 ring-slate-900/10 dark:ring-white/10 rounded-2xl shadow-[0_24px_60px_rgba(0,0,0,0.32)] z-[9999] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-2xl`}
-                                             >
-                                               {btn.label === 'Animation' ? (
-                                                 <>
-                                                   {/* Apple Keynote Realistic Motion Physics Keyframes */}
-                                                   <style>{`
-                                                     @keyframes keynoteWhipSlide {
-                                                       0% { transform: translateX(-42px) scale(0.92); opacity: 0; filter: blur(2px); }
-                                                       35% { transform: translateX(2px) scale(1.01); opacity: 1; filter: blur(0px); }
-                                                       65%, 100% { transform: translateX(0) scale(1); opacity: 1; }
-                                                     }
-                                                     @keyframes keynoteZoomGlow {
-                                                       0% { transform: scale(0.8); opacity: 0.3; filter: drop-shadow(0 0 0px #00f0ff); }
-                                                       45% { transform: scale(1.03); opacity: 1; filter: drop-shadow(0 0 8px rgba(0,240,255,0.7)); }
-                                                       75%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 3px rgba(124,77,255,0.4)); }
-                                                     }
-                                                     @keyframes keynotePulseShake {
-                                                       0%, 55%, 100% { transform: scale(1) translate(0, 0); }
-                                                       60% { transform: scale(1.02) translate(-1.5px, 0.5px); }
-                                                       65% { transform: scale(1.02) translate(1.5px, -0.5px); }
-                                                       70% { transform: scale(1.01) translate(-1px, -0.5px); }
-                                                       75% { transform: scale(1) translate(0.5px, 0.5px); }
-                                                       80% { transform: scale(1) translate(0, 0); }
-                                                     }
-                                                     @keyframes keynoteSmoothFloat {
-                                                       0%, 100% { transform: translateY(2px); }
-                                                       50% { transform: translateY(-4px); }
-                                                     }
-                                                     @keyframes keynoteStagLine1 { 0%, 10% { opacity: 0; transform: translateY(5px); } 30%, 100% { opacity: 1; transform: translateY(0); } }
-                                                     @keyframes keynoteStagLine2 { 0%, 25% { opacity: 0; transform: translateY(5px); } 45%, 100% { opacity: 1; transform: translateY(0); } }
-                                                     @keyframes keynoteStagLine3 { 0%, 40% { opacity: 0; transform: translateY(5px); } 60%, 100% { opacity: 1; transform: translateY(0); } }
-                                                     @keyframes keynoteDissolveRise {
-                                                       0% { opacity: 0; transform: translateY(6px) scale(0.96); filter: blur(3px); }
-                                                       45%, 100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
-                                                     }
-                                                   `}</style>
+                                            {isOpen && (
+                                              <div 
+                                                onClick={(e) => e.stopPropagation()}
+                                                className={`absolute ${
+                                                  btn.label === 'Media & Logo' || btn.label === 'Insert' || btn.label === 'AI' 
+                                                    ? 'right-0' 
+                                                    : btn.label === 'Background' || btn.label === 'Vector & Wave' || btn.label === 'Styles' || btn.label === 'Animation' 
+                                                    ? 'left-1/2 -translate-x-1/2' 
+                                                    : 'left-0'
+                                                } top-9 ${
+                                                  btn.label === 'Vector & Wave' ? 'w-[420px] max-h-[480px]' : 
+                                                  btn.label === 'Background' ? 'w-[410px] max-h-[480px]' : 
+                                                  btn.label === 'Styles' ? 'w-[380px] max-h-[440px]' : 
+                                                  btn.label === 'Animation' ? 'w-[430px] max-h-[480px]' : 
+                                                  btn.label === 'Insert' ? 'w-[390px] max-h-[480px]' : 
+                                                  btn.label === 'Media & Logo' ? 'w-[350px]' : 
+                                                  btn.label === 'AI' ? 'w-[350px]' : 'w-60'
+                                                } flex flex-col bg-white dark:bg-[#12141c] border border-slate-200/90 dark:border-zinc-800 ring-1 ring-slate-900/10 dark:ring-white/10 rounded-2xl shadow-[0_24px_60px_rgba(0,0,0,0.32)] z-[9999] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-2xl`}
+                                              >
+                                                {btn.label === 'Animation' ? (
+                                                  <>
+                                                    {/* Apple Keynote Realistic Motion Physics Keyframes */}
+                                                    <style>{`
+                                                      @keyframes keynoteWhipSlide {
+                                                        0% { transform: translateX(-42px) scale(0.92); opacity: 0; filter: blur(2px); }
+                                                        35% { transform: translateX(2px) scale(1.01); opacity: 1; filter: blur(0px); }
+                                                        65%, 100% { transform: translateX(0) scale(1); opacity: 1; }
+                                                      }
+                                                      @keyframes keynoteZoomGlow {
+                                                        0% { transform: scale(0.8); opacity: 0.3; filter: drop-shadow(0 0 0px #00f0ff); }
+                                                        45% { transform: scale(1.03); opacity: 1; filter: drop-shadow(0 0 8px rgba(0,240,255,0.7)); }
+                                                        75%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 3px rgba(124,77,255,0.4)); }
+                                                      }
+                                                      @keyframes keynotePulseShake {
+                                                        0%, 55%, 100% { transform: scale(1) translate(0, 0); }
+                                                        60% { transform: scale(1.02) translate(-1.5px, 0.5px); }
+                                                        65% { transform: scale(1.02) translate(1.5px, -0.5px); }
+                                                        70% { transform: scale(1.01) translate(-1px, -0.5px); }
+                                                        75% { transform: scale(1) translate(0.5px, 0.5px); }
+                                                        80% { transform: scale(1) translate(0, 0); }
+                                                      }
+                                                      @keyframes keynoteSmoothFloat {
+                                                        0%, 100% { transform: translateY(2px); }
+                                                        50% { transform: translateY(-4px); }
+                                                      }
+                                                      @keyframes keynoteStagLine1 { 0%, 10% { opacity: 0; transform: translateY(5px); } 30%, 100% { opacity: 1; transform: translateY(0); } }
+                                                      @keyframes keynoteStagLine2 { 0%, 25% { opacity: 0; transform: translateY(5px); } 45%, 100% { opacity: 1; transform: translateY(0); } }
+                                                      @keyframes keynoteStagLine3 { 0%, 40% { opacity: 0; transform: translateY(5px); } 60%, 100% { opacity: 1; transform: translateY(0); } }
+                                                      @keyframes keynoteDissolveRise {
+                                                        0% { opacity: 0; transform: translateY(6px) scale(0.96); filter: blur(3px); }
+                                                        45%, 100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+                                                      }
+                                                    `}</style>
 
-                                                   {/* Apple Keynote Style Motion Popover Header */}
-                                                   <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 flex items-center justify-between select-none font-sans">
-                                                     <div className="flex items-center gap-1.5">
-                                                        <Wand2 size={13} className="text-[#7C4DFF]" />
-                                                        <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
-                                                          MOTION & ENTRANCE PHYSICS
+                                                    {/* Apple Keynote Style Motion Popover Header with Spotlight Search & Filters */}
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                                      <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                          <Wand2 size={13} className="text-[#7C4DFF]" />
+                                                          <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                            MOTION & ENTRANCE PHYSICS
+                                                          </span>
+                                                        </div>
+                                                        <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
+                                                          {ALL_DECK_ANIMATION_OPTIONS.filter(a => (deckAnimationFilter === 'All' || (deckAnimationFilter === 'Entrances' && (a.id.includes('whip') || a.id.includes('zoom') || a.id.includes('dissolve'))) || (deckAnimationFilter === 'Loops' && a.id.includes('float')) || (deckAnimationFilter === 'Kinetic' && (a.id.includes('shake') || a.id.includes('stagger')))) && (!deckAnimationSearch || a.label.toLowerCase().includes(deckAnimationSearch.toLowerCase()) || a.desc.toLowerCase().includes(deckAnimationSearch.toLowerCase()))).length} PRESETS
                                                         </span>
-                                                     </div>
-                                                     <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
-                                                       {ALL_DECK_ANIMATION_OPTIONS.length} PRESETS
-                                                     </span>
-                                                   </div>
+                                                      </div>
 
-                                                   {/* 2-Column Realistic Keynote Motion Preview Cards */}
-                                                   <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-2.5 max-h-[350px]">
-                                                     {ALL_DECK_ANIMATION_OPTIONS.map((animOpt) => {
-                                                       const isCurrent = activeDeckSlide?.motionCue === animOpt.label;
+                                                      {/* Search Input */}
+                                                      <div className="relative flex items-center">
+                                                        <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+                                                        <input
+                                                          type="text"
+                                                          value={deckAnimationSearch}
+                                                          onChange={(e) => setDeckAnimationSearch(e.target.value)}
+                                                          placeholder="Search animations, physics cues…"
+                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500 focus:ring-1 focus:ring-violet-400/30 transition-all font-sans"
+                                                        />
+                                                        {deckAnimationSearch && (
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => setDeckAnimationSearch('')}
+                                                            className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded cursor-pointer transition-colors"
+                                                          >
+                                                            <X size={12} />
+                                                          </button>
+                                                        )}
+                                                      </div>
 
-                                                       return (
-                                                         <button
-                                                           key={animOpt.id}
-                                                           type="button"
-                                                           onPointerDown={(e) => {
-                                                             e.preventDefault();
-                                                             updateDeckSlideField(activeDeckSlide?.id, 'motionCue', animOpt.label);
-                                                             setDeckActiveToolbarMenu(null);
-                                                             showToast(`Animation entrance set to: ${animOpt.label}`);
-                                                           }}
-                                                           className={`group relative flex flex-col p-1.5 rounded-xl text-left transition-all duration-150 cursor-pointer ${
-                                                             isCurrent 
-                                                               ? 'bg-violet-500/10 dark:bg-violet-500/20 ring-2 ring-[#7C4DFF] shadow-sm' 
-                                                               : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
-                                                           }`}
-                                                         >
-                                                           {/* Authentic 16:10 Keynote Slide Canvas Preview */}
-                                                           <div 
-                                                             className={`w-full aspect-[16/10] rounded-lg relative overflow-hidden transition-all duration-150 p-2.5 flex flex-col justify-between select-none bg-[#090C15] border border-white/10 ${
-                                                               isCurrent ? 'ring-1 ring-[#7C4DFF]' : 'group-hover:border-white/20'
-                                                             }`}
-                                                           >
-                                                             {/* Top Bar / Slide Badge */}
-                                                             <div className="flex items-center justify-between w-full z-10">
-                                                               <span className="text-[6.5px] font-semibold text-slate-400 uppercase tracking-wider">
-                                                                 {animOpt.tag}
-                                                               </span>
-                                                               {isCurrent && (
-                                                                 <span className="w-3.5 h-3.5 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-md shrink-0">
-                                                                   <Check size={9} strokeWidth={3} />
-                                                                 </span>
-                                                               )}
-                                                             </div>
+                                                      {/* Category Filter Tabs */}
+                                                      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
+                                                        {['All', 'Entrances', 'Loops', 'Kinetic'].map((cat) => {
+                                                          const isTabActive = deckAnimationFilter === cat;
+                                                          return (
+                                                            <button
+                                                              key={cat}
+                                                              type="button"
+                                                              onPointerDown={(e) => {
+                                                                e.preventDefault();
+                                                                setDeckAnimationFilter(cat);
+                                                              }}
+                                                              className={`px-2 py-0.5 text-[9.5px] font-medium rounded-md whitespace-nowrap transition-all cursor-pointer ${
+                                                                isTabActive
+                                                                  ? 'bg-white dark:bg-zinc-800 text-violet-600 dark:text-violet-300 border border-violet-300 dark:border-violet-500/50 shadow-xs font-semibold'
+                                                                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
+                                                              }`}
+                                                            >
+                                                              {cat}
+                                                            </button>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    </div>
 
-                                                             {/* Realistic Slide Composition with Applied Motion Physics */}
-                                                             <div className="my-auto w-full flex items-center justify-center">
-                                                               {animOpt.id === 'whip-slide' ? (
-                                                                 /* Realistic Title Slide Whip Entrance */
-                                                                 <div 
-                                                                   className="w-full flex flex-col items-start gap-1 p-1"
-                                                                   style={{ animation: 'keynoteWhipSlide 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite' }}
-                                                                 >
-                                                                   <div className="w-20 h-2 rounded bg-gradient-to-r from-white to-slate-300 shadow-xs" />
-                                                                   <div className="w-12 h-1.5 rounded bg-cyan-400/80" />
-                                                                   <div className="w-full h-0.5 mt-0.5 rounded-full bg-gradient-to-r from-violet-500 to-transparent opacity-80" />
-                                                                 </div>
-                                                               ) : animOpt.id === 'zoom-glow' ? (
-                                                                 /* Realistic Hero Center Card Zoom & Aura Bloom */
-                                                                 <div 
-                                                                   className="w-24 h-9 rounded-lg bg-gradient-to-br from-[#121626] to-[#0A0D18] border border-cyan-400/40 flex flex-col items-center justify-center gap-1 p-1"
-                                                                   style={{ animation: 'keynoteZoomGlow 2.4s ease-in-out infinite' }}
-                                                                 >
-                                                                   <div className="w-14 h-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400" />
-                                                                   <div className="w-8 h-1 rounded-full bg-white/50" />
-                                                                 </div>
-                                                               ) : animOpt.id === 'shake-vibrate' ? (
-                                                                 /* Realistic Dynamic Alert / Key Stat Tension Pulse */
-                                                                 <div 
-                                                                   className="w-22 h-9 rounded-lg bg-gradient-to-r from-rose-950/40 to-amber-950/40 border border-rose-500/40 flex items-center gap-1.5 px-2"
-                                                                   style={{ animation: 'keynotePulseShake 2s ease-in-out infinite' }}
-                                                                 >
-                                                                   <div className="w-3 h-3 rounded-full bg-rose-500 shrink-0" />
-                                                                   <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                                                                     <div className="w-10 h-1.5 rounded bg-rose-200" />
-                                                                     <div className="w-6 h-1 rounded bg-rose-400/60" />
-                                                                   </div>
-                                                                 </div>
-                                                               ) : animOpt.id === 'smooth-float' ? (
-                                                                 /* Realistic Bento Card Levitation Loop */
-                                                                 <div 
-                                                                   className="w-full flex items-center justify-center gap-1.5"
-                                                                   style={{ animation: 'keynoteSmoothFloat 2.6s ease-in-out infinite' }}
-                                                                 >
-                                                                   <div className="w-12 h-8 rounded-md bg-white/10 backdrop-blur-xs border border-emerald-400/30 flex flex-col justify-between p-1">
-                                                                     <div className="w-6 h-1 rounded bg-emerald-400" />
-                                                                     <div className="w-8 h-1 rounded bg-white/40" />
-                                                                   </div>
-                                                                   <div className="w-12 h-8 rounded-md bg-white/5 border border-white/10 flex flex-col justify-between p-1">
-                                                                     <div className="w-4 h-1 rounded bg-teal-400" />
-                                                                     <div className="w-7 h-1 rounded bg-white/30" />
-                                                                   </div>
-                                                                 </div>
-                                                               ) : animOpt.id === 'stagger-reveal' ? (
-                                                                 /* Realistic Typographic Stagger Cascade */
-                                                                 <div className="w-full flex flex-col items-start gap-1 p-1">
-                                                                   <div className="w-22 h-2 rounded bg-violet-300 shadow-xs" style={{ animation: 'keynoteStagLine1 2.2s ease-out infinite' }} />
-                                                                   <div className="w-16 h-1.5 rounded bg-cyan-300 shadow-xs" style={{ animation: 'keynoteStagLine2 2.2s ease-out infinite' }} />
-                                                                   <div className="w-12 h-1.5 rounded bg-purple-300/80 shadow-xs" style={{ animation: 'keynoteStagLine3 2.2s ease-out infinite' }} />
-                                                                 </div>
-                                                               ) : (
-                                                                 /* Realistic Cinematic Atmospheric Rise & Dissolve */
-                                                                 <div 
-                                                                   className="w-full flex flex-col items-center justify-center gap-1 p-1"
-                                                                   style={{ animation: 'keynoteDissolveRise 2.4s ease-out infinite' }}
-                                                                 >
-                                                                   <div className="w-18 h-2 rounded bg-gradient-to-r from-fuchsia-300 to-pink-300 shadow-xs" />
-                                                                   <div className="w-14 h-1 rounded bg-white/40" />
-                                                                 </div>
-                                                               )}
-                                                             </div>
+                                                    {/* 2-Column Realistic Keynote Motion Preview Cards */}
+                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-2.5 max-h-[340px]">
+                                                      {ALL_DECK_ANIMATION_OPTIONS
+                                                        .filter(a => (deckAnimationFilter === 'All' || (deckAnimationFilter === 'Entrances' && (a.id.includes('whip') || a.id.includes('zoom') || a.id.includes('dissolve'))) || (deckAnimationFilter === 'Loops' && a.id.includes('float')) || (deckAnimationFilter === 'Kinetic' && (a.id.includes('shake') || a.id.includes('stagger')))) && (!deckAnimationSearch || a.label.toLowerCase().includes(deckAnimationSearch.toLowerCase()) || a.desc.toLowerCase().includes(deckAnimationSearch.toLowerCase())))
+                                                        .map((animOpt) => {
+                                                          const isCurrent = activeDeckSlide?.motionCue === animOpt.label;
 
-                                                             {/* Bottom Subtle Indicator */}
-                                                             <div className="flex items-center justify-between w-full z-10 text-[5.5px] text-slate-500">
-                                                               <span>Keynote Physics</span>
-                                                               <span className="text-cyan-400/80">Live</span>
-                                                             </div>
-                                                           </div>
+                                                          return (
+                                                            <button
+                                                              key={animOpt.id}
+                                                              type="button"
+                                                              onPointerDown={(e) => {
+                                                                e.preventDefault();
+                                                                updateDeckSlideField(activeDeckSlide?.id, 'motionCue', animOpt.label);
+                                                                setDeckActiveToolbarMenu(null);
+                                                                showToast(`Animation entrance set to: ${animOpt.label}`);
+                                                              }}
+                                                              className={`group relative flex flex-col p-1.5 rounded-xl text-left transition-all duration-150 cursor-pointer ${
+                                                                isCurrent 
+                                                                  ? 'bg-violet-500/10 dark:bg-violet-500/20 ring-2 ring-[#7C4DFF] shadow-sm' 
+                                                                  : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
+                                                              }`}
+                                                            >
+                                                              {/* Authentic 16:10 Keynote Slide Canvas Preview */}
+                                                              <div 
+                                                                className={`w-full aspect-[16/10] rounded-lg relative overflow-hidden transition-all duration-150 p-2.5 flex flex-col justify-between select-none bg-[#090C15] border border-white/10 ${
+                                                                  isCurrent ? 'ring-1 ring-[#7C4DFF]' : 'group-hover:border-white/20'
+                                                                }`}
+                                                              >
+                                                                <div className="flex items-center justify-between w-full z-10">
+                                                                  <span className="text-[6.5px] font-semibold text-slate-400 uppercase tracking-wider">
+                                                                    {animOpt.tag}
+                                                                  </span>
+                                                                  {isCurrent && (
+                                                                    <span className="w-3.5 h-3.5 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-md shrink-0">
+                                                                      <Check size={9} strokeWidth={3} />
+                                                                    </span>
+                                                                  )}
+                                                                </div>
 
-                                                           {/* Caption */}
-                                                           <div className="mt-1.5 px-0.5 flex flex-col gap-0.5 w-full">
-                                                             <span className={`text-[10.5px] font-semibold truncate ${isCurrent ? 'text-[#7C4DFF] dark:text-violet-300' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
-                                                               {animOpt.label}
-                                                             </span>
-                                                             <span className="text-[8px] text-slate-400 dark:text-zinc-500 line-clamp-1">
-                                                               {animOpt.desc}
-                                                             </span>
-                                                           </div>
-                                                         </button>
-                                                       );
-                                                     })}
-                                                   </div>
-                                                 </>
-                                               )
-                                               : btn.label === 'Vector & Wave' ? (
-                                                 <>
-                                                   {/* Vector Meshes Popover Header with Search and Category Tabs */}
-                                                   <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
-                                                     <div className="flex items-center justify-between">
-                                                       <div className="flex items-center gap-1.5">
-                                                         <RegaarderVectorIcon size={13} className="text-[#00f0ff]" />
-                                                         <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
-                                                           VECTOR MESHES & WAVES
-                                                         </span>
-                                                       </div>
-                                                       <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-cyan-100 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 font-mono">
-                                                         {ALL_INDUSTRY_VECTOR_STYLES.filter((s) => (deckVectorFilter === 'All' || s.category === deckVectorFilter) && (!vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase()))).length} STYLES
-                                                       </span>
-                                                     </div>
+                                                                <div className="my-auto w-full flex items-center justify-center">
+                                                                  {animOpt.id === 'whip-slide' ? (
+                                                                    <div 
+                                                                      className="w-full flex flex-col items-start gap-1 p-1"
+                                                                      style={{ animation: 'keynoteWhipSlide 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite' }}
+                                                                    >
+                                                                      <div className="w-20 h-2 rounded bg-gradient-to-r from-white to-slate-300 shadow-xs" />
+                                                                      <div className="w-12 h-1.5 rounded bg-cyan-400/80" />
+                                                                      <div className="w-full h-0.5 mt-0.5 rounded-full bg-gradient-to-r from-violet-500 to-transparent opacity-80" />
+                                                                    </div>
+                                                                  ) : animOpt.id === 'zoom-glow' ? (
+                                                                    <div 
+                                                                      className="w-24 h-9 rounded-lg bg-gradient-to-br from-[#121626] to-[#0A0D18] border border-cyan-400/40 flex flex-col items-center justify-center gap-1 p-1"
+                                                                      style={{ animation: 'keynoteZoomGlow 2.4s ease-in-out infinite' }}
+                                                                    >
+                                                                      <div className="w-14 h-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400" />
+                                                                      <div className="w-8 h-1 rounded-full bg-white/50" />
+                                                                    </div>
+                                                                  ) : animOpt.id === 'shake-vibrate' ? (
+                                                                    <div 
+                                                                      className="w-22 h-9 rounded-lg bg-gradient-to-r from-rose-950/40 to-amber-950/40 border border-rose-500/40 flex items-center gap-1.5 px-2"
+                                                                      style={{ animation: 'keynotePulseShake 2s ease-in-out infinite' }}
+                                                                    >
+                                                                      <div className="w-3 h-3 rounded-full bg-rose-500 shrink-0" />
+                                                                      <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                                                                        <div className="w-10 h-1.5 rounded bg-rose-200" />
+                                                                        <div className="w-6 h-1 rounded bg-rose-400/60" />
+                                                                      </div>
+                                                                    </div>
+                                                                  ) : animOpt.id === 'smooth-float' ? (
+                                                                    <div 
+                                                                      className="w-full flex items-center justify-center gap-1.5"
+                                                                      style={{ animation: 'keynoteSmoothFloat 2.6s ease-in-out infinite' }}
+                                                                    >
+                                                                      <div className="w-12 h-8 rounded-md bg-white/10 backdrop-blur-xs border border-emerald-400/30 flex flex-col justify-between p-1">
+                                                                        <div className="w-6 h-1 rounded bg-emerald-400" />
+                                                                        <div className="w-8 h-1 rounded bg-white/40" />
+                                                                      </div>
+                                                                      <div className="w-12 h-8 rounded-md bg-white/5 border border-white/10 flex flex-col justify-between p-1">
+                                                                        <div className="w-4 h-1 rounded bg-teal-400" />
+                                                                        <div className="w-7 h-1 rounded bg-white/30" />
+                                                                      </div>
+                                                                    </div>
+                                                                  ) : animOpt.id === 'stagger-reveal' ? (
+                                                                    <div className="w-full flex flex-col items-start gap-1 p-1">
+                                                                      <div className="w-22 h-2 rounded bg-violet-300 shadow-xs" style={{ animation: 'keynoteStagLine1 2.2s ease-out infinite' }} />
+                                                                      <div className="w-16 h-1.5 rounded bg-cyan-300 shadow-xs" style={{ animation: 'keynoteStagLine2 2.2s ease-out infinite' }} />
+                                                                      <div className="w-12 h-1.5 rounded bg-purple-300/80 shadow-xs" style={{ animation: 'keynoteStagLine3 2.2s ease-out infinite' }} />
+                                                                    </div>
+                                                                  ) : (
+                                                                    <div 
+                                                                      className="w-full flex flex-col items-center justify-center gap-1 p-1"
+                                                                      style={{ animation: 'keynoteDissolveRise 2.4s ease-out infinite' }}
+                                                                    >
+                                                                      <div className="w-18 h-2 rounded bg-gradient-to-r from-fuchsia-300 to-pink-300 shadow-xs" />
+                                                                      <div className="w-14 h-1 rounded bg-white/40" />
+                                                                    </div>
+                                                                  )}
+                                                                </div>
 
-                                                     {/* Search Input */}
-                                                     <div className="relative flex items-center">
-                                                       <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
-                                                       <input
-                                                         type="text"
-                                                         value={vectorWaveSearch}
-                                                         onChange={(e) => setVectorWaveSearch(e.target.value)}
-                                                         placeholder="Search 3D meshes, waves, shapes…"
-                                                         className="w-full h-7 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-cyan-400 dark:focus:border-cyan-500 focus:ring-1 focus:ring-cyan-400/30 transition-all font-sans"
-                                                       />
-                                                       {vectorWaveSearch && (
-                                                         <button
-                                                           type="button"
-                                                           onClick={() => setVectorWaveSearch('')}
-                                                           className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded cursor-pointer transition-colors"
-                                                         >
-                                                           <X size={12} />
-                                                         </button>
-                                                       )}
-                                                     </div>
+                                                                <div className="flex items-center justify-between w-full z-10 text-[5.5px] text-slate-500">
+                                                                  <span>Keynote Physics</span>
+                                                                  <span className="text-cyan-400/80">Live</span>
+                                                                </div>
+                                                              </div>
 
-                                                     {/* Category Filter Tabs */}
-                                                     <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
-                                                       {['All', 'Startup Specials', '3D Shapes', 'Featured Waves', 'Deep-Tech & Systems', 'Sports & Athletics', 'Faith & Spiritual'].map((cat) => {
-                                                         const isTabActive = deckVectorFilter === cat;
-                                                         return (
-                                                           <button
-                                                             key={cat}
-                                                             type="button"
-                                                             onPointerDown={(e) => {
-                                                               e.preventDefault();
-                                                               setDeckVectorFilter(cat);
-                                                             }}
-                                                             className={`px-2 py-0.5 text-[9.5px] font-medium rounded-md whitespace-nowrap transition-all cursor-pointer ${
-                                                               isTabActive
-                                                                 ? 'bg-white dark:bg-zinc-800 text-cyan-600 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-500/50 shadow-xs font-semibold'
-                                                                 : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
-                                                             }`}
-                                                           >
-                                                             {cat === 'Deep-Tech & Systems' ? 'Deep-Tech' : cat === 'Sports & Athletics' ? 'Sports' : cat === 'Faith & Spiritual' ? 'Faith' : cat}
-                                                           </button>
-                                                         );
-                                                       })}
-                                                     </div>
-                                                   </div>
+                                                              <div className="mt-1.5 px-0.5 flex flex-col gap-0.5 w-full">
+                                                                <span className={`text-[10.5px] font-semibold truncate ${isCurrent ? 'text-[#7C4DFF] dark:text-violet-300' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
+                                                                  {animOpt.label}
+                                                                </span>
+                                                                <span className="text-[8px] text-slate-400 dark:text-zinc-500 line-clamp-1">
+                                                                  {animOpt.desc}
+                                                                </span>
+                                                              </div>
+                                                            </button>
+                                                          );
+                                                        })}
+                                                    </div>
+                                                  </>
+                                                )
+                                                : btn.label === 'Vector & Wave' ? (
+                                                  <>
+                                                    {/* Vector Meshes Popover Header with Search and Category Tabs */}
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                                      <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                          <RegaarderVectorIcon size={13} className="text-[#00f0ff]" />
+                                                          <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                            VECTOR MESHES & WAVES
+                                                          </span>
+                                                        </div>
+                                                        <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-cyan-100 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 font-mono">
+                                                          {ALL_INDUSTRY_VECTOR_STYLES.filter((s) => (deckVectorFilter === 'All' || s.category === deckVectorFilter) && (!vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase()))).length} STYLES
+                                                        </span>
+                                                      </div>
 
-                                                   {/* 2-Column Real Visual Vector Mesh Preview Grid */}
-                                                   <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-3 max-h-[350px]">
-                                                     {ALL_INDUSTRY_VECTOR_STYLES
-                                                       .filter((s) => (deckVectorFilter === 'All' || s.category === deckVectorFilter) && (!vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase())))
-                                                       .map((styleObj) => {
-                                                         const isCurrent = activeDeckSlide?.vectorWaveStyle === styleObj.id;
-                                                         return (
-                                                           <button
-                                                             key={styleObj.id}
-                                                             type="button"
-                                                             onPointerDown={(e) => {
-                                                               e.preventDefault();
-                                                               btn.onSelect(styleObj.label);
-                                                               setDeckActiveToolbarMenu(null);
-                                                             }}
-                                                             className={`group relative flex flex-col p-1.5 rounded-xl text-left transition-all duration-150 cursor-pointer ${
-                                                               isCurrent 
-                                                                 ? 'bg-cyan-500/10 dark:bg-cyan-500/20 ring-2 ring-[#00f0ff] shadow-sm' 
-                                                                 : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
-                                                             }`}
-                                                           >
-                                                             {/* 16:10 Keynote Canvas with Authentic Vector Preview */}
-                                                             <div 
-                                                               className={`w-full aspect-[16/10] rounded-lg relative overflow-hidden transition-all duration-150 p-2 flex flex-col justify-between shadow-xs select-none bg-[#07090E] ${
-                                                                 isCurrent 
-                                                                   ? 'ring-1 ring-[#00f0ff]' 
-                                                                   : 'border border-white/10 group-hover:shadow-sm'
-                                                               }`}
-                                                             >
-                                                               <div className="flex items-center justify-between w-full z-10">
-                                                                 <span className="text-[6.5px] font-semibold text-slate-400 truncate tracking-wide">
-                                                                   {styleObj.category}
-                                                                 </span>
-                                                                 {isCurrent && (
-                                                                   <span className="w-3.5 h-3.5 rounded-full bg-[#00f0ff] text-slate-950 flex items-center justify-center shadow-md shrink-0">
-                                                                     <Check size={9} strokeWidth={3} />
-                                                                   </span>
-                                                                 )}
-                                                               </div>
+                                                      {/* Search Input */}
+                                                      <div className="relative flex items-center">
+                                                        <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+                                                        <input
+                                                          type="text"
+                                                          value={vectorWaveSearch}
+                                                          onChange={(e) => setVectorWaveSearch(e.target.value)}
+                                                          placeholder="Search 3D meshes, waves, shapes…"
+                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-cyan-400 dark:focus:border-cyan-500 focus:ring-1 focus:ring-cyan-400/30 transition-all font-sans"
+                                                        />
+                                                        {vectorWaveSearch && (
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => setVectorWaveSearch('')}
+                                                            className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded cursor-pointer transition-colors"
+                                                          >
+                                                            <X size={12} />
+                                                          </button>
+                                                        )}
+                                                      </div>
 
-                                                               <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden" viewBox="0 0 160 100" fill="none">
-                                                                 {renderMiniVectorWaveGraphic(styleObj.id, styleObj.c1, styleObj.c2)}
-                                                               </svg>
+                                                      {/* Category Filter Tabs */}
+                                                      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
+                                                        {['All', 'Startup Specials', '3D Shapes', 'Featured Waves', 'Deep-Tech & Systems', 'Sports & Athletics', 'Faith & Spiritual'].map((cat) => {
+                                                          const isTabActive = deckVectorFilter === cat;
+                                                          return (
+                                                            <button
+                                                              key={cat}
+                                                              type="button"
+                                                              onPointerDown={(e) => {
+                                                                e.preventDefault();
+                                                                setDeckVectorFilter(cat);
+                                                              }}
+                                                              className={`px-2 py-0.5 text-[9.5px] font-medium rounded-md whitespace-nowrap transition-all cursor-pointer ${
+                                                                isTabActive
+                                                                  ? 'bg-white dark:bg-zinc-800 text-cyan-600 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-500/50 shadow-xs font-semibold'
+                                                                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
+                                                              }`}
+                                                            >
+                                                              {cat === 'Deep-Tech & Systems' ? 'Deep-Tech' : cat === 'Sports & Athletics' ? 'Sports' : cat === 'Faith & Spiritual' ? 'Faith' : cat}
+                                                            </button>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    </div>
 
-                                                               <div className="flex items-center justify-between w-full z-10">
-                                                                 <div className="flex items-center gap-1">
-                                                                   <span className="w-1.5 h-1.5 rounded-full shadow-xs" style={{ backgroundColor: styleObj.c1 }} />
-                                                                   <span className="w-1.5 h-1.5 rounded-full shadow-xs" style={{ backgroundColor: styleObj.c2 }} />
-                                                                 </div>
-                                                               </div>
-                                                             </div>
+                                                    {/* 2-Column Real Visual Vector Mesh Preview Grid */}
+                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-3 max-h-[340px]">
+                                                      {ALL_INDUSTRY_VECTOR_STYLES
+                                                        .filter((s) => (deckVectorFilter === 'All' || s.category === deckVectorFilter) && (!vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase())))
+                                                        .map((styleObj) => {
+                                                          const isCurrent = activeDeckSlide?.vectorWaveStyle === styleObj.id;
+                                                          return (
+                                                            <button
+                                                              key={styleObj.id}
+                                                              type="button"
+                                                              onPointerDown={(e) => {
+                                                                e.preventDefault();
+                                                                btn.onSelect(styleObj.label);
+                                                                setDeckActiveToolbarMenu(null);
+                                                              }}
+                                                              className={`group relative flex flex-col p-1.5 rounded-xl text-left transition-all duration-150 cursor-pointer ${
+                                                                isCurrent 
+                                                                  ? 'bg-cyan-500/10 dark:bg-cyan-500/20 ring-2 ring-[#00f0ff] shadow-sm' 
+                                                                  : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
+                                                              }`}
+                                                            >
+                                                              <div 
+                                                                className={`w-full aspect-[16/10] rounded-lg relative overflow-hidden transition-all duration-150 p-2 flex flex-col justify-between shadow-xs select-none bg-[#07090E] ${
+                                                                  isCurrent 
+                                                                    ? 'ring-1 ring-[#00f0ff]' 
+                                                                    : 'border border-white/10 group-hover:shadow-sm'
+                                                                }`}
+                                                              >
+                                                                <div className="flex items-center justify-between w-full z-10">
+                                                                  <span className="text-[6.5px] font-semibold text-slate-400 truncate tracking-wide">
+                                                                    {styleObj.category}
+                                                                  </span>
+                                                                  {isCurrent && (
+                                                                    <span className="w-3.5 h-3.5 rounded-full bg-[#00f0ff] text-slate-950 flex items-center justify-center shadow-md shrink-0">
+                                                                      <Check size={9} strokeWidth={3} />
+                                                                    </span>
+                                                                  )}
+                                                                </div>
 
-                                                             <div className="mt-1.5 px-0.5 flex flex-col gap-0.5 w-full">
-                                                               <span className={`text-[10.5px] font-semibold truncate ${isCurrent ? 'text-cyan-600 dark:text-cyan-300' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
-                                                                 {styleObj.label.replace(/\s*\([^)]*\)/, '')}
-                                                               </span>
-                                                               <span className="text-[8px] text-slate-400 dark:text-zinc-500 line-clamp-1">
-                                                                 {styleObj.desc}
-                                                               </span>
-                                                             </div>
-                                                           </button>
-                                                         );
-                                                       })}
-                                                   </div>
-                                                 </>
-                                               ) : btn.label === 'Background' ? (
-                                                 <>
-                                                   {/* Apple Keynote Style Background Theme Popover */}
-                                                   <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 flex items-center justify-between select-none font-sans">
-                                                     <div className="flex items-center gap-1.5">
-                                                       <Palette size={13} className="text-[#7C4DFF]" />
-                                                       <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
-                                                         KEYNOTE THEMES & BACKGROUNDS
-                                                       </span>
-                                                     </div>
-                                                     <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
-                                                       {ALL_DECK_BACKGROUND_OPTIONS.length} THEMES
-                                                     </span>
-                                                   </div>
+                                                                <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden" viewBox="0 0 160 100" fill="none">
+                                                                  {renderMiniVectorWaveGraphic(styleObj.id, styleObj.c1, styleObj.c2)}
+                                                                </svg>
 
-                                                   {/* 2-Column High-Fidelity Keynote Slide Thumbnails */}
-                                                   <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-3 max-h-[350px]">
-                                                     {ALL_DECK_BACKGROUND_OPTIONS.map((bgOpt) => {
-                                                       const isCurrent = activeDeckSlide?.backgroundColor === bgOpt.value;
-                                                       const isDark = bgOpt.isDark ?? true;
-                                                       const accentPillBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
-                                                       const accentPillBorder = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)';
-                                                       const titleLineBg = isDark ? '#ffffff' : '#0f172a';
-                                                       const subLineBg = isDark ? '#94a3b8' : '#64748b';
+                                                                <div className="flex items-center justify-between w-full z-10">
+                                                                  <div className="flex items-center gap-1">
+                                                                    <span className="w-1.5 h-1.5 rounded-full shadow-xs" style={{ backgroundColor: styleObj.c1 }} />
+                                                                    <span className="w-1.5 h-1.5 rounded-full shadow-xs" style={{ backgroundColor: styleObj.c2 }} />
+                                                                  </div>
+                                                                  <span className="text-[6.5px] font-mono text-cyan-400/80">3D Mesh</span>
+                                                                </div>
+                                                              </div>
 
-                                                       return (
-                                                         <button
-                                                           key={bgOpt.label}
-                                                           type="button"
-                                                           onPointerDown={(e) => {
-                                                             e.preventDefault();
-                                                             btn.onSelect(bgOpt.label);
-                                                             setDeckActiveToolbarMenu(null);
-                                                           }}
-                                                           className={`group relative flex flex-col p-1.5 rounded-xl text-left transition-all duration-150 cursor-pointer ${
-                                                             isCurrent 
-                                                               ? 'bg-violet-500/10 dark:bg-violet-500/20 ring-2 ring-[#7C4DFF] shadow-sm' 
-                                                               : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
-                                                           }`}
-                                                         >
-                                                           {/* High-Fidelity 16:10 Keynote Theme Canvas */}
-                                                           <div 
-                                                             className={`w-full aspect-[16/10] rounded-lg relative overflow-hidden transition-all duration-150 p-2.5 flex flex-col justify-between shadow-xs select-none ${
-                                                               isCurrent 
-                                                                 ? 'ring-1 ring-[#7C4DFF]' 
-                                                                 : 'border border-black/10 dark:border-white/10 group-hover:shadow-sm'
-                                                             }`}
-                                                             style={{ background: bgOpt.value }}
-                                                           >
-                                                             {/* Top Keynote Slide Header & Indicator */}
-                                                             <div className="flex items-center justify-between w-full z-10">
-                                                               <span className={`text-[6.5px] font-medium tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                                                 {bgOpt.category}
-                                                               </span>
-                                                               {isCurrent && (
-                                                                 <span className="w-3.5 h-3.5 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-md shrink-0">
-                                                                   <Check size={9} strokeWidth={3} />
-                                                                 </span>
-                                                               )}
-                                                             </div>
+                                                              <div className="mt-1.5 px-0.5 flex flex-col gap-0.5 w-full">
+                                                                <span className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-cyan-600 dark:text-cyan-300' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
+                                                                  {styleObj.label}
+                                                                </span>
+                                                                <span className="text-[8.5px] text-slate-400 dark:text-zinc-500 line-clamp-1">
+                                                                  {styleObj.desc}
+                                                                </span>
+                                                              </div>
+                                                            </button>
+                                                          );
+                                                        })}
+                                                    </div>
+                                                  </>
+                                                ) : btn.label === 'Background' ? (
+                                                  <>
+                                                    {/* Apple Keynote Style Background Theme Popover with Spotlight Search & Filters */}
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                                      <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                          <Palette size={13} className="text-[#7C4DFF]" />
+                                                          <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                            KEYNOTE THEMES & BACKGROUNDS
+                                                          </span>
+                                                        </div>
+                                                        <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
+                                                          {ALL_DECK_BACKGROUND_OPTIONS.filter(b => (deckBgFilter === 'All' || b.category.toLowerCase().includes(deckBgFilter.toLowerCase())) && (!deckBgSearch || b.label.toLowerCase().includes(deckBgSearch.toLowerCase()) || b.value.toLowerCase().includes(deckBgSearch.toLowerCase()))).length} THEMES
+                                                        </span>
+                                                      </div>
 
-                                                             {/* Clean Architectural Layout Silhouette */}
-                                                             <div className="my-auto z-10 w-full space-y-1.5">
-                                                               <div className="space-y-1">
-                                                                 <div className="w-20 h-2.5 rounded-sm" style={{ backgroundColor: titleLineBg }} />
-                                                                 <div className="w-14 h-2 rounded-sm opacity-80" style={{ backgroundColor: titleLineBg }} />
-                                                               </div>
-                                                               <div 
-                                                                 className="inline-flex items-center px-1.5 py-0.5 rounded-full" 
-                                                                 style={{ backgroundColor: accentPillBg, border: `1px solid ${accentPillBorder}` }}
-                                                               >
-                                                                 <div className="w-10 h-1 rounded-full" style={{ backgroundColor: subLineBg }} />
-                                                               </div>
-                                                             </div>
+                                                      {/* Search Input */}
+                                                      <div className="relative flex items-center">
+                                                        <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+                                                        <input
+                                                          type="text"
+                                                          value={deckBgSearch}
+                                                          onChange={(e) => setDeckBgSearch(e.target.value)}
+                                                          placeholder="Search background colors, gradients…"
+                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500 focus:ring-1 focus:ring-violet-400/30 transition-all font-sans"
+                                                        />
+                                                        {deckBgSearch && (
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => setDeckBgSearch('')}
+                                                            className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded cursor-pointer transition-colors"
+                                                          >
+                                                            <X size={12} />
+                                                          </button>
+                                                        )}
+                                                      </div>
 
-                                                             {/* Bottom Accent Rule & Slide Dots */}
-                                                             <div className="w-full z-10 space-y-1">
-                                                               <div className="w-full h-px" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }} />
-                                                               <div className="flex items-center justify-between">
-                                                                 <div className="w-8 h-1 rounded-full opacity-60" style={{ backgroundColor: subLineBg }} />
-                                                                 <div className="w-6 h-1 rounded-full opacity-60" style={{ backgroundColor: subLineBg }} />
-                                                               </div>
-                                                             </div>
-                                                           </div>
+                                                      {/* Filter Tabs */}
+                                                      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
+                                                        {['All', 'Dark', 'Gradient', 'Neon', 'Slate'].map((cat) => {
+                                                          const isTabActive = deckBgFilter === cat;
+                                                          return (
+                                                            <button
+                                                              key={cat}
+                                                              type="button"
+                                                              onPointerDown={(e) => {
+                                                                e.preventDefault();
+                                                                setDeckBgFilter(cat);
+                                                              }}
+                                                              className={`px-2 py-0.5 text-[9.5px] font-medium rounded-md whitespace-nowrap transition-all cursor-pointer ${
+                                                                isTabActive
+                                                                  ? 'bg-white dark:bg-zinc-800 text-violet-600 dark:text-violet-300 border border-violet-300 dark:border-violet-500/50 shadow-xs font-semibold'
+                                                                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
+                                                              }`}
+                                                            >
+                                                              {cat}
+                                                            </button>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    </div>
 
-                                                           {/* Caption */}
-                                                           <div className="mt-1.5 px-0.5 flex items-center justify-between gap-1 w-full">
-                                                             <span className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-[#7C4DFF] dark:text-violet-300' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
-                                                               {bgOpt.label.replace(/\s*\([^)]*\)/, '')}
-                                                             </span>
-                                                             <span className="text-[9px] font-mono text-slate-400 dark:text-zinc-500 shrink-0">
-                                                               {bgOpt.value.startsWith('#') ? bgOpt.value : 'Grad'}
-                                                             </span>
-                                                           </div>
-                                                         </button>
-                                                       );
-                                                     })}
-                                                   </div>
-                                                 </>
-                                               )
-                                               : btn.label === 'Styles' ? (
-                                                 <>
-                                                   {/* Apple-style Style Presets Popover */}
-                                                   <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 flex items-center justify-between select-none font-sans">
-                                                     <div className="flex items-center gap-1.5">
-                                                       <Sparkles size={13} className="text-[#7C4DFF]" />
-                                                       <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
-                                                         STYLE PRESETS
-                                                       </span>
-                                                     </div>
-                                                     <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
-                                                       {btn.menuItems.length} PRESETS
-                                                     </span>
-                                                   </div>
+                                                    {/* 2-Column High-Fidelity Keynote Slide Thumbnails */}
+                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-3 max-h-[340px]">
+                                                      {ALL_DECK_BACKGROUND_OPTIONS
+                                                        .filter(b => (deckBgFilter === 'All' || b.category.toLowerCase().includes(deckBgFilter.toLowerCase())) && (!deckBgSearch || b.label.toLowerCase().includes(deckBgSearch.toLowerCase()) || b.value.toLowerCase().includes(deckBgSearch.toLowerCase())))
+                                                        .map((bgOpt) => {
+                                                          const isCurrent = activeDeckSlide?.backgroundColor === bgOpt.value;
+                                                          const isDark = bgOpt.isDark ?? true;
+                                                          const accentPillBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
+                                                          const accentPillBorder = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)';
+                                                          const titleLineBg = isDark ? '#ffffff' : '#0f172a';
+                                                          const subLineBg = isDark ? '#94a3b8' : '#64748b';
 
-                                                   {/* 2-Column Style Preset Cards Grid */}
-                                                   <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-2.5 max-h-[350px]">
-                                                     {btn.menuItems.map((item) => {
-                                                       const isCyber = item.includes('Cyber Glow');
-                                                       const isAurora = item.includes('Aurora');
-                                                       const isMidnight = item.includes('Midnight');
-                                                       const isElectric = item.includes('Electric Cyan');
+                                                          return (
+                                                            <button
+                                                              key={bgOpt.label}
+                                                              type="button"
+                                                              onPointerDown={(e) => {
+                                                                e.preventDefault();
+                                                                btn.onSelect(bgOpt.label);
+                                                                setDeckActiveToolbarMenu(null);
+                                                              }}
+                                                              className={`group relative flex flex-col p-1.5 rounded-xl text-left transition-all duration-150 cursor-pointer ${
+                                                                isCurrent 
+                                                                  ? 'bg-violet-500/10 dark:bg-violet-500/20 ring-2 ring-[#7C4DFF] shadow-sm' 
+                                                                  : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
+                                                              }`}
+                                                            >
+                                                              <div 
+                                                                className={`w-full aspect-[16/10] rounded-lg relative overflow-hidden transition-all duration-150 p-2.5 flex flex-col justify-between shadow-xs select-none ${
+                                                                  isCurrent 
+                                                                    ? 'ring-1 ring-[#7C4DFF]' 
+                                                                    : 'border border-black/10 dark:border-white/10 group-hover:shadow-sm'
+                                                                }`}
+                                                                style={{ background: bgOpt.value }}
+                                                              >
+                                                                <div className="flex items-center justify-between w-full z-10">
+                                                                  <span className={`text-[6.5px] font-medium tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                                    {bgOpt.category}
+                                                                  </span>
+                                                                  {isCurrent && (
+                                                                    <span className="w-3.5 h-3.5 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-md shrink-0">
+                                                                      <Check size={9} strokeWidth={3} />
+                                                                    </span>
+                                                                  )}
+                                                                </div>
 
-                                                       const styleBg = isCyber ? '#05070B' : isAurora ? '#0A081E' : isMidnight ? '#0F172A' : isElectric ? '#030D1B' : '#000000';
-                                                       const waveColor1 = isCyber ? '#00f0ff' : isAurora ? '#a855f7' : isMidnight ? '#38bdf8' : isElectric ? '#00f0ff' : '#94a3b8';
-                                                       const waveColor2 = isCyber ? '#7c4dff' : isAurora ? '#ec4899' : isMidnight ? '#1e293b' : isElectric ? '#3b82f6' : '#475569';
+                                                                <div className="my-auto z-10 w-full space-y-1.5">
+                                                                  <div className="space-y-1">
+                                                                    <div className="w-20 h-2.5 rounded-sm" style={{ backgroundColor: titleLineBg }} />
+                                                                    <div className="w-14 h-2 rounded-sm opacity-80" style={{ backgroundColor: titleLineBg }} />
+                                                                  </div>
+                                                                  <div 
+                                                                    className="inline-flex items-center px-1.5 py-0.5 rounded-full" 
+                                                                    style={{ backgroundColor: accentPillBg, border: `1px solid ${accentPillBorder}` }}
+                                                                  >
+                                                                    <div className="w-10 h-1 rounded-full" style={{ backgroundColor: subLineBg }} />
+                                                                  </div>
+                                                                </div>
 
-                                                       return (
-                                                         <button
-                                                           key={item}
-                                                           type="button"
-                                                           onPointerDown={(e) => {
-                                                             e.preventDefault();
-                                                             btn.onSelect(item);
-                                                             setDeckActiveToolbarMenu(null);
-                                                           }}
-                                                           className="group relative flex flex-col p-1.5 rounded-xl text-left hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 transition-all cursor-pointer"
-                                                         >
-                                                           <div 
-                                                             className="w-full aspect-[16/10] rounded-lg relative overflow-hidden p-2 flex flex-col justify-between border border-white/10 shadow-xs"
-                                                             style={{ backgroundColor: styleBg }}
-                                                           >
-                                                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: waveColor1 }} />
-                                                             <div className="text-[8px] font-bold text-white uppercase tracking-tight">
-                                                               {item.split('(')[0].trim()}
-                                                             </div>
-                                                             <div className="w-full h-0.5 rounded-full" style={{ background: `linear-gradient(90deg, ${waveColor1}, ${waveColor2})` }} />
-                                                           </div>
-                                                           <span className="mt-1 text-[10.5px] font-semibold text-slate-700 dark:text-zinc-200 truncate">
-                                                             {item.split('(')[0].trim()}
-                                                           </span>
-                                                         </button>
-                                                       );
-                                                     })}
-                                                   </div>
-                                                 </>
-                                               ) : btn.label === 'Media & Logo' ? (
-                                                 <>
-                                                   {/* Apple-style Media & Logo Dropdown with Visual Icons */}
-                                                   <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 flex items-center justify-between select-none font-sans">
-                                                     <div className="flex items-center gap-1.5">
-                                                       <ImageIcon size={13} className="text-[#7C4DFF]" />
-                                                       <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
-                                                         MEDIA & BRAND ASSETS
-                                                       </span>
-                                                     </div>
-                                                     <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
-                                                       4 ASSETS
-                                                     </span>
-                                                   </div>
-                                                   <div className="p-1.5 space-y-1">
-                                                     {[
-                                                       { label: 'Upload Picture / Image', icon: ImageIcon, iconBg: 'bg-violet-500/10 text-violet-500', badge: 'JPG / PNG', desc: 'Insert photography or graphic asset' },
-                                                       { label: 'Upload Brand Logo', icon: Award, iconBg: 'bg-amber-500/10 text-amber-500', badge: 'SVG / PNG', desc: 'Place high-res company emblem' },
-                                                       { label: 'Convert PNG/JPG to Vector (SVG)', icon: Wand2, iconBg: 'bg-cyan-500/10 text-cyan-500', badge: 'AI Tracing', desc: 'Auto-convert raster images to crisp SVG' },
-                                                       { label: 'Preset Monogram Logo', icon: Layers, iconBg: 'bg-purple-500/10 text-purple-500', badge: 'Vector', desc: 'Add sleek executive monogram badge' }
-                                                     ].map((mediaItem) => {
-                                                       const MediaIcon = mediaItem.icon;
-                                                       return (
-                                                         <button
-                                                           key={mediaItem.label}
-                                                           type="button"
-                                                           onPointerDown={(e) => {
-                                                             e.preventDefault();
-                                                             btn.onSelect(mediaItem.label);
-                                                             setDeckActiveToolbarMenu(null);
-                                                           }}
-                                                           className="w-full text-left p-2 rounded-xl hover:bg-violet-50/80 dark:hover:bg-zinc-800/80 transition-all flex items-center justify-between group cursor-pointer border border-transparent hover:border-violet-200/50 dark:hover:border-zinc-700/50"
-                                                         >
-                                                           <div className="flex items-center gap-2.5 min-w-0">
-                                                             <div className={`w-8 h-8 rounded-lg ${mediaItem.iconBg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
-                                                               <MediaIcon size={15} />
-                                                             </div>
-                                                             <div className="flex flex-col min-w-0">
-                                                               <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-[#7C4DFF] truncate">
-                                                                 {mediaItem.label}
-                                                               </span>
-                                                               <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 truncate">
-                                                                 {mediaItem.desc}
-                                                               </span>
-                                                             </div>
-                                                           </div>
-                                                           <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 shrink-0">
-                                                             {mediaItem.badge}
-                                                           </span>
-                                                         </button>
-                                                       );
-                                                     })}
-                                                   </div>
-                                                 </>
-                                               ) : btn.label === 'Insert' ? (
-                                                 <>
-                                                   {/* Apple-style Categorized Insert Menu with Icons & Previews */}
-                                                   <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 flex items-center justify-between select-none font-sans">
-                                                     <div className="flex items-center gap-1.5">
-                                                       <Plus size={13} className="text-[#7C4DFF]" />
-                                                       <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
-                                                         INSERT SLIDE OBJECTS
-                                                       </span>
-                                                     </div>
-                                                     <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
-                                                       ELEMENTS
-                                                     </span>
-                                                   </div>
-                                                   <div className="flex-1 overflow-y-auto thin-scrollbar p-2 space-y-2.5 max-h-[380px]">
-                                                     {/* Section 1: Media & Vector */}
-                                                     <div>
-                                                       <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">Media & Vectors</span>
-                                                       <div className="grid grid-cols-2 gap-1.5">
-                                                         {[
-                                                           { label: 'Picture / Image', icon: ImageIcon, desc: 'Photo upload' },
-                                                           { label: 'Brand Logo', icon: Award, desc: 'Vector emblem' },
-                                                           { label: 'Convert JPG/PNG to Vector', icon: Wand2, desc: 'AI Vectorize' },
-                                                           { label: 'Glow Vector Wave', icon: Sparkles, desc: '3D neon mesh' }
-                                                         ].map((item) => {
-                                                           const ItemIcon = item.icon;
-                                                           return (
-                                                             <button
-                                                               key={item.label}
-                                                               type="button"
-                                                               onPointerDown={(e) => {
-                                                                 e.preventDefault();
-                                                                 btn.onSelect(item.label);
-                                                                 setDeckActiveToolbarMenu(null);
-                                                               }}
-                                                               className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-50 dark:bg-zinc-850 hover:bg-violet-50 dark:hover:bg-zinc-800 text-left border border-slate-200/50 dark:border-zinc-800 hover:border-violet-300 transition-all cursor-pointer"
-                                                             >
-                                                               <div className="w-6 h-6 rounded-md bg-violet-500/10 text-[#7C4DFF] flex items-center justify-center shrink-0">
-                                                                 <ItemIcon size={12} />
-                                                               </div>
-                                                               <div className="flex flex-col min-w-0">
-                                                                 <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200 truncate">{item.label}</span>
-                                                                 <span className="text-[8px] text-slate-400 dark:text-zinc-500 truncate">{item.desc}</span>
-                                                               </div>
-                                                             </button>
-                                                           );
-                                                         })}
-                                                       </div>
-                                                     </div>
+                                                                <div className="w-full z-10 space-y-1">
+                                                                  <div className="w-full h-px" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }} />
+                                                                  <div className="flex items-center justify-between">
+                                                                    <div className="w-8 h-1 rounded-full opacity-60" style={{ backgroundColor: subLineBg }} />
+                                                                    <div className="w-6 h-1 rounded-full opacity-60" style={{ backgroundColor: subLineBg }} />
+                                                                  </div>
+                                                                </div>
+                                                              </div>
 
-                                                     {/* Section 2: Shapes & Badges */}
-                                                     <div>
-                                                       <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">Geometric Shapes & Badges</span>
-                                                       <div className="grid grid-cols-2 gap-1.5">
-                                                         {[
-                                                           { label: 'Presenter Pill Badge', icon: Shield, desc: 'Speaker bio' },
-                                                           { label: 'Gradient Pill Shape', icon: Palette, desc: 'Accent pill' },
-                                                           { label: 'Circle Shape', icon: Circle, desc: 'Round focus' },
-                                                           { label: 'Square Shape', icon: Square, desc: 'Bento card' },
-                                                           { label: 'Diamond Shape', icon: Diamond, desc: 'Badge gem' },
-                                                           { label: 'Triangle Shape', icon: Triangle, desc: 'Polygon' }
-                                                         ].map((item) => {
-                                                           const ItemIcon = item.icon;
-                                                           return (
-                                                             <button
-                                                               key={item.label}
-                                                               type="button"
-                                                               onPointerDown={(e) => {
-                                                                 e.preventDefault();
-                                                                 btn.onSelect(item.label);
-                                                                 setDeckActiveToolbarMenu(null);
-                                                               }}
-                                                               className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-50 dark:bg-zinc-850 hover:bg-violet-50 dark:hover:bg-zinc-800 text-left border border-slate-200/50 dark:border-zinc-800 hover:border-violet-300 transition-all cursor-pointer"
-                                                             >
-                                                               <div className="w-6 h-6 rounded-md bg-pink-500/10 text-pink-500 flex items-center justify-center shrink-0">
-                                                                 <ItemIcon size={12} />
-                                                               </div>
-                                                               <div className="flex flex-col min-w-0">
-                                                                 <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200 truncate">{item.label}</span>
-                                                                 <span className="text-[8px] text-slate-400 dark:text-zinc-500 truncate">{item.desc}</span>
-                                                               </div>
-                                                             </button>
-                                                           );
-                                                         })}
-                                                       </div>
-                                                     </div>
+                                                              <div className="mt-1.5 px-0.5 flex items-center justify-between gap-1 w-full">
+                                                                <span className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-[#7C4DFF] dark:text-violet-300' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
+                                                                  {bgOpt.label.replace(/\s*\([^)]*\)/, '')}
+                                                                </span>
+                                                                <span className="text-[9px] font-mono text-slate-400 dark:text-zinc-500 shrink-0">
+                                                                  {bgOpt.value.startsWith('#') ? bgOpt.value : 'Grad'}
+                                                                </span>
+                                                              </div>
+                                                            </button>
+                                                          );
+                                                        })}
+                                                    </div>
+                                                  </>
+                                                )
+                                                : btn.label === 'Styles' ? (
+                                                  <>
+                                                    {/* Apple-style Style Presets Popover with Search */}
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                                      <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                          <RegaarderStylesIcon size={13} className="text-[#7C4DFF]" />
+                                                          <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                            STYLE PRESETS
+                                                          </span>
+                                                        </div>
+                                                        <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
+                                                          {btn.menuItems.filter(item => !deckStyleSearch || item.toLowerCase().includes(deckStyleSearch.toLowerCase())).length} PRESETS
+                                                        </span>
+                                                      </div>
 
-                                                     {/* Section 3: Typography & Structure */}
-                                                     <div>
-                                                       <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">Typography & Lines</span>
-                                                       <div className="grid grid-cols-2 gap-1.5">
-                                                         {[
-                                                           { label: 'Heading H1', icon: Heading1, desc: 'Headline text' },
-                                                           { label: 'Text Box (Multi-line)', icon: Type, desc: 'Paragraph text' },
-                                                           { label: 'Divider Line', icon: Minus, desc: 'Rule separator' },
-                                                           { label: 'Contact Icon Shape', icon: Globe, desc: 'Footer contact' }
-                                                         ].map((item) => {
-                                                           const ItemIcon = item.icon;
-                                                           return (
-                                                             <button
-                                                               key={item.label}
-                                                               type="button"
-                                                               onPointerDown={(e) => {
-                                                                 e.preventDefault();
-                                                                 btn.onSelect(item.label);
-                                                                 setDeckActiveToolbarMenu(null);
-                                                               }}
-                                                               className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-50 dark:bg-zinc-850 hover:bg-violet-50 dark:hover:bg-zinc-800 text-left border border-slate-200/50 dark:border-zinc-800 hover:border-violet-300 transition-all cursor-pointer"
-                                                             >
-                                                               <div className="w-6 h-6 rounded-md bg-cyan-500/10 text-cyan-500 flex items-center justify-center shrink-0">
-                                                                 <ItemIcon size={12} />
-                                                               </div>
-                                                               <div className="flex flex-col min-w-0">
-                                                                 <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200 truncate">{item.label}</span>
-                                                                 <span className="text-[8px] text-slate-400 dark:text-zinc-500 truncate">{item.desc}</span>
-                                                               </div>
-                                                             </button>
-                                                           );
-                                                         })}
-                                                       </div>
-                                                     </div>
-                                                   </div>
-                                                 </>
-                                               ) : btn.label === 'AI' ? (
-                                                 <>
-                                                   {/* Apple-style AI Actions Dropdown with Radiant Visual Cards */}
-                                                   <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 flex items-center justify-between select-none font-sans">
-                                                     <div className="flex items-center gap-1.5">
-                                                       <Bot size={13} className="text-[#7C4DFF]" />
-                                                       <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
-                                                         AI PRESENTATION AGENT
-                                                       </span>
-                                                     </div>
-                                                     <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 font-mono">
-                                                       INTELLIGENCE
-                                                     </span>
-                                                   </div>
-                                                   <div className="p-1.5 space-y-1">
-                                                     {[
-                                                       { label: 'Auto-Design Slide 1 Cover', icon: Sparkles, iconBg: 'bg-violet-500/10 text-violet-500', badge: '1-Click', desc: 'Assemble full layout, typography & glowing mesh' },
-                                                       { label: 'Improve typography hierarchy', icon: Type, iconBg: 'bg-blue-500/10 text-blue-500', badge: 'Hierarchy', desc: 'Refine headline scale, tracking & contrast' },
-                                                       { label: 'Generate slide content', icon: FileText, iconBg: 'bg-emerald-500/10 text-emerald-500', badge: 'Copy', desc: 'Synthesize executive pitch bullet points' },
-                                                       { label: 'Auto-retheme presentation', icon: Palette, iconBg: 'bg-pink-500/10 text-pink-500', badge: 'Theme', desc: 'Harmonize chromatic styling & glow hues' },
-                                                       { label: 'Make More Visual', icon: LayoutGrid, iconBg: 'bg-cyan-500/10 text-cyan-500', badge: 'Visuals', desc: 'Transform plain text into structured visual cards' }
-                                                     ].map((aiItem) => {
-                                                       const AiIcon = aiItem.icon;
-                                                       return (
-                                                         <button
-                                                           key={aiItem.label}
-                                                           type="button"
-                                                           onPointerDown={(e) => {
-                                                             e.preventDefault();
-                                                             btn.onSelect(aiItem.label);
-                                                             setDeckActiveToolbarMenu(null);
-                                                           }}
-                                                           className="w-full text-left p-2 rounded-xl hover:bg-violet-50/80 dark:hover:bg-zinc-800/80 transition-all flex items-center justify-between group cursor-pointer border border-transparent hover:border-violet-200/50 dark:hover:border-zinc-700/50"
-                                                         >
-                                                           <div className="flex items-center gap-2.5 min-w-0">
-                                                             <div className={`w-8 h-8 rounded-lg ${aiItem.iconBg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
-                                                               <AiIcon size={15} />
-                                                             </div>
-                                                             <div className="flex flex-col min-w-0">
-                                                               <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-[#7C4DFF] truncate">
-                                                                 {aiItem.label}
-                                                               </span>
-                                                               <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 truncate">
-                                                                 {aiItem.desc}
-                                                               </span>
-                                                             </div>
-                                                           </div>
-                                                           <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 shrink-0">
-                                                             {aiItem.badge}
-                                                           </span>
-                                                         </button>
-                                                       );
-                                                     })}
-                                                   </div>
-                                                 </>
-                                               ) : (
-                                                 <>
-                                                   <div className="px-3 py-1.5 border-b border-slate-100 dark:border-zinc-800/60 flex items-center justify-between shrink-0 select-none font-sans bg-white/40 dark:bg-zinc-900/40">
-                                                     <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-zinc-500 uppercase">
-                                                       {btn.label} Options
-                                                     </span>
-                                                   </div>
-                                                   <div className="flex-1 overflow-y-auto thin-scrollbar p-1 space-y-0.5 max-h-[220px]">
-                                                     {btn.menuItems.map((item) => (
-                                                       <button
-                                                         key={item}
-                                                         type="button"
-                                                         onPointerDown={(e) => {
-                                                           e.preventDefault();
-                                                           btn.onSelect(item);
-                                                           setDeckActiveToolbarMenu(null);
-                                                         }}
-                                                         className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/60 hover:text-[#7C4DFF] rounded-lg transition-colors flex items-center justify-between cursor-pointer"
-                                                       >
-                                                         <span>{item}</span>
-                                                       </button>
-                                                     ))}
-                                                   </div>
-                                                 </>
-                                               )}
-                                             </div>
-                                           )}
-                                        </div>
-                                      );
-                                    })
-                                  )}
-                                </div>
-                              </div>
+                                                      {/* Search Input */}
+                                                      <div className="relative flex items-center">
+                                                        <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+                                                        <input
+                                                          type="text"
+                                                          value={deckStyleSearch}
+                                                          onChange={(e) => setDeckStyleSearch(e.target.value)}
+                                                          placeholder="Search color schemes, palettes…"
+                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500 focus:ring-1 focus:ring-violet-400/30 transition-all font-sans"
+                                                        />
+                                                        {deckStyleSearch && (
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => setDeckStyleSearch('')}
+                                                            className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded cursor-pointer transition-colors"
+                                                          >
+                                                            <X size={12} />
+                                                          </button>
+                                                        )}
+                                                      </div>
+                                                    </div>
 
-                                {/* ── CONTEXTUAL SECONDARY TOOLBAR STRIP (SHOWN ONLY WHEN RELEVANT OBJECT IS SELECTED) ── */}
+                                                    {/* 2-Column Style Preset Cards Grid */}
+                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-2.5 max-h-[340px]">
+                                                      {btn.menuItems
+                                                        .filter(item => !deckStyleSearch || item.toLowerCase().includes(deckStyleSearch.toLowerCase()))
+                                                        .map((item) => {
+                                                          const isCyber = item.includes('Cyber Glow');
+                                                          const isAurora = item.includes('Aurora');
+                                                          const isMidnight = item.includes('Midnight');
+                                                          const isElectric = item.includes('Electric Cyan');
+
+                                                          const styleBg = isCyber ? '#05070B' : isAurora ? '#0A081E' : isMidnight ? '#0F172A' : isElectric ? '#030D1B' : '#000000';
+                                                          const waveColor1 = isCyber ? '#00f0ff' : isAurora ? '#a855f7' : isMidnight ? '#38bdf8' : isElectric ? '#00f0ff' : '#94a3b8';
+                                                          const waveColor2 = isCyber ? '#7c4dff' : isAurora ? '#ec4899' : isMidnight ? '#1e293b' : isElectric ? '#3b82f6' : '#475569';
+
+                                                          return (
+                                                            <button
+                                                              key={item}
+                                                              type="button"
+                                                              onPointerDown={(e) => {
+                                                                e.preventDefault();
+                                                                btn.onSelect(item);
+                                                                setDeckActiveToolbarMenu(null);
+                                                              }}
+                                                              className="group relative flex flex-col p-1.5 rounded-xl text-left hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700 transition-all cursor-pointer"
+                                                            >
+                                                              <div 
+                                                                className="w-full aspect-[16/10] rounded-lg relative overflow-hidden p-2 flex flex-col justify-between border border-white/10 shadow-xs"
+                                                                style={{ backgroundColor: styleBg }}
+                                                              >
+                                                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: waveColor1 }} />
+                                                                <div className="text-[8px] font-bold text-white uppercase tracking-tight">
+                                                                  {item.split('(')[0].trim()}
+                                                                </div>
+                                                                <div className="w-full h-0.5 rounded-full" style={{ background: `linear-gradient(90deg, ${waveColor1}, ${waveColor2})` }} />
+                                                              </div>
+                                                              <span className="mt-1 text-[10.5px] font-semibold text-slate-700 dark:text-zinc-200 group-hover:text-[#7C4DFF] truncate">
+                                                                {item.split('(')[0].trim()}
+                                                              </span>
+                                                            </button>
+                                                          );
+                                                        })}
+                                                    </div>
+                                                  </>
+                                                ) : btn.label === 'Media & Logo' ? (
+                                                  <>
+                                                    {/* Apple-style Media & Logo Dropdown with Spotlight Search */}
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                                      <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                          <RegaarderMediaIcon size={13} className="text-[#7C4DFF]" />
+                                                          <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                            MEDIA & BRAND ASSETS
+                                                          </span>
+                                                        </div>
+                                                        <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
+                                                          4 ASSETS
+                                                        </span>
+                                                      </div>
+
+                                                      {/* Search Input */}
+                                                      <div className="relative flex items-center">
+                                                        <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+                                                        <input
+                                                          type="text"
+                                                          value={deckMediaSearch}
+                                                          onChange={(e) => setDeckMediaSearch(e.target.value)}
+                                                          placeholder="Search media, logos, uploads…"
+                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500 focus:ring-1 focus:ring-violet-400/30 transition-all font-sans"
+                                                        />
+                                                        {deckMediaSearch && (
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => setDeckMediaSearch('')}
+                                                            className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded cursor-pointer transition-colors"
+                                                          >
+                                                            <X size={12} />
+                                                          </button>
+                                                        )}
+                                                      </div>
+                                                    </div>
+
+                                                    <div className="p-1.5 space-y-1">
+                                                      {[
+                                                        { label: 'Upload Picture / Image', icon: ImageIcon, iconBg: 'bg-violet-500/10 text-violet-500', badge: 'JPG / PNG', desc: 'Insert photography or graphic asset' },
+                                                        { label: 'Upload Brand Logo', icon: Award, iconBg: 'bg-amber-500/10 text-amber-500', badge: 'SVG / PNG', desc: 'Place high-res company emblem' },
+                                                        { label: 'Convert PNG/JPG to Vector (SVG)', icon: Wand2, iconBg: 'bg-cyan-500/10 text-cyan-500', badge: 'AI Tracing', desc: 'Auto-convert raster images to crisp SVG' },
+                                                        { label: 'Preset Monogram Logo', icon: Layers, iconBg: 'bg-purple-500/10 text-purple-500', badge: 'Vector', desc: 'Add sleek executive monogram badge' }
+                                                      ]
+                                                        .filter(m => !deckMediaSearch || m.label.toLowerCase().includes(deckMediaSearch.toLowerCase()) || m.desc.toLowerCase().includes(deckMediaSearch.toLowerCase()) || m.badge.toLowerCase().includes(deckMediaSearch.toLowerCase()))
+                                                        .map((mediaItem) => {
+                                                          const MediaIcon = mediaItem.icon;
+                                                          return (
+                                                            <button
+                                                              key={mediaItem.label}
+                                                              type="button"
+                                                              onPointerDown={(e) => {
+                                                                e.preventDefault();
+                                                                btn.onSelect(mediaItem.label);
+                                                                setDeckActiveToolbarMenu(null);
+                                                              }}
+                                                              className="w-full text-left p-2 rounded-xl hover:bg-violet-50/80 dark:hover:bg-zinc-800/80 transition-all flex items-center justify-between group cursor-pointer border border-transparent hover:border-violet-200/50 dark:hover:border-zinc-700/50"
+                                                            >
+                                                              <div className="flex items-center gap-2.5 min-w-0">
+                                                                <div className={`w-8 h-8 rounded-lg ${mediaItem.iconBg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
+                                                                  <MediaIcon size={15} />
+                                                                </div>
+                                                                <div className="flex flex-col min-w-0">
+                                                                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-[#7C4DFF] truncate">
+                                                                    {mediaItem.label}
+                                                                  </span>
+                                                                  <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 truncate">
+                                                                    {mediaItem.desc}
+                                                                  </span>
+                                                                </div>
+                                                              </div>
+                                                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 shrink-0">
+                                                                {mediaItem.badge}
+                                                              </span>
+                                                            </button>
+                                                          );
+                                                        })}
+                                                    </div>
+                                                  </>
+                                                ) : btn.label === 'Insert' ? (
+                                                  <>
+                                                    {/* Apple-style Categorized Insert Menu with Spotlight Search & Filters */}
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                                      <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                          <Plus size={13} className="text-[#7C4DFF]" />
+                                                          <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                            INSERT SLIDE OBJECTS
+                                                          </span>
+                                                        </div>
+                                                        <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
+                                                          OBJECTS
+                                                        </span>
+                                                      </div>
+
+                                                      {/* Search Input */}
+                                                      <div className="relative flex items-center">
+                                                        <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+                                                        <input
+                                                          type="text"
+                                                          value={deckInsertSearch}
+                                                          onChange={(e) => setDeckInsertSearch(e.target.value)}
+                                                          placeholder="Search shapes, text, media, badges…"
+                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500 focus:ring-1 focus:ring-violet-400/30 transition-all font-sans"
+                                                        />
+                                                        {deckInsertSearch && (
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => setDeckInsertSearch('')}
+                                                            className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded cursor-pointer transition-colors"
+                                                          >
+                                                            <X size={12} />
+                                                          </button>
+                                                        )}
+                                                      </div>
+
+                                                      {/* Category Filter Tabs */}
+                                                      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
+                                                        {['All', 'Media', 'Shapes', 'Typography'].map((cat) => {
+                                                          const isTabActive = deckInsertFilter === cat;
+                                                          return (
+                                                            <button
+                                                              key={cat}
+                                                              type="button"
+                                                              onPointerDown={(e) => {
+                                                                e.preventDefault();
+                                                                setDeckInsertFilter(cat);
+                                                              }}
+                                                              className={`px-2 py-0.5 text-[9.5px] font-medium rounded-md whitespace-nowrap transition-all cursor-pointer ${
+                                                                isTabActive
+                                                                  ? 'bg-white dark:bg-zinc-800 text-violet-600 dark:text-violet-300 border border-violet-300 dark:border-violet-500/50 shadow-xs font-semibold'
+                                                                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
+                                                              }`}
+                                                            >
+                                                              {cat}
+                                                            </button>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    </div>
+
+                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2 space-y-2.5 max-h-[340px]">
+                                                      {/* Section 1: Media & Vector */}
+                                                      {(deckInsertFilter === 'All' || deckInsertFilter === 'Media') && (
+                                                        <div>
+                                                          <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">Media & Vectors</span>
+                                                          <div className="grid grid-cols-2 gap-1.5">
+                                                            {[
+                                                              { label: 'Picture / Image', icon: ImageIcon, desc: 'Photo upload' },
+                                                              { label: 'Brand Logo', icon: Award, desc: 'Vector emblem' },
+                                                              { label: 'Convert JPG/PNG to Vector', icon: Wand2, desc: 'AI Vectorize' },
+                                                              { label: 'Glow Vector Wave', icon: Sparkles, desc: '3D neon mesh' }
+                                                            ]
+                                                              .filter(item => !deckInsertSearch || item.label.toLowerCase().includes(deckInsertSearch.toLowerCase()) || item.desc.toLowerCase().includes(deckInsertSearch.toLowerCase()))
+                                                              .map((item) => {
+                                                                const ItemIcon = item.icon;
+                                                                return (
+                                                                  <button
+                                                                    key={item.label}
+                                                                    type="button"
+                                                                    onPointerDown={(e) => {
+                                                                      e.preventDefault();
+                                                                      btn.onSelect(item.label);
+                                                                      setDeckActiveToolbarMenu(null);
+                                                                    }}
+                                                                    className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-50 dark:bg-zinc-850 hover:bg-violet-50 dark:hover:bg-zinc-800 text-left border border-slate-200/50 dark:border-zinc-800 hover:border-violet-300 transition-all cursor-pointer"
+                                                                  >
+                                                                    <div className="w-6 h-6 rounded-md bg-violet-500/10 text-[#7C4DFF] flex items-center justify-center shrink-0">
+                                                                      <ItemIcon size={12} />
+                                                                    </div>
+                                                                    <div className="flex flex-col min-w-0">
+                                                                      <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200 truncate">{item.label}</span>
+                                                                      <span className="text-[8px] text-slate-400 dark:text-zinc-500 truncate">{item.desc}</span>
+                                                                    </div>
+                                                                  </button>
+                                                                );
+                                                              })}
+                                                          </div>
+                                                        </div>
+                                                      )}
+
+                                                      {/* Section 2: Shapes & Badges */}
+                                                      {(deckInsertFilter === 'All' || deckInsertFilter === 'Shapes') && (
+                                                        <div>
+                                                          <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">Geometric Shapes & Badges</span>
+                                                          <div className="grid grid-cols-2 gap-1.5">
+                                                            {[
+                                                              { label: 'Presenter Pill Badge', icon: Shield, desc: 'Speaker bio' },
+                                                              { label: 'Gradient Pill Shape', icon: Palette, desc: 'Accent pill' },
+                                                              { label: 'Circle Shape', icon: Circle, desc: 'Round focus' },
+                                                              { label: 'Square Shape', icon: Square, desc: 'Bento card' },
+                                                              { label: 'Diamond Shape', icon: Diamond, desc: 'Badge gem' },
+                                                              { label: 'Triangle Shape', icon: Triangle, desc: 'Polygon' }
+                                                            ]
+                                                              .filter(item => !deckInsertSearch || item.label.toLowerCase().includes(deckInsertSearch.toLowerCase()) || item.desc.toLowerCase().includes(deckInsertSearch.toLowerCase()))
+                                                              .map((item) => {
+                                                                const ItemIcon = item.icon;
+                                                                return (
+                                                                  <button
+                                                                    key={item.label}
+                                                                    type="button"
+                                                                    onPointerDown={(e) => {
+                                                                      e.preventDefault();
+                                                                      btn.onSelect(item.label);
+                                                                      setDeckActiveToolbarMenu(null);
+                                                                    }}
+                                                                    className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-50 dark:bg-zinc-850 hover:bg-violet-50 dark:hover:bg-zinc-800 text-left border border-slate-200/50 dark:border-zinc-800 hover:border-violet-300 transition-all cursor-pointer"
+                                                                  >
+                                                                    <div className="w-6 h-6 rounded-md bg-pink-500/10 text-pink-500 flex items-center justify-center shrink-0">
+                                                                      <ItemIcon size={12} />
+                                                                    </div>
+                                                                    <div className="flex flex-col min-w-0">
+                                                                      <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200 truncate">{item.label}</span>
+                                                                      <span className="text-[8px] text-slate-400 dark:text-zinc-500 truncate">{item.desc}</span>
+                                                                    </div>
+                                                                  </button>
+                                                                );
+                                                              })}
+                                                          </div>
+                                                        </div>
+                                                      )}
+
+                                                      {/* Section 3: Typography & Structure */}
+                                                      {(deckInsertFilter === 'All' || deckInsertFilter === 'Typography') && (
+                                                        <div>
+                                                          <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">Typography & Lines</span>
+                                                          <div className="grid grid-cols-2 gap-1.5">
+                                                            {[
+                                                              { label: 'Heading H1', icon: Heading1, desc: 'Headline text' },
+                                                              { label: 'Text Box (Multi-line)', icon: Type, desc: 'Paragraph text' },
+                                                              { label: 'Divider Line', icon: Minus, desc: 'Rule separator' },
+                                                              { label: 'Contact Icon Shape', icon: Globe, desc: 'Footer contact' }
+                                                            ]
+                                                              .filter(item => !deckInsertSearch || item.label.toLowerCase().includes(deckInsertSearch.toLowerCase()) || item.desc.toLowerCase().includes(deckInsertSearch.toLowerCase()))
+                                                              .map((item) => {
+                                                                const ItemIcon = item.icon;
+                                                                return (
+                                                                  <button
+                                                                    key={item.label}
+                                                                    type="button"
+                                                                    onPointerDown={(e) => {
+                                                                      e.preventDefault();
+                                                                      btn.onSelect(item.label);
+                                                                      setDeckActiveToolbarMenu(null);
+                                                                    }}
+                                                                    className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-50 dark:bg-zinc-850 hover:bg-violet-50 dark:hover:bg-zinc-800 text-left border border-slate-200/50 dark:border-zinc-800 hover:border-violet-300 transition-all cursor-pointer"
+                                                                  >
+                                                                    <div className="w-6 h-6 rounded-md bg-cyan-500/10 text-cyan-500 flex items-center justify-center shrink-0">
+                                                                      <ItemIcon size={12} />
+                                                                    </div>
+                                                                    <div className="flex flex-col min-w-0">
+                                                                      <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200 truncate">{item.label}</span>
+                                                                      <span className="text-[8px] text-slate-400 dark:text-zinc-500 truncate">{item.desc}</span>
+                                                                    </div>
+                                                                  </button>
+                                                                );
+                                                              })}
+                                                          </div>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </>
+                                                ) : btn.label === 'AI' ? (
+                                                  <>
+                                                    {/* Apple-style AI Actions Dropdown with Spotlight Search */}
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                                      <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                          <Bot size={13} className="text-[#7C4DFF]" />
+                                                          <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                            AI PRESENTATION AGENT
+                                                          </span>
+                                                        </div>
+                                                        <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 font-mono">
+                                                          INTELLIGENCE
+                                                        </span>
+                                                      </div>
+
+                                                      {/* Search Input */}
+                                                      <div className="relative flex items-center">
+                                                        <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+                                                        <input
+                                                          type="text"
+                                                          value={deckAiSearch}
+                                                          onChange={(e) => setDeckAiSearch(e.target.value)}
+                                                          placeholder="Search AI capabilities & prompts…"
+                                                          className="w-full h-7 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-purple-400 dark:focus:border-purple-500 focus:ring-1 focus:ring-purple-400/30 transition-all font-sans"
+                                                        />
+                                                        {deckAiSearch && (
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => setDeckAiSearch('')}
+                                                            className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded cursor-pointer transition-colors"
+                                                          >
+                                                            <X size={12} />
+                                                          </button>
+                                                        )}
+                                                      </div>
+                                                    </div>
+
+                                                    <div className="p-1.5 space-y-1">
+                                                      {[
+                                                        { label: 'Auto-Design Slide 1 Cover', icon: Sparkles, iconBg: 'bg-violet-500/10 text-violet-500', badge: '1-Click', desc: 'Assemble full layout, typography & glowing mesh' },
+                                                        { label: 'Improve typography hierarchy', icon: Type, iconBg: 'bg-blue-500/10 text-blue-500', badge: 'Hierarchy', desc: 'Refine headline scale, tracking & contrast' },
+                                                        { label: 'Generate slide content', icon: FileText, iconBg: 'bg-emerald-500/10 text-emerald-500', badge: 'Copy', desc: 'Synthesize executive pitch bullet points' },
+                                                        { label: 'Auto-retheme presentation', icon: Palette, iconBg: 'bg-pink-500/10 text-pink-500', badge: 'Theme', desc: 'Harmonize chromatic styling & glow hues' },
+                                                        { label: 'Make More Visual', icon: LayoutGrid, iconBg: 'bg-cyan-500/10 text-cyan-500', badge: 'Visuals', desc: 'Transform plain text into structured visual cards' }
+                                                      ]
+                                                        .filter(ai => !deckAiSearch || ai.label.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.desc.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.badge.toLowerCase().includes(deckAiSearch.toLowerCase()))
+                                                        .map((aiItem) => {
+                                                          const AiIcon = aiItem.icon;
+                                                          return (
+                                                            <button
+                                                              key={aiItem.label}
+                                                              type="button"
+                                                              onPointerDown={(e) => {
+                                                                e.preventDefault();
+                                                                btn.onSelect(aiItem.label);
+                                                                setDeckActiveToolbarMenu(null);
+                                                              }}
+                                                              className="w-full text-left p-2 rounded-xl hover:bg-violet-50/80 dark:hover:bg-zinc-800/80 transition-all flex items-center justify-between group cursor-pointer border border-transparent hover:border-violet-200/50 dark:hover:border-zinc-700/50"
+                                                            >
+                                                              <div className="flex items-center gap-2.5 min-w-0">
+                                                                <div className={`w-8 h-8 rounded-lg ${aiItem.iconBg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
+                                                                  <AiIcon size={15} />
+                                                                </div>
+                                                                <div className="flex flex-col min-w-0">
+                                                                  <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-[#7C4DFF] truncate">
+                                                                    {aiItem.label}
+                                                                  </span>
+                                                                  <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 truncate">
+                                                                    {aiItem.desc}
+                                                                  </span>
+                                                                </div>
+                                                              </div>
+                                                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 shrink-0">
+                                                                {aiItem.badge}
+                                                              </span>
+                                                            </button>
+                                                          );
+                                                        })}
+                                                    </div>
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <div className="px-3 py-1.5 border-b border-slate-100 dark:border-zinc-800/60 flex items-center justify-between shrink-0 select-none font-sans bg-white/40 dark:bg-zinc-900/40">
+                                                      <span className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-zinc-500 uppercase">
+                                                        {btn.label} Options
+                                                      </span>
+                                                    </div>
+                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-1 space-y-0.5 max-h-[220px]">
+                                                      {btn.menuItems.map((item) => (
+                                                        <button
+                                                          key={item}
+                                                          type="button"
+                                                          onPointerDown={(e) => {
+                                                            e.preventDefault();
+                                                            btn.onSelect(item);
+                                                            setDeckActiveToolbarMenu(null);
+                                                          }}
+                                                          className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/60 hover:text-[#7C4DFF] rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                                                        >
+                                                          <span>{item}</span>
+                                                        </button>
+                                                      ))}
+                                                    </div>
+                                                  </>
+                                                )}
+                                              </div>
+                                            )}
+                                         </div>
+                                       );
+                                     })
+                                   )}
+                                 </div>
+                               </div>
+
+                                 {/* ── CONTEXTUAL SECONDARY TOOLBAR STRIP (SHOWN ONLY WHEN RELEVANT OBJECT IS SELECTED) ── */}
                                 {['line', 'badge', 'pill', 'vector'].includes(deckSelection.type) && (
                                 <div className="w-full flex items-center justify-between gap-2 px-2.5 py-1 mt-1 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/50 dark:border-zinc-800 text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 animate-in fade-in slide-in-from-top-1 duration-150 overflow-x-auto no-scrollbar">
                                   {deckSelection.type === 'line' ? (
