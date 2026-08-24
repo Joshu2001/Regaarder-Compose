@@ -34282,280 +34282,7 @@ Respond with a JSON array of slide objects matching the schema.`;
   }, [productMode, selectedSheetRange, selectedSheetCell, activeSheetId]);
 
   
-  // ── FULL LLM & PROGRAMMATIC API HARNESS FOR REGAARDER DECK ──
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.regaarderDeck = {
-        tools: DECK_LLM_TOOL_DEFINITIONS,
-        
-        getSlides: () => (deckSlidesData && deckSlidesData.length ? deckSlidesData : DEFAULT_DECK_SLIDES),
-        getActiveSlide: () => activeDeckSlide,
-        
-        getState: () => ({
-          title: deckTitle || 'Untitled Deck',
-          totalSlides: (deckSlidesData || []).length,
-          activeSlideId: activeDeckSlideId,
-          activeSlide: activeDeckSlide,
-          brandKit: selectedBrandKit?.name,
-          isPresentationMode: isDeckPresentationMode,
-          isPresentationFocus: isDeckPresentationFocus
-        }),
 
-        createSlide: (props = {}) => {
-          const slides = deckSlidesData && deckSlidesData.length ? deckSlidesData : DEFAULT_DECK_SLIDES;
-          const nextId = (slides.length ? Math.max(...slides.map(s => s.id)) : 0) + 1;
-          const preset = DECK_DESIGN_PRESETS.find(p => p.key === props.designPresetKey) || DECK_DESIGN_PRESETS[0];
-          
-          const newSlide = {
-            id: nextId,
-            title: props.title || `Slide ${nextId}`,
-            subtitle: props.subtitle || '',
-            headline: props.headline || props.title || `Slide ${nextId}`,
-            blurb: props.blurb || '',
-            layoutStyle: props.layoutStyle || 'Title Slide',
-            designPresetKey: preset.key,
-            backgroundColor: props.backgroundColor || '#05070B',
-            vectorWaveStyle: 'original-pitch',
-            vectorColor1: '#00f0ff',
-            vectorColor2: '#7c4dff',
-            shapes: [],
-            bentoCards: (props.bentoCards || []).map((b, idx) => ({
-              id: `bento_${Date.now()}_${idx}`,
-              title: b.title || 'Feature',
-              description: b.description || '',
-              style: b.style || 'frosted',
-              bg: 'rgba(255, 255, 255, 0.04)',
-              posX: 70 + (idx % 3) * 280,
-              posY: 230,
-              width: 260,
-              height: 190
-            }))
-          };
-
-          setDeckSlidesData(prev => [...prev, newSlide]);
-          setActiveDeckSlideId(nextId);
-          showToast(`Created slide: "${newSlide.title}"`);
-          return newSlide;
-        },
-
-        deleteSlide: (slideId) => {
-          const targetId = Number(slideId) || activeDeckSlideId;
-          const slides = deckSlidesData || [];
-          if (slides.length <= 1) {
-            showToast('Cannot delete the only remaining slide');
-            return false;
-          }
-          const filtered = slides.filter(s => s.id !== targetId);
-          setDeckSlidesData(filtered);
-          if (activeDeckSlideId === targetId) {
-            setActiveDeckSlideId(filtered[0]?.id || 1);
-          }
-          showToast(`Deleted slide ${targetId}`);
-          return true;
-        },
-
-        duplicateSlide: (slideId) => {
-          const targetId = Number(slideId) || activeDeckSlideId;
-          const slides = deckSlidesData || [];
-          const source = slides.find(s => s.id === targetId);
-          if (!source) return null;
-          const nextId = Math.max(...slides.map(s => s.id)) + 1;
-          const cloned = {
-            ...JSON.parse(JSON.stringify(source)),
-            id: nextId,
-            title: `${source.title || 'Slide'} (Copy)`
-          };
-          const srcIdx = slides.findIndex(s => s.id === targetId);
-          const nextSlides = [...slides];
-          nextSlides.splice(srcIdx + 1, 0, cloned);
-          setDeckSlidesData(nextSlides);
-          setActiveDeckSlideId(nextId);
-          showToast(`Duplicated slide ${targetId}`);
-          return cloned;
-        },
-
-        reorderSlides: (sourceIndex, destinationIndex) => {
-          setDeckSlidesData(prev => {
-            const result = Array.from(prev);
-            const [removed] = result.splice(sourceIndex, 1);
-            result.splice(destinationIndex, 0, removed);
-            return result;
-          });
-          showToast(`Reordered slide ${sourceIndex + 1} to position ${destinationIndex + 1}`);
-        },
-
-        setActiveSlide: (slideId) => {
-          setActiveDeckSlideId(Number(slideId));
-        },
-
-        updateSlideFields: (slideId, fieldsObj = {}) => {
-          const targetId = Number(slideId) || activeDeckSlideId;
-          updateDeckSlideFields(targetId, fieldsObj);
-          showToast('Updated slide properties');
-        },
-
-        addBentoCard: (slideId, cardProps = {}) => {
-          const targetId = Number(slideId) || activeDeckSlideId;
-          const newCard = {
-            id: `bento_${Date.now()}`,
-            title: cardProps.title || 'New Bento Card',
-            description: cardProps.description || 'Describe key metrics and architectural capabilities.',
-            style: cardProps.style || 'frosted',
-            bg: cardProps.bg || 'rgba(255, 255, 255, 0.04)',
-            borderRadius: 18,
-            posX: cardProps.posX || 70,
-            posY: cardProps.posY || 230,
-            width: cardProps.width || 260,
-            height: cardProps.height || 190
-          };
-          setDeckSlidesData(prev => prev.map(s => s.id === targetId ? { ...s, bentoCards: [...(s.bentoCards || []), newCard] } : s));
-          setDeckSelection({ type: 'bentoCard', id: newCard.id });
-          showToast(`Added Bento card: "${newCard.title}"`);
-          return newCard;
-        },
-
-        updateBentoCard: (cardId, updates = {}) => {
-          setDeckSlidesData(prev => prev.map(s => {
-            if (!(s.bentoCards || []).some(b => b.id === cardId)) return s;
-            return {
-              ...s,
-              bentoCards: (s.bentoCards || []).map(b => b.id === cardId ? { ...b, ...updates } : b)
-            };
-          }));
-          showToast('Updated Bento card');
-        },
-
-        deleteBentoCard: (cardId) => {
-          setDeckSlidesData(prev => prev.map(s => ({
-            ...s,
-            bentoCards: (s.bentoCards || []).filter(b => b.id !== cardId)
-          })));
-          setDeckSelection({ type: 'none', id: null });
-          showToast('Deleted Bento card');
-        },
-
-        convertShapeToBento: (shapeId) => {
-          if (!activeDeckSlide) return null;
-          const shape = (activeDeckSlide.shapes || []).find(s => s.id === shapeId);
-          if (!shape) return null;
-          const newBento = {
-            id: `bento_${Date.now()}`,
-            posX: shape.posX || 100,
-            posY: shape.posY || 100,
-            width: Math.max(220, shape.width || 260),
-            height: Math.max(160, shape.height || 190),
-            title: shape.text || 'Executive Bento',
-            description: 'Integrated translucent card surface with fluid negative whitespace.',
-            style: 'frosted',
-            bg: 'rgba(255, 255, 255, 0.04)',
-            borderRadius: 18
-          };
-          updateDeckSlideFields(activeDeckSlide.id, {
-            shapes: (activeDeckSlide.shapes || []).filter(s => s.id !== shapeId),
-            bentoCards: [...(activeDeckSlide.bentoCards || []), newBento]
-          });
-          setDeckSelection({ type: 'bentoCard', id: newBento.id });
-          showToast('Converted shape to Bento card');
-          return newBento;
-        },
-
-        addShape: (shapeProps = {}) => {
-          if (!activeDeckSlide) return null;
-          const newShape = {
-            id: `shape_${Date.now()}`,
-            shapeType: shapeProps.shapeType || 'rectangle',
-            text: shapeProps.text || '',
-            posX: shapeProps.posX || 120,
-            posY: shapeProps.posY || 140,
-            width: shapeProps.width || 280,
-            height: shapeProps.height || 160,
-            color: shapeProps.color || '#ffffff',
-            fillType: shapeProps.fillType || 'glass'
-          };
-          updateDeckSlideFields(activeDeckSlide.id, {
-            shapes: [...(activeDeckSlide.shapes || []), newShape]
-          });
-          setDeckSelection({ type: 'shape', id: newShape.id });
-          showToast(`Added ${newShape.shapeType} shape`);
-          return newShape;
-        },
-
-        updateShape: (shapeId, updates = {}) => {
-          if (!activeDeckSlide) return;
-          const updated = (activeDeckSlide.shapes || []).map(s => s.id === shapeId ? { ...s, ...updates } : s);
-          updateDeckSlideFields(activeDeckSlide.id, { shapes: updated });
-          showToast('Updated shape');
-        },
-
-        deleteShape: (shapeId) => {
-          if (!activeDeckSlide) return;
-          const updated = (activeDeckSlide.shapes || []).filter(s => s.id !== shapeId);
-          updateDeckSlideFields(activeDeckSlide.id, { shapes: updated });
-          setDeckSelection({ type: 'none', id: null });
-          showToast('Deleted shape');
-        },
-
-        setTheme: ({ presetKey, brandKitKey, applyToAllSlides = false }) => {
-          if (presetKey) {
-            if (applyToAllSlides) {
-              setDeckSlidesData(prev => prev.map(s => ({ ...s, designPresetKey: presetKey })));
-            } else if (activeDeckSlide) {
-              updateDeckSlideFields(activeDeckSlide.id, { designPresetKey: presetKey });
-            }
-          }
-          if (brandKitKey) {
-            const kit = DECK_BRAND_KITS.find(k => k.name.toLowerCase().includes(brandKitKey.toLowerCase())) || DECK_BRAND_KITS[0];
-            setSelectedBrandKit(kit);
-          }
-          showToast('Applied deck theme preset');
-        },
-
-        setVectorWave: (waveProps = {}) => {
-          if (!activeDeckSlide) return;
-          const updates = {};
-          if (waveProps.waveStyle) updates.vectorWaveStyle = waveProps.waveStyle;
-          if (waveProps.color1) updates.vectorColor1 = waveProps.color1;
-          if (waveProps.color2) updates.vectorColor2 = waveProps.color2;
-          if (waveProps.glow) updates.vectorGlow = waveProps.glow;
-          if (typeof waveProps.opacity === 'number') updates.vectorOpacity = waveProps.opacity;
-          if (typeof waveProps.hidden === 'boolean') updates.vectorHidden = waveProps.hidden;
-          updateDeckSlideFields(activeDeckSlide.id, updates);
-          showToast('Updated background vector wave');
-        },
-
-        runAudit: (metricKey = 'full-audit') => {
-          setDeckReviewActiveModal(metricKey);
-          return {
-            metric: metricKey,
-            score: 94,
-            status: 'Excellent Standing',
-            totalSlides: (deckSlidesData || []).length,
-            findings: [
-              { label: 'Typography Scale & Hierarchy', status: 'Passed' },
-              { label: 'Color Contrast & Readability', status: 'WCAG AAA' },
-              { label: 'Bento Card Layout Flow', status: 'Optimized' }
-            ]
-          };
-        },
-
-        applyAuditPolish: (scope = 'active-slide') => {
-          executeDeckIntelligenceAction('hierarchy');
-          showToast(`Applied AI polish across ${scope}`);
-        },
-
-        togglePresentation: (active = true, fillScreen = false) => {
-          setIsDeckPresentationMode(active);
-          setIsDeckPresentationFocus(fillScreen);
-        },
-
-        executeTool: (toolName, args = {}) => {
-          return dispatchDeckToolCall(toolName, args, { activeSlide: activeDeckSlide, slides: deckSlidesData });
-        }
-      };
-
-      window.deckAIHarness = window.regaarderDeck;
-    }
-  }, [deckSlidesData, activeDeckSlideId, activeDeckSlide, selectedBrandKit, isDeckPresentationMode, isDeckPresentationFocus]);
 
 
   useEffect(() => {
@@ -34989,6 +34716,281 @@ Respond with a JSON array of slide objects matching the schema.`;
   );
   const deckSlides = deckSlidesData;
   const activeDeckSlide = deckSlides.find((slide) => slide.id === activeDeckSlideId) || deckSlides[0];
+
+  // ── FULL LLM & PROGRAMMATIC API HARNESS FOR REGAARDER DECK ──
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.regaarderDeck = {
+        tools: DECK_LLM_TOOL_DEFINITIONS,
+        
+        getSlides: () => (deckSlidesData && deckSlidesData.length ? deckSlidesData : DEFAULT_DECK_SLIDES),
+        getActiveSlide: () => activeDeckSlide,
+        
+        getState: () => ({
+          title: deckTitle || 'Untitled Deck',
+          totalSlides: (deckSlidesData || []).length,
+          activeSlideId: activeDeckSlideId,
+          activeSlide: activeDeckSlide,
+          brandKit: selectedBrandKit?.name,
+          isPresentationMode: isDeckPresentationMode,
+          isPresentationFocus: isDeckPresentationFocus
+        }),
+
+        createSlide: (props = {}) => {
+          const slides = deckSlidesData && deckSlidesData.length ? deckSlidesData : DEFAULT_DECK_SLIDES;
+          const nextId = (slides.length ? Math.max(...slides.map(s => s.id)) : 0) + 1;
+          const preset = DECK_DESIGN_PRESETS.find(p => p.key === props.designPresetKey) || DECK_DESIGN_PRESETS[0];
+          
+          const newSlide = {
+            id: nextId,
+            title: props.title || `Slide ${nextId}`,
+            subtitle: props.subtitle || '',
+            headline: props.headline || props.title || `Slide ${nextId}`,
+            blurb: props.blurb || '',
+            layoutStyle: props.layoutStyle || 'Title Slide',
+            designPresetKey: preset.key,
+            backgroundColor: props.backgroundColor || '#05070B',
+            vectorWaveStyle: 'original-pitch',
+            vectorColor1: '#00f0ff',
+            vectorColor2: '#7c4dff',
+            shapes: [],
+            bentoCards: (props.bentoCards || []).map((b, idx) => ({
+              id: `bento_${Date.now()}_${idx}`,
+              title: b.title || 'Feature',
+              description: b.description || '',
+              style: b.style || 'frosted',
+              bg: 'rgba(255, 255, 255, 0.04)',
+              posX: 70 + (idx % 3) * 280,
+              posY: 230,
+              width: 260,
+              height: 190
+            }))
+          };
+
+          setDeckSlidesData(prev => [...prev, newSlide]);
+          setActiveDeckSlideId(nextId);
+          showToast(`Created slide: "${newSlide.title}"`);
+          return newSlide;
+        },
+
+        deleteSlide: (slideId) => {
+          const targetId = Number(slideId) || activeDeckSlideId;
+          const slides = deckSlidesData || [];
+          if (slides.length <= 1) {
+            showToast('Cannot delete the only remaining slide');
+            return false;
+          }
+          const filtered = slides.filter(s => s.id !== targetId);
+          setDeckSlidesData(filtered);
+          if (activeDeckSlideId === targetId) {
+            setActiveDeckSlideId(filtered[0]?.id || 1);
+          }
+          showToast(`Deleted slide ${targetId}`);
+          return true;
+        },
+
+        duplicateSlide: (slideId) => {
+          const targetId = Number(slideId) || activeDeckSlideId;
+          const slides = deckSlidesData || [];
+          const source = slides.find(s => s.id === targetId);
+          if (!source) return null;
+          const nextId = Math.max(...slides.map(s => s.id)) + 1;
+          const cloned = {
+            ...JSON.parse(JSON.stringify(source)),
+            id: nextId,
+            title: `${source.title || 'Slide'} (Copy)`
+          };
+          const srcIdx = slides.findIndex(s => s.id === targetId);
+          const nextSlides = [...slides];
+          nextSlides.splice(srcIdx + 1, 0, cloned);
+          setDeckSlidesData(nextSlides);
+          setActiveDeckSlideId(nextId);
+          showToast(`Duplicated slide ${targetId}`);
+          return cloned;
+        },
+
+        reorderSlides: (sourceIndex, destinationIndex) => {
+          setDeckSlidesData(prev => {
+            const result = Array.from(prev);
+            const [removed] = result.splice(sourceIndex, 1);
+            result.splice(destinationIndex, 0, removed);
+            return result;
+          });
+          showToast(`Reordered slide ${sourceIndex + 1} to position ${destinationIndex + 1}`);
+        },
+
+        setActiveSlide: (slideId) => {
+          setActiveDeckSlideId(Number(slideId));
+        },
+
+        updateSlideFields: (slideId, fieldsObj = {}) => {
+          const targetId = Number(slideId) || activeDeckSlideId;
+          updateDeckSlideFields(targetId, fieldsObj);
+          showToast('Updated slide properties');
+        },
+
+        addBentoCard: (slideId, cardProps = {}) => {
+          const targetId = Number(slideId) || activeDeckSlideId;
+          const newCard = {
+            id: `bento_${Date.now()}`,
+            title: cardProps.title || 'New Bento Card',
+            description: cardProps.description || 'Describe key metrics and architectural capabilities.',
+            style: cardProps.style || 'frosted',
+            bg: cardProps.bg || 'rgba(255, 255, 255, 0.04)',
+            borderRadius: 18,
+            posX: cardProps.posX || 70,
+            posY: cardProps.posY || 230,
+            width: cardProps.width || 260,
+            height: cardProps.height || 190
+          };
+          setDeckSlidesData(prev => prev.map(s => s.id === targetId ? { ...s, bentoCards: [...(s.bentoCards || []), newCard] } : s));
+          setDeckSelection({ type: 'bentoCard', id: newCard.id });
+          showToast(`Added Bento card: "${newCard.title}"`);
+          return newCard;
+        },
+
+        updateBentoCard: (cardId, updates = {}) => {
+          setDeckSlidesData(prev => prev.map(s => {
+            if (!(s.bentoCards || []).some(b => b.id === cardId)) return s;
+            return {
+              ...s,
+              bentoCards: (s.bentoCards || []).map(b => b.id === cardId ? { ...b, ...updates } : b)
+            };
+          }));
+          showToast('Updated Bento card');
+        },
+
+        deleteBentoCard: (cardId) => {
+          setDeckSlidesData(prev => prev.map(s => ({
+            ...s,
+            bentoCards: (s.bentoCards || []).filter(b => b.id !== cardId)
+          })));
+          setDeckSelection({ type: 'none', id: null });
+          showToast('Deleted Bento card');
+        },
+
+        convertShapeToBento: (shapeId) => {
+          if (!activeDeckSlide) return null;
+          const shape = (activeDeckSlide.shapes || []).find(s => s.id === shapeId);
+          if (!shape) return null;
+          const newBento = {
+            id: `bento_${Date.now()}`,
+            posX: shape.posX || 100,
+            posY: shape.posY || 100,
+            width: Math.max(220, shape.width || 260),
+            height: Math.max(160, shape.height || 190),
+            title: shape.text || 'Executive Bento',
+            description: 'Integrated translucent card surface with fluid negative whitespace.',
+            style: 'frosted',
+            bg: 'rgba(255, 255, 255, 0.04)',
+            borderRadius: 18
+          };
+          updateDeckSlideFields(activeDeckSlide.id, {
+            shapes: (activeDeckSlide.shapes || []).filter(s => s.id !== shapeId),
+            bentoCards: [...(activeDeckSlide.bentoCards || []), newBento]
+          });
+          setDeckSelection({ type: 'bentoCard', id: newBento.id });
+          showToast('Converted shape to Bento card');
+          return newBento;
+        },
+
+        addShape: (shapeProps = {}) => {
+          if (!activeDeckSlide) return null;
+          const newShape = {
+            id: `shape_${Date.now()}`,
+            shapeType: shapeProps.shapeType || 'rectangle',
+            text: shapeProps.text || '',
+            posX: shapeProps.posX || 120,
+            posY: shapeProps.posY || 140,
+            width: shapeProps.width || 280,
+            height: shapeProps.height || 160,
+            color: shapeProps.color || '#ffffff',
+            fillType: shapeProps.fillType || 'glass'
+          };
+          updateDeckSlideFields(activeDeckSlide.id, {
+            shapes: [...(activeDeckSlide.shapes || []), newShape]
+          });
+          setDeckSelection({ type: 'shape', id: newShape.id });
+          showToast(`Added ${newShape.shapeType} shape`);
+          return newShape;
+        },
+
+        updateShape: (shapeId, updates = {}) => {
+          if (!activeDeckSlide) return;
+          const updated = (activeDeckSlide.shapes || []).map(s => s.id === shapeId ? { ...s, ...updates } : s);
+          updateDeckSlideFields(activeDeckSlide.id, { shapes: updated });
+          showToast('Updated shape');
+        },
+
+        deleteShape: (shapeId) => {
+          if (!activeDeckSlide) return;
+          const updated = (activeDeckSlide.shapes || []).filter(s => s.id !== shapeId);
+          updateDeckSlideFields(activeDeckSlide.id, { shapes: updated });
+          setDeckSelection({ type: 'none', id: null });
+          showToast('Deleted shape');
+        },
+
+        setTheme: ({ presetKey, brandKitKey, applyToAllSlides = false }) => {
+          if (presetKey) {
+            if (applyToAllSlides) {
+              setDeckSlidesData(prev => prev.map(s => ({ ...s, designPresetKey: presetKey })));
+            } else if (activeDeckSlide) {
+              updateDeckSlideFields(activeDeckSlide.id, { designPresetKey: presetKey });
+            }
+          }
+          if (brandKitKey) {
+            const kit = DECK_BRAND_KITS.find(k => k.name.toLowerCase().includes(brandKitKey.toLowerCase())) || DECK_BRAND_KITS[0];
+            setSelectedBrandKit(kit);
+          }
+          showToast('Applied deck theme preset');
+        },
+
+        setVectorWave: (waveProps = {}) => {
+          if (!activeDeckSlide) return;
+          const updates = {};
+          if (waveProps.waveStyle) updates.vectorWaveStyle = waveProps.waveStyle;
+          if (waveProps.color1) updates.vectorColor1 = waveProps.color1;
+          if (waveProps.color2) updates.vectorColor2 = waveProps.color2;
+          if (waveProps.glow) updates.vectorGlow = waveProps.glow;
+          if (typeof waveProps.opacity === 'number') updates.vectorOpacity = waveProps.opacity;
+          if (typeof waveProps.hidden === 'boolean') updates.vectorHidden = waveProps.hidden;
+          updateDeckSlideFields(activeDeckSlide.id, updates);
+          showToast('Updated background vector wave');
+        },
+
+        runAudit: (metricKey = 'full-audit') => {
+          setDeckReviewActiveModal(metricKey);
+          return {
+            metric: metricKey,
+            score: 94,
+            status: 'Excellent Standing',
+            totalSlides: (deckSlidesData || []).length,
+            findings: [
+              { label: 'Typography Scale & Hierarchy', status: 'Passed' },
+              { label: 'Color Contrast & Readability', status: 'WCAG AAA' },
+              { label: 'Bento Card Layout Flow', status: 'Optimized' }
+            ]
+          };
+        },
+
+        applyAuditPolish: (scope = 'active-slide') => {
+          executeDeckIntelligenceAction('hierarchy');
+          showToast(`Applied AI polish across ${scope}`);
+        },
+
+        togglePresentation: (active = true, fillScreen = false) => {
+          setIsDeckPresentationMode(active);
+          setIsDeckPresentationFocus(fillScreen);
+        },
+
+        executeTool: (toolName, args = {}) => {
+          return dispatchDeckToolCall(toolName, args, { activeSlide: activeDeckSlide, slides: deckSlidesData });
+        }
+      };
+
+      window.deckAIHarness = window.regaarderDeck;
+    }
+  }, [deckSlidesData, activeDeckSlideId, activeDeckSlide, selectedBrandKit, isDeckPresentationMode, isDeckPresentationFocus]);
   const resolvedDeckSlideDesign = useMemo(() => {
     const fallback = DECK_DESIGN_PRESETS[0];
     if (!activeDeckSlide) {
