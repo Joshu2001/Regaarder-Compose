@@ -54145,7 +54145,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }
                                   }}
                                   data-canvas-bg="true"
-                                  className={`aspect-[16/9] ${customBg ? '' : (currentPresetObj.background || 'bg-white')} rounded-[24px] md:rounded-[36px] shadow-[0_20px_50px_-10px_rgba(15,23,42,0.12)] border border-gray-150 relative overflow-hidden flex flex-col justify-between p-[32px] md:p-[48px] select-text mx-auto my-auto transition-all duration-300`}
+                                  className={`aspect-[16/9] ${customBg ? '' : (currentPresetObj.background || 'bg-white')} rounded-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] border border-slate-200/80 dark:border-zinc-800 relative overflow-hidden flex flex-col justify-between p-[32px] md:p-[48px] select-text mx-auto my-auto transition-all duration-300`}
                                   style={{ 
                                     width: 'min(100%, 820px)',
                                     aspectRatio: '16/9',
@@ -81576,7 +81576,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               const slideHeadline = currentSlide.headline || currentSlide.title || currentSlide.name || 'Untitled Slide';
               const slideBlurb = currentSlide.blurb || currentSlide.subtitle || currentSlide.body || currentSlide.description || '';
               return (
-                <div className="w-full aspect-[16/9] max-w-[1200px] max-h-[85vh] bg-zinc-900 border border-zinc-800/90 rounded-[28px] md:rounded-[36px] shadow-[0_32px_90px_-20px_rgba(0,0,0,0.8)] relative overflow-hidden flex flex-col justify-between p-10 md:p-16 text-white transition-all duration-300">
+                <div className="w-full aspect-[16/9] max-w-[1200px] max-h-[85vh] bg-zinc-900 border border-zinc-800/90 rounded-[16px] shadow-[0_16px_40px_rgba(0,0,0,0.5)] relative overflow-hidden flex flex-col justify-between p-10 md:p-16 text-white transition-all duration-300">
                   {/* Decorative Background Curves */}
                   <div className="absolute inset-0 pointer-events-none select-none opacity-40">
                     <svg className="absolute bottom-0 right-0 w-[60%] h-[90%]" viewBox="0 0 900 650" fill="none">
