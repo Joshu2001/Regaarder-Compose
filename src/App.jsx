@@ -42,7 +42,9 @@ import {
   AssistIcon,
   AgentsIcon,
   BrowserIcon,
-  OrbIcon
+  OrbIcon,
+  RegaarderStylesIcon,
+  RegaarderMediaIcon
 } from './components/RegaarderProductIcons';
 import RoomLandingPage from './RoomLandingPage';
 import BrowserWorkspace from './components/browser/BrowserWorkspace';
