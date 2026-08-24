@@ -9690,6 +9690,24 @@ const BUSINESS_PLAN_DECK_SLIDES = [
   }
 ];
 
+const DEFAULT_BLANK_DECK_SLIDES = [
+  {
+    id: 1,
+    title: 'Untitled Slide',
+    tagline: 'Novaris Company',
+    headline: 'New Presentation',
+    blurb: 'Click anywhere to begin crafting your presentation narrative.',
+    layoutStyle: 'Title Slide',
+    designPresetKey: 'blank',
+    backgroundColor: '#05070B',
+    vectorWaveStyle: 'original-pitch',
+    vectorColor1: '#00f0ff',
+    vectorColor2: '#7c4dff',
+    shapes: [],
+    bentoCards: []
+  }
+];
+
 const DEFAULT_DECK_SLIDES = [
   {
     id: 1,
@@ -10220,7 +10238,7 @@ const DEFAULT_DECK_SLIDES = [
     footer: 'novaris Company'
   }
 ];
-  const [deckSlidesData, setDeckSlidesData] = useState(DEFAULT_DECK_SLIDES);
+  const [deckSlidesData, setDeckSlidesData] = useState(DEFAULT_BLANK_DECK_SLIDES);
   const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
   const [whiteboardTool, setWhiteboardTool] = useState('pen');
@@ -32075,7 +32093,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
   const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
     const initialSheetsData = [{ id: 1, title: 'Sheet 1', subtitle: '' }];
     const initialSheetGrids = { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } };
-    const initialDeckSlidesData = JSON.parse(JSON.stringify(DEFAULT_DECK_SLIDES));
+    const initialDeckSlidesData = JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES));
 
     const currentWorkspaceMode = (activeRightTab === 'whiteboard' || productMode === 'whiteboard') ? 'whiteboard' : (productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose');
     const defaultTitleForMode = initialTitle || (currentWorkspaceMode === 'sheets' ? 'Untitled Sheet' : currentWorkspaceMode === 'deck' ? 'Untitled Deck' : currentWorkspaceMode === 'whiteboard' ? 'Untitled Whiteboard' : '');
@@ -32216,7 +32234,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setCreationPickerOpen(false);
     setProductMode('deck');
     setDeckTitle('Untitled deck');
-    setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_DECK_SLIDES)));
+    setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES)));
     setActiveDeckSlideId(1);
     setDeckZoomLevel(100);
     setDeckToolbarFont('Inter');
