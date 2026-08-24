@@ -47602,13 +47602,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 >
                   <RegaarderHistoryIcon size={15} strokeWidth={1.6} />
                 </button>
-                <button
-                  onClick={saveDocumentLocally}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                  title="Save locally (Ctrl+S)"
-                >
-                  <RegaarderSaveCloudIcon size={15} strokeWidth={1.6} />
-                </button>
+{/* Preserved save action: auto-saved continuously & Ctrl+S */}
 
                 {/* Orb Global Intelligence Command Capsule */}
                 <button
@@ -71358,13 +71352,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               >
                 <RegaarderHistoryIcon size={15} strokeWidth={1.6} />
               </button>
-              <button
-                onClick={saveDocumentLocally}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                title="Save locally (Ctrl+S)"
-              >
-                <RegaarderSaveCloudIcon size={15} strokeWidth={1.6} />
-              </button>
+{/* Preserved save action: auto-saved continuously & Ctrl+S */}
 
                 {/* Orb Global Intelligence Command Capsule */}
                 <button
