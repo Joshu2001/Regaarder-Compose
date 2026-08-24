@@ -47649,17 +47649,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </button>
 {/* Preserved save action: auto-saved continuously & Ctrl+S */}
 
-                {/* Orb Global Intelligence Command Capsule */}
-                <button
-                  type="button"
-                  onClick={() => setOrbOpen(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/25 transition-all duration-150 active:scale-95 text-xs font-semibold cursor-pointer shadow-xs mr-1 group"
-                  title="Orb Cross-Workspace Intelligence (⌘K / Ctrl+K)"
-                >
-                  <AgentsIcon size={13} className="text-violet-500 group-hover:scale-110 transition-transform" />
-                  <span className="hidden sm:inline text-[11.5px] font-bold tracking-tight text-violet-700 dark:text-violet-300">Orb</span>
-                  <kbd className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-white/80 dark:bg-zinc-800/90 border border-violet-300/60 dark:border-violet-700 text-violet-600 dark:text-violet-300 shadow-2xs">⌘K</kbd>
-                </button>
+{/* Orb intelligence accessible via global ⌘K shortcut */}
 
                 {!isSheetsMode && (
                   <div className="relative" ref={docSearchPanelRef}>
