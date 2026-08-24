@@ -54694,7 +54694,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     aspectRatio: isDeckPresentationMode && isDeckPresentationFocus ? 'auto' : '16/9',
                                     transform: isDeckPresentationMode ? 'none' : `scale(${deckZoomLevel / 100})`, 
                                     transformOrigin: 'center center', 
-                                    transition: isDeckPresentationMode ? 'none' : 'transform 140ms ease, background-color 300ms ease',
+                                    transition: isDeckPresentationMode ? 'width 320ms cubic-bezier(0.16, 1, 0.3, 1), height 320ms cubic-bezier(0.16, 1, 0.3, 1), border-radius 320ms cubic-bezier(0.16, 1, 0.3, 1), padding 320ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 320ms ease' : 'transform 140ms ease, background-color 300ms ease',
                                     backgroundColor: customBg || undefined,
                                     fontFamily: selectedBrandKit?.font || 'inherit'
                                   }}
@@ -65781,19 +65781,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </span>
                               <div className="w-px h-3.5 bg-zinc-700 mx-1" />
                               
-                              {/* Focus / Screen Fill Toggle */}
+                              {/* Focus / Screen Fill Toggle with Luminous Halo Micro-interaction */}
                               <button
                                 type="button"
                                 onClick={() => setIsDeckPresentationFocus((prev) => !prev)}
-                                className={`p-1.5 px-2.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 text-xs font-medium ${
+                                className={`p-1.5 px-2.5 rounded-lg transition-all duration-300 cursor-pointer flex items-center gap-1.5 text-xs font-medium relative group/fitbtn active:scale-95 ${
                                   isDeckPresentationFocus 
-                                    ? 'bg-violet-600 text-white shadow-sm' 
-                                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white'
+                                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-[0_0_24px_rgba(124,77,255,0.7),inset_0_1px_1px_rgba(255,255,255,0.4)] ring-2 ring-violet-400/60' 
+                                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white hover:shadow-[0_0_16px_rgba(255,255,255,0.15)]'
                                 }`}
                                 title={isDeckPresentationFocus ? "Fit 16:9 (F)" : "Fill Screen (F)"}
                               >
-                                <RegaarderFitScreenIcon isFilled={isDeckPresentationFocus} size={14} />
-                                <span className="text-[10.5px] hidden sm:inline">{isDeckPresentationFocus ? 'Fit 16:9' : 'Fill Screen'}</span>
+                                {isDeckPresentationFocus && (
+                                  <span className="absolute -inset-1 rounded-xl bg-violet-500/25 blur-sm animate-pulse pointer-events-none -z-10" />
+                                )}
+                                <RegaarderFitScreenIcon isFilled={isDeckPresentationFocus} size={14} className="transition-transform duration-300 group-active/fitbtn:scale-110" />
+                                <span className="text-[10.5px] hidden sm:inline font-semibold">{isDeckPresentationFocus ? 'Fit 16:9' : 'Fill Screen'}</span>
                               </button>
 
                               <button
