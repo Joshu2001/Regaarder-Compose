@@ -14206,94 +14206,136 @@ const DEFAULT_DECK_SLIDES = [
   const [deckVectorFilter, setDeckVectorFilter] = useState('All');
 
 const renderMiniVectorWaveGraphic = (styleId, c1 = '#00f0ff', c2 = '#7c4dff') => {
-  switch (styleId) {
-    case 'startup-pitch':
-    case 'original-pitch':
-      return (
-        <g>
-          <path d="M 95 100 C 115 70, 138 25, 160 40" stroke={c1} strokeWidth="3" opacity="0.9" fill="none" />
-          <path d="M 85 100 C 110 75, 132 35, 160 52" stroke={c2} strokeWidth="2.5" opacity="0.8" fill="none" />
-          <path d="M 0 94 C 38 84, 78 98, 118 92 C 138 89, 152 94, 160 92" stroke={c1} strokeWidth="1.8" opacity="0.8" fill="none" />
-        </g>
-      );
-    case '3d-cube':
-      return (
-        <g transform="translate(105, 30) scale(0.9)">
-          <polygon points="30,5 55,18 30,31 5,18" fill={c1} opacity="0.4" stroke={c1} strokeWidth="1.5" />
-          <polygon points="5,18 30,31 30,58 5,45" fill={c2} opacity="0.6" stroke={c2} strokeWidth="1.5" />
-          <polygon points="30,31 55,18 55,45 30,58" fill={c1} opacity="0.8" stroke={c1} strokeWidth="1.5" />
-        </g>
-      );
-    case '3d-torus':
-      return (
-        <g transform="translate(110, 45)">
-          <ellipse cx="25" cy="15" rx="25" ry="12" stroke={c1} strokeWidth="3" fill="none" transform="rotate(-20 25 15)" opacity="0.9" />
-          <ellipse cx="25" cy="15" rx="14" ry="7" stroke={c2} strokeWidth="2" fill="none" transform="rotate(-20 25 15)" opacity="0.7" />
-        </g>
-      );
-    case '3d-cylinder':
-    case '3d-cone':
-      return (
-        <g transform="translate(110, 25)">
-          <ellipse cx="25" cy="10" rx="20" ry="6" fill={c1} opacity="0.6" stroke={c1} strokeWidth="1.5" />
-          <path d="M 5 10 L 5 45 C 5 50, 45 50, 45 45 L 45 10" fill={c2} opacity="0.4" stroke={c2} strokeWidth="1.5" />
-          <ellipse cx="25" cy="45" rx="20" ry="6" stroke={c1} strokeWidth="1.5" fill="none" />
-        </g>
-      );
-    case '3d-helix':
-      return (
-        <g transform="translate(90, 20)">
-          <path d="M 20 10 Q 50 25 20 40 T 20 70" stroke={c1} strokeWidth="2.5" fill="none" opacity="0.9" />
-          <path d="M 50 10 Q 20 25 50 40 T 50 70" stroke={c2} strokeWidth="2.5" fill="none" opacity="0.8" />
-        </g>
-      );
-    case '3d-pyramid':
-    case '3d-prism':
-      return (
-        <g transform="translate(110, 25)">
-          <polygon points="25,5 5,50 45,50" fill={c1} opacity="0.5" stroke={c1} strokeWidth="1.5" />
-          <polygon points="25,5 45,50 55,40" fill={c2} opacity="0.7" stroke={c2} strokeWidth="1.5" />
-        </g>
-      );
-    case 'tech-matrix':
-    case 'quantum-grid':
-      return (
-        <g transform="translate(90, 20) scale(0.8)">
-          {[0, 15, 30, 45, 60].map((y) => (
-            <line key={'h-' + y} x1="0" y1={y} x2="70" y2={y} stroke={c1} strokeWidth="1" opacity="0.4" />
-          ))}
-          {[0, 15, 30, 45, 60, 70].map((x) => (
-            <line key={'v-' + x} x1={x} y1="0" x2={x} y2="60" stroke={c2} strokeWidth="1" opacity="0.4" />
-          ))}
-          <circle cx="30" cy="30" r="12" stroke={c1} strokeWidth="2" fill="none" opacity="0.8" />
-        </g>
-      );
-    case 'faith-cross':
-      return (
-        <g transform="translate(120, 25)">
-          <line x1="20" y1="5" x2="20" y2="55" stroke={c1} strokeWidth="4" strokeLinecap="round" opacity="0.9" />
-          <line x1="5" y1="20" x2="35" y2="20" stroke={c2} strokeWidth="4" strokeLinecap="round" opacity="0.9" />
-        </g>
-      );
-    case 'sports-stadium':
-      return (
-        <g transform="translate(100, 30)">
-          <ellipse cx="30" cy="20" rx="30" ry="16" stroke={c1} strokeWidth="2" fill="none" opacity="0.85" />
-          <ellipse cx="30" cy="20" rx="20" ry="10" stroke={c2} strokeWidth="1.5" fill="none" opacity="0.7" />
-          <line x1="30" y1="4" x2="30" y2="36" stroke={c1} strokeWidth="1" opacity="0.6" />
-        </g>
-      );
-    default:
-      return (
-        <g>
-          <path d="M 60 100 C 90 60, 120 20, 160 30" stroke={c1} strokeWidth="2.5" opacity="0.85" fill="none" />
-          <path d="M 80 100 C 105 70, 135 30, 160 50" stroke={c2} strokeWidth="2" opacity="0.75" fill="none" />
-          <path d="M 0 90 C 40 80, 90 95, 160 88" stroke={c1} strokeWidth="1.5" opacity="0.7" fill="none" />
-        </g>
-      );
+  const strandCount = 14;
+  
+  if (styleId === 'agenda-bottom-wave') {
+    return (
+      <g>
+        {Array.from({ length: strandCount }).map((_, i) => {
+          const ratio = i / strandCount;
+          const yOff = ratio * 20;
+          const opacity = 0.2 + (1 - ratio) * 0.7;
+          const strokeW = 0.5 + ratio * 1.2;
+          const col = ratio < 0.6 ? c1 : c2;
+          const d = `M -10 ${75 + yOff * 0.4} C 40 ${60 - ratio * 15}, 80 ${70 + ratio * 10}, 120 ${62 - ratio * 15} C 140 ${58 - ratio * 10}, 155 ${68}, 170 ${80 + yOff * 0.3}`;
+          return <path key={i} d={d} stroke={col} strokeWidth={strokeW} opacity={opacity} fill="none" />;
+        })}
+      </g>
+    );
   }
-};
 
+  if (styleId === 'startup-pitch' || styleId === 'original-pitch' || styleId === 'top-right-neon-vortex' || styleId === 'top-right-vortex') {
+    return (
+      <g>
+        {/* Multi-strand luminous ascending vortex ribbon */}
+        {Array.from({ length: strandCount }).map((_, i) => {
+          const ratio = i / strandCount;
+          const spread = ratio * 18;
+          const opacity = 0.25 + (1 - ratio) * 0.7;
+          const strokeW = 0.6 + ratio * 1.2;
+          const col = ratio < 0.65 ? c1 : c2;
+          const d = `M ${80 + spread * 1.2} 105 C ${95 + spread * 0.8} ${65 - ratio * 15}, ${125 + spread * 0.5} ${25 - ratio * 8}, ${165 + spread * 0.2} ${30 + ratio * 20}`;
+          return <path key={'vortex-' + i} d={d} stroke={col} strokeWidth={strokeW} opacity={opacity} fill="none" />;
+        })}
+        {/* Bottom complementary subtle glow wave */}
+        {Array.from({ length: 6 }).map((_, i) => {
+          const r = i / 6;
+          const d = `M -5 ${88 + r * 5} C 35 ${80 - r * 6}, 75 ${92 + r * 4}, 115 ${86 - r * 4} C 135 ${82}, 150 ${88}, 165 ${84}`;
+          return <path key={'bot-' + i} d={d} stroke={c1} strokeWidth={0.8 + r * 0.8} opacity={0.3 + (1 - r) * 0.4} fill="none" />;
+        })}
+      </g>
+    );
+  }
+
+  if (styleId === '3d-cube') {
+    return (
+      <g transform="translate(100, 22) scale(0.85)">
+        <polygon points="30,5 55,18 30,31 5,18" fill={c1} opacity="0.35" stroke={c1} strokeWidth="1.2" />
+        <polygon points="5,18 30,31 30,58 5,45" fill={c2} opacity="0.55" stroke={c2} strokeWidth="1.2" />
+        <polygon points="30,31 55,18 55,45 30,58" fill={c1} opacity="0.75" stroke={c1} strokeWidth="1.2" />
+        {/* Inner wireframe accents */}
+        <line x1="30" y1="31" x2="30" y2="5" stroke="#ffffff" strokeWidth="0.8" opacity="0.6" />
+        <line x1="5" y1="18" x2="55" y2="18" stroke="#ffffff" strokeWidth="0.8" opacity="0.4" />
+      </g>
+    );
+  }
+
+  if (styleId === '3d-torus') {
+    return (
+      <g transform="translate(95, 32)">
+        {Array.from({ length: 8 }).map((_, i) => {
+          const r = i / 8;
+          const rx = 24 - r * 4;
+          const ry = 12 - r * 2;
+          const rot = -22 + r * 6;
+          const col = r < 0.5 ? c1 : c2;
+          return (
+            <ellipse 
+              key={i} 
+              cx="28" 
+              cy="16" 
+              rx={rx} 
+              ry={ry} 
+              stroke={col} 
+              strokeWidth={1 + (1 - r) * 1.5} 
+              fill="none" 
+              transform={`rotate(${rot} 28 16)`} 
+              opacity={0.3 + (1 - r) * 0.6} 
+            />
+          );
+        })}
+      </g>
+    );
+  }
+
+  if (styleId === '3d-helix' || styleId === 'dna-double-helix') {
+    return (
+      <g transform="translate(85, 15)">
+        {Array.from({ length: 10 }).map((_, i) => {
+          const t = i / 10;
+          const y1 = 8 + t * 50;
+          const x1 = 20 + Math.sin(t * Math.PI * 2) * 18;
+          const x2 = 20 - Math.sin(t * Math.PI * 2) * 18;
+          return (
+            <g key={i}>
+              <line x1={x1} y1={y1} x2={x2} y2={y1} stroke={c1} strokeWidth="0.8" opacity="0.4" />
+              <circle cx={x1} cy={y1} r="1.5" fill={c1} />
+              <circle cx={x2} cy={y1} r="1.5" fill={c2} />
+            </g>
+          );
+        })}
+      </g>
+    );
+  }
+
+  if (styleId === 'growth-venture-hockey') {
+    return (
+      <g>
+        {Array.from({ length: 12 }).map((_, i) => {
+          const r = i / 12;
+          const col = r < 0.6 ? c1 : c2;
+          const d = `M 10 ${82 + r * 6} C 60 ${80 - r * 4}, 90 ${72 - r * 10}, ${135 + r * 10} ${20 - r * 5}`;
+          return <path key={i} d={d} stroke={col} strokeWidth={0.8 + r * 1.4} opacity={0.3 + (1 - r) * 0.6} fill="none" />;
+        })}
+      </g>
+    );
+  }
+
+  // Default: High-Density Luminous Multi-Strand Harmonic Wave
+  return (
+    <g>
+      {Array.from({ length: strandCount }).map((_, i) => {
+        const ratio = i / strandCount;
+        const spread = ratio * 14;
+        const opacity = 0.2 + (1 - ratio) * 0.7;
+        const strokeW = 0.6 + ratio * 1.4;
+        const col = ratio < 0.6 ? c1 : c2;
+        const d = `M -5 ${55 + spread * 1.5} C 35 ${30 - ratio * 15}, 85 ${75 + ratio * 12}, 135 ${40 - ratio * 18} C 148 ${32}, 158 ${45}, 168 ${52 + spread * 0.8}`;
+        return <path key={'mesh-' + i} d={d} stroke={col} strokeWidth={strokeW} opacity={opacity} fill="none" />;
+      })}
+    </g>
+  );
+};
 
 const ALL_DECK_ANIMATION_OPTIONS = [
   {
@@ -52290,7 +52332,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            {isOpen && (
                                              <div 
                                                onClick={(e) => e.stopPropagation()}
-                                               className={`absolute ${btn.label === 'Background' || btn.label === 'Vector & Wave' || btn.label === 'Styles' || btn.label === 'Animation' ? 'left-1/2 -translate-x-1/2' : 'left-0'} top-8 ${btn.label === 'Vector & Wave' ? 'w-[420px] max-h-[480px]' : btn.label === 'Background' ? 'w-[400px] max-h-[480px]' : btn.label === 'Styles' ? 'w-[380px] max-h-[420px]' : btn.label === 'Animation' ? 'w-[430px] max-h-[480px]' : btn.label === 'Insert' ? 'w-[380px] max-h-[480px]' : btn.label === 'Media & Logo' ? 'w-[340px]' : btn.label === 'AI' ? 'w-[340px]' : 'w-60'} flex flex-col bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.16)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] z-[9999] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-xl`}
+                                               className={`absolute ${
+    btn.label === 'Media & Logo' || btn.label === 'Insert' || btn.label === 'AI' 
+      ? 'right-0' 
+      : btn.label === 'Background' || btn.label === 'Vector & Wave' || btn.label === 'Styles' || btn.label === 'Animation' 
+      ? 'left-1/2 -translate-x-1/2' 
+      : 'left-0'
+  } top-9 ${
+    btn.label === 'Vector & Wave' ? 'w-[420px] max-h-[480px]' : 
+    btn.label === 'Background' ? 'w-[400px] max-h-[480px]' : 
+    btn.label === 'Styles' ? 'w-[380px] max-h-[420px]' : 
+    btn.label === 'Animation' ? 'w-[430px] max-h-[480px]' : 
+    btn.label === 'Insert' ? 'w-[380px] max-h-[480px]' : 
+    btn.label === 'Media & Logo' ? 'w-[340px]' : 
+    btn.label === 'AI' ? 'w-[340px]' : 'w-60'
+  } flex flex-col bg-white dark:bg-[#12141c] border border-slate-200/90 dark:border-zinc-800 ring-1 ring-slate-900/10 dark:ring-white/10 rounded-2xl shadow-[0_24px_60px_rgba(0,0,0,0.32)] z-[9999] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-2xl`}
                                              >
                                                {btn.label === 'Animation' ? (
                                                  <>

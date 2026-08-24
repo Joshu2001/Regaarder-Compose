@@ -8616,7 +8616,7 @@ function AppCore() {
   const [deckPromptMinimized, setDeckPromptMinimized] = useState(false);
   const [deckPromptOffset, setDeckPromptOffset] = useState({ x: 0, y: 0 });
   const [deckPromptChips, setDeckPromptChips] = useState(['Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft']);
-  const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(false);
+  const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(true);
   const [sheetsSidebarOpen, setSheetsSidebarOpen] = useState(false);
   const [deckActiveToolbarMenu, setDeckActiveToolbarMenu] = useState(null);
   const [activeDeckTitle, setActiveDeckTitle] = useState('Untitled Deck');
@@ -10193,6 +10193,8 @@ const DEFAULT_DECK_SLIDES = [
   const [whiteboardComments, setWhiteboardComments] = useState([]);
   const [whiteboardActiveCommentId, setWhiteboardActiveCommentId] = useState(null);
   const [whiteboardAddMenuOpen, setWhiteboardAddMenuOpen] = useState(false);
+  const [whiteboardMediaModalOpen, setWhiteboardMediaModalOpen] = useState(false);
+  const [whiteboardMediaUrlInput, setWhiteboardMediaUrlInput] = useState('');
   const [whiteboardStickyColorMenuFor, setWhiteboardStickyColorMenuFor] = useState(null);
   const [whiteboardMoreTextMenuFor, setWhiteboardMoreTextMenuFor] = useState(null);
   const [whiteboardTextColorMenuFor, setWhiteboardTextColorMenuFor] = useState(null);
@@ -10715,6 +10717,198 @@ const DEFAULT_DECK_SLIDES = [
     return () => window.clearInterval(timer);
   }, [activeRightTab]);
 
+  const parseWhiteboardMediaUrl = (inputUrl) => {
+    if (!inputUrl || typeof inputUrl !== 'string') return null;
+    const url = inputUrl.trim();
+    if (!url) return null;
+
+    // 1. Direct Image
+    if (url.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)(\?.*)?$/i) || url.includes('images.unsplash.com')) {
+      return {
+        type: 'image',
+        url,
+        title: url.split('/').pop().split('?')[0] || 'Image Asset'
+      };
+    }
+
+    // 2. YouTube
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      let videoId = '';
+      if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1].split('?')[0].split('&')[0];
+      } else if (url.includes('/shorts/')) {
+        videoId = url.split('/shorts/')[1].split('?')[0].split('&')[0];
+      } else if (url.includes('v=')) {
+        videoId = url.split('v=')[1].split('&')[0];
+      } else if (url.includes('/embed/')) {
+        videoId = url.split('/embed/')[1].split('?')[0].split('&')[0];
+      }
+      if (videoId) {
+        return {
+          type: 'video',
+          provider: 'youtube',
+          videoId,
+          embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=0`,
+          url,
+          title: 'YouTube Video'
+        };
+      }
+    }
+
+    // 3. Vimeo
+    if (url.includes('vimeo.com/')) {
+      const parts = url.split('vimeo.com/');
+      const vimeoId = parts[1]?.split('?')[0]?.split('/')[0];
+      if (vimeoId && /^\d+$/.test(vimeoId)) {
+        return {
+          type: 'video',
+          provider: 'vimeo',
+          videoId: vimeoId,
+          embedUrl: `https://player.vimeo.com/video/${vimeoId}`,
+          url,
+          title: 'Vimeo Video'
+        };
+      }
+    }
+
+    // 4. Direct HTML5 Video
+    if (url.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i)) {
+      return {
+        type: 'video',
+        provider: 'html5',
+        url,
+        embedUrl: url,
+        title: url.split('/').pop().split('?')[0] || 'Video Player'
+      };
+    }
+
+    // 5. General Web Bookmark
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('www.')) {
+      const fullUrl = url.startsWith('www.') ? `https://${url}` : url;
+      let domain = fullUrl;
+      try {
+        domain = new URL(fullUrl).hostname.replace(/^www\./, '');
+      } catch (e) {}
+      return {
+        type: 'link',
+        url: fullUrl,
+        title: domain || 'Web Bookmark'
+      };
+    }
+
+    return null;
+  };
+
+  const addWhiteboardMediaFromUrl = (rawUrl, customCoords = {}) => {
+    const parsed = parseWhiteboardMediaUrl(rawUrl);
+    if (!parsed) {
+      showToast('Please enter a valid media or web URL');
+      return;
+    }
+
+    const index = whiteboardWidgets.length;
+    const defaultX = customCoords.x ?? (180 + (index % 3) * 220);
+    const defaultY = customCoords.y ?? (140 + Math.floor(index / 3) * 160);
+
+    if (parsed.type === 'image') {
+      const img = new window.Image();
+      img.onload = () => {
+        const aspect = img.width / (img.height || 1);
+        const w = Math.min(460, Math.max(260, img.width || 320));
+        const h = Math.round(w / aspect);
+        addWhiteboardWidget('image', {
+          x: defaultX,
+          y: defaultY,
+          width: w,
+          height: h,
+          imageUrl: parsed.url,
+          title: parsed.title,
+        });
+        showToast('Image link embedded');
+      };
+      img.onerror = () => {
+        addWhiteboardWidget('image', {
+          x: defaultX,
+          y: defaultY,
+          width: 320,
+          height: 200,
+          imageUrl: parsed.url,
+          title: parsed.title,
+        });
+        showToast('Image link embedded');
+      };
+      img.src = parsed.url;
+      return;
+    }
+
+    if (parsed.type === 'video') {
+      addWhiteboardWidget('video', {
+        x: defaultX,
+        y: defaultY,
+        width: 420,
+        height: 250,
+        videoUrl: parsed.url,
+        embedUrl: parsed.embedUrl,
+        videoProvider: parsed.provider,
+        title: parsed.title,
+      });
+      showToast(`Embedded ${parsed.provider === 'youtube' ? 'YouTube' : parsed.provider === 'vimeo' ? 'Vimeo' : 'video'} player`);
+      return;
+    }
+
+    if (parsed.type === 'link') {
+      addWhiteboardWidget('link', {
+        x: defaultX,
+        y: defaultY,
+        width: 320,
+        height: 110,
+        linkedUrl: parsed.url,
+        title: parsed.title,
+      });
+      showToast('Web link card added');
+      return;
+    }
+  };
+
+  const handleWhiteboardPaste = (e) => {
+    if (!e.clipboardData) return;
+    
+    // Check for image file in clipboard
+    const items = Array.from(e.clipboardData.items || []);
+    const imageItem = items.find(item => item.type.startsWith('image/'));
+    if (imageItem) {
+      e.preventDefault();
+      const file = imageItem.getAsFile();
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          const img = new window.Image();
+          img.onload = () => {
+            const aspect = img.width / (img.height || 1);
+            const w = Math.min(460, Math.max(260, img.width || 320));
+            const h = Math.round(w / aspect);
+            addWhiteboardWidget('image', {
+              imageUrl: re.target?.result,
+              width: w,
+              height: h
+            });
+            showToast('Image pasted to whiteboard');
+          };
+          img.src = re.target?.result;
+        };
+        reader.readAsDataURL(file);
+      }
+      return;
+    }
+
+    // Check for text/URL in clipboard
+    const pastedText = e.clipboardData.getData('text/plain')?.trim();
+    if (pastedText && (pastedText.startsWith('http://') || pastedText.startsWith('https://') || pastedText.includes('youtube.com') || pastedText.includes('youtu.be') || pastedText.includes('vimeo.com') || pastedText.match(/\.(jpeg|jpg|gif|png|webp|mp4|webm)/i))) {
+      e.preventDefault();
+      addWhiteboardMediaFromUrl(pastedText);
+    }
+  };
+
   const addWhiteboardWidget = (type, options = {}) => {
     const index = whiteboardWidgets.length;
     const defaultX = 130 + (index % 4) * 188;
@@ -10724,11 +10918,14 @@ const DEFAULT_DECK_SLIDES = [
       type,
       x: options.x ?? defaultX,
       y: options.y ?? defaultY,
-      width: options.width ?? (type === 'text' ? 260 : type === 'image' ? 260 : 170),
-      height: options.height ?? (type === 'image' ? 180 : 120),
+      width: options.width ?? (type === 'text' ? 260 : type === 'image' ? 320 : type === 'video' ? 420 : type === 'link' ? 320 : 170),
+      height: options.height ?? (type === 'image' ? 200 : type === 'video' ? 250 : type === 'link' ? 110 : 120),
       color: options.color ?? whiteboardStickyColor,
       text: options.text ?? '',
       imageUrl: options.imageUrl ?? '',
+      videoUrl: options.videoUrl ?? '',
+      embedUrl: options.embedUrl ?? '',
+      videoProvider: options.videoProvider ?? '',
       objectFit: options.objectFit ?? 'cover',
       fontFamily: options.fontFamily ?? 'Calibri',
       fontSize: options.fontSize ?? 14,
@@ -10743,15 +10940,23 @@ const DEFAULT_DECK_SLIDES = [
       listType: options.listType ?? 'bullet',
       linkedUrl: options.linkedUrl ?? '',
       title:
-        type === 'sticky' ? 'New sticky note'
-        : type === 'text' ? 'Text block'
-        : type === 'image' ? 'Image asset'
-        : 'Connector note',
+        options.title || (
+          type === 'sticky' ? 'New sticky note'
+          : type === 'text' ? 'Text block'
+          : type === 'image' ? 'Image asset'
+          : type === 'video' ? 'Video Player'
+          : type === 'link' ? 'Web Link'
+          : 'Connector note'
+        ),
       body:
-        type === 'sticky' ? 'Capture key idea...'
-        : type === 'text' ? 'Type your annotation...'
-        : type === 'image' ? 'Drop an image here'
-        : 'Link to related node',
+        options.body || (
+          type === 'sticky' ? 'Capture key idea...'
+          : type === 'text' ? 'Type your annotation...'
+          : type === 'image' ? 'Drop an image here'
+          : type === 'video' ? 'Playable video embed'
+          : type === 'link' ? 'Open link'
+          : 'Link to related node'
+        ),
     };
     setWhiteboardWidgets((prev) => [...prev, nextWidget]);
     setSelectedWidgetId(nextWidget.id);
@@ -11798,16 +12003,20 @@ const DEFAULT_DECK_SLIDES = [
   const [isDeckPresentationMode, setIsDeckPresentationMode] = useState(false);
   const [presentationSlideIndex, setPresentationSlideIndex] = useState(0);
   const [sheetZoomDropdownOpen, setSheetZoomDropdownOpen] = useState(false);
+  const [deckZoomDropdownOpen, setDeckZoomDropdownOpen] = useState(false);
 
   const handleStartDeckPresentation = () => {
-    const currentIdx = deckSlidesData.findIndex((s) => s.id === activeDeckSlideId);
+    const slides = deckSlidesData && deckSlidesData.length ? deckSlidesData : (DEFAULT_DECK_SLIDES || []);
+    const currentIdx = slides.findIndex((s) => s.id === activeDeckSlideId);
     setPresentationSlideIndex(currentIdx >= 0 ? currentIdx : 0);
     setIsDeckPresentationMode(true);
-    const docEl = document.documentElement;
-    const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-    if (requestFS && !document.fullscreenElement) {
-      requestFS.call(docEl).catch(() => {});
-    }
+    try {
+      const docEl = document.documentElement;
+      const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+      if (requestFS && !document.fullscreenElement) {
+        requestFS.call(docEl).catch(() => {});
+      }
+    } catch (e) {}
     showToast('Started Deck Presentation Mode (Press Esc to exit)');
   };
 
@@ -11865,13 +12074,8 @@ const DEFAULT_DECK_SLIDES = [
   const [voiceTarget, setVoiceTarget] = useState('compose');
   const [scheduleInput, setScheduleInput] = useState('');
   const [scheduleOutput, setScheduleOutput] = useState([]);
-  const [upcomingEvents, setUpcomingEvents] = useState([
-    { id: 1, title: 'Beta Launch Kickoff', slotLabel: 'May 15 - 10:00 AM', slot: '10:00 AM', dueDate: '2026-05-15T10:00:00', durationMinutes: 60, category: 'General' },
-    { id: 2, title: 'Product Hunt Checklist Finalization', slotLabel: 'June 14 - 2:30 PM', slot: '2:30 PM', dueDate: '2026-06-14T14:30:00', durationMinutes: 60, category: 'General' },
-  ]);
-  const [relatedDocuments, setRelatedDocuments] = useState([
-    { id: 'doc-1', title: 'Product Hunt Launch Plan', dateStr: '2026-05-15', dueDate: 'May 15', status: 'On Track' },
-  ]);
+    const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [relatedDocuments, setRelatedDocuments] = useState([]);
   const [scheduleForm, setScheduleForm] = useState({
     startDate: '2026-05-29',
     startTime: '10:00',
@@ -11926,19 +12130,20 @@ const DEFAULT_DECK_SLIDES = [
   // Track mouse movement to show/hide right sidebar expand handle
   useEffect(() => {
     const handleMouseMove = (e) => {
-      // Exclude native scrollbar area (far right 18px) and narrow trigger zone to 60px
+      // Exclude native scrollbar area (far right 18px), header area (top 56px), and footer status bar (bottom 44px)
       const isOverScrollbar = e.clientX >= window.innerWidth - 18;
-      const rightThreshold = window.innerWidth - 60;
-      if (e.clientX >= rightThreshold && !isOverScrollbar) {
+      const isOverHeaderOrFooter = e.clientY < 56 || e.clientY > window.innerHeight - 44;
+      const rightThreshold = window.innerWidth - 45;
+      if (e.clientX >= rightThreshold && !isOverScrollbar && !isOverHeaderOrFooter) {
         setMiniSidebarDismissed(false);
         setIsRightSideHovered(true);
-      } else if (e.clientX < rightThreshold - 20) {
+      } else if (e.clientX < rightThreshold - 20 || isOverHeaderOrFooter) {
         // Generous grace latch so it stays stable while scrolling
         if (!sidebarHoverTimerRef.current) {
           sidebarHoverTimerRef.current = setTimeout(() => {
             setIsRightSideHovered(false);
             sidebarHoverTimerRef.current = null;
-          }, 1200);
+          }, 350);
         }
       }
     };
@@ -13998,7 +14203,139 @@ const DEFAULT_DECK_SLIDES = [
   const [activeMarketCardStylePicker, setActiveMarketCardStylePicker] = useState(false);
   // ── CLIENT-SIDE RASTER TO VECTOR (JPG/PNG to SVG) TRACER ENGINE ──
   const [vectorWaveSearch, setVectorWaveSearch] = useState('');
+  const [deckVectorFilter, setDeckVectorFilter] = useState('All');
 
+const renderMiniVectorWaveGraphic = (styleId, c1 = '#00f0ff', c2 = '#7c4dff') => {
+  const strandCount = 14;
+  
+  if (styleId === 'agenda-bottom-wave') {
+    return (
+      <g>
+        {Array.from({ length: strandCount }).map((_, i) => {
+          const ratio = i / strandCount;
+          const yOff = ratio * 20;
+          const opacity = 0.2 + (1 - ratio) * 0.7;
+          const strokeW = 0.5 + ratio * 1.2;
+          const col = ratio < 0.6 ? c1 : c2;
+          const d = `M -10 ${75 + yOff * 0.4} C 40 ${60 - ratio * 15}, 80 ${70 + ratio * 10}, 120 ${62 - ratio * 15} C 140 ${58 - ratio * 10}, 155 ${68}, 170 ${80 + yOff * 0.3}`;
+          return <path key={i} d={d} stroke={col} strokeWidth={strokeW} opacity={opacity} fill="none" />;
+        })}
+      </g>
+    );
+  }
+
+  if (styleId === 'startup-pitch' || styleId === 'original-pitch' || styleId === 'top-right-neon-vortex' || styleId === 'top-right-vortex') {
+    return (
+      <g>
+        {/* Multi-strand luminous ascending vortex ribbon */}
+        {Array.from({ length: strandCount }).map((_, i) => {
+          const ratio = i / strandCount;
+          const spread = ratio * 18;
+          const opacity = 0.25 + (1 - ratio) * 0.7;
+          const strokeW = 0.6 + ratio * 1.2;
+          const col = ratio < 0.65 ? c1 : c2;
+          const d = `M ${80 + spread * 1.2} 105 C ${95 + spread * 0.8} ${65 - ratio * 15}, ${125 + spread * 0.5} ${25 - ratio * 8}, ${165 + spread * 0.2} ${30 + ratio * 20}`;
+          return <path key={'vortex-' + i} d={d} stroke={col} strokeWidth={strokeW} opacity={opacity} fill="none" />;
+        })}
+        {/* Bottom complementary subtle glow wave */}
+        {Array.from({ length: 6 }).map((_, i) => {
+          const r = i / 6;
+          const d = `M -5 ${88 + r * 5} C 35 ${80 - r * 6}, 75 ${92 + r * 4}, 115 ${86 - r * 4} C 135 ${82}, 150 ${88}, 165 ${84}`;
+          return <path key={'bot-' + i} d={d} stroke={c1} strokeWidth={0.8 + r * 0.8} opacity={0.3 + (1 - r) * 0.4} fill="none" />;
+        })}
+      </g>
+    );
+  }
+
+  if (styleId === '3d-cube') {
+    return (
+      <g transform="translate(100, 22) scale(0.85)">
+        <polygon points="30,5 55,18 30,31 5,18" fill={c1} opacity="0.35" stroke={c1} strokeWidth="1.2" />
+        <polygon points="5,18 30,31 30,58 5,45" fill={c2} opacity="0.55" stroke={c2} strokeWidth="1.2" />
+        <polygon points="30,31 55,18 55,45 30,58" fill={c1} opacity="0.75" stroke={c1} strokeWidth="1.2" />
+        {/* Inner wireframe accents */}
+        <line x1="30" y1="31" x2="30" y2="5" stroke="#ffffff" strokeWidth="0.8" opacity="0.6" />
+        <line x1="5" y1="18" x2="55" y2="18" stroke="#ffffff" strokeWidth="0.8" opacity="0.4" />
+      </g>
+    );
+  }
+
+  if (styleId === '3d-torus') {
+    return (
+      <g transform="translate(95, 32)">
+        {Array.from({ length: 8 }).map((_, i) => {
+          const r = i / 8;
+          const rx = 24 - r * 4;
+          const ry = 12 - r * 2;
+          const rot = -22 + r * 6;
+          const col = r < 0.5 ? c1 : c2;
+          return (
+            <ellipse 
+              key={i} 
+              cx="28" 
+              cy="16" 
+              rx={rx} 
+              ry={ry} 
+              stroke={col} 
+              strokeWidth={1 + (1 - r) * 1.5} 
+              fill="none" 
+              transform={`rotate(${rot} 28 16)`} 
+              opacity={0.3 + (1 - r) * 0.6} 
+            />
+          );
+        })}
+      </g>
+    );
+  }
+
+  if (styleId === '3d-helix' || styleId === 'dna-double-helix') {
+    return (
+      <g transform="translate(85, 15)">
+        {Array.from({ length: 10 }).map((_, i) => {
+          const t = i / 10;
+          const y1 = 8 + t * 50;
+          const x1 = 20 + Math.sin(t * Math.PI * 2) * 18;
+          const x2 = 20 - Math.sin(t * Math.PI * 2) * 18;
+          return (
+            <g key={i}>
+              <line x1={x1} y1={y1} x2={x2} y2={y1} stroke={c1} strokeWidth="0.8" opacity="0.4" />
+              <circle cx={x1} cy={y1} r="1.5" fill={c1} />
+              <circle cx={x2} cy={y1} r="1.5" fill={c2} />
+            </g>
+          );
+        })}
+      </g>
+    );
+  }
+
+  if (styleId === 'growth-venture-hockey') {
+    return (
+      <g>
+        {Array.from({ length: 12 }).map((_, i) => {
+          const r = i / 12;
+          const col = r < 0.6 ? c1 : c2;
+          const d = `M 10 ${82 + r * 6} C 60 ${80 - r * 4}, 90 ${72 - r * 10}, ${135 + r * 10} ${20 - r * 5}`;
+          return <path key={i} d={d} stroke={col} strokeWidth={0.8 + r * 1.4} opacity={0.3 + (1 - r) * 0.6} fill="none" />;
+        })}
+      </g>
+    );
+  }
+
+  // Default: High-Density Luminous Multi-Strand Harmonic Wave
+  return (
+    <g>
+      {Array.from({ length: strandCount }).map((_, i) => {
+        const ratio = i / strandCount;
+        const spread = ratio * 14;
+        const opacity = 0.2 + (1 - ratio) * 0.7;
+        const strokeW = 0.6 + ratio * 1.4;
+        const col = ratio < 0.6 ? c1 : c2;
+        const d = `M -5 ${55 + spread * 1.5} C 35 ${30 - ratio * 15}, 85 ${75 + ratio * 12}, 135 ${40 - ratio * 18} C 148 ${32}, 158 ${45}, 168 ${52 + spread * 0.8}`;
+        return <path key={'mesh-' + i} d={d} stroke={col} strokeWidth={strokeW} opacity={opacity} fill="none" />;
+      })}
+    </g>
+  );
+};
 
 const ALL_DECK_ANIMATION_OPTIONS = [
   {
@@ -14829,14 +15166,36 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                         setOrbOpen(true);
                         return;
                       }
-                      if (item.mode !== productMode) {
-                        setProductMode(item.mode);
-                        if (item.mode === 'whiteboard') {
-                          enterFullscreen();
-                          setActiveRightTab('whiteboard');
-                        }
-                        showToast(`Switched to ${item.label}`);
+                      if (item.mode === 'whiteboard') {
+                        createWhiteboardExperience();
+                        return;
                       }
+                      if (item.mode === 'deck') {
+                        createDeckExperience();
+                        return;
+                      }
+                      if (item.mode === 'sheets') {
+                        createSheetsExperience();
+                        return;
+                      }
+                      if (item.mode === 'compose') {
+                        createComposeExperience();
+                        return;
+                      }
+                      if (item.mode === 'room') {
+                        setProductMode('room-landing');
+                        setLeftSidebarOpen(false);
+                        setRightSidebarOpen(false);
+                        showToast('Switched to Room');
+                        return;
+                      }
+                      if (item.mode === 'browser') {
+                        setProductMode('browser');
+                        showToast('Switched to Research');
+                        return;
+                      }
+                      setProductMode(item.mode);
+                      showToast(`Switched to ${item.label}`);
                     }}
                     onPointerDown={(e) => e.preventDefault()}
                     className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-left select-none transition-all duration-150 w-full cursor-pointer ${
@@ -14871,7 +15230,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
           </div>
         </div>
       </>,
-      document.body
+      typeof document !== 'undefined' ? (document.fullscreenElement ?? document.body) : null
     );
   };
 
@@ -14912,7 +15271,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
             }`}
             title="Toggle AI-assisted semantic search"
           >
-            <Sparkles size={12} className={docSearchAiEnabled ? 'text-violet-600 animate-pulse' : 'text-slate-400'} />
+            <RegaarderAiIcon size={13} className={docSearchAiEnabled ? 'text-violet-600 dark:text-violet-300 animate-pulse' : 'text-slate-400 dark:text-zinc-500'} />
             <span>AI {docSearchAiEnabled ? 'On' : 'Off'}</span>
           </button>
         </div>
@@ -15708,6 +16067,12 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   }, [gestureNotification]);
 
   useEffect(() => {
+    if (productMode !== 'compose') {
+      gestureHistory.current = [];
+      setGestureNotification(null);
+      return;
+    }
+
     const handleMouseMove = (e) => {
       const now = Date.now();
       gestureHistory.current.push({ x: e.clientX, y: e.clientY, t: now });
@@ -15794,7 +16159,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [isPromptMinimized, isDictationHiddenByGesture, isVoiceActive, voiceTarget]);
+  }, [productMode, isPromptMinimized, isDictationHiddenByGesture, isVoiceActive, voiceTarget]);
 
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
@@ -21333,66 +21698,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   ], []);
 
   // Integrated Tasks workspace state
-  const [tasks, setTasks] = useState([
-    { 
-      id: 1, 
-      text: 'Confirm final beta signup workflow with design team', 
-      completed: false, 
-      owner: 'user',
-      assignees: [
-        { id: 'u-1', name: 'You', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80', type: 'user' }
-      ],
-      dueDate: 'Tomorrow',
-      priority: 'High',
-      project: 'Compose Beta',
-      sourceContext: { type: 'compose', id: 'doc-1', title: 'Beta Signup Spec' },
-      isAiCreated: false,
-    },
-    { 
-      id: 2, 
-      text: 'Draft launch announcements for Twitter and LinkedIn', 
-      completed: true, 
-      owner: 'agent',
-      assignees: [
-        { id: 'ai-1', name: 'Antigravity AI', avatar: null, type: 'agent' }
-      ],
-      dueDate: 'Today',
-      priority: 'Medium',
-      project: 'Marketing',
-      sourceContext: { type: 'compose', id: 'doc-2', title: 'Social Copy' },
-      isAiCreated: true,
-    },
-    { 
-      id: 3, 
-      text: 'Coordinate with marketing for Creator pricing model tier', 
-      completed: false, 
-      owner: 'team',
-      assignees: [
-        { id: 'u-2', name: 'Sarah Chen', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80', type: 'user' },
-        { id: 'u-3', name: 'Alex Miller', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80', type: 'user' },
-        { id: 'u-1', name: 'You', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80', type: 'user' }
-      ],
-      dueDate: 'Jul 26',
-      priority: 'High',
-      project: 'Pricing Tier',
-      sourceContext: { type: 'crm', id: 'deal-9', title: 'Creator Plan CRM' },
-      isAiCreated: false,
-    },
-    { 
-      id: 4, 
-      text: 'Check analytics dashboard integration is live', 
-      completed: false, 
-      owner: 'agent',
-      assignees: [
-        { id: 'ai-1', name: 'Antigravity AI', avatar: null, type: 'agent' }
-      ],
-      dueDate: 'Jul 28',
-      priority: 'Low',
-      project: 'Infrastructure',
-      sourceContext: { type: 'room', id: 'room-3', title: 'Sync Room' },
-      isAiCreated: true,
-    },
-  ]);
+  const [tasks, setTasks] = useState([]);
   const [taskOwnerFilter, setTaskOwnerFilter] = useState('all');
   const [assigneePickerTaskId, setAssigneePickerTaskId] = useState(null);
   const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
@@ -21526,13 +21832,81 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   };
 
   // Conversational state with pre-loaded AI response cards and device/localStorage persistence
-  const [chatMessages, setChatMessages] = useState(() => {
+  const [expandedMessageIds, setExpandedMessageIds] = useState(new Set());
+  const [chatTabs, setChatTabs] = useState(() => {
+    try {
+      const stored = localStorage.getItem('rc.ai_chat_tabs');
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return [{ id: 'tab_default', title: 'Chat 1', messages: [], isComposing: false, selectedModel: null }];
+  });
+  const [activeChatTabId, setActiveChatTabId] = useState('tab_default');
+
+  // Sync active chatMessages with activeChatTab
+  const [chatMessages, setChatMessagesInternal] = useState(() => {
     try {
       const stored = localStorage.getItem('rc.ai_chat_messages');
       if (stored) return JSON.parse(stored);
     } catch (e) {}
     return [];
   });
+
+  const setChatMessages = (updater) => {
+    setChatMessagesInternal((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      setChatTabs((prevTabs) => prevTabs.map((t) => (t.id === activeChatTabId ? { ...t, messages: next } : t)));
+      return next;
+    });
+  };
+
+  const handleSwitchChatTab = (tabId) => {
+    setActiveChatTabId(tabId);
+    const targetTab = chatTabs.find((t) => t.id === tabId);
+    if (targetTab) {
+      setChatMessagesInternal(targetTab.messages || []);
+    }
+  };
+
+  const handleCreateNewChatTab = () => {
+    const nextIdx = chatTabs.length + 1;
+    const newTabId = 'tab_' + Date.now();
+    const newTab = {
+      id: newTabId,
+      title: `Chat ${nextIdx}`,
+      messages: [],
+      isComposing: false,
+      selectedModel: composeSelectedModel
+    };
+    setChatTabs((prev) => [...prev, newTab]);
+    setActiveChatTabId(newTabId);
+    setChatMessagesInternal([]);
+    setChatInput('');
+    showToast(`Opened new chat tab (${newTab.title})`);
+  };
+
+  const handleCloseChatTab = (tabId, e) => {
+    e?.stopPropagation();
+    if (chatTabs.length <= 1) {
+      // If only one tab, clear it instead of deleting
+      setChatMessagesInternal([]);
+      setChatTabs([{ id: 'tab_default', title: 'Chat 1', messages: [] }]);
+      setActiveChatTabId('tab_default');
+      return;
+    }
+    const remaining = chatTabs.filter((t) => t.id !== tabId);
+    setChatTabs(remaining);
+    if (activeChatTabId === tabId) {
+      const nextActive = remaining[0];
+      setActiveChatTabId(nextActive.id);
+      setChatMessagesInternal(nextActive.messages || []);
+    }
+  };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rc.ai_chat_tabs', JSON.stringify(chatTabs));
+    } catch (e) {}
+  }, [chatTabs]);
 
   useEffect(() => {
     try {
@@ -23143,19 +23517,26 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
     // ⚡ Local LLM Execution Path (Ollama / LM Studio / llama.cpp)
     if (composeSelectedModel?.isLocal && composeSelectedModel?.endpoint) {
+      const localAbortController = new AbortController();
+      const localTimeout = setTimeout(() => localAbortController.abort(), 35000);
+      if (aiAbortControllerRef.current?.signal) {
+        aiAbortControllerRef.current.signal.addEventListener('abort', () => {
+          try { localAbortController.abort(); } catch (e) {}
+        }, { once: true });
+      }
+
       try {
         const isOllama = composeSelectedModel.provider === 'Ollama' || composeSelectedModel.endpoint.includes('11434');
         const baseEndpoint = composeSelectedModel.endpoint.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '');
         const targetUrl = isOllama
-          ? `${baseEndpoint}/api/chat`
+          ? `${baseEndpoint}/api/generate`
           : `${composeSelectedModel.endpoint.endsWith('/v1') ? composeSelectedModel.endpoint : composeSelectedModel.endpoint + '/v1'}/chat/completions`;
 
         const requestBody = isOllama
           ? {
               model: composeSelectedModel.id,
-              messages: [
-                { role: 'user', content: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt }
-              ],
+              prompt: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt,
+              format: schema ? 'json' : undefined,
               stream: false,
             }
           : {
@@ -23171,28 +23552,37 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
         let localRes = await fetch(targetUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
-        }).catch(() => null);
+          body: JSON.stringify(requestBody),
+          signal: localAbortController.signal
+        }).catch((e) => {
+          console.warn('Local primary fetch error:', e);
+          return null;
+        });
 
-        // Fallback for Ollama /api/generate if /api/chat fails
+        // Fallback for Ollama /api/chat if /api/generate fails
         if ((!localRes || !localRes.ok) && isOllama) {
-          const genUrl = `${baseEndpoint}/api/generate`;
-          localRes = await fetch(genUrl, {
+          const chatUrl = `${baseEndpoint}/api/chat`;
+          localRes = await fetch(chatUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               model: composeSelectedModel.id,
-              prompt: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt,
+              messages: [
+                { role: 'user', content: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt }
+              ],
               stream: false
-            })
+            }),
+            signal: localAbortController.signal
           }).catch(() => null);
         }
+
+        clearTimeout(localTimeout);
 
         if (localRes && localRes.ok) {
           const data = await localRes.json();
           let text = '';
           if (isOllama) {
-            text = (data.message?.content || data.response || '').trim();
+            text = (data.response || data.message?.content || '').trim();
           } else if (data.choices?.[0]?.message?.content) {
             text = data.choices[0].message.content.trim();
           }
@@ -23216,9 +23606,20 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
               modelName: composeSelectedModel.name
             };
           }
+        } else {
+          const statusText = localRes ? `HTTP ${localRes.status}` : 'Connection Refused';
+          return {
+            text: `⚠️ Unable to reach local inference model (${composeSelectedModel.name}) at ${composeSelectedModel.endpoint} (${statusText}). Please verify that Ollama or LM Studio is running ("ollama serve") or select a cloud AI model from the picker.`,
+            modelName: composeSelectedModel.name
+          };
         }
       } catch (localErr) {
-        console.warn('Local LLM call failed, falling back to cloud endpoint:', localErr);
+        clearTimeout(localTimeout);
+        console.warn('Local LLM call failed:', localErr);
+        return {
+          text: `⚠️ Local model request timed out or was interrupted (${localErr.message || 'Timeout'}). Please ensure Ollama is actively running.`,
+          modelName: composeSelectedModel.name
+        };
       }
     }
 
@@ -28371,7 +28772,9 @@ Return ONLY valid JSON matching the schema.`;
     // Strict Guard: Identify informational, Q&A, review, or summarization queries
     const isQueryOrSummary = /\b(summarize|summary|explain|what\s+is|what\s+are|review|analyze|analysis|insights?|tell\s+me|how\s+many|key\s+takeaways?|overview|details?|read|extract|audit)\b/i.test(promptText);
     
-    const shouldBuildDocument = !isQueryOrSummary && (forceDocBuild || source === 'compose');
+    const isBlankOrNewDoc = !blankBodyRef.current?.innerText || blankBodyRef.current.innerText.trim().length <= 35 || docTitle === 'Untitled Document' || !docTitle;
+    const isExplicitArticleIntent = !isQueryOrSummary && /\b(write|create|draft|compose|generate|article|essay|post|letter|report|paragraph|content|guide|memo|story)\b/i.test(promptText);
+    const shouldBuildDocument = !isQueryOrSummary && (forceDocBuild || source === 'compose' || (source === 'chat' && isBlankOrNewDoc && isExplicitArticleIntent));
     const selectionScoped = Boolean(options.selectionScoped);
     const smartActionKey = String(options.smartActionKey || '').toLowerCase();
     const preferredDocType = resolveDocTypeFromComposeFormat(requestedFormat);
@@ -28847,7 +29250,7 @@ Return ONLY valid JSON matching the schema.`;
       return !normalized || normalized === 'composed with live ai.' || normalized === 'composed with live ai' || normalized === 'ai response' || normalized === 'generated in normal tone with ~220 words.';
     };
 
-    const isArticleWritingRequest = shouldBuildDocument || source === 'compose' || source === 'floating' || (!isQueryOrSummary && /\b(write|create|draft|compose|generate|article|essay|post|letter|report|paragraph|content|guide|memo|story)\b/i.test(promptText));
+    const isArticleWritingRequest = shouldBuildDocument || source === 'compose' || source === 'floating' || isExplicitArticleIntent;
 
     let systemPrompt = '';
     let activeSchemaToUse = null;
@@ -33951,6 +34354,35 @@ Respond with a JSON array of slide objects matching the schema.`;
     return { noun: 'document', title: 'Close this document?', button: 'Close Document' };
   }, [closeConfirmDocId, documents, activeWorkspaceMode, getDocMode]);
 
+  const renderCloseConfirmModal = () => {
+    if (!closeConfirmDocId) return null;
+    return createPortal(
+      <div className="fixed inset-0 z-[100000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 select-none">
+        <div className="w-[420px] max-w-[90vw] rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl p-5 animate-in fade-in zoom-in-95 duration-150 font-sans">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-1.5">{closeConfirmTerm.title}</h3>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 mb-4 leading-relaxed">You can still create a new one after closing. This action will remove the selected tab.</p>
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setCloseConfirmDocId(null)}
+              className="px-3.5 py-1.5 rounded-xl text-xs border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 font-semibold transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={confirmCloseDocument}
+              className="px-4 py-1.5 rounded-xl text-xs bg-violet-600 hover:bg-violet-700 text-white font-bold shadow-sm transition-colors cursor-pointer"
+            >
+              {closeConfirmTerm.button}
+            </button>
+          </div>
+        </div>
+      </div>,
+      typeof document !== 'undefined' ? (document.fullscreenElement ?? document.body) : null
+    );
+  };
+
   const canShowComposeActions = Boolean(
     lastComposeRun
     && lastComposeRun.documentId === activeDocId
@@ -37033,12 +37465,12 @@ Respond with a JSON array of slide objects matching the schema.`;
       )}
 
       <div 
-        className={`no-fullscreen-toggle border-l border-slate-200/60 dark:border-zinc-800/80 flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl transition-all duration-200 shadow-[-12px_0_35px_-10px_rgba(15,23,42,0.08)] select-none overflow-hidden ${
+        className={`no-fullscreen-toggle border-l border-slate-200/60 dark:border-zinc-800/80 flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl transition-all duration-200 shadow-[-16px_0_40px_rgba(0,0,0,0.06),-4px_0_12px_rgba(0,0,0,0.03)] dark:shadow-[-16px_0_40px_rgba(0,0,0,0.35)] select-none overflow-hidden ${
           productMode !== 'landing' && rightSidebarOpen && !shareModalOpen 
             ? 'fixed top-0 right-0 bottom-0 animate-in fade-in slide-in-from-right-4'
             : 'w-0 h-0 hidden overflow-hidden border-l-0 pointer-events-none opacity-0'
         }`}
-        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: productMode === 'compose' ? '380px' : `${rightSidebarWidth}px`, position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
+        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: productMode === 'compose' ? `${rightSidebarWidth || 380}px` : `${rightSidebarWidth}px`, position: 'fixed', top: 0, right: 0, bottom: 0, height: '100vh', minHeight: '100vh', zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
@@ -37652,42 +38084,78 @@ Respond with a JSON array of slide objects matching the schema.`;
           {/* A. ACTIVE TAB: AI ASSISTANT / CHAT */}
           {(activeRightTab === 'assistant' || activeRightTab === 'chat') && (
             <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
+              {/* Persistent Multi-Tab Concurrent Header */}
+              <div className="flex flex-col w-full shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm z-10">
+                <div className="flex items-center justify-between w-full px-3.5 py-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 flex items-center justify-center shrink-0">
+                      <Bot size={12} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
+                    </div>
+                    <h3 className="text-xs font-semibold text-slate-800 dark:text-zinc-100 tracking-tight truncate">
+                      {productMode === 'compose' ? 'Compose Assistant' : productMode === 'sheets' ? 'Sheets Assistant' : 'Deck Assistant'}
+                    </h3>
+                  </div>
+                  <div className="shrink-0 flex items-center gap-1">
+                    <button
+                      type="button"
+                      title="Add New Independent Chat Tab (+)"
+                      className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer flex items-center justify-center"
+                      onClick={handleCreateNewChatTab}
+                    >
+                      <Plus size={13} strokeWidth={2} />
+                    </button>
+                    <button
+                      type="button"
+                      title="Close panel"
+                      className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 dark:hover:text-zinc-200 transition-all cursor-pointer flex items-center justify-center"
+                      onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
+                    >
+                      <X size={13} strokeWidth={1.75} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Multi-Tab Switcher Bar */}
+                <div className="flex items-center gap-1 px-2.5 pb-1.5 overflow-x-auto thin-scrollbar">
+                  {chatTabs.map((tab) => {
+                    const isActive = tab.id === activeChatTabId;
+                    return (
+                      <div
+                        key={tab.id}
+                        onClick={() => handleSwitchChatTab(tab.id)}
+                        className={`group flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-medium transition-all cursor-pointer shrink-0 border select-none ${
+                          isActive
+                            ? 'bg-violet-50 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] border-violet-200/80 dark:border-violet-800/80 shadow-2xs font-semibold'
+                            : 'bg-slate-50 dark:bg-zinc-800/50 text-slate-600 dark:text-zinc-400 border-slate-200/50 dark:border-zinc-700/40 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${tab.isComposing ? 'bg-violet-500 animate-spin' : isActive ? 'bg-[#7C5ACF]' : 'bg-slate-300 dark:bg-zinc-600'}`} />
+                        <span className="truncate max-w-[85px]">{tab.title || 'Chat'}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleCloseChatTab(tab.id, e)}
+                          className="w-3.5 h-3.5 rounded flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10"
+                        >
+                          <X size={9} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={handleCreateNewChatTab}
+                    className="p-1 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs shrink-0 cursor-pointer"
+                    title="New Chat Tab"
+                  >
+                    <Plus size={11} />
+                  </button>
+                </div>
+              </div>
+
               {/* Chat Stream & Focal Layout */}
               <div className="flex-1 overflow-y-auto thin-scrollbar p-4 space-y-3.5">
                 {chatMessages.length === 0 && (
                   <div className="flex flex-col items-start justify-start w-full pt-0.5 pb-2">
-                    {/* Compact Integrated Header with [+] and [X] pushed down */}
-                    <div className="flex items-center justify-between w-full mb-2.5 text-left">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-6.5 h-6.5 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 flex items-center justify-center shrink-0">
-                          <Bot size={13} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight leading-none">
-                            {productMode === 'compose' ? 'Compose Assistant' : productMode === 'sheets' ? 'Sheets Assistant' : 'Deck Assistant'}
-                          </h3>
-                        </div>
-                      </div>
-                      <div className="shrink-0 flex items-center gap-1">
-                        <button
-                          type="button"
-                          title="Start New Chat (+)"
-                          className="p-1 rounded-lg text-slate-400 dark:text-zinc-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer"
-                          onClick={startNewChatSession}
-                        >
-                          <Plus size={14} strokeWidth={2} />
-                        </button>
-                        <button
-                          type="button"
-                          title="Close panel"
-                          className="p-1 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 dark:hover:text-zinc-200 transition-all cursor-pointer"
-                          onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
-                        >
-                          <X size={14} strokeWidth={1.75} />
-                        </button>
-                      </div>
-                    </div>
-
                     {/* Integrated Input Area (VS Code Prompt Box Style) */}
                     <form onSubmit={handleSidebarSend} className="w-full mb-3.5 relative">
                       {/* Floating / Slash Command Dropdown (SlashMenuPopover Component) */}
@@ -37863,7 +38331,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         );
                       })()}
 
-                      <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all duration-200 shadow-2xs overflow-hidden">
+                      <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.05),0_1px_3px_rgba(0,0,0,0.02)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden">
                         {/* Top Context Attachment Chips inside container (VS Code / Apple Token Style) */}
                         {(isDocContextActive || activeAgentTag || chatAttachments.length > 0) && (
                           <div className="px-2.5 pt-2 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
@@ -38112,7 +38580,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-tr-xs shadow-2xs font-medium' 
                         : msg.isBrowserResearch
                           ? 'bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 border border-indigo-200/70 dark:border-indigo-900/60 rounded-tl-xs shadow-sm w-full'
-                          : 'bg-slate-100/80 dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-200 border border-slate-200/50 dark:border-zinc-700/50 rounded-tl-xs shadow-2xs'
+                          : 'bg-slate-100/80 dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-200 border border-slate-200/50 dark:border-zinc-700/50 rounded-tl-xs shadow-[0_4px_20px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.25)]'
                     }`}>
                       {/* Live Sources Bar if Browser Research */}
                       {msg.isBrowserResearch && Array.isArray(msg.sources) && msg.sources.length > 0 && (
@@ -38238,34 +38706,70 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </div>
                       )}
 
-                      {/* Main Message Content */}
+                      {/* Main Message Content with Progressive Disclosure */}
                       {msg.sender === 'user' ? (
                         <div className="whitespace-pre-wrap break-words max-w-full text-[13px] font-normal leading-relaxed text-white dark:text-zinc-900 select-text">
                           {msg.text}
                         </div>
-                      ) : (
-                        <div 
-                          className="whitespace-pre-wrap selection-ai-rendered prose-sm dark:prose-invert break-words max-w-full overflow-hidden text-slate-800 dark:text-zinc-200"
-                          dangerouslySetInnerHTML={{ __html: toParagraphHtml(msg.text) }}
-                        />
-                      )}
+                      ) : (() => {
+                        const rawText = String(msg.text || '');
+                        const isLong = rawText.length > 450;
+                        const isExpanded = expandedMessageIds.has(msg.id);
+                        const displayText = (isLong && !isExpanded) ? (rawText.slice(0, 380) + '...') : rawText;
+                        const lineCount = rawText.split('\n').length;
+                        return (
+                          <div className="space-y-1">
+                            <div 
+                              className="whitespace-pre-wrap selection-ai-rendered prose-sm dark:prose-invert break-words max-w-full overflow-hidden text-slate-800 dark:text-zinc-200"
+                              dangerouslySetInnerHTML={{ __html: toParagraphHtml(displayText) }}
+                            />
+                            {isLong && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setExpandedMessageIds((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(msg.id)) next.delete(msg.id);
+                                    else next.add(msg.id);
+                                    return next;
+                                  });
+                                }}
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#7C5ACF] dark:text-[#a78bfa] hover:underline cursor-pointer select-none pt-1"
+                              >
+                                <span>{isExpanded ? 'Show less ▴' : `Show full response (${lineCount} lines) ▾`}</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
 
-                      {/* Browser Research Action Bar */}
-                      {msg.isBrowserResearch && (
-                        <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between gap-2">
+                      {/* Action Bar for AI Responses (Browser Research & Assistant Messages) */}
+                      {msg.sender !== 'user' && (
+                        <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-zinc-700/60 flex items-center justify-between gap-2">
                           <button
                             type="button"
                             onClick={() => {
-                              const formattedHtml = toParagraphHtml(msg.text);
+                              const formattedHtml = toParagraphHtml(msg.text || '');
                               if (window.__composeInsertHTML) {
                                 window.__composeInsertHTML(formattedHtml);
                               } else if (blankBodyRef.current) {
-                                blankBodyRef.current.innerHTML += formattedHtml;
+                                const isDocEmpty = !blankBodyRef.current.innerText || blankBodyRef.current.innerText.trim().length <= 30;
+                                if (isDocEmpty) {
+                                  blankBodyRef.current.innerHTML = formattedHtml;
+                                } else {
+                                  blankBodyRef.current.innerHTML += `<div style="margin-top: 24px;"></div>` + formattedHtml;
+                                }
                                 setDocBodyHtml(blankBodyRef.current.innerHTML);
                               }
-                              showToast('Inserted live research into document');
+                              // Auto-update document title if empty or Untitled Document
+                              const matchTitle = (msg.text || '').match(/^(?:#\s*|Title:\s*)([^\n]+)/i);
+                              if (matchTitle && (!docTitle || docTitle === 'Untitled Document' || docTitle === 'Compose Draft')) {
+                                setDocTitle(matchTitle[1].trim());
+                              }
+                              showToast('Injected into document');
                             }}
-                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg shadow-xs transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-[#7C5ACF] hover:bg-[#6c48c5] text-white px-2.5 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                            title="Inject AI text into the active document"
                           >
                             <Plus size={12} />
                             <span>Insert into Document</span>
@@ -38273,10 +38777,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                           <button
                             type="button"
                             onClick={() => {
-                              navigator.clipboard.writeText(msg.text);
-                              showToast('Copied research to clipboard');
+                              navigator.clipboard.writeText(msg.text || '');
+                              showToast('Copied to clipboard');
                             }}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 px-2 py-1.5 rounded-lg hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 transition-colors cursor-pointer"
+                            title="Copy response to clipboard"
                           >
                             <Copy size={11} />
                             <span>Copy</span>
@@ -38323,6 +38828,17 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </div>
 
                     <div className="mt-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(msg.text || '');
+                          showToast('Copied to clipboard');
+                        }}
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                        title="Copy message"
+                      >
+                        <Copy size={12} strokeWidth={1.75} />
+                      </button>
                       <button
                         type="button"
                         onClick={() => retryMessageAction(msg)}
@@ -38582,7 +39098,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </div>
                   )}
 
-                  <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all shadow-2xs overflow-hidden">
+                  <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.05),0_1px_3px_rgba(0,0,0,0.02)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden">
                     {(isDocContextActive || activeAgentTag || chatAttachments.length > 0) && (
                       <div className="px-2.5 pt-2 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
                         {activeAgentTag && (
@@ -39625,9 +40141,16 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </div>
                 ))}
                 {visibleTasks.length === 0 && (
-                  <div className="py-12 text-center space-y-1">
-                    <div className="text-xs text-slate-400 dark:text-zinc-500 font-medium">No tasks in this view</div>
-                    <div className="text-[11px] text-slate-300 dark:text-zinc-600">Drag or create tasks to organize</div>
+                  <div className="py-16 px-4 flex flex-col items-center justify-center text-center select-none">
+                    <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-violet-500/10 to-indigo-500/20 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(139,92,246,0.08)] mb-3.5">
+                      <CheckCircle2 size={24} className="text-violet-600 dark:text-violet-400" />
+                    </div>
+                    <div className="text-[13.5px] font-bold text-slate-800 dark:text-zinc-100 tracking-tight">
+                      No tasks available yet
+                    </div>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 max-w-[230px] leading-relaxed">
+                      Add a new task using the input above or convert action items directly from your document.
+                    </p>
                   </div>
                 )}
               </div>
@@ -39748,9 +40271,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </button>
                 </div>
                 {comments.filter(c => !c.isDraft && (showResolvedComments || !c.resolved)).length === 0 ? (
-                  <div className="text-center py-10 px-4 text-slate-400 text-xs">
-                    <MessageSquareText size={24} className="mx-auto mb-2 opacity-50" />
-                    No comments found. Highlight text and click Comment to start a discussion.
+                  <div className="flex flex-col items-center justify-center py-16 px-6 text-center select-none">
+                    <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-violet-500/10 to-indigo-500/20 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(139,92,246,0.08)] mb-3.5">
+                      <MessageSquareText size={24} className="text-violet-600 dark:text-violet-400" />
+                    </div>
+                    <div className="text-[13.5px] font-bold text-slate-800 dark:text-zinc-100 tracking-tight">No comments yet</div>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 max-w-[220px] leading-relaxed">
+                      Highlight any text in your document and click Comment to start a contextual discussion.
+                    </p>
                   </div>
                 ) : (
                   comments.filter(c => !c.isDraft && (showResolvedComments || !c.resolved)).map(c => (
@@ -40141,13 +40669,13 @@ Respond with a JSON array of slide objects matching the schema.`;
                       })}
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-6 px-4 text-center rounded-2xl border border-dashed border-slate-200/80 bg-slate-50/50 my-1">
-                      <div className="w-8 h-8 rounded-full bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-500 mb-2 shadow-2xs">
-                        <Calendar size={15} />
+                    <div className="flex flex-col items-center justify-center py-10 px-4 text-center rounded-2xl border border-dashed border-slate-200/80 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/30 my-1 select-none">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-violet-500/10 to-indigo-500/20 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-2xs mb-2.5">
+                        <Calendar size={20} className="text-violet-600 dark:text-violet-400" />
                       </div>
-                      <div className="text-[12.5px] font-semibold text-slate-800 tracking-tight">No Events Scheduled</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5 max-w-[210px] leading-relaxed">
-                        No events set for {selectedCalendarDate ? selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'this date'}. Add a task below to plan your schedule.
+                      <div className="text-[13px] font-bold text-slate-800 dark:text-zinc-100 tracking-tight">No events scheduled yet</div>
+                      <div className="text-[11.5px] text-slate-400 dark:text-zinc-500 mt-1 max-w-[220px] leading-relaxed">
+                        No events set for {selectedCalendarDate ? selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'this date'}. Add a scheduled task to organize your timeline.
                       </div>
                     </div>
                   )}
@@ -40622,9 +41150,9 @@ Respond with a JSON array of slide objects matching the schema.`;
             </div>
           )}
 
-          {isScheduleSessionModalOpen && (
+          {isScheduleSessionModalOpen && createPortal(
             <div
-              className="fixed inset-0 z-[1350] bg-black/70 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150 select-none"
               onClick={closeScheduleSessionModal}
             >
               <div
@@ -40636,11 +41164,18 @@ Respond with a JSON array of slide objects matching the schema.`;
                     <div className="text-[24px] font-semibold text-slate-900 leading-tight">Schedule a session</div>
                     <div className="text-[11px] text-slate-500 mt-1">Plan ahead and invite others to collaborate.</div>
                   </div>
-                  <div className="flex items-center">
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={closeScheduleSessionModal}
+                      className="h-10 px-4 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
                     <button
                       type="button"
                       onClick={handleScheduleSessionSave}
-                      className="h-10 px-5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700"
+                      className="h-10 px-5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 transition-colors shadow-sm active:scale-95"
                     >
                       Save
                     </button>
@@ -40907,7 +41442,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </div>
                 </div>
               </div>
-            </div>
+            </div>,
+            document.body
           )}
 
           {activeRightTab === 'room' && (
@@ -41692,12 +42228,12 @@ Respond with a JSON array of slide objects matching the schema.`;
         return (
           <>
 
-            {/* ── Sleek Sidebar Icon Rail (Full length from top-0 to bottom-0, in front of scrollbar, revealed on hover) ──────────── */}
+            {/* ── Sleek Sidebar Icon Rail (Scoped between top header and bottom status bar, never blocks top/bottom icons) ──────────── */}
             {productMode !== 'landing' && productMode !== 'browser' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
               <div
                 onMouseEnter={handleRightSidebarMouseEnter}
                 onMouseLeave={handleRightSidebarMouseLeave}
-                className={`fixed right-0 top-0 bottom-0 h-full z-[365] group/sidebar border-l border-slate-200/70 dark:border-zinc-800/80 bg-white/95 dark:bg-[#121216]/95 backdrop-blur-xl flex flex-col items-start px-2 py-4 gap-2 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] ${
+                className={`fixed right-0 top-14 bottom-11 z-[365] group/sidebar border-l border-t border-b border-slate-200/70 dark:border-zinc-800/80 rounded-l-2xl bg-white/95 dark:bg-[#121216]/95 backdrop-blur-xl flex flex-col items-start px-2 py-3 gap-2 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] ${
                   isRightSideHovered && !miniSidebarDismissed
                     ? 'translate-x-0 opacity-100 pointer-events-auto w-[58px] hover:w-[170px]'
                     : 'translate-x-full opacity-0 pointer-events-none w-[58px]'
@@ -42603,14 +43139,11 @@ If requested to draw a chart or graph, append a structured action JSON block:
                 stream: false
               };
 
-          const localController = new AbortController();
-          const localTimer = setTimeout(() => localController.abort(), 30000);
           const localRes = await fetch(targetUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody),
-            signal: localController.signal
-          }).finally(() => clearTimeout(localTimer));
+            body: JSON.stringify(requestBody)
+          });
 
           if (!localRes.ok) throw new Error(`Local LLM error: HTTP ${localRes.status}`);
           const localData = await localRes.json();
@@ -45843,30 +46376,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
 
-        {closeConfirmDocId && (
-          <div className="fixed inset-0 z-[100000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-[420px] max-w-[90vw] rounded-xl bg-white border border-gray-100 shadow-2xl p-5 animate-in fade-in zoom-in-95 duration-150">
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">{closeConfirmTerm.title}</h3>
-              <p className="text-xs text-gray-500 mb-4">You can still create a new one after closing. This action will remove the selected tab.</p>
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCloseConfirmDocId(null)}
-                  className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={confirmCloseDocument}
-                  className="px-3 py-1.5 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700 font-medium shadow-sm transition-colors"
-                >
-                  {closeConfirmTerm.button}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {renderCloseConfirmModal()}
 
         {creationPickerOpen && (
           <div className="fixed inset-0 z-[620] bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
@@ -45941,7 +46451,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
 
-        <main className={`flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-[#000000] ${isSheetsPresentationMode || isDeckPresentationMode ? 'fixed inset-0 z-[9999] bg-white dark:bg-[#000000]' : ''}`}>
+        <main 
+          className={`flex-1 h-full min-w-0 min-h-0 flex flex-col bg-[#f5f7fc] dark:bg-[#000000] ${isSheetsPresentationMode || isDeckPresentationMode ? 'fixed inset-0 z-[9999] bg-white dark:bg-[#000000]' : ''}`}
+          style={{
+            marginLeft: (leftSidebarOpen && !isSheetsPresentationMode && !isDeckPresentationMode && productMode !== 'deck')
+              ? `${leftSidebarWidth}px`
+              : '0px',
+            transition: 'margin-left 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}
+        >
           {!isSheetsPresentationMode && !isDeckPresentationMode && (
             <div data-sheets-toolbar="true" className={`h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/70 dark:bg-[#111111] backdrop-blur-xl shrink-0 select-none group/header relative z-[350] transition-all duration-200 ${
               isSheetZenMode ? 'fixed top-0 left-0 right-0 z-[9000] opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto shadow-md border-b' : ''
@@ -45952,16 +46470,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 onClick={() => {
                   if (isSheetsMode) {
                     setSheetsSidebarOpen((prev) => !prev);
-                  } else {
+                  } else if (productMode === 'deck') {
                     setDeckSlidesPanelOpen((prev) => !prev);
+                  } else {
+                    setLeftSidebarOpen((prev) => !prev);
                   }
                 }}
-                className="text-gray-400 hover:text-gray-600 dark:text-zinc-400 dark:hover:text-zinc-200 shrink-0 transition-colors"
-                title="Toggle sidebar"
+                className="text-gray-400 hover:text-gray-600 dark:text-zinc-400 dark:hover:text-zinc-200 shrink-0 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer"
+                title={
+                  isSheetsMode 
+                    ? (sheetsSidebarOpen ? "Hide sheets sidebar" : "Show sheets sidebar")
+                    : productMode === 'deck'
+                      ? (deckSlidesPanelOpen ? "Hide slide deck" : "Show slide deck")
+                      : (leftSidebarOpen ? "Hide navigation sidebar" : "Show navigation sidebar")
+                }
               >
                 {isSheetsMode
                   ? (sheetsSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
-                  : (deckSlidesPanelOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
+                  : productMode === 'deck'
+                    ? (deckSlidesPanelOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
+                    : (leftSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
                 }
               </button>
 
@@ -45970,11 +46498,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   type="button"
                   data-workspace-switcher="true"
-                  onClick={(e) => {
+                  onPointerDown={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     const rect = e.currentTarget.getBoundingClientRect();
                     setWorkspaceSwitcherAnchorRect(rect);
                     setWorkspaceSwitcherOpen((prev) => !prev);
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
                   }}
                   className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 cursor-pointer ${
                     workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
@@ -46568,8 +47100,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="flex-1 h-full min-h-0 flex relative">
             {!isSheetsMode && productMode !== 'deck' && (
                     <aside
-                      className="border-r border-gray-100/50 flex flex-col bg-[#FAFAFC]/75 dark:bg-zinc-900/75 backdrop-blur-md shrink-0 select-none overflow-hidden transition-[width] duration-200"
-                      style={{ width: leftSidebarOpen ? `${leftSidebarWidth}px` : '0px' }}
+                      className={`border-r border-slate-200/80 dark:border-zinc-800 flex flex-col bg-[#FAFAFC]/95 dark:bg-zinc-900/95 backdrop-blur-2xl shrink-0 select-none overflow-hidden transition-all duration-200 shadow-[8px_0_30px_-10px_rgba(0,0,0,0.06)] ${
+                        leftSidebarOpen
+                          ? 'fixed top-0 left-0 bottom-0 h-screen z-[450] animate-in fade-in slide-in-from-left-4'
+                          : 'w-0 h-0 hidden overflow-hidden pointer-events-none'
+                      }`}
+                      style={
+                        leftSidebarOpen
+                          ? { width: `${leftSidebarWidth}px`, position: 'fixed', top: 0, left: 0, bottom: 0, height: '100vh', zIndex: 450 }
+                          : { width: '0px', height: '0px', display: 'none' }
+                      }
                     >
                       <div className="h-14 flex items-center justify-between px-4">
                         <div className="flex items-center gap-2 font-bold text-gray-900 text-lg">
@@ -51333,7 +51873,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         )}
                                       </div>
 
-                                      {/* Shape & Wave Selector Dropdown (with Search Bar) */}
+                                       {/* Shape & Wave Selector Dropdown (with Search Bar & 2-Column Preview Grid) */}
                                        <div data-deck-toolbar-menu="true" className="relative shrink-0">
                                          <button
                                            type="button"
@@ -51344,62 +51884,139 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            }}
                                            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200/70 cursor-pointer shadow-2xs"
                                          >
-                                           <Sparkles size={13} className="text-violet-500" />
+                                           <RegaarderVectorIcon size={13} className="text-[#00f0ff]" />
                                            <span>Shape & Wave ({ALL_INDUSTRY_VECTOR_STYLES.length})</span>
                                            <ChevronDown size={10} className="text-gray-400" />
                                          </button>
                                          {deckActiveToolbarMenu === 'vectorStyle' && (
-                                           <div onClick={(e) => e.stopPropagation()} className="absolute top-8 left-0 z-[999] w-76 max-h-[320px] flex flex-col bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.16)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] overflow-hidden backdrop-blur-xl animate-in fade-in">
-                                             {/* Search Bar */}
-                                             <div className="px-2 pt-2 pb-1.5 shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50">
+                                           <div onClick={(e) => e.stopPropagation()} className="absolute top-8 left-1/2 -translate-x-1/2 z-[9999] w-[420px] max-h-[480px] flex flex-col bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.16)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] overflow-hidden backdrop-blur-xl animate-in fade-in">
+                                             {/* Vector Meshes Popover Header with Search and Category Tabs */}
+                                             <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                               <div className="flex items-center justify-between">
+                                                 <div className="flex items-center gap-1.5">
+                                                   <RegaarderVectorIcon size={13} className="text-[#00f0ff]" />
+                                                   <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                     VECTOR MESHES & WAVES
+                                                   </span>
+                                                 </div>
+                                                 <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-cyan-100 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 font-mono">
+                                                   {ALL_INDUSTRY_VECTOR_STYLES.filter((s) => (deckVectorFilter === 'All' || s.category === deckVectorFilter) && (!vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase()))).length} STYLES
+                                                 </span>
+                                               </div>
+
+                                               {/* Search Input */}
                                                <div className="relative flex items-center">
-                                                 <Search size={13} className="absolute left-2.5 text-slate-400 pointer-events-none" />
+                                                 <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
                                                  <input
                                                    type="text"
-                                                   autoFocus
                                                    value={vectorWaveSearch}
                                                    onChange={(e) => setVectorWaveSearch(e.target.value)}
-                                                   placeholder="Search 25+ shapes & waves…"
-                                                   className="w-full h-7 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 placeholder-slate-400 rounded-lg border border-slate-200 dark:border-zinc-700 outline-none focus:ring-1 focus:ring-violet-400"
+                                                   placeholder="Search 3D meshes, waves, shapes…"
+                                                   className="w-full h-7 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-cyan-400 dark:focus:border-cyan-500 focus:ring-1 focus:ring-cyan-400/30 transition-all font-sans"
                                                  />
                                                  {vectorWaveSearch && (
-                                                   <button type="button" onClick={() => setVectorWaveSearch('')} className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200">
+                                                   <button
+                                                     type="button"
+                                                     onClick={() => setVectorWaveSearch('')}
+                                                     className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded cursor-pointer transition-colors"
+                                                   >
                                                      <X size={12} />
                                                    </button>
                                                  )}
                                                </div>
-                                             </div>
 
-                                             <div className="flex-1 overflow-y-auto thin-scrollbar p-1 space-y-0.5 max-h-[220px]">
-                                               {ALL_INDUSTRY_VECTOR_STYLES
-                                                 .filter((s) => !vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.category.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase()))
-                                                 .map((preset) => {
-                                                   const isCurrent = activeDeckSlide?.vectorWaveStyle === preset.id;
+                                               {/* Category Filter Tabs */}
+                                               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
+                                                 {['All', 'Startup Specials', '3D Shapes', 'Featured Waves', 'Deep-Tech & Systems', 'Sports & Athletics', 'Faith & Spiritual'].map((cat) => {
+                                                   const isTabActive = deckVectorFilter === cat;
                                                    return (
                                                      <button
-                                                       key={preset.id}
+                                                       key={cat}
                                                        type="button"
                                                        onPointerDown={(e) => {
                                                          e.preventDefault();
-                                                         updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', preset.id);
-                                                         updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', preset.c1);
-                                                         updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', preset.c2);
-                                                         setDeckActiveToolbarMenu(null);
-                                                         showToast(`Activated: ${preset.label}`);
+                                                         setDeckVectorFilter(cat);
                                                        }}
-                                                       className={`w-full text-left px-2 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-between gap-1.5 ${
-                                                         isCurrent 
-                                                           ? 'bg-violet-500/15 text-violet-600 dark:text-violet-300 font-semibold' 
-                                                           : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80'
+                                                       className={`px-2 py-0.5 text-[9.5px] font-medium rounded-md whitespace-nowrap transition-all cursor-pointer ${
+                                                         isTabActive
+                                                           ? 'bg-white dark:bg-zinc-800 text-cyan-600 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-500/50 shadow-xs font-semibold'
+                                                           : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
                                                        }`}
                                                      >
-                                                       <div className="flex items-center gap-2 min-w-0">
-                                                         <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: `linear-gradient(135deg, ${preset.c1}, ${preset.c2})` }} />
-                                                         <span className="text-xs truncate">{preset.label}</span>
+                                                       {cat === 'Deep-Tech & Systems' ? 'Deep-Tech' : cat === 'Sports & Athletics' ? 'Sports' : cat === 'Faith & Spiritual' ? 'Faith' : cat}
+                                                     </button>
+                                                   );
+                                                 })}
+                                               </div>
+                                             </div>
+
+                                             {/* 2-Column Real Visual Vector Mesh Preview Grid */}
+                                             <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-3 max-h-[350px]">
+                                               {ALL_INDUSTRY_VECTOR_STYLES
+                                                 .filter((s) => (deckVectorFilter === 'All' || s.category === deckVectorFilter) && (!vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase())))
+                                                 .map((styleObj) => {
+                                                   const isCurrent = activeDeckSlide?.vectorWaveStyle === styleObj.id;
+                                                   return (
+                                                     <button
+                                                       key={styleObj.id}
+                                                       type="button"
+                                                       onPointerDown={(e) => {
+                                                         e.preventDefault();
+                                                         updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', styleObj.id);
+                                                         updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', styleObj.c1);
+                                                         updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', styleObj.c2);
+                                                         setDeckActiveToolbarMenu(null);
+                                                         showToast(`Activated: ${styleObj.label}`);
+                                                       }}
+                                                       className={`group relative flex flex-col p-1.5 rounded-xl text-left transition-all duration-150 cursor-pointer ${
+                                                         isCurrent 
+                                                           ? 'bg-cyan-500/10 dark:bg-cyan-500/20 ring-2 ring-[#00f0ff] shadow-sm' 
+                                                           : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
+                                                       }`}
+                                                     >
+                                                       {/* 16:10 Keynote Canvas with Authentic Vector Preview */}
+                                                       <div 
+                                                         className={`w-full aspect-[16/10] rounded-lg relative overflow-hidden transition-all duration-150 p-2 flex flex-col justify-between shadow-xs select-none bg-[#07090E] ${
+                                                           isCurrent 
+                                                             ? 'ring-1 ring-[#00f0ff]' 
+                                                             : 'border border-white/10 group-hover:shadow-sm'
+                                                         }`}
+                                                       >
+                                                         {/* Top Header of Preview Card */}
+                                                         <div className="flex items-center justify-between w-full z-10">
+                                                           <span className="text-[6.5px] font-semibold text-slate-400 truncate tracking-wide">
+                                                             {styleObj.category}
+                                                           </span>
+                                                           {isCurrent && (
+                                                             <span className="w-3.5 h-3.5 rounded-full bg-[#00f0ff] text-slate-950 flex items-center justify-center shadow-md shrink-0">
+                                                               <Check size={9} strokeWidth={3} />
+                                                             </span>
+                                                           )}
+                                                         </div>
+
+                                                         {/* Actual Vector Mesh / Wave SVG Graphic Render */}
+                                                         <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden" viewBox="0 0 160 100" fill="none">
+                                                           {renderMiniVectorWaveGraphic(styleObj.id, styleObj.c1, styleObj.c2)}
+                                                         </svg>
+
+                                                         {/* Bottom Color Dot Indicator */}
+                                                         <div className="flex items-center justify-between w-full z-10">
+                                                           <div className="flex items-center gap-1">
+                                                             <span className="w-1.5 h-1.5 rounded-full shadow-xs" style={{ backgroundColor: styleObj.c1 }} />
+                                                             <span className="w-1.5 h-1.5 rounded-full shadow-xs" style={{ backgroundColor: styleObj.c2 }} />
+                                                           </div>
+                                                         </div>
                                                        </div>
-                                                       <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 shrink-0">
-                                                         {preset.category}
-                                                       </span>
+
+                                                       {/* Caption */}
+                                                       <div className="mt-1.5 px-0.5 flex flex-col gap-0.5 w-full">
+                                                         <span className={`text-[10.5px] font-semibold truncate ${isCurrent ? 'text-cyan-600 dark:text-cyan-300' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
+                                                           {styleObj.label.replace(/\s*\([^)]*\)/, '')}
+                                                         </span>
+                                                         <span className="text-[8px] text-slate-400 dark:text-zinc-500 line-clamp-1">
+                                                           {styleObj.desc}
+                                                         </span>
+                                                       </div>
                                                      </button>
                                                    );
                                                  })}
@@ -51407,7 +52024,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            </div>
                                          )}
                                        </div>
-
                                        {/* Opacity Dropdown */}
                                       <div data-deck-toolbar-menu="true" className="relative shrink-0">
                                         <button
@@ -51716,7 +52332,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            {isOpen && (
                                              <div 
                                                onClick={(e) => e.stopPropagation()}
-                                               className={`absolute ${btn.label === 'Background' || btn.label === 'Vector & Wave' || btn.label === 'Styles' || btn.label === 'Animation' ? 'left-1/2 -translate-x-1/2' : 'left-0'} top-8 ${btn.label === 'Vector & Wave' ? 'w-[420px] max-h-[480px]' : btn.label === 'Background' ? 'w-[400px] max-h-[480px]' : btn.label === 'Styles' ? 'w-[380px] max-h-[420px]' : btn.label === 'Animation' ? 'w-[430px] max-h-[480px]' : btn.label === 'Insert' ? 'w-[380px] max-h-[480px]' : btn.label === 'Media & Logo' ? 'w-[340px]' : btn.label === 'AI' ? 'w-[340px]' : 'w-60'} flex flex-col bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.16)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] z-[9999] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-xl`}
+                                               className={`absolute ${
+    btn.label === 'Media & Logo' || btn.label === 'Insert' || btn.label === 'AI' 
+      ? 'right-0' 
+      : btn.label === 'Background' || btn.label === 'Vector & Wave' || btn.label === 'Styles' || btn.label === 'Animation' 
+      ? 'left-1/2 -translate-x-1/2' 
+      : 'left-0'
+  } top-9 ${
+    btn.label === 'Vector & Wave' ? 'w-[420px] max-h-[480px]' : 
+    btn.label === 'Background' ? 'w-[400px] max-h-[480px]' : 
+    btn.label === 'Styles' ? 'w-[380px] max-h-[420px]' : 
+    btn.label === 'Animation' ? 'w-[430px] max-h-[480px]' : 
+    btn.label === 'Insert' ? 'w-[380px] max-h-[480px]' : 
+    btn.label === 'Media & Logo' ? 'w-[340px]' : 
+    btn.label === 'AI' ? 'w-[340px]' : 'w-60'
+  } flex flex-col bg-white dark:bg-[#12141c] border border-slate-200/90 dark:border-zinc-800 ring-1 ring-slate-900/10 dark:ring-white/10 rounded-2xl shadow-[0_24px_60px_rgba(0,0,0,0.32)] z-[9999] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-2xl`}
                                              >
                                                {btn.label === 'Animation' ? (
                                                  <>
@@ -52536,39 +53166,372 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'pillHidden', true); setDeckSelection({ type: 'none', id: null }); }} className="text-rose-500 hover:text-rose-600 flex items-center gap-1"><Trash2 size={11} /> Delete Shape</button>
                                     </div>
                                   ) : deckSelection.type === 'vector' ? (
-                                    /* Secondary Vector Mesh Inspector */
-                                    <div className="flex items-center gap-3">
-                                      <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5"><RegaarderVectorIcon size={12} className="text-[#00f0ff]" /> Vector Wave Glow</span>
-                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
-                                      <div className="flex items-center gap-1.5">
-                                        <span>Glow Saturation:</span>
-                                        {[
-                                          { id: 'ultra-radiant', label: 'Ultra Radiant' },
-                                          { id: 'neon-bloom', label: 'Neon Bloom' },
-                                          { id: 'electric-high', label: 'Electric High' },
-                                          { id: 'soft-ambient', label: 'Soft' }
-                                        ].map((g) => (
-                                          <button key={g.id} type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorGlow', g.id); showToast(`Glow: ${g.label}`); }} className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 text-[10px] font-semibold">{g.label}</button>
-                                        ))}
-                                      </div>
-                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
-                                      <div className="flex items-center gap-1.5">
-                                        <span>Primary:</span>
-                                        {['#00f0ff', '#3b82f6', '#7c4dff', '#a855f7', '#ec4899', '#10b981', '#ffffff'].map((c) => (
-                                          <button key={c} type="button" onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', c)} className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-zinc-600 hover:scale-110" style={{ backgroundColor: c }} />
-                                        ))}
-                                      </div>
-                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
-                                      <div className="flex items-center gap-1.5">
-                                        <span>Secondary:</span>
-                                        {['#a855f7', '#ec4899', '#00f0ff', '#0ea5e9', '#10b981', '#ffffff'].map((c) => (
-                                          <button key={c} type="button" onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', c)} className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-zinc-600 hover:scale-110" style={{ backgroundColor: c }} />
-                                        ))}
-                                      </div>
-                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
-                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', 0); updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', 0); updateDeckSlideField(activeDeckSlide?.id, 'vectorWidth', 900); updateDeckSlideField(activeDeckSlide?.id, 'vectorHeight', 650); showToast('Vector mesh reset'); }} className="hover:text-slate-900 dark:hover:text-white flex items-center gap-1"><RotateCcw size={11} /> Reset Bounds</button>
-                                      <button type="button" onClick={() => { updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', true); setDeckSelection({ type: 'none', id: null }); }} className="text-rose-500 hover:text-rose-600 flex items-center gap-1"><Trash2 size={11} /> Delete Mesh</button>
-                                    </div>
+                                    /* Apple-Tier Progressive Disclosure Vector Mesh Secondary Inspector */
+                                    (() => {
+                                      const vGlow = activeDeckSlide?.vectorGlow || 'crisp';
+                                      const c1 = activeDeckSlide?.vectorColor1 || '#00f0ff';
+                                      const c2 = activeDeckSlide?.vectorColor2 || '#a855f7';
+
+                                      const glowOptions = [
+                                        { id: 'ultra-radiant', label: 'Ultra Radiant', percent: '100%', blur: '12px', desc: 'Maximum luminescent bloom & outer flare' },
+                                        { id: 'neon-bloom', label: 'Neon Bloom', percent: '75%', blur: '8px', desc: 'Vivid neon glow with saturated beam core' },
+                                        { id: 'electric-high', label: 'Electric High', percent: '50%', blur: '4px', desc: 'Crisp electric laser stroke' },
+                                        { id: 'soft-ambient', label: 'Soft Ambient', percent: '25%', blur: '2px', desc: 'Subtle ambient light diffusion' }
+                                      ];
+
+                                      const quickColors = [
+                                        '#00f0ff', '#38bdf8', '#3b82f6', '#4f46e5', '#7c4dff', '#a855f7',
+                                        '#d946ef', '#ec4899', '#f43f5e', '#ef4444', '#f97316', '#f59e0b',
+                                        '#eab308', '#84cc16', '#10b981', '#14b8a6', '#06b6d4', '#ffffff',
+                                        '#94a3b8', '#334155'
+                                      ];
+
+                                      const currentGlowObj = glowOptions.find(g => g.id === vGlow) || glowOptions[1];
+
+                                      return (
+                                        <div className="flex items-center gap-2.5 relative select-none">
+                                          {/* Title Badge */}
+                                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-cyan-500/10 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-300 font-semibold text-[11px] shrink-0">
+                                            <RegaarderVectorIcon size={13} className="text-[#00f0ff]" />
+                                            <span>Vector Mesh</span>
+                                          </div>
+
+                                          <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700 shrink-0" />
+
+                                          {/* 1. Glow Saturation Progressive Disclosure Button */}
+                                          <div className="relative">
+                                            <button
+                                              type="button"
+                                              onPointerDown={(e) => {
+                                                e.stopPropagation();
+                                                setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'vGlowMenu' ? null : 'vGlowMenu');
+                                              }}
+                                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                                deckFloatingMenuOpen === 'vGlowMenu'
+                                                  ? 'bg-cyan-100 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-500/50 shadow-xs'
+                                                  : 'bg-slate-100/70 dark:bg-zinc-800/70 hover:bg-slate-200/70 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60'
+                                              }`}
+                                            >
+                                              {/* Visual cue showing the active color at current intensity */}
+                                              <span
+                                                className="w-2.5 h-2.5 rounded-full transition-all shrink-0"
+                                                style={{
+                                                  backgroundColor: c1,
+                                                  boxShadow: `0 0 ${currentGlowObj.blur} ${c1}`
+                                                }}
+                                              />
+                                              <span>Glow: {currentGlowObj.label}</span>
+                                              <span className="text-[9.5px] font-mono text-slate-400 dark:text-zinc-500 font-normal">({currentGlowObj.percent})</span>
+                                              <ChevronDown size={10} className={`text-slate-400 transition-transform ${deckFloatingMenuOpen === 'vGlowMenu' ? 'rotate-180 text-cyan-500' : ''}`} />
+                                            </button>
+
+                                            {/* Glow Saturation Popover with Visual Intensity Cues */}
+                                            {deckFloatingMenuOpen === 'vGlowMenu' && (
+                                              <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="absolute top-full mt-1.5 left-0 z-[9999] w-64 p-2 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] space-y-1 animate-in fade-in"
+                                              >
+                                                <div className="px-2 py-1 border-b border-slate-100 dark:border-zinc-800/80 flex items-center justify-between">
+                                                  <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                                                    Glow Saturation & Intensity
+                                                  </span>
+                                                </div>
+                                                <div className="space-y-1 pt-1">
+                                                  {glowOptions.map((opt) => {
+                                                    const isSelected = vGlow === opt.id;
+                                                    return (
+                                                      <button
+                                                        key={opt.id}
+                                                        type="button"
+                                                        onPointerDown={(e) => {
+                                                          e.preventDefault();
+                                                          updateDeckSlideField(activeDeckSlide?.id, 'vectorGlow', opt.id);
+                                                          setDeckFloatingMenuOpen(null);
+                                                          showToast(`Glow set to ${opt.label}`);
+                                                        }}
+                                                        className={`w-full p-2 rounded-xl text-left transition-all cursor-pointer flex items-center gap-2.5 ${
+                                                          isSelected
+                                                            ? 'bg-cyan-500/10 dark:bg-cyan-500/20 border border-cyan-300 dark:border-cyan-500/50 shadow-xs'
+                                                            : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/70 border border-transparent'
+                                                        }`}
+                                                      >
+                                                        {/* Live Visual Glow Cue rendered in active primary color */}
+                                                        <div className="w-8 h-8 rounded-lg bg-zinc-950 flex items-center justify-center shrink-0 border border-white/10">
+                                                          <div
+                                                            className="w-3.5 h-3.5 rounded-full transition-all"
+                                                            style={{
+                                                              backgroundColor: c1,
+                                                              boxShadow: `0 0 ${opt.blur} ${c1}, 0 0 ${parseInt(opt.blur) * 1.8}px ${c1}`
+                                                            }}
+                                                          />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                          <div className="flex items-center justify-between">
+                                                            <span className={`text-xs font-semibold ${isSelected ? 'text-cyan-600 dark:text-cyan-300' : 'text-slate-800 dark:text-zinc-100'}`}>
+                                                              {opt.label}
+                                                            </span>
+                                                            <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 font-medium">
+                                                              {opt.percent}
+                                                            </span>
+                                                          </div>
+                                                          <p className="text-[9px] text-slate-400 dark:text-zinc-500 truncate">
+                                                            {opt.desc}
+                                                          </p>
+                                                        </div>
+                                                        {isSelected && <Check size={13} className="text-cyan-500 shrink-0" strokeWidth={2.5} />}
+                                                      </button>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700 shrink-0" />
+
+                                          {/* 2. Primary Beam Color Progressive Disclosure Button */}
+                                          <div className="relative">
+                                            <button
+                                              type="button"
+                                              onPointerDown={(e) => {
+                                                e.stopPropagation();
+                                                setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'vCol1Menu' ? null : 'vCol1Menu');
+                                              }}
+                                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                                deckFloatingMenuOpen === 'vCol1Menu'
+                                                  ? 'bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 border border-violet-300 dark:border-violet-500/50 shadow-xs'
+                                                  : 'bg-slate-100/70 dark:bg-zinc-800/70 hover:bg-slate-200/70 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60'
+                                              }`}
+                                            >
+                                              <span
+                                                className="w-3.5 h-3.5 rounded-full border border-white/40 shadow-xs shrink-0"
+                                                style={{ backgroundColor: c1, boxShadow: `0 0 6px ${c1}88` }}
+                                              />
+                                              <span>Primary Beam</span>
+                                              <span className="text-[9.5px] font-mono text-slate-400 dark:text-zinc-500 uppercase">{c1}</span>
+                                              <ChevronDown size={10} className={`text-slate-400 transition-transform ${deckFloatingMenuOpen === 'vCol1Menu' ? 'rotate-180 text-violet-500' : ''}`} />
+                                            </button>
+
+                                            {/* Primary Color Popover with Spectrum, Swatches & Custom Hex Input */}
+                                            {deckFloatingMenuOpen === 'vCol1Menu' && (
+                                              <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="absolute top-full mt-1.5 left-0 z-[9999] w-68 p-3 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] space-y-3 animate-in fade-in"
+                                              >
+                                                <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/80 pb-2">
+                                                  <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                                                    Primary Beam Color
+                                                  </span>
+                                                  <span className="w-4 h-4 rounded-full border border-white/30 shadow-xs" style={{ backgroundColor: c1, boxShadow: `0 0 8px ${c1}` }} />
+                                                </div>
+
+                                                {/* Quick Swatches Grid */}
+                                                <div className="grid grid-cols-5 gap-1.5">
+                                                  {quickColors.map((hex) => (
+                                                    <button
+                                                      key={hex}
+                                                      type="button"
+                                                      onPointerDown={(e) => {
+                                                        e.preventDefault();
+                                                        updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', hex);
+                                                        showToast(`Primary color: ${hex}`);
+                                                      }}
+                                                      className={`w-7 h-7 rounded-lg border transition-transform cursor-pointer flex items-center justify-center ${
+                                                        c1.toLowerCase() === hex.toLowerCase()
+                                                          ? 'border-white ring-2 ring-[#7C4DFF] scale-110 shadow-sm'
+                                                          : 'border-black/10 dark:border-white/15 hover:scale-110'
+                                                      }`}
+                                                      style={{ backgroundColor: hex }}
+                                                    >
+                                                      {c1.toLowerCase() === hex.toLowerCase() && <Check size={11} className={hex === '#ffffff' ? 'text-black' : 'text-white'} strokeWidth={3} />}
+                                                    </button>
+                                                  ))}
+                                                </div>
+
+                                                {/* Custom Color Spectrum Picker & Hex Input */}
+                                                <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/80 space-y-2">
+                                                  <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-zinc-400 font-medium">
+                                                    <span>Custom Spectrum Range:</span>
+                                                    <label className="relative flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200/70 dark:hover:bg-zinc-700 cursor-pointer border border-slate-200 dark:border-zinc-700">
+                                                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c1 }} />
+                                                      <span className="text-[10px] font-semibold">Spectrum Picker</span>
+                                                      <input
+                                                        type="color"
+                                                        value={c1.startsWith('#') && c1.length === 7 ? c1 : '#00f0ff'}
+                                                        onChange={(e) => updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', e.target.value)}
+                                                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                                                      />
+                                                    </label>
+                                                  </div>
+
+                                                  <div className="flex items-center gap-1.5">
+                                                    <span className="text-xs font-bold text-slate-400 font-mono">#</span>
+                                                    <input
+                                                      type="text"
+                                                      value={c1.replace(/^#/, '')}
+                                                      onChange={(e) => {
+                                                        const val = '#' + e.target.value.replace(/[^0-9a-fA-F]/g, '');
+                                                        updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', val);
+                                                      }}
+                                                      placeholder="00F0FF"
+                                                      maxLength={6}
+                                                      className="flex-1 h-7 px-2 font-mono text-xs uppercase bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400"
+                                                    />
+                                                    <button
+                                                      type="button"
+                                                      onPointerDown={(e) => {
+                                                        e.preventDefault();
+                                                        setDeckFloatingMenuOpen(null);
+                                                      }}
+                                                      className="px-2.5 h-7 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold shadow-xs cursor-pointer"
+                                                    >
+                                                      Done
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700 shrink-0" />
+
+                                          {/* 3. Secondary Beam Color Progressive Disclosure Button */}
+                                          <div className="relative">
+                                            <button
+                                              type="button"
+                                              onPointerDown={(e) => {
+                                                e.stopPropagation();
+                                                setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'vCol2Menu' ? null : 'vCol2Menu');
+                                              }}
+                                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                                deckFloatingMenuOpen === 'vCol2Menu'
+                                                  ? 'bg-fuchsia-100 dark:bg-fuchsia-950/60 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-300 dark:border-fuchsia-500/50 shadow-xs'
+                                                  : 'bg-slate-100/70 dark:bg-zinc-800/70 hover:bg-slate-200/70 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60'
+                                              }`}
+                                            >
+                                              <span
+                                                className="w-3.5 h-3.5 rounded-full border border-white/40 shadow-xs shrink-0"
+                                                style={{ backgroundColor: c2, boxShadow: `0 0 6px ${c2}88` }}
+                                              />
+                                              <span>Secondary Beam</span>
+                                              <span className="text-[9.5px] font-mono text-slate-400 dark:text-zinc-500 uppercase">{c2}</span>
+                                              <ChevronDown size={10} className={`text-slate-400 transition-transform ${deckFloatingMenuOpen === 'vCol2Menu' ? 'rotate-180 text-fuchsia-500' : ''}`} />
+                                            </button>
+
+                                            {/* Secondary Color Popover with Spectrum, Swatches & Custom Hex Input */}
+                                            {deckFloatingMenuOpen === 'vCol2Menu' && (
+                                              <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="absolute top-full mt-1.5 left-0 z-[9999] w-68 p-3 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] space-y-3 animate-in fade-in"
+                                              >
+                                                <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/80 pb-2">
+                                                  <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                                                    Secondary Beam Color
+                                                  </span>
+                                                  <span className="w-4 h-4 rounded-full border border-white/30 shadow-xs" style={{ backgroundColor: c2, boxShadow: `0 0 8px ${c2}` }} />
+                                                </div>
+
+                                                {/* Quick Swatches Grid */}
+                                                <div className="grid grid-cols-5 gap-1.5">
+                                                  {quickColors.map((hex) => (
+                                                    <button
+                                                      key={hex}
+                                                      type="button"
+                                                      onPointerDown={(e) => {
+                                                        e.preventDefault();
+                                                        updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', hex);
+                                                        showToast(`Secondary color: ${hex}`);
+                                                      }}
+                                                      className={`w-7 h-7 rounded-lg border transition-transform cursor-pointer flex items-center justify-center ${
+                                                        c2.toLowerCase() === hex.toLowerCase()
+                                                          ? 'border-white ring-2 ring-fuchsia-500 scale-110 shadow-sm'
+                                                          : 'border-black/10 dark:border-white/15 hover:scale-110'
+                                                      }`}
+                                                      style={{ backgroundColor: hex }}
+                                                    >
+                                                      {c2.toLowerCase() === hex.toLowerCase() && <Check size={11} className={hex === '#ffffff' ? 'text-black' : 'text-white'} strokeWidth={3} />}
+                                                    </button>
+                                                  ))}
+                                                </div>
+
+                                                {/* Custom Color Spectrum Picker & Hex Input */}
+                                                <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/80 space-y-2">
+                                                  <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-zinc-400 font-medium">
+                                                    <span>Custom Spectrum Range:</span>
+                                                    <label className="relative flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200/70 dark:hover:bg-zinc-700 cursor-pointer border border-slate-200 dark:border-zinc-700">
+                                                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c2 }} />
+                                                      <span className="text-[10px] font-semibold">Spectrum Picker</span>
+                                                      <input
+                                                        type="color"
+                                                        value={c2.startsWith('#') && c2.length === 7 ? c2 : '#a855f7'}
+                                                        onChange={(e) => updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', e.target.value)}
+                                                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                                                      />
+                                                    </label>
+                                                  </div>
+
+                                                  <div className="flex items-center gap-1.5">
+                                                    <span className="text-xs font-bold text-slate-400 font-mono">#</span>
+                                                    <input
+                                                      type="text"
+                                                      value={c2.replace(/^#/, '')}
+                                                      onChange={(e) => {
+                                                        const val = '#' + e.target.value.replace(/[^0-9a-fA-F]/g, '');
+                                                        updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', val);
+                                                      }}
+                                                      placeholder="A855F7"
+                                                      maxLength={6}
+                                                      className="flex-1 h-7 px-2 font-mono text-xs uppercase bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100 focus:outline-none focus:border-fuchsia-400 focus:ring-1 focus:ring-fuchsia-400"
+                                                    />
+                                                    <button
+                                                      type="button"
+                                                      onPointerDown={(e) => {
+                                                        e.preventDefault();
+                                                        setDeckFloatingMenuOpen(null);
+                                                      }}
+                                                      className="px-2.5 h-7 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-semibold shadow-xs cursor-pointer"
+                                                    >
+                                                      Done
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700 shrink-0" />
+
+                                          {/* 4. Action Buttons */}
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorPosX', 0);
+                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorPosY', 0);
+                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorWidth', 900);
+                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorHeight', 650);
+                                              showToast('Vector mesh bounds reset');
+                                            }}
+                                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 cursor-pointer shrink-0"
+                                            title="Reset Bounds"
+                                          >
+                                            <RotateCcw size={11} /> Reset Bounds
+                                          </button>
+
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', true);
+                                              setDeckSelection({ type: 'none', id: null });
+                                              showToast('Vector mesh removed');
+                                            }}
+                                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer shrink-0"
+                                            title="Delete Mesh"
+                                          >
+                                            <Trash2 size={11} /> Delete Mesh
+                                          </button>
+                                        </div>
+                                      );
+                                    })()
                                   ) : null}
                                 </div>
                                 )}
@@ -63164,23 +64127,90 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <div className="w-full px-6 flex items-center justify-between text-[11px] font-medium text-gray-400 pt-1 border-t border-gray-150/50">
                             <div className="flex items-center gap-4">
                               <span>Slide {deckSlides.findIndex(s => s.id === activeDeckSlideId) + 1} of {deckSlides.length}</span>
-                              <button type="button" className="flex items-center gap-1 hover:text-gray-600 transition-colors">
+                              <button type="button" className="flex items-center gap-1 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors">
                                 <span>English (US)</span>
                                 <ChevronDown size={11} />
                               </button>
-                              <span className="text-gray-300">•</span>
+                              <span className="text-gray-300 dark:text-zinc-600">•</span>
                               <span>All changes saved</span>
                             </div>
 
                             <div className="flex items-center gap-3">
-                              <button type="button" className="hover:text-gray-600 transition-colors" title="More options">
+                              <button type="button" className="hover:text-gray-600 dark:hover:text-zinc-200 transition-colors" title="More options">
                                 <MoreHorizontal size={14} />
                               </button>
-                              <div className="w-20 h-1 bg-gray-200 rounded-full relative flex items-center cursor-pointer">
-                                <div className="w-2.5 h-2.5 rounded-full bg-[#7C4DFF] absolute left-1/2 -translate-x-1/2 shadow-xs" />
+                              
+                              {/* Zoom Control Identical to Docs */}
+                              <div className="relative flex items-center gap-1.5 select-none">
+                                <button
+                                  type="button"
+                                  onClick={() => setDeckZoomLevel(Math.max(50, deckZoomLevel - 10))}
+                                  className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 px-1.5 py-0.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded font-bold transition-colors cursor-pointer text-xs"
+                                  title="Zoom out"
+                                >
+                                  -
+                                </button>
+                                <span
+                                  onClick={() => setDeckZoomDropdownOpen(prev => !prev)}
+                                  className="w-9 text-center cursor-pointer font-medium text-gray-600 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                  title="Change Zoom Level"
+                                >
+                                  {deckZoomLevel}%
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeckZoomLevel(Math.min(200, deckZoomLevel + 10))}
+                                  className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 px-1.5 py-0.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded font-bold transition-colors cursor-pointer text-xs"
+                                  title="Zoom in"
+                                >
+                                  +
+                                </button>
+                                <ChevronDown
+                                  size={12}
+                                  className={`cursor-pointer transition-transform ${deckZoomDropdownOpen ? 'rotate-180 text-violet-500' : 'text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200'}`}
+                                  onClick={() => setDeckZoomDropdownOpen(prev => !prev)}
+                                />
+                                {deckZoomDropdownOpen && (
+                                  <div className="absolute right-0 bottom-full mb-2 z-[99999] w-28 backdrop-blur-xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-[#13131a]/95 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.15)] p-1 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-100 select-none">
+                                    {[50, 75, 90, 100, 110, 125, 150, 200].map((level) => (
+                                      <button
+                                        key={level}
+                                        type="button"
+                                        onPointerDown={(e) => {
+                                          e.preventDefault();
+                                          setDeckZoomLevel(level);
+                                          setDeckZoomDropdownOpen(false);
+                                        }}
+                                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
+                                          deckZoomLevel === level
+                                            ? 'bg-violet-50 dark:bg-violet-950/40 text-[#7C4DFF] dark:text-violet-400 font-bold'
+                                            : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-white'
+                                        }`}
+                                      >
+                                        {level}%
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                              <button type="button" className="hover:text-gray-600 transition-colors" title="Toggle Fullscreen">
-                                <Maximize size={13} />
+
+                              {/* Fullscreen Trigger (Slide Takes Fullscreen) */}
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleStartDeckPresentation();
+                                }}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleStartDeckPresentation();
+                                }}
+                                className="hover:text-gray-600 dark:hover:text-zinc-200 transition-colors p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md cursor-pointer flex items-center justify-center active:scale-95"
+                                title="Enter Fullscreen Presentation (Slide takes fullscreen)"
+                              >
+                                <Maximize size={14} />
                               </button>
                             </div>
                           </div>
@@ -66779,15 +67809,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
 
-      {/* 1. Left Navigation Sidebar — collapses to 0px when floating Document Outline is active to avoid squeezing canvas */}
+      {/* 1. Left Navigation Sidebar — Full length (top to bottom) */}
       <div
-        className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-white border-r border-gray-100"
-        style={{ width: (productMode === 'whiteboard' || activeRightTab === 'whiteboard' || showDocumentOutlineView) ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
+        className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-[#FAFAFC] dark:bg-[#18181b] border-r border-slate-200/80 dark:border-zinc-800/80 h-screen min-h-screen h-full z-[380]"
+        style={{ width: (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
-        {!showDocumentOutlineView && (
-          <>
-
-            <div className="h-16 flex items-center justify-between px-4">
+        <>
+            <div className="h-14 flex items-center justify-between px-4 border-b border-slate-100 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 text-white flex items-center justify-center shadow-[0_12px_24px_-14px_rgba(139,92,246,0.95)]">
                   <Sparkles size={16} />
@@ -66821,12 +67849,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">Ctrl K</span>
               </div>
             </div>
-          </>
-        )}
+        </>
 
         {/* Main Nav Links */}
-        {!showDocumentOutlineView ? (
-          <div className="flex-1 overflow-y-auto px-3 space-y-4 thin-scrollbar">
+        <div className="flex-1 overflow-y-auto px-3 space-y-4 thin-scrollbar">
+          {/* Integrated Document Outline if in document */}
+          {docOutlineEnabled && documentOutlineItems && documentOutlineItems.length > 1 && (
+            <div className="rounded-xl border border-violet-100/80 dark:border-violet-950/60 bg-violet-50/30 dark:bg-violet-950/20 p-2.5 my-1">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 dark:text-violet-400 uppercase">Document Outline</span>
+                <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/50 rounded-full px-2 py-0.5">{Math.max(0, documentOutlineItems.length - 1)}</span>
+              </div>
+              <div className="max-h-40 overflow-y-auto pr-1 space-y-0.5 thin-scrollbar">
+                {documentOutlineItems.map((item, index) => (
+                  <button
+                    key={`item-${item.id}-${index}`}
+                    type="button"
+                    onClick={() => jumpToOutlineItem(item)}
+                    className={`w-full text-left rounded-md py-1 text-xs transition-colors cursor-pointer ${item.isTitle ? 'font-semibold text-gray-800 dark:text-zinc-200 hover:bg-violet-100/50 px-2' : 'text-gray-600 dark:text-zinc-400 hover:bg-violet-50 dark:hover:bg-zinc-800'}`}
+                    style={item.isTitle ? undefined : { paddingLeft: `${10 + Math.max(0, item.level - 1) * 12}px`, paddingRight: '6px' }}
+                    title={item.label}
+                  >
+                    <span className="block truncate">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
             <div className="space-y-0.5">
               <button
                 onClick={() => setActivePrimaryNav('my-orb')}
@@ -66933,7 +67982,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </button>
             </div>
           </div>
-        ) : null}
 
         {/* Footer Settings */}
         <div className="p-4 border-t border-gray-100 bg-[#FAFAFC]">
@@ -66943,8 +67991,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       </div>
 
-      {/* Document Outline — full-height floating edge drawer overlay at z-[260] */}
-      {showDocumentOutlineView && productMode === 'compose' && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
+      {/* Document Outline — full-height floating edge drawer overlay at z-[260] (disabled in favor of integrated full-length sidebar) */}
+      {false && showDocumentOutlineView && productMode === 'compose' && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
         <div
           ref={documentOutlineDrawerRef}
           className="fixed top-0 left-0 bottom-0 z-[260] flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border-r border-slate-200/60 dark:border-zinc-800/80 shadow-[12px_0_35px_-10px_rgba(15,23,42,0.08)] select-none overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-left-4"
@@ -66999,6 +68047,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <div className="flex-1 flex flex-col min-w-0 bg-white relative">
           <RoomLandingPage 
             showToast={showToast}
+            onSwitchProductMode={(mode) => {
+              setProductMode(mode);
+              const labelMap = { compose: 'Docs', sheets: 'Sheets', deck: 'Decks', room: 'Room', whiteboard: 'Whiteboard', browser: 'Research' };
+              showToast?.(`Switched to ${labelMap[mode] || mode}`);
+            }}
+            onOpenWorkspaceSwitcher={(rect) => {
+              if (rect) setWorkspaceSwitcherAnchorRect(rect);
+              setWorkspaceSwitcherOpen((prev) => !prev);
+            }}
             onLaunch={(action) => {
               if (action && action.name === 'Room') {
                 if (action.type === 'schedule') {
@@ -67503,11 +68560,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <button
                 type="button"
                 data-workspace-switcher="true"
-                onClick={(e) => {
+                onPointerDown={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   const rect = e.currentTarget.getBoundingClientRect();
                   setWorkspaceSwitcherAnchorRect(rect);
                   setWorkspaceSwitcherOpen((prev) => !prev);
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
                 }}
                 className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 cursor-pointer ${
                   workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
@@ -70752,6 +71813,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="h-full w-full bg-[#FAFAFC] dark:bg-[#0d0d0f] overflow-hidden flex flex-col relative">
                 <div 
                   id="whiteboard-export-container"
+                  tabIndex={0}
+                  onPaste={handleWhiteboardPaste}
                   onPointerMove={(e) => {
                     if (e.clientY > 60 && isWhiteboardTopNavHovered) {
                       setIsWhiteboardTopNavHovered(false);
@@ -71292,7 +72355,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       const rawY = event.clientY - rect.top;
                       const x = rawX - whiteboardPanOffset.x;
                       const y = rawY - whiteboardPanOffset.y;
-                      setWhiteboardStickyCursorPosition({ x, y });
+                      if (whiteboardTool === 'sticky') {
+                        setWhiteboardStickyCursorPosition({ x, y });
+                      } else if (whiteboardStickyCursorPosition !== null) {
+                        setWhiteboardStickyCursorPosition(null);
+                      }
                       if (whiteboardTool === 'sticky' && whiteboardStickyDragStart) {
                         const deltaX = x - whiteboardStickyDragStart.x;
                         const deltaY = y - whiteboardStickyDragStart.y;
@@ -71471,6 +72538,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setWhiteboardCurrentStroke('');
                       setIsWhiteboardDrawing(false);
                       setWhiteboardLineAnchor(null);
+                    }}
+                    onPointerLeave={() => {
+                      if (whiteboardStickyCursorPosition !== null) {
+                        setWhiteboardStickyCursorPosition(null);
+                      }
                     }}
                   />
                   {whiteboardTool === 'sticky' && whiteboardStickyCursorPosition && (
@@ -71952,6 +73024,88 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             </p>
                           </div>
                         )
+                      ) : widget.type === 'video' ? (
+                        <div className="relative w-full h-full rounded-xl overflow-hidden bg-black flex flex-col group/video select-none shadow-md border border-slate-800">
+                          {widget.videoProvider === 'html5' ? (
+                            <video
+                              controls
+                              src={widget.embedUrl || widget.videoUrl}
+                              className="w-full h-full object-contain rounded-xl bg-black"
+                            />
+                          ) : (
+                            <iframe
+                              src={widget.embedUrl}
+                              title={widget.title || "Video Player"}
+                              className="w-full h-full rounded-xl border-0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          )}
+                          {/* Context Actions Pill */}
+                          {(isSelected || isWidgetHovered) && (
+                            <div
+                              data-widget-interactive="true"
+                              className="absolute top-2 right-2 z-40 flex items-center gap-1 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-lg p-1 shadow-md border border-slate-200/80 dark:border-zinc-800"
+                              onPointerDown={(e) => e.stopPropagation()}
+                            >
+                              <span className="text-[9.5px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400 px-1.5">
+                                {widget.videoProvider === 'youtube' ? 'YouTube' : widget.videoProvider === 'vimeo' ? 'Vimeo' : 'Video'}
+                              </span>
+                              {widget.videoUrl && (
+                                <a
+                                  href={widget.videoUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="h-6 px-1.5 rounded text-[10px] font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-1 cursor-pointer"
+                                  title="Open original video"
+                                >
+                                  <ArrowUpRight size={11} />
+                                </a>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setWhiteboardWidgets((prev) => prev.filter((w) => w.id !== widget.id));
+                                  setSelectedWidgetId(null);
+                                  showToast('Video deleted');
+                                }}
+                                className="h-6 w-6 rounded flex items-center justify-center text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 cursor-pointer"
+                                title="Delete video"
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : widget.type === 'link' ? (
+                        <div
+                          className="relative w-full h-full rounded-xl p-3 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200/80 dark:border-zinc-800 shadow-sm flex flex-col justify-between select-none group/link cursor-pointer hover:border-violet-300 transition-colors"
+                          onClick={() => {
+                            if (widget.linkedUrl) window.open(widget.linkedUrl, '_blank', 'noopener,noreferrer');
+                          }}
+                        >
+                          <div className="flex items-start gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 border border-violet-100 dark:border-violet-900/40">
+                              <LinkIcon size={14} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-[12px] font-bold text-slate-800 dark:text-zinc-100 truncate leading-tight">
+                                {widget.title || widget.linkedUrl}
+                              </h4>
+                              <p className="text-[10px] text-slate-400 dark:text-zinc-500 truncate mt-0.5 font-mono">
+                                {widget.linkedUrl}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 dark:border-zinc-800">
+                            <span className="text-[9.5px] font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-wider flex items-center gap-1">
+                              <Globe size={10} /> Web Bookmark
+                            </span>
+                            <span className="text-[9.5px] text-slate-400 hover:text-slate-700 flex items-center gap-0.5 font-medium">
+                              Open <ArrowUpRight size={9} />
+                            </span>
+                          </div>
+                        </div>
                       ) : (
                         <>
                           <p className="text-[11px] font-semibold text-gray-900">{widget.title}</p>
@@ -73067,6 +74221,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             { label: 'Text Block', icon: Type, action: () => { activateWhiteboardTool('text'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Shape', icon: Shapes, action: () => { activateWhiteboardTool('shapes'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Image', icon: ImageIcon, action: () => { activateWhiteboardTool('image'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'Embed Link / Video', icon: Video, action: () => { setWhiteboardMediaModalOpen(true); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Connector', icon: LinkIcon, action: () => { activateWhiteboardTool('link'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Comment', icon: MessageCircle, action: () => { activateWhiteboardTool('comment'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Task Card', icon: CheckSquare, action: () => { addWhiteboardWidget('task'); setWhiteboardAddMenuOpen(false); showToast('Task card added'); } },
@@ -73105,6 +74260,85 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <Trash2 size={14} strokeWidth={1.6} />
                     </button>
                   </div>
+
+                  {whiteboardMediaModalOpen && createPortal(
+                    <div className="fixed inset-0 z-[100000] bg-slate-950/45 dark:bg-black/70 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-150 select-none">
+                      <div className="w-[520px] max-w-[95vw] rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl shadow-2xl p-6 flex flex-col font-sans">
+                        <div className="flex items-center justify-between gap-4 mb-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                              <Video size={16} />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-800 dark:text-zinc-100">Embed Media or Link</h3>
+                              <p className="text-xs text-slate-400 dark:text-zinc-500">Paste YouTube, Vimeo, MP4 video, image, or website URL</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => { setWhiteboardMediaModalOpen(false); setWhiteboardMediaUrlInput(''); }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            if (whiteboardMediaUrlInput.trim()) {
+                              addWhiteboardMediaFromUrl(whiteboardMediaUrlInput.trim());
+                              setWhiteboardMediaModalOpen(false);
+                              setWhiteboardMediaUrlInput('');
+                            }
+                          }}
+                          className="space-y-4"
+                        >
+                          <div className="relative">
+                            <input
+                              autoFocus
+                              type="url"
+                              value={whiteboardMediaUrlInput}
+                              onChange={(e) => setWhiteboardMediaUrlInput(e.target.value)}
+                              placeholder="https://www.youtube.com/watch?v=... or image URL"
+                              className="w-full h-11 px-4 text-sm bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                            />
+                          </div>
+
+                          {/* Instant detection cue */}
+                          {whiteboardMediaUrlInput.trim() && (() => {
+                            const parsed = parseWhiteboardMediaUrl(whiteboardMediaUrlInput.trim());
+                            return (
+                              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-50/70 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-900/40 text-xs">
+                                <Sparkles size={13} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                                <span className="font-medium text-slate-700 dark:text-zinc-300">
+                                  Detected: <strong className="text-violet-700 dark:text-violet-300 capitalize">{parsed?.type === 'video' ? `${parsed.provider} Video Embed` : parsed?.type === 'image' ? 'Image Asset' : 'Web Bookmark'}</strong>
+                                </span>
+                              </div>
+                            );
+                          })()}
+
+                          <div className="flex items-center justify-end gap-2 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => { setWhiteboardMediaModalOpen(false); setWhiteboardMediaUrlInput(''); }}
+                              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={!whiteboardMediaUrlInput.trim()}
+                              className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-sm active:scale-95"
+                            >
+                              Embed to Whiteboard
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>,
+                    document.body
+                  )}
 
                   {whiteboardTaskPreviewOpen && createPortal(
                     <div className="fixed inset-0 z-[100000] bg-slate-950/40 dark:bg-black/70 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200 select-none">
@@ -73269,7 +74503,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       </div>
                     </div>,
-                    document.body
+                    typeof document !== 'undefined' ? (document.fullscreenElement ?? document.body) : null
                   )}
                 </div>
                 
@@ -80014,7 +81248,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           deckSlidesData,
           activeDeckSlideId,
           tasks: initiatives,
-          scheduleAgendaItems
+          scheduleAgendaItems,
+          whiteboardWidgets,
+          whiteboardShapes
         }}
         onNavigateToEntity={(entity) => {
           if (!entity) return;
@@ -80256,6 +81492,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
       )}
+
+      {/* Close Document / Whiteboard Confirmation Modal */}
+      {renderCloseConfirmModal()}
 
       {/* Global Workspace Switcher Popover (Available across Docs, Sheets, Decks, Room, Research) */}
       {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
