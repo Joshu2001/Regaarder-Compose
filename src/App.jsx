@@ -52294,40 +52294,40 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                              >
                                                {btn.label === 'Animation' ? (
                                                  <>
-                                                   {/* Global Animation Keyframes for Live Motion Cards */}
+                                                   {/* Apple Keynote Realistic Motion Physics Keyframes */}
                                                    <style>{`
-                                                     @keyframes whipSlideAnim {
-                                                       0% { transform: translateX(-40px) scale(0.85); opacity: 0; }
-                                                       40% { transform: translateX(3px) scale(1.02); opacity: 1; }
-                                                       70%, 100% { transform: translateX(0) scale(1); opacity: 1; }
+                                                     @keyframes keynoteWhipSlide {
+                                                       0% { transform: translateX(-42px) scale(0.92); opacity: 0; filter: blur(2px); }
+                                                       35% { transform: translateX(2px) scale(1.01); opacity: 1; filter: blur(0px); }
+                                                       65%, 100% { transform: translateX(0) scale(1); opacity: 1; }
                                                      }
-                                                     @keyframes zoomGlowAnim {
-                                                       0% { transform: scale(0.55); opacity: 0.2; filter: drop-shadow(0 0 0px #00f0ff); }
-                                                       50% { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 10px #00f0ff); }
-                                                       80%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 3px #7C4DFF); }
+                                                     @keyframes keynoteZoomGlow {
+                                                       0% { transform: scale(0.8); opacity: 0.3; filter: drop-shadow(0 0 0px #00f0ff); }
+                                                       45% { transform: scale(1.03); opacity: 1; filter: drop-shadow(0 0 8px rgba(0,240,255,0.7)); }
+                                                       75%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 3px rgba(124,77,255,0.4)); }
                                                      }
-                                                     @keyframes shakeVibrateAnim {
-                                                       0%, 60%, 100% { transform: translate(0, 0) rotate(0deg); }
-                                                       65% { transform: translate(-2px, 1px) rotate(-1deg); }
-                                                       70% { transform: translate(2px, -1px) rotate(1deg); }
-                                                       75% { transform: translate(-2px, -1px) rotate(-0.5deg); }
-                                                       80% { transform: translate(2px, 1px) rotate(0.5deg); }
-                                                       85% { transform: translate(0, 0) rotate(0deg); }
+                                                     @keyframes keynotePulseShake {
+                                                       0%, 55%, 100% { transform: scale(1) translate(0, 0); }
+                                                       60% { transform: scale(1.02) translate(-1.5px, 0.5px); }
+                                                       65% { transform: scale(1.02) translate(1.5px, -0.5px); }
+                                                       70% { transform: scale(1.01) translate(-1px, -0.5px); }
+                                                       75% { transform: scale(1) translate(0.5px, 0.5px); }
+                                                       80% { transform: scale(1) translate(0, 0); }
                                                      }
-                                                     @keyframes smoothFloatAnim {
-                                                       0%, 100% { transform: translateY(3px); }
+                                                     @keyframes keynoteSmoothFloat {
+                                                       0%, 100% { transform: translateY(2px); }
                                                        50% { transform: translateY(-4px); }
                                                      }
-                                                     @keyframes staggerBar1 { 0%, 10% { opacity: 0; transform: translateY(4px); } 30%, 100% { opacity: 1; transform: translateY(0); } }
-                                                     @keyframes staggerBar2 { 0%, 30% { opacity: 0; transform: translateY(4px); } 50%, 100% { opacity: 1; transform: translateY(0); } }
-                                                     @keyframes staggerBar3 { 0%, 50% { opacity: 0; transform: translateY(4px); } 70%, 100% { opacity: 1; transform: translateY(0); } }
-                                                     @keyframes dissolveRiseAnim {
-                                                       0% { opacity: 0; transform: translateY(6px) scale(0.95); filter: blur(3px); }
-                                                       50%, 100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+                                                     @keyframes keynoteStagLine1 { 0%, 10% { opacity: 0; transform: translateY(5px); } 30%, 100% { opacity: 1; transform: translateY(0); } }
+                                                     @keyframes keynoteStagLine2 { 0%, 25% { opacity: 0; transform: translateY(5px); } 45%, 100% { opacity: 1; transform: translateY(0); } }
+                                                     @keyframes keynoteStagLine3 { 0%, 40% { opacity: 0; transform: translateY(5px); } 60%, 100% { opacity: 1; transform: translateY(0); } }
+                                                     @keyframes keynoteDissolveRise {
+                                                       0% { opacity: 0; transform: translateY(6px) scale(0.96); filter: blur(3px); }
+                                                       45%, 100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
                                                      }
                                                    `}</style>
 
-                                                   {/* Apple-Style Motion Popover Header */}
+                                                   {/* Apple Keynote Style Motion Popover Header */}
                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 flex items-center justify-between select-none font-sans">
                                                      <div className="flex items-center gap-1.5">
                                                         <Wand2 size={13} className="text-[#7C4DFF]" />
@@ -52340,11 +52340,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      </span>
                                                    </div>
 
-                                                   {/* 2-Column Live Motion Preview Cards */}
+                                                   {/* 2-Column Realistic Keynote Motion Preview Cards */}
                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-2.5 max-h-[350px]">
                                                      {ALL_DECK_ANIMATION_OPTIONS.map((animOpt) => {
                                                        const isCurrent = activeDeckSlide?.motionCue === animOpt.label;
-                                                       const AnimIcon = animOpt.icon || Wand2;
 
                                                        return (
                                                          <button
@@ -52362,22 +52361,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
                                                            }`}
                                                          >
-                                                           {/* 16:10 Keynote Canvas with Live Motion Simulation */}
+                                                           {/* Authentic 16:10 Keynote Slide Canvas Preview */}
                                                            <div 
-                                                             className={`w-full aspect-[16/10] rounded-lg relative overflow-hidden transition-all duration-150 p-2 flex flex-col justify-between shadow-xs select-none bg-[#07090E] ${
-                                                               isCurrent 
-                                                                 ? 'ring-1 ring-[#7C4DFF]' 
-                                                                 : 'border border-white/10 group-hover:shadow-sm'
+                                                             className={`w-full aspect-[16/10] rounded-lg relative overflow-hidden transition-all duration-150 p-2.5 flex flex-col justify-between select-none bg-[#090C15] border border-white/10 ${
+                                                               isCurrent ? 'ring-1 ring-[#7C4DFF]' : 'group-hover:border-white/20'
                                                              }`}
                                                            >
-                                                             {/* Card Header with Category & Icon */}
+                                                             {/* Top Bar / Slide Badge */}
                                                              <div className="flex items-center justify-between w-full z-10">
-                                                               <div className="flex items-center gap-1">
-                                                                 <AnimIcon size={10} className="text-[#00f0ff]" />
-                                                                 <span className="text-[6.5px] font-bold text-slate-400 uppercase tracking-wide">
-                                                                   {animOpt.tag}
-                                                                 </span>
-                                                               </div>
+                                                               <span className="text-[6.5px] font-semibold text-slate-400 uppercase tracking-wider">
+                                                                 {animOpt.tag}
+                                                               </span>
                                                                {isCurrent && (
                                                                  <span className="w-3.5 h-3.5 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-md shrink-0">
                                                                    <Check size={9} strokeWidth={3} />
@@ -52385,56 +52379,77 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                )}
                                                              </div>
 
-                                                             {/* Center Live Simulation */}
+                                                             {/* Realistic Slide Composition with Applied Motion Physics */}
                                                              <div className="my-auto w-full flex items-center justify-center">
-                                                               {animOpt.id === 'stagger-reveal' ? (
-                                                                 <div className="w-full flex flex-col items-center gap-1">
-                                                                   <div className="w-14 h-1.5 rounded-full bg-violet-400 shadow-xs" style={{ animation: 'staggerBar1 2.2s ease-out infinite' }} />
-                                                                   <div className="w-10 h-1.5 rounded-full bg-cyan-400 shadow-xs" style={{ animation: 'staggerBar2 2.2s ease-out infinite' }} />
-                                                                   <div className="w-12 h-1.5 rounded-full bg-purple-400 shadow-xs" style={{ animation: 'staggerBar3 2.2s ease-out infinite' }} />
-                                                                 </div>
-                                                               ) : animOpt.id === 'whip-slide' ? (
+                                                               {animOpt.id === 'whip-slide' ? (
+                                                                 /* Realistic Title Slide Whip Entrance */
                                                                  <div 
-                                                                   className="w-14 h-5 rounded-md bg-gradient-to-r from-violet-600 to-indigo-500 shadow-[0_0_12px_rgba(124,77,255,0.6)] flex items-center justify-center text-[7px] font-bold text-white tracking-wider"
-                                                                   style={{ animation: 'whipSlideAnim 2s cubic-bezier(0.16, 1, 0.3, 1) infinite' }}
+                                                                   className="w-full flex flex-col items-start gap-1 p-1"
+                                                                   style={{ animation: 'keynoteWhipSlide 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite' }}
                                                                  >
-                                                                   WHIP IN
+                                                                   <div className="w-20 h-2 rounded bg-gradient-to-r from-white to-slate-300 shadow-xs" />
+                                                                   <div className="w-12 h-1.5 rounded bg-cyan-400/80" />
+                                                                   <div className="w-full h-0.5 mt-0.5 rounded-full bg-gradient-to-r from-violet-500 to-transparent opacity-80" />
                                                                  </div>
                                                                ) : animOpt.id === 'zoom-glow' ? (
+                                                                 /* Realistic Hero Center Card Zoom & Aura Bloom */
                                                                  <div 
-                                                                   className="w-14 h-5 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-[7px] font-bold text-white tracking-wider"
-                                                                   style={{ animation: 'zoomGlowAnim 2.2s ease-in-out infinite' }}
+                                                                   className="w-24 h-9 rounded-lg bg-gradient-to-br from-[#121626] to-[#0A0D18] border border-cyan-400/40 flex flex-col items-center justify-center gap-1 p-1"
+                                                                   style={{ animation: 'keynoteZoomGlow 2.4s ease-in-out infinite' }}
                                                                  >
-                                                                   ZOOM GLOW
+                                                                   <div className="w-14 h-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400" />
+                                                                   <div className="w-8 h-1 rounded-full bg-white/50" />
                                                                  </div>
                                                                ) : animOpt.id === 'shake-vibrate' ? (
+                                                                 /* Realistic Dynamic Alert / Key Stat Tension Pulse */
                                                                  <div 
-                                                                   className="w-14 h-5 rounded-md bg-gradient-to-r from-rose-500 to-amber-500 shadow-[0_0_10px_rgba(244,63,94,0.5)] flex items-center justify-center text-[7px] font-bold text-white tracking-wider"
-                                                                   style={{ animation: 'shakeVibrateAnim 2s ease-in-out infinite' }}
+                                                                   className="w-22 h-9 rounded-lg bg-gradient-to-r from-rose-950/40 to-amber-950/40 border border-rose-500/40 flex items-center gap-1.5 px-2"
+                                                                   style={{ animation: 'keynotePulseShake 2s ease-in-out infinite' }}
                                                                  >
-                                                                   VIBRATE
+                                                                   <div className="w-3 h-3 rounded-full bg-rose-500 shrink-0" />
+                                                                   <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                                                                     <div className="w-10 h-1.5 rounded bg-rose-200" />
+                                                                     <div className="w-6 h-1 rounded bg-rose-400/60" />
+                                                                   </div>
                                                                  </div>
                                                                ) : animOpt.id === 'smooth-float' ? (
+                                                                 /* Realistic Bento Card Levitation Loop */
                                                                  <div 
-                                                                   className="w-14 h-5 rounded-md bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_10px_rgba(16,185,129,0.4)] flex items-center justify-center text-[7px] font-bold text-white tracking-wider"
-                                                                   style={{ animation: 'smoothFloatAnim 2.4s ease-in-out infinite' }}
+                                                                   className="w-full flex items-center justify-center gap-1.5"
+                                                                   style={{ animation: 'keynoteSmoothFloat 2.6s ease-in-out infinite' }}
                                                                  >
-                                                                   FLOAT
+                                                                   <div className="w-12 h-8 rounded-md bg-white/10 backdrop-blur-xs border border-emerald-400/30 flex flex-col justify-between p-1">
+                                                                     <div className="w-6 h-1 rounded bg-emerald-400" />
+                                                                     <div className="w-8 h-1 rounded bg-white/40" />
+                                                                   </div>
+                                                                   <div className="w-12 h-8 rounded-md bg-white/5 border border-white/10 flex flex-col justify-between p-1">
+                                                                     <div className="w-4 h-1 rounded bg-teal-400" />
+                                                                     <div className="w-7 h-1 rounded bg-white/30" />
+                                                                   </div>
+                                                                 </div>
+                                                               ) : animOpt.id === 'stagger-reveal' ? (
+                                                                 /* Realistic Typographic Stagger Cascade */
+                                                                 <div className="w-full flex flex-col items-start gap-1 p-1">
+                                                                   <div className="w-22 h-2 rounded bg-violet-300 shadow-xs" style={{ animation: 'keynoteStagLine1 2.2s ease-out infinite' }} />
+                                                                   <div className="w-16 h-1.5 rounded bg-cyan-300 shadow-xs" style={{ animation: 'keynoteStagLine2 2.2s ease-out infinite' }} />
+                                                                   <div className="w-12 h-1.5 rounded bg-purple-300/80 shadow-xs" style={{ animation: 'keynoteStagLine3 2.2s ease-out infinite' }} />
                                                                  </div>
                                                                ) : (
+                                                                 /* Realistic Cinematic Atmospheric Rise & Dissolve */
                                                                  <div 
-                                                                   className="w-14 h-5 rounded-md bg-gradient-to-r from-fuchsia-600 to-pink-500 shadow-[0_0_10px_rgba(217,70,239,0.5)] flex items-center justify-center text-[7px] font-bold text-white tracking-wider"
-                                                                   style={{ animation: 'dissolveRiseAnim 2.2s ease-out infinite' }}
+                                                                   className="w-full flex flex-col items-center justify-center gap-1 p-1"
+                                                                   style={{ animation: 'keynoteDissolveRise 2.4s ease-out infinite' }}
                                                                  >
-                                                                   DISSOLVE
+                                                                   <div className="w-18 h-2 rounded bg-gradient-to-r from-fuchsia-300 to-pink-300 shadow-xs" />
+                                                                   <div className="w-14 h-1 rounded bg-white/40" />
                                                                  </div>
                                                                )}
                                                              </div>
 
-                                                             {/* Bottom Subtitle / Tag */}
-                                                             <div className="flex items-center justify-between w-full z-10 text-[5px] text-slate-500">
-                                                               <span>Live Preview</span>
-                                                               <span>Physics</span>
+                                                             {/* Bottom Subtle Indicator */}
+                                                             <div className="flex items-center justify-between w-full z-10 text-[5.5px] text-slate-500">
+                                                               <span>Keynote Physics</span>
+                                                               <span className="text-cyan-400/80">Live</span>
                                                              </div>
                                                            </div>
 
@@ -52452,7 +52467,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      })}
                                                    </div>
                                                  </>
-                                               ) : btn.label === 'Vector & Wave' ? (
+                                               )
+                                               : btn.label === 'Vector & Wave' ? (
                                                  <>
                                                    {/* Vector Meshes Popover Header with Search and Category Tabs */}
                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
@@ -52581,12 +52597,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  </>
                                                ) : btn.label === 'Background' ? (
                                                  <>
-                                                   {/* Apple-style Real Visual Slide Background Popover */}
+                                                   {/* Apple Keynote Style Background Theme Popover */}
                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 flex items-center justify-between select-none font-sans">
                                                      <div className="flex items-center gap-1.5">
                                                        <Palette size={13} className="text-[#7C4DFF]" />
                                                        <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
-                                                         SLIDE BACKGROUNDS
+                                                         KEYNOTE THEMES & BACKGROUNDS
                                                        </span>
                                                      </div>
                                                      <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
@@ -52594,15 +52610,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      </span>
                                                    </div>
 
-                                                   {/* 2-Column Pure Background Visual Cards Grid */}
+                                                   {/* 2-Column High-Fidelity Keynote Slide Thumbnails */}
                                                    <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-3 max-h-[350px]">
                                                      {ALL_DECK_BACKGROUND_OPTIONS.map((bgOpt) => {
                                                        const isCurrent = activeDeckSlide?.backgroundColor === bgOpt.value;
                                                        const isDark = bgOpt.isDark ?? true;
-                                                       const textColor = isDark ? 'text-white' : 'text-slate-900';
-                                                       const subtextColor = isDark ? 'text-slate-400' : 'text-slate-500';
-                                                       const dividerColor = isDark ? 'bg-white/20' : 'bg-black/20';
-                                                       const headlineParts = (activeDeckSlide?.headline || 'STARTUP\nPITCH DECK').split('\n');
+                                                       const accentPillBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
+                                                       const accentPillBorder = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)';
+                                                       const titleLineBg = isDark ? '#ffffff' : '#0f172a';
+                                                       const subLineBg = isDark ? '#94a3b8' : '#64748b';
 
                                                        return (
                                                          <button
@@ -52619,7 +52635,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
                                                            }`}
                                                          >
-                                                           {/* Pure Authentic 16:10 Slide Preview Canvas */}
+                                                           {/* High-Fidelity 16:10 Keynote Theme Canvas */}
                                                            <div 
                                                              className={`w-full aspect-[16/10] rounded-lg relative overflow-hidden transition-all duration-150 p-2.5 flex flex-col justify-between shadow-xs select-none ${
                                                                isCurrent 
@@ -52628,9 +52644,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                              }`}
                                                              style={{ background: bgOpt.value }}
                                                            >
+                                                             {/* Top Keynote Slide Header & Indicator */}
                                                              <div className="flex items-center justify-between w-full z-10">
-                                                               <span className={`text-[6px] italic font-medium truncate ${subtextColor}`}>
-                                                                 {activeDeckSlide?.tagline || 'Ingoude Company'}
+                                                               <span className={`text-[6.5px] font-medium tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                                 {bgOpt.category}
                                                                </span>
                                                                {isCurrent && (
                                                                  <span className="w-3.5 h-3.5 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-md shrink-0">
@@ -52639,32 +52656,31 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                )}
                                                              </div>
 
-                                                             <div className="my-auto z-10 space-y-1">
-                                                               <div className={`text-[10px] font-black uppercase tracking-tight leading-[1.05] ${textColor}`}>
-                                                                 {headlineParts[0] || 'STARTUP'}
-                                                                 {headlineParts.length > 1 && (
-                                                                   <>
-                                                                     <br />
-                                                                     {headlineParts.slice(1).join(' ')}
-                                                                   </>
-                                                                 )}
+                                                             {/* Clean Architectural Layout Silhouette */}
+                                                             <div className="my-auto z-10 w-full space-y-1.5">
+                                                               <div className="space-y-1">
+                                                                 <div className="w-20 h-2.5 rounded-sm" style={{ backgroundColor: titleLineBg }} />
+                                                                 <div className="w-14 h-2 rounded-sm opacity-80" style={{ backgroundColor: titleLineBg }} />
                                                                </div>
-                                                               <div className={`inline-flex items-center px-1.5 py-0.5 rounded-full backdrop-blur-xs border shadow-xs ${isDark ? 'bg-white/10 border-white/20' : 'bg-black/10 border-black/15'}`}>
-                                                                 <span className={`text-[5px] font-extrabold tracking-wider uppercase ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                                                                   {activeDeckSlide?.presenter || 'PRESENT BY NEIL TRAN'}
-                                                                 </span>
+                                                               <div 
+                                                                 className="inline-flex items-center px-1.5 py-0.5 rounded-full" 
+                                                                 style={{ backgroundColor: accentPillBg, border: `1px solid ${accentPillBorder}` }}
+                                                               >
+                                                                 <div className="w-10 h-1 rounded-full" style={{ backgroundColor: subLineBg }} />
                                                                </div>
                                                              </div>
 
-                                                             <div className="w-full z-10 space-y-0.5">
-                                                               <div className={`w-full h-px ${dividerColor}`} />
-                                                               <div className={`flex items-center justify-between text-[4.5px] font-medium ${subtextColor}`}>
-                                                                 <span className="truncate">{activeDeckSlide?.footerEmail || 'www.reallygreatsite.com'}</span>
-                                                                 <span className="truncate">{activeDeckSlide?.footerLocation || '123 Anywhere St'}</span>
+                                                             {/* Bottom Accent Rule & Slide Dots */}
+                                                             <div className="w-full z-10 space-y-1">
+                                                               <div className="w-full h-px" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }} />
+                                                               <div className="flex items-center justify-between">
+                                                                 <div className="w-8 h-1 rounded-full opacity-60" style={{ backgroundColor: subLineBg }} />
+                                                                 <div className="w-6 h-1 rounded-full opacity-60" style={{ backgroundColor: subLineBg }} />
                                                                </div>
                                                              </div>
                                                            </div>
 
+                                                           {/* Caption */}
                                                            <div className="mt-1.5 px-0.5 flex items-center justify-between gap-1 w-full">
                                                              <span className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-[#7C4DFF] dark:text-violet-300' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
                                                                {bgOpt.label.replace(/\s*\([^)]*\)/, '')}
@@ -52678,7 +52694,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      })}
                                                    </div>
                                                  </>
-                                               ) : btn.label === 'Styles' ? (
+                                               )
+                                               : btn.label === 'Styles' ? (
                                                  <>
                                                    {/* Apple-style Style Presets Popover */}
                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 flex items-center justify-between select-none font-sans">
