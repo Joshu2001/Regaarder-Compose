@@ -14213,6 +14213,7 @@ const DEFAULT_DECK_SLIDES = [
   const [deckInsertFilter, setDeckInsertFilter] = useState('All');
   const [deckMediaSearch, setDeckMediaSearch] = useState('');
   const [deckAiSearch, setDeckAiSearch] = useState('');
+  const [deckSlideMenuOpenId, setDeckSlideMenuOpenId] = useState(null);
 
 const renderMiniVectorWaveGraphic = (styleId, c1 = '#00f0ff', c2 = '#7c4dff') => {
   const strandCount = 14;
@@ -35018,6 +35019,49 @@ Respond with a JSON array of slide objects matching the schema.`;
     showToast('Loaded Startup Pitch Deck Template (15 Slides)');
   };
 
+  
+  const duplicateDeckSlide = (slideId) => {
+    const target = deckSlidesData.find(s => s.id === slideId);
+    if (!target) return;
+    const nextId = (deckSlidesData[deckSlidesData.length - 1]?.id || 0) + 1;
+    const duplicated = { ...target, id: nextId, title: `${target.title || 'Slide'} (Copy)` };
+    const targetIdx = deckSlidesData.findIndex(s => s.id === slideId);
+    const newSlides = [...deckSlidesData];
+    newSlides.splice(targetIdx + 1, 0, duplicated);
+    setDeckSlidesData(newSlides);
+    setActiveDeckSlideId(nextId);
+    showToast(`Duplicated slide ${slideId}`);
+  };
+
+  const deleteDeckSlide = (slideId) => {
+    if (deckSlidesData.length <= 1) {
+      showToast('Cannot delete the only slide in the deck');
+      return;
+    }
+    const targetIdx = deckSlidesData.findIndex(s => s.id === slideId);
+    const remaining = deckSlidesData.filter(s => s.id !== slideId);
+    setDeckSlidesData(remaining);
+    const nextActive = remaining[Math.max(0, targetIdx - 1)]?.id || remaining[0]?.id;
+    setActiveDeckSlideId(nextActive);
+    showToast('Slide deleted');
+  };
+
+  const toggleHideDeckSlide = (slideId) => {
+    setDeckSlidesData(prev => prev.map(s => s.id === slideId ? { ...s, hidden: !s.hidden } : s));
+    const slide = deckSlidesData.find(s => s.id === slideId);
+    showToast(slide?.hidden ? 'Slide unhidden' : 'Slide hidden from presentation');
+  };
+
+  const renameDeckSlide = (slideId) => {
+    const slide = deckSlidesData.find(s => s.id === slideId);
+    const currentTitle = slide?.title || `Slide ${slideId}`;
+    const newTitle = prompt('Enter slide title:', currentTitle);
+    if (newTitle && newTitle.trim()) {
+      updateDeckSlideField(slideId, 'title', newTitle.trim());
+      showToast(`Renamed to "${newTitle.trim()}"`);
+    }
+  };
+
   const addDeckSlide = () => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
     const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
@@ -47238,24 +47282,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                       </div>
             
-                      {/* Slide List */}
-                      <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
+                      {/* Slide List - Keynote/PowerPoint Filmstrip Style */}
+                      <div className="flex-1 overflow-y-auto p-2.5 space-y-2 thin-scrollbar">
                         {(isSheetsMode ? sheetsData : deckSlides).length === 0 && (
-                          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-3 text-xs text-gray-500">
+                          <div className="rounded-xl border border-dashed border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-3 text-xs text-gray-500">
                             {isSheetsMode ? 'No worksheets yet. Create one to see a live preview.' : 'No slides yet.'}
                           </div>
                         )}
-                        {(isSheetsMode ? sheetsData : deckSlides).map((item, index, collection) => {
+                        {(isSheetsMode ? sheetsData : deckSlides).map((item, index) => {
                           const isActive = isSheetsMode ? item.id === activeSheetId : item.id === activeDeckSlideId;
                           
                           return (
-                            <div key={item.id} className="flex items-center gap-3">
-                              {/* Slide number */}
-                              <span className="text-xs font-bold text-gray-400 w-4 text-right">
+                            <div key={item.id} className="group relative flex items-center gap-2">
+                              {/* Slide number integrated with filmstrip alignment */}
+                              <span className={`text-[11px] font-mono font-semibold w-4 text-right shrink-0 select-none tabular-nums transition-colors ${
+                                isActive ? 'text-[#7C4DFF] dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300'
+                              }`}>
                                 {index + 1}
                               </span>
                               
-                              {/* Thumbnail Card */}
+                              {/* Filmstrip Thumbnail Card */}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -47266,10 +47312,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     setActiveDeckSlideId(item.id);
                                   }
                                 }}
-                                className={`flex-1 relative rounded-[14px] overflow-hidden border border-gray-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] aspect-[16/9] transition-all ${
+                                className={`flex-1 relative rounded-[11px] overflow-hidden border aspect-[16/9] transition-all duration-150 cursor-pointer select-none bg-black/5 dark:bg-black/30 ${
                                   isActive 
-                                    ? 'outline outline-[2px] outline-[#7C4DFF] outline-offset-1 shadow-md' 
-                                    : 'hover:border-gray-300'
+                                    ? 'outline outline-[2px] outline-[#7C4DFF] outline-offset-1 shadow-[0_0_12px_rgba(124,77,255,0.22)] border-transparent' 
+                                    : 'border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-xs'
                                 }`}
                               >
                                 <img
@@ -47280,11 +47326,71 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   className="w-full h-full object-cover"
                                   loading="lazy"
                                 />
-                                {/* Floating slide overlay text */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent flex flex-col justify-end p-2 opacity-0 hover:opacity-100 transition-opacity">
-                                  <span className="text-[10px] text-white font-semibold truncate">{item.title}</span>
+
+                                {/* Hidden indicator badge */}
+                                {item.hidden && (
+                                  <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/70 backdrop-blur-xs text-amber-300 text-[8.5px] font-medium flex items-center gap-1">
+                                    <EyeOff size={9} />
+                                    <span>Hidden</span>
+                                  </div>
+                                )}
+
+                                {/* Slide title on hover */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent flex flex-col justify-end p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <span className="text-[9.5px] text-white font-semibold truncate leading-tight">{item.title || `Slide ${index + 1}`}</span>
                                 </div>
                               </button>
+
+                              {/* Hover Contextual Action Button & Dropdown Menu */}
+                              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeckSlideMenuOpenId(deckSlideMenuOpenId === item.id ? null : item.id);
+                                  }}
+                                  className="w-5 h-5 rounded-md bg-black/60 hover:bg-black/85 backdrop-blur-md text-white flex items-center justify-center cursor-pointer shadow-sm transition-all"
+                                  title="Slide Options"
+                                >
+                                  <MoreHorizontal size={11} />
+                                </button>
+                                {deckSlideMenuOpenId === item.id && (
+                                  <div 
+                                    onClick={(e) => e.stopPropagation()} 
+                                    className="absolute left-6 top-0 w-36 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5 text-xs text-slate-700 dark:text-zinc-200 animate-in fade-in"
+                                  >
+                                    <button 
+                                      type="button" 
+                                      onClick={() => { duplicateDeckSlide(item.id); setDeckSlideMenuOpenId(null); }} 
+                                      className="w-full text-left px-2 py-1 hover:bg-violet-50 dark:hover:bg-violet-950/50 hover:text-[#7C4DFF] rounded-lg flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                      <Copy size={12} /> Duplicate
+                                    </button>
+                                    <button 
+                                      type="button" 
+                                      onClick={() => { renameDeckSlide(item.id); setDeckSlideMenuOpenId(null); }} 
+                                      className="w-full text-left px-2 py-1 hover:bg-violet-50 dark:hover:bg-violet-950/50 hover:text-[#7C4DFF] rounded-lg flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                      <FileEdit size={12} /> Rename
+                                    </button>
+                                    <button 
+                                      type="button" 
+                                      onClick={() => { toggleHideDeckSlide(item.id); setDeckSlideMenuOpenId(null); }} 
+                                      className="w-full text-left px-2 py-1 hover:bg-violet-50 dark:hover:bg-violet-950/50 hover:text-[#7C4DFF] rounded-lg flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                      <EyeOff size={12} /> {item.hidden ? 'Unhide' : 'Hide Slide'}
+                                    </button>
+                                    <div className="h-px bg-slate-100 dark:bg-zinc-800 my-0.5" />
+                                    <button 
+                                      type="button" 
+                                      onClick={() => { deleteDeckSlide(item.id); setDeckSlideMenuOpenId(null); }} 
+                                      className="w-full text-left px-2 py-1 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-500 rounded-lg flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                      <Trash2 size={12} /> Delete
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
