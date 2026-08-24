@@ -14284,6 +14284,9 @@ const DEFAULT_DECK_SLIDES = [
   const [deckToolbarTab, setDeckToolbarTab] = useState('Create');
   const [deckReviewActiveModal, setDeckReviewActiveModal] = useState(null);
   const [isDeckAIGeneratorModalOpen, setIsDeckAIGeneratorModalOpen] = useState(false);
+  const [isDeckTemplateLibraryModalOpen, setIsDeckTemplateLibraryModalOpen] = useState(false);
+  const [deckTemplateSearch, setDeckTemplateSearch] = useState('');
+  const [deckTemplateCategory, setDeckTemplateCategory] = useState('all');
   const [isDeckAIGenerating, setIsDeckAIGenerating] = useState(false);
   const [deckAIGenTopic, setDeckAIGenTopic] = useState('');
   const [deckAIGenSlideCount, setDeckAIGenSlideCount] = useState(8);
@@ -35931,6 +35934,37 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
   
 
+  
+  const handleSelectDeckTemplateFromLibrary = (templateId) => {
+    setIsDeckTemplateLibraryModalOpen(false);
+    if (templateId === 'business-plan') {
+      handleLoadBusinessPlanDeck();
+    } else if (templateId === 'startup-pitch') {
+      handleLoadStartupPitchDeck();
+    } else if (templateId === 'product-launch') {
+      setDeckAIGenTopic('Product Launch & Technical Architecture');
+      setDeckAIGenSlideCount(8);
+      setDeckAIGenTone('Technical');
+      setDeckAIGenPreset('cyberpunk-neon');
+      handleExecuteAIGenerator();
+    } else if (templateId === 'sales-proposal') {
+      setDeckAIGenTopic('Enterprise Solution & ROI Proposal');
+      setDeckAIGenSlideCount(6);
+      setDeckAIGenTone('Executive');
+      setDeckAIGenPreset('midnight-slate');
+      handleExecuteAIGenerator();
+    } else if (templateId === 'qbr') {
+      setDeckAIGenTopic('Q3 Quarterly Business Review');
+      setDeckAIGenSlideCount(5);
+      setDeckAIGenTone('Executive');
+      setDeckAIGenPreset('mint-depth');
+      handleExecuteAIGenerator();
+    } else {
+      handleLoadStartupPitchDeck();
+    }
+  };
+  
+
   const handleLoadStartupPitchDeck = () => {
     setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_DECK_SLIDES)));
     setActiveDeckSlideId(DEFAULT_DECK_SLIDES[0].id);
@@ -54330,7 +54364,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   {/* All Templates Library Modal Trigger */}
                                   <button
                                     type="button"
-                                    onClick={() => setIsTemplateModalOpen(true)}
+                                    onClick={() => setIsDeckTemplateLibraryModalOpen(true)}
                                     className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 hover:bg-slate-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 border border-slate-300/80 dark:border-zinc-700 shrink-0 cursor-pointer flex items-center gap-1.5 transition-all active:scale-95"
                                     title="Browse Full Presentation Template Library"
                                   >
@@ -54563,6 +54597,119 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                       
                         
+                        
+                        {/* ── DEDICATED DECK TEMPLATE LIBRARY MODAL ── */}
+                        {isDeckTemplateLibraryModalOpen && createPortal(
+                          <div 
+                            className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"
+                            onClick={() => setIsDeckTemplateLibraryModalOpen(false)}
+                          >
+                            <div 
+                              className="bg-zinc-950 border border-white/15 text-zinc-100 rounded-3xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* Modal Header */}
+                              <div className="flex items-center justify-between px-8 py-5 border-b border-white/10 bg-white/[0.02]">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                                    <Layout size={20} />
+                                  </div>
+                                  <div>
+                                    <h2 className="text-xl font-bold text-white tracking-tight">Presentation Template Library</h2>
+                                    <p className="text-xs text-zinc-400 mt-0.5">Select a curated deck template with pre-configured Bento cards and styling</p>
+                                  </div>
+                                </div>
+                                <button 
+                                  type="button" 
+                                  onClick={() => setIsDeckTemplateLibraryModalOpen(false)} 
+                                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                                >
+                                  <X size={16} strokeWidth={2.5} />
+                                </button>
+                              </div>
+
+                              {/* Modal Body */}
+                              <div className="flex flex-1 overflow-hidden">
+                                {/* Sidebar Categories */}
+                                <div className="w-60 bg-white/[0.01] p-5 border-r border-white/10 flex flex-col gap-1.5 shrink-0">
+                                  {[
+                                    { id: 'all', label: 'All Templates' },
+                                    { id: 'pitch', label: 'Pitch Decks' },
+                                    { id: 'business', label: 'Business Plans' },
+                                    { id: 'product', label: 'Product & Tech' },
+                                    { id: 'qbr', label: 'Executive Reviews' }
+                                  ].map(c => (
+                                    <button 
+                                      key={c.id} 
+                                      type="button"
+                                      onClick={() => setDeckTemplateCategory(c.id)}
+                                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                                        deckTemplateCategory === c.id 
+                                          ? 'bg-violet-600/20 text-violet-300 border border-violet-500/40 shadow-xs' 
+                                          : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                                      }`}
+                                    >
+                                      <span>{c.label}</span>
+                                    </button>
+                                  ))}
+                                </div>
+
+                                {/* Grid */}
+                                <div className="flex-1 p-6 overflow-y-auto thin-scrollbar flex flex-col gap-4">
+                                  <div className="relative">
+                                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={15} />
+                                    <input 
+                                      type="text" 
+                                      value={deckTemplateSearch}
+                                      onChange={(e) => setDeckTemplateSearch(e.target.value)}
+                                      placeholder="Search presentation templates..." 
+                                      className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/15 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 transition-all" 
+                                    />
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    {[
+                                      { id: 'startup-pitch', title: 'Startup Pitch Deck (15 Slides)', category: 'pitch', icon: Presentation, color: 'bg-violet-500/15 text-violet-400', desc: '15-slide comprehensive investor pitch deck with Bento grids, TAM/SAM/SOM, and traction metrics.' },
+                                      { id: 'business-plan', title: 'Executive Business Plan (10 Slides)', category: 'business', icon: TrendingUp, color: 'bg-cyan-500/15 text-cyan-400', desc: '10-slide complete business plan: Market Sizing, 3-Yr Financials, Moat & GTM with 32 bento cards.' },
+                                      { id: 'product-launch', title: 'Product Launch & Architecture (8 Slides)', category: 'product', icon: LayoutGrid, color: 'bg-purple-500/15 text-purple-400', desc: 'Feature showcase, architectural diagrams, rollout milestones, and KPI projections.' },
+                                      { id: 'sales-proposal', title: 'Enterprise Sales Proposal (6 Slides)', category: 'business', icon: PieChart, color: 'bg-emerald-500/15 text-emerald-400', desc: 'Executive solution proposal with ROI calculations, implementation timeline, and SLA terms.' },
+                                      { id: 'qbr', title: 'Quarterly Business Review (5 Slides)', category: 'qbr', icon: CheckCircle2, color: 'bg-amber-500/15 text-amber-400', desc: 'Executive revenue performance, OKR tracking, strategic wins, and next-quarter targets.' }
+                                    ]
+                                    .filter(t => {
+                                      const matchCat = deckTemplateCategory === 'all' || t.category === deckTemplateCategory;
+                                      const matchQ = !deckTemplateSearch || t.title.toLowerCase().includes(deckTemplateSearch.toLowerCase()) || t.desc.toLowerCase().includes(deckTemplateSearch.toLowerCase());
+                                      return matchCat && matchQ;
+                                    })
+                                    .map(t => (
+                                      <div 
+                                        key={t.id} 
+                                        onClick={() => handleSelectDeckTemplateFromLibrary(t.id)} 
+                                        className="group relative bg-white/[0.02] border border-white/10 rounded-2xl p-4 cursor-pointer hover:border-violet-500/50 hover:bg-white/[0.04] hover:shadow-xl hover:shadow-violet-950/40 transition-all duration-200 flex flex-col justify-between"
+                                      >
+                                        <div>
+                                          <div className="flex items-center justify-between mb-3">
+                                            <div className={`w-9 h-9 rounded-xl ${t.color} flex items-center justify-center group-hover:scale-105 transition-transform duration-200 shadow-xs`}>
+                                              <t.icon size={18} strokeWidth={2} />
+                                            </div>
+                                            <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-semibold text-zinc-400">Curated Deck</span>
+                                          </div>
+                                          <h3 className="text-sm font-bold text-white mb-1">{t.title}</h3>
+                                          <p className="text-[11px] text-zinc-400 leading-relaxed line-clamp-2">{t.desc}</p>
+                                        </div>
+                                        <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] font-semibold text-violet-400 group-hover:text-violet-300">
+                                          <span>Click to Load</span>
+                                          <span>Load Template →</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>,
+                          document.body
+                        )}
+
                         {/* ── AI PRESENTATION GENERATOR MODAL ── */}
                         {isDeckAIGeneratorModalOpen && createPortal(
                           <div 
