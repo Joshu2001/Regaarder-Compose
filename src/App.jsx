@@ -26,8 +26,9 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, MapPin, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive } from 'lucide-react';
 import './thin-scrollbar.css';
+import StorageDataManagement from './components/StorageDataManagement';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 import {
@@ -69091,10 +69092,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Account</button>
                 <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Personalization</button>
                 <button onClick={() => setSettingsTab('ai_models')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'ai_models' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>AI & API Keys</button>
+                <button onClick={() => setSettingsTab('storage')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'storage' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Storage & Data</button>
                 <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>General</button>
               </div>
             </div>
-            <div className="flex-1 bg-white/50 dark:bg-zinc-900/50 p-6 sm:p-8 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden relative">
+            <div className="flex-1 bg-white/50 dark:bg-zinc-900/50 p-6 sm:p-8 overflow-y-auto thin-scrollbar relative">
               {settingsTab === 'account' && (
                 <div className="max-w-[400px] mx-auto mt-6">
                   <div className="text-center mb-8">
@@ -69483,6 +69485,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   </div>
                 </div>
+              )}
+              {settingsTab === 'storage' && (
+                <StorageDataManagement showToast={showToast} />
               )}
               {settingsTab === 'general' && (
                 <div className="max-w-[500px]">
@@ -71482,16 +71487,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
 {/* Preserved save action: auto-saved continuously & Ctrl+S */}
 
                 {/* Orb Global Intelligence Command Capsule */}
-                <button
-                  type="button"
-                  onClick={() => setOrbOpen(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/25 transition-all duration-150 active:scale-95 text-xs font-semibold cursor-pointer shadow-xs mr-1 group"
-                  title="Orb Cross-Workspace Intelligence (⌘K / Ctrl+K)"
-                >
-                  <AgentsIcon size={13} className="text-violet-500 group-hover:scale-110 transition-transform" />
-                  <span className="hidden sm:inline text-[11.5px] font-bold tracking-tight text-violet-700 dark:text-violet-300">Orb</span>
-                  <kbd className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-white/80 dark:bg-zinc-800/90 border border-violet-300/60 dark:border-violet-700 text-violet-600 dark:text-violet-300 shadow-2xs">⌘K</kbd>
-                </button>
+                {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && (
+                  <button
+                    type="button"
+                    onClick={() => setOrbOpen(true)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/25 transition-all duration-150 active:scale-95 text-xs font-semibold cursor-pointer shadow-xs mr-1 group"
+                    title="Orb Cross-Workspace Intelligence (⌘K / Ctrl+K)"
+                  >
+                    <AgentsIcon size={13} className="text-violet-500 group-hover:scale-110 transition-transform" />
+                    <span className="hidden sm:inline text-[11.5px] font-bold tracking-tight text-violet-700 dark:text-violet-300">Orb</span>
+                    <kbd className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-white/80 dark:bg-zinc-800/90 border border-violet-300/60 dark:border-violet-700 text-violet-600 dark:text-violet-300 shadow-2xs">⌘K</kbd>
+                  </button>
+                )}
 
               {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && (
                 <div className="relative" ref={docSearchPanelRef}>
@@ -83347,12 +83354,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="flex flex-col gap-1.5 flex-1">
                 <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Account</button>
                 <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Personalization</button>
+                <button onClick={() => setSettingsTab('storage')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'storage' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Storage & Data</button>
                 <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>General</button>
               </div>
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 bg-white/50 dark:bg-zinc-900/50 p-6 sm:p-8 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden relative">
+            <div className="flex-1 bg-white/50 dark:bg-zinc-900/50 p-6 sm:p-8 overflow-y-auto thin-scrollbar relative">
 
               {settingsTab === 'account' && (
                 <div className="max-w-[400px] mx-auto mt-6">
@@ -83546,6 +83554,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               )}
 
+              {settingsTab === 'storage' && (
+                <StorageDataManagement showToast={showToast} />
+              )}
               {settingsTab === 'general' && (
                 <div className="max-w-[500px]">
                   <h2 className="text-2xl font-bold text-slate-800 tracking-tight mb-8">General</h2>
