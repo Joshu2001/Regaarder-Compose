@@ -53982,63 +53982,50 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             {deckToolbarTab === 'View' && (
                               <div className="w-full flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
                                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0">
-                                  {/* Slide Sorter / Panel Toggle */}
-                                  <button
-                                    type="button"
-                                    onClick={() => setDeckSlidesPanelOpen((prev) => !prev)}
-                                    className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                                      deckSlidesPanelOpen
-                                        ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs'
-                                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 hover:bg-slate-200/60'
-                                    }`}
-                                  >
-                                    <LayoutGrid size={13} /> Slide Sorter: {deckSlidesPanelOpen ? 'On' : 'Off'}
-                                  </button>
+                                   {/* Slide Sorter / Panel Toggle */}
+                                   <button
+                                     type="button"
+                                     onClick={() => setDeckSlidesPanelOpen((prev) => !prev)}
+                                     className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                       deckSlidesPanelOpen
+                                         ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs outline outline-1 outline-[#7C4DFF]/50'
+                                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 hover:bg-slate-200/60'
+                                     }`}
+                                     title="Toggle Slide Sorter Navigator"
+                                   >
+                                     <LayoutGrid size={13} className={deckSlidesPanelOpen ? "text-[#7C4DFF]" : ""} /> <span>Slide Sorter</span>
+                                   </button>
 
-                                  {/* Presentation Outline Toggle */}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setDeckViewShowOutline((prev) => !prev);
-                                      showToast(`Outline view ${!deckViewShowOutline ? 'enabled' : 'disabled'}`);
-                                    }}
-                                    className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                                      deckViewShowOutline
-                                        ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs'
-                                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 hover:bg-slate-200/60'
-                                    }`}
-                                  >
-                                    <Layers size={13} /> Outline: {deckViewShowOutline ? 'On' : 'Off'}
-                                  </button>
+                                   {/* Alignment Guides & Snap Gridlines Toggle */}
+                                   <button
+                                     type="button"
+                                     onClick={() => {
+                                       setDeckViewShowGuides((prev) => !prev);
+                                       showToast(`Alignment guides ${!deckViewShowGuides ? 'enabled' : 'disabled'}`);
+                                     }}
+                                     className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                       deckViewShowGuides
+                                         ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs outline outline-1 outline-emerald-500/50'
+                                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 hover:bg-slate-200/60'
+                                     }`}
+                                     title="Toggle Canvas Alignment Guides & Snap Grid"
+                                   >
+                                     <Eye size={13} className={deckViewShowGuides ? "text-emerald-500" : ""} /> <span>Guides</span>
+                                   </button>
 
-                                  {/* Guides & Gridlines Toggle */}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setDeckViewShowGuides((prev) => !prev);
-                                      showToast(`Alignment guides ${!deckViewShowGuides ? 'enabled' : 'disabled'}`);
-                                    }}
-                                    className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                                      deckViewShowGuides
-                                        ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs'
-                                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 hover:bg-slate-200/60'
-                                    }`}
-                                  >
-                                    <Eye size={13} /> Guides: {deckViewShowGuides ? 'On' : 'Off'}
-                                  </button>
-
-                                  {/* Right Inspector Sidebar Toggle */}
-                                  <button
-                                    type="button"
-                                    onClick={() => setRightSidebarOpen((prev) => !prev)}
-                                    className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                                      rightSidebarOpen
-                                        ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs'
-                                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 hover:bg-slate-200/60'
-                                    }`}
-                                  >
-                                    <Sidebar size={13} /> Inspector: {rightSidebarOpen ? 'On' : 'Off'}
-                                  </button>
+                                   {/* Right Inspector Sidebar Toggle */}
+                                   <button
+                                     type="button"
+                                     onClick={() => setRightSidebarOpen((prev) => !prev)}
+                                     className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                       rightSidebarOpen
+                                         ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs outline outline-1 outline-[#7C4DFF]/50'
+                                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 hover:bg-slate-200/60'
+                                     }`}
+                                     title="Toggle Inspector Sidebar"
+                                   >
+                                     <Sidebar size={13} className={rightSidebarOpen ? "text-[#7C4DFF]" : ""} /> <span>Inspector</span>
+                                   </button>
 
                                   {/* Zoom Controls */}
                                   <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-0.5 rounded-lg border border-slate-200/60 dark:border-zinc-700/50 shrink-0">
