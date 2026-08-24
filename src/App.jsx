@@ -9695,9 +9695,9 @@ const DEFAULT_DECK_SLIDES = [
     id: 1,
     section: 'Opening',
     title: 'Startup Pitch Deck',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'STARTUP\nPITCH DECK',
-    presenter: 'PRESENT BY NEIL TRAN',
+    presenter: 'PRESENT BY ALEX CHEN',
     contactWeb: 'www.reallygreatsite.com',
     contactEmail: 'hello@reallygreatsite.com',
     contactAddress: '123 Anywhere Street',
@@ -9713,13 +9713,13 @@ const DEFAULT_DECK_SLIDES = [
     layoutStyle: 'Startup Pitch Deck',
     motionCue: 'Whip Slide (Fast In)',
     keyMetric: '',
-    speakerNotes: 'Welcome investors to the Ingoude Company startup pitch deck presentation.',
-    footer: 'Ingoude Company'  },
+    speakerNotes: 'Welcome investors to the Novaris Company startup pitch deck presentation.',
+    footer: 'Novaris Company'  },
   {
     id: 2,
     section: 'Agenda',
     title: "Today's Agenda",
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: "TODAY'S\nAGENDA",
     backgroundColor: '#05070B',
     vectorWaveStyle: 'original-pitch',
@@ -9753,13 +9753,13 @@ const DEFAULT_DECK_SLIDES = [
     agendaTitle10: 'Use of Funds',
     motionCue: 'Soft Fade (Left)',
     speakerNotes: "Walk investors through the 10 core agenda items for today's pitch session.",
-    footer: 'Ingoude Company'
+    footer: 'Novaris Company'
   },
   {
     id: 3,
     section: 'Introduction',
     title: 'Introduction',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'INTRODUCTION',
     backgroundColor: '#05070B',
     vectorWaveStyle: 'top-right-vortex',
@@ -9777,12 +9777,12 @@ const DEFAULT_DECK_SLIDES = [
     introSubImg: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80',
     motionCue: 'Zoom & Glow Entrance',
     speakerNotes: 'Introduce the core mission, team capabilities, and collaborative startup acceleration model.',
-    footer: 'Ingoude Company'  },
+    footer: 'Novaris Company'  },
   {
     id: 4,
     section: 'Problem',
     title: 'Problem Statement',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'PROBLEM\nSTATEMENT',
     backgroundColor: '#05070B',
     vectorWaveStyle: 'original-pitch',
@@ -9808,13 +9808,13 @@ const DEFAULT_DECK_SLIDES = [
     card3Bg: 'linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
     motionCue: 'Stagger Text Reveal',
     speakerNotes: 'Detail the three critical market pain points: brand differentiation, inconsistent messaging, and dynamic trend adaptation.',
-    footer: 'Ingoude Company'
+    footer: 'Novaris Company'
   },
   {
     id: 5,
     section: 'Solution',
     title: 'Our Innovative Solutions',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'OUR INNOVATIVE\nSOLUTIONS',
     backgroundColor: '#05070B',
     vectorWaveStyle: 'solutions-flow',
@@ -9843,13 +9843,13 @@ const DEFAULT_DECK_SLIDES = [
     card3Glimmer: 'white',
     motionCue: 'Stagger Card Entrance',
     speakerNotes: 'Walk through the 3 innovative solutions: USP discovery, unified brand messaging guidelines, and agile marketing execution.',
-    footer: 'Ingoude Company'
+    footer: 'Novaris Company'
   },
   {
     id: 6,
     section: 'Services',
     title: 'Discover Our Services',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'DISCOVER OUR\nSERVICES',
     backgroundColor: '#05070B',
     vectorVortexStyle: 'neon-concentric-arc',
@@ -9877,13 +9877,13 @@ const DEFAULT_DECK_SLIDES = [
     srv4_text: 'We help startups get media coverage and build relationships with relevant journalists and influencers.',
     motionCue: 'Stagger Grid Fade',
     speakerNotes: 'Showcase the 4 primary services offering: Brand Building, Digital Marketing, Marketing Analytics, and PR Support.',
-    footer: 'Ingoude Company'
+    footer: 'Novaris Company'
   },
   {
     id: 7,
     section: 'Market',
     title: 'Size of Market',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'SIZE OF MARKET',
     backgroundColor: '#05070B',
     vectorWaveStyle: 'ambient-market-glow',
@@ -9916,13 +9916,13 @@ const DEFAULT_DECK_SLIDES = [
     chartMaxVal: 20,
     motionCue: 'Slide & Bar Rise',
     speakerNotes: 'Explain the market opportunity breakdown: TAM (32M US small businesses), SAM (9.6M tech/ecommerce/services), and SOM (480K target customers).',
-    footer: 'Ingoude Company'
+    footer: 'Novaris Company'
   },
   {
     id: 8,
     section: 'Competitors',
     title: 'Key Competitors Advantage',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'COMPETITOR ANALYSIS',
     backgroundColor: '#05070B',
     vectorWaveStyle: 'bottom-neon-swirl',
@@ -9949,13 +9949,13 @@ const DEFAULT_DECK_SLIDES = [
     indirect4: 'Can include companies from different industries or sectors that indirectly impact our market.',
     motionCue: 'Dual Column Slide In',
     speakerNotes: 'Contrast direct competitors targeting identical segments with indirect competitors addressing complementary needs.',
-    footer: 'ingoude Company'
+    footer: 'novaris Company'
   },
   {
     id: 9,
     section: 'Advantages',
     title: 'Key Competitive Advantages',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'KEY COMPETITIVE\nADVANTAGES',
     backgroundColor: '#05070B',
     vectorWaveStyle: 'stepped-neon-vortex',
@@ -9988,13 +9988,13 @@ const DEFAULT_DECK_SLIDES = [
     adv4Shape: '16px',
     motionCue: 'Staircase Rise In',
     speakerNotes: 'Highlight the 4 core competitive pillars: Expert Team, Cutting-Edge Tech, Customer Focus, and Proven Success.',
-    footer: 'ingoude Company'
+    footer: 'novaris Company'
   },
   {
     id: 10,
     section: 'Traction',
     title: 'Traction & Growth',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'TRACTION',
     tractionDesc: 'This matrix provides a snapshot of various success metrics for our company, including revenue growth, customer satisfaction, market share, employee retention, innovation, and brand reputation.',
     backgroundColor: '#05070B',
@@ -10031,13 +10031,13 @@ const DEFAULT_DECK_SLIDES = [
     metric3Shape: '12px',
     motionCue: 'Chart Draw & Metric Cascade',
     speakerNotes: 'Walk through historical performance trends across Series 1-3 leading to 20% annual revenue growth and 90% satisfaction.',
-    footer: 'ingoude Company'
+    footer: 'novaris Company'
   },
   {
     id: 11,
     section: 'Business Model',
     title: 'Revenue Model & Pricing',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'REVENUE MODEL',
     backgroundColor: '#05070B',
     vectorWaveStyle: 'top-dual-neon-waves',
@@ -10074,13 +10074,13 @@ const DEFAULT_DECK_SLIDES = [
     plan3Shape: '14px',
     motionCue: '3-Card Stagger Rise In',
     speakerNotes: 'Walk through our 3-tier pricing strategy: Basic ($135/mo), Standard ($175/mo with add-ons), and Premium ($220/mo with dedicated consulting).',
-    footer: 'ingoude Company'
+    footer: 'novaris Company'
   },
   {
     id: 12,
     section: 'Milestones',
     title: 'Accomplishments & Roadmap',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'ACCOMPLISHMENTS',
     subHeadline: 'DATE',
     backgroundColor: '#05070B',
@@ -10110,13 +10110,13 @@ const DEFAULT_DECK_SLIDES = [
     timeline4Shape: '14px',
     motionCue: 'Vertical Timeline Cascade',
     speakerNotes: 'Highlight historical milestones from initial 2021 product launch, 2023 expansion, 2025 growth round, leading to present profitability.',
-    footer: 'ingoude Company'
+    footer: 'novaris Company'
   },
   {
     id: 13,
     section: 'Financials',
     title: 'Use of Funds & Capital Allocation',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'USE OF FUNDS',
     fundsDesc: "Our plan for using funds generated from investors is straightforward. We'll allocate 40% towards developing our products, ensuring they stay competitive and meet customer needs. 30% will go marketing and sales efforts to attract new customers and drive revenue growth. 20% will be invested in infrastructure and operations to support our expanding business and improve efficiency. Finally, 10% will be set aside for strategic initiatives like market expansion and partnerships to fuel long-term growth.",
     backgroundColor: '#05070B',
@@ -10148,13 +10148,13 @@ const DEFAULT_DECK_SLIDES = [
     fund4Shape: '12px',
     motionCue: 'Pie Slice Expand & Row Cascade',
     speakerNotes: 'Detail capital deployment breakdown: 40% Product R&D, 30% Marketing/GTM, 20% Infrastructure/Ops, and 10% Strategic Expansion.',
-    footer: 'ingoude Company'
+    footer: 'novaris Company'
   },
   {
     id: 14,
     section: 'Team',
     title: 'Leadership & Team',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'MEET THE TEAM',
     teamSub: 'Thank you for your time! Reach out to us for questions.',
     backgroundColor: '#05070B',
@@ -10181,7 +10181,7 @@ const DEFAULT_DECK_SLIDES = [
     member3Photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=faces',
     member3Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
     member3Shape: '14px',
-    member4Name: 'NEIL TRAN',
+    member4Name: 'ALEX CHEN',
     member4Role: 'Director',
     member4Photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop&crop=faces',
     member4Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
@@ -10191,16 +10191,16 @@ const DEFAULT_DECK_SLIDES = [
     contactPhone: '+123-456-7890',
     motionCue: '2x2 Card Float & Contact Fade In',
     speakerNotes: 'Introduce core founding and executive leadership team driving execution and scale.',
-    footer: 'ingoude Company'
+    footer: 'novaris Company'
   },
   {
     id: 15,
     section: 'Outro',
     title: 'Thank You & Contact',
-    tagline: 'Ingoude Company',
+    tagline: 'Novaris Company',
     headline: 'THANK YOU',
     thankSub: 'FOR YOUR TIME AND ATTENTION',
-    presenterText: 'PRESENT BY NEIL TRAN',
+    presenterText: 'PRESENT BY ALEX CHEN',
     presenterBg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
     presenterShape: '9999px',
     contactWeb: 'www.reallygreatsite.com',
@@ -10217,7 +10217,7 @@ const DEFAULT_DECK_SLIDES = [
     layoutStyle: 'Startup Thank You',
     motionCue: 'Center Scale In & Wave Sweep',
     speakerNotes: 'Conclude presentation with gratitude and open floor for Q&A and investor discussion.',
-    footer: 'ingoude Company'
+    footer: 'novaris Company'
   }
 ];
   const [deckSlidesData, setDeckSlidesData] = useState(DEFAULT_DECK_SLIDES);
@@ -14647,7 +14647,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       updateDeckSlideFields(activeDeckSlide.id, {
         shapes: updatedShapes,
         headline: curHeadline,
-        tagline: activeDeckSlide.tagline || 'Ingoude Company'
+        tagline: activeDeckSlide.tagline || 'Novaris Company'
       });
 
       setDeckIntelligenceActiveBanner({ actionName: 'Visual Hierarchy Rebalanced' });
@@ -14823,7 +14823,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     else if (queryLower.includes('coherence') || queryLower.includes('slide-to-slide')) {
       const updatedDeck = deckSlides.map((sl, idx) => ({
         ...sl,
-        tagline: sl.tagline || 'Ingoude Company',
+        tagline: sl.tagline || 'Novaris Company',
         footerLocation: sl.footerLocation || '123 Anywhere Street'
       }));
       setDeckSlides(updatedDeck);
@@ -37495,7 +37495,7 @@ Respond with a JSON array of slide objects matching the schema.`;
   const buildDeckPreviewDataUri = (slide) => {
     if (slide?.layoutStyle === "Startup Discover Services" || slide?.layoutStyle === "Startup Services" || slide?.title === "Discover Our Services") {
       const headline = escapeSvgText(slide?.headline || "DISCOVER OUR\nSERVICES").replace(/\n/g, ' ');
-      const footer = escapeSvgText(slide?.footer || 'Ingoude Company');
+      const footer = escapeSvgText(slide?.footer || 'Novaris Company');
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
         <rect width="320" height="192" rx="14" fill="#05070B"/>
         <path d="M 280 0 A 70 70 0 0 1 320 70" stroke="#00f0ff" stroke-width="3" opacity="0.85" fill="none" />
@@ -37522,7 +37522,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     }
     if (slide?.layoutStyle === "Startup Innovative Solutions" || slide?.layoutStyle === "Startup Solutions" || slide?.title === "Our Innovative Solutions") {
       const headline = escapeSvgText(slide?.headline || "OUR INNOVATIVE\nSOLUTIONS").replace(/\n/g, ' ');
-      const footer = escapeSvgText(slide?.footer || 'Ingoude Company');
+      const footer = escapeSvgText(slide?.footer || 'Novaris Company');
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
         <rect width="320" height="192" rx="14" fill="#05070B"/>
         <path d="M 80 0 C 140 60, 240 20, 320 80" stroke="#00f0ff" stroke-width="2" opacity="0.8" fill="none" />
@@ -37540,7 +37540,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     }
     if (slide?.layoutStyle === "Startup Problem Statement" || slide?.layoutStyle === 'Startup Problem') {
-      const footer = escapeSvgText(slide?.footer || 'Ingoude Company');
+      const footer = escapeSvgText(slide?.footer || 'Novaris Company');
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
         <rect width="320" height="192" rx="14" fill="#05070B"/>
         <path d="M 0 170 C 60 150, 120 190, 180 165" stroke="#a855f7" stroke-width="2" opacity="0.8" fill="none" />
@@ -37559,7 +37559,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     }
     if (slide?.layoutStyle === "Startup Introduction" || slide?.layoutStyle === 'Startup Intro') {
       const headline = escapeSvgText(slide?.headline || 'INTRODUCTION');
-      const footer = escapeSvgText(slide?.footer || 'Ingoude Company');
+      const footer = escapeSvgText(slide?.footer || 'Novaris Company');
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
         <rect width="320" height="192" rx="14" fill="#05070B"/>
         <path d="M 200 0 C 240 60, 280 40, 320 30" stroke="#00f0ff" stroke-width="2" opacity="0.8" fill="none" />
@@ -37574,7 +37574,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     }
     if (slide?.layoutStyle === "Startup Today's Agenda" || slide?.layoutStyle === 'Startup Agenda') {
-      const tagline = escapeSvgText(slide?.tagline || 'Ingoude Company');
+      const tagline = escapeSvgText(slide?.tagline || 'Novaris Company');
       const headline = escapeSvgText(slide?.headline || "TODAY'S\nAGENDA").replace(/\n/g, ' ');
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
         <rect width="320" height="192" rx="14" fill="#05070B"/>
@@ -37600,9 +37600,9 @@ Respond with a JSON array of slide objects matching the schema.`;
       return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     }
     if (slide?.layoutStyle === 'Startup Pitch Deck' || slide?.backgroundColor === '#05070B') {
-      const tagline = escapeSvgText(slide?.tagline || 'Ingoude Company');
+      const tagline = escapeSvgText(slide?.tagline || 'Novaris Company');
       const headline = escapeSvgText(slide?.headline || 'STARTUP\nPITCH DECK').replace(/\n/g, ' ');
-      const presenter = escapeSvgText(slide?.presenter || 'PRESENT BY NEIL TRAN');
+      const presenter = escapeSvgText(slide?.presenter || 'PRESENT BY ALEX CHEN');
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
         <rect width="320" height="192" rx="14" fill="#05070B"/>
         <path d="M 120 192 C 180 130, 240 80, 320 100" stroke="#00f0ff" stroke-width="2" opacity="0.6" fill="none" />
@@ -52607,7 +52607,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  id: 'shape_' + Date.now(),
                                                  shapeType: 'pill',
                                                  name: 'Presenter Pill',
-                                                 label: 'PRESENT BY NEIL TRAN',
+                                                 label: 'PRESENT BY ALEX CHEN',
                                                  posX: 340,
                                                  posY: 260,
                                                  width: 260,
@@ -57103,7 +57103,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                             style={{ color: "#ffffff", caretColor: "#00f0ff" }}
                                                             className="relative z-20 text-[10px] md:text-[11px] font-[900] tracking-[0.16em] uppercase text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans leading-none"
                                                           >
-                                                            {shape.label || 'PRESENT BY NEIL TRAN'}
+                                                            {shape.label || 'PRESENT BY ALEX CHEN'}
                                                           </span>
                                                         </div>
                                                       </div>
@@ -57880,7 +57880,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
                                                   className="text-[12px] md:text-[14px] italic text-slate-300 font-serif outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text select-text leading-none tracking-wide"
                                                 >
-                                                  {activeDeckSlide?.tagline || 'Ingoude Company'}
+                                                  {activeDeckSlide?.tagline || 'Novaris Company'}
                                                 </span>
                                               </div>
                                             </div>
@@ -58004,7 +58004,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   style={{ color: "#ffffff", caretColor: "#00f0ff" }}
                                                   className="text-[10px] md:text-[11.5px] font-[900] tracking-[0.14em] uppercase text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans leading-none"
                                                 >
-                                                  {activeDeckSlide?.presenterText || 'PRESENT BY NEIL TRAN'}
+                                                  {activeDeckSlide?.presenterText || 'PRESENT BY ALEX CHEN'}
                                                 </span>
 
                                                 {/* Floating Capsule Toolbar */}
@@ -58357,7 +58357,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   photoKey: 'member4Photo',
                                                   bgKey: 'member4Bg',
                                                   shapeKey: 'member4Shape',
-                                                  defName: 'NEIL TRAN',
+                                                  defName: 'ALEX CHEN',
                                                   defRole: 'Director',
                                                   defPhoto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop&crop=faces',
                                                   defBg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)'
@@ -61217,7 +61217,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 style={{ color: "#94a3b8", caretColor: "#00f0ff" }}
                                                 className="text-[11px] md:text-[12px] italic text-slate-400 font-serif outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text"
                                               >
-                                                {activeDeckSlide?.footer || 'ingoude Company'}
+                                                {activeDeckSlide?.footer || 'novaris Company'}
                                               </span>
                                             </div>
                                           </div>
@@ -63896,7 +63896,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                style={{ color: "#94a3b8", caretColor: "#00f0ff" }}
                                                className="text-[11px] italic font-normal tracking-wide text-slate-400 !text-slate-400 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 rounded px-1 cursor-text select-text"
                                              >
-                                               {activeDeckSlide?.footer || 'Ingoude Company'}
+                                               {activeDeckSlide?.footer || 'Novaris Company'}
                                              </div>
                                            </div>
                                          </div>
@@ -64227,7 +64227,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                style={{ color: "#94a3b8", caretColor: "#00f0ff" }}
                                                className="text-[11.5px] italic font-normal tracking-wide text-slate-400 !text-slate-400 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 rounded px-1 cursor-text select-text"
                                              >
-                                               {activeDeckSlide?.footer || 'Ingoude Company'}
+                                               {activeDeckSlide?.footer || 'Novaris Company'}
                                              </div>
                                            </div>
                                          </div>
@@ -64246,7 +64246,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 style={{ color: "#94a3b8", caretColor: "#00f0ff" }}
                                                 className="text-[13px] md:text-[14px] italic font-normal tracking-wide text-slate-400 !text-slate-400 focus:!text-slate-100 outline-none hover:ring-1 hover:ring-violet-500/50 focus:ring-2 focus:ring-[#7C4DFF] rounded px-1.5 py-0.5 cursor-text transition-all bg-transparent hover:bg-white/5 select-text"
                                               >
-                                                {activeDeckSlide?.tagline || 'Ingoude Company'}
+                                                {activeDeckSlide?.tagline || 'Novaris Company'}
                                               </div>
                                             </div>
 
@@ -64606,7 +64606,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     style={{ color: "#cbd5e1", caretColor: "#00f0ff" }}
                                                     className="text-[12px] md:text-[13.5px] italic text-slate-300 font-serif outline-none hover:ring-1 hover:ring-violet-500/40 rounded px-1 cursor-text select-text leading-none tracking-wide"
                                                   >
-                                                    {activeDeckSlide?.tagline || 'Ingoude Company'}
+                                                    {activeDeckSlide?.tagline || 'Novaris Company'}
                                                   </span>
 
                                                   {/* Floating Toolbar for Tagline */}
@@ -64823,7 +64823,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           style={{ color: "#ffffff", caretColor: "#00f0ff" }}
                                                           className="relative z-20 text-[10px] md:text-[11px] font-[900] tracking-[0.16em] uppercase text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans leading-none"
                                                         >
-                                                          {activeDeckSlide?.presenter || 'PRESENT BY NEIL TRAN'}
+                                                          {activeDeckSlide?.presenter || 'PRESENT BY ALEX CHEN'}
                                                         </span>
                                                       </div>
                                                     </div>
