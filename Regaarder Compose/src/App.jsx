@@ -3115,75 +3115,115 @@ const TemplateMiniChartPreview = ({ type = 'column', color = '#0284c7' }) => {
 };
 
 const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
-  if (!isOpen) return null;
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const categories = [
     { id: 'all', label: 'All Templates' },
     { id: 'pitch', label: 'Pitch Decks' },
-    { id: 'meeting', label: 'Meetings' },
-    { id: 'report', label: 'Reports' },
-    { id: 'dashboards', label: 'Enterprise Dashboards' },
-    { id: 'blank', label: 'Blank' }
+    { id: 'business', label: 'Business Plans' },
+    { id: 'product', label: 'Product & Tech' },
+    { id: 'dashboards', label: 'Enterprise Dashboards' }
   ];
 
   const templates = [
-    { id: 'business-plan', title: 'Executive Business Plan (10 Slides)', category: 'pitch', icon: Presentation, color: 'bg-cyan-100 text-cyan-600', chartType: 'column', chartColor: '#00f0ff', desc: '10-slide complete business plan: TAM/SAM/SOM, 3-Yr Financials, Moat & GTM with 32 bento cards' },
-    { id: 'financial', title: 'Financial Revenue Model', category: 'dashboards', icon: TrendingUp, color: 'bg-sky-100 text-sky-600', chartType: 'line', chartColor: '#0284c7', desc: '3-5 Year growth, OpEx & EBITDA forecast visual chart' },
-    { id: 'saas', title: 'SaaS Metrics & Economics', category: 'dashboards', icon: BarChart2, color: 'bg-emerald-100 text-emerald-600', chartType: 'column', chartColor: '#059669', desc: 'MRR, ARR, NRR & LTV:CAC live chart analytics' },
-    { id: 'crm', title: 'Sales CRM & Pipeline', category: 'dashboards', icon: PieChart, color: 'bg-violet-100 text-violet-600', chartType: 'donut', chartColor: '#7c3aed', desc: 'Deal pipeline breakdown & win rate distribution visual' },
-    { id: 'cashflow', title: '12-Month Cash Flow', category: 'dashboards', icon: Sparkles, color: 'bg-amber-100 text-amber-600', chartType: 'area', chartColor: '#d97706', desc: 'Cash inflows vs outflows runway visual trajectory' },
-    { id: 'kpi', title: 'KPI Executive Dashboard', category: 'dashboards', icon: LayoutGrid, color: 'bg-indigo-100 text-indigo-600', chartType: 'column', chartColor: '#4f46e5', desc: 'Target vs Actual achievement live visual metrics' },
-    { id: 'blank', title: 'Blank Canvas', category: 'blank', icon: Layout, color: 'bg-gray-100 text-gray-500', chartType: 'column', chartColor: '#64748b', desc: 'Start from a clean slate' }
+    { id: 'startup-pitch', title: 'Startup Pitch Deck (15 Slides)', category: 'pitch', icon: Presentation, color: 'bg-violet-500/15 text-violet-400', chartType: 'column', chartColor: '#7c4dff', desc: '15-slide comprehensive investor pitch deck with Bento grids, TAM/SAM/SOM, and traction metrics' },
+    { id: 'business-plan', title: 'Executive Business Plan (10 Slides)', category: 'business', icon: TrendingUp, color: 'bg-cyan-500/15 text-cyan-400', chartType: 'column', chartColor: '#00f0ff', desc: '10-slide complete business plan: Market Sizing, 3-Yr Financials, Moat & GTM with 32 bento cards' },
+    { id: 'product-launch', title: 'Product Launch & Roadmap (8 Slides)', category: 'product', icon: LayoutGrid, color: 'bg-purple-500/15 text-purple-400', chartType: 'donut', chartColor: '#a855f7', desc: 'Feature showcase, architectural diagrams, rollout milestones, and KPI projections' },
+    { id: 'sales-proposal', title: 'Enterprise Sales Proposal (6 Slides)', category: 'business', icon: PieChart, color: 'bg-emerald-500/15 text-emerald-400', chartType: 'donut', chartColor: '#10b981', desc: 'Executive solution proposal with ROI calculations, implementation timeline, and SLA terms' },
+    { id: 'financial', title: 'Financial Revenue Model', category: 'dashboards', icon: TrendingUp, color: 'bg-sky-500/15 text-sky-400', chartType: 'line', chartColor: '#0284c7', desc: '3-5 Year growth, OpEx & EBITDA forecast visual chart' },
+    { id: 'saas', title: 'SaaS Metrics & Economics', category: 'dashboards', icon: BarChart2, color: 'bg-emerald-500/15 text-emerald-400', chartType: 'column', chartColor: '#059669', desc: 'MRR, ARR, NRR & LTV:CAC live chart analytics' }
   ];
 
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden ring-1 ring-black/5 animate-in zoom-in-95 duration-200">
-        
+  const filtered = templates.filter(t => {
+    const matchCat = activeCategory === 'all' || t.category === activeCategory;
+    const matchQ = !searchQuery || t.title.toLowerCase().includes(searchQuery.toLowerCase()) || t.desc.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchCat && matchQ;
+  });
+
+  return createPortal(
+    <div 
+      className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999999] flex items-center justify-center p-4 animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-zinc-950 border border-white/15 text-zinc-100 rounded-3xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">Templates & Visual Dashboards</h2>
-            <p className="text-gray-500 mt-1">Start with a pre-configured template and interactive live chart visualizer</p>
+        <div className="flex items-center justify-between px-8 py-5 border-b border-white/10 bg-white/[0.02]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+              <Layout size={20} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white tracking-tight">Presentation & Workspace Templates</h2>
+              <p className="text-xs text-zinc-400 mt-0.5">Select a curated deck template with pre-configured Bento cards and styling</p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-2.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
-            <X size={20} strokeWidth={2.5} />
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <X size={16} strokeWidth={2.5} />
           </button>
         </div>
 
         {/* Body */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
-          <div className="w-64 bg-gray-50/50 p-6 border-r border-gray-100 flex flex-col gap-1.5">
+          {/* Sidebar Categories */}
+          <div className="w-60 bg-white/[0.01] p-5 border-r border-white/10 flex flex-col gap-1.5 shrink-0">
             {categories.map(c => (
-              <button key={c.id} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors ${c.id === 'all' ? 'bg-white shadow-sm text-purple-600 ring-1 ring-gray-200/50' : 'text-gray-600 hover:bg-gray-100'}`}>
-                {c.label}
+              <button 
+                key={c.id} 
+                type="button"
+                onClick={() => setActiveCategory(c.id)}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activeCategory === c.id 
+                    ? 'bg-violet-600/20 text-violet-300 border border-violet-500/40 shadow-xs' 
+                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <span>{c.label}</span>
               </button>
             ))}
           </div>
 
           {/* Grid */}
-          <div className="flex-1 p-8 overflow-y-auto no-scrollbar bg-gray-50/30">
-            <div className="relative mb-8">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input type="text" placeholder="Search templates..." className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all shadow-sm" />
+          <div className="flex-1 p-6 overflow-y-auto thin-scrollbar flex flex-col gap-4">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={15} />
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search templates..." 
+                className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/15 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 transition-all" 
+              />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              {templates.map(t => (
-                <div key={t.id} onClick={() => { onSelect(t.id); onClose(); }} className="group relative bg-white border border-gray-200 rounded-2xl p-5 cursor-pointer hover:border-purple-300 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 overflow-hidden flex flex-col justify-between">
+            <div className="grid grid-cols-2 gap-4">
+              {filtered.map(t => (
+                <div 
+                  key={t.id} 
+                  onClick={() => { onSelect(t.id); onClose(); }} 
+                  className="group relative bg-white/[0.02] border border-white/10 rounded-2xl p-4 cursor-pointer hover:border-violet-500/50 hover:bg-white/[0.04] hover:shadow-xl hover:shadow-violet-950/40 transition-all duration-200 flex flex-col justify-between"
+                >
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <div className={`w-10 h-10 rounded-xl ${t.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-xs`}>
-                        <t.icon size={20} strokeWidth={2} />
+                      <div className={`w-9 h-9 rounded-xl ${t.color} flex items-center justify-center group-hover:scale-105 transition-transform duration-200 shadow-xs`}>
+                        <t.icon size={18} strokeWidth={2} />
                       </div>
                       <TemplateMiniChartPreview type={t.chartType} color={t.chartColor} />
                     </div>
-                    <h3 className="text-base font-semibold text-gray-900 mb-1">{t.title}</h3>
-                    <p className="text-xs text-gray-500 leading-relaxed">{t.desc}</p>
+                    <h3 className="text-sm font-bold text-white mb-1">{t.title}</h3>
+                    <p className="text-[11px] text-zinc-400 leading-relaxed line-clamp-2">{t.desc}</p>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] font-semibold text-purple-600">
-                    <span>Includes Live Visual Chart</span>
+                  <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] font-semibold text-violet-400 group-hover:text-violet-300">
+                    <span>Curated Deck</span>
                     <span>Load Template →</span>
                   </div>
                 </div>
@@ -3192,7 +3232,8 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
