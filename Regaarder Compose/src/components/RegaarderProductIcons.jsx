@@ -297,6 +297,26 @@ export const BrowserIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...p
   </svg>
 );
 
+export const OrbIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Concentric intelligence core & orbital field */}
+    <circle cx="12" cy="12" r="8.5" />
+    <circle cx="12" cy="12" r="3.5" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 /**
  * Proprietary Regaarder Signature AI Glyph
  * Metaphor: The iconic spiral intelligence swirl from the doc floating AI assistant.

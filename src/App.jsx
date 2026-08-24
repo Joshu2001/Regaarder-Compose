@@ -20,7 +20,7 @@ import {
   Send, ListTodo, ShieldAlert, Shield, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, Phone, PhoneOff,
   UserPlus, ExternalLink, Link2 as LinkIcon, Link, Clock, Minimize2, Sidebar, Image as ImageIcon,
   FileEdit, CheckCircle2, Users2, Archive,
-  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
+  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, MoveHorizontal, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
@@ -14289,6 +14289,64 @@ const renderMiniVectorWaveGraphic = (styleId, c1 = '#00f0ff', c2 = '#7c4dff') =>
       );
   }
 };
+
+
+const ALL_DECK_ANIMATION_OPTIONS = [
+  {
+    id: 'whip-slide',
+    label: 'Whip Slide (Fast In)',
+    tag: 'High Velocity',
+    desc: 'Snappy horizontal entrance with momentum ease-out',
+    icon: Zap,
+    c1: '#7C4DFF',
+    c2: '#3B82F6'
+  },
+  {
+    id: 'zoom-glow',
+    label: 'Zoom & Glow Entrance',
+    tag: 'Radiant Hero',
+    desc: 'Expands from depth with luminous aura bloom',
+    icon: Maximize2,
+    c1: '#00f0ff',
+    c2: '#7C4DFF'
+  },
+  {
+    id: 'shake-vibrate',
+    label: 'Shake & Vibrate',
+    tag: 'Kinetic Pulse',
+    desc: 'High-impact micro-vibration tension pulse',
+    icon: Activity,
+    c1: '#F43F5E',
+    c2: '#F59E0B'
+  },
+  {
+    id: 'smooth-float',
+    label: 'Smooth Float Ambient Loop',
+    tag: 'Floating Loop',
+    desc: 'Weightless continuous vertical levitation',
+    icon: Sparkles,
+    c1: '#10B981',
+    c2: '#06B6D4'
+  },
+  {
+    id: 'stagger-reveal',
+    label: 'Stagger Text Reveal',
+    tag: 'Sequential',
+    desc: 'Cascade lines into place with rhythmic cadence',
+    icon: MoveHorizontal,
+    c1: '#A855F7',
+    c2: '#EC4899'
+  },
+  {
+    id: 'cinematic-dissolve',
+    label: 'Cinematic Dissolve & Rise',
+    tag: 'Subtle Elegance',
+    desc: 'Soft atmospheric rise with blur fade-in',
+    icon: Film,
+    c1: '#6366F1',
+    c2: '#D946EF'
+  }
+];
 
 const ALL_DECK_BACKGROUND_OPTIONS = [
     { label: 'Deep Cyber Glow (#05070B)', value: '#05070B', category: 'Executive Dark', isDark: true },
@@ -52005,37 +52063,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     /* ── DEFAULT CREATE STATE ── */
                                     [
                                       { 
-                                        label: 'Headings', 
-                                        icon: Heading1,
-                                        menuItems: ['Startup Deck Title (H1)', 'Slide Section (H2)', 'Key Subtitle (H3)', 'Tagline / Badge', 'Metadata / Caption'],
-                                        onSelect: (item) => {
-                                          if (item.includes('Startup Deck Title') || item.includes('H1')) {
-                                            updateDeckSlideField(activeDeckSlide?.id, 'layoutStyle', 'Startup Pitch Deck');
-                                            updateDeckSlideField(activeDeckSlide?.id, 'headline', 'STARTUP\nPITCH DECK');
-                                          } else if (item.includes('Tagline')) {
-                                            updateDeckSlideField(activeDeckSlide?.id, 'tagline', 'Ingoude Company');
-                                          }
-                                          showToast(`Applied heading style: ${item}`);
-                                        }
-                                      },
-                                      { 
-                                        label: 'Font Style', 
-                                        icon: Type,
-                                        menuItems: ['Inter Display (Default)', 'Montserrat Extra Bold', 'Outfit Modern', 'Syne Tech Bold', 'Cinzel Serif Italic', 'JetBrains Monospace'],
-                                        onSelect: (item) => {
-                                          const fontMap = {
-                                            'Inter Display (Default)': 'Inter, sans-serif',
-                                            'Montserrat Extra Bold': 'Montserrat, sans-serif',
-                                            'Outfit Modern': 'Outfit, sans-serif',
-                                            'Syne Tech Bold': 'Syne, sans-serif',
-                                            'Cinzel Serif Italic': 'Cinzel, serif',
-                                            'JetBrains Monospace': 'JetBrains Mono, monospace'
-                                          };
-                                          setDeckTextFont(fontMap[item] || 'Inter, sans-serif');
-                                          showToast(`Font style updated to ${item}`);
-                                        }
-                                      },
-                                      { 
                                          label: 'Animation', 
                                          icon: Wand2,
                                          menuItems: ['Whip Slide (Fast In)', 'Zoom & Glow Entrance', 'Shake & Vibrate', 'Smooth Float Ambient Loop', 'Stagger Text Reveal'],
@@ -52259,9 +52286,169 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            {isOpen && (
                                              <div 
                                                onClick={(e) => e.stopPropagation()}
-                                               className={`absolute ${btn.label === 'Background' || btn.label === 'Vector & Wave' || btn.label === 'Styles' ? 'left-1/2 -translate-x-1/2' : 'left-0'} top-8 ${btn.label === 'Vector & Wave' ? 'w-[420px] max-h-[480px]' : btn.label === 'Background' ? 'w-[400px] max-h-[480px]' : btn.label === 'Styles' ? 'w-[380px] max-h-[420px]' : 'w-56'} flex flex-col bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.16)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] z-[9999] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-xl`}
+                                               className={`absolute ${btn.label === 'Background' || btn.label === 'Vector & Wave' || btn.label === 'Styles' || btn.label === 'Animation' ? 'left-1/2 -translate-x-1/2' : 'left-0'} top-8 ${btn.label === 'Vector & Wave' ? 'w-[420px] max-h-[480px]' : btn.label === 'Background' ? 'w-[400px] max-h-[480px]' : btn.label === 'Styles' ? 'w-[380px] max-h-[420px]' : btn.label === 'Animation' ? 'w-[430px] max-h-[480px]' : btn.label === 'Insert' ? 'w-[380px] max-h-[480px]' : btn.label === 'Media & Logo' ? 'w-[340px]' : btn.label === 'AI' ? 'w-[340px]' : 'w-60'} flex flex-col bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.16)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] z-[9999] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-xl`}
                                              >
-                                               {btn.label === 'Vector & Wave' ? (
+                                               {btn.label === 'Animation' ? (
+                                                 <>
+                                                   {/* Global Animation Keyframes for Live Motion Cards */}
+                                                   <style>{`
+                                                     @keyframes whipSlideAnim {
+                                                       0% { transform: translateX(-40px) scale(0.85); opacity: 0; }
+                                                       40% { transform: translateX(3px) scale(1.02); opacity: 1; }
+                                                       70%, 100% { transform: translateX(0) scale(1); opacity: 1; }
+                                                     }
+                                                     @keyframes zoomGlowAnim {
+                                                       0% { transform: scale(0.55); opacity: 0.2; filter: drop-shadow(0 0 0px #00f0ff); }
+                                                       50% { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 10px #00f0ff); }
+                                                       80%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 3px #7C4DFF); }
+                                                     }
+                                                     @keyframes shakeVibrateAnim {
+                                                       0%, 60%, 100% { transform: translate(0, 0) rotate(0deg); }
+                                                       65% { transform: translate(-2px, 1px) rotate(-1deg); }
+                                                       70% { transform: translate(2px, -1px) rotate(1deg); }
+                                                       75% { transform: translate(-2px, -1px) rotate(-0.5deg); }
+                                                       80% { transform: translate(2px, 1px) rotate(0.5deg); }
+                                                       85% { transform: translate(0, 0) rotate(0deg); }
+                                                     }
+                                                     @keyframes smoothFloatAnim {
+                                                       0%, 100% { transform: translateY(3px); }
+                                                       50% { transform: translateY(-4px); }
+                                                     }
+                                                     @keyframes staggerBar1 { 0%, 10% { opacity: 0; transform: translateY(4px); } 30%, 100% { opacity: 1; transform: translateY(0); } }
+                                                     @keyframes staggerBar2 { 0%, 30% { opacity: 0; transform: translateY(4px); } 50%, 100% { opacity: 1; transform: translateY(0); } }
+                                                     @keyframes staggerBar3 { 0%, 50% { opacity: 0; transform: translateY(4px); } 70%, 100% { opacity: 1; transform: translateY(0); } }
+                                                     @keyframes dissolveRiseAnim {
+                                                       0% { opacity: 0; transform: translateY(6px) scale(0.95); filter: blur(3px); }
+                                                       50%, 100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+                                                     }
+                                                   `}</style>
+
+                                                   {/* Apple-Style Motion Popover Header */}
+                                                   <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 flex items-center justify-between select-none font-sans">
+                                                     <div className="flex items-center gap-1.5">
+                                                        <Wand2 size={13} className="text-[#7C4DFF]" />
+                                                        <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                          MOTION & ENTRANCE PHYSICS
+                                                        </span>
+                                                     </div>
+                                                     <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
+                                                       {ALL_DECK_ANIMATION_OPTIONS.length} PRESETS
+                                                     </span>
+                                                   </div>
+
+                                                   {/* 2-Column Live Motion Preview Cards */}
+                                                   <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 grid grid-cols-2 gap-2.5 max-h-[350px]">
+                                                     {ALL_DECK_ANIMATION_OPTIONS.map((animOpt) => {
+                                                       const isCurrent = activeDeckSlide?.motionCue === animOpt.label;
+                                                       const AnimIcon = animOpt.icon || Wand2;
+
+                                                       return (
+                                                         <button
+                                                           key={animOpt.id}
+                                                           type="button"
+                                                           onPointerDown={(e) => {
+                                                             e.preventDefault();
+                                                             updateDeckSlideField(activeDeckSlide?.id, 'motionCue', animOpt.label);
+                                                             setDeckActiveToolbarMenu(null);
+                                                             showToast(`Animation entrance set to: ${animOpt.label}`);
+                                                           }}
+                                                           className={`group relative flex flex-col p-1.5 rounded-xl text-left transition-all duration-150 cursor-pointer ${
+                                                             isCurrent 
+                                                               ? 'bg-violet-500/10 dark:bg-violet-500/20 ring-2 ring-[#7C4DFF] shadow-sm' 
+                                                               : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
+                                                           }`}
+                                                         >
+                                                           {/* 16:10 Keynote Canvas with Live Motion Simulation */}
+                                                           <div 
+                                                             className={`w-full aspect-[16/10] rounded-lg relative overflow-hidden transition-all duration-150 p-2 flex flex-col justify-between shadow-xs select-none bg-[#07090E] ${
+                                                               isCurrent 
+                                                                 ? 'ring-1 ring-[#7C4DFF]' 
+                                                                 : 'border border-white/10 group-hover:shadow-sm'
+                                                             }`}
+                                                           >
+                                                             {/* Card Header with Category & Icon */}
+                                                             <div className="flex items-center justify-between w-full z-10">
+                                                               <div className="flex items-center gap-1">
+                                                                 <AnimIcon size={10} className="text-[#00f0ff]" />
+                                                                 <span className="text-[6.5px] font-bold text-slate-400 uppercase tracking-wide">
+                                                                   {animOpt.tag}
+                                                                 </span>
+                                                               </div>
+                                                               {isCurrent && (
+                                                                 <span className="w-3.5 h-3.5 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-md shrink-0">
+                                                                   <Check size={9} strokeWidth={3} />
+                                                                 </span>
+                                                               )}
+                                                             </div>
+
+                                                             {/* Center Live Simulation */}
+                                                             <div className="my-auto w-full flex items-center justify-center">
+                                                               {animOpt.id === 'stagger-reveal' ? (
+                                                                 <div className="w-full flex flex-col items-center gap-1">
+                                                                   <div className="w-14 h-1.5 rounded-full bg-violet-400 shadow-xs" style={{ animation: 'staggerBar1 2.2s ease-out infinite' }} />
+                                                                   <div className="w-10 h-1.5 rounded-full bg-cyan-400 shadow-xs" style={{ animation: 'staggerBar2 2.2s ease-out infinite' }} />
+                                                                   <div className="w-12 h-1.5 rounded-full bg-purple-400 shadow-xs" style={{ animation: 'staggerBar3 2.2s ease-out infinite' }} />
+                                                                 </div>
+                                                               ) : animOpt.id === 'whip-slide' ? (
+                                                                 <div 
+                                                                   className="w-14 h-5 rounded-md bg-gradient-to-r from-violet-600 to-indigo-500 shadow-[0_0_12px_rgba(124,77,255,0.6)] flex items-center justify-center text-[7px] font-bold text-white tracking-wider"
+                                                                   style={{ animation: 'whipSlideAnim 2s cubic-bezier(0.16, 1, 0.3, 1) infinite' }}
+                                                                 >
+                                                                   WHIP IN
+                                                                 </div>
+                                                               ) : animOpt.id === 'zoom-glow' ? (
+                                                                 <div 
+                                                                   className="w-14 h-5 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-[7px] font-bold text-white tracking-wider"
+                                                                   style={{ animation: 'zoomGlowAnim 2.2s ease-in-out infinite' }}
+                                                                 >
+                                                                   ZOOM GLOW
+                                                                 </div>
+                                                               ) : animOpt.id === 'shake-vibrate' ? (
+                                                                 <div 
+                                                                   className="w-14 h-5 rounded-md bg-gradient-to-r from-rose-500 to-amber-500 shadow-[0_0_10px_rgba(244,63,94,0.5)] flex items-center justify-center text-[7px] font-bold text-white tracking-wider"
+                                                                   style={{ animation: 'shakeVibrateAnim 2s ease-in-out infinite' }}
+                                                                 >
+                                                                   VIBRATE
+                                                                 </div>
+                                                               ) : animOpt.id === 'smooth-float' ? (
+                                                                 <div 
+                                                                   className="w-14 h-5 rounded-md bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_10px_rgba(16,185,129,0.4)] flex items-center justify-center text-[7px] font-bold text-white tracking-wider"
+                                                                   style={{ animation: 'smoothFloatAnim 2.4s ease-in-out infinite' }}
+                                                                 >
+                                                                   FLOAT
+                                                                 </div>
+                                                               ) : (
+                                                                 <div 
+                                                                   className="w-14 h-5 rounded-md bg-gradient-to-r from-fuchsia-600 to-pink-500 shadow-[0_0_10px_rgba(217,70,239,0.5)] flex items-center justify-center text-[7px] font-bold text-white tracking-wider"
+                                                                   style={{ animation: 'dissolveRiseAnim 2.2s ease-out infinite' }}
+                                                                 >
+                                                                   DISSOLVE
+                                                                 </div>
+                                                               )}
+                                                             </div>
+
+                                                             {/* Bottom Subtitle / Tag */}
+                                                             <div className="flex items-center justify-between w-full z-10 text-[5px] text-slate-500">
+                                                               <span>Live Preview</span>
+                                                               <span>Physics</span>
+                                                             </div>
+                                                           </div>
+
+                                                           {/* Caption */}
+                                                           <div className="mt-1.5 px-0.5 flex flex-col gap-0.5 w-full">
+                                                             <span className={`text-[10.5px] font-semibold truncate ${isCurrent ? 'text-[#7C4DFF] dark:text-violet-300' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
+                                                               {animOpt.label}
+                                                             </span>
+                                                             <span className="text-[8px] text-slate-400 dark:text-zinc-500 line-clamp-1">
+                                                               {animOpt.desc}
+                                                             </span>
+                                                           </div>
+                                                         </button>
+                                                       );
+                                                     })}
+                                                   </div>
+                                                 </>
+                                               ) : btn.label === 'Vector & Wave' ? (
                                                  <>
                                                    {/* Vector Meshes Popover Header with Search and Category Tabs */}
                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
@@ -52411,7 +52598,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                        const textColor = isDark ? 'text-white' : 'text-slate-900';
                                                        const subtextColor = isDark ? 'text-slate-400' : 'text-slate-500';
                                                        const dividerColor = isDark ? 'bg-white/20' : 'bg-black/20';
-                                                        const headlineParts = (activeDeckSlide?.headline || 'STARTUP\nPITCH DECK').split('\n');
+                                                       const headlineParts = (activeDeckSlide?.headline || 'STARTUP\nPITCH DECK').split('\n');
 
                                                        return (
                                                          <button
@@ -52437,7 +52624,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                              }`}
                                                              style={{ background: bgOpt.value }}
                                                            >
-                                                             {/* Top Subtitle / Tagline */}
                                                              <div className="flex items-center justify-between w-full z-10">
                                                                <span className={`text-[6px] italic font-medium truncate ${subtextColor}`}>
                                                                  {activeDeckSlide?.tagline || 'Ingoude Company'}
@@ -52449,7 +52635,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                )}
                                                              </div>
 
-                                                             {/* Center Bold Typography & Presenter Pill Badge */}
                                                              <div className="my-auto z-10 space-y-1">
                                                                <div className={`text-[10px] font-black uppercase tracking-tight leading-[1.05] ${textColor}`}>
                                                                  {headlineParts[0] || 'STARTUP'}
@@ -52467,7 +52652,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                </div>
                                                              </div>
 
-                                                             {/* Bottom Footer Info Line */}
                                                              <div className="w-full z-10 space-y-0.5">
                                                                <div className={`w-full h-px ${dividerColor}`} />
                                                                <div className={`flex items-center justify-between text-[4.5px] font-medium ${subtextColor}`}>
@@ -52477,7 +52661,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                              </div>
                                                            </div>
 
-                                                           {/* Slide Card Caption */}
                                                            <div className="mt-1.5 px-0.5 flex items-center justify-between gap-1 w-full">
                                                              <span className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-[#7C4DFF] dark:text-violet-300' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
                                                                {bgOpt.label.replace(/\s*\([^)]*\)/, '')}
@@ -52547,6 +52730,238 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      })}
                                                    </div>
                                                  </>
+                                               ) : btn.label === 'Media & Logo' ? (
+                                                 <>
+                                                   {/* Apple-style Media & Logo Dropdown with Visual Icons */}
+                                                   <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 flex items-center justify-between select-none font-sans">
+                                                     <div className="flex items-center gap-1.5">
+                                                       <ImageIcon size={13} className="text-[#7C4DFF]" />
+                                                       <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                         MEDIA & BRAND ASSETS
+                                                       </span>
+                                                     </div>
+                                                     <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
+                                                       4 ASSETS
+                                                     </span>
+                                                   </div>
+                                                   <div className="p-1.5 space-y-1">
+                                                     {[
+                                                       { label: 'Upload Picture / Image', icon: ImageIcon, iconBg: 'bg-violet-500/10 text-violet-500', badge: 'JPG / PNG', desc: 'Insert photography or graphic asset' },
+                                                       { label: 'Upload Brand Logo', icon: Award, iconBg: 'bg-amber-500/10 text-amber-500', badge: 'SVG / PNG', desc: 'Place high-res company emblem' },
+                                                       { label: 'Convert PNG/JPG to Vector (SVG)', icon: Wand2, iconBg: 'bg-cyan-500/10 text-cyan-500', badge: 'AI Tracing', desc: 'Auto-convert raster images to crisp SVG' },
+                                                       { label: 'Preset Monogram Logo', icon: Layers, iconBg: 'bg-purple-500/10 text-purple-500', badge: 'Vector', desc: 'Add sleek executive monogram badge' }
+                                                     ].map((mediaItem) => {
+                                                       const MediaIcon = mediaItem.icon;
+                                                       return (
+                                                         <button
+                                                           key={mediaItem.label}
+                                                           type="button"
+                                                           onPointerDown={(e) => {
+                                                             e.preventDefault();
+                                                             btn.onSelect(mediaItem.label);
+                                                             setDeckActiveToolbarMenu(null);
+                                                           }}
+                                                           className="w-full text-left p-2 rounded-xl hover:bg-violet-50/80 dark:hover:bg-zinc-800/80 transition-all flex items-center justify-between group cursor-pointer border border-transparent hover:border-violet-200/50 dark:hover:border-zinc-700/50"
+                                                         >
+                                                           <div className="flex items-center gap-2.5 min-w-0">
+                                                             <div className={`w-8 h-8 rounded-lg ${mediaItem.iconBg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
+                                                               <MediaIcon size={15} />
+                                                             </div>
+                                                             <div className="flex flex-col min-w-0">
+                                                               <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-[#7C4DFF] truncate">
+                                                                 {mediaItem.label}
+                                                               </span>
+                                                               <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 truncate">
+                                                                 {mediaItem.desc}
+                                                               </span>
+                                                             </div>
+                                                           </div>
+                                                           <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 shrink-0">
+                                                             {mediaItem.badge}
+                                                           </span>
+                                                         </button>
+                                                       );
+                                                     })}
+                                                   </div>
+                                                 </>
+                                               ) : btn.label === 'Insert' ? (
+                                                 <>
+                                                   {/* Apple-style Categorized Insert Menu with Icons & Previews */}
+                                                   <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 flex items-center justify-between select-none font-sans">
+                                                     <div className="flex items-center gap-1.5">
+                                                       <Plus size={13} className="text-[#7C4DFF]" />
+                                                       <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                         INSERT SLIDE OBJECTS
+                                                       </span>
+                                                     </div>
+                                                     <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-[#7C4DFF] dark:text-violet-300 font-mono">
+                                                       ELEMENTS
+                                                     </span>
+                                                   </div>
+                                                   <div className="flex-1 overflow-y-auto thin-scrollbar p-2 space-y-2.5 max-h-[380px]">
+                                                     {/* Section 1: Media & Vector */}
+                                                     <div>
+                                                       <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">Media & Vectors</span>
+                                                       <div className="grid grid-cols-2 gap-1.5">
+                                                         {[
+                                                           { label: 'Picture / Image', icon: ImageIcon, desc: 'Photo upload' },
+                                                           { label: 'Brand Logo', icon: Award, desc: 'Vector emblem' },
+                                                           { label: 'Convert JPG/PNG to Vector', icon: Wand2, desc: 'AI Vectorize' },
+                                                           { label: 'Glow Vector Wave', icon: Sparkles, desc: '3D neon mesh' }
+                                                         ].map((item) => {
+                                                           const ItemIcon = item.icon;
+                                                           return (
+                                                             <button
+                                                               key={item.label}
+                                                               type="button"
+                                                               onPointerDown={(e) => {
+                                                                 e.preventDefault();
+                                                                 btn.onSelect(item.label);
+                                                                 setDeckActiveToolbarMenu(null);
+                                                               }}
+                                                               className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-50 dark:bg-zinc-850 hover:bg-violet-50 dark:hover:bg-zinc-800 text-left border border-slate-200/50 dark:border-zinc-800 hover:border-violet-300 transition-all cursor-pointer"
+                                                             >
+                                                               <div className="w-6 h-6 rounded-md bg-violet-500/10 text-[#7C4DFF] flex items-center justify-center shrink-0">
+                                                                 <ItemIcon size={12} />
+                                                               </div>
+                                                               <div className="flex flex-col min-w-0">
+                                                                 <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200 truncate">{item.label}</span>
+                                                                 <span className="text-[8px] text-slate-400 dark:text-zinc-500 truncate">{item.desc}</span>
+                                                               </div>
+                                                             </button>
+                                                           );
+                                                         })}
+                                                       </div>
+                                                     </div>
+
+                                                     {/* Section 2: Shapes & Badges */}
+                                                     <div>
+                                                       <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">Geometric Shapes & Badges</span>
+                                                       <div className="grid grid-cols-2 gap-1.5">
+                                                         {[
+                                                           { label: 'Presenter Pill Badge', icon: Shield, desc: 'Speaker bio' },
+                                                           { label: 'Gradient Pill Shape', icon: Palette, desc: 'Accent pill' },
+                                                           { label: 'Circle Shape', icon: Circle, desc: 'Round focus' },
+                                                           { label: 'Square Shape', icon: Square, desc: 'Bento card' },
+                                                           { label: 'Diamond Shape', icon: Diamond, desc: 'Badge gem' },
+                                                           { label: 'Triangle Shape', icon: Triangle, desc: 'Polygon' }
+                                                         ].map((item) => {
+                                                           const ItemIcon = item.icon;
+                                                           return (
+                                                             <button
+                                                               key={item.label}
+                                                               type="button"
+                                                               onPointerDown={(e) => {
+                                                                 e.preventDefault();
+                                                                 btn.onSelect(item.label);
+                                                                 setDeckActiveToolbarMenu(null);
+                                                               }}
+                                                               className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-50 dark:bg-zinc-850 hover:bg-violet-50 dark:hover:bg-zinc-800 text-left border border-slate-200/50 dark:border-zinc-800 hover:border-violet-300 transition-all cursor-pointer"
+                                                             >
+                                                               <div className="w-6 h-6 rounded-md bg-pink-500/10 text-pink-500 flex items-center justify-center shrink-0">
+                                                                 <ItemIcon size={12} />
+                                                               </div>
+                                                               <div className="flex flex-col min-w-0">
+                                                                 <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200 truncate">{item.label}</span>
+                                                                 <span className="text-[8px] text-slate-400 dark:text-zinc-500 truncate">{item.desc}</span>
+                                                               </div>
+                                                             </button>
+                                                           );
+                                                         })}
+                                                       </div>
+                                                     </div>
+
+                                                     {/* Section 3: Typography & Structure */}
+                                                     <div>
+                                                       <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 mb-1 block">Typography & Lines</span>
+                                                       <div className="grid grid-cols-2 gap-1.5">
+                                                         {[
+                                                           { label: 'Heading H1', icon: Heading1, desc: 'Headline text' },
+                                                           { label: 'Text Box (Multi-line)', icon: Type, desc: 'Paragraph text' },
+                                                           { label: 'Divider Line', icon: Minus, desc: 'Rule separator' },
+                                                           { label: 'Contact Icon Shape', icon: Globe, desc: 'Footer contact' }
+                                                         ].map((item) => {
+                                                           const ItemIcon = item.icon;
+                                                           return (
+                                                             <button
+                                                               key={item.label}
+                                                               type="button"
+                                                               onPointerDown={(e) => {
+                                                                 e.preventDefault();
+                                                                 btn.onSelect(item.label);
+                                                                 setDeckActiveToolbarMenu(null);
+                                                               }}
+                                                               className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-50 dark:bg-zinc-850 hover:bg-violet-50 dark:hover:bg-zinc-800 text-left border border-slate-200/50 dark:border-zinc-800 hover:border-violet-300 transition-all cursor-pointer"
+                                                             >
+                                                               <div className="w-6 h-6 rounded-md bg-cyan-500/10 text-cyan-500 flex items-center justify-center shrink-0">
+                                                                 <ItemIcon size={12} />
+                                                               </div>
+                                                               <div className="flex flex-col min-w-0">
+                                                                 <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200 truncate">{item.label}</span>
+                                                                 <span className="text-[8px] text-slate-400 dark:text-zinc-500 truncate">{item.desc}</span>
+                                                               </div>
+                                                             </button>
+                                                           );
+                                                         })}
+                                                       </div>
+                                                     </div>
+                                                   </div>
+                                                 </>
+                                               ) : btn.label === 'AI' ? (
+                                                 <>
+                                                   {/* Apple-style AI Actions Dropdown with Radiant Visual Cards */}
+                                                   <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 flex items-center justify-between select-none font-sans">
+                                                     <div className="flex items-center gap-1.5">
+                                                       <Bot size={13} className="text-[#7C4DFF]" />
+                                                       <span className="text-[10.5px] font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
+                                                         AI PRESENTATION AGENT
+                                                       </span>
+                                                     </div>
+                                                     <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 font-mono">
+                                                       INTELLIGENCE
+                                                     </span>
+                                                   </div>
+                                                   <div className="p-1.5 space-y-1">
+                                                     {[
+                                                       { label: 'Auto-Design Slide 1 Cover', icon: Sparkles, iconBg: 'bg-violet-500/10 text-violet-500', badge: '1-Click', desc: 'Assemble full layout, typography & glowing mesh' },
+                                                       { label: 'Improve typography hierarchy', icon: Type, iconBg: 'bg-blue-500/10 text-blue-500', badge: 'Hierarchy', desc: 'Refine headline scale, tracking & contrast' },
+                                                       { label: 'Generate slide content', icon: FileText, iconBg: 'bg-emerald-500/10 text-emerald-500', badge: 'Copy', desc: 'Synthesize executive pitch bullet points' },
+                                                       { label: 'Auto-retheme presentation', icon: Palette, iconBg: 'bg-pink-500/10 text-pink-500', badge: 'Theme', desc: 'Harmonize chromatic styling & glow hues' },
+                                                       { label: 'Make More Visual', icon: LayoutGrid, iconBg: 'bg-cyan-500/10 text-cyan-500', badge: 'Visuals', desc: 'Transform plain text into structured visual cards' }
+                                                     ].map((aiItem) => {
+                                                       const AiIcon = aiItem.icon;
+                                                       return (
+                                                         <button
+                                                           key={aiItem.label}
+                                                           type="button"
+                                                           onPointerDown={(e) => {
+                                                             e.preventDefault();
+                                                             btn.onSelect(aiItem.label);
+                                                             setDeckActiveToolbarMenu(null);
+                                                           }}
+                                                           className="w-full text-left p-2 rounded-xl hover:bg-violet-50/80 dark:hover:bg-zinc-800/80 transition-all flex items-center justify-between group cursor-pointer border border-transparent hover:border-violet-200/50 dark:hover:border-zinc-700/50"
+                                                         >
+                                                           <div className="flex items-center gap-2.5 min-w-0">
+                                                             <div className={`w-8 h-8 rounded-lg ${aiItem.iconBg} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
+                                                               <AiIcon size={15} />
+                                                             </div>
+                                                             <div className="flex flex-col min-w-0">
+                                                               <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-[#7C4DFF] truncate">
+                                                                 {aiItem.label}
+                                                               </span>
+                                                               <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 truncate">
+                                                                 {aiItem.desc}
+                                                               </span>
+                                                             </div>
+                                                           </div>
+                                                           <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 shrink-0">
+                                                             {aiItem.badge}
+                                                           </span>
+                                                         </button>
+                                                       );
+                                                     })}
+                                                   </div>
+                                                 </>
                                                ) : (
                                                  <>
                                                    <div className="px-3 py-1.5 border-b border-slate-100 dark:border-zinc-800/60 flex items-center justify-between shrink-0 select-none font-sans bg-white/40 dark:bg-zinc-900/40">
@@ -52581,8 +52996,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 </div>
                               </div>
 
-                                {/* ── DOCX-STYLE CONTEXTUAL SECONDARY TOOLBAR STRIP ── */}
-                                <div className="w-full flex items-center justify-between gap-2 px-2.5 py-1 mt-1 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/50 dark:border-zinc-800 text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 animate-in fade-in slide-in-from-top-1 duration-150 overflow-visible relative z-[20]">
+                                {/* ── CONTEXTUAL SECONDARY TOOLBAR STRIP (SHOWN ONLY WHEN RELEVANT OBJECT IS SELECTED) ── */}
+                                {['line', 'badge', 'pill', 'vector'].includes(deckSelection.type) && (
+                                <div className="w-full flex items-center justify-between gap-2 px-2.5 py-1 mt-1 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/50 dark:border-zinc-800 text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 animate-in fade-in slide-in-from-top-1 duration-150 overflow-x-auto no-scrollbar">
                                   {deckSelection.type === 'line' ? (
                                     /* Secondary Line Inspector */
                                     <div className="flex items-center gap-3">
@@ -53039,22 +53455,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
                                       );
                                     })()
-                                  ) : (
-                                    /* Default General Slide Quick Bar (Like in docx write mode) */
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex items-center gap-1">
-                                        <button type="button" onClick={() => { setDeckTextBold(prev => !prev); }} className="px-2 py-0.5 rounded hover:bg-slate-200/70 dark:hover:bg-zinc-700 font-bold">B</button>
-                                        <button type="button" onClick={() => { setDeckTextItalic(prev => !prev); }} className="px-2 py-0.5 rounded hover:bg-slate-200/70 dark:hover:bg-zinc-700 italic">I</button>
-                                        <button type="button" onClick={() => { setDeckTextUnderline(prev => !prev); }} className="px-2 py-0.5 rounded hover:bg-slate-200/70 dark:hover:bg-zinc-700 underline">U</button>
-                                        <button type="button" onClick={() => { setDeckTextStrike(prev => !prev); }} className="px-2 py-0.5 rounded hover:bg-slate-200/70 dark:hover:bg-zinc-700 line-through">S</button>
-                                      </div>
-                                      <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700" />
-                                      <div className="flex items-center gap-1 text-slate-500 text-xs">
-                                        <span>Tap any text, wave, divider line, or circle badge on the slide to edit directly</span>
-                                      </div>
-                                    </div>
-                                  )}
+                                  ) : null}
                                 </div>
+                                )}
                               </div>
                             )}
 
