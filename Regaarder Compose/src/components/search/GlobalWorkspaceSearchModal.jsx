@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
-  Search, X, ArrowRight, CornerDownLeft, Sparkles, Send, Copy, Check, RefreshCw
+  Search, X, ArrowRight, CornerDownLeft, Copy, Check, RefreshCw
 } from 'lucide-react';
 import {
   buildWorkspaceIndex,
@@ -108,7 +108,7 @@ const COMPACT_QUICK_ACTIONS = [
   }
 ];
 
-// Suggested Ask AI prompt queries
+// Suggested Ask AI prompt queries for Deck mode
 const SUGGESTED_AI_PROMPTS = [
   "What did we decide about the pricing strategy?",
   "What is our Q3 GPU revenue & margin forecast?",
@@ -129,12 +129,13 @@ export default function GlobalWorkspaceSearchModal({
   onNavigateToEntity,
   onQuickAction
 }) {
-  const [mode, setMode] = useState(initialMode || 'search');
+  const isDeck = productMode === 'deck';
+  const [mode, setMode] = useState(isDeck ? (initialMode || 'search') : 'search');
   const [query, setQuery] = useState(initialQuery || '');
   const [activeFilter, setActiveFilter] = useState(initialFilter || 'all');
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // AI Synthesis state
+  // AI Synthesis state (for Deck workspace)
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState(null);
   const [copiedAi, setCopiedAi] = useState(false);
@@ -173,7 +174,7 @@ export default function GlobalWorkspaceSearchModal({
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setMode(initialMode || 'search');
+      setMode(isDeck ? (initialMode || 'search') : 'search');
       setQuery(initialQuery || '');
       setActiveFilter(initialFilter || 'all');
       setSelectedIndex(0);
@@ -181,7 +182,7 @@ export default function GlobalWorkspaceSearchModal({
       setAiLoading(false);
       setTimeout(() => inputRef.current?.focus(), 40);
     }
-  }, [isOpen, initialQuery, initialMode, initialFilter]);
+  }, [isOpen, initialQuery, initialMode, initialFilter, isDeck]);
 
   // Reset selected index when query or filter changes
   useEffect(() => {
@@ -199,7 +200,7 @@ export default function GlobalWorkspaceSearchModal({
 
   if (!isOpen) return null;
 
-  // Execute AI Workspace Synthesis
+  // Execute AI Workspace Synthesis (Deck mode)
   const handleRunAiSynthesis = async (promptQuery) => {
     const targetQ = promptQuery || query;
     if (!targetQ || !targetQ.trim()) return;
@@ -293,30 +294,19 @@ export default function GlobalWorkspaceSearchModal({
     setTimeout(() => setCopiedAi(false), 2000);
   };
 
-  // Check if current workspace is Deck (or dark high-contrast mode)
-  const isDeck = productMode === 'deck';
-
-  // Backdrop Scrim:
-  // - On Deck (Image 1): Atmospheric dark blur + desaturation + soft dark scrim
-  // - On Compose, Sheets, Whiteboard, etc. (Image 2): Luminous light translucent scrim with soft blur
+  // Surface and backdrop styles based on workspace mode:
+  // - Deck Mode: Atmospheric dark blur with presentation-style contrast & optional Ask AI mode
+  // - All Other Modes (Docs, Sheets, Tasks, Rooms, Notes, People): 840×610px architectural command center
   const backdropClasses = isDeck
     ? 'bg-slate-950/40 dark:bg-black/50 backdrop-blur-[14px] backdrop-saturate-[0.4] backdrop-contrast-[1.05]'
-    : 'bg-slate-900/12 dark:bg-black/40 backdrop-blur-[10px] backdrop-saturate-[1.1]';
+    : 'bg-slate-950/25 dark:bg-black/45 backdrop-blur-[10px]';
 
-  // Modal Surface:
-  // - On Deck (Image 1): Solid crisp white/zinc surface for maximum contrast against neon graphics
-  // - On other apps (Image 2): Pristine luminous frosted glass surface (80% opacity with backdrop blur)
   const surfaceClasses = isDeck
     ? 'bg-white dark:bg-[#161618] rounded-[14px] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.25)] dark:shadow-[0_30px_80px_-15px_rgba(0,0,0,0.8)] border border-slate-200/90 dark:border-zinc-800/90'
-    : 'bg-white/80 dark:bg-[#161618]/85 backdrop-blur-2xl rounded-[14px] shadow-[0_20px_60px_-10px_rgba(0,0,0,0.12)] border border-white/90 dark:border-white/10 ring-1 ring-black/5 dark:ring-black/40';
+    : 'bg-white/98 dark:bg-[#161618]/98 rounded-[14px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.22)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.7)] border border-slate-200/90 dark:border-zinc-800/90';
 
-  const categoryBarClasses = isDeck
-    ? 'bg-slate-50/50 dark:bg-zinc-900/30 border-b border-slate-200/60 dark:border-zinc-800/60'
-    : 'bg-white/40 dark:bg-zinc-900/30 border-b border-white/60 dark:border-zinc-800/40 backdrop-blur-sm';
-
-  const footerClasses = isDeck
-    ? 'bg-slate-50/60 dark:bg-zinc-900/40 border-t border-slate-200/60 dark:border-zinc-800/60'
-    : 'bg-white/50 dark:bg-zinc-900/40 border-t border-white/60 dark:border-zinc-800/40 backdrop-blur-sm';
+  const categoryBarClasses = 'bg-slate-50/60 dark:bg-zinc-900/40 border-b border-slate-200/60 dark:border-zinc-800/60';
+  const footerClasses = 'bg-slate-50/80 dark:bg-zinc-900/60 border-t border-slate-200/60 dark:border-zinc-800/60';
 
   return (
     <div
@@ -329,8 +319,8 @@ export default function GlobalWorkspaceSearchModal({
         className={`w-[840px] max-w-[95vw] h-[610px] max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-[0.98] duration-150 text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Large Dominant Search / Ask AI Header (60px height) ── */}
-        <div className="h-[60px] flex items-center px-5 border-b border-slate-200/40 dark:border-zinc-800/40 gap-3.5 shrink-0 bg-transparent">
+        {/* ── Dominant Search / Header (60px height) ── */}
+        <div className="h-[60px] flex items-center px-5 border-b border-slate-200/80 dark:border-zinc-800/80 gap-3.5 shrink-0 bg-transparent">
           {mode === 'ai' ? (
             <RegaarderAiIcon size={20} className="text-violet-600 dark:text-violet-400 shrink-0" />
           ) : (
@@ -355,27 +345,29 @@ export default function GlobalWorkspaceSearchModal({
             className="flex-1 bg-transparent border-none outline-none text-[16.5px] font-normal text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 tracking-[-0.01em]"
           />
 
-          {/* Right Action Controls: AI Mode Toggle Pill + Clear + ESC */}
+          {/* Right Action Controls */}
           <div className="flex items-center gap-1.5 shrink-0 select-none">
-            {/* ✦ AI Mode Toggle */}
-            <button
-              type="button"
-              onClick={() => {
-                const nextMode = mode === 'ai' ? 'search' : 'ai';
-                setMode(nextMode);
-                setAiResponse(null);
-                setTimeout(() => inputRef.current?.focus(), 20);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 active:scale-95 cursor-pointer ${
-                mode === 'ai'
-                  ? 'bg-violet-600 text-white shadow-xs border border-violet-500'
-                  : 'bg-violet-500/10 hover:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/25'
-              }`}
-              title={mode === 'ai' ? "Switch back to direct file search" : "Switch to Ask AI workspace knowledge synthesis"}
-            >
-              <RegaarderAiIcon size={14} strokeWidth={1.8} className={mode === 'ai' ? 'text-white' : 'text-violet-600 dark:text-violet-400'} />
-              <span>{mode === 'ai' ? 'Ask AI' : '✦ AI'}</span>
-            </button>
+            {/* AI Mode Toggle (available when in Deck mode) */}
+            {isDeck && (
+              <button
+                type="button"
+                onClick={() => {
+                  const nextMode = mode === 'ai' ? 'search' : 'ai';
+                  setMode(nextMode);
+                  setAiResponse(null);
+                  setTimeout(() => inputRef.current?.focus(), 20);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 active:scale-95 cursor-pointer ${
+                  mode === 'ai'
+                    ? 'bg-violet-600 text-white shadow-xs border border-violet-500'
+                    : 'bg-violet-500/10 hover:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/25'
+                }`}
+                title={mode === 'ai' ? "Switch back to direct file search" : "Switch to Ask AI workspace knowledge synthesis"}
+              >
+                <RegaarderAiIcon size={14} strokeWidth={1.8} className={mode === 'ai' ? 'text-white' : 'text-violet-600 dark:text-violet-400'} />
+                <span>{mode === 'ai' ? 'Ask AI' : '✦ AI'}</span>
+              </button>
+            )}
 
             {query && (
               <button
@@ -392,7 +384,7 @@ export default function GlobalWorkspaceSearchModal({
               </button>
             )}
 
-            <kbd className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-white/80 dark:bg-zinc-800/80 text-[10.5px] font-mono font-medium text-slate-500 dark:text-zinc-400 border border-slate-200/70 dark:border-zinc-700/60 shadow-2xs">
+            <kbd className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10.5px] font-mono font-medium text-slate-500 dark:text-zinc-400 border border-slate-200/70 dark:border-zinc-700/60 shadow-2xs">
               ESC
             </kbd>
           </div>
@@ -417,7 +409,7 @@ export default function GlobalWorkspaceSearchModal({
                   className={`flex items-center gap-1.5 px-2.5 py-1 text-[12px] rounded-lg transition-all duration-150 cursor-pointer ${
                     isActive
                       ? 'bg-violet-500/10 text-violet-700 dark:text-violet-300 font-semibold border border-violet-500/25 shadow-2xs'
-                      : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/60 dark:hover:bg-zinc-800/40 border border-transparent font-medium'
+                      : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100/70 dark:hover:bg-zinc-800/50 border border-transparent font-medium'
                   }`}
                 >
                   <Icon size={13} strokeWidth={1.7} className={isActive ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'} />
@@ -427,14 +419,14 @@ export default function GlobalWorkspaceSearchModal({
             })}
           </div>
 
-          {/* Result Count in search mode when search query exists */}
+          {/* Result Count - only shown when query has results in Search Mode */}
           {mode === 'search' && query.trim() && searchResults.length > 0 && (
             <div className="text-[11.5px] font-medium text-slate-400 dark:text-zinc-500 pl-3 shrink-0 whitespace-nowrap">
               {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
             </div>
           )}
 
-          {/* AI Mode indicator */}
+          {/* AI Mode indicator in Deck */}
           {mode === 'ai' && (
             <div className="text-[11px] font-medium text-violet-600 dark:text-violet-400 flex items-center gap-1 pl-3 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
@@ -448,150 +440,102 @@ export default function GlobalWorkspaceSearchModal({
           ref={resultsContainerRef}
           className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 thin-scrollbar"
         >
-          {/* ══════════════════════════════════════════════════════════════════════
-              MODE A: ASK AI MODE (Workspace Cross-Synthesis & Clickable Sources)
-             ══════════════════════════════════════════════════════════════════════ */}
+          {/* ══════════════════════════════════════════════════════════
+              MODE A: ASK AI WORKSPACE SYNTHESIS (Deck Presentation Mode)
+             ══════════════════════════════════════════════════════════ */}
           {mode === 'ai' && (
             <div className="space-y-4">
-              {/* If no answer yet and not loading, show suggestions & guidance */}
-              {!aiLoading && !aiResponse && (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-violet-500/5 dark:bg-violet-500/10 border border-violet-500/15 flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                      <RegaarderAiIcon size={16} />
-                    </div>
-                    <div>
-                      <h4 className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100">
-                        Ask AI across your entire workspace
-                      </h4>
-                      <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed mt-0.5">
-                        Ask questions in natural language. Regaarder AI analyzes and synthesizes answers across your active Documents, Spreadsheets, Presentations, Tasks, and Meeting Transcripts.
-                      </p>
-                    </div>
+              {!aiResponse && !aiLoading && (
+                <div className="space-y-4 py-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1">
+                    <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400" />
+                    <span>Suggested Questions</span>
                   </div>
-
-                  {/* Suggested Question Chips */}
-                  <div>
-                    <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1">
-                      <Sparkles size={12} className="text-violet-500" />
-                      <span>Suggested questions</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {SUGGESTED_AI_PROMPTS.map((promptText, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => {
-                            setQuery(promptText);
-                            handleRunAiSynthesis(promptText);
-                          }}
-                          className="p-3 text-left rounded-xl bg-white/80 dark:bg-zinc-800/40 hover:bg-white dark:hover:bg-zinc-800/70 border border-white/90 dark:border-zinc-700/50 hover:border-violet-300 dark:hover:border-violet-700 shadow-2xs transition-all duration-150 group cursor-pointer"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-[12.5px] font-medium text-slate-700 dark:text-zinc-300 group-hover:text-violet-700 dark:group-hover:text-violet-300">
-                              {promptText}
-                            </span>
-                            <ArrowRight size={13} className="text-slate-300 dark:text-zinc-600 group-hover:text-violet-600 group-hover:translate-x-0.5 transition-all shrink-0" />
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* AI Loading State */}
-              {aiLoading && (
-                <div className="flex flex-col items-center justify-center py-14 px-4 text-center space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-violet-50/80 dark:bg-violet-950/50 border border-violet-200/70 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-sm animate-pulse">
-                    <RegaarderAiIcon size={24} className="animate-spin" />
-                  </div>
-                  <div>
-                    <h4 className="text-[14.5px] font-semibold text-slate-900 dark:text-zinc-100">
-                      Synthesizing workspace knowledge…
-                    </h4>
-                    <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
-                      Grounding across documents, spreadsheet formulas, slide metrics, and team transcripts.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* AI Synthesized Answer & Clickable Source Cards */}
-              {!aiLoading && aiResponse && (
-                <div className="space-y-4 animate-in fade-in duration-150">
-                  {/* Executive Synthesized Answer Box */}
-                  <div className="p-4 sm:p-5 rounded-2xl bg-white/70 dark:bg-zinc-900/60 border border-white/80 dark:border-zinc-800/60 shadow-xs">
-                    <div className="flex items-center justify-between mb-3 border-b border-slate-200/50 dark:border-zinc-800/50 pb-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-md bg-violet-600 text-white flex items-center justify-center">
-                          <RegaarderAiIcon size={13} />
-                        </div>
-                        <span className="text-xs font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300">
-                          Workspace Synthesis
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {SUGGESTED_AI_PROMPTS.map((promptText, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setQuery(promptText);
+                          handleRunAiSynthesis(promptText);
+                        }}
+                        className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 dark:bg-zinc-800/40 hover:bg-violet-50/60 dark:hover:bg-violet-950/30 border border-slate-200/60 dark:border-zinc-800 text-left transition-all group cursor-pointer"
+                      >
+                        <span className="text-[13px] font-medium text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300">
+                          {promptText}
                         </span>
-                        {activeFilter !== 'all' && (
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-violet-100/80 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 uppercase">
-                            Filtered: {activeFilter}
-                          </span>
-                        )}
-                      </div>
+                        <ArrowRight size={13} className="text-slate-400 group-hover:text-violet-600 transition-transform group-hover:translate-x-0.5 shrink-0 ml-2" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={handleCopyAiResponse}
-                          className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/60 transition-colors"
-                        >
-                          {copiedAi ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
-                          <span>{copiedAi ? 'Copied' : 'Copy'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRunAiSynthesis(query)}
-                          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-md transition-colors"
-                          title="Re-synthesize answer"
-                        >
-                          <RefreshCw size={13} />
-                        </button>
+              {aiLoading && (
+                <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+                  <div className="w-10 h-10 rounded-2xl bg-violet-100 dark:bg-violet-950/60 flex items-center justify-center text-violet-600 dark:text-violet-400 animate-spin shadow-xs">
+                    <RefreshCw size={18} />
+                  </div>
+                  <div className="text-[14.5px] font-semibold text-slate-800 dark:text-zinc-100">
+                    Synthesizing cross-workspace intelligence…
+                  </div>
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm">
+                    Analyzing documents, financial models, slides, and transcripts for &ldquo;{query}&rdquo;
+                  </p>
+                </div>
+              )}
+
+              {aiResponse && !aiLoading && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div className="p-4 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-800/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <RegaarderAiIcon size={16} className="text-violet-600 dark:text-violet-400" />
+                        <span className="text-xs font-bold text-violet-900 dark:text-violet-200 uppercase tracking-wider">
+                          AI Executive Summary
+                        </span>
                       </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyAiResponse}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 border border-slate-200/70 dark:border-zinc-700 shadow-2xs transition-colors"
+                      >
+                        {copiedAi ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                        <span>{copiedAi ? 'Copied' : 'Copy'}</span>
+                      </button>
                     </div>
-
-                    {/* Markdown structured answer body */}
-                    <div className="text-[13.5px] text-slate-800 dark:text-zinc-200 leading-relaxed space-y-2 whitespace-pre-line font-normal">
+                    <div className="text-[13.5px] text-slate-800 dark:text-zinc-200 leading-relaxed font-normal whitespace-pre-line">
                       {aiResponse.answer}
                     </div>
                   </div>
 
-                  {/* Clearly Visible, Clickable Source Cards */}
-                  {aiResponse.sources && aiResponse.sources.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1">
-                        <OrbIcon size={13} className="text-slate-400" />
-                        <span>Referenced Workspace Sources ({aiResponse.sources.length})</span>
+                  {aiResponse.sources?.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1">
+                        Referenced Sources ({aiResponse.sources.length})
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {aiResponse.sources.map((src) => (
+                        {aiResponse.sources.map((src, i) => (
                           <div
-                            key={src.id}
-                            onClick={() => handleActivateItem({ type: 'entity', data: src.entity })}
-                            className="flex items-center justify-between p-3 rounded-xl bg-white/85 dark:bg-zinc-900/80 border border-white/90 dark:border-zinc-800/80 hover:border-violet-400 dark:hover:border-violet-600 shadow-2xs hover:shadow-xs transition-all duration-150 group cursor-pointer"
+                            key={i}
+                            onClick={() => {
+                              const entity = workspaceIndex.find(e => e.id === src.id);
+                              if (entity) handleActivateItem({ type: 'entity', data: entity });
+                            }}
+                            className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 hover:bg-slate-100/80 border border-slate-200/60 dark:border-zinc-800 cursor-pointer transition-colors"
                           >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="w-7 h-7 rounded-lg bg-slate-100/80 dark:bg-zinc-800/80 flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-slate-200/50 dark:border-zinc-700/50 group-hover:text-violet-600">
-                                <RegaarderProductIcon name={src.workspace} size={14} />
+                            <div className="w-6 h-6 rounded-md bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-slate-200/60 dark:border-zinc-700/60 shadow-2xs mt-0.5">
+                              <RegaarderProductIcon name={src.workspace} size={13} />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                                {src.title}
                               </div>
-                              <div className="min-w-0">
-                                <div className="text-[12.5px] font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-violet-700 dark:group-hover:text-violet-300">
-                                  {src.title}
-                                </div>
-                                <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
-                                  {src.location || src.workspace}
-                                </div>
+                              <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 truncate">
+                                {src.location}
                               </div>
                             </div>
-
-                            <ArrowRight size={13} className="text-slate-300 dark:text-zinc-600 group-hover:text-violet-600 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
                           </div>
                         ))}
                       </div>
@@ -602,12 +546,12 @@ export default function GlobalWorkspaceSearchModal({
             </div>
           )}
 
-          {/* ══════════════════════════════════════════════════════════════════════
-              MODE B: SEARCH MODE (DEFAULT LAYOUT: Quick Actions & Continue Recent)
-             ══════════════════════════════════════════════════════════════════════ */}
+          {/* ══════════════════════════════════════════════════════════
+              MODE B: SEARCH MODE - EMPTY QUERY (Suggested & Actions)
+             ══════════════════════════════════════════════════════════ */}
           {mode === 'search' && !query.trim() && (
-            <div className="space-y-4 select-none">
-              {/* Quick Action Chips (Shown only when not typing - exact Image 2 bright white tiles) */}
+            <div className="space-y-4">
+              {/* Compact Quick Action Chips */}
               <div>
                 <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1">
                   <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400" />
@@ -626,10 +570,8 @@ export default function GlobalWorkspaceSearchModal({
                         onMouseEnter={() => setSelectedIndex(idx)}
                         className={`flex items-center justify-between px-3 py-2 rounded-lg text-left transition-all duration-150 cursor-pointer ${
                           isSelected
-                            ? 'bg-violet-500/10 dark:bg-violet-500/20 border border-violet-500/35 text-violet-700 dark:text-violet-300 shadow-2xs'
-                            : isDeck
-                            ? 'bg-slate-50/80 dark:bg-zinc-800/40 hover:bg-slate-100 dark:hover:bg-zinc-800/70 border border-slate-200/60 dark:border-zinc-800/60 text-slate-700 dark:text-zinc-300'
-                            : 'bg-white/85 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800/80 border border-white/90 dark:border-zinc-700/50 text-slate-700 dark:text-zinc-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
+                            ? 'bg-violet-500/10 dark:bg-violet-500/15 border border-violet-500/30 text-violet-700 dark:text-violet-300 shadow-2xs'
+                            : 'bg-slate-50/70 dark:bg-zinc-800/30 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-800/60 text-slate-700 dark:text-zinc-300'
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
@@ -645,7 +587,7 @@ export default function GlobalWorkspaceSearchModal({
                 </div>
               </div>
 
-              {/* Continue Where You Left Off Section */}
+              {/* Continue Where You Left Off (Recent & Suggested Workspace Hierarchy) */}
               <div>
                 <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1">
                   <RegaarderHistoryIcon size={13} strokeWidth={1.7} className="text-slate-400 dark:text-zinc-500" />
@@ -666,11 +608,11 @@ export default function GlobalWorkspaceSearchModal({
                         className={`flex items-center justify-between p-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
                           isSelected
                             ? 'bg-violet-500/8 dark:bg-violet-500/15 border border-violet-500/25 shadow-2xs'
-                            : 'hover:bg-white/50 dark:hover:bg-zinc-800/40 border border-transparent'
+                            : 'hover:bg-slate-50 dark:hover:bg-zinc-800/40 border border-transparent'
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-7 h-7 rounded-lg bg-white/80 dark:bg-zinc-800/80 flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-white/80 dark:border-zinc-700/50 shadow-2xs">
+                          <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-slate-200/60 dark:border-zinc-700/60">
                             <RegaarderProductIcon name={entity.workspace} size={14} strokeWidth={1.6} />
                           </div>
                           <div className="min-w-0">
@@ -718,7 +660,7 @@ export default function GlobalWorkspaceSearchModal({
                     <div
                       key={person.id}
                       onClick={() => handleActivateItem({ type: 'entity', data: person })}
-                      className="flex items-center gap-2.5 p-2 rounded-lg bg-white/60 dark:bg-zinc-800/40 hover:bg-white/90 dark:hover:bg-zinc-800/70 border border-white/70 dark:border-zinc-800/50 cursor-pointer transition-colors shadow-2xs"
+                      className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800/40 border border-slate-200/50 dark:border-zinc-800/50 cursor-pointer transition-colors"
                     >
                       <img
                         src={person.avatar}
@@ -740,31 +682,20 @@ export default function GlobalWorkspaceSearchModal({
             </div>
           )}
 
-          {/* ══════════════════════════════════════════════════════════════════════
-              MODE B: SEARCH MODE (ACTIVE QUERY TYPING: Quick Actions Collapsed)
-             ══════════════════════════════════════════════════════════════════════ */}
+          {/* ══════════════════════════════════════════════════════════
+              MODE B: SEARCH MODE - ACTIVE QUERY RESULTS
+             ══════════════════════════════════════════════════════════ */}
           {mode === 'search' && query.trim() && searchResults.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <div className="w-11 h-11 rounded-xl bg-white/80 dark:bg-zinc-800/80 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-3 border border-white/80 dark:border-zinc-700/50 shadow-2xs">
+              <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-zinc-800/80 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-3 border border-slate-200/60 dark:border-zinc-700/60">
                 <Search size={20} strokeWidth={1.5} />
               </div>
               <h4 className="text-[14.5px] font-semibold text-slate-900 dark:text-zinc-100 mb-1">
                 No results for &ldquo;{query}&rdquo;
               </h4>
-              <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm leading-relaxed mb-3">
+              <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm leading-relaxed">
                 Check your spelling or switch category tabs to search across all Documents, Sheets, Decks, Tasks, Rooms, and Notes.
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('ai');
-                  handleRunAiSynthesis(query);
-                }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-semibold shadow-xs hover:bg-violet-700 transition-colors"
-              >
-                <RegaarderAiIcon size={14} />
-                <span>Ask AI about &ldquo;{query}&rdquo;</span>
-              </button>
             </div>
           )}
 
@@ -798,7 +729,7 @@ export default function GlobalWorkspaceSearchModal({
                         className={`group relative flex flex-col p-3 rounded-xl transition-all duration-150 cursor-pointer ${
                           isSelected
                             ? 'bg-violet-500/8 dark:bg-violet-500/15 border border-violet-500/25 shadow-2xs'
-                            : 'bg-white/70 dark:bg-zinc-800/30 hover:bg-white/95 dark:hover:bg-zinc-800/60 border border-white/80 dark:border-zinc-800/40 shadow-2xs'
+                            : 'bg-slate-50/40 dark:bg-zinc-800/20 hover:bg-slate-100/60 dark:hover:bg-zinc-800/40 border border-slate-200/50 dark:border-zinc-800/50'
                         }`}
                       >
                         {/* Header: Icon + Title + Location + Metadata */}
@@ -822,7 +753,7 @@ export default function GlobalWorkspaceSearchModal({
                                   <HighlightedText text={entity.title} query={query} />
                                 </h4>
                                 {entity.type === 'person' && entity.role && (
-                                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-white/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 shrink-0 border border-slate-200/50">
+                                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 shrink-0">
                                     {entity.role}
                                   </span>
                                 )}
@@ -847,11 +778,11 @@ export default function GlobalWorkspaceSearchModal({
                                   ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 border border-rose-200/60'
                                   : 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300 border border-amber-200/60'
                               }`}>
-                                {entity.metadata.priority}
+                                {entity.metadata?.priority}
                               </span>
                             )}
                             {entity.metadata?.status && (
-                              <span className="px-2 py-0.5 text-[10px] font-medium bg-white/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 rounded-md border border-slate-200/50">
+                              <span className="px-2 py-0.5 text-[10px] font-medium bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 rounded-md">
                                 {entity.metadata.status}
                               </span>
                             )}
@@ -882,35 +813,20 @@ export default function GlobalWorkspaceSearchModal({
         </div>
 
         {/* ── Footer Cheatsheet Bar ── */}
-        <div className={`flex items-center justify-between px-5 py-2.5 text-[11px] text-slate-500 dark:text-zinc-400 shrink-0 select-none ${footerClasses}`}>
+        <div className={`flex items-center justify-between px-5 py-2.5 text-[11px] text-slate-500 dark:text-zinc-400 shrink-0 ${footerClasses}`}>
           <div className="flex items-center gap-3">
-            {mode === 'ai' ? (
-              <>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/90 dark:bg-zinc-800/80 border border-slate-200/70 dark:border-zinc-700/60 font-mono text-[10px] shadow-2xs">↵</kbd>
-                  <span>Ask AI</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/90 dark:bg-zinc-800/80 border border-slate-200/70 dark:border-zinc-700/60 font-mono text-[10px] shadow-2xs">Esc</kbd>
-                  <span>Close</span>
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/90 dark:bg-zinc-800/80 border border-slate-200/70 dark:border-zinc-700/60 font-mono text-[10px] shadow-2xs">↑↓</kbd>
-                  <span>Navigate</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/90 dark:bg-zinc-800/80 border border-slate-200/70 dark:border-zinc-700/60 font-mono text-[10px] shadow-2xs">↵</kbd>
-                  <span>Open</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/90 dark:bg-zinc-800/80 border border-slate-200/70 dark:border-zinc-700/60 font-mono text-[10px] shadow-2xs">Esc</kbd>
-                  <span>Close</span>
-                </span>
-              </>
-            )}
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono text-[10px] shadow-2xs">↑↓</kbd>
+              <span>Navigate</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono text-[10px] shadow-2xs">↵</kbd>
+              <span>Open</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 font-mono text-[10px] shadow-2xs">Esc</kbd>
+              <span>Close</span>
+            </span>
           </div>
 
           <div className="flex items-center gap-1.5 font-medium text-slate-400 dark:text-zinc-500">
