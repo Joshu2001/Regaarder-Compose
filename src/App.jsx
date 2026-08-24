@@ -14288,6 +14288,7 @@ const DEFAULT_DECK_SLIDES = [
   const [deckReviewActiveModal, setDeckReviewActiveModal] = useState(null);
   const [isDeckAIGeneratorModalOpen, setIsDeckAIGeneratorModalOpen] = useState(false);
   const [isDeckTemplateLibraryModalOpen, setIsDeckTemplateLibraryModalOpen] = useState(false);
+  const [isDeckCreationChoiceModalOpen, setIsDeckCreationChoiceModalOpen] = useState(false);
   const [deckTemplateSearch, setDeckTemplateSearch] = useState('');
   const [deckTemplateCategory, setDeckTemplateCategory] = useState('all');
   const [isDeckAIGenerating, setIsDeckAIGenerating] = useState(false);
@@ -35968,6 +35969,32 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
   
 
+  
+  const handleCreateBlankDeck = () => {
+    const blankSlide = {
+      id: 1,
+      title: 'Untitled Slide',
+      tagline: 'Novaris Company',
+      headline: 'New Presentation',
+      blurb: 'Click anywhere to begin crafting your presentation narrative.',
+      layoutStyle: 'Title Slide',
+      designPresetKey: 'blank',
+      backgroundColor: '#05070B',
+      vectorWaveStyle: 'original-pitch',
+      vectorColor1: '#00f0ff',
+      vectorColor2: '#7c4dff',
+      shapes: [],
+      bentoCards: []
+    };
+    setDeckSlidesData([blankSlide]);
+    setActiveDeckSlideId(1);
+    setActiveDeckTitle('Untitled Deck');
+    setDeckTitle('Untitled Deck');
+    setIsDeckCreationChoiceModalOpen(false);
+    showToast('Created fresh blank presentation');
+  };
+  
+
   const handleLoadStartupPitchDeck = () => {
     setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_DECK_SLIDES)));
     setActiveDeckSlideId(DEFAULT_DECK_SLIDES[0].id);
@@ -52292,56 +52319,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     {deckActiveToolbarMenu === 'title' && (
                                       <div 
                                         onClick={(e) => e.stopPropagation()}
-                                        className="absolute left-0 top-9 w-60 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.12)] p-2 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
+                                        className="absolute left-0 top-9 w-64 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.14)] p-2 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
                                       >
-                                        <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Presentations</div>
-                                        {[
-                                          'Product Roadmap 2025',
-                                          'Q3 Executive Pitch',
-                                          'Marketing Strategy Deck',
-                                          'AI Product Overview'
-                                        ].map((t) => (
-                                          <button
-                                            key={t}
-                                            type="button"
-                                            onClick={() => {
-                                              setActiveDeckTitle(t);
-                                              setDeckActiveToolbarMenu(null);
-                                              showToast(`Switched deck to ${t}`);
-                                            }}
-                                            className={`w-full text-left px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center justify-between ${
-                                              t === activeDeckTitle ? 'bg-violet-50 dark:bg-violet-950/50 text-[#7C4DFF] font-semibold' : 'hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-200'
-                                            }`}
-                                          >
-                                            <span>{t}</span>
-                                            {t === activeDeckTitle && <Sparkles size={12} className="text-[#7C4DFF]" />}
-                                          </button>
-                                        ))}
-                                        <div className="h-px bg-gray-100 dark:bg-zinc-800 my-1"></div>
+                                        <div className="px-2.5 py-1 text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider flex items-center justify-between">
+                                          <span>Presentations</span>
+                                          <span className="text-[9.5px] font-mono">Deck</span>
+                                        </div>
+
+                                        {/* Current Active Presentation Item */}
+                                        <div className="px-2.5 py-2 rounded-xl bg-violet-50 dark:bg-violet-950/50 border border-violet-200/80 dark:border-violet-800/80 my-1 flex items-center justify-between">
+                                          <div className="flex flex-col min-w-0">
+                                            <span className="text-xs font-bold text-[#7C4DFF] truncate">{activeDeckTitle || 'Untitled Deck'}</span>
+                                            <span className="text-[10px] text-zinc-500">Active presentation • {(deckSlidesData || []).length} slides</span>
+                                          </div>
+                                          <div className="w-2 h-2 rounded-full bg-[#7C4DFF] shadow-[0_0_8px_rgba(124,77,255,0.8)]" />
+                                        </div>
+
+                                        {/* Minimalist Empty State */}
+                                        <div className="px-2.5 py-3 text-center flex flex-col items-center justify-center gap-1 border border-dashed border-gray-200 dark:border-zinc-800 rounded-xl my-1 bg-gray-50/50 dark:bg-zinc-950/40">
+                                          <p className="text-[11px] font-medium text-gray-600 dark:text-zinc-400">No other presentations yet.</p>
+                                          <p className="text-[10px] text-gray-400 dark:text-zinc-500">Create a new deck to add another project.</p>
+                                        </div>
+
+                                        <div className="h-px bg-gray-100 dark:bg-zinc-800 my-1.5"></div>
                                         <button
                                           type="button"
                                           onClick={() => {
                                             setDeckActiveToolbarMenu(null);
-                                            addDeckSlide();
-                                            showToast('Created new presentation deck');
+                                            setIsDeckCreationChoiceModalOpen(true);
                                           }}
-                                          className="w-full text-left px-2.5 py-1.5 text-xs font-semibold text-[#7C4DFF] hover:bg-violet-50 dark:hover:bg-violet-950/50 rounded-lg transition-colors flex items-center gap-1.5"
+                                          className="w-full text-left px-2.5 py-2 text-xs font-bold text-[#7C4DFF] hover:bg-violet-50 dark:hover:bg-violet-950/50 rounded-xl transition-all cursor-pointer flex items-center gap-2"
                                         >
-                                          <Plus size={13} />
-                                          <span>+ Create New Deck</span>
+                                          <Plus size={14} className="text-[#7C4DFF]" />
+                                          <span>Create New Deck</span>
                                         </button>
                                       </div>
                                     )}
                                   </div>
-
-                                  <button
-                                    type="button"
-                                    onClick={addDeckSlide}
-                                    className="w-7 h-7 flex items-center justify-center border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-100/80 dark:hover:bg-zinc-800 text-[#7C4DFF] transition-colors shrink-0"
-                                    title="Add slide"
-                                  >
-                                    <Plus size={15} />
-                                  </button>
 
                                   <div className="w-px h-4 bg-gray-200/80 dark:bg-zinc-700 shrink-0 mx-0.5" />
                                 </div>
@@ -54594,6 +54608,89 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       
                         
                         
+                        
+                        {/* ── DECK CREATION CHOICE MODAL ── */}
+                        {isDeckCreationChoiceModalOpen && createPortal(
+                          <div 
+                            className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"
+                            onClick={() => setIsDeckCreationChoiceModalOpen(false)}
+                          >
+                            <div 
+                              className="bg-zinc-950 border border-white/15 text-zinc-100 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* Modal Header */}
+                              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/[0.02]">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400">
+                                    <Plus size={16} />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-bold text-sm text-white tracking-tight">Create New Presentation</h3>
+                                    <p className="text-[11px] text-zinc-400">Select how you want to begin your presentation</p>
+                                  </div>
+                                </div>
+                                <button 
+                                  type="button" 
+                                  onClick={() => setIsDeckCreationChoiceModalOpen(false)}
+                                  className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/15 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+
+                              {/* Choice Cards */}
+                              <div className="p-5 grid grid-cols-2 gap-3.5">
+                                {/* Option 1: Template */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsDeckCreationChoiceModalOpen(false);
+                                    setIsDeckTemplateLibraryModalOpen(true);
+                                  }}
+                                  className="group p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-cyan-500/40 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:shadow-cyan-950/30"
+                                >
+                                  <div>
+                                    <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-3 group-hover:scale-105 transition-transform">
+                                      <Layout size={18} />
+                                    </div>
+                                    <h4 className="text-sm font-bold text-white mb-1">Start from Template</h4>
+                                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                                      Browse curated pitch decks, business plans, or use AI generation.
+                                    </p>
+                                  </div>
+                                  <div className="mt-3.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10.5px] font-semibold text-cyan-400">
+                                    <span>Template Library</span>
+                                    <span>Browse →</span>
+                                  </div>
+                                </button>
+
+                                {/* Option 2: Blank Canvas */}
+                                <button
+                                  type="button"
+                                  onClick={handleCreateBlankDeck}
+                                  className="group p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-violet-500/40 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:shadow-violet-950/30"
+                                >
+                                  <div>
+                                    <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 mb-3 group-hover:scale-105 transition-transform">
+                                      <FileText size={18} />
+                                    </div>
+                                    <h4 className="text-sm font-bold text-white mb-1">Blank Canvas</h4>
+                                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                                      Start from a clean slate and author your slides from scratch.
+                                    </p>
+                                  </div>
+                                  <div className="mt-3.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10.5px] font-semibold text-violet-400">
+                                    <span>Clean Slate</span>
+                                    <span>Create Blank →</span>
+                                  </div>
+                                </button>
+                              </div>
+                            </div>
+                          </div>,
+                          document.body
+                        )}
+
                         {/* ── DEDICATED DECK TEMPLATE LIBRARY MODAL ── */}
                         {isDeckTemplateLibraryModalOpen && createPortal(
                           <div 
