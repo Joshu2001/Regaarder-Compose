@@ -321,6 +321,25 @@ const LassoLoopIcon = ({ size = 12, className = '', style = {} }) => (
   </svg>
 );
 
+const ContrastIcon = ({ size = 14, className = '', style = {} }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    style={style}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 2a10 10 0 0 1 0 20z" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 const RegaarderAiIcon = ({ size = 18, className = '', style = {} }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -14185,6 +14204,8 @@ const DEFAULT_DECK_SLIDES = [
   const [deckLineDrag, setDeckLineDrag] = useState({ isDragging: false, startY: 0, origY: 0 });
   const [deckBentoDrag, setDeckBentoDrag] = useState({ isDragging: false, cardId: null, startX: 0, startY: 0, origX: 0, origY: 0 });
   const [deckFloatingMenuOpen, setDeckFloatingMenuOpen] = useState(null);
+  const [deckImageContextMenu, setDeckImageContextMenu] = useState(null);
+  const [deckAssetPreviewState, setDeckAssetPreviewState] = useState(null);
   const [activeCardIconPicker, setActiveCardIconPicker] = useState(null);
   const [activeOrbColorPicker, setActiveOrbColorPicker] = useState(null);
   const [activePresenterImgPicker, setActivePresenterImgPicker] = useState(false);
@@ -14197,6 +14218,13 @@ const DEFAULT_DECK_SLIDES = [
   const [activeBadgeShapePicker, setActiveBadgeShapePicker] = useState(null);
   const [activeBadgeColorPicker, setActiveBadgeColorPicker] = useState(null);
   const [activeBadgeIconPicker, setActiveBadgeIconPicker] = useState(null);
+  const [deckIntelligenceUndoSnapshot, setDeckIntelligenceUndoSnapshot] = useState(null);
+  const [deckIntelligenceActiveBanner, setDeckIntelligenceActiveBanner] = useState(null);
+  const [activeShapeFontPicker, setActiveShapeFontPicker] = useState(null);
+  const [activeShapeSizePicker, setActiveShapeSizePicker] = useState(null);
+  const [activeShapeFillPicker, setActiveShapeFillPicker] = useState(null);
+  const [activeShapeStrokePicker, setActiveShapeStrokePicker] = useState(null);
+  const [activeShapeEffectPicker, setActiveShapeEffectPicker] = useState(null);
   const [activeAdvIconPicker, setActiveAdvIconPicker] = useState(null);
   const [activeTractionChartPicker, setActiveTractionChartPicker] = useState(false);
   const [activeFundsChartPicker, setActiveFundsChartPicker] = useState(false);
@@ -14482,6 +14510,242 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   const imageFileInputRef = useRef(null);
   const logoFileInputRef = useRef(null);
   const vectorizerFileInputRef = useRef(null);
+
+  // ── DETERMINISTIC-FIRST AGENTIC DECK INTELLIGENCE ENGINE ──
+  const executeDeckIntelligenceAction = (actionName, customQuery = '') => {
+    if (!activeDeckSlide) return;
+
+    // 1. Snapshot previous state for 1-click Undo
+    const prevSnapshot = JSON.parse(JSON.stringify(activeDeckSlide));
+    setDeckIntelligenceUndoSnapshot(prevSnapshot);
+
+    const queryLower = (customQuery || actionName || '').toLowerCase();
+
+    // ── Action 1: Improve Visual Hierarchy ──
+    if (queryLower.includes('hierarchy') || queryLower.includes('typography') || queryLower.includes('scale') || queryLower.includes('font')) {
+      const curHeadline = activeDeckSlide.headline || 'STARTUP PITCH DECK';
+      const curBlurb = activeDeckSlide.blurb || '';
+      
+      // Golden ratio calculation: scale headline based on char length
+      const optimalHeadlineSize = curHeadline.length < 25 ? 44 : curHeadline.length < 45 ? 36 : 30;
+      
+      // Rebalance shapes / textboxes
+      const updatedShapes = (activeDeckSlide.shapes || []).map((s) => {
+        if (s.shapeType === 'heading') {
+          return { ...s, fontSize: optimalHeadlineSize, fontWeight: '800', posX: 80, posY: 140, width: 480 };
+        }
+        if (s.shapeType === 'textbox') {
+          return { ...s, fontSize: 15, lineHeight: 1.6, posX: 80, posY: 220, width: 440, height: 90 };
+        }
+        if (s.shapeType === 'pill') {
+          return { ...s, posX: 80, posY: 280, width: 260 };
+        }
+        return s;
+      });
+
+      updateDeckSlideFields(activeDeckSlide.id, {
+        shapes: updatedShapes,
+        headline: curHeadline,
+        tagline: activeDeckSlide.tagline || 'Ingoude Company'
+      });
+
+      setDeckIntelligenceActiveBanner({ actionName: 'Visual Hierarchy Rebalanced' });
+      showToast('✨ Rebalanced typography hierarchy & negative whitespace');
+    }
+
+    // ── Action 2: Balance Composition & Alignment ──
+    else if (queryLower.includes('composition') || queryLower.includes('balance') || queryLower.includes('align') || queryLower.includes('margins') || queryLower.includes('layout')) {
+      // 12-column grid alignment
+      const currentShapes = [...(activeDeckSlide.shapes || [])];
+      let runningY = 140;
+
+      const alignedShapes = currentShapes.map((s, idx) => {
+        if (s.shapeType === 'heading') {
+          const itemY = 120;
+          return { ...s, posX: 80, posY: itemY, width: Math.min(520, Math.max(340, s.width || 380)) };
+        }
+        if (s.shapeType === 'textbox') {
+          const itemY = 200;
+          return { ...s, posX: 80, posY: itemY, width: 460 };
+        }
+        if (s.shapeType === 'pill') {
+          const itemY = 280;
+          return { ...s, posX: 80, posY: itemY };
+        }
+        // Distribute geometric shapes along right quadrant
+        const geoX = 540 + (idx % 2) * 160;
+        const geoY = 160 + Math.floor(idx / 2) * 160;
+        return { ...s, posX: geoX, posY: geoY };
+      });
+
+      // Align Bento Cards into a grid if present
+      const alignedBentos = (activeDeckSlide.bentoCards || []).map((b, i) => ({
+        ...b,
+        posX: 70 + (i % 3) * 280,
+        posY: 240 + Math.floor(i / 3) * 200,
+        width: 260,
+        height: 180
+      }));
+
+      updateDeckSlideFields(activeDeckSlide.id, {
+        shapes: alignedShapes,
+        bentoCards: alignedBentos
+      });
+
+      setDeckIntelligenceActiveBanner({ actionName: 'Composition & Grid Balanced' });
+      showToast('✨ Balanced visual weight & 12-column grid alignment');
+    }
+
+    // ── Action 3: Strengthen Title Contrast & Backdrop Legibility ──
+    else if (queryLower.includes('contrast') || queryLower.includes('legibility') || queryLower.includes('luminance') || queryLower.includes('backdrop') || queryLower.includes('glow')) {
+      const updatedShapes = (activeDeckSlide.shapes || []).map((s) => {
+        if (s.shapeType === 'heading') {
+          return { ...s, color: '#ffffff', effect: 'cyber-glow' };
+        }
+        if (s.shapeType === 'textbox') {
+          return { ...s, color: '#f8fafc', fillType: 'glass', strokeWidth: 1, strokeColor: 'rgba(255,255,255,0.25)' };
+        }
+        if (s.shapeType === 'pill') {
+          return { ...s, hasShimmer: true, shimmerColor1: '#00f0ff', shimmerColor2: '#ec4899' };
+        }
+        return { ...s, effect: 'cyber-glow' };
+      });
+
+      updateDeckSlideFields(activeDeckSlide.id, {
+        shapes: updatedShapes,
+        backgroundColor: '#05070B',
+        vectorWaveHue: 'neon-cyan-purple',
+        vectorColor1: '#00f0ff',
+        vectorColor2: '#7c4dff'
+      });
+
+      setDeckIntelligenceActiveBanner({ actionName: 'Luminance & Title Contrast Enhanced' });
+      showToast('✨ Enhanced headline luminance & background contrast');
+    }
+
+    // ── Action 4: Auto-Format as Bento Grid ──
+    else if (queryLower.includes('bento') || queryLower.includes('card') || queryLower.includes('grid') || queryLower.includes('bullets') || queryLower.includes('structure')) {
+      // Generate 3 executive bento cards
+      const generatedBentos = [
+        {
+          id: 'bento_1_' + Date.now(),
+          posX: 70,
+          posY: 230,
+          width: 260,
+          height: 190,
+          style: 'midnight',
+          bg: 'linear-gradient(135deg, #172554 0%, #1e1b4b 50%, #0f172a 100%)',
+          borderRadius: 16,
+          title: 'Core Architecture',
+          description: 'Unified spatial canvas engine with sub-millisecond deterministic layout scaling.',
+          glow: 'rgba(59,130,246,0.5)'
+        },
+        {
+          id: 'bento_2_' + Date.now(),
+          posX: 350,
+          posY: 230,
+          width: 260,
+          height: 190,
+          style: 'frosted',
+          bg: 'rgba(24, 24, 27, 0.85)',
+          borderRadius: 16,
+          title: 'Executive Speed',
+          description: 'Hardware-accelerated 60fps design pipeline with zero-latency vector rendering.',
+          glow: 'rgba(0,240,255,0.4)'
+        },
+        {
+          id: 'bento_3_' + Date.now(),
+          posX: 630,
+          posY: 230,
+          width: 260,
+          height: 190,
+          style: 'cyber',
+          bg: 'linear-gradient(135deg, #18181b 0%, #09090b 100%)',
+          borderRadius: 16,
+          title: 'Autonomous Intelligence',
+          description: 'Context-aware Agentic AI assistant paired with mathematical design heuristics.',
+          glow: 'rgba(236,72,153,0.5)'
+        }
+      ];
+
+      // Re-anchor existing heading & pill to the top
+      const updatedShapes = (activeDeckSlide.shapes || []).map((s) => {
+        if (s.shapeType === 'heading') {
+          return { ...s, posY: 110, fontSize: 32 };
+        }
+        if (s.shapeType === 'pill') {
+          return { ...s, posY: 170 };
+        }
+        return s;
+      });
+
+      updateDeckSlideFields(activeDeckSlide.id, {
+        shapes: updatedShapes,
+        bentoCards: generatedBentos
+      });
+
+      setDeckIntelligenceActiveBanner({ actionName: 'Auto-Formatted as Bento Grid' });
+      showToast('✨ Formatted slide into structured 3-card Bento Grid');
+    }
+
+    // ── Action 5: Deck-Wide Harmony Actions ──
+    else if (queryLower.includes('theme') || queryLower.includes('deck theme')) {
+      const targetBg = '#05070B';
+      const targetWave = 'original-pitch';
+      const targetCol1 = '#0055ff';
+      const targetCol2 = '#00f0ff';
+      
+      const updatedDeck = deckSlides.map((sl) => ({
+        ...sl,
+        backgroundColor: targetBg,
+        vectorWaveStyle: targetWave,
+        vectorColor1: targetCol1,
+        vectorColor2: targetCol2,
+        vectorWaveHue: 'neon-cyan-purple'
+      }));
+      setDeckSlides(updatedDeck);
+      setDeckIntelligenceActiveBanner({ actionName: 'Consistent Theme Applied to Deck' });
+      showToast('✨ Harmonized theme & color scheme across all slides');
+    }
+    else if (queryLower.includes('inconsistencies') || queryLower.includes('typography inconsistencies')) {
+      const updatedDeck = deckSlides.map((sl) => ({
+        ...sl,
+        shapes: (sl.shapes || []).map((s) => ({
+          ...s,
+          fontFamily: "'Plus Jakarta Sans', sans-serif"
+        }))
+      }));
+      setDeckSlides(updatedDeck);
+      setDeckIntelligenceActiveBanner({ actionName: 'Typography Standardized Across Deck' });
+      showToast('✨ Standardized font pairings & hierarchy across all slides');
+    }
+    else if (queryLower.includes('coherence') || queryLower.includes('slide-to-slide')) {
+      const updatedDeck = deckSlides.map((sl, idx) => ({
+        ...sl,
+        tagline: sl.tagline || 'Ingoude Company',
+        footerLocation: sl.footerLocation || '123 Anywhere Street'
+      }));
+      setDeckSlides(updatedDeck);
+      setDeckIntelligenceActiveBanner({ actionName: 'Slide-to-Slide Coherence Optimized' });
+      showToast('✨ Aligned narrative pacing and metadata across deck');
+    }
+
+    // ── Fallback General AI Natural Language Transform ──
+    else {
+      // General executive polish
+      const updatedShapes = (activeDeckSlide.shapes || []).map((s) => {
+        if (s.shapeType === 'heading') return { ...s, fontSize: 36, color: '#ffffff' };
+        if (s.shapeType === 'pill') return { ...s, hasShimmer: true };
+        return s;
+      });
+      updateDeckSlideFields(activeDeckSlide.id, {
+        shapes: updatedShapes,
+        backgroundColor: '#05070B'
+      });
+      setDeckIntelligenceActiveBanner({ actionName: `Transformed: "${customQuery}"` });
+      showToast(`✨ Applied AI intelligence for "${customQuery}"`);
+    }
+  };
 
   const runImageVectorizer = (imageSrc, mode = vectorizerMode, threshold = vectorizerThreshold, color = vectorizerColor) => {
     if (!imageSrc) return;
@@ -34683,6 +34947,77 @@ Respond with a JSON array of slide objects matching the schema.`;
     }));
   };
 
+  const bringImageToFront = (imgId) => {
+    const images = Array.isArray(activeDeckSlide?.images) ? [...activeDeckSlide.images] : [];
+    const idx = images.findIndex((im) => im.id === imgId);
+    if (idx === -1) return;
+    const target = { ...images[idx], zIndex: 45, layerPosition: 'front' };
+    images.splice(idx, 1);
+    images.push(target);
+    updateDeckSlideField(activeDeckSlide?.id, 'images', images);
+    showToast('Brought to front');
+  };
+
+  const bringImageForward = (imgId) => {
+    const images = Array.isArray(activeDeckSlide?.images) ? [...activeDeckSlide.images] : [];
+    const idx = images.findIndex((im) => im.id === imgId);
+    if (idx === -1) return;
+    const currentZ = images[idx].zIndex !== undefined ? images[idx].zIndex : 20;
+    const target = { ...images[idx], zIndex: Math.min(45, currentZ + 8), layerPosition: currentZ + 8 >= 30 ? 'front' : 'middle' };
+    if (idx < images.length - 1) {
+      const temp = images[idx + 1];
+      images[idx] = temp;
+      images[idx + 1] = target;
+    } else {
+      images[idx] = target;
+    }
+    updateDeckSlideField(activeDeckSlide?.id, 'images', images);
+    showToast('Brought forward');
+  };
+
+  const sendImageBackward = (imgId) => {
+    const images = Array.isArray(activeDeckSlide?.images) ? [...activeDeckSlide.images] : [];
+    const idx = images.findIndex((im) => im.id === imgId);
+    if (idx === -1) return;
+    const currentZ = images[idx].zIndex !== undefined ? images[idx].zIndex : 20;
+    const target = { ...images[idx], zIndex: Math.max(1, currentZ - 8), layerPosition: currentZ - 8 <= 5 ? 'back' : 'middle' };
+    if (idx > 0) {
+      const temp = images[idx - 1];
+      images[idx] = temp;
+      images[idx - 1] = target;
+    } else {
+      images[idx] = target;
+    }
+    updateDeckSlideField(activeDeckSlide?.id, 'images', images);
+    showToast('Sent backward');
+  };
+
+  const sendImageToBack = (imgId) => {
+    const images = Array.isArray(activeDeckSlide?.images) ? [...activeDeckSlide.images] : [];
+    const idx = images.findIndex((im) => im.id === imgId);
+    if (idx === -1) return;
+    const target = { ...images[idx], zIndex: 1, layerPosition: 'back' };
+    images.splice(idx, 1);
+    images.unshift(target);
+    updateDeckSlideField(activeDeckSlide?.id, 'images', images);
+    showToast('Sent to back');
+  };
+
+  const duplicateDeckImage = (imgId) => {
+    const images = Array.isArray(activeDeckSlide?.images) ? [...activeDeckSlide.images] : [];
+    const target = images.find((im) => im.id === imgId);
+    if (!target) return;
+    const cloned = {
+      ...target,
+      id: (target.isVector ? 'vec_' : 'img_') + Date.now(),
+      posX: (target.posX || 0) + 24,
+      posY: (target.posY || 0) + 24
+    };
+    updateDeckSlideField(activeDeckSlide?.id, 'images', [...images, cloned]);
+    setDeckSelection({ type: 'image', id: cloned.id });
+    showToast('Asset duplicated');
+  };
+
   const updateDeckSlideFields = (slideId, fieldsObj) => {
     markUserHasEdited();
     setDeckSlidesData((prev) => prev.map((slide) => {
@@ -34747,33 +35082,51 @@ Respond with a JSON array of slide objects matching the schema.`;
     const handlePointerMove = (e) => {
       const dx = e.clientX - deckResizeDrag.startX;
       const dy = e.clientY - deckResizeDrag.startY;
-      const { handle, initW, initH, initX, initY, target } = deckResizeDrag;
+      const { handle, initW, initH, initX, initY, target, imgId } = deckResizeDrag;
       
       const isText = target && target.startsWith('text-');
-      const minW = isText ? 40 : 80;
-      const minH = isText ? 24 : 60;
-      const maxW = isText ? 950 : 850;
-      const maxH = isText ? 750 : 650;
+      const minW = isText ? 40 : 30;
+      const minH = isText ? 24 : 30;
+      const maxW = isText ? 950 : 950;
+      const maxH = isText ? 750 : 750;
 
       let newW = initW;
       let newH = initH;
       let newX = initX;
       let newY = initY;
 
-      if (handle.includes('right')) newW = Math.max(minW, Math.min(maxW, initW + dx));
-      if (handle.includes('left')) {
+      const isRight = handle.includes('right') || handle === 'e' || handle === 'ne' || handle === 'se';
+      const isLeft = handle.includes('left') || handle === 'w' || handle === 'nw' || handle === 'sw';
+      const isBottom = handle.includes('bottom') || handle === 's' || handle === 'sw' || handle === 'se';
+      const isTop = handle.includes('top') || handle === 'n' || handle === 'nw' || handle === 'ne';
+
+      if (isRight) newW = Math.max(minW, Math.min(maxW, initW + dx));
+      if (isLeft) {
         const deltaW = Math.min(initW - minW, dx);
         newW = initW - deltaW;
         newX = initX + deltaW;
       }
-      if (handle.includes('bottom')) newH = Math.max(minH, Math.min(maxH, initH + dy));
-      if (handle.includes('top')) {
+      if (isBottom) newH = Math.max(minH, Math.min(maxH, initH + dy));
+      if (isTop) {
         const deltaH = Math.min(initH - minH, dy);
         newH = initH - deltaH;
         newY = initY + deltaH;
       }
 
-      if (target === 'vector') {
+      if (target === 'image' && imgId) {
+        const currentImages = Array.isArray(activeDeckSlide?.images) ? activeDeckSlide.images : [];
+        const updated = currentImages.map((img) => {
+          if (img.id !== imgId) return img;
+          return {
+            ...img,
+            width: Math.round(newW),
+            height: Math.round(newH),
+            posX: Math.round(newX),
+            posY: Math.round(newY)
+          };
+        });
+        updateDeckSlideField(activeDeckSlide?.id, 'images', updated);
+      } else if (target === 'vector') {
         updateDeckSlideFields(activeDeckSlide?.id, {
           vectorWidth: Math.round(newW),
           vectorHeight: Math.round(newH),
@@ -34805,7 +35158,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       }
     };
     const handlePointerUp = () => {
-      setDeckResizeDrag((prev) => ({ ...prev, isResizing: false }));
+      setDeckResizeDrag((prev) => ({ ...prev, isResizing: false, imgId: null }));
     };
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
@@ -34813,7 +35166,92 @@ Respond with a JSON array of slide objects matching the schema.`;
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-  }, [deckResizeDrag, activeDeckSlide?.id]);
+  }, [deckResizeDrag, activeDeckSlide?.id, activeDeckSlide?.images]);
+
+  // Shape asset dragging lifecycle listener
+  useEffect(() => {
+    if (!deckResizeDrag.isDraggingShape || !deckResizeDrag.shapeId) return;
+    const handlePointerMove = (e) => {
+      const dx = e.clientX - deckResizeDrag.startX;
+      const dy = e.clientY - deckResizeDrag.startY;
+      const nextX = Math.round(deckResizeDrag.origX + dx);
+      const nextY = Math.round(deckResizeDrag.origY + dy);
+      
+      const currentShapes = Array.isArray(activeDeckSlide?.shapes) ? activeDeckSlide.shapes : [];
+      const updated = currentShapes.map((shp) => {
+        if (shp.id !== deckResizeDrag.shapeId) return shp;
+        return {
+          ...shp,
+          posX: nextX,
+          posY: nextY
+        };
+      });
+      updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+    };
+    const handlePointerUp = () => {
+      setDeckResizeDrag((prev) => ({ ...prev, isDraggingShape: false, shapeId: null }));
+    };
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [deckResizeDrag.isDraggingShape, deckResizeDrag.shapeId, deckResizeDrag.startX, deckResizeDrag.startY, deckResizeDrag.origX, deckResizeDrag.origY, activeDeckSlide?.id, activeDeckSlide?.shapes]);
+
+  // Image and Vector asset dragging lifecycle listener
+  useEffect(() => {
+    if (!deckResizeDrag.isDraggingImg || !deckResizeDrag.imgId) return;
+    const handlePointerMove = (e) => {
+      const dx = e.clientX - deckResizeDrag.startX;
+      const dy = e.clientY - deckResizeDrag.startY;
+      const nextX = Math.round(deckResizeDrag.origX + dx);
+      const nextY = Math.round(deckResizeDrag.origY + dy);
+      
+      const currentImages = Array.isArray(activeDeckSlide?.images) ? activeDeckSlide.images : [];
+      const updated = currentImages.map((img) => {
+        if (img.id !== deckResizeDrag.imgId) return img;
+        return {
+          ...img,
+          posX: nextX,
+          posY: nextY
+        };
+      });
+      updateDeckSlideField(activeDeckSlide?.id, 'images', updated);
+    };
+    const handlePointerUp = () => {
+      setDeckResizeDrag((prev) => ({ ...prev, isDraggingImg: false, imgId: null }));
+    };
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [deckResizeDrag.isDraggingImg, deckResizeDrag.imgId, deckResizeDrag.startX, deckResizeDrag.startY, deckResizeDrag.origX, deckResizeDrag.origY, activeDeckSlide?.id, activeDeckSlide?.images]);
+
+  // Click outside and keydown listener for deckImageContextMenu
+  useEffect(() => {
+    if (!deckImageContextMenu) return;
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.deck-image-context-menu')) {
+        setDeckImageContextMenu(null);
+        setDeckAssetPreviewState(null);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setDeckImageContextMenu(null);
+        setDeckAssetPreviewState(null);
+      }
+    };
+    window.addEventListener('pointerdown', handleOutsideClick);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('pointerdown', handleOutsideClick);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [deckImageContextMenu]);
 
   // Click outside listener for card icon picker popover
   useEffect(() => {
@@ -34826,6 +35264,20 @@ Respond with a JSON array of slide objects matching the schema.`;
     window.addEventListener('pointerdown', handleOutsideClick);
     return () => window.removeEventListener('pointerdown', handleOutsideClick);
   }, [activeCardIconPicker]);
+
+  // Click outside listener for shape customizer popovers
+  useEffect(() => {
+    if (!activeShapeFillPicker && !activeShapeStrokePicker && !activeShapeEffectPicker && !activeShapeFontPicker && !activeShapeSizePicker) return;
+    const handleShapeOutside = (e) => {
+      if (!e.target.closest('.shape-picker-popover') && !e.target.closest('.shape-trigger-btn')) {
+        setActiveShapeFillPicker(null);
+        setActiveShapeStrokePicker(null);
+        setActiveShapeEffectPicker(null);
+      }
+    };
+    window.addEventListener('pointerdown', handleShapeOutside);
+    return () => window.removeEventListener('pointerdown', handleShapeOutside);
+  }, [activeShapeFillPicker, activeShapeStrokePicker, activeShapeEffectPicker, activeShapeFontPicker, activeShapeSizePicker]);
 
   // Click outside listener for presenter and orb pickers
   useEffect(() => {
@@ -51505,93 +51957,254 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        },
                                        { 
                                          label: 'Insert', 
-                                         icon: Plus,
-                                         menuItems: [
-                                           'Picture / Image', 
-                                           'Brand Logo', 
-                                           'Convert JPG/PNG to Vector (SVG)',
-                                           'Contact Icon Shape', 
-                                           'Circle Shape', 
-                                           'Square Shape', 
-                                           'Diamond Shape', 
-                                           'Triangle Shape', 
-                                           'Presenter Pill Badge', 
-                                           'Gradient Pill Shape', 
-                                           'Divider Line', 
-                                           'Text Box (Multi-line)', 
-                                           'Heading H1', 
-                                           'Glow Vector Wave'
-                                         ],
-                                         onSelect: (item) => {
-                                           if (item.includes('Picture / Image')) {
-                                             imageFileInputRef.current?.click();
-                                           } else if (item.includes('Brand Logo')) {
-                                             logoFileInputRef.current?.click();
-                                           } else if (item.includes('Convert JPG/PNG to Vector')) {
-                                             vectorizerFileInputRef.current?.click();
-                                           } else if (item.includes('Contact Icon') || item.includes('Circle Shape') || item.includes('Square Shape') || item.includes('Diamond Shape') || item.includes('Triangle Shape')) {
-                                             const shapeType = item.includes('Circle') ? 'circle' : item.includes('Square') ? 'rounded-square' : item.includes('Diamond') ? 'diamond' : item.includes('Triangle') ? 'triangle' : 'circle';
-                                             updateDeckSlideField(activeDeckSlide?.id, 'badge1_hidden', false);
-                                             updateDeckSlideField(activeDeckSlide?.id, 'badge1_shape', shapeType);
-                                             updateDeckSlideField(activeDeckSlide?.id, 'badge1_bg', '#7C4DFF');
-                                             setDeckSelection({ type: 'badge', id: 'badge1' });
-                                             showToast(`Inserted ${item}`);
-                                           } else if (item.includes('Bento Card')) {
-                                              const bentoStyle = item.includes('Midnight') ? 'midnight' : item.includes('Lavender') ? 'lavender' : item.includes('Cyber') ? 'cyber' : 'frosted';
-                                              const newCard = {
-                                                id: 'bento_' + Date.now(),
-                                                posX: 400,
-                                                posY: 180,
-                                                width: 320,
-                                                height: 200,
-                                                style: bentoStyle,
-                                                bg: bentoStyle === 'midnight' ? 'linear-gradient(to right, #172554, #1e1b4b, #0f172a)' : bentoStyle === 'lavender' ? '#C4B5FD' : bentoStyle === 'cyber' ? '#000000' : 'rgba(24,24,27,0.85)',
-                                                borderRadius: 16,
-                                                glow: bentoStyle === 'cyber' ? 'rgba(0,240,255,0.5)' : 'rgba(255,255,255,0.1)'
-                                              };
-                                              updateDeckSlideField(activeDeckSlide?.id, 'bentoCards', [...(activeDeckSlide?.bentoCards || []), newCard]);
-                                              setDeckSelection({ type: 'bentoCard', id: newCard.id });
-                                              showToast(`Inserted ${item}`);
-                                            } else if (item.includes('Presenter Pill') || item.includes('Gradient Pill Shape')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'pillHidden', false);
-                                             updateDeckSlideField(activeDeckSlide?.id, 'presenter', 'PRESENT BY NEIL TRAN');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'pillGradient', 'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)');
-                                             setDeckSelection({ type: 'pill', id: 'presenter-pill' });
-                                             showToast(`Inserted ${item}`);
-                                           } else if (item.includes('Divider Line')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'footerLineHidden', false);
-                                             setDeckSelection({ type: 'line', id: 'footer-divider' });
-                                             showToast('Inserted Divider Line');
-                                           } else if (item.includes('Glow Vector Wave')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', false);
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'original-pitch');
-                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#0055ff');
-                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#00f0ff');
-                                             setDeckSelection({ type: 'vector', id: 'vector-mesh' });
-                                             showToast('Inserted Vector Wave');
-                                           }
-                                         }
-                                       },
-                                       { 
-                                         label: 'AI', 
-                                         icon: Bot,
+                                          icon: Plus,
+                                          menuItems: [
+                                            'Picture / Image', 
+                                            'Brand Logo', 
+                                            'Convert JPG/PNG to Vector (SVG)',
+                                            'Contact Icon Shape', 
+                                            'Circle Shape', 
+                                            'Square Shape', 
+                                            'Diamond Shape', 
+                                            'Triangle Shape', 
+                                            'Presenter Pill Badge', 
+                                            'Gradient Pill Shape', 
+                                            'Divider Line', 
+                                            'Text Box (Multi-line)', 
+                                            'Heading H1', 
+                                            'Glow Vector Wave'
+                                          ],
+                                          onSelect: (item) => {
+                                            if (item.includes('Picture / Image')) {
+                                              imageFileInputRef.current?.click();
+                                            } else if (item.includes('Brand Logo')) {
+                                              logoFileInputRef.current?.click();
+                                            } else if (item.includes('Convert JPG/PNG to Vector') || item.includes('Convert PNG/JPG') || item.includes('AI Vectorize')) {
+                                              vectorizerFileInputRef.current?.click();
+                                            } else if (item.includes('Heading') || item.includes('H1')) {
+                                               const newShape = {
+                                                 id: 'shape_' + Date.now(),
+                                                 shapeType: 'heading',
+                                                 name: 'Heading H1',
+                                                 label: 'HEADLINE TEXT',
+                                                 posX: 320,
+                                                 posY: 180,
+                                                 width: 380,
+                                                 height: 60,
+                                                 fontSize: 32,
+                                                 color: '#ffffff',
+                                                 opacity: 1,
+                                                 zIndex: 30
+                                               };
+                                               updateDeckSlideField(activeDeckSlide?.id, 'shapes', [...(activeDeckSlide?.shapes || []), newShape]);
+                                               setDeckSelection({ type: 'shape', id: newShape.id });
+                                               showToast('Inserted Heading H1');
+                                             } else if (item.includes('Text Box') || item.includes('Paragraph') || item.includes('Typography')) {
+                                               const newShape = {
+                                                 id: 'shape_' + Date.now(),
+                                                 shapeType: 'textbox',
+                                                 name: 'Text Box',
+                                                 label: 'Enter your slide narrative and descriptive text here. Fully editable and draggable.',
+                                                 posX: 320,
+                                                 posY: 240,
+                                                 width: 360,
+                                                 height: 90,
+                                                 fontSize: 14,
+                                                 color: '#e2e8f0',
+                                                 fillType: 'glass',
+                                                 fill: 'rgba(255,255,255,0.04)',
+                                                 strokeWidth: 1,
+                                                 strokeStyle: 'solid',
+                                                 strokeColor: 'rgba(255,255,255,0.15)',
+                                                 borderRadius: 12,
+                                                 opacity: 1,
+                                                 zIndex: 30
+                                               };
+                                               updateDeckSlideField(activeDeckSlide?.id, 'shapes', [...(activeDeckSlide?.shapes || []), newShape]);
+                                               setDeckSelection({ type: 'shape', id: newShape.id });
+                                               showToast('Inserted Text Box');
+                                             } else if (item.includes('Circle Shape')) {
+                                               const newShape = {
+                                                 id: 'shape_' + Date.now(),
+                                                 shapeType: 'circle',
+                                                 name: 'Circle',
+                                                 posX: 400,
+                                                 posY: 220,
+                                                 width: 140,
+                                                 height: 140,
+                                                 fillType: 'solid',
+                                                 fill: '#7C4DFF',
+                                                 strokeStyle: 'solid',
+                                                 strokeWidth: 1,
+                                                 strokeColor: 'rgba(255,255,255,0.3)',
+                                                 borderRadius: 9999,
+                                                 opacity: 1,
+                                                 zIndex: 20
+                                               };
+                                               updateDeckSlideField(activeDeckSlide?.id, 'shapes', [...(activeDeckSlide?.shapes || []), newShape]);
+                                               setDeckSelection({ type: 'shape', id: newShape.id });
+                                               showToast('Inserted Circle Shape');
+                                             } else if (item.includes('Square Shape')) {
+                                               const newShape = {
+                                                 id: 'shape_' + Date.now(),
+                                                 shapeType: 'square',
+                                                 name: 'Square',
+                                                 posX: 400,
+                                                 posY: 220,
+                                                 width: 160,
+                                                 height: 160,
+                                                 fillType: 'solid',
+                                                 fill: '#1e293b',
+                                                 strokeStyle: 'solid',
+                                                 strokeWidth: 2,
+                                                 strokeColor: '#334155',
+                                                 borderRadius: 16,
+                                                 opacity: 1,
+                                                 zIndex: 20
+                                               };
+                                               updateDeckSlideField(activeDeckSlide?.id, 'shapes', [...(activeDeckSlide?.shapes || []), newShape]);
+                                               setDeckSelection({ type: 'shape', id: newShape.id });
+                                               showToast('Inserted Square Shape');
+                                             } else if (item.includes('Triangle Shape')) {
+                                               const newShape = {
+                                                 id: 'shape_' + Date.now(),
+                                                 shapeType: 'triangle',
+                                                 name: 'Triangle',
+                                                 posX: 400,
+                                                 posY: 220,
+                                                 width: 150,
+                                                 height: 150,
+                                                 fillType: 'solid',
+                                                 fill: '#ec4899',
+                                                 strokeStyle: 'solid',
+                                                 strokeWidth: 2,
+                                                 strokeColor: 'rgba(255,255,255,0.4)',
+                                                 opacity: 1,
+                                                 zIndex: 20
+                                               };
+                                               updateDeckSlideField(activeDeckSlide?.id, 'shapes', [...(activeDeckSlide?.shapes || []), newShape]);
+                                               setDeckSelection({ type: 'shape', id: newShape.id });
+                                               showToast('Inserted Triangle Shape');
+                                             } else if (item.includes('Diamond Shape')) {
+                                               const newShape = {
+                                                 id: 'shape_' + Date.now(),
+                                                 shapeType: 'diamond',
+                                                 name: 'Diamond',
+                                                 posX: 400,
+                                                 posY: 220,
+                                                 width: 140,
+                                                 height: 140,
+                                                 fillType: 'solid',
+                                                 fill: '#00f0ff',
+                                                 strokeStyle: 'solid',
+                                                 strokeWidth: 2,
+                                                 strokeColor: 'rgba(255,255,255,0.4)',
+                                                 opacity: 1,
+                                                 zIndex: 20
+                                               };
+                                               updateDeckSlideField(activeDeckSlide?.id, 'shapes', [...(activeDeckSlide?.shapes || []), newShape]);
+                                               setDeckSelection({ type: 'shape', id: newShape.id });
+                                               showToast('Inserted Diamond Shape');
+                                             } else if (item.includes('Presenter Pill') || item.includes('Gradient Pill Shape')) {
+                                               const newShape = {
+                                                 id: 'shape_' + Date.now(),
+                                                 shapeType: 'pill',
+                                                 name: 'Presenter Pill',
+                                                 label: 'PRESENT BY NEIL TRAN',
+                                                 posX: 340,
+                                                 posY: 260,
+                                                 width: 260,
+                                                 height: 40,
+                                                 fillType: 'glass',
+                                                 fill: 'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)',
+                                                 strokeStyle: 'solid',
+                                                 strokeWidth: 1,
+                                                 strokeColor: 'rgba(255,255,255,0.4)',
+                                                 borderRadius: 20,
+                                                 hasShimmer: true,
+                                                 shimmerColor1: '#00f0ff',
+                                                 shimmerColor2: '#ec4899',
+                                                 opacity: 1,
+                                                 zIndex: 25
+                                               };
+                                               updateDeckSlideField(activeDeckSlide?.id, 'shapes', [...(activeDeckSlide?.shapes || []), newShape]);
+                                               setDeckSelection({ type: 'shape', id: newShape.id });
+                                               showToast('Inserted Presenter Pill Badge');
+                                             } else if (item.includes('Divider Line')) {
+                                               const newShape = {
+                                                 id: 'shape_' + Date.now(),
+                                                 shapeType: 'divider',
+                                                 name: 'Divider Line',
+                                                 posX: 340,
+                                                 posY: 280,
+                                                 width: 340,
+                                                 height: 24,
+                                                 lineThickness: 2,
+                                                 fill: '#7C4DFF',
+                                                 strokeStyle: 'solid',
+                                                 borderRadius: 2,
+                                                 opacity: 1,
+                                                 zIndex: 20
+                                               };
+                                               updateDeckSlideField(activeDeckSlide?.id, 'shapes', [...(activeDeckSlide?.shapes || []), newShape]);
+                                               setDeckSelection({ type: 'shape', id: newShape.id });
+                                               showToast('Inserted Divider Line');
+                                             } else if (item.includes('Contact Icon')) {
+                                               const newShape = {
+                                                 id: 'shape_' + Date.now(),
+                                                 shapeType: 'contact',
+                                                 name: 'Contact Badge',
+                                                 label: '+1 (555) 019-2834 • contact@regaarder.com',
+                                                 posX: 340,
+                                                 posY: 280,
+                                                 width: 300,
+                                                 height: 42,
+                                                 fillType: 'glass',
+                                                 fill: 'rgba(255,255,255,0.08)',
+                                                 strokeStyle: 'solid',
+                                                 strokeWidth: 1,
+                                                 strokeColor: 'rgba(255,255,255,0.2)',
+                                                 borderRadius: 21,
+                                                 opacity: 1,
+                                                 zIndex: 25
+                                               };
+                                               updateDeckSlideField(activeDeckSlide?.id, 'shapes', [...(activeDeckSlide?.shapes || []), newShape]);
+                                               setDeckSelection({ type: 'shape', id: newShape.id });
+                                               showToast('Inserted Contact Icon Shape');
+                                             } else if (item.includes('Bento Card')) {
+                                                const bentoStyle = item.includes('Midnight') ? 'midnight' : item.includes('Lavender') ? 'lavender' : item.includes('Cyber') ? 'cyber' : 'frosted';
+                                                const newCard = {
+                                                  id: 'bento_' + Date.now(),
+                                                  posX: 400,
+                                                  posY: 180,
+                                                  width: 320,
+                                                  height: 200,
+                                                  style: bentoStyle,
+                                                  bg: bentoStyle === 'midnight' ? 'linear-gradient(to right, #172554, #1e1b4b, #0f172a)' : bentoStyle === 'lavender' ? '#C4B5FD' : bentoStyle === 'cyber' ? '#000000' : 'rgba(24,24,27,0.85)',
+                                                  borderRadius: 16,
+                                                  glow: bentoStyle === 'cyber' ? 'rgba(0,240,255,0.5)' : 'rgba(255,255,255,0.1)'
+                                                };
+                                                updateDeckSlideField(activeDeckSlide?.id, 'bentoCards', [...(activeDeckSlide?.bentoCards || []), newCard]);
+                                                setDeckSelection({ type: 'bentoCard', id: newCard.id });
+                                                showToast(`Inserted ${item}`);
+                                             } else if (item.includes('Glow Vector Wave')) {
+                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorHidden', false);
+                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'original-pitch');
+                                               updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#0055ff');
+                                               updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#00f0ff');
+                                              setDeckSelection({ type: 'vector', id: 'vector-mesh' });
+                                              showToast('Inserted Vector Wave');
+                                            }
+                                          }
+                                        },
+                                        { 
+                                          label: 'AI',
+                                          icon: RegaarderAiIcon,
                                          menuItems: ['Auto-Design Slide 1 Cover', 'Improve typography hierarchy', 'Generate slide content', 'Auto-retheme presentation', 'Make More Visual'],
                                          onSelect: (item) => {
-                                           if (item.includes('Slide 1 Cover')) {
-                                             updateDeckSlideField(activeDeckSlide?.id, 'layoutStyle', 'Startup Pitch Deck');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'backgroundColor', '#05070B');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'tagline', 'Ingoude Company');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'headline', 'STARTUP\nPITCH DECK');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'presenter', 'PRESENT BY NEIL TRAN');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'footerEmail', 'www.reallygreatsite.com');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'footerWeb', 'hello@reallygreatsite.com');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'footerLocation', '123 Anywhere Street');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveStyle', 'original-pitch');
-                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorColor1', '#0055ff');
-                                              updateDeckSlideField(activeDeckSlide?.id, 'vectorColor2', '#00f0ff');
-                                             updateDeckSlideField(activeDeckSlide?.id, 'vectorWaveHue', 'neon-cyan-purple');
-                                           }
-                                           showToast(`AI Action: ${item}`);
+                                            executeDeckIntelligenceAction(item);
+                                            setDeckActiveToolbarMenu(null);
+                                          
                                          }
                                        },].map((btn) => {
                                       const isOpen = deckActiveToolbarMenu === btn.label;
@@ -52473,22 +53086,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 ) : btn.label === 'AI' ? (
                                                   <>
                                                     {/* Elevated Apple Deck Intelligence Panel */}
-                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 shrink-0 space-y-2 select-none font-sans">
+                                                    <div className="p-3 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/90 shrink-0 space-y-2.5 select-none font-sans">
                                                       <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1.5">
-                                                          <div className="w-5 h-5 rounded-md bg-[#7C4DFF]/10 dark:bg-violet-400/10 text-[#7C4DFF] dark:text-violet-300 flex items-center justify-center">
-                                                            <Sparkles size={11} />
+                                                        <div className="flex items-center gap-2">
+                                                          <div className="w-5.5 h-5.5 rounded-lg bg-[#7C4DFF]/10 dark:bg-violet-400/10 text-[#7C4DFF] dark:text-violet-300 flex items-center justify-center shadow-xs">
+                                                            <RegaarderAiIcon size={14} className="text-[#7C4DFF] dark:text-violet-300" />
                                                           </div>
-                                                          <span className="text-[10px] font-bold tracking-wider text-slate-700 dark:text-zinc-200 uppercase">
+                                                          <span className="text-[10.5px] font-bold tracking-wider text-slate-800 dark:text-zinc-200 uppercase">
                                                             DECK INTELLIGENCE
                                                           </span>
                                                         </div>
-                                                        <span className="text-[8.5px] font-medium px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-mono">
+                                                        <span className="text-[8.5px] font-semibold px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-mono border border-black/5 dark:border-white/5">
                                                           SLIDE {activeDeckSlide?.id || 1}
                                                         </span>
                                                       </div>
 
-                                                      {/* Conversational Prompt Input */}
+                                                      {/* Spacious Apple-Style Conversational Prompt Input */}
                                                       <div className="relative flex items-center">
                                                         <input
                                                           type="text"
@@ -52497,27 +53110,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           onKeyDown={(e) => {
                                                             if (e.key === 'Enter' && deckAiSearch.trim()) {
                                                               e.preventDefault();
-                                                              showToast(`AI transforming deck with: "${deckAiSearch}"`);
+                                                              executeDeckIntelligenceAction('Custom Prompt', deckAiSearch);
                                                               setDeckActiveToolbarMenu(null);
                                                               setDeckAiSearch('');
                                                             }
                                                           }}
                                                           placeholder="What would you like to improve?"
-                                                          className="w-full h-7.5 pl-3 pr-8 text-xs bg-white dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-[#7C4DFF] dark:focus:border-violet-500 focus:ring-1 focus:ring-[#7C4DFF]/30 transition-all font-sans"
+                                                          className="w-full h-9.5 pl-3.5 pr-10 text-xs bg-white dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-xl border border-slate-200/90 dark:border-zinc-700/80 focus:outline-none focus:border-[#7C4DFF] dark:focus:border-violet-500 focus:ring-2 focus:ring-[#7C4DFF]/20 shadow-xs transition-all font-sans"
                                                         />
                                                         <button
                                                           type="button"
                                                           onClick={() => {
                                                             if (deckAiSearch.trim()) {
-                                                              showToast(`AI transforming deck with: "${deckAiSearch}"`);
+                                                              executeDeckIntelligenceAction('Custom Prompt', deckAiSearch);
                                                               setDeckActiveToolbarMenu(null);
                                                               setDeckAiSearch('');
                                                             }
                                                           }}
-                                                          className="absolute right-1.5 w-5 h-5 rounded-md bg-[#7C4DFF] text-white flex items-center justify-center cursor-pointer hover:bg-violet-600 transition-colors shadow-xs"
+                                                          className="absolute right-1.5 w-6.5 h-6.5 rounded-lg bg-[#7C4DFF] hover:bg-violet-600 active:scale-95 text-white flex items-center justify-center cursor-pointer transition-all shadow-xs"
                                                           title="Run intelligence prompt"
                                                         >
-                                                          <ArrowRight size={10} />
+                                                          <ArrowRight size={12} />
                                                         </button>
                                                       </div>
                                                     </div>
@@ -52532,7 +53145,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           {[
                                                             { label: 'Improve visual hierarchy', icon: Type, badge: 'Hierarchy', desc: 'Rebalance headline scale, tracking & whitespace' },
                                                             { label: 'Balance composition', icon: LayoutGrid, badge: 'Layout', desc: 'Optimize margins, element balance & alignment' },
-                                                            { label: 'Strengthen title contrast', icon: Sparkles, badge: 'Contrast', desc: 'Enhance headline luminance & backdrop legibility' },
+                                                            { label: 'Strengthen title contrast', icon: ContrastIcon, badge: 'Contrast', desc: 'Enhance headline luminance & backdrop legibility' },
                                                             { label: 'Auto-format as bento grid', icon: Square, badge: 'Cards', desc: 'Structure narrative bullets into visual cards' }
                                                           ]
                                                             .filter(ai => !deckAiSearch || ai.label.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.desc.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.badge.toLowerCase().includes(deckAiSearch.toLowerCase()))
@@ -53456,7 +54069,529 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                       {/* Presentation Editor Main Workspace Canvas */}
                       <div className="flex-1 flex flex-col justify-between items-center p-3 min-h-0 relative overflow-y-auto thin-scrollbar bg-[#F7F8FB]">
-                        
+                        {/* Hidden File Pickers for Slide Deck Media, Logos, and Vectorizer */}
+                        <input
+                          ref={imageFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleInsertDeckImageFile(file, false);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <input
+                          ref={logoFileInputRef}
+                          type="file"
+                          accept="image/*,image/svg+xml"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleInsertDeckImageFile(file, true);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <input
+                          ref={vectorizerFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                const dataUrl = ev.target.result;
+                                setVectorizerSourceImage(dataUrl);
+                                setVectorizerTargetImageId(null);
+                                setVectorizerModalOpen(true);
+                                runImageVectorizer(dataUrl, 'silhouette', 128, '#00f0ff');
+                              };
+                              reader.readAsDataURL(file);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+
+                        {/* Deck Image Context Menu with Live Hover Previews */}
+                        {deckImageContextMenu && typeof document !== 'undefined' && (() => {
+                          const activeImg = (activeDeckSlide?.images || []).find((im) => im.id === deckImageContextMenu.imgId);
+                          if (!activeImg) return null;
+                          const menuW = 240;
+                          const menuH = 380;
+                          const posX = Math.min(window.innerWidth - menuW - 16, Math.max(16, deckImageContextMenu.x));
+                          const posY = Math.min(window.innerHeight - menuH - 16, Math.max(16, deckImageContextMenu.y));
+
+                          return createPortal(
+                            <div 
+                              className="fixed z-[999999] deck-image-context-menu animate-in fade-in zoom-in-95 duration-100"
+                              style={{ left: `${posX}px`, top: `${posY}px` }}
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onContextMenu={(e) => e.preventDefault()}
+                            >
+                              <div className="w-[236px] bg-[#111319]/95 backdrop-blur-2xl text-zinc-200 border border-white/12 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] p-1.5 flex flex-col gap-1 select-none font-sans text-xs">
+                                {/* Header Badge */}
+                                <div className="px-2.5 py-1.5 flex items-center justify-between border-b border-white/8 mb-0.5">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                                    <RegaarderAiIcon size={12} strokeWidth={2} className="text-cyan-400" />
+                                    {activeImg.isVector ? 'Vector Asset' : 'Image Asset'}
+                                  </span>
+                                  <span className="text-[9px] font-mono text-cyan-400 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                                    Live Preview
+                                  </span>
+                                </div>
+
+                                {/* Section 1: Layer Ordering */}
+                                <div className="space-y-0.5">
+                                  <button
+                                    type="button"
+                                    onPointerEnter={() => setDeckAssetPreviewState({ imgId: activeImg.id, overrides: { zIndex: 99, opacity: 1, badge: 'Front' } })}
+                                    onPointerLeave={() => setDeckAssetPreviewState(null)}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setDeckAssetPreviewState(null);
+                                      bringImageToFront(activeImg.id);
+                                      setDeckImageContextMenu(null);
+                                    }}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-left group"
+                                  >
+                                    <span className="font-medium">Bring to Front</span>
+                                    <span className="text-[10px] font-mono text-zinc-400 group-hover:text-zinc-300">⌥⌘]</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onPointerEnter={() => setDeckAssetPreviewState({ imgId: activeImg.id, overrides: { zIndex: 45, badge: 'Forward' } })}
+                                    onPointerLeave={() => setDeckAssetPreviewState(null)}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setDeckAssetPreviewState(null);
+                                      bringImageForward(activeImg.id);
+                                      setDeckImageContextMenu(null);
+                                    }}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-left group"
+                                  >
+                                    <span className="font-medium">Bring Forward</span>
+                                    <span className="text-[10px] font-mono text-zinc-400 group-hover:text-zinc-300">⌘]</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onPointerEnter={() => setDeckAssetPreviewState({ imgId: activeImg.id, overrides: { zIndex: 10, badge: 'Backward' } })}
+                                    onPointerLeave={() => setDeckAssetPreviewState(null)}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setDeckAssetPreviewState(null);
+                                      sendImageBackward(activeImg.id);
+                                      setDeckImageContextMenu(null);
+                                    }}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-left group"
+                                  >
+                                    <span className="font-medium">Send Backward</span>
+                                    <span className="text-[10px] font-mono text-zinc-400 group-hover:text-zinc-300">⌘[</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onPointerEnter={() => setDeckAssetPreviewState({ imgId: activeImg.id, overrides: { zIndex: 1, opacity: 0.85, badge: 'Back' } })}
+                                    onPointerLeave={() => setDeckAssetPreviewState(null)}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setDeckAssetPreviewState(null);
+                                      sendImageToBack(activeImg.id);
+                                      setDeckImageContextMenu(null);
+                                    }}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-left group"
+                                  >
+                                    <span className="font-medium">Send to Back</span>
+                                    <span className="text-[10px] font-mono text-zinc-400 group-hover:text-zinc-300">⌥⌘[</span>
+                                  </button>
+                                </div>
+
+                                <div className="h-px bg-white/8 my-0.5" />
+
+                                {/* Section 2: AI Semantic Theme-Match & Lighting */}
+                                <div className="space-y-0.5">
+                                  <span className="px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">AI Theme & Glow</span>
+
+                                  <button
+                                    type="button"
+                                    onPointerEnter={() => setDeckAssetPreviewState({ imgId: activeImg.id, overrides: { vectorColor: '#00f0ff', vectorGlow: 'ultra-radiant', badge: 'Theme Cyan' } })}
+                                    onPointerLeave={() => setDeckAssetPreviewState(null)}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setDeckAssetPreviewState(null);
+                                      const updated = (activeDeckSlide?.images || []).map((im) => {
+                                        if (im.id !== activeImg.id) return im;
+                                        const newSvg = im.vectorSvg ? im.vectorSvg.replace(/fill="[^"]*"/g, 'fill="#00f0ff"') : im.vectorSvg;
+                                        return { ...im, vectorColor: '#00f0ff', vectorGlow: 'ultra-radiant', vectorSvg: newSvg };
+                                      });
+                                      updateDeckSlideField(activeDeckSlide?.id, 'images', updated);
+                                      setDeckImageContextMenu(null);
+                                      showToast('AI Theme-Match Cyan applied');
+                                    }}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-cyan-500/20 hover:text-cyan-200 transition-colors cursor-pointer text-left group"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2.5 h-2.5 rounded-full bg-[#00f0ff] shadow-[0_0_8px_#00f0ff]" />
+                                      <span className="font-medium text-cyan-300">AI Theme Cyan</span>
+                                    </div>
+                                    <Sparkles size={11} className="text-cyan-400" />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onPointerEnter={() => setDeckAssetPreviewState({ imgId: activeImg.id, overrides: { vectorColor: '#7c4dff', vectorGlow: 'ultra-radiant', badge: 'Theme Purple' } })}
+                                    onPointerLeave={() => setDeckAssetPreviewState(null)}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setDeckAssetPreviewState(null);
+                                      const updated = (activeDeckSlide?.images || []).map((im) => {
+                                        if (im.id !== activeImg.id) return im;
+                                        const newSvg = im.vectorSvg ? im.vectorSvg.replace(/fill="[^"]*"/g, 'fill="#7c4dff"') : im.vectorSvg;
+                                        return { ...im, vectorColor: '#7c4dff', vectorGlow: 'ultra-radiant', vectorSvg: newSvg };
+                                      });
+                                      updateDeckSlideField(activeDeckSlide?.id, 'images', updated);
+                                      setDeckImageContextMenu(null);
+                                      showToast('AI Theme-Match Purple applied');
+                                    }}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-violet-500/20 hover:text-violet-200 transition-colors cursor-pointer text-left group"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2.5 h-2.5 rounded-full bg-[#7c4dff] shadow-[0_0_8px_#7c4dff]" />
+                                      <span className="font-medium text-violet-300">AI Theme Purple</span>
+                                    </div>
+                                    <Sparkles size={11} className="text-violet-400" />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onPointerEnter={() => setDeckAssetPreviewState({ imgId: activeImg.id, overrides: { vectorGlow: 'soft', badge: 'Ambient Shadow' } })}
+                                    onPointerLeave={() => setDeckAssetPreviewState(null)}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setDeckAssetPreviewState(null);
+                                      const updated = (activeDeckSlide?.images || []).map((im) => im.id === activeImg.id ? { ...im, vectorGlow: 'soft' } : im);
+                                      updateDeckSlideField(activeDeckSlide?.id, 'images', updated);
+                                      setDeckImageContextMenu(null);
+                                      showToast('Ambient elevation shadow applied');
+                                    }}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-left group"
+                                  >
+                                    <span className="font-medium">Ambient Soft Elevation</span>
+                                    <span className="text-[10px] text-zinc-400 font-mono">Depth</span>
+                                  </button>
+                                </div>
+
+                                <div className="h-px bg-white/8 my-0.5" />
+
+                                {/* Section 3: Utility & Trace */}
+                                <div className="space-y-0.5">
+                                  {!activeImg.isVector && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setDeckImageContextMenu(null);
+                                        setVectorizerSourceImage(activeImg.url);
+                                        setVectorizerTargetImageId(activeImg.id);
+                                        setVectorizerModalOpen(true);
+                                        runImageVectorizer(activeImg.url, 'silhouette', 128, '#00f0ff');
+                                      }}
+                                      onPointerDown={(e) => e.stopPropagation()}
+                                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25 transition-colors cursor-pointer text-left font-bold"
+                                    >
+                                      <div className="flex items-center gap-1.5">
+                                        <Wand2 size={12} className="text-cyan-400" />
+                                        <span>Trace to Vector (AI)</span>
+                                      </div>
+                                      <span className="text-[9px] uppercase font-mono px-1 rounded bg-cyan-900/60">SVG</span>
+                                    </button>
+                                  )}
+
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      duplicateDeckImage(activeImg.id);
+                                      setDeckImageContextMenu(null);
+                                    }}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-left group"
+                                  >
+                                    <span className="font-medium">Duplicate</span>
+                                    <span className="text-[10px] font-mono text-zinc-400 group-hover:text-zinc-300">⌘D</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      const updated = (activeDeckSlide?.images || []).map((im) => im.id === activeImg.id ? { ...im, width: 220, height: 220, posX: 360, posY: 180, zIndex: 20 } : im);
+                                      updateDeckSlideField(activeDeckSlide?.id, 'images', updated);
+                                      setDeckImageContextMenu(null);
+                                      showToast('Size & position reset');
+                                    }}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer text-left group"
+                                  >
+                                    <span className="font-medium">Reset Size & Center</span>
+                                    <RotateCcw size={11} className="text-zinc-400 group-hover:text-zinc-200" />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      const updated = (activeDeckSlide?.images || []).filter((im) => im.id !== activeImg.id);
+                                      updateDeckSlideField(activeDeckSlide?.id, 'images', updated);
+                                      setDeckSelection({ type: 'none', id: null });
+                                      setDeckImageContextMenu(null);
+                                      showToast('Asset deleted');
+                                    }}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 transition-colors cursor-pointer text-left group"
+                                  >
+                                    <span className="font-medium">Delete Asset</span>
+                                    <Trash2 size={11} className="text-rose-400" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>,
+                            document.body
+                          );
+                        })()}
+
+                        {/* AI Vectorizer Studio Modal (Portal mounted for 100% viewport coverage over all topbars and chrome) */}
+                        {vectorizerModalOpen && typeof document !== 'undefined' && createPortal(
+                          <div 
+                            className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setVectorizerModalOpen(false);
+                            }}
+                          >
+                            <div 
+                              className="w-full max-w-2xl bg-[#0F1117] text-white border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col font-sans animate-in zoom-in-95 duration-150 relative z-[1000000]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* Header */}
+                              <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-white/[0.02]">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                                    <RegaarderAiIcon size={18} strokeWidth={2} />
+                                  </div>
+                                  <div>
+                                    <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
+                                      AI Vectorizer Studio
+                                      <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">SVG Core</span>
+                                    </h3>
+                                    <p className="text-[11px] text-zinc-400">Convert bitmap images to crisp scalable vector graphics</p>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setVectorizerModalOpen(false)}
+                                  className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                >
+                                  <X size={15} />
+                                </button>
+                              </div>
+
+                              {/* Body: 2 Columns */}
+                              <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                                {/* Left: Original Bitmap */}
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center justify-between text-xs font-semibold text-zinc-400">
+                                    <span>Original Bitmap</span>
+                                    <span className="text-[10px] font-mono bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-300">Raster (PNG/JPG)</span>
+                                  </div>
+                                  <div className="w-full aspect-square rounded-xl bg-black/40 border border-white/10 overflow-hidden flex items-center justify-center p-3 relative group">
+                                    {vectorizerSourceImage ? (
+                                      <img 
+                                        src={vectorizerSourceImage} 
+                                        alt="Source" 
+                                        className="max-w-full max-h-full object-contain rounded-lg shadow-md"
+                                      />
+                                    ) : (
+                                      <div className="flex flex-col items-center gap-2 text-zinc-500 text-xs">
+                                        <ImageIcon size={28} className="opacity-40" />
+                                        <span>No source image loaded</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Right: Live Vector Preview */}
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center justify-between text-xs font-semibold text-zinc-400">
+                                    <span className="flex items-center gap-1.5 text-cyan-300">
+                                      <RegaarderAiIcon size={14} strokeWidth={2} className="text-cyan-400" /> Vector Tracing (SVG)
+                                    </span>
+                                    {isVectorizing ? (
+                                      <span className="text-[10px] font-mono text-cyan-400 animate-pulse">Vectorizing…</span>
+                                    ) : (
+                                      <span className="text-[10px] font-mono bg-cyan-950/80 border border-cyan-500/40 px-1.5 py-0.5 rounded text-cyan-300">Infinite Scaling</span>
+                                    )}
+                                  </div>
+                                  <div className="w-full aspect-square rounded-xl bg-[#090B10] border border-cyan-500/20 overflow-hidden flex items-center justify-center p-3 relative shadow-[inset_0_0_20px_rgba(0,240,255,0.05)]">
+                                    {isVectorizing ? (
+                                      <div className="flex flex-col items-center gap-2 text-cyan-400 text-xs">
+                                        <div className="w-6 h-6 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" />
+                                        <span className="text-zinc-400">Analyzing contours…</span>
+                                      </div>
+                                    ) : vectorizerPreviewSvg ? (
+                                      <div 
+                                        className="w-full h-full flex items-center justify-center pointer-events-none"
+                                        style={{
+                                          filter: vectorizerMode === 'cyber' 
+                                            ? `drop-shadow(0 0 10px ${vectorizerColor}) drop-shadow(0 0 20px #ec4899)` 
+                                            : 'none'
+                                        }}
+                                        dangerouslySetInnerHTML={{ __html: vectorizerPreviewSvg }}
+                                      />
+                                    ) : (
+                                      <span className="text-zinc-500 text-xs">Generating SVG output…</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Controls: Mode selection, Threshold & Color */}
+                              <div className="px-5 pb-5 pt-1 space-y-4 border-t border-white/5 bg-white/[0.01]">
+                                {/* Tracing Mode Tabs */}
+                                <div>
+                                  <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                                    Vectorizing Mode
+                                  </label>
+                                  <div className="grid grid-cols-4 gap-2">
+                                    {[
+                                      { id: 'silhouette', label: 'Silhouette', desc: 'Solid monochrome' },
+                                      { id: 'outline', label: 'Outline', desc: 'Contour wireframe' },
+                                      { id: 'cyber', label: 'Cyber Glow', desc: 'Neon luminous' },
+                                      { id: 'color', label: 'Color Poster', desc: '4-Tone chromatic' }
+                                    ].map((m) => {
+                                      const active = vectorizerMode === m.id;
+                                      return (
+                                        <button
+                                          key={m.id}
+                                          type="button"
+                                          onClick={() => {
+                                            setVectorizerMode(m.id);
+                                            runImageVectorizer(vectorizerSourceImage, m.id, vectorizerThreshold, vectorizerColor);
+                                          }}
+                                          className={`p-2 rounded-xl text-left border transition-all cursor-pointer ${
+                                            active
+                                              ? 'bg-cyan-500/15 border-cyan-400 text-white shadow-sm ring-1 ring-cyan-400/30'
+                                              : 'bg-zinc-900/70 border-white/10 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                                          }`}
+                                        >
+                                          <div className={`text-xs font-bold ${active ? 'text-cyan-300' : 'text-zinc-200'}`}>{m.label}</div>
+                                          <div className="text-[9px] text-zinc-400 truncate">{m.desc}</div>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                {/* Threshold Slider & Color Picker Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {/* Sensitivity / Threshold */}
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Tracing Threshold</span>
+                                      <span className="text-[11px] font-mono text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/40">
+                                        {vectorizerThreshold}
+                                      </span>
+                                    </div>
+                                    <input
+                                      type="range"
+                                      min="30"
+                                      max="220"
+                                      value={vectorizerThreshold}
+                                      onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        setVectorizerThreshold(val);
+                                        runImageVectorizer(vectorizerSourceImage, vectorizerMode, val, vectorizerColor);
+                                      }}
+                                      className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                                    />
+                                  </div>
+
+                                  {/* Vector Tint / Fill Color */}
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Vector Color</span>
+                                      <span className="text-[11px] font-mono text-zinc-400">{vectorizerColor}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      {['#00f0ff', '#ffffff', '#7c4dff', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#f43f5e'].map((col) => (
+                                        <button
+                                          key={col}
+                                          type="button"
+                                          onClick={() => {
+                                            setVectorizerColor(col);
+                                            runImageVectorizer(vectorizerSourceImage, vectorizerMode, vectorizerThreshold, col);
+                                          }}
+                                          className={`w-6 h-6 rounded-md border transition-all cursor-pointer ${
+                                            vectorizerColor === col ? 'border-white scale-110 shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'border-white/20 hover:border-white/50'
+                                          }`}
+                                          style={{ backgroundColor: col }}
+                                          title={col}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Footer Actions */}
+                              <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/10 bg-zinc-950/70">
+                                <button
+                                  type="button"
+                                  onClick={() => setVectorizerModalOpen(false)}
+                                  className="px-4 py-1.5 text-xs font-semibold text-zinc-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={applyVectorToSlideImage}
+                                  disabled={!vectorizerPreviewSvg || isVectorizing}
+                                  className="px-5 py-2 text-xs font-bold text-slate-950 bg-gradient-to-r from-cyan-400 to-cyan-300 hover:from-cyan-300 hover:to-white rounded-xl shadow-[0_0_20px_rgba(0,240,255,0.35)] flex items-center gap-2 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                                >
+                                  <RegaarderAiIcon size={15} strokeWidth={2.2} className="text-slate-950" />
+                                  <span>{vectorizerTargetImageId ? 'Update Asset on Slide' : 'Insert Scalable Vector SVG'}</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>,
+                          document.body
+                        )}
+
                         {/* Centered Presentation Canvas */}
                         <div className="w-full flex-1 flex items-center justify-center relative min-h-[320px] py-4">
                           {!activeDeckSlide ? (
@@ -54568,84 +55703,117 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   
                                             {/* ── INTERACTIVE DRAGGABLE & RESIZABLE IMAGES, LOGOS & VECTOR TRACED ASSETS ── */}
                                             {Array.isArray(activeDeckSlide?.images) && activeDeckSlide.images.map((img) => {
-                                              const isImgSelected = deckSelection.type === 'image' && deckSelection.id === img.id;
-                                              const iX = img.posX || 0;
-                                              const iY = img.posY || 0;
-                                              const iW = img.width || 180;
-                                              const iH = img.height || 180;
-                                              const iOp = img.opacity ?? 1;
+                                               const isImgSelected = deckSelection.type === 'image' && deckSelection.id === img.id;
+                                               const isPreviewing = deckAssetPreviewState?.imgId === img.id;
+                                               const previewProps = isPreviewing ? (deckAssetPreviewState.overrides || {}) : {};
 
-                                              return (
-                                                <div
-                                                  key={img.id}
-                                                  className="absolute pointer-events-auto select-none z-20"
-                                                  style={{
-                                                    transform: `translate(${iX}px, ${iY}px)`,
-                                                    transition: deckResizeDrag.isResizing ? 'none' : 'transform 120ms ease-out'
-                                                  }}
-                                                >
-                                                  <div
-                                                    onPointerDown={(e) => {
-                                                      if (e.target.getAttribute('data-resize-handle')) return;
-                                                      e.stopPropagation();
-                                                      setDeckSelection({ type: 'image', id: img.id });
-                                                      setDeckResizeDrag({
-                                                        isResizing: false,
-                                                        isDraggingImg: true,
-                                                        imgId: img.id,
-                                                        startX: e.clientX,
-                                                        startY: e.clientY,
-                                                        origX: iX,
-                                                        origY: iY
-                                                      });
-                                                    }}
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      setDeckSelection({ type: 'image', id: img.id });
-                                                    }}
-                                                    className={`relative inline-flex items-center justify-center cursor-grab active:cursor-grabbing group transition-all ${
-                                                      isImgSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-2xl rounded-xl' : 'hover:outline hover:outline-1 hover:outline-white/30 rounded-xl'
-                                                    }`}
-                                                    style={{
-                                                      width: `${iW}px`,
-                                                      height: `${iH}px`,
-                                                      opacity: iOp,
-                                                      borderRadius: `${img.borderRadius || 0}px`
-                                                    }}
-                                                  >
-                                                    {/* Render Raster Image OR Clean Scalable SVG Vector */}
-                                                    {img.isVector && img.vectorSvg ? (
-                                                      <div 
-                                                        className="w-full h-full flex items-center justify-center pointer-events-none"
-                                                        style={{
-                                                          filter: img.vectorGlow === 'ultra-radiant' 
-                                                            ? `drop-shadow(0 0 15px ${img.vectorColor || '#00f0ff'}) drop-shadow(0 0 30px #ec4899)` 
-                                                            : 'none'
-                                                        }}
-                                                        dangerouslySetInnerHTML={{ __html: img.vectorSvg }}
-                                                      />
-                                                    ) : (
-                                                      <img 
-                                                        src={img.url} 
-                                                        alt={img.name || 'Slide asset'} 
-                                                        className="w-full h-full object-contain pointer-events-none"
-                                                        style={{ borderRadius: `${img.borderRadius || 0}px` }}
-                                                      />
-                                                    )}
+                                               const iX = previewProps.posX !== undefined ? previewProps.posX : (img.posX || 0);
+                                               const iY = previewProps.posY !== undefined ? previewProps.posY : (img.posY || 0);
+                                               const iW = previewProps.width !== undefined ? previewProps.width : (img.width || 180);
+                                               const iH = previewProps.height !== undefined ? previewProps.height : (img.height || 180);
+                                               const iOp = previewProps.opacity !== undefined ? previewProps.opacity : (img.opacity ?? 1);
+                                               const baseZ = img.zIndex !== undefined ? img.zIndex : 20;
+                                               const iZ = previewProps.zIndex !== undefined 
+                                                 ? previewProps.zIndex 
+                                                 : (baseZ <= 5 ? baseZ : (isImgSelected ? baseZ + 2 : baseZ));
+                                               const iColor = previewProps.vectorColor || img.vectorColor || '#00f0ff';
+                                               const iGlow = previewProps.vectorGlow || img.vectorGlow || 'none';
+                                               const iSvg = previewProps.vectorSvg || img.vectorSvg;
 
-                                                    {/* Selection Outline & 8 Resize Handles */}
-                                                    {isImgSelected && (
-                                                      <>
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'nw', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'ne', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nesw-resize z-40 hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'sw', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nesw-resize z-40 hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'se', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'e', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-2 h-3 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ew-resize z-40 hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'w', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-2 h-3 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ew-resize z-40 hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-2 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ns-resize z-40 hover:scale-125 transition-transform" />
-                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-2 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ns-resize z-40 hover:scale-125 transition-transform" />
+                                               return (
+                                                 <div
+                                                   key={img.id}
+                                                   className="absolute pointer-events-auto select-none"
+                                                   style={{
+                                                     transform: `translate(${iX}px, ${iY}px)`,
+                                                     zIndex: iZ,
+                                                     transition: (deckResizeDrag.isResizing || deckResizeDrag.isDraggingImg) ? 'none' : 'transform 120ms ease-out, filter 150ms ease, opacity 150ms ease'
+                                                   }}
+                                                 >
+                                                   <div
+                                                     onPointerDown={(e) => {
+                                                       if (e.target.getAttribute('data-resize-handle')) return;
+                                                       e.stopPropagation();
+                                                       setDeckSelection({ type: 'image', id: img.id });
+                                                       setDeckResizeDrag({
+                                                         isResizing: false,
+                                                         isDraggingImg: true,
+                                                         imgId: img.id,
+                                                         startX: e.clientX,
+                                                         startY: e.clientY,
+                                                         origX: iX,
+                                                         origY: iY
+                                                       });
+                                                     }}
+                                                     onClick={(e) => {
+                                                       e.stopPropagation();
+                                                       setDeckSelection({ type: 'image', id: img.id });
+                                                     }}
+                                                     onContextMenu={(e) => {
+                                                       e.preventDefault();
+                                                       e.stopPropagation();
+                                                       setDeckSelection({ type: 'image', id: img.id });
+                                                       setDeckImageContextMenu({
+                                                         isOpen: true,
+                                                         x: e.clientX,
+                                                         y: e.clientY,
+                                                         imgId: img.id
+                                                       });
+                                                     }}
+                                                     className={`relative inline-flex items-center justify-center cursor-grab active:cursor-grabbing group transition-all ${
+                                                       isImgSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-2xl rounded-xl' : 'hover:outline hover:outline-1 hover:outline-white/30 rounded-xl'
+                                                     }`}
+                                                     style={{
+                                                       width: `${iW}px`,
+                                                       height: `${iH}px`,
+                                                       opacity: iOp,
+                                                       borderRadius: `${img.borderRadius || 0}px`
+                                                     }}
+                                                   >
+                                                     {/* Render Raster Image OR Clean Scalable SVG Vector */}
+                                                     {img.isVector && iSvg ? (
+                                                       <div 
+                                                         className="w-full h-full flex items-center justify-center pointer-events-none"
+                                                         style={{
+                                                           filter: iGlow === 'ultra-radiant' 
+                                                             ? `drop-shadow(0 0 15px ${iColor}) drop-shadow(0 0 30px #ec4899)` 
+                                                             : iGlow === 'soft' 
+                                                             ? `drop-shadow(0 8px 24px rgba(0,0,0,0.5))`
+                                                             : 'none'
+                                                         }}
+                                                         dangerouslySetInnerHTML={{ __html: iColor ? iSvg.replace(/fill="[^"]*"/g, `fill="${iColor}"`) : iSvg }}
+                                                       />
+                                                     ) : (
+                                                       <img 
+                                                         src={img.url} 
+                                                         alt={img.name || 'Slide asset'} 
+                                                         className="w-full h-full object-contain pointer-events-none"
+                                                         style={{ 
+                                                           borderRadius: `${img.borderRadius || 0}px`,
+                                                           filter: iGlow === 'soft' ? 'drop-shadow(0 12px 28px rgba(0,0,0,0.6))' : 'none'
+                                                         }}
+                                                       />
+                                                     )}
 
-                                                        {/* Floating Contextual Inspector for Image / Logo */}
+                                                     {/* Live Hover Preview Indicator Badge */}
+                                                     {isPreviewing && previewProps.badge && (
+                                                       <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md bg-cyan-500/90 text-slate-950 text-[9px] font-extrabold uppercase tracking-wider shadow-lg animate-in fade-in zoom-in-95 pointer-events-none z-50">
+                                                         Preview: {previewProps.badge}
+                                                       </div>
+                                                     )}
+
+                                                     {/* Selection Outline & 8 Resize Handles */}
+                                                     {isImgSelected && (
+                                                       <>
+                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'nw', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
+                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'ne', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nesw-resize z-40 hover:scale-125 transition-transform" />
+                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'sw', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nesw-resize z-40 hover:scale-125 transition-transform" />
+                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'se', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
+                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'e', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-2 h-3 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ew-resize z-40 hover:scale-125 transition-transform" />
+                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'w', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-2 h-3 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ew-resize z-40 hover:scale-125 transition-transform" />
+                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-2 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ns-resize z-40 hover:scale-125 transition-transform" />
+                                                         <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-2 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ns-resize z-40 hover:scale-125 transition-transform" />
+                                                         {/* Floating Contextual Inspector for Image / Logo */}
                                                         <div className="absolute -top-11 left-0 px-3 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[11px] font-semibold tracking-wide shadow-2xl flex items-center gap-2 z-50 border border-white/15 whitespace-nowrap pointer-events-auto">
                                                           {/* Vectorize Action Button */}
                                                           {!img.isVector ? (
@@ -54726,7 +55894,824 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               );
                                             })}
   
-                                  {/* Main Slide Content */}
+                                  {/* ── FLOATING AI INTELLIGENCE ACTIVE BANNER ── */}
+                                            {deckIntelligenceActiveBanner && (
+                                              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-1.5 rounded-full bg-zinc-900/95 backdrop-blur-xl border border-violet-500/40 shadow-2xl flex items-center gap-3 text-xs text-white animate-in fade-in slide-in-from-top-2 pointer-events-auto">
+                                                <div className="flex items-center gap-1.5 text-violet-300 font-semibold">
+                                                  <RegaarderAiIcon size={13} className="text-cyan-400 animate-pulse" />
+                                                  <span className="text-[11px]">{deckIntelligenceActiveBanner.actionName}</span>
+                                                </div>
+                                                <div className="w-px h-3.5 bg-white/20" />
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (deckIntelligenceUndoSnapshot) {
+                                                      updateDeckSlideFields(activeDeckSlide?.id, deckIntelligenceUndoSnapshot);
+                                                      setDeckIntelligenceActiveBanner(null);
+                                                      setDeckIntelligenceUndoSnapshot(null);
+                                                      showToast('Reverted AI changes');
+                                                    }
+                                                  }}
+                                                  className="text-[10px] font-bold text-rose-300 hover:text-white px-2 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500/30 cursor-pointer transition-colors"
+                                                >
+                                                  Undo
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDeckIntelligenceActiveBanner(null);
+                                                    setDeckIntelligenceUndoSnapshot(null);
+                                                    showToast('Accepted design changes');
+                                                  }}
+                                                  className="text-[10px] font-bold text-emerald-300 hover:text-white px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 cursor-pointer transition-colors"
+                                                >
+                                                  Keep Changes
+                                                </button>
+                                              </div>
+                                            )}
+
+                                            {/* ── INTERACTIVE DRAGGABLE & RESIZABLE STANDALONE SHAPES & PILLS ── */}
+                                            {Array.isArray(activeDeckSlide?.shapes) && activeDeckSlide.shapes.map((shape) => {
+                                              const isShapeSelected = deckSelection.type === 'shape' && deckSelection.id === shape.id;
+                                              const sX = shape.posX || 0;
+                                              const sY = shape.posY || 0;
+                                              const sW = shape.width || 140;
+                                              const sH = shape.height || 140;
+                                              const sFill = shape.fill || '#7C4DFF';
+                                              const sFillType = shape.fillType || 'solid';
+                                              const sStroke = shape.strokeStyle || 'solid';
+                                              const sStrokeWidth = sStroke === 'none' ? 0 : (shape.strokeWidth || 1);
+                                              const sStrokeColor = shape.strokeColor || 'rgba(255,255,255,0.3)';
+                                              const sRadius = shape.borderRadius || 0;
+                                              const sZ = shape.zIndex || 20;
+
+                                              return (
+                                                <div
+                                                  key={shape.id}
+                                                  className="absolute pointer-events-auto select-none"
+                                                  style={{
+                                                    transform: `translate(${sX}px, ${sY}px)`,
+                                                    zIndex: isShapeSelected ? sZ + 4 : sZ,
+                                                    transition: (deckResizeDrag.isResizing || deckResizeDrag.isDraggingShape) ? 'none' : 'transform 120ms ease-out'
+                                                  }}
+                                                >
+                                                  <div
+                                                    onPointerDown={(e) => {
+                                                      if (e.target.getAttribute('data-resize-handle')) return;
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'shape', id: shape.id });
+                                                      setDeckResizeDrag({
+                                                        isResizing: false,
+                                                        isDraggingShape: true,
+                                                        shapeId: shape.id,
+                                                        startX: e.clientX,
+                                                        startY: e.clientY,
+                                                        origX: sX,
+                                                        origY: sY
+                                                      });
+                                                    }}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setDeckSelection({ type: 'shape', id: shape.id });
+                                                    }}
+                                                    className={`relative inline-flex items-center justify-center cursor-grab active:cursor-grabbing group transition-all ${
+                                                      isShapeSelected ? 'outline outline-2 outline-[#7C4DFF] ring-4 ring-[#7C4DFF]/30 shadow-2xl rounded-xl' : 'hover:outline hover:outline-1 hover:outline-white/30 rounded-xl'
+                                                    }`}
+                                                    style={{
+                                                      width: `${sW}px`,
+                                                      height: `${sH}px`,
+                                                      opacity: shape.opacity ?? 1
+                                                    }}
+                                                  >
+                                                    {/* 1. Heading H1 Block */}
+                                                    {shape.shapeType === 'heading' && (
+                                                      <div 
+                                                        className="w-full h-full flex items-center p-1 select-text"
+                                                        style={{
+                                                          fontSize: `${shape.fontSize || 32}px`,
+                                                          fontFamily: shape.fontFamily || 'Inter, system-ui, sans-serif',
+                                                          fontWeight: shape.fontWeight || '800',
+                                                          fontStyle: shape.fontStyle || 'normal',
+                                                          textAlign: shape.align || 'left',
+                                                          color: shape.color || '#ffffff',
+                                                          lineHeight: '1.15'
+                                                        }}
+                                                      >
+                                                        <span
+                                                          contentEditable
+                                                          suppressContentEditableWarning
+                                                          onBlur={(e) => {
+                                                            const val = e.currentTarget.textContent || '';
+                                                            const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, label: val } : s);
+                                                            updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                          }}
+                                                          className="outline-none w-full leading-none tracking-tight"
+                                                        >
+                                                          {shape.label || 'HEADLINE TEXT'}
+                                                        </span>
+                                                      </div>
+                                                    )}
+
+                                                    {/* 2. Text Box (Multi-line) */}
+                                                    {shape.shapeType === 'textbox' && (
+                                                      <div 
+                                                        className={`w-full h-full p-3 text-slate-200 leading-relaxed overflow-hidden select-text ${sFillType === 'glass' ? 'backdrop-blur-md' : ''}`}
+                                                        style={{
+                                                          fontSize: `${shape.fontSize || 14}px`,
+                                                          fontFamily: shape.fontFamily || 'Inter, system-ui, sans-serif',
+                                                          fontWeight: shape.fontWeight || '400',
+                                                          fontStyle: shape.fontStyle || 'normal',
+                                                          textAlign: shape.align || 'left',
+                                                          color: shape.color || '#e2e8f0',
+                                                          background: sFillType === 'glass' ? 'rgba(255,255,255,0.06)' : (sFillType === 'solid' ? sFill : 'transparent'),
+                                                          borderRadius: `${sRadius || 12}px`,
+                                                          border: sStrokeWidth > 0 ? `${sStrokeWidth}px ${sStroke} ${sStrokeColor}` : 'none'
+                                                        }}
+                                                      >
+                                                        <div
+                                                          contentEditable
+                                                          suppressContentEditableWarning
+                                                          onBlur={(e) => {
+                                                            const val = e.currentTarget.textContent || '';
+                                                            const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, label: val } : s);
+                                                            updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                          }}
+                                                          className="outline-none w-full h-full"
+                                                        >
+                                                          {shape.label || 'Enter your slide paragraph text here.'}
+                                                        </div>
+                                                      </div>
+                                                    )}
+
+                                                    {/* 3. Circle Geometry */}
+                                                    {shape.shapeType === 'circle' && (
+                                                      <div 
+                                                        className={`w-full h-full rounded-full ${shape.effect === 'cyber-glow' ? 'shadow-[0_0_20px_rgba(0,240,255,0.6)]' : 'shadow-lg'} ${sFillType === 'glass' ? 'backdrop-blur-md' : ''}`}
+                                                        style={{ 
+                                                          background: sFillType === 'none' ? 'transparent' : (sFillType === 'glass' ? 'rgba(255,255,255,0.06)' : sFill),
+                                                          borderStyle: sStroke === 'none' ? 'none' : sStroke,
+                                                          borderWidth: `${sStrokeWidth}px`,
+                                                          borderColor: sStrokeColor
+                                                        }}
+                                                      />
+                                                    )}
+
+                                                    {/* 4. Square Geometry */}
+                                                    {shape.shapeType === 'square' && (
+                                                      <div 
+                                                        className={`w-full h-full ${shape.effect === 'cyber-glow' ? 'shadow-[0_0_20px_rgba(124,77,255,0.6)]' : 'shadow-lg'} ${sFillType === 'glass' ? 'backdrop-blur-md' : ''}`}
+                                                        style={{ 
+                                                          background: sFillType === 'none' ? 'transparent' : (sFillType === 'glass' ? 'rgba(255,255,255,0.06)' : sFill),
+                                                          borderRadius: `${sRadius || 16}px`,
+                                                          borderStyle: sStroke === 'none' ? 'none' : sStroke,
+                                                          borderWidth: `${sStrokeWidth}px`,
+                                                          borderColor: sStrokeColor
+                                                        }}
+                                                      />
+                                                    )}
+
+                                                    {/* 5. Triangle Vector Polygon */}
+                                                    {shape.shapeType === 'triangle' && (
+                                                      <svg 
+                                                        className={`w-full h-full overflow-visible ${shape.effect === 'cyber-glow' ? 'filter drop-shadow(0 0 15px #ec4899)' : 'drop-shadow-lg'}`} 
+                                                        viewBox="0 0 100 100" 
+                                                        preserveAspectRatio="none"
+                                                      >
+                                                        <polygon 
+                                                          points="50,2 98,98 2,98" 
+                                                          fill={sFillType === 'none' ? 'none' : (sFillType === 'glass' ? 'rgba(255,255,255,0.08)' : sFill)}
+                                                          stroke={sStroke === 'none' ? 'none' : sStrokeColor} 
+                                                          strokeWidth={sStrokeWidth}
+                                                          strokeDasharray={sStroke === 'dashed' ? '8,6' : sStroke === 'dotted' ? '3,5' : 'none'}
+                                                        />
+                                                      </svg>
+                                                    )}
+
+                                                    {/* 6. Diamond Vector Polygon */}
+                                                    {shape.shapeType === 'diamond' && (
+                                                      <svg 
+                                                        className={`w-full h-full overflow-visible ${shape.effect === 'cyber-glow' ? 'filter drop-shadow(0 0 15px #00f0ff)' : 'drop-shadow-lg'}`} 
+                                                        viewBox="0 0 100 100" 
+                                                        preserveAspectRatio="none"
+                                                      >
+                                                        <polygon 
+                                                          points="50,2 98,50 50,98 2,50" 
+                                                          fill={sFillType === 'none' ? 'none' : (sFillType === 'glass' ? 'rgba(255,255,255,0.08)' : sFill)}
+                                                          stroke={sStroke === 'none' ? 'none' : sStrokeColor} 
+                                                          strokeWidth={sStrokeWidth}
+                                                          strokeDasharray={sStroke === 'dashed' ? '8,6' : sStroke === 'dotted' ? '3,5' : 'none'}
+                                                        />
+                                                      </svg>
+                                                    )}
+
+                                                    {/* 7. Authentic Presenter Pill Capsule */}
+                                                    {shape.shapeType === 'pill' && (
+                                                      <div 
+                                                        className="w-full h-full relative p-[1.5px] overflow-hidden flex items-center justify-center shadow-2xl group/pill select-none"
+                                                        style={{
+                                                          borderRadius: `${sRadius || 20}px`
+                                                        }}
+                                                      >
+                                                        {shape.hasShimmer !== false && (
+                                                          <div 
+                                                            className="absolute -inset-[200%] pointer-events-none animate-deck-beam-spin"
+                                                            style={{
+                                                              background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 200deg, ${shape.shimmerColor1 || '#00f0ff'} 260deg, #ffffff 320deg, ${shape.shimmerColor2 || '#ec4899'} 360deg)`
+                                                            }}
+                                                          />
+                                                        )}
+
+                                                        <div 
+                                                          className="relative z-10 w-full h-full flex items-center justify-center overflow-hidden px-4 py-1.5"
+                                                          style={{
+                                                            background: sFillType === 'none' 
+                                                              ? 'transparent' 
+                                                              : (shape.fill || 'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)'),
+                                                            borderRadius: `${Math.max(0, (sRadius || 20) - 1.5)}px`,
+                                                            boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.45), 0 8px 20px rgba(0,0,0,0.6)',
+                                                            backdropFilter: sFillType === 'glass' ? 'blur(12px)' : 'none'
+                                                          }}
+                                                        >
+                                                          <div 
+                                                            className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/25 to-transparent skew-x-12 pointer-events-none animate-deck-sheen" 
+                                                            style={{ opacity: 0.8 }}
+                                                          />
+                                                          <span
+                                                            contentEditable
+                                                            suppressContentEditableWarning
+                                                            onBlur={(e) => {
+                                                              const val = e.currentTarget.textContent || '';
+                                                              const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, label: val } : s);
+                                                              updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                            }}
+                                                            style={{ color: "#ffffff", caretColor: "#00f0ff" }}
+                                                            className="relative z-20 text-[10px] md:text-[11px] font-[900] tracking-[0.16em] uppercase text-white outline-none hover:ring-1 hover:ring-violet-400/40 rounded px-1 select-text font-sans leading-none"
+                                                          >
+                                                            {shape.label || 'PRESENT BY NEIL TRAN'}
+                                                          </span>
+                                                        </div>
+                                                      </div>
+                                                    )}
+
+                                                    {/* 8. Interactive Grab Divider Line */}
+                                                    {shape.shapeType === 'divider' && (
+                                                      <div className="w-full h-full flex items-center justify-center pointer-events-auto py-1">
+                                                        <div 
+                                                          className="w-full shadow-md transition-all"
+                                                          style={{ 
+                                                            height: `${shape.lineThickness || sStrokeWidth || 2}px`,
+                                                            background: sStroke === 'dashed' || sStroke === 'dotted' ? 'transparent' : sFill,
+                                                            borderTop: sStroke === 'dashed' ? `${shape.lineThickness || 2}px dashed ${sFill}` : sStroke === 'dotted' ? `${shape.lineThickness || 2}px dotted ${sFill}` : 'none',
+                                                            borderRadius: `${sRadius || 2}px` 
+                                                          }}
+                                                        />
+                                                      </div>
+                                                    )}
+
+                                                    {/* 9. Contact Badge with Icon */}
+                                                    {shape.shapeType === 'contact' && (
+                                                      <div 
+                                                        className="w-full h-full px-4 py-2 flex items-center gap-2.5 text-white text-xs font-semibold shadow-xl select-text"
+                                                        style={{ 
+                                                          background: sFillType === 'none' ? 'transparent' : sFill, 
+                                                          borderRadius: `${sRadius || 21}px`,
+                                                          border: `${sStrokeWidth}px ${sStroke} ${sStrokeColor}`,
+                                                          backdropFilter: 'blur(12px)',
+                                                          boxShadow: '0 8px 24px rgba(0,0,0,0.45)'
+                                                        }}
+                                                      >
+                                                        <div className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0 border border-cyan-500/30">
+                                                          <Globe size={13} />
+                                                        </div>
+                                                        <span
+                                                          contentEditable
+                                                          suppressContentEditableWarning
+                                                          onBlur={(e) => {
+                                                            const val = e.currentTarget.textContent || '';
+                                                            const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, label: val } : s);
+                                                            updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                          }}
+                                                          className="outline-none truncate flex-1 leading-none font-sans text-[11px]"
+                                                        >
+                                                          {shape.label || '+1 (555) 019-2834 • contact@regaarder.com'}
+                                                        </span>
+                                                      </div>
+                                                    )}
+
+                                                    {/* Selection Outline & 8 Resize Handles */}
+                                                    {isShapeSelected && (
+                                                      <>
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'nw', startX: e.clientX, startY: e.clientY, initW: sW, initH: sH, initX: sX, initY: sY, target: 'shape', shapeId: shape.id }); }} className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'ne', startX: e.clientX, startY: e.clientY, initW: sW, initH: sH, initX: sX, initY: sY, target: 'shape', shapeId: shape.id }); }} className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nesw-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'sw', startX: e.clientX, startY: e.clientY, initW: sW, initH: sH, initX: sX, initY: sY, target: 'shape', shapeId: shape.id }); }} className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nesw-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'se', startX: e.clientX, startY: e.clientY, initW: sW, initH: sH, initX: sX, initY: sY, target: 'shape', shapeId: shape.id }); }} className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'e', startX: e.clientX, startY: e.clientY, initW: sW, initH: sH, initX: sX, initY: sY, target: 'shape', shapeId: shape.id }); }} className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-2 h-3 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ew-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'w', startX: e.clientX, startY: e.clientY, initW: sW, initH: sH, initX: sX, initY: sY, target: 'shape', shapeId: shape.id }); }} className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-2 h-3 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ew-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'top', startX: e.clientX, startY: e.clientY, initW: sW, initH: sH, initX: sX, initY: sY, target: 'shape', shapeId: shape.id }); }} className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-2 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ns-resize z-40 hover:scale-125 transition-transform" />
+                                                        <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'bottom', startX: e.clientX, startY: e.clientY, initW: sW, initH: sH, initX: sX, initY: sY, target: 'shape', shapeId: shape.id }); }} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-2 bg-white border-2 border-[#7C4DFF] rounded-[1px] shadow-md cursor-ns-resize z-40 hover:scale-125 transition-transform" />
+
+                                                        {/* Rich Floating Contextual Inspector for Shape / Text / Line */}
+                                                        <div className="absolute -top-11 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-zinc-900/95 backdrop-blur-xl text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-2 z-50 border border-white/20 whitespace-nowrap pointer-events-auto">
+                                                          <span className="text-[10px] uppercase font-bold text-zinc-400">{shape.name || 'Shape'}</span>
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+
+                                                          {/* Advanced Typography Suite (Font Family, Editable Size Dropdown, Steppers, Weight & Align) */}
+                                                          {(shape.shapeType === 'heading' || shape.shapeType === 'textbox') && (
+                                                            <div className="flex items-center gap-1.5">
+                                                              {/* 1. Font Family Dropdown */}
+                                                              <div className="relative">
+                                                                <button
+                                                                  type="button"
+                                                                  onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setActiveShapeFontPicker(activeShapeFontPicker === shape.id ? null : shape.id);
+                                                                    setActiveShapeSizePicker(null);
+                                                                    setActiveShapeFillPicker(null);
+                                                                    setActiveShapeStrokePicker(null);
+                                                                    setActiveShapeEffectPicker(null);
+                                                                  }}
+                                                                  className="shape-trigger-btn px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-zinc-200 flex items-center gap-1 cursor-pointer transition-colors"
+                                                                  title="Select Font Family"
+                                                                >
+                                                                  <Type size={10} className="text-cyan-400" />
+                                                                  <span className="max-w-[72px] truncate" style={{ fontFamily: shape.fontFamily || 'Inter' }}>
+                                                                    {shape.fontFamily || 'Inter'}
+                                                                  </span>
+                                                                  <ChevronDown size={8} className="text-zinc-400" />
+                                                                </button>
+
+                                                                {/* Font Family Popover */}
+                                                                {activeShapeFontPicker === shape.id && (
+                                                                  <div 
+                                                                    onClick={(e) => e.stopPropagation()} 
+                                                                    className="shape-picker-popover absolute bottom-8 left-0 z-[999] w-56 bg-zinc-900/98 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl p-2.5 flex flex-col gap-2 text-xs text-white"
+                                                                  >
+                                                                    <div className="flex items-center justify-between border-b border-white/10 pb-1.5 px-1">
+                                                                      <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1">
+                                                                        <Type size={11} /> Font Family
+                                                                      </span>
+                                                                      <button type="button" onClick={() => setActiveShapeFontPicker(null)} className="text-zinc-400 hover:text-white p-0.5"><X size={11} /></button>
+                                                                    </div>
+
+                                                                    <div className="flex flex-col gap-1 max-h-56 overflow-y-auto thin-scrollbar pr-0.5">
+                                                                      {[
+                                                                        { label: 'Inter', category: 'Modern Sans', font: 'Inter, system-ui, sans-serif' },
+                                                                        { label: 'Plus Jakarta Sans', category: 'Geometric Sans', font: "'Plus Jakarta Sans', sans-serif" },
+                                                                        { label: 'Outfit', category: 'Display Sans', font: "'Outfit', sans-serif" },
+                                                                        { label: 'Playfair Display', category: 'Editorial Serif', font: "'Playfair Display', serif" },
+                                                                        { label: 'JetBrains Mono', category: 'Monospace', font: "'JetBrains Mono', monospace" },
+                                                                        { label: 'Cabinet Grotesk', category: 'Modern Bold', font: "'Cabinet Grotesk', sans-serif" },
+                                                                        { label: 'Syne', category: 'Avant-Garde', font: "'Syne', sans-serif" },
+                                                                        { label: 'Satoshi', category: 'Neo-Grotesk', font: "'Satoshi', sans-serif" },
+                                                                        { label: 'Georgia', category: 'Classic Serif', font: 'Georgia, serif' },
+                                                                        { label: 'System UI', category: 'Native', font: 'system-ui, -apple-system, sans-serif' }
+                                                                      ].map((fItem) => (
+                                                                        <button
+                                                                          key={fItem.label}
+                                                                          type="button"
+                                                                          onClick={() => {
+                                                                            const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, fontFamily: fItem.font } : s);
+                                                                            updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                                            setActiveShapeFontPicker(null);
+                                                                            showToast(`Font: ${fItem.label}`);
+                                                                          }}
+                                                                          className={`w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-white/10 flex items-center justify-between transition-colors cursor-pointer ${(shape.fontFamily || 'Inter').includes(fItem.label) ? 'bg-cyan-500/20 text-cyan-200' : 'text-zinc-200'}`}
+                                                                        >
+                                                                          <span className="text-[11px]" style={{ fontFamily: fItem.font }}>{fItem.label}</span>
+                                                                          <span className="text-[8.5px] text-zinc-400 font-mono">{fItem.category}</span>
+                                                                        </button>
+                                                                      ))}
+                                                                    </div>
+                                                                  </div>
+                                                                )}
+                                                              </div>
+
+                                                              {/* 2. Editable Size Input with Steppers & Extended Dropdown */}
+                                                              <div className="relative flex items-center bg-black/40 border border-white/20 rounded-lg p-0.5">
+                                                                {/* Minus Stepper */}
+                                                                <button
+                                                                  type="button"
+                                                                  onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const curSz = shape.fontSize || (shape.shapeType === 'heading' ? 32 : 14);
+                                                                    const nextSz = Math.max(8, curSz - 2);
+                                                                    const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, fontSize: nextSz } : s);
+                                                                    updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                                  }}
+                                                                  className="w-4 h-4 rounded text-zinc-400 hover:text-white hover:bg-white/10 flex items-center justify-center text-[11px] font-bold cursor-pointer"
+                                                                  title="Decrease Font Size"
+                                                                >
+                                                                  −
+                                                                </button>
+
+                                                                {/* Direct Editable Number Input */}
+                                                                <input
+                                                                  type="number"
+                                                                  min="8"
+                                                                  max="200"
+                                                                  value={shape.fontSize || (shape.shapeType === 'heading' ? 32 : 14)}
+                                                                  onChange={(e) => {
+                                                                    const sz = parseInt(e.target.value, 10);
+                                                                    if (!isNaN(sz) && sz > 0) {
+                                                                      const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, fontSize: sz } : s);
+                                                                      updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                                    }
+                                                                  }}
+                                                                  onClick={(e) => e.stopPropagation()}
+                                                                  className="w-7 h-4 bg-transparent text-center font-mono text-[9.5px] font-bold text-cyan-300 outline-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                                  title="Custom Font Size (Type any value)"
+                                                                />
+
+                                                                {/* Plus Stepper */}
+                                                                <button
+                                                                  type="button"
+                                                                  onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const curSz = shape.fontSize || (shape.shapeType === 'heading' ? 32 : 14);
+                                                                    const nextSz = Math.min(200, curSz + 2);
+                                                                    const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, fontSize: nextSz } : s);
+                                                                    updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                                  }}
+                                                                  className="w-4 h-4 rounded text-zinc-400 hover:text-white hover:bg-white/10 flex items-center justify-center text-[11px] font-bold cursor-pointer"
+                                                                  title="Increase Font Size"
+                                                                >
+                                                                  +
+                                                                </button>
+
+                                                                {/* Dropdown Chevron */}
+                                                                <button
+                                                                  type="button"
+                                                                  onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setActiveShapeSizePicker(activeShapeSizePicker === shape.id ? null : shape.id);
+                                                                    setActiveShapeFontPicker(null);
+                                                                    setActiveShapeFillPicker(null);
+                                                                    setActiveShapeStrokePicker(null);
+                                                                    setActiveShapeEffectPicker(null);
+                                                                  }}
+                                                                  className="px-0.5 text-zinc-400 hover:text-white cursor-pointer"
+                                                                  title="Select Standard Size"
+                                                                >
+                                                                  <ChevronDown size={8} />
+                                                                </button>
+
+                                                                {/* Font Size Preset Grid Popover */}
+                                                                {activeShapeSizePicker === shape.id && (
+                                                                  <div 
+                                                                    onClick={(e) => e.stopPropagation()} 
+                                                                    className="shape-picker-popover absolute bottom-8 left-1/2 -translate-x-1/2 z-[999] w-48 bg-zinc-900/98 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl p-2.5 flex flex-col gap-2 text-xs text-white"
+                                                                  >
+                                                                    <div className="flex items-center justify-between border-b border-white/10 pb-1.5 px-1">
+                                                                      <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300">Preset Sizes</span>
+                                                                      <button type="button" onClick={() => setActiveShapeSizePicker(null)} className="text-zinc-400 hover:text-white p-0.5"><X size={11} /></button>
+                                                                    </div>
+
+                                                                    <div className="grid grid-cols-4 gap-1">
+                                                                      {[10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 96].map((sz) => (
+                                                                        <button
+                                                                          key={sz}
+                                                                          type="button"
+                                                                          onClick={() => {
+                                                                            const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, fontSize: sz } : s);
+                                                                            updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                                            setActiveShapeSizePicker(null);
+                                                                          }}
+                                                                          className={`py-1 rounded-md text-[9.5px] font-mono font-bold transition-all ${(shape.fontSize || 32) === sz ? 'bg-[#7C4DFF] text-white shadow-md' : 'bg-white/10 hover:bg-white/20 text-zinc-200'}`}
+                                                                        >
+                                                                          {sz}
+                                                                        </button>
+                                                                      ))}
+                                                                    </div>
+                                                                  </div>
+                                                                )}
+                                                              </div>
+
+                                                              {/* 3. Font Weight Toggle (B) */}
+                                                              <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  const curWeight = shape.fontWeight || (shape.shapeType === 'heading' ? '800' : '400');
+                                                                  const nextWeight = (curWeight === '800' || curWeight === 'bold' || curWeight === '700') ? '400' : '800';
+                                                                  const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, fontWeight: nextWeight } : s);
+                                                                  updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                                }}
+                                                                className={`w-5 h-5 rounded flex items-center justify-center font-bold text-[10px] cursor-pointer transition-colors ${(shape.fontWeight === '800' || shape.fontWeight === 'bold') ? 'bg-[#7C4DFF] text-white' : 'bg-white/10 hover:bg-white/20 text-zinc-300'}`}
+                                                                title="Toggle Bold Weight"
+                                                              >
+                                                                B
+                                                              </button>
+
+                                                              {/* 4. Font Style Toggle (I) */}
+                                                              <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  const nextStyle = shape.fontStyle === 'italic' ? 'normal' : 'italic';
+                                                                  const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, fontStyle: nextStyle } : s);
+                                                                  updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                                }}
+                                                                className={`w-5 h-5 rounded flex items-center justify-center italic font-serif text-[10px] cursor-pointer transition-colors ${shape.fontStyle === 'italic' ? 'bg-[#7C4DFF] text-white' : 'bg-white/10 hover:bg-white/20 text-zinc-300'}`}
+                                                                title="Toggle Italic"
+                                                              >
+                                                                I
+                                                              </button>
+
+                                                              <div className="w-px h-3 bg-white/20 mx-0.5" />
+                                                            </div>
+                                                          )}
+
+                                                          {/* 1. Fill Popover Button */}
+                                                          <div className="relative">
+                                                            <button
+                                                              type="button"
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setActiveShapeFillPicker(activeShapeFillPicker === shape.id ? null : shape.id);
+                                                                setActiveShapeStrokePicker(null);
+                                                                setActiveShapeEffectPicker(null);
+                                                              }}
+                                                              className="shape-trigger-btn px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1.5 cursor-pointer"
+                                                            >
+                                                              <Palette size={10} /> {shape.shapeType === 'heading' || shape.shapeType === 'textbox' ? 'Color' : 'Fill'}
+                                                            </button>
+
+                                                            {activeShapeFillPicker === shape.id && (
+                                                              <div 
+                                                                onClick={(e) => e.stopPropagation()} 
+                                                                className="shape-picker-popover absolute bottom-8 left-1/2 -translate-x-1/2 z-[999] w-64 bg-zinc-900/98 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl p-3 flex flex-col gap-2.5 text-xs text-white"
+                                                              >
+                                                                <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+                                                                  <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300">Fill & Color</span>
+                                                                  <button type="button" onClick={() => setActiveShapeFillPicker(null)} className="text-zinc-400 hover:text-white p-0.5"><X size={11} /></button>
+                                                                </div>
+
+                                                                {/* Fill Type Tabs */}
+                                                                {shape.shapeType !== 'heading' && (
+                                                                  <div className="grid grid-cols-4 gap-1 bg-black/40 p-1 rounded-xl">
+                                                                    {[
+                                                                      { id: 'solid', label: 'Solid' },
+                                                                      { id: 'gradient', label: 'Gradient' },
+                                                                      { id: 'glass', label: 'Glass' },
+                                                                      { id: 'none', label: 'Empty' }
+                                                                    ].map((fMode) => (
+                                                                      <button
+                                                                        key={fMode.id}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                          const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, fillType: fMode.id } : s);
+                                                                          updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                                        }}
+                                                                        className={`py-1 rounded-lg text-[9px] font-bold tracking-tight transition-all ${sFillType === fMode.id ? 'bg-[#7C4DFF] text-white shadow-md' : 'text-zinc-400 hover:text-white'}`}
+                                                                      >
+                                                                        {fMode.label}
+                                                                      </button>
+                                                                    ))}
+                                                                  </div>
+                                                                )}
+
+                                                                {/* Palette Swatches */}
+                                                                <div className="space-y-1.5">
+                                                                  <span className="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider block">Palette Colors</span>
+                                                                  <div className="grid grid-cols-5 gap-1.5">
+                                                                    {[
+                                                                      '#ffffff', '#00f0ff', '#7C4DFF', '#ec4899', '#3b82f6',
+                                                                      '#10b981', '#f59e0b', '#18181b', '#3e3453', '#0f172a',
+                                                                      'linear-gradient(90deg, #7C4DFF 0%, #00F0FF 100%)',
+                                                                      'linear-gradient(90deg, #ec4899 0%, #f59e0b 100%)',
+                                                                      'linear-gradient(to right, #3e3453, #2a3150, #1c2c4d)',
+                                                                      'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)',
+                                                                      'linear-gradient(90deg, #06b6d4 0%, #3b82f6 100%)'
+                                                                    ].map((hex, i) => (
+                                                                      <button 
+                                                                        key={i} 
+                                                                        type="button" 
+                                                                        onClick={() => { 
+                                                                          const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, fill: hex, color: hex, fillType: hex.includes('gradient') ? 'gradient' : 'solid' } : s);
+                                                                          updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                                        }} 
+                                                                        className="w-full aspect-square rounded-lg border border-white/20 hover:scale-110 cursor-pointer shadow-xs transition-transform" 
+                                                                        style={{ background: hex }} 
+                                                                      />
+                                                                    ))}
+                                                                  </div>
+                                                                </div>
+                                                              </div>
+                                                            )}
+                                                          </div>
+
+                                                          {/* 2. Outline / Stroke Popover Button */}
+                                                          {shape.shapeType !== 'heading' && (
+                                                            <div className="relative">
+                                                              <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  setActiveShapeStrokePicker(activeShapeStrokePicker === shape.id ? null : shape.id);
+                                                                  setActiveShapeFillPicker(null);
+                                                                  setActiveShapeEffectPicker(null);
+                                                                }}
+                                                                className="shape-trigger-btn px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-violet-300 flex items-center gap-1.5 cursor-pointer"
+                                                              >
+                                                                <Maximize2 size={10} /> Outline
+                                                              </button>
+
+                                                              {activeShapeStrokePicker === shape.id && (
+                                                                <div 
+                                                                  onClick={(e) => e.stopPropagation()} 
+                                                                  className="shape-picker-popover absolute bottom-8 left-1/2 -translate-x-1/2 z-[999] w-64 bg-zinc-900/98 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl p-3 flex flex-col gap-2.5 text-xs text-white"
+                                                                >
+                                                                  <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+                                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-violet-300">Outline & Dashes</span>
+                                                                    <button type="button" onClick={() => setActiveShapeStrokePicker(null)} className="text-zinc-400 hover:text-white p-0.5"><X size={11} /></button>
+                                                                  </div>
+
+                                                                  {/* Stroke Pattern Tabs */}
+                                                                  <div className="grid grid-cols-4 gap-1 bg-black/40 p-1 rounded-xl">
+                                                                    {[
+                                                                      { id: 'solid', label: 'Solid —' },
+                                                                      { id: 'dashed', label: 'Dashed ╌' },
+                                                                      { id: 'dotted', label: 'Dotted ┈' },
+                                                                      { id: 'none', label: 'None' }
+                                                                    ].map((sMode) => (
+                                                                      <button
+                                                                        key={sMode.id}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                          const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, strokeStyle: sMode.id } : s);
+                                                                          updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                                        }}
+                                                                        className={`py-1 rounded-lg text-[9px] font-bold tracking-tight transition-all ${sStroke === sMode.id ? 'bg-[#7C4DFF] text-white shadow-md' : 'text-zinc-400 hover:text-white'}`}
+                                                                      >
+                                                                        {sMode.label}
+                                                                      </button>
+                                                                    ))}
+                                                                  </div>
+
+                                                                  {/* Thickness Sliders */}
+                                                                  {sStroke !== 'none' && (
+                                                                    <div className="space-y-1">
+                                                                      <div className="flex items-center justify-between text-[9px] font-semibold text-zinc-400 uppercase">
+                                                                        <span>Thickness</span>
+                                                                        <span className="font-mono text-violet-300">{shape.lineThickness || shape.strokeWidth || 1}px</span>
+                                                                      </div>
+                                                                      <div className="flex items-center gap-1.5">
+                                                                        {[1, 2, 3, 4, 6].map((w) => (
+                                                                          <button
+                                                                            key={w}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                              const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, strokeWidth: w, lineThickness: w } : s);
+                                                                              updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                                            }}
+                                                                            className={`flex-1 py-1 rounded-md text-[9px] font-bold ${(shape.strokeWidth || 1) === w ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20 text-white'}`}
+                                                                          >
+                                                                            {w}px
+                                                                          </button>
+                                                                        ))}
+                                                                      </div>
+                                                                    </div>
+                                                                  )}
+
+                                                                  {/* Outline Colors */}
+                                                                  {sStroke !== 'none' && (
+                                                                    <div className="space-y-1">
+                                                                      <span className="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider block">Outline Color</span>
+                                                                      <div className="grid grid-cols-6 gap-1.5">
+                                                                        {['#ffffff', '#00f0ff', '#7C4DFF', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#94a3b8', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.15)', '#000000'].map((hex, i) => (
+                                                                          <button 
+                                                                            key={i} 
+                                                                            type="button" 
+                                                                            onClick={() => { 
+                                                                              const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, strokeColor: hex } : s);
+                                                                              updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                                            }} 
+                                                                            className="w-full aspect-square rounded-md border border-white/20 hover:scale-110 cursor-pointer shadow-xs" 
+                                                                            style={{ background: hex }} 
+                                                                          />
+                                                                        ))}
+                                                                      </div>
+                                                                    </div>
+                                                                  )}
+                                                                </div>
+                                                              )}
+                                                            </div>
+                                                          )}
+
+                                                          {/* 3. Effect Popover Button */}
+                                                          <div className="relative">
+                                                            <button
+                                                              type="button"
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setActiveShapeEffectPicker(activeShapeEffectPicker === shape.id ? null : shape.id);
+                                                                setActiveShapeFillPicker(null);
+                                                                setActiveShapeStrokePicker(null);
+                                                              }}
+                                                              className="shape-trigger-btn px-2 py-0.5 rounded bg-purple-500/20 hover:bg-purple-500/30 text-[9.5px] font-bold text-purple-300 flex items-center gap-1.5 cursor-pointer"
+                                                            >
+                                                              <Zap size={10} /> Effect
+                                                            </button>
+
+                                                            {activeShapeEffectPicker === shape.id && (
+                                                              <div 
+                                                                onClick={(e) => e.stopPropagation()} 
+                                                                className="shape-picker-popover absolute bottom-8 left-1/2 -translate-x-1/2 z-[999] w-60 bg-zinc-900/98 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl p-3 flex flex-col gap-2 text-xs text-white"
+                                                              >
+                                                                <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+                                                                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300">Presentation Effects</span>
+                                                                  <button type="button" onClick={() => setActiveShapeEffectPicker(null)} className="text-zinc-400 hover:text-white p-0.5"><X size={11} /></button>
+                                                                </div>
+
+                                                                <div className="space-y-1">
+                                                                  {[
+                                                                    { id: 'cyber-glow', label: 'Cyber Perimeter Glow', desc: 'Luminous neon radiance' },
+                                                                    { id: 'ambient', label: 'Ambient Elevation Shadow', desc: 'Apple-style soft depth' },
+                                                                    { id: 'none', label: 'Standard Clean', desc: 'No special filter' }
+                                                                  ].map((eff) => (
+                                                                    <button
+                                                                      key={eff.id}
+                                                                      type="button"
+                                                                      onClick={() => {
+                                                                        const updated = (activeDeckSlide?.shapes || []).map((s) => s.id === shape.id ? { ...s, effect: eff.id, hasShimmer: eff.id === 'cyber-glow' } : s);
+                                                                        updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                                        setActiveShapeEffectPicker(null);
+                                                                        showToast(`Effect: ${eff.label}`);
+                                                                      }}
+                                                                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-white/10 flex flex-col gap-0.5 transition-colors cursor-pointer"
+                                                                    >
+                                                                      <span className="font-bold text-[10px] text-zinc-200">{eff.label}</span>
+                                                                      <span className="text-[8.5px] text-zinc-400">{eff.desc}</span>
+                                                                    </button>
+                                                                  ))}
+                                                                </div>
+                                                              </div>
+                                                            )}
+                                                          </div>
+
+                                                          {/* 4. Convert to Bento Card Action */}
+                                                          {shape.shapeType !== 'heading' && (
+                                                            <button
+                                                              type="button"
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const currentShapes = Array.isArray(activeDeckSlide?.shapes) ? activeDeckSlide.shapes : [];
+                                                                const remainingShapes = currentShapes.filter((s) => s.id !== shape.id);
+                                                                const newBento = {
+                                                                  id: 'bento_' + Date.now(),
+                                                                  posX: shape.posX || 400,
+                                                                  posY: shape.posY || 200,
+                                                                  width: Math.max(280, shape.width || 280),
+                                                                  height: Math.max(160, shape.height || 180),
+                                                                  style: 'frosted',
+                                                                  bg: shape.fillType === 'solid' ? shape.fill : 'rgba(24, 24, 27, 0.85)',
+                                                                  borderRadius: shape.borderRadius || 16,
+                                                                  title: shape.label || shape.name || 'Structured Bento',
+                                                                  description: 'Dynamic presentation module with live layout container capabilities.',
+                                                                  glow: 'rgba(0, 240, 255, 0.4)'
+                                                                };
+                                                                updateDeckSlideFields(activeDeckSlide?.id, {
+                                                                  shapes: remainingShapes,
+                                                                  bentoCards: [...(activeDeckSlide?.bentoCards || []), newBento]
+                                                                });
+                                                                setDeckSelection({ type: 'bentoCard', id: newBento.id });
+                                                                showToast('Converted shape to Bento Card');
+                                                              }}
+                                                              className="px-2 py-0.5 rounded bg-cyan-500/15 hover:bg-cyan-500/25 text-[9.5px] font-bold text-cyan-300 flex items-center gap-1 cursor-pointer"
+                                                              title="Promote to Bento Card Container"
+                                                            >
+                                                              <LayoutTemplate size={10} /> Bento
+                                                            </button>
+                                                          )}
+
+                                                          <div className="w-px h-3 bg-white/20 mx-0.5" />
+
+                                                          {/* Delete Shape */}
+                                                          <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              const updated = (activeDeckSlide?.shapes || []).filter((s) => s.id !== shape.id);
+                                                              updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                                              setDeckSelection({ type: 'none', id: null });
+                                                              showToast('Shape removed');
+                                                            }}
+                                                            className="p-1 hover:bg-rose-500/30 text-zinc-400 hover:text-rose-300 rounded cursor-pointer"
+                                                            title="Delete shape"
+                                                          >
+                                                            <Trash2 size={11} />
+                                                          </button>
+                                                        </div>
+                                                      </>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+
+                                            {/* Main Slide Content */}
                                   <div className="flex flex-col h-full justify-between relative z-10 pointer-events-none">
                                     {/* Header Lockup - Blank */}
                                     <div className="flex items-center justify-between" />
@@ -72118,11 +74103,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setIsWhiteboardDrawing(false);
                       setWhiteboardLineAnchor(null);
                     }}
-                    onPointerLeave={() => {
-                      if (whiteboardStickyCursorPosition !== null) {
-                        setWhiteboardStickyCursorPosition(null);
-                      }
-                    }}
+
                   />
                   {whiteboardTool === 'sticky' && whiteboardStickyCursorPosition && (
                     <div
