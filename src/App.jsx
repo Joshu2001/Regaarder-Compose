@@ -47283,7 +47283,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
             
                       {/* Slide List - Keynote/PowerPoint Filmstrip Style */}
-                      <div className="flex-1 overflow-y-auto p-2.5 space-y-2 thin-scrollbar">
+                      <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-2.5 thin-scrollbar">
                         {(isSheetsMode ? sheetsData : deckSlides).length === 0 && (
                           <div className="rounded-xl border border-dashed border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-3 text-xs text-gray-500">
                             {isSheetsMode ? 'No worksheets yet. Create one to see a live preview.' : 'No slides yet.'}
@@ -47293,15 +47293,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           const isActive = isSheetsMode ? item.id === activeSheetId : item.id === activeDeckSlideId;
                           
                           return (
-                            <div key={item.id} className="group relative flex items-center gap-2">
-                              {/* Slide number integrated with filmstrip alignment */}
-                              <span className={`text-[11px] font-mono font-semibold w-4 text-right shrink-0 select-none tabular-nums transition-colors ${
-                                isActive ? 'text-[#7C4DFF] dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300'
+                            <div key={item.id} className="group relative flex items-center gap-1.5">
+                              {/* Slide number aligned closely and centered with thumbnail */}
+                              <span className={`text-[11px] font-mono font-medium w-4 text-center shrink-0 select-none tabular-nums transition-colors ${
+                                isActive 
+                                  ? 'text-[#7C4DFF] dark:text-violet-400 font-bold' 
+                                  : 'text-slate-400/80 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300'
                               }`}>
                                 {index + 1}
                               </span>
                               
-                              {/* Filmstrip Thumbnail Card */}
+                              {/* Filmstrip Thumbnail Card with Unmistakable Purple Outline for Active Slide */}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -47312,10 +47314,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     setActiveDeckSlideId(item.id);
                                   }
                                 }}
-                                className={`flex-1 relative rounded-[11px] overflow-hidden border aspect-[16/9] transition-all duration-150 cursor-pointer select-none bg-black/5 dark:bg-black/30 ${
+                                className={`flex-1 relative rounded-[11px] overflow-hidden aspect-[16/9] transition-all duration-150 cursor-pointer select-none bg-black/5 dark:bg-black/40 ${
                                   isActive 
-                                    ? 'outline outline-[2px] outline-[#7C4DFF] outline-offset-1 shadow-[0_0_12px_rgba(124,77,255,0.22)] border-transparent' 
-                                    : 'border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-xs'
+                                    ? 'ring-2 ring-[#7C4DFF] ring-offset-2 ring-offset-[#f8f9fd] dark:ring-offset-zinc-900 shadow-[0_0_14px_rgba(124,77,255,0.3)] border-transparent' 
+                                    : 'border border-slate-200/90 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-xs'
                                 }`}
                               >
                                 <img
