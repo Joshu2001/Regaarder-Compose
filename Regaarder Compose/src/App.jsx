@@ -52344,7 +52344,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         <div className="h-px bg-gray-100 dark:bg-zinc-800 my-1.5"></div>
                                         <button
                                           type="button"
-                                          onClick={() => {
+                                          onPointerDown={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setDeckActiveToolbarMenu(null);
+                                            setIsDeckCreationChoiceModalOpen(true);
+                                          }}
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
                                             setDeckActiveToolbarMenu(null);
                                             setIsDeckCreationChoiceModalOpen(true);
                                           }}
@@ -54612,11 +54620,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         {/* ── DECK CREATION CHOICE MODAL ── */}
                         {isDeckCreationChoiceModalOpen && createPortal(
                           <div 
-                            className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"
-                            onClick={() => setIsDeckCreationChoiceModalOpen(false)}
+                            className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-150"
+                            onMouseDown={(e) => {
+                              if (e.target === e.currentTarget) {
+                                setIsDeckCreationChoiceModalOpen(false);
+                              }
+                            }}
                           >
                             <div 
-                              className="bg-zinc-950 border border-white/15 text-zinc-100 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
+                              className="bg-zinc-950 border border-white/15 text-zinc-100 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
+                              onMouseDown={(e) => e.stopPropagation()}
                               onClick={(e) => e.stopPropagation()}
                             >
                               {/* Modal Header */}
@@ -54632,7 +54645,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 </div>
                                 <button 
                                   type="button" 
-                                  onClick={() => setIsDeckCreationChoiceModalOpen(false)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsDeckCreationChoiceModalOpen(false);
+                                  }}
                                   className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/15 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                                 >
                                   <X size={14} />
@@ -54644,11 +54660,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 {/* Option 1: Template */}
                                 <button
                                   type="button"
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setIsDeckCreationChoiceModalOpen(false);
                                     setIsDeckTemplateLibraryModalOpen(true);
                                   }}
-                                  className="group p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-cyan-500/40 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:shadow-cyan-950/30"
+                                  className="group p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-cyan-500/40 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:shadow-cyan-950/30 active:scale-[0.98]"
                                 >
                                   <div>
                                     <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-3 group-hover:scale-105 transition-transform">
@@ -54668,8 +54685,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 {/* Option 2: Blank Canvas */}
                                 <button
                                   type="button"
-                                  onClick={handleCreateBlankDeck}
-                                  className="group p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-violet-500/40 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:shadow-violet-950/30"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCreateBlankDeck();
+                                  }}
+                                  className="group p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-violet-500/40 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer hover:shadow-lg hover:shadow-violet-950/30 active:scale-[0.98]"
                                 >
                                   <div>
                                     <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 mb-3 group-hover:scale-105 transition-transform">
