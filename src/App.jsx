@@ -9751,15 +9751,15 @@ const DEFAULT_DECK_SLIDES = [
     card1Num: '01',
     card1Title: 'LACK OF BRAND DIFFERENTIATION',
     card1Text: 'Startups often find it hard to make their brand unique in a crowded market. Without a clear way to stand out, they struggle to catch the eye of potential customers and lose out to bigger competitors.',
-    card1Bg: 'linear-gradient(180deg, #A78BFA 0%, #6366F1 45%, #1E1B4B 100%)',
+    card1Bg: 'linear-gradient(180deg, rgba(167, 139, 250, 0.16) 0%, rgba(99, 102, 241, 0.08) 50%, rgba(30, 27, 75, 0.4) 100%)',
     card2Num: '02',
     card2Title: 'INCONSISTENT BRAND MESSAGING',
     card2Text: 'Inconsistency in brand messaging across various marketing channels confuses potential customers and dilutes brand perception. Startups often face challenges in maintaining a cohesive message that effectively communicates their value proposition and resonates with their target audience.',
-    card2Bg: 'linear-gradient(180deg, #2E2640 0%, #1E1B38 45%, #121829 100%)',
+    card2Bg: 'linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
     card3Num: '03',
     card3Title: 'KEEPING UP WITH TRENDS',
     card3Text: 'The marketing landscape evolves fast, and startups often struggle to keep up. With limited resources and time, staying on top of the latest trends and integrating them into marketing strategies can be a hurdle.',
-    card3Bg: 'linear-gradient(180deg, #33263D 0%, #1C1A2E 45%, #0E1320 100%)',
+    card3Bg: 'linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
     motionCue: 'Stagger Text Reveal',
     speakerNotes: 'Detail the three critical market pain points: brand differentiation, inconsistent messaging, and dynamic trend adaptation.',
     footer: 'Ingoude Company'
@@ -9783,17 +9783,17 @@ const DEFAULT_DECK_SLIDES = [
     card1Icon: 'award',
     card1Title: 'FIND UNIQUE SELLING POINT',
     card1Text: 'Help startups figure out what makes them special and build their brand around it. This involves learning about their competitors and target audience, then creating a clear message that sets them apart.',
-    card1Bg: 'linear-gradient(180deg, #382c4d 0%, #20223f 50%, #0f162e 100%)',
+    card1Bg: 'linear-gradient(180deg, rgba(56, 44, 77, 0.4) 0%, rgba(32, 34, 63, 0.3) 50%, rgba(15, 22, 46, 0.4) 100%)',
     card1Glimmer: 'white',
     card2Icon: 'shield-check',
     card2Title: 'BRAND MESSAGING GUIDELINES',
     card2Text: "Make sure all of the startup's marketing materials send the same message. This means having clear guidelines for how they talk about themselves and making sure everyone sticks to them.",
-    card2Bg: 'linear-gradient(180deg, #322846 0%, #1e1f3b 50%, #0e1428 100%)',
+    card2Bg: 'linear-gradient(180deg, rgba(50, 40, 70, 0.4) 0%, rgba(30, 31, 59, 0.3) 50%, rgba(14, 20, 40, 0.4) 100%)',
     card2Glimmer: 'white',
     card3Icon: 'target',
     card3Title: 'AGILE MARKETING STRATEGY',
     card3Text: 'Help startups adapt quickly to changes in the market. This means keeping an eye on what works, analyzing data, and being open to new things to keep the marketing strategy fresh and effective.',
-    card3Bg: 'linear-gradient(180deg, #7c5c99 0%, #3e3264 50%, #191c3d 100%)',
+    card3Bg: 'linear-gradient(180deg, rgba(124, 92, 153, 0.35) 0%, rgba(62, 50, 100, 0.25) 50%, rgba(25, 28, 61, 0.35) 100%)',
     card3Glimmer: 'white',
     motionCue: 'Stagger Card Entrance',
     speakerNotes: 'Walk through the 3 innovative solutions: USP discovery, unified brand messaging guidelines, and agile marketing execution.',
@@ -14698,7 +14698,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
           width: 260,
           height: 190,
           style: 'midnight',
-          bg: 'linear-gradient(135deg, #172554 0%, #1e1b4b 50%, #0f172a 100%)',
+          bg: 'linear-gradient(135deg, rgba(23, 37, 84, 0.35) 0%, rgba(30, 27, 75, 0.2) 50%, rgba(15, 23, 42, 0.35) 100%)',
           borderRadius: 16,
           title: 'Core Architecture',
           description: 'Unified spatial canvas engine with sub-millisecond deterministic layout scaling.',
@@ -14711,7 +14711,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
           width: 260,
           height: 190,
           style: 'frosted',
-          bg: 'rgba(24, 24, 27, 0.85)',
+          bg: 'rgba(255, 255, 255, 0.04)',
           borderRadius: 16,
           title: 'Executive Speed',
           description: 'Hardware-accelerated 60fps design pipeline with zero-latency vector rendering.',
@@ -14724,7 +14724,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
           width: 260,
           height: 190,
           style: 'cyber',
-          bg: 'linear-gradient(135deg, #18181b 0%, #09090b 100%)',
+          bg: 'linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%)',
           borderRadius: 16,
           title: 'Autonomous Intelligence',
           description: 'Context-aware Agentic AI assistant paired with mathematical design heuristics.',
@@ -54698,7 +54698,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }
                                   }}
                                   data-canvas-bg="true"
-                                  className={`${customBg ? '' : (currentPresetObj.background || 'bg-white')} relative overflow-hidden flex flex-col justify-between p-[32px] md:p-[48px] mx-auto my-auto transition-all duration-300 ${
+                                  className={`${customBg ? '' : (currentPresetObj.background || 'bg-white')} relative overflow-hidden flex flex-col justify-between p-[32px] md:p-[48px] mx-auto my-auto ${isDeckPresentationMode ? 'transition-none' : 'transition-all duration-300'} ${
                                     isDeckPresentationMode 
                                       ? (isDeckPresentationFocus 
                                           ? 'fixed inset-0 z-10 !w-screen !h-screen !max-w-none !max-h-none !rounded-none !border-0 shadow-none select-none !p-6 md:!p-12' 
@@ -62603,7 +62603,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                    style={{
                                                      width: activeDeckSlide?.card1_width ? `${activeDeckSlide.card1_width}px` : undefined, minWidth: activeDeckSlide?.card1_width ? `${activeDeckSlide.card1_width}px` : undefined, flexShrink: activeDeckSlide?.card1_width ? 0 : 1,
                                                      height: activeDeckSlide?.card1_height ? `${activeDeckSlide.card1_height}px` : undefined,
-                                                     background: activeDeckSlide?.card1Bg || 'linear-gradient(180deg, rgba(167, 139, 250, 0.16) 0%, rgba(99, 102, 241, 0.08) 50%, rgba(30, 27, 75, 0.4) 100%)',
+                                                     background: (() => { const b = activeDeckSlide?.card1Bg; return (!b || b.includes('#A78BFA') || b.includes('#6366F1')) ? 'linear-gradient(180deg, rgba(167, 139, 250, 0.16) 0%, rgba(99, 102, 241, 0.08) 50%, rgba(30, 27, 75, 0.4) 100%)' : b; })(),
                                                       backdropFilter: 'blur(20px)',
                                                       WebkitBackdropFilter: 'blur(20px)',
                                                      borderRadius: activeDeckSlide?.card1Radius || '18px',
@@ -63089,7 +63089,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                    : 'hover:border-purple-300/60'
                                                }`}
                                                style={{
-                                                 backgroundColor: activeDeckSlide?.introLeftBg || 'rgba(196, 181, 253, 0.12)',
+                                                 backgroundColor: (() => { const b = activeDeckSlide?.introLeftBg; return (!b || b === '#C4B5FD' || b.startsWith('#')) ? 'rgba(196, 181, 253, 0.10)' : b; })(),
                                                   backdropFilter: 'blur(20px)',
                                                   WebkitBackdropFilter: 'blur(20px)',
                                                   border: '1px solid rgba(196, 181, 253, 0.25)',
@@ -63215,7 +63215,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      : 'hover:border-cyan-400/50'
                                                  }`}
                                                  style={{
-                                                   background: activeDeckSlide?.introTopRightBg || 'linear-gradient(135deg, rgba(23, 37, 84, 0.4) 0%, rgba(30, 27, 75, 0.25) 50%, rgba(15, 23, 42, 0.4) 100%)',
+                                                   background: (() => { const b = activeDeckSlide?.introTopRightBg; return (!b || b.includes('#172554')) ? 'linear-gradient(135deg, rgba(23, 37, 84, 0.35) 0%, rgba(30, 27, 75, 0.18) 50%, rgba(15, 23, 42, 0.35) 100%)' : b; })(),
                                                     backdropFilter: 'blur(20px)',
                                                     WebkitBackdropFilter: 'blur(20px)',
                                                     border: '1px solid rgba(255, 255, 255, 0.1)',
