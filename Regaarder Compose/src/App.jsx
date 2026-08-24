@@ -26388,7 +26388,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
             if (key === 'clear_format') {
               newFormats[r-1][c-1] = {};
             } else if (key === 'redact') {
-              newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], fill: '#000000', color: '#000000' };
+              newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], fill: '#000000', color: '#ffffff' };
             }
           }
         }
@@ -49329,7 +49329,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            const strokeType = overlay.strokeType || 'solid'; // 'solid', 'dashed', 'dotted', 'dash-dot', 'none'
                            const strokeColor = overlay.strokeColor || '#000000';
                            const strokeWidth = overlay.strokeWidth || 0;
-                           const effectGlow = overlay.effectGlow || { active: false, intensity: 5, color: '#000000' };
+                           const effectGlow = overlay.effectGlow || { active: false, intensity: 5, color: '#ffffff' };
                            const effectShadow = overlay.effectShadow || { active: false, blur: 4, distance: 4, opacity: 0.25, angle: 45 };
                            const effectBlur = overlay.effectBlur || { active: false, radius: 0 };
                            const opacity = overlay.opacity !== undefined ? overlay.opacity : 100;
@@ -52245,7 +52245,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   width: 320,
                                                   height: 200,
                                                   style: bentoStyle,
-                                                  bg: bentoStyle === 'midnight' ? 'linear-gradient(to right, #172554, #1e1b4b, #0f172a)' : bentoStyle === 'lavender' ? '#C4B5FD' : bentoStyle === 'cyber' ? '#000000' : 'rgba(24,24,27,0.85)',
+                                                  bg: bentoStyle === 'midnight' ? 'linear-gradient(180deg, rgba(23, 37, 84, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)' : bentoStyle === 'lavender' ? 'linear-gradient(180deg, rgba(196, 181, 253, 0.15) 0%, rgba(139, 92, 246, 0.08) 100%)' : bentoStyle === 'cyber' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.04)',
                                                   borderRadius: 16,
                                                   glow: bentoStyle === 'cyber' ? 'rgba(0,240,255,0.5)' : 'rgba(255,255,255,0.1)'
                                                 };
@@ -54318,7 +54318,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       <div className="w-2.5 h-2.5 rounded-full bg-[#00f0ff] shadow-[0_0_8px_#00f0ff]" />
                                       <span className="font-medium text-cyan-300">AI Theme Cyan</span>
                                     </div>
-                                    <Sparkles size={11} className="text-cyan-400" />
+                                    <AgentsIcon size={12} className="text-cyan-400" />
                                   </button>
 
                                   <button
@@ -55907,7 +55907,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs flex items-center gap-1 cursor-pointer font-bold"
                                                               title="Convert PNG/JPG to Scalable Vector SVG"
                                                             >
-                                                              <Sparkles size={11} className="text-cyan-400" />
+                                                              <AgentsIcon size={12} className="text-cyan-400" />
                                                               <span>Trace to Vector</span>
                                                             </button>
                                                           ) : (
@@ -56926,7 +56926,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'thank-top-neon' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'thank-top-neon' }); setDeckBentoDrag({ isDragging: true, cardId: 'thankTopNeon', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.thankTopNeon_posX || 0, origY: activeDeckSlide?.thankTopNeon_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Top Neon Ribbon</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { thankTopNeon_posX: 0, thankTopNeon_posY: 0, thankTopNeon_width: undefined, thankTopNeon_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -57134,7 +57134,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 {/* Floating Capsule Toolbar */}
                                                 {deckSelection.type === 'bento' && deckSelection.id === 'thank-presenter' && (
                                                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                    <Sparkles size={11} className="text-cyan-400" />
+                                                    <AgentsIcon size={12} className="text-cyan-400" />
                                                     <span>Presenter Pill</span>
                                                     <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                     <button
@@ -57341,7 +57341,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'team-neon-wave' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'team-neon-wave' }); setDeckBentoDrag({ isDragging: true, cardId: 'teamNeonWave', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.teamNeonWave_posX || 0, origY: activeDeckSlide?.teamNeonWave_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Neon Trails</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { teamNeonWave_posX: 0, teamNeonWave_posY: 0, teamNeonWave_width: undefined, teamNeonWave_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -57776,7 +57776,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'funds-neon-vortex' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'funds-neon-vortex' }); setDeckBentoDrag({ isDragging: true, cardId: 'fundsNeonVortex', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.fundsNeonVortex_posX || 0, origY: activeDeckSlide?.fundsNeonVortex_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Neon Vortex</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { fundsNeonVortex_posX: 0, fundsNeonVortex_posY: 0, fundsNeonVortex_width: undefined, fundsNeonVortex_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -58094,7 +58094,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       {/* Floating Capsule Toolbar */}
                                                       {isSelected && (
                                                         <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                          <Sparkles size={11} className="text-cyan-400" />
+                                                          <AgentsIcon size={12} className="text-cyan-400" />
                                                           <span>Allocation {fIdx + 1}</span>
                                                           <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                           <button
@@ -58247,7 +58247,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'timeline-neon' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'timeline-neon' }); setDeckBentoDrag({ isDragging: true, cardId: 'timelineNeon', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.timelineNeon_posX || 0, origY: activeDeckSlide?.timelineNeon_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Neon Sweep</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { timelineNeon_posX: 0, timelineNeon_posY: 0, timelineNeon_width: undefined, timelineNeon_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -58468,7 +58468,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     {/* Floating Capsule Menu */}
                                                     {isSelected && (
                                                       <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                        <Sparkles size={11} className="text-cyan-400" />
+                                                        <AgentsIcon size={12} className="text-cyan-400" />
                                                         <span>Milestone {tIdx + 1}</span>
                                                         <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                         <button
@@ -58582,7 +58582,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'rev-left-neon' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'rev-left-neon' }); setDeckBentoDrag({ isDragging: true, cardId: 'revLeftNeon', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.revLeftNeon_posX || 0, origY: activeDeckSlide?.revLeftNeon_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Left Wave</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { revLeftNeon_posX: 0, revLeftNeon_posY: 0, revLeftNeon_width: undefined, revLeftNeon_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -58634,7 +58634,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'rev-right-neon' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'rev-right-neon' }); setDeckBentoDrag({ isDragging: true, cardId: 'revRightNeon', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.revRightNeon_posX || 0, origY: activeDeckSlide?.revRightNeon_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Right Wave</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { revRightNeon_posX: 0, revRightNeon_posY: 0, revRightNeon_width: undefined, revRightNeon_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -58899,7 +58899,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     {/* Floating Capsule Menu */}
                                                     {isSelected && (
                                                       <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                        <Sparkles size={11} className="text-cyan-400" />
+                                                        <AgentsIcon size={12} className="text-cyan-400" />
                                                         <span>{pItem.defTitle.split(' ')[0]}</span>
                                                         <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                         <button
@@ -59020,7 +59020,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'traction-neon-vortex' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'traction-neon-vortex' }); setDeckBentoDrag({ isDragging: true, cardId: 'tractionNeonVortex', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.tractionNeonVortex_posX || 0, origY: activeDeckSlide?.tractionNeonVortex_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Orbital Neon Vortex</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { tractionNeonVortex_posX: 0, tractionNeonVortex_posY: 0, tractionNeonVortex_width: undefined, tractionNeonVortex_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -59393,7 +59393,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       {/* Floating Capsule Toolbar */}
                                                       {isSelected && (
                                                         <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                          <Sparkles size={11} className="text-cyan-400" />
+                                                          <AgentsIcon size={12} className="text-cyan-400" />
                                                           <span>Metric {mIdx + 1}</span>
                                                           <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                           <button
@@ -59582,7 +59582,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'adv-left-neon' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'adv-left-neon' }); setDeckBentoDrag({ isDragging: true, cardId: 'advLeftNeon', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.advLeftNeon_posX || 0, origY: activeDeckSlide?.advLeftNeon_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Left Neon Loop</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { advLeftNeon_posX: 0, advLeftNeon_posY: 0, advLeftNeon_width: undefined, advLeftNeon_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -59640,7 +59640,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'adv-right-neon' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'adv-right-neon' }); setDeckBentoDrag({ isDragging: true, cardId: 'advRightNeon', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.advRightNeon_posX || 0, origY: activeDeckSlide?.advRightNeon_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Right Neon Trails</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { advRightNeon_posX: 0, advRightNeon_posY: 0, advRightNeon_width: undefined, advRightNeon_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -59796,7 +59796,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     {/* Card Floating Capsule Menu */}
                                                     {isSelected && (
                                                       <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                        <Sparkles size={11} className="text-cyan-400" />
+                                                        <AgentsIcon size={12} className="text-cyan-400" />
                                                         <span>Card {cIdx + 1}</span>
                                                         <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                         <button
@@ -59998,7 +59998,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'comp-bottom-swirl' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'comp-bottom-swirl' }); setDeckBentoDrag({ isDragging: true, cardId: 'compBottomSwirl', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.compBottomSwirl_posX || 0, origY: activeDeckSlide?.compBottomSwirl_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Ambient Neon Wave</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { compBottomSwirl_posX: 0, compBottomSwirl_posY: 0, compBottomSwirl_width: undefined, compBottomSwirl_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -60066,7 +60066,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 {/* Floating Capsule Toolbar for Direct Header */}
                                                 {deckSelection.type === 'bento' && deckSelection.id === 'direct-col' && (
                                                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                    <Sparkles size={11} className="text-cyan-400" />
+                                                    <AgentsIcon size={12} className="text-cyan-400" />
                                                     <span>Direct Column</span>
                                                     <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                     <button
@@ -60228,7 +60228,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 {/* Floating Capsule Toolbar for Indirect Header */}
                                                 {deckSelection.type === 'bento' && deckSelection.id === 'indirect-col' && (
                                                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                    <Sparkles size={11} className="text-cyan-400" />
+                                                    <AgentsIcon size={12} className="text-cyan-400" />
                                                     <span>Indirect Column</span>
                                                     <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                     <button
@@ -60402,7 +60402,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'market-glow-wave' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'market-glow-wave' }); setDeckBentoDrag({ isDragging: true, cardId: 'marketGlowWave', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.marketGlowWave_posX || 0, origY: activeDeckSlide?.marketGlowWave_posY || 0 }); }} className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Bottom Neon Wave</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { marketGlowWave_posX: 0, marketGlowWave_posY: 0, marketGlowWave_width: undefined, marketGlowWave_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -60453,7 +60453,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Main Frame Floating Capsule Menu */}
                                               {deckSelection.type === 'bento' && deckSelection.id === 'market-main-frame' && (
                                                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Market Card Frame</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button
@@ -60706,7 +60706,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         {/* Row Floating Capsule with Shape & Color Tools */}
                                                         {isSelected && (
                                                           <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                            <Sparkles size={11} className="text-cyan-400" />
+                                                            <AgentsIcon size={12} className="text-cyan-400" />
                                                             <span>{mItem.label} Row</span>
                                                             <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                             <button
@@ -61364,7 +61364,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Drag Capsule */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'services-vortex' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'services-vortex' }); setDeckBentoDrag({ isDragging: true, cardId: 'servicesVortex', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.servicesVortex_posX || 0, origY: activeDeckSlide?.servicesVortex_posY || 0 }); }} className="absolute -top-10 right-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Vortex Arc</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { servicesVortex_posX: 0, servicesVortex_posY: 0, servicesVortex_width: undefined, servicesVortex_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -61428,7 +61428,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   {/* Backdrop Floating Capsule Menu with Style & Fill controls */}
                                                   {deckSelection.type === 'bento' && deckSelection.id === 'presenter-backdrop' && (
                                                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                      <Sparkles size={11} className="text-purple-400" />
+                                                      <AgentsIcon size={12} className="text-violet-400" />
                                                       <span>Backdrop Box</span>
                                                       <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                       <button
@@ -61732,7 +61732,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           {/* Floating Capsule for Service Card */}
                                                           {isSelected && (
                                                             <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                              <Sparkles size={11} className="text-cyan-400" />
+                                                              <AgentsIcon size={12} className="text-cyan-400" />
                                                               <span>{sItem.defTitle.split(' ')[0]}</span>
                                                               <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                               <button
@@ -61902,7 +61902,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           {/* Floating Capsule for Service Card */}
                                                           {isSelected && (
                                                             <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                              <Sparkles size={11} className="text-cyan-400" />
+                                                              <AgentsIcon size={12} className="text-cyan-400" />
                                                               <span>{sItem.defTitle.split(' ')[0]}</span>
                                                               <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                               <button
@@ -61984,7 +61984,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               >
                                                 <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
                                                   <span className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                                                    <Sparkles size={12} className="text-violet-400" /> Select Badge Icon
+                                                    <AgentsIcon size={13} className="text-violet-400" /> Select Badge Icon
                                                   </span>
                                                   <button
                                                     type="button"
@@ -62202,7 +62202,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               {/* Drag Capsule for wave */}
                                               {deckSelection.type === 'vector' && deckSelection.id === 'solutions-wave' && (
                                                 <div onPointerDown={(e) => { if (e.target.closest('button')) return; e.stopPropagation(); setDeckSelection({ type: 'vector', id: 'solutions-wave' }); setDeckBentoDrag({ isDragging: true, cardId: 'vectorWave', startX: e.clientX, startY: e.clientY, origX: activeDeckSlide?.vectorWave_posX || 0, origY: activeDeckSlide?.vectorWave_posY || 0 }); }} className="absolute -top-10 right-4 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap cursor-grab active:cursor-grabbing">
-                                                  <Sparkles size={11} className="text-cyan-400" />
+                                                  <AgentsIcon size={12} className="text-cyan-400" />
                                                   <span>Vector Neon Wave</span>
                                                   <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                   <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { vectorWave_posX: 0, vectorWave_posY: 0, vectorWave_width: undefined, vectorWave_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -62388,7 +62388,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     {/* Card Floating Capsule Menu */}
                                                     {isSelected && (
                                                       <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                        <Sparkles size={11} className="text-purple-400" />
+                                                        <AgentsIcon size={12} className="text-violet-400" />
                                                         <span>Card {cIdx + 1}</span>
                                                         <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                         <button
@@ -62412,7 +62412,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           }}
                                                           className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1 cursor-pointer"
                                                         >
-                                                          <Wand2 size={10} /> Glimmer
+                                                          <AgentsIcon size={11} className="text-amber-300" /> Glimmer
                                                         </button>
                                                         <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                         <button
@@ -62461,7 +62461,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               >
                                                 <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
                                                   <span className="text-[11px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                                                    <Sparkles size={12} className="text-violet-400" /> Select Badge Icon
+                                                    <AgentsIcon size={13} className="text-violet-400" /> Select Badge Icon
                                                   </span>
                                                   <button
                                                     type="button"
@@ -62603,10 +62603,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                    style={{
                                                      width: activeDeckSlide?.card1_width ? `${activeDeckSlide.card1_width}px` : undefined, minWidth: activeDeckSlide?.card1_width ? `${activeDeckSlide.card1_width}px` : undefined, flexShrink: activeDeckSlide?.card1_width ? 0 : 1,
                                                      height: activeDeckSlide?.card1_height ? `${activeDeckSlide.card1_height}px` : undefined,
-                                                     background: activeDeckSlide?.card1Bg || 'linear-gradient(180deg, #A78BFA 0%, #6366F1 45%, #1E1B4B 100%)',
+                                                     background: activeDeckSlide?.card1Bg || 'linear-gradient(180deg, rgba(167, 139, 250, 0.16) 0%, rgba(99, 102, 241, 0.08) 50%, rgba(30, 27, 75, 0.4) 100%)',
+                                                      backdropFilter: 'blur(20px)',
+                                                      WebkitBackdropFilter: 'blur(20px)',
                                                      borderRadius: activeDeckSlide?.card1Radius || '18px',
-                                                     border: activeDeckSlide?.card1Glimmer === 'cyan' ? '1.5px solid rgba(0, 240, 255, 0.9)' : activeDeckSlide?.card1Glimmer === 'violet' ? '1.5px solid rgba(168, 85, 247, 0.9)' : '1.5px solid rgba(255, 255, 255, 0.45)',
-                                                     boxShadow: activeDeckSlide?.card1Glimmer === 'cyan' ? '0 0 25px rgba(0, 240, 255, 0.45), inset 0 0 15px rgba(0, 240, 255, 0.2)' : activeDeckSlide?.card1Glimmer === 'violet' ? '0 0 25px rgba(168, 85, 247, 0.45), inset 0 0 15px rgba(168, 85, 247, 0.2)' : '0 16px 40px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.4)',
+                                                     border: activeDeckSlide?.card1Glimmer === 'cyan' ? '1px solid rgba(0, 240, 255, 0.8)' : activeDeckSlide?.card1Glimmer === 'violet' ? '1px solid rgba(168, 85, 247, 0.8)' : '1px solid rgba(255, 255, 255, 0.12)',
+                                                     boxShadow: activeDeckSlide?.card1Glimmer === 'cyan' ? '0 12px 36px rgba(0, 240, 255, 0.25), inset 0 1px 1px rgba(0, 240, 255, 0.3)' : activeDeckSlide?.card1Glimmer === 'violet' ? '0 12px 36px rgba(168, 85, 247, 0.25), inset 0 1px 1px rgba(168, 85, 247, 0.3)' : '0 12px 32px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.15)',
                                                      transform: `translate(${activeDeckSlide?.card1_posX || 0}px, ${activeDeckSlide?.card1_posY || 0}px)`,
                                                      transition: deckBentoDrag.isDragging || deckResizeDrag.isResizing ? 'none' : 'transform 120ms ease-out, width 100ms ease-out, height 100ms ease-out'
                                                    }}
@@ -62632,7 +62634,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                    {/* Floating Capsule for Card 1 */}
                                                    {deckSelection.type === 'bento' && deckSelection.id === 'prob-card-1' && (
                                                      <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                       <Sparkles size={11} className="text-purple-400" />
+                                                       <AgentsIcon size={12} className="text-violet-400" />
                                                        <span>Card 01</span>
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                        <button
@@ -62646,7 +62648,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                          className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1"
                                                          title="Toggle Glimmer Edge"
                                                        >
-                                                         <Wand2 size={10} /> Glimmer
+                                                         <AgentsIcon size={11} className="text-amber-300" /> Glimmer
                                                        </button>
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                        <button
@@ -62775,7 +62777,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                    {/* Floating Capsule for Card 2 */}
                                                    {deckSelection.type === 'bento' && deckSelection.id === 'prob-card-2' && (
                                                      <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                       <Sparkles size={11} className="text-cyan-400" />
+                                                       <AgentsIcon size={12} className="text-cyan-400" />
                                                        <span>Card 02</span>
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                        <button
@@ -62789,7 +62791,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                          className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1"
                                                          title="Toggle Glimmer Edge"
                                                        >
-                                                         <Wand2 size={10} /> Glimmer
+                                                         <AgentsIcon size={11} className="text-amber-300" /> Glimmer
                                                        </button>
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                        <button
@@ -62932,7 +62934,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                          className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9.5px] font-bold text-amber-300 flex items-center gap-1"
                                                          title="Toggle Glimmer Edge"
                                                        >
-                                                         <Wand2 size={10} /> Glimmer
+                                                         <AgentsIcon size={11} className="text-amber-300" /> Glimmer
                                                        </button>
                                                        <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                        <button
@@ -63087,15 +63089,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                    : 'hover:border-purple-300/60'
                                                }`}
                                                style={{
-                                                 backgroundColor: activeDeckSlide?.introLeftBg || '#C4B5FD',
+                                                 backgroundColor: activeDeckSlide?.introLeftBg || 'rgba(196, 181, 253, 0.12)',
+                                                  backdropFilter: 'blur(20px)',
+                                                  WebkitBackdropFilter: 'blur(20px)',
+                                                  border: '1px solid rgba(196, 181, 253, 0.25)',
                                                  borderRadius: activeDeckSlide?.introLeftRadius || '16px',
-                                                 color: '#000000'
+                                                 color: '#ffffff'
                                                }}
                                              >
                                                {/* Floating Capsule Toolbar for Bento Left Card */}
                                                {deckSelection.type === 'bento' && deckSelection.id === 'bento-left' && (
                                                  <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                   <Sparkles size={11} className="text-purple-400" />
+                                                   <AgentsIcon size={12} className="text-violet-400" />
                                                    <span>Studio Card</span>
                                                    <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                    {/* Color Swatch */}
@@ -63169,7 +63174,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      }}
                                                      className="px-2 py-1 rounded-md bg-cyan-500 text-white text-[10.5px] font-bold shadow hover:bg-cyan-600 flex items-center gap-1 cursor-pointer"
                                                    >
-                                                     <Sparkles size={11} /> Replace
+                                                     <AgentsIcon size={12} className="text-white" /> Replace
                                                    </button>
                                                    <button
                                                      type="button"
@@ -63190,7 +63195,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/80 border border-white/20 text-[9px] font-bold text-cyan-300 w-fit tracking-wider">
                                                    <span>STUDIO EDITION</span>
                                                  </div>
-                                                 <h3 className="text-black font-[900] text-[13.5px] leading-tight tracking-tight mt-1 uppercase font-sans">
+                                                 <h3 className="text-white font-[900] text-[13.5px] leading-tight tracking-tight mt-1 uppercase font-sans">
                                                    DESIGN YOUR FUTURE WITH US.
                                                  </h3>
                                                </div>
@@ -63210,14 +63215,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      : 'hover:border-cyan-400/50'
                                                  }`}
                                                  style={{
-                                                   background: activeDeckSlide?.introTopRightBg || 'linear-gradient(to right, #172554, #1e1b4b, #0f172a)',
+                                                   background: activeDeckSlide?.introTopRightBg || 'linear-gradient(135deg, rgba(23, 37, 84, 0.4) 0%, rgba(30, 27, 75, 0.25) 50%, rgba(15, 23, 42, 0.4) 100%)',
+                                                    backdropFilter: 'blur(20px)',
+                                                    WebkitBackdropFilter: 'blur(20px)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
                                                    borderRadius: activeDeckSlide?.introTopRightRadius || '16px'
                                                  }}
                                                >
                                                  {/* Floating Capsule Toolbar for Top-Right Glass Card */}
                                                  {deckSelection.type === 'bento' && deckSelection.id === 'bento-top-right' && (
                                                    <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10.5px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                     <Sparkles size={11} className="text-cyan-400" />
+                                                     <AgentsIcon size={12} className="text-cyan-400" />
                                                      <span>Glass Card</span>
                                                      <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                      {/* Color Swatch */}
@@ -63591,7 +63599,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 {/* Floating Toolbar for Top Neon */}
                                                 {deckSelection.type === 'vector' && deckSelection.id === 'cover-top-neon' && (
                                                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                    <Sparkles size={11} className="text-cyan-400" />
+                                                    <AgentsIcon size={12} className="text-cyan-400" />
                                                     <span>Top Neon Wave</span>
                                                     <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                     <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { coverTopNeon_posX: 0, coverTopNeon_posY: 0, coverTopNeon_width: undefined, coverTopNeon_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Bounds"><RotateCcw size={11} /></button>
@@ -63663,7 +63671,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 {/* Floating Toolbar for Bottom Neon */}
                                                 {deckSelection.type === 'vector' && deckSelection.id === 'cover-bottom-neon' && (
                                                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                    <Sparkles size={11} className="text-cyan-400" />
+                                                    <AgentsIcon size={12} className="text-cyan-400" />
                                                     <span>Bottom Neon Loop</span>
                                                     <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                     <button type="button" onPointerDown={(e) => { e.stopPropagation(); updateDeckSlideFields(activeDeckSlide?.id, { coverBottomNeon_posX: 0, coverBottomNeon_posY: 0, coverBottomNeon_width: undefined, coverBottomNeon_height: undefined }); }} className="p-1 hover:bg-white/10 rounded text-slate-300 hover:text-white cursor-pointer" title="Reset Position"><RotateCcw size={11} /></button>
@@ -63947,7 +63955,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     {/* Floating Contextual Toolbar for Presenter Pill */}
                                                     {deckSelection.type === 'bento' && deckSelection.id === 'cover-presenter' && (
                                                       <div className="absolute -top-11 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-zinc-900/95 backdrop-blur-md text-zinc-100 text-[10px] font-semibold tracking-wide shadow-2xl flex items-center gap-1.5 z-50 border border-white/20 pointer-events-auto whitespace-nowrap">
-                                                        <Sparkles size={11} className="text-cyan-400" />
+                                                        <AgentsIcon size={12} className="text-cyan-400" />
                                                         <span>Presenter Pill</span>
                                                         <div className="w-px h-3 bg-white/20 mx-0.5" />
                                                         
@@ -76546,7 +76554,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            const strokeType = overlay.strokeType || 'solid'; // 'solid', 'dashed', 'dotted', 'dash-dot', 'none'
                            const strokeColor = overlay.strokeColor || '#000000';
                            const strokeWidth = overlay.strokeWidth || 0;
-                           const effectGlow = overlay.effectGlow || { active: false, intensity: 5, color: '#000000' };
+                           const effectGlow = overlay.effectGlow || { active: false, intensity: 5, color: '#ffffff' };
                            const effectShadow = overlay.effectShadow || { active: false, blur: 4, distance: 4, opacity: 0.25, angle: 45 };
                            const effectBlur = overlay.effectBlur || { active: false, radius: 0 };
                            const opacity = overlay.opacity !== undefined ? overlay.opacity : 100;
