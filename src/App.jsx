@@ -20948,6 +20948,27 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       getTransactions: () => getTransactionHistory()
     };
 
+    // ── Workspace State Bridges for Canonical Tool Registry ──────────────────
+    // These expose live React state to window.__REGAARDER_* globals so that
+    // the LLM harness tools (get_deck_slides, get_tasks, get_sheet_data etc.)
+    // can read and mutate real workspace data during agentic tool-call resolution.
+
+    // Deck slides — read bridge (mutations delegated to window.regaarderDeck)
+    window.__REGAARDER_DECK_SLIDES__ = deckSlidesData;
+
+    window.__REGAARDER_ADD_DECK_SLIDE__ = (params) => {
+      if (window.regaarderDeck?.addSlide) return window.regaarderDeck.addSlide(params);
+      return { success: false, error: { code: 'BRIDGE_NOT_READY', details: 'Deck workspace not mounted.' } };
+    };
+    window.__REGAARDER_UPDATE_DECK_SLIDE__ = (slideId, fields) => {
+      if (window.regaarderDeck?.updateSlide) return window.regaarderDeck.updateSlide(slideId, fields);
+      return { success: false, error: { code: 'BRIDGE_NOT_READY', details: 'Deck workspace not mounted.' } };
+    };
+    window.__REGAARDER_DELETE_DECK_SLIDE__ = (slideId) => {
+      if (window.regaarderDeck?.deleteSlide) return window.regaarderDeck.deleteSlide(slideId);
+      return { success: false, error: { code: 'BRIDGE_NOT_READY', details: 'Deck workspace not mounted.' } };
+    };
+
     const handleDevConsoleShortcut = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
         e.preventDefault();
@@ -20972,6 +20993,10 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       delete window.setCellFillColor;
       delete window.__composeSetCellFillColor;
       delete window.__DOCS_TOOL_HARNESS__;
+      delete window.__REGAARDER_DECK_SLIDES__;
+      delete window.__REGAARDER_ADD_DECK_SLIDE__;
+      delete window.__REGAARDER_UPDATE_DECK_SLIDE__;
+      delete window.__REGAARDER_DELETE_DECK_SLIDE__;
       window.removeEventListener('keydown', handleDevConsoleShortcut);
       window.removeEventListener('keydown', handleOrbGlobalShortcut, true);
       if (window.RegaarderAPI) delete window.RegaarderAPI.setCellFillColor;
@@ -22117,6 +22142,78 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   // Integrated Tasks workspace state
   const [tasks, setTasks] = useState([]);
   const [taskOwnerFilter, setTaskOwnerFilter] = useState('all');
+
+  // ── Sheets & Research Notes bridge sync ─────────────────────────────────
+  useEffect(() => {
+    window.__REGAARDER_SHEET_DATA__ = { sheetsData, sheetGrids };
+    window.__REGAARDER_UPDATE_SHEET_CELLS__ = (updates) => {
+      // updates: Array<{ sheetId, row, col, value }>
+      if (!Array.isArray(updates)) return { success: false, error: { code: 'INVALID_PARAMS', details: 'updates must be an array.' } };
+      setSheetGrids(prev => {
+        const next = { ...(prev || {}) };
+        for (const { sheetId, row, col, value } of updates) {
+          const sid = sheetId || activeSheetId;
+          if (!next[sid]) next[sid] = {};
+          const key = `${row},${col}`;
+          next[sid][key] = { ...(next[sid][key] || {}), value };
+        }
+        return next;
+      });
+      return { success: true, message: `${updates.length} cell(s) updated.`, data: updates };
+    };
+
+    // Research notes bridge (backed by docCitations as the closest existing state)
+    window.__REGAARDER_RESEARCH_NOTES__ = docCitations;
+    window.__REGAARDER_ADD_RESEARCH_NOTE__ = (params) => {
+      const newNote = { id: `note_${Date.now()}`, type: 'research_note', ...params, savedAt: new Date().toISOString() };
+      setDocCitations(prev => [...prev, newNote]);
+      return { success: true, message: `Research note '${params.title}' saved.`, data: newNote };
+    };
+    window.__REGAARDER_DELETE_RESEARCH_NOTE__ = (noteId) => {
+      setDocCitations(prev => prev.filter(c => c.id !== noteId));
+      return { success: true, message: `Note ${noteId} deleted.`, data: { noteId } };
+    };
+
+    // Rooms bridge
+    window.__REGAARDER_ROOMS__ = [];
+
+    return () => {
+      delete window.__REGAARDER_SHEET_DATA__;
+      delete window.__REGAARDER_UPDATE_SHEET_CELLS__;
+      delete window.__REGAARDER_RESEARCH_NOTES__;
+      delete window.__REGAARDER_ADD_RESEARCH_NOTE__;
+      delete window.__REGAARDER_DELETE_RESEARCH_NOTE__;
+      delete window.__REGAARDER_ROOMS__;
+    };
+  }, [sheetsData, sheetGrids, activeSheetId, docCitations]);
+
+  // ── Reactive workspace state bridge sync ────────────────────────────────
+  // Keeps window.__REGAARDER_* globals in sync with the latest live React state
+  // so the canonical tool registry always reads current data, not stale closures.
+  useEffect(() => {
+    // Tasks bridge
+    window.__REGAARDER_TASKS__ = tasks;
+    window.__REGAARDER_ADD_TASK__ = (params) => {
+      const newTask = { id: `task_${Date.now()}`, ...params };
+      setTasks(prev => [...prev, newTask]);
+      return { success: true, message: `Task '${params.title}' created.`, data: newTask };
+    };
+    window.__REGAARDER_UPDATE_TASK__ = (taskId, fields) => {
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...fields } : t));
+      return { success: true, message: `Task ${taskId} updated.`, data: fields };
+    };
+    window.__REGAARDER_DELETE_TASK__ = (taskId) => {
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+      return { success: true, message: `Task ${taskId} deleted.`, data: { taskId } };
+    };
+
+    return () => {
+      delete window.__REGAARDER_TASKS__;
+      delete window.__REGAARDER_ADD_TASK__;
+      delete window.__REGAARDER_UPDATE_TASK__;
+      delete window.__REGAARDER_DELETE_TASK__;
+    };
+  }, [tasks]);
   const [assigneePickerTaskId, setAssigneePickerTaskId] = useState(null);
   const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
   const [dueDatePickerTaskId, setDueDatePickerTaskId] = useState(null);
@@ -35085,6 +35182,8 @@ Respond with a JSON array of slide objects matching the schema.`;
 
       window.deckAIHarness = window.regaarderDeck;
     }
+    // Keep read bridge in sync with latest slides data
+    window.__REGAARDER_DECK_SLIDES__ = deckSlidesData;
   }, [deckSlidesData, activeDeckSlideId, activeDeckSlide, selectedBrandKit, isDeckPresentationMode, isDeckPresentationFocus]);
   const resolvedDeckSlideDesign = useMemo(() => {
     const fallback = DECK_DESIGN_PRESETS[0];

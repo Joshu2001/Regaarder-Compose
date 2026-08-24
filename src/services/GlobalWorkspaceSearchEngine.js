@@ -585,28 +585,60 @@ export function groupResultsByCategory(scoredResults) {
 
 /**
  * Synthesizes cross-workspace intelligence using actual live indexed data.
+ * Routes through callAiWithTools when aiConfig is provided so the LLM can
+ * call get_document_structure, get_tasks, get_sheet_data etc. directly.
+ * Falls back to onCallAi (plain text) and then local extraction when both are absent.
  */
 export async function synthesizeWorkspaceKnowledge({
   query,
   activeFilter = 'all',
   workspaceIndex = [],
-  onCallAi = null
+  onCallAi = null,
+  aiConfig = null
 }) {
-  const matched = queryWorkspace(workspaceIndex, query, activeFilter).slice(0, 5);
+  const matched = queryWorkspace(workspaceIndex, query, activeFilter).slice(0, 8);
 
   if (matched.length === 0) {
     return {
-      answer: `No records found in your workspace regarding "${query}". Create or import documents and data to ask questions about your workspace.`,
+      answer: `No records found in your workspace regarding "${query}". Create or import documents, sheets, tasks, or notes to ask questions about your workspace.`,
       sources: []
     };
   }
 
-  const contextData = matched.map((m, idx) => 
-    `[Source ${idx + 1}] Title: ${m.entity.title} (${m.entity.location})\nContent: ${m.entity.content}`
-  ).join('\n\n');
+  // ── Primary Path: callAiWithTools (live tool-calling harness) ──────────────
+  if (aiConfig) {
+    try {
+      const { callAiWithTools } = await import('./docsToolExecutor.js');
+      const { getSavedAiConfig } = await import('./orbAiService.js');
 
+      const resolvedConfig = aiConfig || getSavedAiConfig();
+      const contextSummary = matched.map((m, i) =>
+        `[${i + 1}] "${m.entity.title}" (${m.entity.location}): ${m.entity.content?.slice(0, 200) || ''}`
+      ).join('\n\n');
+
+      const prompt = `You have access to workspace tools. The user asked: "${query}"\n\nPre-indexed context from the search engine (use tools to get live/updated data if needed):\n${contextSummary}\n\nProvide a direct, concise executive summary answering the user's question based on the workspace data.`;
+
+      const result = await callAiWithTools(prompt, resolvedConfig, 'all', {}, { maxTurns: 3 });
+
+      if (result?.answer) {
+        return {
+          answer: result.answer,
+          sources: matched.map(m => m.entity),
+          toolsExecuted: result.toolsExecuted || []
+        };
+      }
+    } catch (err) {
+      console.warn('[synthesizeWorkspaceKnowledge] callAiWithTools failed, falling back:', err);
+    }
+  }
+
+  // ── Secondary Path: onCallAi plain text callback (legacy) ─────────────────
   if (onCallAi) {
     try {
+      const contextData = matched.map((m, idx) =>
+        `[Source ${idx + 1}] Title: ${m.entity.title} (${m.entity.location})\nContent: ${m.entity.content}`
+      ).join('\n\n');
+
       const prompt = `You are the Regaarder Executive Workspace Assistant. Answer the user's question concisely based ONLY on the following workspace data. If the answer cannot be determined from the data, say so politely.\n\nWORKSPACE DATA:\n${contextData}\n\nUSER QUESTION: ${query}\n\nProvide a direct, concise executive summary:`;
       const response = await onCallAi(prompt);
       if (response) {
@@ -616,14 +648,15 @@ export async function synthesizeWorkspaceKnowledge({
         };
       }
     } catch (err) {
-      console.warn('onCallAi failed in synthesizeWorkspaceKnowledge, falling back to local extraction:', err);
+      console.warn('[synthesizeWorkspaceKnowledge] onCallAi failed, falling back to local extraction:', err);
     }
   }
 
-  // Local synthesis fallback from matched snippets
+  // ── Tertiary Path: Local snippet extraction (no LLM required) ─────────────
   const topMatch = matched[0];
   return {
     answer: `Based on **${topMatch.entity.title}** (${topMatch.entity.location}):\n${topMatch.snippet || topMatch.entity.content.slice(0, 200) + '…'}`,
     sources: matched.map(m => m.entity)
   };
 }
+

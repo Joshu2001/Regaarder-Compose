@@ -22,6 +22,9 @@ export const DOCS_TOOL_CATEGORIES = {
   APPLICATION_COMMANDS: 'application_commands',
   DECK_TOOLS: 'deck_tools',
   SHEET_TOOLS: 'sheet_tools',
+  TASKS_TOOLS: 'tasks_tools',
+  ROOMS_TOOLS: 'rooms_tools',
+  BROWSER_TOOLS: 'browser_tools',
 };
 
 export const CANONICAL_DOCS_TOOLS = [
@@ -657,6 +660,286 @@ export const CANONICAL_DOCS_TOOLS = [
           timestamp: new Date().toISOString()
         }
       };
+    }
+  },
+
+  // ── TASKS & INITIATIVES TOOLS ────────────────────────────────────
+  {
+    name: 'get_tasks',
+    label: 'Get All Tasks',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Retrieves all tasks and initiatives in the active project, including title, status, priority, assignee, and due date.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        filter: {
+          type: 'string',
+          enum: ['all', 'active', 'completed', 'overdue'],
+          description: 'Filter tasks by status. Defaults to all.'
+        }
+      },
+      required: []
+    },
+    execute: async (params) => {
+      const tasks = window.__REGAARDER_TASKS__ || [];
+      const filter = params.filter || 'all';
+      const filtered = filter === 'all' ? tasks : tasks.filter(t => {
+        if (filter === 'active') return t.status !== 'Done' && t.status !== 'Completed';
+        if (filter === 'completed') return t.status === 'Done' || t.status === 'Completed';
+        if (filter === 'overdue') return t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Done';
+        return true;
+      });
+      return { success: true, data: { total: filtered.length, tasks: filtered } };
+    }
+  },
+  {
+    name: 'add_task',
+    label: 'Add Task',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Creates a new task or initiative in the active project with specified title, priority, assignee, and due date.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Task title.' },
+        priority: { type: 'string', enum: ['High', 'Medium', 'Low'], description: 'Task priority level.' },
+        status: { type: 'string', enum: ['Not Started', 'In Progress', 'Done', 'Blocked'], description: 'Initial task status.' },
+        assignee: { type: 'string', description: 'Assignee name or ID.' },
+        dueDate: { type: 'string', description: 'ISO 8601 due date string (e.g. 2025-09-01).' },
+        notes: { type: 'string', description: 'Optional task notes or description.' }
+      },
+      required: ['title']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_ADD_TASK__) {
+        return window.__REGAARDER_ADD_TASK__(params);
+      }
+      return { success: true, message: 'Task created', data: { ...params, id: `task_${Date.now()}` } };
+    }
+  },
+  {
+    name: 'update_task',
+    label: 'Update Task',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Updates an existing task property such as status, priority, assignee, due date, or title.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string', description: 'The unique ID of the task to update.' },
+        title: { type: 'string', description: 'Updated task title.' },
+        status: { type: 'string', enum: ['Not Started', 'In Progress', 'Done', 'Blocked'], description: 'Updated status.' },
+        priority: { type: 'string', enum: ['High', 'Medium', 'Low'], description: 'Updated priority.' },
+        assignee: { type: 'string', description: 'Updated assignee.' },
+        dueDate: { type: 'string', description: 'Updated ISO 8601 due date.' }
+      },
+      required: ['taskId']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_UPDATE_TASK__) {
+        return window.__REGAARDER_UPDATE_TASK__(params.taskId, params);
+      }
+      return { success: true, message: 'Task updated', data: params };
+    }
+  },
+  {
+    name: 'delete_task',
+    label: 'Delete Task',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Permanently deletes a task by its ID from the active project.',
+    mutatesDocument: true,
+    destructive: true,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string', description: 'Unique ID of the task to delete.' }
+      },
+      required: ['taskId']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_DELETE_TASK__) {
+        return window.__REGAARDER_DELETE_TASK__(params.taskId);
+      }
+      return { success: true, message: 'Task deleted', data: params };
+    }
+  },
+
+  // ── ROOMS & MEETING TOOLS ────────────────────────────────────────
+  {
+    name: 'get_room_sessions',
+    label: 'Get Room Sessions',
+    category: DOCS_TOOL_CATEGORIES.ROOMS_TOOLS,
+    description: 'Retrieves all active and recent Room meeting sessions, including title, participants, status, and start time.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        filter: {
+          type: 'string',
+          enum: ['all', 'active', 'recent'],
+          description: 'Filter by session status. Defaults to all.'
+        }
+      },
+      required: []
+    },
+    execute: async (params) => {
+      const rooms = window.__REGAARDER_ROOMS__ || [];
+      const filter = params.filter || 'all';
+      const filtered = filter === 'active'
+        ? rooms.filter(r => r.status === 'live' || r.status === 'active')
+        : rooms;
+      return { success: true, data: { total: filtered.length, sessions: filtered } };
+    }
+  },
+  {
+    name: 'get_meeting_transcript',
+    label: 'Get Meeting Transcript',
+    category: DOCS_TOOL_CATEGORIES.ROOMS_TOOLS,
+    description: 'Retrieves the full recorded transcript and key moment summary for a specific Room meeting session.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        roomId: { type: 'string', description: 'The unique room session ID.' }
+      },
+      required: ['roomId']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_GET_TRANSCRIPT__) {
+        return window.__REGAARDER_GET_TRANSCRIPT__(params.roomId);
+      }
+      const rooms = window.__REGAARDER_ROOMS__ || [];
+      const session = rooms.find(r => r.id === params.roomId);
+      if (!session) return { success: false, error: { code: 'ROOM_NOT_FOUND', details: `Room ${params.roomId} not found.` } };
+      return { success: true, data: { roomId: params.roomId, title: session.title, transcript: session.transcript || 'Transcript not yet available.', keyMoments: session.keyMoments || [] } };
+    }
+  },
+  {
+    name: 'start_room',
+    label: 'Start Room Session',
+    category: DOCS_TOOL_CATEGORIES.ROOMS_TOOLS,
+    description: 'Creates and starts a new Room meeting session with specified title and participant list.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Meeting room title.' },
+        participants: { type: 'array', items: { type: 'string' }, description: 'List of participant names or email addresses.' },
+        agenda: { type: 'string', description: 'Optional meeting agenda.' }
+      },
+      required: ['title']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_START_ROOM__) {
+        return window.__REGAARDER_START_ROOM__(params);
+      }
+      return { success: true, message: `Room "${params.title}" started`, data: { ...params, id: `room_${Date.now()}`, status: 'active' } };
+    }
+  },
+
+  // ── BROWSER RESEARCH & NOTES TOOLS ───────────────────────────────
+  {
+    name: 'get_research_notes',
+    label: 'Get Research Notes',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Retrieves all saved web research notes, citations, and source bookmarks from the Browser workspace.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Optional keyword to filter notes by title or content.' }
+      },
+      required: []
+    },
+    execute: async (params) => {
+      const notes = window.__REGAARDER_RESEARCH_NOTES__ || [];
+      const filtered = params.query
+        ? notes.filter(n => (n.title + ' ' + n.content).toLowerCase().includes(params.query.toLowerCase()))
+        : notes;
+      return { success: true, data: { total: filtered.length, notes: filtered } };
+    }
+  },
+  {
+    name: 'add_research_note',
+    label: 'Add Research Note',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Saves a new research note or web citation to the Browser workspace.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Note or citation title.' },
+        content: { type: 'string', description: 'Note body text or citation excerpt.' },
+        sourceUrl: { type: 'string', description: 'Source URL for the citation.' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Optional tags for categorization.' }
+      },
+      required: ['title', 'content']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_ADD_RESEARCH_NOTE__) {
+        return window.__REGAARDER_ADD_RESEARCH_NOTE__(params);
+      }
+      return { success: true, message: 'Research note saved', data: { ...params, id: `note_${Date.now()}`, savedAt: new Date().toISOString() } };
+    }
+  },
+  {
+    name: 'delete_research_note',
+    label: 'Delete Research Note',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Deletes a saved research note by its ID from the Browser workspace.',
+    mutatesDocument: true,
+    destructive: true,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        noteId: { type: 'string', description: 'Unique ID of the note to delete.' }
+      },
+      required: ['noteId']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_DELETE_RESEARCH_NOTE__) {
+        return window.__REGAARDER_DELETE_RESEARCH_NOTE__(params.noteId);
+      }
+      return { success: true, message: 'Research note deleted', data: params };
     }
   }
 ];

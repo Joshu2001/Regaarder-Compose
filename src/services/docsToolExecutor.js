@@ -1,13 +1,13 @@
 /**
  * docsToolExecutor.js
- * 
+ *
  * Layer 3: Tool Execution Engine & Transaction Runtime
- * 
+ *
  * Manages context injection, parameter validation, safety checks, transaction recording,
  * dry-run simulation, undo/redo state restoration, and standard result formatting.
  */
 
-import { getToolByName, CANONICAL_DOCS_TOOLS } from './docsToolRegistry.js';
+import { getToolByName } from './docsToolRegistry.js';
 import * as docsCommandApi from './docsCommandApi.js';
 
 // In-memory transaction stack for document state undo/redo tracking
@@ -73,11 +73,11 @@ export const undoTransaction = async (transactionId) => {
 
 /**
  * Execute a canonical tool with full runtime validation, transaction tracking, and dryRun support.
- * 
- * @param {string} toolName - Name of the canonical tool to execute.
- * @param {object} params - Input parameters for the tool.
- * @param {object} context - Execution context { documentId, workspaceId, selection, mode, permissions }.
- * @param {object} options - Execution options { dryRun: boolean }.
+ *
+ * @param {string} toolName  - Name of the canonical tool to execute.
+ * @param {object} params    - Input parameters for the tool.
+ * @param {object} context   - Execution context { documentId, workspaceId, selection, mode, permissions }.
+ * @param {object} options   - Execution options { dryRun: boolean }.
  */
 export const executeTool = async (toolName, params = {}, context = {}, options = {}) => {
   const startTime = Date.now();
@@ -166,9 +166,8 @@ export const executeTool = async (toolName, params = {}, context = {}, options =
     }
 
     // Capture After Snapshot & Record Transaction
-    let afterSnapshot = null;
     if (toolDef.mutatesDocument) {
-      afterSnapshot = docsCommandApi.getDocumentSnapshot();
+      const afterSnapshot = docsCommandApi.getDocumentSnapshot();
       transactionHistory.push({
         transactionId,
         toolName,
@@ -209,4 +208,114 @@ export const executeTool = async (toolName, params = {}, context = {}, options =
     executionLogs.push({ ...exceptionResult, durationMs: Date.now() - startTime });
     return exceptionResult;
   }
+};
+
+/**
+ * callAiWithTools — Multi-Turn Agentic Resolution Loop
+ *
+ * Sends a prompt to the active LLM provider with the canonical tool schemas injected.
+ * When the model responds with a function_call (OpenAI/Gemini) or tool_use (Anthropic) block,
+ * this loop executes the tool via executeTool(), appends the structured result to the
+ * conversation thread, and re-calls the model. Iterates up to maxTurns until the model
+ * produces a final plain-text answer.
+ *
+ * @param {string}   prompt      - User instruction or question to send to the LLM.
+ * @param {object}   aiConfig    - Active AI provider config from getSavedAiConfig().
+ * @param {string}   toolFilter  - Context filter ('all'|'editing'|'analysis'|'commands').
+ * @param {object}   docContext  - Execution context passed through to executeTool calls.
+ * @param {object}   options     - { maxTurns: number (default 5), signal: AbortSignal }
+ * @returns {Promise<{ answer: string, toolsExecuted: Array }>}
+ */
+export const callAiWithTools = async (
+  prompt,
+  aiConfig = {},
+  toolFilter = 'all',
+  docContext = {},
+  options = {}
+) => {
+  const { maxTurns = 5, signal } = options;
+
+  // Lazy dynamic imports prevent circular dependency at module load time
+  const [
+    { getAvailableTools },
+    { callAiProvider }
+  ] = await Promise.all([
+    import('./docsAgentOrchestrator.js'),
+    import('./orbAiService.js')
+  ]);
+
+  const availableTools = getAvailableTools({ context: toolFilter });
+
+  // System prompt that contextualises the LLM within the Regaarder workspace runtime
+  const systemPrompt = `You are the Regaarder Executive Workspace AI. You have access to structured tools that read and mutate the user's live workspace — Documents, Spreadsheets, Presentations, Tasks, Rooms, and Research Notes. Always call the appropriate tool to gather real workspace data before answering. After receiving tool results, synthesise a concise, direct executive answer. Never invent data — if a tool returns empty results, report that clearly.`;
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: prompt }
+  ];
+
+  const toolsExecuted = [];
+  let turnCount = 0;
+
+  while (turnCount < maxTurns) {
+    turnCount++;
+
+    const providerResult = await callAiProvider(messages, aiConfig, availableTools, { signal });
+
+    // providerResult shape: { type: 'text'|'tool_call', content: string, toolCalls: Array<{name, arguments}>, rawAssistantMessage }
+    if (!providerResult) {
+      return {
+        answer: 'The AI provider returned an empty response. Please check your API key and model settings.',
+        toolsExecuted
+      };
+    }
+
+    if (providerResult.type === 'text') {
+      // Final plain-text answer — agentic resolution complete
+      return { answer: providerResult.content || '', toolsExecuted };
+    }
+
+    if (providerResult.type === 'tool_call' && Array.isArray(providerResult.toolCalls)) {
+      // Execute all tool calls the model requested in this turn
+      const toolResultMessages = [];
+
+      for (const call of providerResult.toolCalls) {
+        let parsedArgs = {};
+        try {
+          parsedArgs = typeof call.arguments === 'string'
+            ? JSON.parse(call.arguments)
+            : (call.arguments || {});
+        } catch (_) {
+          parsedArgs = {};
+        }
+
+        const execResult = await executeTool(call.name, parsedArgs, docContext);
+        toolsExecuted.push({ toolName: call.name, params: parsedArgs, result: execResult });
+
+        toolResultMessages.push({
+          role: 'tool',
+          tool_call_id: call.id || call.name,
+          name: call.name,
+          content: JSON.stringify(execResult.data ?? { success: execResult.success, message: execResult.message })
+        });
+      }
+
+      // Append the assistant's tool-call turn, then all results, for the next iteration
+      messages.push({
+        role: 'assistant',
+        content: '',
+        tool_calls: providerResult.rawAssistantMessage
+      });
+      messages.push(...toolResultMessages);
+      continue;
+    }
+
+    // Unknown response shape — exit loop
+    break;
+  }
+
+  return {
+    answer: 'Could not produce a final answer within the allowed number of tool resolution turns.',
+    toolsExecuted
+  };
 };
