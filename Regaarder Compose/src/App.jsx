@@ -12031,6 +12031,8 @@ const DEFAULT_DECK_SLIDES = [
     const slides = deckSlidesData && deckSlidesData.length ? deckSlidesData : (DEFAULT_DECK_SLIDES || []);
     const currentIdx = slides.findIndex((s) => s.id === activeDeckSlideId);
     setPresentationSlideIndex(currentIdx >= 0 ? currentIdx : 0);
+    setIsDeckPresentationFocus(false);
+    setIsDeckChromeVisible(true);
     setIsDeckPresentationMode(true);
     try {
       const docEl = document.documentElement;
@@ -12041,6 +12043,30 @@ const DEFAULT_DECK_SLIDES = [
     } catch (e) {}
     showToast('Started Deck Presentation Mode (Press Esc to exit)');
   };
+
+  // Auto-hide presentation overlay chrome when idle
+  useEffect(() => {
+    if (!isDeckPresentationMode) return;
+    setIsDeckChromeVisible(true);
+    let hideTimer = null;
+    const onActivity = () => {
+      setIsDeckChromeVisible(true);
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => {
+        setIsDeckChromeVisible(false);
+      }, 2000);
+    };
+    window.addEventListener('mousemove', onActivity, { passive: true });
+    window.addEventListener('pointermove', onActivity, { passive: true });
+    hideTimer = setTimeout(() => {
+      setIsDeckChromeVisible(false);
+    }, 2000);
+    return () => {
+      window.removeEventListener('mousemove', onActivity);
+      window.removeEventListener('pointermove', onActivity);
+      if (hideTimer) clearTimeout(hideTimer);
+    };
+  }, [isDeckPresentationMode]);
 
   useEffect(() => {
     if (!isSheetsPresentationMode && !isSheetZenMode && !isDeckPresentationMode) return;
@@ -54660,10 +54686,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       : 'aspect-[16/9] rounded-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] border border-slate-200/80 dark:border-zinc-800 select-text'
                                   }`}
                                   style={{ 
-                                    width: isDeckPresentationMode ? (isDeckPresentationFocus ? '100vw' : 'min(96vw, calc(94vh * 16 / 9))') : 'min(100%, 820px)',
-                                    height: isDeckPresentationMode ? (isDeckPresentationFocus ? '100vh' : 'min(calc(96vw * 9 / 16), 94vh)') : 'auto',
-                                    maxWidth: isDeckPresentationMode ? (isDeckPresentationFocus ? 'none' : '177.7vh') : '820px',
-                                    maxHeight: isDeckPresentationMode ? (isDeckPresentationFocus ? 'none' : '94vh') : 'none',
+                                    width: isDeckPresentationMode ? (isDeckPresentationFocus ? '100vw' : 'min(90vw, calc(84vh * 16 / 9))') : 'min(100%, 820px)',
+                                    height: isDeckPresentationMode ? (isDeckPresentationFocus ? '100vh' : 'min(calc(90vw * 9 / 16), 84vh)') : 'auto',
+                                    maxWidth: isDeckPresentationMode ? (isDeckPresentationFocus ? 'none' : '149.3vh') : '820px',
+                                    maxHeight: isDeckPresentationMode ? (isDeckPresentationFocus ? 'none' : '84vh') : 'none',
                                     aspectRatio: isDeckPresentationMode && isDeckPresentationFocus ? 'auto' : '16/9',
                                     transform: isDeckPresentationMode ? 'none' : `scale(${deckZoomLevel / 100})`, 
                                     transformOrigin: 'center center', 
@@ -54672,24 +54698,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     fontFamily: selectedBrandKit?.font || 'inherit'
                                   }}
                                 >
-                                  {/* Corner Fill/Fit Button on Slide Canvas in Presentation Mode */}
-                                  {isDeckPresentationMode && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsDeckPresentationFocus((prev) => !prev);
-                                      }}
-                                      className={`absolute top-4 right-4 z-40 p-2 rounded-xl backdrop-blur-md border shadow-lg cursor-pointer transition-all duration-200 hover:scale-105 ${
-                                        isDeckPresentationFocus 
-                                          ? 'bg-violet-600/90 text-white border-violet-400/50 ring-2 ring-violet-400/30' 
-                                          : 'bg-black/40 hover:bg-black/70 text-white/80 hover:text-white border-white/20'
-                                      }`}
-                                      title={isDeckPresentationFocus ? "Fit to 16:9 Screen (F)" : "Fill Full Screen (F)"}
-                                    >
-                                      <Expand size={16} />
-                                    </button>
-                                  )}
+
                                   {/* Interactive Draggable & Resizable Background spline wave decoration */}
                                   {(() => {
                                     const isVectorSelected = !isDeckPresentationMode && deckSelection.type === 'vector';
