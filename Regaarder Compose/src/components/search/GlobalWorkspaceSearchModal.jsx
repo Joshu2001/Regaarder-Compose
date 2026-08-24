@@ -347,27 +347,25 @@ export default function GlobalWorkspaceSearchModal({
 
           {/* Right Action Controls */}
           <div className="flex items-center gap-1.5 shrink-0 select-none">
-            {/* AI Mode Toggle (available when in Deck mode) */}
-            {isDeck && (
-              <button
-                type="button"
-                onClick={() => {
-                  const nextMode = mode === 'ai' ? 'search' : 'ai';
-                  setMode(nextMode);
-                  setAiResponse(null);
-                  setTimeout(() => inputRef.current?.focus(), 20);
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 active:scale-95 cursor-pointer ${
-                  mode === 'ai'
-                    ? 'bg-violet-600 text-white shadow-xs border border-violet-500'
-                    : 'bg-violet-500/10 hover:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/25'
-                }`}
-                title={mode === 'ai' ? "Switch back to direct file search" : "Switch to Ask AI workspace knowledge synthesis"}
-              >
-                <RegaarderAiIcon size={14} strokeWidth={1.8} className={mode === 'ai' ? 'text-white' : 'text-violet-600 dark:text-violet-400'} />
-                <span>{mode === 'ai' ? 'Ask AI' : '✦ AI'}</span>
-              </button>
-            )}
+            {/* ✦ AI Mode Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                const nextMode = mode === 'ai' ? 'search' : 'ai';
+                setMode(nextMode);
+                setAiResponse(null);
+                setTimeout(() => inputRef.current?.focus(), 20);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 active:scale-95 cursor-pointer ${
+                mode === 'ai'
+                  ? 'bg-violet-600 text-white shadow-xs border border-violet-500'
+                  : 'bg-violet-500/10 hover:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/25'
+              }`}
+              title={mode === 'ai' ? "Switch back to direct file search" : "Switch to Ask AI workspace knowledge synthesis"}
+            >
+              <RegaarderAiIcon size={14} strokeWidth={1.8} className={mode === 'ai' ? 'text-white' : 'text-violet-600 dark:text-violet-400'} />
+              <span>{mode === 'ai' ? 'Ask AI' : '✦ AI'}</span>
+            </button>
 
             {query && (
               <button

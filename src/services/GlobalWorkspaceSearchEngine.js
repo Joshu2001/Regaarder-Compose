@@ -209,26 +209,142 @@ export const QUICK_ACTIONS = [
 ];
 
 /**
+ * Intelligently resolves workspace type and category based on entity title, type, and active mode.
+ */
+export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspace = '') {
+  const tLower = (title || '').toLowerCase();
+  const typeLower = (type || '').toLowerCase();
+  const explicitLower = (explicitWorkspace || '').toLowerCase();
+
+  if (
+    explicitLower === 'deck' ||
+    typeLower === 'deck' ||
+    typeLower === 'slide' ||
+    typeLower === 'slides' ||
+    tLower.includes('deck') ||
+    tLower.includes('presentation') ||
+    tLower.includes('slides')
+  ) {
+    return {
+      workspace: 'deck',
+      type: 'deck',
+      prefix: 'Deck'
+    };
+  }
+
+  if (
+    explicitLower === 'sheets' ||
+    explicitLower === 'sheet' ||
+    typeLower === 'sheet' ||
+    typeLower === 'sheets' ||
+    tLower.includes('sheet') ||
+    tLower.includes('spreadsheet') ||
+    tLower.includes('revenue model') ||
+    tLower.includes('financial model')
+  ) {
+    return {
+      workspace: 'sheets',
+      type: 'sheet',
+      prefix: 'Sheets'
+    };
+  }
+
+  if (
+    explicitLower === 'whiteboard' ||
+    typeLower === 'whiteboard' ||
+    tLower.includes('whiteboard')
+  ) {
+    return {
+      workspace: 'whiteboard',
+      type: 'whiteboard',
+      prefix: 'Whiteboard'
+    };
+  }
+
+  if (
+    explicitLower === 'room' ||
+    typeLower === 'meeting' ||
+    typeLower === 'room' ||
+    tLower.includes('room') ||
+    tLower.includes('meeting') ||
+    tLower.includes('sync')
+  ) {
+    return {
+      workspace: 'room',
+      type: 'meeting',
+      prefix: 'Room'
+    };
+  }
+
+  if (
+    explicitLower === 'tasks' ||
+    typeLower === 'task' ||
+    tLower.includes('task') ||
+    tLower.includes('initiative')
+  ) {
+    return {
+      workspace: 'tasks',
+      type: 'task',
+      prefix: 'Tasks'
+    };
+  }
+
+  if (
+    explicitLower === 'browser' ||
+    typeLower === 'research' ||
+    typeLower === 'note' ||
+    typeLower === 'research_note' ||
+    tLower.includes('research')
+  ) {
+    return {
+      workspace: 'browser',
+      type: 'research_note',
+      prefix: 'Research'
+    };
+  }
+
+  if (
+    explicitLower === 'people' ||
+    typeLower === 'person'
+  ) {
+    return {
+      workspace: 'people',
+      type: 'person',
+      prefix: 'People'
+    };
+  }
+
+  return {
+    workspace: 'compose',
+    type: 'document',
+    prefix: 'Compose'
+  };
+}
+
+/**
  * Builds a unified index of all workspace entities from live app state + default corpus.
  */
 export function buildWorkspaceIndex(context = {}) {
   const items = [];
 
-  // 1. Documents (Compose)
+  // 1. Documents & Active Workspaces
   const docs = context.documents || [];
   const activeDocId = context.activeDocId;
   const currentDocTitle = context.docTitle || 'Untitled Document';
   const currentDocSubtitle = context.docSubtitle || '';
   const currentDocBodyHtml = context.docBodyHtml || '';
+  const currentProductMode = (context.productMode || '').toLowerCase();
 
-  // Add currently open document
+  const activeRes = resolveWorkspaceForEntity(currentDocTitle, '', currentProductMode);
+
+  // Add currently open document / deck / sheet
   items.push({
     id: `doc-active-${activeDocId || 'current'}`,
-    type: 'document',
-    workspace: 'compose',
+    type: activeRes.type,
+    workspace: activeRes.workspace,
     title: currentDocTitle || 'Active Document',
-    subtitle: currentDocSubtitle || 'Currently open in Compose',
-    location: `Compose > ${currentDocTitle || 'Untitled Document'}`,
+    subtitle: currentDocSubtitle || `Currently open in ${activeRes.prefix}`,
+    location: `${activeRes.prefix} > ${currentDocTitle || 'Untitled Document'}`,
     content: stripHtml(currentDocBodyHtml),
     rawHtml: currentDocBodyHtml,
     author: 'You (Author)',
@@ -245,13 +361,14 @@ export function buildWorkspaceIndex(context = {}) {
   docs.forEach((doc, idx) => {
     if (doc.id === activeDocId) return; // avoid duplicate
     const plainText = stripHtml(doc.bodyHtml || '');
+    const docRes = resolveWorkspaceForEntity(doc.title || '', doc.type || doc.format || '');
     items.push({
       id: `doc-${doc.id || idx}`,
-      type: 'document',
-      workspace: 'compose',
-      title: doc.title || `Document ${idx + 1}`,
-      subtitle: doc.subtitle || 'Compose Document',
-      location: `Compose > ${doc.title || `Document ${idx + 1}`}`,
+      type: docRes.type,
+      workspace: docRes.workspace,
+      title: doc.title || `${docRes.prefix} ${idx + 1}`,
+      subtitle: doc.subtitle || `${docRes.prefix} Document`,
+      location: `${docRes.prefix} > ${doc.title || `${docRes.prefix} ${idx + 1}`}`,
       content: plainText,
       rawHtml: doc.bodyHtml || '',
       author: 'You (Author)',
