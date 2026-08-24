@@ -53296,7 +53296,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   </>
                                                 ) : btn.label === 'AI' ? (
                                                   <>
-                                                    {/* Elevated Apple Intelligence Intelligence Layer */}
+                                                    {/* Elevated Apple Deck Intelligence Panel */}
                                                     <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
@@ -53312,7 +53312,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         </span>
                                                       </div>
 
-                                                      {/* Contextual Intelligence Prompt Bar */}
+                                                      {/* Conversational Prompt Input */}
                                                       <div className="relative flex items-center">
                                                         <input
                                                           type="text"
@@ -53321,43 +53321,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           onKeyDown={(e) => {
                                                             if (e.key === 'Enter' && deckAiSearch.trim()) {
                                                               e.preventDefault();
-                                                              showToast(`AI transforming slide with: "${deckAiSearch}"`);
+                                                              showToast(`AI transforming deck with: "${deckAiSearch}"`);
                                                               setDeckActiveToolbarMenu(null);
                                                               setDeckAiSearch('');
                                                             }
                                                           }}
-                                                          placeholder="What would you like to improve on this slide?"
-                                                          className="w-full h-7 pl-2.5 pr-7 text-xs bg-white dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-[#7C4DFF] dark:focus:border-violet-500 focus:ring-1 focus:ring-[#7C4DFF]/30 transition-all font-sans"
+                                                          placeholder="What would you like to improve?"
+                                                          className="w-full h-7.5 pl-3 pr-8 text-xs bg-white dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-[#7C4DFF] dark:focus:border-violet-500 focus:ring-1 focus:ring-[#7C4DFF]/30 transition-all font-sans"
                                                         />
                                                         <button
                                                           type="button"
                                                           onClick={() => {
                                                             if (deckAiSearch.trim()) {
-                                                              showToast(`AI transforming slide with: "${deckAiSearch}"`);
+                                                              showToast(`AI transforming deck with: "${deckAiSearch}"`);
                                                               setDeckActiveToolbarMenu(null);
                                                               setDeckAiSearch('');
                                                             }
                                                           }}
-                                                          className="absolute right-1.5 w-4.5 h-4.5 rounded-md bg-[#7C4DFF] text-white flex items-center justify-center cursor-pointer hover:bg-violet-600 transition-colors shadow-xs"
-                                                          title="Run AI action"
+                                                          className="absolute right-1.5 w-5 h-5 rounded-md bg-[#7C4DFF] text-white flex items-center justify-center cursor-pointer hover:bg-violet-600 transition-colors shadow-xs"
+                                                          title="Run intelligence prompt"
                                                         >
                                                           <ArrowRight size={10} />
                                                         </button>
                                                       </div>
                                                     </div>
 
-                                                    <div className="p-2 space-y-2 max-h-[260px] overflow-y-auto thin-scrollbar bg-white dark:bg-[#13151b]">
-                                                      {/* Section 1: Contextual Suggestions */}
+                                                    <div className="p-2 space-y-2 max-h-[270px] overflow-y-auto thin-scrollbar bg-white dark:bg-[#13151b]">
+                                                      {/* Tier 1: Suggested for this slide */}
                                                       <div>
                                                         <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">
-                                                          Contextual Slide Actions
+                                                          Suggested for this slide
                                                         </span>
                                                         <div className="space-y-1">
                                                           {[
-                                                            { label: 'Auto-Design Slide 1 Cover', icon: Sparkles, badge: 'Executive Cover', desc: 'Synthesize title hierarchy & glowing mesh' },
-                                                            { label: 'Improve Typography Hierarchy', icon: Type, badge: 'Hierarchy', desc: 'Rebalance headline scale, tracking & contrast' },
-                                                            { label: 'Auto-Retheme Presentation', icon: Palette, badge: 'Brand Theme', desc: 'Harmonize chromatic styling & glow hues' },
-                                                            { label: 'Transform into Visual Bento Grid', icon: LayoutGrid, badge: 'Cards', desc: 'Format narrative bullets into structured cards' }
+                                                            { label: 'Improve visual hierarchy', icon: Type, badge: 'Hierarchy', desc: 'Rebalance headline scale, tracking & whitespace' },
+                                                            { label: 'Balance composition', icon: LayoutGrid, badge: 'Layout', desc: 'Optimize margins, element balance & alignment' },
+                                                            { label: 'Strengthen title contrast', icon: Sparkles, badge: 'Contrast', desc: 'Enhance headline luminance & backdrop legibility' },
+                                                            { label: 'Auto-format as bento grid', icon: Square, badge: 'Cards', desc: 'Structure narrative bullets into visual cards' }
                                                           ]
                                                             .filter(ai => !deckAiSearch || ai.label.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.desc.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.badge.toLowerCase().includes(deckAiSearch.toLowerCase()))
                                                             .map((aiItem) => {
@@ -53395,15 +53395,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         </div>
                                                       </div>
 
-                                                      {/* Section 2: Generative Intelligence */}
-                                                      <div className="pt-1 border-t border-slate-100 dark:border-zinc-800/60">
+                                                      {/* Tier 2: For the whole deck */}
+                                                      <div className="pt-1.5 border-t border-slate-100 dark:border-zinc-800/80">
                                                         <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">
-                                                          Generative Intelligence
+                                                          For the whole deck
                                                         </span>
                                                         <div className="space-y-1">
                                                           {[
-                                                            { label: 'Generate Slide Content & Bullets', icon: FileText, badge: 'Pitch Copy', desc: 'Synthesize concise executive pitch copy' },
-                                                            { label: 'Synthesize Speaker Notes', icon: Bot, badge: 'Presenter Notes', desc: 'Generate talking points & cue remarks' }
+                                                            { label: 'Apply consistent theme', icon: Palette, badge: 'Deck Theme', desc: 'Harmonize chromatic styling & glow hues across deck' },
+                                                            { label: 'Fix typography inconsistencies', icon: Type, badge: 'Typography', desc: 'Standardize font pairings & scale across all slides' },
+                                                            { label: 'Improve slide-to-slide coherence', icon: Wand2, badge: 'Flow', desc: 'Align narrative pacing, section markers & transitions' }
                                                           ]
                                                             .filter(ai => !deckAiSearch || ai.label.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.desc.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.badge.toLowerCase().includes(deckAiSearch.toLowerCase()))
                                                             .map((aiItem) => {
