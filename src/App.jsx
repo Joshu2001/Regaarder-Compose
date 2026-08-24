@@ -46651,7 +46651,7 @@ const renderRoomTopHeader = () => (
             className={`p-2.5 rounded-2xl relative ${isInvitesOpen ? 'bg-violet-100 text-violet-600' : 'text-slate-300 hover:bg-slate-50 hover:text-slate-600'}`} 
             title="Invites"
           >
-            <Bell size={16} />
+            <RegaarderNotificationIcon size={16} strokeWidth={1.6} />
             {invites.length > 0 && (
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
             )}
@@ -47597,26 +47597,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
                   title="Open edit replay"
                 >
-                  <Clock size={15} strokeWidth={1.5} />
+                  <RegaarderHistoryIcon size={15} strokeWidth={1.6} />
                 </button>
                 <button
                   onClick={saveDocumentLocally}
                   className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)]"
                   title="Save locally (Ctrl+S)"
                 >
-                  <Save size={15} strokeWidth={1.5} />
+                  <RegaarderSaveCloudIcon size={15} strokeWidth={1.6} />
                 </button>
 
-                {/* Orb Global Intelligence Trigger Button */}
+                {/* Orb Global Intelligence Command Capsule */}
                 <button
                   type="button"
                   onClick={() => setOrbOpen(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-50/80 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 border border-violet-200/80 dark:border-violet-800/80 transition-all duration-150 active:scale-95 text-xs font-semibold cursor-pointer shadow-2xs mr-1"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/25 transition-all duration-150 active:scale-95 text-xs font-semibold cursor-pointer shadow-xs mr-1 group"
                   title="Orb Cross-Workspace Intelligence (⌘K / Ctrl+K)"
                 >
-                  <OrbIcon size={14} className="text-[#7C5ACF]" />
-                  <span className="hidden sm:inline text-[11.5px]">Orb</span>
-                  <kbd className="text-[9.5px] font-mono px-1 py-0.2 rounded bg-white dark:bg-zinc-800 border border-violet-200 dark:border-violet-700 text-violet-500 dark:text-violet-400">⌘K</kbd>
+                  <AgentsIcon size={13} className="text-violet-500 group-hover:scale-110 transition-transform" />
+                  <span className="hidden sm:inline text-[11.5px] font-bold tracking-tight text-violet-700 dark:text-violet-300">Orb</span>
+                  <kbd className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-white/80 dark:bg-zinc-800/90 border border-violet-300/60 dark:border-violet-700 text-violet-600 dark:text-violet-300 shadow-2xs">⌘K</kbd>
                 </button>
 
                 {!isSheetsMode && (
@@ -47816,13 +47816,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <button
                       type="button"
                       onClick={() => setProfileMenuOpen(prev => !prev)}
-                      className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] hover:ring-2 hover:ring-slate-200 dark:hover:ring-zinc-700 flex items-center justify-center text-[11px] leading-none font-semibold transition-all shadow-sm focus:outline-none ${currentUser ? 'text-white' : 'text-slate-600 dark:text-zinc-350'}`}
-                      style={{
-                        backgroundColor: currentUser ? '#8b5cf6' : (isDarkMode ? '#27272a' : '#f1f5f9'),
-                      }}
+                      className="w-7 h-7 rounded-full p-[1.5px] bg-gradient-to-tr from-violet-500 via-purple-500 to-cyan-400 hover:scale-105 transition-all shadow-xs focus:outline-none cursor-pointer flex items-center justify-center"
                       title={currentUser ? `Profile: ${currentUser.name}` : 'Sign In'}
                     >
-                      {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                      <div className="w-full h-full rounded-full bg-slate-900 dark:bg-zinc-950 flex items-center justify-center text-white text-[11px] font-bold">
+                        {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                      </div>
                     </button>
 
 
@@ -47910,7 +47909,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 relative transition-colors"
                       title="Notifications"
                     >
-                      <Bell size={16} />
+                      <RegaarderNotificationIcon size={16} strokeWidth={1.6} />
                       {notifications.some(n => n.unread) && (
                         <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-[#121214] animate-pulse"></span>
                       )}
@@ -71354,27 +71353,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
                 title="Open edit replay"
               >
-                <Clock size={15} strokeWidth={1.5} />
+                <RegaarderHistoryIcon size={15} strokeWidth={1.6} />
               </button>
               <button
                 onClick={saveDocumentLocally}
                 className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)]"
                 title="Save locally (Ctrl+S)"
               >
-                <Save size={15} strokeWidth={1.5} />
+                <RegaarderSaveCloudIcon size={15} strokeWidth={1.6} />
               </button>
 
-              {/* Orb Global Intelligence Trigger Button */}
-              <button
-                type="button"
-                onClick={() => setOrbOpen(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-50/80 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 border border-violet-200/80 dark:border-violet-800/80 transition-all duration-150 active:scale-95 text-xs font-semibold cursor-pointer shadow-2xs mr-1"
-                title="Orb Cross-Workspace Intelligence (⌘K / Ctrl+K)"
-              >
-                <OrbIcon size={14} className="text-[#7C5ACF]" />
-                <span className="hidden sm:inline text-[11.5px]">Orb</span>
-                <kbd className="text-[9.5px] font-mono px-1 py-0.2 rounded bg-white dark:bg-zinc-800 border border-violet-200 dark:border-violet-700 text-violet-500 dark:text-violet-400">⌘K</kbd>
-              </button>
+                {/* Orb Global Intelligence Command Capsule */}
+                <button
+                  type="button"
+                  onClick={() => setOrbOpen(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/25 transition-all duration-150 active:scale-95 text-xs font-semibold cursor-pointer shadow-xs mr-1 group"
+                  title="Orb Cross-Workspace Intelligence (⌘K / Ctrl+K)"
+                >
+                  <AgentsIcon size={13} className="text-violet-500 group-hover:scale-110 transition-transform" />
+                  <span className="hidden sm:inline text-[11.5px] font-bold tracking-tight text-violet-700 dark:text-violet-300">Orb</span>
+                  <kbd className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-white/80 dark:bg-zinc-800/90 border border-violet-300/60 dark:border-violet-700 text-violet-600 dark:text-violet-300 shadow-2xs">⌘K</kbd>
+                </button>
 
               {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && (
                 <div className="relative" ref={docSearchPanelRef}>

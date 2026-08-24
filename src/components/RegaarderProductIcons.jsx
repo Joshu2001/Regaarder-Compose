@@ -423,7 +423,34 @@ export const RegaarderFitScreenIcon = ({ isFilled = false, size = 20, className 
   );
 };
 
+
+export const RegaarderHistoryIcon = ({ size = 16, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+    <path d="M3 3v5h5" />
+    <path d="M12 7v5l3 2" />
+  </svg>
+);
+
+export const RegaarderSaveCloudIcon = ({ size = 16, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <path d="M19 16.9A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25" />
+    <path d="m9 13 2 2 4-4" />
+  </svg>
+);
+
+export const RegaarderNotificationIcon = ({ size = 16, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+  </svg>
+);
+
+
 export const RegaarderProductIconMap = {
+  History: RegaarderHistoryIcon,
+  SaveCloud: RegaarderSaveCloudIcon,
+  Notification: RegaarderNotificationIcon,
   Styles: RegaarderStylesIcon,
   Media: RegaarderMediaIcon,
   Compose: ComposeIcon,
