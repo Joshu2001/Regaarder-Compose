@@ -29,7 +29,6 @@ import {
 , Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive } from 'lucide-react';
 import './thin-scrollbar.css';
 import StorageDataManagement from './components/StorageDataManagement';
-import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 import {
   ComposeIcon,
@@ -32999,6 +32998,15 @@ Respond with valid JSON formatted like this:
       return;
     }
 
+    if (target === 'memory') {
+      enterFullscreen();
+      setIsDocumentImmersive(true);
+      setOrbInitialMode('search');
+      setOrbInitialQuery('');
+      setOrbOpen(true);
+      return;
+    }
+
     // Products that act as Right Sidebar Panels or Overlays:
     setIsPromptExpanded(false);
     setIsPromptAutoVisible(false);
@@ -33019,10 +33027,6 @@ Respond with valid JSON formatted like this:
       case 'people':
         setActivePrimaryNav('home');
         setActiveRightTab('people');
-        break;
-      case 'memory':
-        setActivePrimaryNav('home');
-        setActiveRightTab('memory');
         break;
       case 'chat':
         setActivePrimaryNav('inbox');
@@ -43114,9 +43118,6 @@ Respond with a JSON array of slide objects matching the schema.`;
             </div>
           )}
 
-          {activeRightTab === 'memory' && (
-            <MemoryDashboard />
-          )}
 
           {activeRightTab === 'orb' && (
             <div className="flex-1 min-h-0 animate-fade-in flex flex-col bg-white">
