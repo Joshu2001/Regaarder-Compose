@@ -57,6 +57,7 @@ import BrowserWorkspace from './components/browser/BrowserWorkspace';
 import PopoverWindowContainer from './components/browser/PopoverWindowContainer';
 import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 import HelpSupportPanel from './components/HelpSupportPanel';
+import GlobalWorkspaceSearchModal from './components/search/GlobalWorkspaceSearchModal';
 import OrbSpotlightModal from './components/orb/OrbSpotlightModal';
 import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWorkspaceRAG';
 import { transcribeAudioBlobLocally, cleanAndSanitizeTranscription } from './services/localWhisperService';
@@ -15630,226 +15631,246 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   };
 
   const renderDocSearchPanel = () => {
-    return (
-      <div className="absolute left-0 top-full mt-1.5 z-[420] w-[370px] rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.16)] p-3.5 font-sans animate-in fade-in zoom-in-95 duration-150 origin-top-left">
-        {/* Top bar: Mode Tabs & AI toggle */}
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-0.5 bg-slate-100/90 dark:bg-zinc-800/80 p-1 rounded-xl">
-            {[
-              { key: 'find', label: 'Find' },
-              { key: 'replace', label: 'Replace' },
-              { key: 'goTo', label: 'Go To' },
-              { key: 'redact', label: 'Redact' },
-            ].map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setDocSearchMode(item.key)}
-                className={`px-3 py-1 rounded-lg text-[12px] font-medium transition-all ${
-                  docSearchMode === item.key
-                    ? 'bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-2xs font-semibold'
-                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+    if (!docSearchPanelOpen) return null;
+    const top = docSearchAnchorRect ? docSearchAnchorRect.bottom + 8 : 120;
+    const left = docSearchAnchorRect ? Math.max(16, Math.min(window.innerWidth - 386, docSearchAnchorRect.left)) : 100;
 
-          <button
-            type="button"
-            onClick={() => setDocSearchAiEnabled((prev) => !prev)}
-            className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-xl border font-medium transition-all shrink-0 ${
-              docSearchAiEnabled
-                ? 'border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-300 shadow-2xs'
-                : 'border-slate-200/80 dark:border-zinc-700 text-slate-500 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800'
-            }`}
-            title="Toggle AI-assisted semantic search"
-          >
-            <RegaarderAiIcon size={13} className={docSearchAiEnabled ? 'text-violet-600 dark:text-violet-300 animate-pulse' : 'text-slate-400 dark:text-zinc-500'} />
-            <span>AI {docSearchAiEnabled ? 'On' : 'Off'}</span>
-          </button>
-        </div>
-
-        {/* Find & Replace Mode Input Controls */}
-        {(docSearchMode === 'find' || docSearchMode === 'replace') && (
-          <div className="flex flex-col gap-2">
-            <div className="relative flex items-center">
-              <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
-              <input
-                value={docSearchQuery}
-                onChange={(event) => setDocSearchQuery(event.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    highlightDocumentSearchTerms(docSearchQuery, docSearchAiEnabled);
-                  }
-                }}
-                placeholder={docSearchAiEnabled ? 'Try: find all companies mentioned' : 'Search text'}
-                className="w-full rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-800/50 pl-8 pr-7 py-2 text-xs outline-none focus:border-violet-500 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-violet-500/15 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 transition-all"
-              />
-              {docSearchQuery && (
+    return createPortal(
+      <>
+        <div
+          className="fixed inset-0 z-[9990] bg-transparent"
+          onPointerDown={() => {
+            setDocSearchPanelOpen(false);
+            setDocSearchAutoPlay(false);
+          }}
+        />
+        <div
+          ref={docSearchPanelRef}
+          data-doc-search-panel="true"
+          className="fixed z-[9995] w-[370px] rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18)] p-3.5 font-sans animate-in fade-in zoom-in-95 duration-150 origin-top-left"
+          style={{ top: `${top}px`, left: `${left}px` }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {/* Top bar: Mode Tabs & AI toggle */}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-0.5 bg-slate-100/90 dark:bg-zinc-800/80 p-1 rounded-xl">
+              {[
+                { key: 'find', label: 'Find' },
+                { key: 'replace', label: 'Replace' },
+                { key: 'goTo', label: 'Go To' },
+                { key: 'redact', label: 'Redact' },
+              ].map((item) => (
                 <button
+                  key={item.key}
                   type="button"
-                  onClick={() => setDocSearchQuery('')}
-                  className="absolute right-2.5 text-slate-400 hover:text-slate-600 p-0.5 rounded-md"
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-
-            {docSearchMode === 'replace' && (
-              <div className="relative flex items-center">
-                <input
-                  value={docReplaceValue}
-                  onChange={(event) => setDocReplaceValue(event.target.value)}
-                  placeholder="Replace with (leave empty to remove)"
-                  className="w-full rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-800/50 px-3 py-2 text-xs outline-none focus:border-violet-500 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-violet-500/15 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 transition-all"
-                />
-              </div>
-            )}
-
-            <div className="mt-1 flex items-center justify-between gap-1.5">
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => highlightDocumentSearchTerms(docSearchQuery, docSearchAiEnabled)}
-                  className="px-3 py-1.5 text-[11.5px] font-medium rounded-xl bg-violet-600 text-white hover:bg-violet-700 active:scale-95 transition-all shadow-xs flex items-center gap-1.5"
-                >
-                  <Search size={13} />
-                  <span>{docSearchMode === 'replace' ? 'Find Matches' : 'Find'}</span>
-                </button>
-
-                {docSearchMode === 'replace' && (
-                  <button
-                    type="button"
-                    onClick={replaceHighlightedSearchMatches}
-                    className="px-3 py-1.5 text-[11.5px] font-medium rounded-xl border border-violet-200/80 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-all"
-                  >
-                    Replace
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDocSearchAutoPlay((prev) => !prev);
-                    if (docSearchMatchCount <= 1) {
-                      setDocSearchAutoPlay(false);
-                    }
-                  }}
-                  className={`px-2.5 py-1.5 text-[11px] font-medium rounded-xl border transition-all ${
-                    docSearchAutoPlay
-                      ? 'border-violet-300 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 font-semibold'
-                      : 'border-slate-200/80 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                  onClick={() => setDocSearchMode(item.key)}
+                  className={`px-3 py-1 rounded-lg text-[12px] font-medium transition-all ${
+                    docSearchMode === item.key
+                      ? 'bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-2xs font-semibold'
+                      : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                   }`}
                 >
-                  {docSearchAutoPlay ? 'Pause' : 'Auto'}
+                  {item.label}
                 </button>
-
-                <div className="flex items-center gap-0.5 ml-0.5">
-                  <button
-                    type="button"
-                    onClick={() => focusSearchMatchAtIndex(docSearchActiveIndex - 1)}
-                    disabled={!docSearchMatchCount}
-                    className="p-1.5 rounded-lg border border-slate-200/80 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                    title="Previous match"
-                  >
-                    <ChevronUp size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => focusSearchMatchAtIndex(docSearchActiveIndex + 1)}
-                    disabled={!docSearchMatchCount}
-                    className="p-1.5 rounded-lg border border-slate-200/80 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                    title="Next match"
-                  >
-                    <ChevronDown size={14} />
-                  </button>
-                </div>
-              </div>
-
-              <span className="text-[11.5px] font-medium text-slate-500 dark:text-zinc-400 truncate">
-                {docSearchMatchCount ? `${docSearchActiveIndex + 1} of ${docSearchMatchCount}` : '0 matches'}
-              </span>
+              ))}
             </div>
-          </div>
-        )}
 
-        {/* Go To Page Mode */}
-        {docSearchMode === 'goTo' && (
-          <div className="flex flex-col gap-2">
-            <input
-              value={docGoToValue}
-              onChange={(event) => setDocGoToValue(event.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  goToDocumentPage();
-                  setDocSearchPanelOpen(false);
-                }
-              }}
-              placeholder="Page number..."
-              className="w-full rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-800/50 px-3 py-2 text-xs outline-none focus:border-violet-500 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-violet-500/15 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 transition-all"
-            />
-            <div className="flex items-center gap-2 mt-1">
-              <button
-                type="button"
-                onClick={() => { goToDocumentPage(); setDocSearchPanelOpen(false); }}
-                className="px-3 py-1.5 text-[11.5px] font-medium rounded-xl bg-violet-600 text-white hover:bg-violet-700 active:scale-95 transition-all shadow-xs"
-              >
-                Go To Page
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setDocSearchAiEnabled((prev) => !prev)}
+              className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-xl border font-medium transition-all shrink-0 ${
+                docSearchAiEnabled
+                  ? 'border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-300 shadow-2xs'
+                  : 'border-slate-200/80 dark:border-zinc-700 text-slate-500 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800'
+              }`}
+              title="Toggle AI-assisted semantic search"
+            >
+              <RegaarderAiIcon size={13} className={docSearchAiEnabled ? 'text-violet-600 dark:text-violet-300 animate-pulse' : 'text-slate-400 dark:text-zinc-500'} />
+              <span>AI {docSearchAiEnabled ? 'On' : 'Off'}</span>
+            </button>
           </div>
-        )}
 
-        {/* Redact Mode */}
-        {docSearchMode === 'redact' && (
-          <div className="flex flex-col gap-2">
-            <input
-              type="text"
-              placeholder="Type word or sentence to redact..."
-              value={semanticRedactQuery}
-              onChange={(e) => {
-                setSemanticRedactQuery(e.target.value);
-                clearSemanticRedactPreview();
-              }}
-              className="w-full rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-800/50 px-3 py-2 text-xs outline-none focus:border-violet-500 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-violet-500/15 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 transition-all"
-            />
-            <div className="mt-1 flex items-center justify-between gap-1.5">
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={performSemanticRedactPreview}
-                  className="px-3 py-1.5 text-[11.5px] font-medium rounded-xl border border-violet-200/80 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 transition-all"
-                >
-                  Preview
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { applySemanticRedaction(); setDocSearchPanelOpen(false); }}
-                  disabled={semanticRedactMatches.length === 0}
-                  className="px-3 py-1.5 text-[11.5px] font-medium rounded-xl bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-40 transition-all shadow-xs"
-                >
-                  Redact All
-                </button>
-                {semanticRedactUndoStack && (
+          {/* Find & Replace Mode Input Controls */}
+          {(docSearchMode === 'find' || docSearchMode === 'replace') && (
+            <div className="flex flex-col gap-2">
+              <div className="relative flex items-center">
+                <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
+                <input
+                  value={docSearchQuery}
+                  onChange={(event) => setDocSearchQuery(event.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      highlightDocumentSearchTerms(docSearchQuery, docSearchAiEnabled);
+                    }
+                  }}
+                  placeholder={docSearchAiEnabled ? 'Try: find all companies mentioned' : 'Search text'}
+                  className="w-full rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-800/50 pl-8 pr-7 py-2 text-xs outline-none focus:border-violet-500 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-violet-500/15 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 transition-all"
+                />
+                {docSearchQuery && (
                   <button
                     type="button"
-                    onClick={undoSemanticRedaction}
-                    className="px-2.5 py-1.5 text-[11.5px] font-medium rounded-xl border border-slate-200/80 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 transition-all"
+                    onClick={() => setDocSearchQuery('')}
+                    className="absolute right-2.5 text-slate-400 hover:text-slate-600 p-0.5 rounded-md"
                   >
-                    Undo
+                    <X size={13} />
                   </button>
                 )}
               </div>
-              <span className="text-[11.5px] font-medium text-slate-500 dark:text-zinc-400 truncate">
-                {semanticRedactMatches.length} matches
-              </span>
+
+              {docSearchMode === 'replace' && (
+                <div className="relative flex items-center">
+                  <input
+                    value={docReplaceValue}
+                    onChange={(event) => setDocReplaceValue(event.target.value)}
+                    placeholder="Replace with (leave empty to remove)"
+                    className="w-full rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-800/50 px-3 py-2 text-xs outline-none focus:border-violet-500 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-violet-500/15 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 transition-all"
+                  />
+                </div>
+              )}
+
+              <div className="mt-1 flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => highlightDocumentSearchTerms(docSearchQuery, docSearchAiEnabled)}
+                    className="px-3 py-1.5 text-[11.5px] font-medium rounded-xl bg-violet-600 text-white hover:bg-violet-700 active:scale-95 transition-all shadow-xs flex items-center gap-1.5"
+                  >
+                    <Search size={13} />
+                    <span>{docSearchMode === 'replace' ? 'Find Matches' : 'Find'}</span>
+                  </button>
+
+                  {docSearchMode === 'replace' && (
+                    <button
+                      type="button"
+                      onClick={replaceHighlightedSearchMatches}
+                      className="px-3 py-1.5 text-[11.5px] font-medium rounded-xl border border-violet-200/80 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-all"
+                    >
+                      Replace
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDocSearchAutoPlay((prev) => !prev);
+                      if (docSearchMatchCount <= 1) {
+                        setDocSearchAutoPlay(false);
+                      }
+                    }}
+                    className={`px-2.5 py-1.5 text-[11px] font-medium rounded-xl border transition-all ${
+                      docSearchAutoPlay
+                        ? 'border-violet-300 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 font-semibold'
+                        : 'border-slate-200/80 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    {docSearchAutoPlay ? 'Pause' : 'Auto'}
+                  </button>
+
+                  <div className="flex items-center gap-0.5 ml-0.5">
+                    <button
+                      type="button"
+                      onClick={() => focusSearchMatchAtIndex(docSearchActiveIndex - 1)}
+                      disabled={!docSearchMatchCount}
+                      className="p-1.5 rounded-lg border border-slate-200/80 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                      title="Previous match"
+                    >
+                      <ChevronUp size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => focusSearchMatchAtIndex(docSearchActiveIndex + 1)}
+                      disabled={!docSearchMatchCount}
+                      className="p-1.5 rounded-lg border border-slate-200/80 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                      title="Next match"
+                    >
+                      <ChevronDown size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <span className="text-[11.5px] font-medium text-slate-500 dark:text-zinc-400 truncate">
+                  {docSearchMatchCount ? `${docSearchActiveIndex + 1} of ${docSearchMatchCount}` : '0 matches'}
+                </span>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+
+          {/* Go To Page Mode */}
+          {docSearchMode === 'goTo' && (
+            <div className="flex flex-col gap-2">
+              <input
+                value={docGoToValue}
+                onChange={(event) => setDocGoToValue(event.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    goToDocumentPage();
+                    setDocSearchPanelOpen(false);
+                  }
+                }}
+                placeholder="Page number..."
+                className="w-full rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-800/50 px-3 py-2 text-xs outline-none focus:border-violet-500 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-violet-500/15 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 transition-all"
+              />
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  type="button"
+                  onClick={() => { goToDocumentPage(); setDocSearchPanelOpen(false); }}
+                  className="px-3 py-1.5 text-[11.5px] font-medium rounded-xl bg-violet-600 text-white hover:bg-violet-700 active:scale-95 transition-all shadow-xs"
+                >
+                  Go To Page
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Redact Mode */}
+          {docSearchMode === 'redact' && (
+            <div className="flex flex-col gap-2">
+              <input
+                type="text"
+                placeholder="Type word or sentence to redact..."
+                value={semanticRedactQuery}
+                onChange={(e) => {
+                  setSemanticRedactQuery(e.target.value);
+                  clearSemanticRedactPreview();
+                }}
+                className="w-full rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-800/50 px-3 py-2 text-xs outline-none focus:border-violet-500 focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-violet-500/15 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 transition-all"
+              />
+              <div className="mt-1 flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={performSemanticRedactPreview}
+                    className="px-3 py-1.5 text-[11.5px] font-medium rounded-xl border border-violet-200/80 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 transition-all"
+                  >
+                    Preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { applySemanticRedaction(); setDocSearchPanelOpen(false); }}
+                    disabled={semanticRedactMatches.length === 0}
+                    className="px-3 py-1.5 text-[11.5px] font-medium rounded-xl bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-40 transition-all shadow-xs"
+                  >
+                    Redact All
+                  </button>
+                  {semanticRedactUndoStack && (
+                    <button
+                      type="button"
+                      onClick={undoSemanticRedaction}
+                      className="px-2.5 py-1.5 text-[11.5px] font-medium rounded-xl border border-slate-200/80 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 transition-all"
+                    >
+                      Undo
+                    </button>
+                  )}
+                </div>
+                <span className="text-[11.5px] font-medium text-slate-500 dark:text-zinc-400 truncate">
+                  {semanticRedactMatches.length} matches
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </>,
+      typeof document !== 'undefined' ? (document.fullscreenElement ?? document.body) : null
     );
   };
 
@@ -17428,6 +17449,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
   const [isEditingTitleFromPanel, setIsEditingTitleFromPanel] = useState(false);
   const [pageNumberPosition, setPageNumberPosition] = useState('center');
   const [docSearchPanelOpen, setDocSearchPanelOpen] = useState(false);
+  const [docSearchAnchorRect, setDocSearchAnchorRect] = useState(null);
   const [docSearchMode, setDocSearchMode] = useState('find');
   const [docSearchQuery, setDocSearchQuery] = useState('');
   const [docReplaceValue, setDocReplaceValue] = useState('');
@@ -47652,23 +47674,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 {/* Orb intelligence accessible via global ⌘K shortcut */}
 
-                {!isSheetsMode && (
-                  <div className="relative" ref={docSearchPanelRef}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeTransientMenus();
-                        setDocSearchPanelOpen((prev) => !prev);
-                        setDocSearchAutoPlay(false);
-                      }}
-                      className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${docSearchPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400 font-semibold shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
-                      title="Find & Replace (Ctrl+F)"
-                    >
-                      <Search size={15} strokeWidth={1.5} />
-                    </button>
-                    {docSearchPanelOpen && renderDocSearchPanel()}
-                  </div>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeTransientMenus();
+                    setOrbOpen(true);
+                  }}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 cursor-pointer"
+                  title="Search Workspace (⌘K / Ctrl+K)"
+                >
+                  <Search size={15} strokeWidth={1.5} />
+                </button>
               </div>
 
               {/* Export Dropdown Button */}
@@ -69563,6 +69579,100 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* Global Workspace Switcher Popover */}
       {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
 
+      {/* Global Workspace Search Spotlight Modal */}
+      <GlobalWorkspaceSearchModal
+        isOpen={orbOpen}
+        onClose={() => setOrbOpen(false)}
+        initialQuery={orbInitialQuery}
+        isDarkMode={isDarkMode}
+        productMode={productMode}
+        onCallAi={callGemini}
+        liveWorkspaceContext={{
+          documents,
+          activeDocId,
+          docTitle,
+          docSubtitle,
+          docBodyHtml,
+          sheetsTitle,
+          sheetGrids,
+          activeSheetId,
+          deckTitle,
+          deckSlidesData,
+          activeDeckSlideId,
+          tasks: initiatives,
+          scheduleAgendaItems,
+          whiteboardWidgets,
+          whiteboardShapes
+        }}
+        onNavigateToEntity={(entity) => {
+          if (!entity) return;
+          const ws = (entity.workspace || '').toLowerCase();
+          if (ws === 'compose') {
+            if (productMode !== 'compose') setProductMode('compose');
+            if (entity.metadata?.docId) {
+              const targetDoc = documents.find(d => d.id === entity.metadata.docId);
+              if (targetDoc) {
+                setActiveDocId(targetDoc.id);
+                setDocTitle(targetDoc.title || '');
+                setDocSubtitle(targetDoc.subtitle || '');
+                setDocBodyHtml(targetDoc.bodyHtml || '');
+              }
+            }
+            showToast(`Navigated to Document: ${entity.title}`);
+          } else if (ws === 'sheets') {
+            if (productMode !== 'sheets') setProductMode('sheets');
+            showToast(`Navigated to Sheets: ${entity.title}`);
+          } else if (ws === 'deck') {
+            if (productMode !== 'deck') setProductMode('deck');
+            if (entity.metadata?.slideNumber) {
+              setActiveDeckSlideId(entity.metadata.slideNumber);
+            }
+            showToast(`Navigated to Presentation: ${entity.title}`);
+          } else if (ws === 'room') {
+            if (productMode !== 'room') setProductMode('room');
+            showToast(`Navigated to Room: ${entity.title}`);
+          } else if (ws === 'tasks') {
+            handleMiniSidebarClick('tasks');
+            showToast(`Navigated to Tasks: ${entity.title}`);
+          } else if (ws === 'schedule') {
+            handleMiniSidebarClick('calendar');
+            showToast(`Navigated to Schedule: ${entity.title}`);
+          } else if (ws === 'browser') {
+            if (productMode !== 'browser') setProductMode('browser');
+            showToast(`Navigated to Research: ${entity.title}`);
+          } else if (ws === 'people') {
+            showToast(`Team Member: ${entity.title} (${entity.role || entity.department})`);
+          } else {
+            showToast(`Opened: ${entity.title}`);
+          }
+        }}
+        onQuickAction={(action) => {
+          if (!action) return;
+          const ws = action.targetWorkspace;
+          if (ws === 'compose') {
+            setProductMode('compose');
+            if (action.actionType === 'new_doc') {
+              handleCreateNewDocument();
+            }
+          } else if (ws === 'sheets') {
+            setProductMode('sheets');
+            showToast('Created new spreadsheet');
+          } else if (ws === 'deck') {
+            setProductMode('deck');
+            showToast('Created new presentation');
+          } else if (ws === 'room') {
+            setProductMode('room');
+            showToast('Starting meeting room');
+          } else if (ws === 'browser') {
+            setProductMode('browser');
+            showToast('Opened web research');
+          } else if (ws === 'tasks') {
+            handleMiniSidebarClick('tasks');
+            showToast('Opened tasks');
+          }
+        }}
+      />
+
 
       </div>
     );
@@ -71518,37 +71628,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </button>
 {/* Preserved save action: auto-saved continuously & Ctrl+S */}
 
-                {/* Orb Global Intelligence Command Capsule */}
-                {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && (
-                  <button
-                    type="button"
-                    onClick={() => setOrbOpen(true)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/25 transition-all duration-150 active:scale-95 text-xs font-semibold cursor-pointer shadow-xs mr-1 group"
-                    title="Orb Cross-Workspace Intelligence (⌘K / Ctrl+K)"
-                  >
-                    <AgentsIcon size={13} className="text-violet-500 group-hover:scale-110 transition-transform" />
-                    <span className="hidden sm:inline text-[11.5px] font-bold tracking-tight text-violet-700 dark:text-violet-300">Orb</span>
-                    <kbd className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-white/80 dark:bg-zinc-800/90 border border-violet-300/60 dark:border-violet-700 text-violet-600 dark:text-violet-300 shadow-2xs">⌘K</kbd>
-                  </button>
-                )}
-
-              {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && (
-                <div className="relative" ref={docSearchPanelRef}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeTransientMenus();
-                      setDocSearchPanelOpen((prev) => !prev);
-                      setDocSearchAutoPlay(false);
-                    }}
-                    className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${docSearchPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400 font-semibold shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
-                    title="Find & Replace (Ctrl+F)"
-                  >
-                    <Search size={15} strokeWidth={1.5} />
-                  </button>
-                  {docSearchPanelOpen && renderDocSearchPanel()}
-                </div>
-              )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeTransientMenus();
+                    setOrbOpen(true);
+                  }}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 cursor-pointer"
+                  title="Search Workspace (⌘K / Ctrl+K)"
+                >
+                  <Search size={15} strokeWidth={1.5} />
+                </button>
 
             </div>
             {/* Export Dropdown Button in Top Header */}
@@ -74215,6 +74305,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                 {/* ── DIVIDER ──────────────────────────────────────────── */}
                 <div className="review-toolbar-divider" aria-hidden="true" />
+
+                {/* ── UTILITY: Find & Replace ──────────────────────────── */}
+                <button
+                  type="button"
+                  id="review-find-replace-btn"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setDocSearchAnchorRect(rect);
+                    setDocSearchPanelOpen((prev) => !prev);
+                    setDocSearchAutoPlay(false);
+                  }}
+                  className={`review-btn review-btn--utility${docSearchPanelOpen ? ' review-btn--utility-active' : ''}`}
+                  title="Find, Replace, Go To, Redact (Ctrl+F)"
+                >
+                  <Search size={14} />
+                  Find & Replace
+                </button>
+                {docSearchPanelOpen && renderDocSearchPanel()}
 
                 {/* ── UTILITY: Insert Citation ──────────────────────────── */}
                 <button
@@ -84083,20 +84192,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onClose={() => setIsDevConsoleOpen(false)}
       />
 
-      {/* ── Layer 6.5: Orb Cross-Workspace Intelligence Layer ─────────────── */}
-      <OrbSpotlightModal
+      {/* ── Layer 6.5: Global Workspace Search Spotlight Modal ─────────────── */}
+      <GlobalWorkspaceSearchModal
         isOpen={orbOpen}
         onClose={() => setOrbOpen(false)}
         initialQuery={orbInitialQuery}
-        initialMode={orbInitialMode}
+        isDarkMode={isDarkMode}
+        productMode={productMode}
         onCallAi={callGemini}
-        aiProviderConfig={aiProviderConfig}
         liveWorkspaceContext={{
           documents,
           activeDocId,
           docTitle,
-          docBodyHtml,
           docSubtitle,
+          docBodyHtml,
           sheetsTitle,
           sheetGrids,
           activeSheetId,
@@ -84125,16 +84234,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
             showToast(`Navigated to Document: ${entity.title}`);
           } else if (ws === 'sheets') {
             if (productMode !== 'sheets') setProductMode('sheets');
-            showToast(`Navigated to Sheets Model: ${entity.title}`);
+            showToast(`Navigated to Sheets: ${entity.title}`);
           } else if (ws === 'deck') {
             if (productMode !== 'deck') setProductMode('deck');
             if (entity.metadata?.slideNumber) {
               setActiveDeckSlideId(entity.metadata.slideNumber);
             }
-            showToast(`Navigated to Deck: ${entity.title}`);
+            showToast(`Navigated to Presentation: ${entity.title}`);
           } else if (ws === 'room') {
             if (productMode !== 'room') setProductMode('room');
-            showToast(`Navigated to Meeting: ${entity.title}`);
+            showToast(`Navigated to Room: ${entity.title}`);
           } else if (ws === 'tasks') {
             handleMiniSidebarClick('tasks');
             showToast(`Navigated to Tasks: ${entity.title}`);
@@ -84144,12 +84253,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
           } else if (ws === 'browser') {
             if (productMode !== 'browser') setProductMode('browser');
             showToast(`Navigated to Research: ${entity.title}`);
+          } else if (ws === 'people') {
+            showToast(`Team Member: ${entity.title} (${entity.role || entity.department})`);
           } else {
             showToast(`Opened: ${entity.title}`);
           }
         }}
-        onAddTask={(act) => {
-          showToast(`Added action to Tasks: ${act.title}`);
+        onQuickAction={(action) => {
+          if (!action) return;
+          const ws = action.targetWorkspace;
+          if (ws === 'compose') {
+            setProductMode('compose');
+            if (action.actionType === 'new_doc') {
+              handleCreateNewDocument();
+            }
+          } else if (ws === 'sheets') {
+            setProductMode('sheets');
+            showToast('Created new spreadsheet');
+          } else if (ws === 'deck') {
+            setProductMode('deck');
+            showToast('Created new presentation');
+          } else if (ws === 'room') {
+            setProductMode('room');
+            showToast('Starting meeting room');
+          } else if (ws === 'browser') {
+            setProductMode('browser');
+            showToast('Opened web research');
+          } else if (ws === 'tasks') {
+            handleMiniSidebarClick('tasks');
+            showToast('Opened tasks');
+          }
         }}
       />
 

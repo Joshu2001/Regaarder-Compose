@@ -222,6 +222,26 @@ export const ChatIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...prop
   </svg>
 );
 
+export const PeopleIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="3.5" />
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a3.5 3.5 0 0 1 0 6.74" />
+  </svg>
+);
+
 /**
  * Proprietary Regaarder AI Assistance & Action Glyph
  * Metaphor: Compact intelligence spark lens + action execution arrow ("intelligence → action").
@@ -310,10 +330,14 @@ export const OrbIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props
     className={className}
     {...props}
   >
-    {/* Concentric intelligence core & orbital field */}
-    <circle cx="12" cy="12" r="8.5" />
-    <circle cx="12" cy="12" r="3.5" />
-    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+    {/* Concentric orbital rings symbolizing cross-workspace intelligence */}
+    <ellipse cx="12" cy="12" rx="9" ry="4.5" transform="rotate(-30 12 12)" />
+    <ellipse cx="12" cy="12" rx="9" ry="4.5" transform="rotate(30 12 12)" opacity="0.6" />
+    {/* Focal intelligence core */}
+    <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+    {/* Cross-context connection nodes */}
+    <circle cx="5" cy="8" r="1" fill="currentColor" stroke="none" />
+    <circle cx="19" cy="16" r="1" fill="currentColor" stroke="none" />
   </svg>
 );
 
@@ -484,6 +508,10 @@ export const RegaarderProductIconMap = {
   'regaarder-ai': RegaarderAiIcon,
   decide: RegaarderAiIcon,
   browser: BrowserIcon,
+  people: PeopleIcon,
+  People: PeopleIcon,
+  user: PeopleIcon,
+  users: PeopleIcon,
 };
 
 export const RegaarderProductIcon = ({ name, size = 24, className = "", strokeWidth = 1.6, ...props }) => {

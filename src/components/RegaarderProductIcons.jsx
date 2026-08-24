@@ -222,6 +222,26 @@ export const ChatIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...prop
   </svg>
 );
 
+export const PeopleIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="3.5" />
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a3.5 3.5 0 0 1 0 6.74" />
+  </svg>
+);
+
 /**
  * Proprietary Regaarder AI Assistance & Action Glyph
  * Metaphor: Compact intelligence spark lens + action execution arrow ("intelligence → action").
@@ -488,6 +508,10 @@ export const RegaarderProductIconMap = {
   'regaarder-ai': RegaarderAiIcon,
   decide: RegaarderAiIcon,
   browser: BrowserIcon,
+  people: PeopleIcon,
+  People: PeopleIcon,
+  user: PeopleIcon,
+  users: PeopleIcon,
 };
 
 export const RegaarderProductIcon = ({ name, size = 24, className = "", strokeWidth = 1.6, ...props }) => {
