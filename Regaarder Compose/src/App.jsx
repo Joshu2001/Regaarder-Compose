@@ -1686,7 +1686,7 @@ const SlashMenuPopover = React.forwardRef(({
       style={style}
     >
       {/* Search Bar Header */}
-      <div className="px-2 pt-2 pb-2 shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50">
+      <div className="px-2 pt-2 pb-2 shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80">
         <div className="relative flex items-center">
           <Search size={13} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
           <input
@@ -4826,7 +4826,7 @@ const AIWorkflowLibraryModal = ({
     <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div className="w-full max-w-4xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-zinc-800 overflow-hidden flex flex-col max-h-[85vh]">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-900/50">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50/80 dark:bg-zinc-900/80">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100">AI Business Workflow Library</h2>
@@ -52008,7 +52008,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                          {deckActiveToolbarMenu === 'vectorStyle' && (
                                            <div onClick={(e) => e.stopPropagation()} className="absolute top-8 left-1/2 -translate-x-1/2 z-[9999] w-[420px] max-h-[480px] flex flex-col bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.16)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] overflow-hidden backdrop-blur-xl animate-in fade-in">
                                              {/* Vector Meshes Popover Header with Search and Category Tabs */}
-                                             <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                             <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 shrink-0 space-y-2 select-none font-sans">
                                                <div className="flex items-center justify-between">
                                                  <div className="flex items-center gap-1.5">
                                                    <RegaarderVectorIcon size={13} className="text-[#00f0ff]" />
@@ -52088,7 +52088,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                        className={`group relative flex flex-col p-1.5 rounded-xl text-left transition-all duration-150 cursor-pointer ${
                                                          isCurrent 
                                                            ? 'bg-cyan-500/10 dark:bg-cyan-500/20 ring-2 ring-[#00f0ff] shadow-sm' 
-                                                           : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
+                                                           : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-100 dark:border-zinc-800/40 hover:border-slate-200/80 dark:hover:border-zinc-700/60'
                                                        }`}
                                                      >
                                                        {/* 16:10 Keynote Canvas with Authentic Vector Preview */}
@@ -52463,7 +52463,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   btn.label === 'Insert' ? 'w-[390px] max-h-[480px]' : 
                                                   btn.label === 'Media & Logo' ? 'w-[360px]' : 
                                                   btn.label === 'AI' ? 'w-[380px]' : 'w-60'
-                                                } flex flex-col bg-white/98 dark:bg-[#15171e]/98 border border-slate-200/80 dark:border-zinc-800 ring-1 ring-black/[0.04] dark:ring-white/[0.06] rounded-[15px] shadow-[0_20px_50px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.65),0_4px_20px_rgba(0,0,0,0.4)] z-[9999] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-2xl`}
+                                                } flex flex-col bg-white/98 dark:bg-[#13151b]/98 border border-slate-200/90 dark:border-zinc-800/90 ring-1 ring-black/[0.05] dark:ring-white/[0.08] rounded-[15px] shadow-[0_20px_50px_rgba(0,0,0,0.14),0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.7),0_4px_20px_rgba(0,0,0,0.4)] z-[9999] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-xl`}
                                               >
                                                 {btn.label === 'Animation' ? (
                                                   <>
@@ -52501,7 +52501,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                     `}</style>
 
                                                     {/* Monochromatic Header Strip */}
-                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
                                                           <Wand2 size={13} className="text-slate-600 dark:text-zinc-300" />
@@ -52580,7 +52580,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               className={`group relative flex flex-col p-1.5 rounded-[12px] text-left transition-all duration-150 cursor-pointer ${
                                                                 isCurrent 
                                                                   ? 'ring-[1.5px] ring-[#7C4DFF] shadow-xs' 
-                                                                  : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
+                                                                  : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-100 dark:border-zinc-800/40 hover:border-slate-200/80 dark:hover:border-zinc-700/60'
                                                               }`}
                                                             >
                                                               <div 
@@ -52682,7 +52682,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 : btn.label === 'Vector & Wave' ? (
                                                   <>
                                                     {/* Monochromatic Header Strip */}
-                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
                                                           <RegaarderVectorIcon size={13} className="text-slate-600 dark:text-zinc-300" />
@@ -52759,7 +52759,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               className={`group relative flex flex-col p-1.5 rounded-[12px] text-left transition-all duration-150 cursor-pointer ${
                                                                 isCurrent 
                                                                   ? 'ring-[1.5px] ring-[#7C4DFF] shadow-xs' 
-                                                                  : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
+                                                                  : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-100 dark:border-zinc-800/40 hover:border-slate-200/80 dark:hover:border-zinc-700/60'
                                                               }`}
                                                             >
                                                               <div 
@@ -52809,7 +52809,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 ) : btn.label === 'Background' ? (
                                                   <>
                                                     {/* Monochromatic Header Strip */}
-                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
                                                           <Palette size={13} className="text-slate-600 dark:text-zinc-300" />
@@ -52892,7 +52892,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               className={`group relative flex flex-col p-1.5 rounded-[12px] text-left transition-all duration-150 cursor-pointer ${
                                                                 isCurrent 
                                                                   ? 'ring-[1.5px] ring-[#7C4DFF] shadow-xs' 
-                                                                  : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700'
+                                                                  : 'hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-100 dark:border-zinc-800/40 hover:border-slate-200/80 dark:hover:border-zinc-700/60'
                                                               }`}
                                                             >
                                                               <div 
@@ -52953,7 +52953,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 : btn.label === 'Styles' ? (
                                                   <>
                                                     {/* Monochromatic Header Strip */}
-                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
                                                           <RegaarderStylesIcon size={13} className="text-slate-600 dark:text-zinc-300" />
@@ -53011,7 +53011,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                 btn.onSelect(item);
                                                                 setDeckActiveToolbarMenu(null);
                                                               }}
-                                                              className="group relative flex flex-col p-1.5 rounded-[12px] text-left hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-800/60 hover:border-slate-300 dark:hover:border-zinc-700 transition-all cursor-pointer"
+                                                              className="group relative flex flex-col p-1.5 rounded-[12px] text-left hover:bg-slate-100/90 dark:hover:bg-zinc-800/80 border border-slate-100 dark:border-zinc-800/40 hover:border-slate-200/80 dark:hover:border-zinc-700/60 transition-all cursor-pointer"
                                                             >
                                                               <div 
                                                                 className="w-full aspect-[16/10] rounded-[9px] relative overflow-hidden p-2 flex flex-col justify-between border border-white/10 shadow-xs"
@@ -53034,7 +53034,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 ) : btn.label === 'Media & Logo' ? (
                                                   <>
                                                     {/* Monochromatic Header Strip */}
-                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
                                                           <RegaarderMediaIcon size={13} className="text-slate-600 dark:text-zinc-300" />
@@ -53114,7 +53114,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 ) : btn.label === 'Insert' ? (
                                                   <>
                                                     {/* Monochromatic Header Strip */}
-                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/50 shrink-0 space-y-2 select-none font-sans">
+                                                    <div className="p-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 shrink-0 space-y-2 select-none font-sans">
                                                       <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
                                                           <Plus size={13} className="text-slate-600 dark:text-zinc-300" />
@@ -68402,7 +68402,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           style={{ width: `${Math.max(300, leftSidebarWidth)}px` }}
         >
           {/* Panel Header */}
-          <div className="h-14 px-5 border-b border-slate-100 dark:border-zinc-800/60 shrink-0 bg-slate-50/50 dark:bg-zinc-900/50 flex items-center justify-between">
+          <div className="h-14 px-5 border-b border-slate-100 dark:border-zinc-800/60 shrink-0 bg-slate-50/80 dark:bg-zinc-900/80 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-xl bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-700/60 flex items-center justify-center shrink-0">
                 <FileText size={14} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
@@ -74747,7 +74747,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <div className="fixed inset-0 z-[100000] bg-slate-950/40 dark:bg-black/70 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200 select-none">
                       <div className="w-[880px] max-w-[96vw] max-h-[88vh] overflow-hidden rounded-[28px] border border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl shadow-2xl flex flex-col font-sans">
                         {/* Header */}
-                        <div className="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-zinc-800 px-6 py-4.5 bg-slate-50/50 dark:bg-zinc-900/50">
+                        <div className="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-zinc-800 px-6 py-4.5 bg-slate-50/80 dark:bg-zinc-900/80">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-violet-600 dark:text-violet-400">
                               <span className="w-3.5 h-3.5 rounded-full border-[1.8px] border-violet-500 dark:border-violet-400 flex items-center justify-center shrink-0" />
