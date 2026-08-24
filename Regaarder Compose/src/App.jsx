@@ -47283,7 +47283,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
             
                       {/* Slide List - Keynote/PowerPoint Filmstrip Style */}
-                      <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-2.5 thin-scrollbar">
+                      <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-2.5 thin-scrollbar [scrollbar-width:thin] [scrollbar-color:transparent_transparent] hover:[scrollbar-color:rgba(148,163,184,0.35)_transparent] dark:hover:[scrollbar-color:rgba(113,113,122,0.35)_transparent]">
                         {(isSheetsMode ? sheetsData : deckSlides).length === 0 && (
                           <div className="rounded-xl border border-dashed border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-3 text-xs text-gray-500">
                             {isSheetsMode ? 'No worksheets yet. Create one to see a live preview.' : 'No slides yet.'}
@@ -47316,7 +47316,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 }}
                                 className={`flex-1 relative rounded-[11px] overflow-hidden aspect-[16/9] transition-all duration-150 cursor-pointer select-none bg-black/5 dark:bg-black/40 ${
                                   isActive 
-                                    ? 'ring-2 ring-[#7C4DFF] ring-offset-2 ring-offset-[#f8f9fd] dark:ring-offset-zinc-900 shadow-[0_0_14px_rgba(124,77,255,0.3)] border-transparent' 
+                                    ? 'ring-[1.5px] ring-[#7C4DFF] ring-offset-1 ring-offset-[#f8f9fd] dark:ring-offset-zinc-900 shadow-[0_0_8px_rgba(124,77,255,0.18)] border-transparent' 
                                     : 'border border-slate-200/90 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-xs'
                                 }`}
                               >
