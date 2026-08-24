@@ -12061,10 +12061,22 @@ const DEFAULT_DECK_SLIDES = [
       } else if (isDeckPresentationMode) {
         if (['ArrowRight', 'ArrowDown', 'Space', 'PageDown'].includes(e.key)) {
           e.preventDefault();
-          setPresentationSlideIndex((prev) => Math.min((deckSlidesData?.length || 1) - 1, prev + 1));
+          setPresentationSlideIndex((prev) => {
+            const nextIdx = Math.min((deckSlidesData?.length || 1) - 1, prev + 1);
+            if (deckSlidesData && deckSlidesData[nextIdx]) {
+              setActiveDeckSlideId(deckSlidesData[nextIdx].id);
+            }
+            return nextIdx;
+          });
         } else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) {
           e.preventDefault();
-          setPresentationSlideIndex((prev) => Math.max(0, prev - 1));
+          setPresentationSlideIndex((prev) => {
+            const nextIdx = Math.max(0, prev - 1);
+            if (deckSlidesData && deckSlidesData[nextIdx]) {
+              setActiveDeckSlideId(deckSlidesData[nextIdx].id);
+            }
+            return nextIdx;
+          });
         }
       }
     };
@@ -47432,7 +47444,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           )}
 
           {/* Document Tab Strip - visible when not in presentation mode and not in Zen mode */}
-          {!isSheetsPresentationMode && !isSheetZenMode && (
+          {!isSheetsPresentationMode && !isDeckPresentationMode && !isSheetZenMode && (
             <div data-sheets-toolbar="true" className="h-10 border-b border-slate-200/50 dark:border-[#333333] px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-[#111111] relative z-[140] min-w-0 shrink-0 select-none">
               {orderedDocuments.map((doc, docIndex) => {
                 const defaultName = productMode === 'sheets' ? 'Untitled Sheet' : productMode === 'deck' ? 'Untitled Deck' : `Tab ${docIndex + 1}`;
@@ -47717,7 +47729,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </aside>
                     )}
 
-            {(isSheetsMode ? sheetsSidebarOpen : deckSlidesPanelOpen) && (
+            {!isDeckPresentationMode && !isSheetsPresentationMode && (isSheetsMode ? sheetsSidebarOpen : deckSlidesPanelOpen) && (
                     <aside className="w-[240px] border-r border-gray-200/50 bg-[#f8f9fd]/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col shrink-0">
                       {/* Top Sidebar Action */}
                       <div className="h-16 px-4 border-b border-gray-200 flex items-center justify-between shrink-0">
@@ -51725,6 +51737,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     <div className="flex-1 min-h-0 h-full flex flex-col min-w-0 relative z-10 overflow-hidden">
                       {/* Floating Sub-header Toolbar */}
+                      {!isDeckPresentationMode && (
                       <div className="mx-4 mt-2 mb-1.5 w-[calc(100%-2rem)] p-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-2 z-30 shrink-0 transition-all duration-200 overflow-visible relative">
                         {/* Top Row: Navigation Tabs & Collapse/Expand Toggle */}
                         <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
@@ -54067,9 +54080,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </div>
                         )}
                       </div>
+                      )}
 
                       {/* Presentation Editor Main Workspace Canvas */}
-                      <div className="flex-1 flex flex-col justify-between items-center p-3 min-h-0 relative overflow-y-auto thin-scrollbar bg-[#F7F8FB]">
+                      <div className={`flex-1 flex flex-col justify-between items-center min-h-0 relative transition-all duration-300 ${isDeckPresentationMode ? 'fixed inset-0 z-[999999] w-screen h-screen bg-[#05070B] p-4 md:p-8 overflow-hidden' : 'p-3 overflow-y-auto thin-scrollbar bg-[#F7F8FB]'}`}>
                         {/* Hidden File Pickers for Slide Deck Media, Logos, and Vectorizer */}
                         <input
                           ref={imageFileInputRef}
@@ -54644,7 +54658,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 >
                                   {/* Interactive Draggable & Resizable Background spline wave decoration */}
                                   {(() => {
-                                    const isVectorSelected = deckSelection.type === 'vector';
+                                    const isVectorSelected = !isDeckPresentationMode && deckSelection.type === 'vector';
                                     const isHidden = activeDeckSlide?.vectorHidden;
                                     if (isHidden) return null;
                                     const vX = activeDeckSlide?.vectorPosX || 0;
@@ -55704,7 +55718,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   
                                             {/* ── INTERACTIVE DRAGGABLE & RESIZABLE IMAGES, LOGOS & VECTOR TRACED ASSETS ── */}
                                             {Array.isArray(activeDeckSlide?.images) && activeDeckSlide.images.map((img) => {
-                                               const isImgSelected = deckSelection.type === 'image' && deckSelection.id === img.id;
+                                               const isImgSelected = !isDeckPresentationMode && deckSelection.type === 'image' && deckSelection.id === img.id;
                                                const isPreviewing = deckAssetPreviewState?.imgId === img.id;
                                                const previewProps = isPreviewing ? (deckAssetPreviewState.overrides || {}) : {};
 
@@ -55896,7 +55910,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             })}
   
                                   {/* ── FLOATING AI INTELLIGENCE ACTIVE BANNER ── */}
-                                            {deckIntelligenceActiveBanner && (
+                                            {!isDeckPresentationMode && deckIntelligenceActiveBanner && (
                                               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-1.5 rounded-full bg-zinc-900/95 backdrop-blur-xl border border-violet-500/40 shadow-2xl flex items-center gap-3 text-xs text-white animate-in fade-in slide-in-from-top-2 pointer-events-auto">
                                                 <div className="flex items-center gap-1.5 text-violet-300 font-semibold">
                                                   <RegaarderAiIcon size={13} className="text-cyan-400 animate-pulse" />
@@ -55935,7 +55949,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                             {/* ── INTERACTIVE DRAGGABLE & RESIZABLE STANDALONE SHAPES & PILLS ── */}
                                             {Array.isArray(activeDeckSlide?.shapes) && activeDeckSlide.shapes.map((shape) => {
-                                              const isShapeSelected = deckSelection.type === 'shape' && deckSelection.id === shape.id;
+                                              const isShapeSelected = !isDeckPresentationMode && deckSelection.type === 'shape' && deckSelection.id === shape.id;
                                               const sX = shape.posX || 0;
                                               const sY = shape.posY || 0;
                                               const sW = shape.width || 140;
@@ -65687,7 +65701,137 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     )}
                         </div>
 
-                        {/* Bottom Status Bar */}
+                        {/* Top Presentation Header Bar when in Presentation Mode */}
+                        {isDeckPresentationMode && (
+                          <div className="fixed top-4 left-6 right-6 z-[9999999] flex items-center justify-between pointer-events-auto select-none animate-in fade-in duration-200">
+                            <div className="flex items-center gap-3 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/80 px-4 py-2 rounded-2xl shadow-2xl">
+                              <div className="flex items-center gap-2">
+                                <svg className="w-4 h-4 text-violet-400" viewBox="0 0 24 24" fill="currentColor">
+                                  <rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(45 12 12)" />
+                                  <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                                </svg>
+                                <span className="font-bold text-xs text-zinc-100 tracking-tight">{deckTitle || 'Startup Pitch Deck'}</span>
+                              </div>
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-violet-950/60 text-violet-300 border border-violet-800/50 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                                Presenting
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/80 px-3 py-1.5 rounded-2xl shadow-2xl">
+                              <span className="text-xs font-semibold text-zinc-400">
+                                Slide <span className="text-zinc-100 font-bold">{presentationSlideIndex + 1}</span> of {deckSlidesData?.length || 1}
+                              </span>
+                              <div className="w-px h-3.5 bg-zinc-700 mx-1" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!document.fullscreenElement) {
+                                    const docEl = document.documentElement;
+                                    const req = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+                                    if (req) req.call(docEl).catch(() => {});
+                                  } else {
+                                    if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                                title="Toggle Native Fullscreen"
+                              >
+                                <Maximize size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsDeckPresentationMode(false);
+                                  if (document.fullscreenElement && document.exitFullscreen) {
+                                    document.exitFullscreen().catch(() => {});
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-950/80 hover:text-red-300 text-zinc-300 transition-colors cursor-pointer"
+                                title="Exit Presentation (Esc)"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Bottom Status Bar & Floating Presentation Controls */}
+                        {isDeckPresentationMode ? (
+                          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999999] flex items-center gap-3 px-5 py-2.5 bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/80 rounded-2xl shadow-2xl pointer-events-auto select-none animate-in fade-in slide-in-from-bottom-2 duration-200">
+                            <button
+                              type="button"
+                              disabled={presentationSlideIndex <= 0}
+                              onClick={() => {
+                                const nextIdx = Math.max(0, presentationSlideIndex - 1);
+                                setPresentationSlideIndex(nextIdx);
+                                if (deckSlidesData && deckSlidesData[nextIdx]) {
+                                  setActiveDeckSlideId(deckSlidesData[nextIdx].id);
+                                }
+                              }}
+                              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                              title="Previous Slide (Left Arrow)"
+                            >
+                              <ChevronLeft size={18} />
+                            </button>
+
+                            {/* Slide Index Counter & Thumbnails Picker */}
+                            <div className="flex items-center gap-1.5 px-3 max-w-[50vw] overflow-x-auto no-scrollbar">
+                              {(deckSlidesData || []).map((slide, idx) => (
+                                <button
+                                  key={slide.id || idx}
+                                  type="button"
+                                  onClick={() => {
+                                    setPresentationSlideIndex(idx);
+                                    if (deckSlidesData && deckSlidesData[idx]) {
+                                      setActiveDeckSlideId(deckSlidesData[idx].id);
+                                    }
+                                  }}
+                                  className={`min-w-[28px] h-7 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
+                                    presentationSlideIndex === idx
+                                      ? 'bg-violet-600 text-white shadow-md shadow-violet-950 ring-2 ring-violet-400/50'
+                                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+                                  }`}
+                                  title={`Go to slide ${idx + 1}`}
+                                >
+                                  {idx + 1}
+                                </button>
+                              ))}
+                            </div>
+
+                            <button
+                              type="button"
+                              disabled={presentationSlideIndex >= (deckSlidesData?.length || 1) - 1}
+                              onClick={() => {
+                                const nextIdx = Math.min((deckSlidesData?.length || 1) - 1, presentationSlideIndex + 1);
+                                setPresentationSlideIndex(nextIdx);
+                                if (deckSlidesData && deckSlidesData[nextIdx]) {
+                                  setActiveDeckSlideId(deckSlidesData[nextIdx].id);
+                                }
+                              }}
+                              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                              title="Next Slide (Right Arrow)"
+                            >
+                              <ChevronRight size={18} />
+                            </button>
+
+                            <div className="w-px h-5 bg-zinc-800 my-0.5" />
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsDeckPresentationMode(false);
+                                if (document.fullscreenElement && document.exitFullscreen) {
+                                  document.exitFullscreen().catch(() => {});
+                                }
+                              }}
+                              className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-red-950/80 hover:text-red-300 text-zinc-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                            >
+                              <X size={14} />
+                              <span>Exit (Esc)</span>
+                            </button>
+                          </div>
+                        ) : (
                         <div className="w-full flex flex-col items-center shrink-0 relative mt-2 gap-2 pb-1">
                           <div className="w-full px-6 flex items-center justify-between text-[11px] font-medium text-gray-400 pt-1 border-t border-gray-150/50">
                             <div className="flex items-center gap-4">
@@ -65780,6 +65924,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             </div>
                           </div>
                         </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -68308,267 +68453,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* Global Workspace Switcher Popover */}
       {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
 
-      {/* ── Layer 7: Presentation Deck Fullscreen Mode Overlay ──────────────── */}
-      {isDeckPresentationMode && typeof document !== 'undefined' && createPortal(
-        <div 
-          className="fixed inset-0 z-[99999999] w-screen h-screen bg-zinc-950 text-white flex flex-col min-w-0 min-h-0 select-none animate-in fade-in duration-200"
-          style={{ zIndex: 99999999, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
-        >
-          {/* Top Header Bar */}
-          <div className="h-14 px-6 border-b border-zinc-800/80 bg-zinc-900/90 backdrop-blur-md flex items-center justify-between shrink-0 z-50">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-violet-400" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(45 12 12)" />
-                  <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                <span className="font-bold text-sm text-zinc-100 tracking-tight">{deckTitle || 'Startup Pitch Deck'}</span>
-              </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-violet-950/60 text-violet-300 border border-violet-800/50 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-                Presenting
-              </span>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <div className="text-xs font-semibold text-zinc-400">
-                Slide <span className="text-zinc-100 font-bold">{presentationSlideIndex + 1}</span> of {deckSlidesData?.length || 1}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (!document.fullscreenElement) {
-                    const docEl = document.documentElement;
-                    const req = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-                    if (req) req.call(docEl).catch(() => {});
-                  } else {
-                    if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
-                  }
-                }}
-                className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
-                title="Toggle Native Fullscreen"
-              >
-                <Maximize size={16} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsDeckPresentationMode(false);
-                  if (document.fullscreenElement && document.exitFullscreen) {
-                    document.exitFullscreen().catch(() => {});
-                  }
-                }}
-                className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
-                title="Exit Presentation (Esc)"
-              >
-                <X size={18} />
-              </button>
-            </div>
-          </div>
-
-          {/* Main Slide Canvas Container */}
-          <div className="flex-1 flex items-center justify-center p-6 md:p-10 relative overflow-hidden bg-zinc-950">
-            {/* Background Ambient Glow */}
-            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(124,77,255,0.15)_0%,transparent_70%)]" />
-
-            {/* Active Slide Display */}
-            {(() => {
-              const currentSlide = (deckSlidesData && deckSlidesData[presentationSlideIndex]) || (deckSlidesData && deckSlidesData[0]) || {};
-              const slideHeadline = currentSlide.headline || currentSlide.title || currentSlide.name || 'Startup Pitch Deck';
-              const slideBlurb = currentSlide.blurb || currentSlide.subtitle || currentSlide.body || currentSlide.description || '';
-              const bentoList = currentSlide.bentoCards || [];
-              const slideBg = currentSlide.backgroundColor || '#05070B';
-              const waveCol1 = currentSlide.vectorColor1 || '#0055ff';
-              const waveCol2 = currentSlide.vectorColor2 || '#00f0ff';
-
-              return (
-                <div 
-                  className="w-full aspect-[16/9] max-w-[1200px] max-h-[85vh] rounded-[20px] shadow-[0_20px_60px_rgba(0,0,0,0.8)] border border-white/10 relative overflow-hidden flex flex-col justify-between p-8 md:p-14 text-white transition-all duration-300"
-                  style={{ backgroundColor: slideBg }}
-                >
-                  {/* Decorative Dynamic Background Spline Waves */}
-                  <div className="absolute inset-0 pointer-events-none select-none opacity-50">
-                    <svg className="absolute bottom-0 right-0 w-[70%] h-[95%]" viewBox="0 0 900 650" fill="none">
-                      <path d="M 150 650 C 350 400, 600 200, 950 300" stroke={waveCol1} strokeWidth="3.5" opacity="0.7" fill="none" />
-                      <path d="M 220 650 C 400 370, 650 180, 950 250" stroke={waveCol2} strokeWidth="2" opacity="0.6" fill="none" />
-                      <path d="M 80 650 C 280 430, 520 230, 950 360" stroke="#8B5CF6" strokeWidth="1.5" opacity="0.4" fill="none" />
-                    </svg>
-                  </div>
-
-                  {/* Slide Header */}
-                  <div className="flex items-center justify-between relative z-10">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,240,255,0.8)]" />
-                      <span className="text-xs font-bold uppercase tracking-widest text-cyan-300">
-                        {currentSlide.section || `0${presentationSlideIndex + 1} / STRATEGIC OVERVIEW`}
-                      </span>
-                    </div>
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-widest bg-white/5 border border-white/10 px-3 py-1 rounded-full">
-                      {currentSlide.layoutStyle || 'Executive View'}
-                    </span>
-                  </div>
-
-                  {/* Slide Body / Content */}
-                  <div className="flex-1 flex flex-col justify-center py-4 relative z-10 overflow-y-auto thin-scrollbar">
-                    {currentSlide.tagline && (
-                      <p className="text-sm font-semibold tracking-wider text-violet-400 mb-1 uppercase">
-                        {currentSlide.tagline}
-                      </p>
-                    )}
-                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight whitespace-pre-line max-w-[85%]">
-                      {slideHeadline}
-                    </h1>
-
-                    {slideBlurb && (
-                      <p className="mt-3 text-base md:text-lg text-zinc-300 leading-relaxed font-normal max-w-[75%]">
-                        {slideBlurb}
-                      </p>
-                    )}
-
-                    {currentSlide.presenter && (
-                      <div className="mt-6 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-bold uppercase tracking-widest text-white w-fit shadow-md">
-                        {currentSlide.presenter}
-                      </div>
-                    )}
-
-                    {/* Bento Cards Grid if available on slide */}
-                    {bentoList.length > 0 && (
-                      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {bentoList.map((card, cIdx) => (
-                          <div 
-                            key={card.id || cIdx}
-                            className="bg-white/5 hover:bg-white/8 backdrop-blur-md border border-white/10 rounded-2xl p-5 flex flex-col justify-between transition-all"
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="w-7 h-7 rounded-xl bg-violet-500/20 border border-violet-400/40 text-violet-300 flex items-center justify-center font-bold text-xs">
-                                {card.num || `0${cIdx + 1}`}
-                              </span>
-                              <Sparkles size={13} className="text-cyan-400" />
-                            </div>
-                            <div>
-                              <h4 className="text-base font-bold text-white mb-1.5">{card.title || card.headline}</h4>
-                              <p className="text-xs text-zinc-300 leading-relaxed">{card.desc || card.text || card.body}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Interactive Dropdown & Field Controls inside slide */}
-                    <div className="mt-6 flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md border border-zinc-700/80 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-zinc-200 shadow-sm">
-                        <span className="text-zinc-400">Status:</span>
-                        <select
-                          className="bg-transparent text-violet-300 font-bold outline-none cursor-pointer"
-                          defaultValue="In Progress"
-                          onChange={(e) => showToast(`Status updated to: ${e.target.value}`)}
-                        >
-                          <option value="In Progress" className="bg-zinc-900 text-white">In Progress</option>
-                          <option value="Completed" className="bg-zinc-900 text-white">Completed</option>
-                          <option value="Review" className="bg-zinc-900 text-white">In Review</option>
-                          <option value="Planned" className="bg-zinc-900 text-white">Planned</option>
-                        </select>
-                      </div>
-
-                      <div className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md border border-zinc-700/80 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-zinc-200 shadow-sm">
-                        <span className="text-zinc-400">Priority:</span>
-                        <select
-                          className="bg-transparent text-amber-300 font-bold outline-none cursor-pointer"
-                          defaultValue="High"
-                          onChange={(e) => showToast(`Priority set to: ${e.target.value}`)}
-                        >
-                          <option value="High" className="bg-zinc-900 text-white">High (P1)</option>
-                          <option value="Medium" className="bg-zinc-900 text-white">Medium (P2)</option>
-                          <option value="Low" className="bg-zinc-900 text-white">Low (P3)</option>
-                        </select>
-                      </div>
-
-                      <div className="flex items-center gap-2 bg-violet-950/60 border border-violet-800/50 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-violet-300 shadow-sm">
-                        <Sparkles size={13} className="text-violet-400" />
-                        <span>AI Optimization: 99% Verified</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Slide Footer */}
-                  <div className="flex items-center justify-between border-t border-white/10 pt-4 relative z-10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-0.5 bg-gradient-to-r from-violet-500 to-cyan-400 rounded-full" />
-                      <span className="text-xs font-medium text-zinc-400">
-                        {currentSlide.footer || currentSlide.contactWeb || 'Regaarder Executive Suite • Confidential'}
-                      </span>
-                    </div>
-                    <span className="text-xs font-bold text-zinc-400 bg-white/5 px-2.5 py-1 rounded-lg">
-                      {presentationSlideIndex + 1} / {deckSlidesData?.length || 1}
-                    </span>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* Bottom Floating Navigation Toolbar */}
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-2.5 bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/80 rounded-2xl shadow-2xl">
-            <button
-              type="button"
-              disabled={presentationSlideIndex <= 0}
-              onClick={() => setPresentationSlideIndex((prev) => Math.max(0, prev - 1))}
-              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-              title="Previous Slide (Left Arrow)"
-            >
-              <ChevronLeft size={18} />
-            </button>
-
-            {/* Slide Index Counter & Thumbnails Picker */}
-            <div className="flex items-center gap-1.5 px-3 max-w-[50vw] overflow-x-auto no-scrollbar">
-              {(deckSlidesData || []).map((slide, idx) => (
-                <button
-                  key={slide.id || idx}
-                  type="button"
-                  onClick={() => setPresentationSlideIndex(idx)}
-                  className={`min-w-[28px] h-7 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
-                    presentationSlideIndex === idx
-                      ? 'bg-violet-600 text-white shadow-md shadow-violet-950 ring-2 ring-violet-400/50'
-                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
-                  }`}
-                  title={`Go to slide ${idx + 1}`}
-                >
-                  {idx + 1}
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              disabled={presentationSlideIndex >= (deckSlidesData?.length || 1) - 1}
-              onClick={() => setPresentationSlideIndex((prev) => Math.min((deckSlidesData?.length || 1) - 1, prev + 1))}
-              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-              title="Next Slide (Right Arrow)"
-            >
-              <ChevronRight size={18} />
-            </button>
-
-            <div className="w-px h-5 bg-zinc-800 my-0.5" />
-
-            <button
-              type="button"
-              onClick={() => {
-                setIsDeckPresentationMode(false);
-                if (document.fullscreenElement && document.exitFullscreen) {
-                  document.exitFullscreen().catch(() => {});
-                }
-              }}
-              className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-red-950/80 hover:text-red-300 text-zinc-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
-            >
-              <X size={14} />
-              <span>Exit (Esc)</span>
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
       </div>
     );
   }
@@ -83120,267 +83005,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         }}
       />
 
-      {/* ── Layer 7: Presentation Deck Fullscreen Mode Overlay ──────────────── */}
-      {isDeckPresentationMode && typeof document !== 'undefined' && createPortal(
-        <div 
-          className="fixed inset-0 z-[99999999] w-screen h-screen bg-zinc-950 text-white flex flex-col min-w-0 min-h-0 select-none animate-in fade-in duration-200"
-          style={{ zIndex: 99999999, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
-        >
-          {/* Top Header Bar */}
-          <div className="h-14 px-6 border-b border-zinc-800/80 bg-zinc-900/90 backdrop-blur-md flex items-center justify-between shrink-0 z-50">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-violet-400" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(45 12 12)" />
-                  <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                <span className="font-bold text-sm text-zinc-100 tracking-tight">{deckTitle || 'Startup Pitch Deck'}</span>
-              </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-violet-950/60 text-violet-300 border border-violet-800/50 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-                Presenting
-              </span>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <div className="text-xs font-semibold text-zinc-400">
-                Slide <span className="text-zinc-100 font-bold">{presentationSlideIndex + 1}</span> of {deckSlidesData?.length || 1}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (!document.fullscreenElement) {
-                    const docEl = document.documentElement;
-                    const req = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-                    if (req) req.call(docEl).catch(() => {});
-                  } else {
-                    if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
-                  }
-                }}
-                className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
-                title="Toggle Native Fullscreen"
-              >
-                <Maximize size={16} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsDeckPresentationMode(false);
-                  if (document.fullscreenElement && document.exitFullscreen) {
-                    document.exitFullscreen().catch(() => {});
-                  }
-                }}
-                className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
-                title="Exit Presentation (Esc)"
-              >
-                <X size={18} />
-              </button>
-            </div>
-          </div>
-
-          {/* Main Slide Canvas Container */}
-          <div className="flex-1 flex items-center justify-center p-6 md:p-10 relative overflow-hidden bg-zinc-950">
-            {/* Background Ambient Glow */}
-            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(124,77,255,0.15)_0%,transparent_70%)]" />
-
-            {/* Active Slide Display */}
-            {(() => {
-              const currentSlide = (deckSlidesData && deckSlidesData[presentationSlideIndex]) || (deckSlidesData && deckSlidesData[0]) || {};
-              const slideHeadline = currentSlide.headline || currentSlide.title || currentSlide.name || 'Startup Pitch Deck';
-              const slideBlurb = currentSlide.blurb || currentSlide.subtitle || currentSlide.body || currentSlide.description || '';
-              const bentoList = currentSlide.bentoCards || [];
-              const slideBg = currentSlide.backgroundColor || '#05070B';
-              const waveCol1 = currentSlide.vectorColor1 || '#0055ff';
-              const waveCol2 = currentSlide.vectorColor2 || '#00f0ff';
-
-              return (
-                <div 
-                  className="w-full aspect-[16/9] max-w-[1200px] max-h-[85vh] rounded-[20px] shadow-[0_20px_60px_rgba(0,0,0,0.8)] border border-white/10 relative overflow-hidden flex flex-col justify-between p-8 md:p-14 text-white transition-all duration-300"
-                  style={{ backgroundColor: slideBg }}
-                >
-                  {/* Decorative Dynamic Background Spline Waves */}
-                  <div className="absolute inset-0 pointer-events-none select-none opacity-50">
-                    <svg className="absolute bottom-0 right-0 w-[70%] h-[95%]" viewBox="0 0 900 650" fill="none">
-                      <path d="M 150 650 C 350 400, 600 200, 950 300" stroke={waveCol1} strokeWidth="3.5" opacity="0.7" fill="none" />
-                      <path d="M 220 650 C 400 370, 650 180, 950 250" stroke={waveCol2} strokeWidth="2" opacity="0.6" fill="none" />
-                      <path d="M 80 650 C 280 430, 520 230, 950 360" stroke="#8B5CF6" strokeWidth="1.5" opacity="0.4" fill="none" />
-                    </svg>
-                  </div>
-
-                  {/* Slide Header */}
-                  <div className="flex items-center justify-between relative z-10">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,240,255,0.8)]" />
-                      <span className="text-xs font-bold uppercase tracking-widest text-cyan-300">
-                        {currentSlide.section || `0${presentationSlideIndex + 1} / STRATEGIC OVERVIEW`}
-                      </span>
-                    </div>
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-widest bg-white/5 border border-white/10 px-3 py-1 rounded-full">
-                      {currentSlide.layoutStyle || 'Executive View'}
-                    </span>
-                  </div>
-
-                  {/* Slide Body / Content */}
-                  <div className="flex-1 flex flex-col justify-center py-4 relative z-10 overflow-y-auto thin-scrollbar">
-                    {currentSlide.tagline && (
-                      <p className="text-sm font-semibold tracking-wider text-violet-400 mb-1 uppercase">
-                        {currentSlide.tagline}
-                      </p>
-                    )}
-                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight whitespace-pre-line max-w-[85%]">
-                      {slideHeadline}
-                    </h1>
-
-                    {slideBlurb && (
-                      <p className="mt-3 text-base md:text-lg text-zinc-300 leading-relaxed font-normal max-w-[75%]">
-                        {slideBlurb}
-                      </p>
-                    )}
-
-                    {currentSlide.presenter && (
-                      <div className="mt-6 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-bold uppercase tracking-widest text-white w-fit shadow-md">
-                        {currentSlide.presenter}
-                      </div>
-                    )}
-
-                    {/* Bento Cards Grid if available on slide */}
-                    {bentoList.length > 0 && (
-                      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {bentoList.map((card, cIdx) => (
-                          <div 
-                            key={card.id || cIdx}
-                            className="bg-white/5 hover:bg-white/8 backdrop-blur-md border border-white/10 rounded-2xl p-5 flex flex-col justify-between transition-all"
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="w-7 h-7 rounded-xl bg-violet-500/20 border border-violet-400/40 text-violet-300 flex items-center justify-center font-bold text-xs">
-                                {card.num || `0${cIdx + 1}`}
-                              </span>
-                              <Sparkles size={13} className="text-cyan-400" />
-                            </div>
-                            <div>
-                              <h4 className="text-base font-bold text-white mb-1.5">{card.title || card.headline}</h4>
-                              <p className="text-xs text-zinc-300 leading-relaxed">{card.desc || card.text || card.body}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Interactive Dropdown & Field Controls inside slide */}
-                    <div className="mt-6 flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md border border-zinc-700/80 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-zinc-200 shadow-sm">
-                        <span className="text-zinc-400">Status:</span>
-                        <select
-                          className="bg-transparent text-violet-300 font-bold outline-none cursor-pointer"
-                          defaultValue="In Progress"
-                          onChange={(e) => showToast(`Status updated to: ${e.target.value}`)}
-                        >
-                          <option value="In Progress" className="bg-zinc-900 text-white">In Progress</option>
-                          <option value="Completed" className="bg-zinc-900 text-white">Completed</option>
-                          <option value="Review" className="bg-zinc-900 text-white">In Review</option>
-                          <option value="Planned" className="bg-zinc-900 text-white">Planned</option>
-                        </select>
-                      </div>
-
-                      <div className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md border border-zinc-700/80 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-zinc-200 shadow-sm">
-                        <span className="text-zinc-400">Priority:</span>
-                        <select
-                          className="bg-transparent text-amber-300 font-bold outline-none cursor-pointer"
-                          defaultValue="High"
-                          onChange={(e) => showToast(`Priority set to: ${e.target.value}`)}
-                        >
-                          <option value="High" className="bg-zinc-900 text-white">High (P1)</option>
-                          <option value="Medium" className="bg-zinc-900 text-white">Medium (P2)</option>
-                          <option value="Low" className="bg-zinc-900 text-white">Low (P3)</option>
-                        </select>
-                      </div>
-
-                      <div className="flex items-center gap-2 bg-violet-950/60 border border-violet-800/50 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-violet-300 shadow-sm">
-                        <Sparkles size={13} className="text-violet-400" />
-                        <span>AI Optimization: 99% Verified</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Slide Footer */}
-                  <div className="flex items-center justify-between border-t border-white/10 pt-4 relative z-10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-0.5 bg-gradient-to-r from-violet-500 to-cyan-400 rounded-full" />
-                      <span className="text-xs font-medium text-zinc-400">
-                        {currentSlide.footer || currentSlide.contactWeb || 'Regaarder Executive Suite • Confidential'}
-                      </span>
-                    </div>
-                    <span className="text-xs font-bold text-zinc-400 bg-white/5 px-2.5 py-1 rounded-lg">
-                      {presentationSlideIndex + 1} / {deckSlidesData?.length || 1}
-                    </span>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* Bottom Floating Navigation Toolbar */}
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-2.5 bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/80 rounded-2xl shadow-2xl">
-            <button
-              type="button"
-              disabled={presentationSlideIndex <= 0}
-              onClick={() => setPresentationSlideIndex((prev) => Math.max(0, prev - 1))}
-              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-              title="Previous Slide (Left Arrow)"
-            >
-              <ChevronLeft size={18} />
-            </button>
-
-            {/* Slide Index Counter & Thumbnails Picker */}
-            <div className="flex items-center gap-1.5 px-3 max-w-[50vw] overflow-x-auto no-scrollbar">
-              {(deckSlidesData || []).map((slide, idx) => (
-                <button
-                  key={slide.id || idx}
-                  type="button"
-                  onClick={() => setPresentationSlideIndex(idx)}
-                  className={`min-w-[28px] h-7 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
-                    presentationSlideIndex === idx
-                      ? 'bg-violet-600 text-white shadow-md shadow-violet-950 ring-2 ring-violet-400/50'
-                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
-                  }`}
-                  title={`Go to slide ${idx + 1}`}
-                >
-                  {idx + 1}
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              disabled={presentationSlideIndex >= (deckSlidesData?.length || 1) - 1}
-              onClick={() => setPresentationSlideIndex((prev) => Math.min((deckSlidesData?.length || 1) - 1, prev + 1))}
-              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-              title="Next Slide (Right Arrow)"
-            >
-              <ChevronRight size={18} />
-            </button>
-
-            <div className="w-px h-5 bg-zinc-800 my-0.5" />
-
-            <button
-              type="button"
-              onClick={() => {
-                setIsDeckPresentationMode(false);
-                if (document.fullscreenElement && document.exitFullscreen) {
-                  document.exitFullscreen().catch(() => {});
-                }
-              }}
-              className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-red-950/80 hover:text-red-300 text-zinc-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
-            >
-              <X size={14} />
-              <span>Exit (Esc)</span>
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
 
       {/* Close Document / Whiteboard Confirmation Modal */}
       {renderCloseConfirmModal()}
