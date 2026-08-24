@@ -295,18 +295,18 @@ export default function GlobalWorkspaceSearchModal({
   };
 
   // Surface and backdrop styles based on workspace mode:
-  // - Deck Mode: Atmospheric dark blur with presentation-style contrast & optional Ask AI mode
-  // - All Other Modes (Docs, Sheets, Tasks, Rooms, Notes, People): 840×610px architectural command center
+  // - Deck Mode: Atmospheric dark blur with presentation-style contrast & AI workspace synthesis
+  // - All Other Modes (Docs, Sheets, Tasks, Rooms, Notes, People): Theme-aware warm/neutral solid surface (~97% opacity)
   const backdropClasses = isDeck
     ? 'bg-slate-950/40 dark:bg-black/50 backdrop-blur-[14px] backdrop-saturate-[0.4] backdrop-contrast-[1.05]'
-    : 'bg-slate-950/25 dark:bg-black/45 backdrop-blur-[10px]';
+    : 'bg-slate-950/20 dark:bg-black/45 backdrop-blur-[8px]';
 
   const surfaceClasses = isDeck
     ? 'bg-white dark:bg-[#161618] rounded-[14px] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.25)] dark:shadow-[0_30px_80px_-15px_rgba(0,0,0,0.8)] border border-slate-200/90 dark:border-zinc-800/90'
-    : 'bg-white/98 dark:bg-[#161618]/98 rounded-[14px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.22)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.7)] border border-slate-200/90 dark:border-zinc-800/90';
+    : 'bg-white/[0.97] dark:bg-[#161618]/[0.97] backdrop-blur-[12px] rounded-[14px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.18)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.7)] border border-slate-200/90 dark:border-zinc-800/90';
 
-  const categoryBarClasses = 'bg-slate-50/60 dark:bg-zinc-900/40 border-b border-slate-200/60 dark:border-zinc-800/60';
-  const footerClasses = 'bg-slate-50/80 dark:bg-zinc-900/60 border-t border-slate-200/60 dark:border-zinc-800/60';
+  const categoryBarClasses = 'bg-slate-50/70 dark:bg-zinc-900/50 border-b border-slate-200/60 dark:border-zinc-800/60';
+  const footerClasses = 'bg-slate-50/80 dark:bg-zinc-900/70 border-t border-slate-200/60 dark:border-zinc-800/60';
 
   return (
     <div
