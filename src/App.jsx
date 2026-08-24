@@ -12019,6 +12019,26 @@ const DEFAULT_DECK_SLIDES = [
   const [activeAgentTag, setActiveAgentTag] = useState(null);
   const [isSheetsPresentationMode, setIsSheetsPresentationMode] = useState(false);
   const [isSheetZenMode, setIsSheetZenMode] = useState(false);
+  // Custom Regaarder 16:9 Aspect & Screen Fit Icon
+const RegaarderFitScreenIcon = ({ isFilled = false, size = 14, className = "" }) => {
+  if (isFilled) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+        <rect x="2.5" y="4.5" width="15" height="11" rx="2" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M6 10H14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <path d="M8 8L6 10L8 12M12 8L14 10L12 12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+      <rect x="3.5" y="4.5" width="13" height="11" rx="1.8" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M1.5 10H4.5M15.5 10H18.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M2.5 8.5L1 10L2.5 11.5M17.5 8.5L19 10L17.5 11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+};
+
   const [isDeckPresentationMode, setIsDeckPresentationMode] = useState(false);
   const [presentationSlideIndex, setPresentationSlideIndex] = useState(0);
   const [isDeckPresentationFocus, setIsDeckPresentationFocus] = useState(false);
@@ -65783,8 +65803,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 }`}
                                 title={isDeckPresentationFocus ? "Fit 16:9 (F)" : "Fill Screen (F)"}
                               >
-                                <Expand size={13} />
-                                <span className="text-[10.5px] hidden sm:inline">{isDeckPresentationFocus ? 'Fit' : 'Fill'}</span>
+                                <RegaarderFitScreenIcon isFilled={isDeckPresentationFocus} size={14} />
+                                <span className="text-[10.5px] hidden sm:inline">{isDeckPresentationFocus ? 'Fit 16:9' : 'Fill Screen'}</span>
                               </button>
 
                               <button
