@@ -1,3 +1,4 @@
+import { useTranslation } from './i18n';
 import { DECK_LLM_TOOL_DEFINITIONS, dispatchDeckToolCall } from './utils/deckEngineHarness';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
@@ -69220,11 +69221,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <span className="font-bold text-slate-800 dark:text-zinc-100 tracking-tight">Settings</span>
               </div>
               <div className="flex flex-col gap-1.5 flex-1">
-                <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Account</button>
-                <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Personalization</button>
+                <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.account')}</button>
+                <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.personalization')}</button>
                 <button onClick={() => setSettingsTab('ai_models')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'ai_models' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>AI & API Keys</button>
-                <button onClick={() => setSettingsTab('storage')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'storage' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Storage & Data</button>
-                <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>General</button>
+                <button onClick={() => setSettingsTab('storage')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'storage' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.storageData')}</button>
+                <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.general')}</button>
               </div>
             </div>
             <div className="flex-1 bg-white/50 dark:bg-zinc-900/50 p-6 sm:p-8 overflow-y-auto thin-scrollbar relative">
@@ -69621,42 +69622,48 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <StorageDataManagement showToast={showToast} />
               )}
               {settingsTab === 'general' && (
-                <div className="max-w-[500px]">
-                  <h2 className="text-2xl font-bold text-slate-800 tracking-tight mb-8">General</h2>
+                <div className="max-w-[520px]">
+                  <h2 className="text-2xl font-bold text-slate-800 dark:text-zinc-100 tracking-tight mb-8">{t('settings.general')}</h2>
                   <div className="space-y-6">
-                    <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                    {/* UI Interface Language */}
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xs">
                       <div>
-                        <h4 className="text-[13px] font-bold text-slate-800">UI Language</h4>
-                        <p className="text-[11px] text-slate-500 mt-0.5">Select your preferred language for the interface.</p>
+                        <h4 className="text-[13px] font-bold text-slate-800 dark:text-zinc-100">{t('settings.uiLanguage')}</h4>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">{t('settings.uiLanguageDesc')}</p>
                       </div>
                       <div className="relative">
                         <button
                           type="button"
                           onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
-                          className="flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg hover:bg-slate-100 px-3 py-2 outline-none font-semibold cursor-pointer transition-colors"
+                          className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 text-xs rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-700 px-3 py-2 outline-none font-semibold cursor-pointer transition-colors"
                         >
-                          {currentLanguage}
+                          {supportedLanguages.find(l => l.code === uiLanguage)?.nativeName || 'English'}
                           <ChevronDown size={14} className="text-slate-400" />
                         </button>
+                        
                         {languageMenuOpen && (
                           <>
                             <div className="fixed inset-0 z-[100]" onClick={() => setLanguageMenuOpen(false)}></div>
-                            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-xl overflow-hidden z-[110] animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden z-[110] animate-in fade-in slide-in-from-top-2 duration-200 max-h-72 overflow-y-auto thin-scrollbar">
                               <div className="p-1">
-                                {['English', 'French', 'Traditional Chinese', 'Auto detect'].map((lang) => (
+                                {supportedLanguages.map((lang) => (
                                   <button
-                                    key={lang}
+                                    key={lang.code}
+                                    type="button"
                                     onClick={() => {
-                                      setCurrentLanguage(lang);
+                                      setUiLanguage(lang.code);
                                       setLanguageMenuOpen(false);
-                                      showToast(`Language changed to ${lang === 'French' ? 'Français' : lang === 'Traditional Chinese' ? '繁體中文' : lang}`);
+                                      showToast(`Language set to ${lang.nativeName}`);
                                     }}
-                                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-left rounded-lg hover:bg-slate-50 transition-colors group"
+                                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-left rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors group cursor-pointer"
                                   >
-                                    <span className={`font-medium ${currentLanguage === lang ? 'text-violet-600' : 'text-slate-700 group-hover:text-slate-900'}`}>
-                                      {lang === 'French' ? 'Français' : lang === 'Traditional Chinese' ? '繁體中文' : lang}
-                                    </span>
-                                    {currentLanguage === lang && <Check size={14} className="text-violet-600" />}
+                                    <div className="flex flex-col">
+                                      <span className={`font-medium ${uiLanguage === lang.code ? 'text-violet-600 dark:text-violet-400 font-bold' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
+                                        {lang.nativeName}
+                                      </span>
+                                      <span className="text-[10px] text-slate-400 dark:text-zinc-500">{lang.name}</span>
+                                    </div>
+                                    {uiLanguage === lang.code && <Check size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />}
                                   </button>
                                 ))}
                               </div>
@@ -69665,123 +69672,55 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+
+                    {/* AI & Orb Response Language */}
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xs">
                       <div>
-                        <h4 className="text-[13px] font-bold text-slate-800">Auto-detect Language</h4>
-                        <p className="text-[11px] text-slate-500 mt-0.5">Automatically select spelling dictionary based on input.</p>
+                        <h4 className="text-[13px] font-bold text-slate-800 dark:text-zinc-100">{t('settings.aiLanguage')}</h4>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">{t('settings.aiLanguageDesc')}</p>
+                      </div>
+                      <div className="relative">
+                        <select
+                          value={aiLanguage}
+                          onChange={(e) => {
+                            setAiLanguage(e.target.value);
+                            showToast(`AI language: ${aiLanguages.find(l => l.code === e.target.value)?.nativeName || e.target.value}`);
+                          }}
+                          className="bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 text-xs rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-700 px-3 py-2 outline-none font-semibold cursor-pointer transition-colors"
+                        >
+                          {aiLanguages.map(l => (
+                            <option key={l.code} value={l.code}>
+                              {l.nativeName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Auto Detect Language */}
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xs">
+                      <div>
+                        <h4 className="text-[13px] font-bold text-slate-800 dark:text-zinc-100">{t('settings.autoDetectLanguage')}</h4>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">{t('settings.autoDetectDesc')}</p>
                       </div>
                       <div className="w-10 h-6 bg-violet-500 rounded-full relative cursor-pointer shadow-inner">
                         <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5 shadow-sm"></div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+
+                    {/* Anonymous Diagnostics */}
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xs">
                       <div>
-                        <h4 className="text-[13px] font-bold text-slate-800">Analytics</h4>
-                        <p className="text-[11px] text-slate-500 mt-0.5">Share anonymous usage data to improve Compose.</p>
+                        <h4 className="text-[13px] font-bold text-slate-800 dark:text-zinc-100">{t('settings.analytics')}</h4>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">{t('settings.analyticsDesc')}</p>
                       </div>
-                      <div className="w-10 h-6 bg-slate-200 rounded-full relative cursor-pointer shadow-inner">
+                      <div className="w-10 h-6 bg-slate-200 dark:bg-zinc-700 rounded-full relative cursor-pointer shadow-inner">
                         <div className="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5 shadow-sm"></div>
                       </div>
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      {renderAuthModal()}
-      {/* Global Workspace Switcher Popover */}
-      {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
-
-      
-      {/* ── Layer 6.7: Contextual Memory Intelligence Layer Modal (Deck & Sheets) ─────────────── */}
-      {isMemoryOpen && (
-        <div 
-          className="fixed inset-0 z-[999998] flex items-center justify-center p-3 sm:p-6 md:p-8 animate-in fade-in duration-150"
-          style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
-        >
-          {/* Translucent Backdrop Overlay */}
-          <div 
-            className="absolute inset-0 bg-slate-900/30 dark:bg-black/55 backdrop-blur-[28px] transition-opacity"
-            onClick={() => setIsMemoryOpen(false)}
-          />
-
-          {/* Main Memory Intelligence Container */}
-          <div className="relative w-[96vw] max-w-7xl h-[90vh] max-h-[880px] z-10 flex flex-col">
-            <MemoryDashboard 
-              onClose={() => setIsMemoryOpen(false)}
-              onNavigateToEntity={(entity) => {
-                setIsMemoryOpen(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* ── Layer 6.6: Global Workspace Search Modal (Memory Spotlight - Deck & Sheets) ─────────────── */}
-      <GlobalWorkspaceSearchModal
-        isOpen={isMemorySearchOpen}
-        onClose={() => setIsMemorySearchOpen(false)}
-        initialQuery={orbInitialQuery}
-        isDarkMode={isDarkMode}
-        productMode={productMode}
-        onCallAi={callGemini}
-        liveWorkspaceContext={{
-          documents,
-          activeDocId,
-          docTitle,
-          docSubtitle,
-          docBodyHtml,
-          sheetsTitle,
-          sheetGrids,
-          activeSheetId,
-          deckTitle,
-          deckSlidesData,
-          activeDeckSlideId,
-          tasks: initiatives,
-          scheduleAgendaItems,
-          whiteboardWidgets,
-          whiteboardShapes
-        }}
-        onNavigateToEntity={(entity) => {
-          if (!entity) return;
-          const ws = (entity.workspace || '').toLowerCase();
-          if (ws === 'compose') {
-            if (productMode !== 'compose') setProductMode('compose');
-            if (entity.metadata?.docId) {
-              const targetDoc = documents.find(d => d.id === entity.metadata.docId);
-              if (targetDoc) {
-                setActiveDocId(targetDoc.id);
-                setDocTitle(targetDoc.title || '');
-                setDocSubtitle(targetDoc.subtitle || '');
-                setDocBodyHtml(targetDoc.bodyHtml || '');
-              }
-            }
-            showToast(`Navigated to Document: ${entity.title}`);
-          } else if (ws === 'sheets') {
-            if (productMode !== 'sheets') setProductMode('sheets');
-            showToast(`Navigated to Sheets: ${entity.title}`);
-          } else if (ws === 'deck') {
-            if (productMode !== 'deck') setProductMode('deck');
-            if (entity.metadata?.slideNumber) {
-              setActiveDeckSlideId(entity.metadata.slideNumber);
-            }
-            showToast(`Navigated to Presentation: ${entity.title}`);
-          } else if (ws === 'room') {
-            if (productMode !== 'room') setProductMode('room');
-            showToast(`Navigated to Room: ${entity.title}`);
-          } else if (ws === 'tasks') {
-            handleMiniSidebarClick('tasks');
-            showToast(`Navigated to Tasks: ${entity.title}`);
-          } else if (ws === 'schedule') {
-            handleMiniSidebarClick('calendar');
-            showToast(`Navigated to Schedule: ${entity.title}`);
-          } else if (ws === 'browser') {
-            if (productMode !== 'browser') setProductMode('browser');
-            showToast(`Navigated to Research: ${entity.title}`);
-          } else if (ws === 'people') {
-            showToast(`Team Member: ${entity.title} (${entity.role || entity.department})`);
+              )}`);
           } else {
             showToast(`Opened: ${entity.title}`);
           }
@@ -83630,10 +83569,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
               
               <div className="flex flex-col gap-1.5 flex-1">
-                <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Account</button>
-                <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Personalization</button>
-                <button onClick={() => setSettingsTab('storage')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'storage' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Storage & Data</button>
-                <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>General</button>
+                <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.account')}</button>
+                <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.personalization')}</button>
+                <button onClick={() => setSettingsTab('storage')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'storage' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.storageData')}</button>
+                <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.general')}</button>
               </div>
             </div>
 
@@ -83836,43 +83775,48 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <StorageDataManagement showToast={showToast} />
               )}
               {settingsTab === 'general' && (
-                <div className="max-w-[500px]">
-                  <h2 className="text-2xl font-bold text-slate-800 tracking-tight mb-8">General</h2>
+                <div className="max-w-[520px]">
+                  <h2 className="text-2xl font-bold text-slate-800 dark:text-zinc-100 tracking-tight mb-8">{t('settings.general')}</h2>
                   <div className="space-y-6">
-                    <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                    {/* UI Interface Language */}
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xs">
                       <div>
-                        <h4 className="text-[13px] font-bold text-slate-800">UI Language</h4>
-                        <p className="text-[11px] text-slate-500 mt-0.5">Select your preferred language for the interface.</p>
+                        <h4 className="text-[13px] font-bold text-slate-800 dark:text-zinc-100">{t('settings.uiLanguage')}</h4>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">{t('settings.uiLanguageDesc')}</p>
                       </div>
                       <div className="relative">
                         <button
                           type="button"
                           onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
-                          className="flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg hover:bg-slate-100 px-3 py-2 outline-none font-semibold cursor-pointer transition-colors"
+                          className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 text-xs rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-700 px-3 py-2 outline-none font-semibold cursor-pointer transition-colors"
                         >
-                          {currentLanguage}
+                          {supportedLanguages.find(l => l.code === uiLanguage)?.nativeName || 'English'}
                           <ChevronDown size={14} className="text-slate-400" />
                         </button>
                         
                         {languageMenuOpen && (
                           <>
                             <div className="fixed inset-0 z-[100]" onClick={() => setLanguageMenuOpen(false)}></div>
-                            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-xl overflow-hidden z-[110] animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden z-[110] animate-in fade-in slide-in-from-top-2 duration-200 max-h-72 overflow-y-auto thin-scrollbar">
                               <div className="p-1">
-                                {['English', 'French', 'Traditional Chinese', 'Auto detect'].map((lang) => (
+                                {supportedLanguages.map((lang) => (
                                   <button
-                                    key={lang}
+                                    key={lang.code}
+                                    type="button"
                                     onClick={() => {
-                                      setCurrentLanguage(lang);
+                                      setUiLanguage(lang.code);
                                       setLanguageMenuOpen(false);
-                                      showToast(`Language changed to ${lang === 'French' ? 'Français' : lang === 'Traditional Chinese' ? '繁體中文' : lang}`);
+                                      showToast(`Language set to ${lang.nativeName}`);
                                     }}
-                                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-left rounded-lg hover:bg-slate-50 transition-colors group"
+                                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-left rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors group cursor-pointer"
                                   >
-                                    <span className={`font-medium ${currentLanguage === lang ? 'text-violet-600' : 'text-slate-700 group-hover:text-slate-900'}`}>
-                                      {lang === 'French' ? 'Français' : lang === 'Traditional Chinese' ? '繁體中文' : lang}
-                                    </span>
-                                    {currentLanguage === lang && <Check size={14} className="text-violet-600" />}
+                                    <div className="flex flex-col">
+                                      <span className={`font-medium ${uiLanguage === lang.code ? 'text-violet-600 dark:text-violet-400 font-bold' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
+                                        {lang.nativeName}
+                                      </span>
+                                      <span className="text-[10px] text-slate-400 dark:text-zinc-500">{lang.name}</span>
+                                    </div>
+                                    {uiLanguage === lang.code && <Check size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />}
                                   </button>
                                 ))}
                               </div>
@@ -83881,133 +83825,55 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+
+                    {/* AI & Orb Response Language */}
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xs">
                       <div>
-                        <h4 className="text-[13px] font-bold text-slate-800">Auto-detect Language</h4>
-                        <p className="text-[11px] text-slate-500 mt-0.5">Automatically select spelling dictionary based on input.</p>
+                        <h4 className="text-[13px] font-bold text-slate-800 dark:text-zinc-100">{t('settings.aiLanguage')}</h4>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">{t('settings.aiLanguageDesc')}</p>
+                      </div>
+                      <div className="relative">
+                        <select
+                          value={aiLanguage}
+                          onChange={(e) => {
+                            setAiLanguage(e.target.value);
+                            showToast(`AI language: ${aiLanguages.find(l => l.code === e.target.value)?.nativeName || e.target.value}`);
+                          }}
+                          className="bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 text-xs rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-700 px-3 py-2 outline-none font-semibold cursor-pointer transition-colors"
+                        >
+                          {aiLanguages.map(l => (
+                            <option key={l.code} value={l.code}>
+                              {l.nativeName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Auto Detect Language */}
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xs">
+                      <div>
+                        <h4 className="text-[13px] font-bold text-slate-800 dark:text-zinc-100">{t('settings.autoDetectLanguage')}</h4>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">{t('settings.autoDetectDesc')}</p>
                       </div>
                       <div className="w-10 h-6 bg-violet-500 rounded-full relative cursor-pointer shadow-inner">
                         <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5 shadow-sm"></div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+
+                    {/* Anonymous Diagnostics */}
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xs">
                       <div>
-                        <h4 className="text-[13px] font-bold text-slate-800">Analytics</h4>
-                        <p className="text-[11px] text-slate-500 mt-0.5">Share anonymous usage data to improve Compose.</p>
+                        <h4 className="text-[13px] font-bold text-slate-800 dark:text-zinc-100">{t('settings.analytics')}</h4>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">{t('settings.analyticsDesc')}</p>
                       </div>
-                      <div className="w-10 h-6 bg-slate-200 rounded-full relative cursor-pointer shadow-inner">
+                      <div className="w-10 h-6 bg-slate-200 dark:bg-zinc-700 rounded-full relative cursor-pointer shadow-inner">
                         <div className="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5 shadow-sm"></div>
                       </div>
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-
-      {/* Gesture visual cues */}
-      {gestureRipples.map(r => (
-        <div
-          key={r.id}
-          className="fixed pointer-events-none z-[99999] rounded-full border border-violet-500/30 bg-violet-500/10 animate-gesture-ripple"
-          style={{
-            left: r.x - 20,
-            top: r.y - 20,
-            width: 40,
-            height: 40,
-          }}
-        />
-      ))}
-
-      {gestureNotification && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[99999] pointer-events-none animate-gesture-pill-in">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/90 backdrop-blur-md text-white text-xs font-semibold shadow-xl border border-white/10">
-            <Sparkles size={14} className="text-violet-400 animate-pulse" />
-            <span>{gestureNotification.label}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Compose Pickers */}
-      <UnifiedMediaModal isOpen={mediaPickerOpen} setOpen={setMediaPickerOpen} anchorEl={document.getElementById('compose-media-btn')} mediaInsertionModal={mediaInsertionModal} setMediaInsertionModal={setMediaInsertionModal} />
-      <EmojiGalleryPicker isOpen={composeEmojiPickerOpen} setOpen={setComposeEmojiPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
-      <SymbolGalleryPicker isOpen={symbolsPickerOpen} setOpen={setSymbolsPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
-      <EquationGalleryPicker isOpen={equationsPickerOpen} setOpen={setEquationsPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
-      <BlockHoverMenu menu={hoveredBlockMenu} setMenu={setHoveredBlockMenu} focusedTableCell={focusedTableCell} setFocusedTableCell={setFocusedTableCell} isTableLocked={isTableLocked} setIsTableLocked={setIsTableLocked} />
-      <TableGridPickerModal isOpen={tableGridModalOpen} setOpen={setTableGridModalOpen} rect={tableGridAnchor} />
-      
-      {/* Root-level Add Source File Popover matching TableGridPickerModal */}
-      {isAddSourceMenuOpen && addSourceAnchorRect && (
-        <>
-          <div
-            className="fixed inset-0 z-[9998]"
-            onPointerDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsAddSourceMenuOpen(false);
-              setIsChooseRegaarderOpen(false);
-            }}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsAddSourceMenuOpen(false);
-              setIsChooseRegaarderOpen(false);
-            }}
-          />
-          <div
-            className="fixed z-[9999] w-64 rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 shadow-[0_12px_40px_rgb(0,0,0,0.14)] backdrop-blur-xl p-1.5 text-xs font-medium select-none animate-in fade-in zoom-in-95 duration-100"
-            style={{
-              top: 12,
-              left: 12
-            }}
-          >
-            <div className="px-2.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-              Add source
-            </div>
-            
-            {/* Option 1: Upload file (Supports Batch Multi-File Upload) */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.multiple = true;
-                input.onchange = (ev) => {
-                  const files = Array.from(ev.target.files || []);
-                  if (files.length > 0) {
-                    files.forEach((file, idx) => {
-                      const ext = file.name.split('.').pop().toLowerCase();
-                      let type = 'text';
-                      if (['xlsx', 'xls', 'csv', 'ods'].includes(ext)) type = 'excel';
-                      else if (['pptx', 'ppt', 'key'].includes(ext)) type = 'powerpoint';
-                      else if (['pdf'].includes(ext)) type = 'pdf';
-                      else if (['doc', 'docx'].includes(ext)) type = 'word';
-                      else if (['txt', 'md', 'json', 'js', 'jsx', 'ts', 'tsx', 'html', 'css', 'csv'].includes(ext)) type = 'text';
-
-                      const isImage = file.type.startsWith('image/') || ['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp'].includes(ext);
-                      const fileObj = {
-                        id: String(Date.now() + idx),
-                        name: file.name,
-                        type,
-                        size: `${Math.round(file.size / 1024)} KB`,
-                        url: isImage ? URL.createObjectURL(file) : null
-                      };
-
-                      if (['txt', 'md', 'json', 'csv', 'js', 'jsx', 'ts', 'tsx', 'html', 'css'].includes(ext)) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                          fileObj.content = e.target.result;
-                          setDocContextMaterials((prev) => [...prev, fileObj]);
-                        };
-                        reader.readAsText(file);
-                      } else {
-                        setDocContextMaterials((prev) => [...prev, fileObj]);
-                      }
-                    });
+              )};
 
                     showToast(files.length === 1 ? `Added ${files[0].name} to AI Context` : `Added ${files.length} files to AI Context`);
                   }
@@ -84641,6 +84507,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
  * so it correctly complies with React Rules of Hooks.
  */
 export default function App() {
+  const { t, uiLanguage, setUiLanguage, aiLanguage, setAiLanguage, supportedLanguages, aiLanguages } = useTranslation();
+
   if (window.location.hash.startsWith('#/popover-window')) {
     return <PopoverWindowContainer />;
   }

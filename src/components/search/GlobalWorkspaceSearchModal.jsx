@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Search, X, ArrowRight, CornerDownLeft, Copy, Check, RefreshCw,
@@ -162,6 +163,7 @@ const SUGGESTED_AI_PROMPTS = [
 ];
 
 export default function GlobalWorkspaceSearchModal({
+
   isOpen,
   onClose,
   initialQuery = '',
@@ -176,6 +178,7 @@ export default function GlobalWorkspaceSearchModal({
 }) {
   const isDeck = productMode === 'deck';
   const [mode, setMode] = useState(isDeck ? (initialMode || 'search') : 'search');
+  const { t } = useTranslation();
   const [query, setQuery] = useState(initialQuery || '');
   const [activeFilter, setActiveFilter] = useState(initialFilter || 'all');
   const [selectedIndex, setSelectedIndex] = useState(0);

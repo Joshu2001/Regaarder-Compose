@@ -1,3 +1,4 @@
+import { I18nProvider } from './i18n';
 import React, { useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
@@ -50,7 +51,7 @@ function RootApp() {
   return (
     <>
       {loading && <SplashScreen durationMs={3000} onFinish={() => setLoading(false)} />}
-      <App />
+      <I18nProvider><App /></I18nProvider>
     </>
   );
 }
