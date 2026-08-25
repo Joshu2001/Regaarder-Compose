@@ -20975,15 +20975,21 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
         setIsDevConsoleOpen(prev => !prev);
       }
     };
-    const handleOrbGlobalShortcut = (e) => {
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'k' || e.key === 'K' || e.key === 'o' || e.key === 'O')) {
-        e.preventDefault();
-        e.stopPropagation();
-        setOrbOpen(prev => !prev);
+    const handleGlobalSearchAndOrbShortcut = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
+        if (e.key === 'k' || e.key === 'K') {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsMemorySearchOpen(prev => !prev);
+        } else if (e.key === 'o' || e.key === 'O') {
+          e.preventDefault();
+          e.stopPropagation();
+          setOrbOpen(prev => !prev);
+        }
       }
     };
     window.addEventListener('keydown', handleDevConsoleShortcut);
-    window.addEventListener('keydown', handleOrbGlobalShortcut, true);
+    window.addEventListener('keydown', handleGlobalSearchAndOrbShortcut, true);
 
     return () => {
       delete window.__composeInsertHTML;
@@ -20998,7 +21004,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       delete window.__REGAARDER_UPDATE_DECK_SLIDE__;
       delete window.__REGAARDER_DELETE_DECK_SLIDE__;
       window.removeEventListener('keydown', handleDevConsoleShortcut);
-      window.removeEventListener('keydown', handleOrbGlobalShortcut, true);
+      window.removeEventListener('keydown', handleGlobalSearchAndOrbShortcut, true);
       if (window.RegaarderAPI) delete window.RegaarderAPI.setCellFillColor;
     };
   }, []);
@@ -47781,7 +47787,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   type="button"
                   onClick={() => {
                     closeTransientMenus();
-                    setOrbOpen(true);
+                    setIsMemorySearchOpen(true);
                   }}
                   className="w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 cursor-pointer"
                   title="Search Workspace (⌘K / Ctrl+K)"
@@ -71640,7 +71646,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   type="button"
                   onClick={() => {
                     closeTransientMenus();
-                    setOrbOpen(true);
+                    setIsMemorySearchOpen(true);
                   }}
                   className="w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 cursor-pointer"
                   title="Search Workspace (⌘K / Ctrl+K)"
