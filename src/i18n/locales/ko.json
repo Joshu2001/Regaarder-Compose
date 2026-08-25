@@ -108,7 +108,20 @@
     "fullscreen": "전체 화면",
     "documentView": "문서 보기",
     "textStyle": "텍스트 스타일",
-    "toggleRightPanel": "우측 패널 전환"
+    "toggleRightPanel": "우측 패널 전환",
+    "contextSources": "컨텍스트 소스:",
+    "addSourceFile": "소스 파일 추가",
+    "noContextSources": "첨부된 컨텍스트 소스 파일이 없습니다",
+    "allContextSources": "모든 컨텍스트 소스",
+    "synthesize": "통합 합성",
+    "aiWorkflows": "AI 워크플로우",
+    "workflowLibrary": "+ 워크플로우 라이브러리",
+    "saveCustom": "+ 커스텀 저장",
+    "findReplace": "찾기 및 바꾸기",
+    "redactSelection": "선택 항목 비식별화",
+    "portrait": "세로 방향",
+    "landscape": "가로 방향",
+    "outline": "개요 탐색"
   },
   "search": {
     "title": "워크스페이스 검색",
@@ -240,7 +253,9 @@
     "draftDesc": "작성 및 편집 중",
     "readyDesc": "완료되어 사용 가능",
     "reviewDesc": "검토 의견 대기 중",
-    "archivedDesc": "보관되어 비활성 상태"
+    "archivedDesc": "보관되어 비활성 상태",
+    "tabToolsReady": "{{tab}} 도구 준비 완료",
+    "toolsReady": "도구 준비 완료"
   },
   "notifications": {
     "title": "알림",
@@ -250,7 +265,9 @@
     "clearAll": "모두 지우기",
     "allCaughtUp": "모든 알림을 확인했습니다",
     "notification": "개 알림",
-    "notifications": "개 알림"
+    "notifications": "개 알림",
+    "markRead": "읽음으로 표시",
+    "dismiss": "지우기"
   },
   "tts": {
     "listenToDraft": "초안 듣기",
@@ -270,5 +287,45 @@
     "googleDocs": "Google Docs 클라우드",
     "pdfDoc": "PDF 문서",
     "markdownDoc": "Markdown 파일"
+  },
+  "share": {
+    "title": "문서 공유",
+    "shareMethod": "공유 방식",
+    "copyLink": "링크 복사",
+    "shareToChat": "채팅으로 공유",
+    "nativeApps": "네이티브 앱",
+    "download": "다운로드",
+    "accessLevel": "액세스 권한",
+    "zeroKnowledge": "영지식 암호화",
+    "viewer": "뷰어",
+    "commenter": "댓글 작성자",
+    "editor": "편집자",
+    "fullAccess": "전체 액세스",
+    "protectedContents": "보호된 콘텐츠",
+    "preview": "미리보기",
+    "noTermsProtected": "🔒 보호 설정된 용어가 없습니다.",
+    "add": "추가",
+    "customWordToRedact": "가릴 단어 입력...",
+    "advancedSecurity": "고급 보안",
+    "passwordProtection": "비밀번호 보호",
+    "expiringAccess": "만료 기간 설정",
+    "password": "비밀번호",
+    "confirm": "비밀번호 확인",
+    "setPassword": "비밀번호 설정",
+    "fileFormat": "파일 형식",
+    "shareLink": "공유 링크",
+    "readyToShare": "공유 준비 완료",
+    "copy": "복사",
+    "shareToApps": "앱으로 공유",
+    "attachToChat": "채팅에 첨부"
+  },
+  "review": {
+    "noReadabilityData": "가독성 분석 데이터 없음",
+    "readabilityDesc": "문서를 분석하여 읽기 난이도 및 문장 흐름을 측정합니다.",
+    "analyzeDoc": "문서 분석",
+    "fleschReadingEase": "가독성 점수",
+    "readingLevel": "권장 독서 수준:",
+    "suggestions": "개선 제안",
+    "reanalyze": "재분석"
   }
 }

@@ -15397,8 +15397,8 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     const footerContent = notifications.length > 0 ? (
       <>
         <span className="text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 tabular-nums">
-          {notifications.length} {notifications.length === 1 ? 'notification' : 'notifications'}
-          {unreadCount > 0 && ` · ${unreadCount} unread`}
+          {notifications.length} {notifications.length === 1 ? (t('notifications.notification') || 'notification') : (t('notifications.notifications') || 'notifications')}
+          {unreadCount > 0 && ` · ${unreadCount} ${t('notifications.unread') || 'unread'}`}
         </span>
         {notifications.length >= 2 && (
           <button
@@ -15486,7 +15486,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                     onPointerDown={(e) => { e.stopPropagation(); setNotifications(prev => prev.map(n => n.id === item.id ? { ...n, unread: false } : n)); }}
                     className="px-2 py-0.5 text-[9.5px] font-medium rounded-md bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white shadow-2xs transition-all"
                   >
-                    Mark read
+                    {t('notifications.markRead') || 'Mark read'}
                   </button>
                 )}
                 <button
@@ -15494,7 +15494,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                   onPointerDown={(e) => { e.stopPropagation(); setNotifications(prev => prev.filter(n => n.id !== item.id)); }}
                   className="px-2 py-0.5 text-[9.5px] font-medium rounded-md bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-400 dark:text-zinc-500 hover:text-rose-500 dark:hover:text-rose-400 shadow-2xs transition-all"
                 >
-                  Dismiss
+                  {t('notifications.dismiss') || 'Dismiss'}
                 </button>
               </div>
             </div>
@@ -71740,11 +71740,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div className="flex flex-col gap-2">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">{t('export.exportAsFile') || 'Export as File'}</span>
                         {[
-                          { format: 'Compose', label: 'Compose Document', desc: '.compose' },
-                          { format: 'Word', label: 'Microsoft Word', desc: '.docx' },
-                          { format: 'Docs', label: 'Google Docs Cloud', desc: 'Cloud Format' },
-                          { format: 'PDF', label: 'PDF Document', desc: '.pdf' },
-                          { format: 'Markdown', label: 'Markdown File', desc: '.md' }
+                          { format: 'Compose', label: t('export.composeDoc') || 'Compose Document', desc: '.compose' },
+                          { format: 'Word', label: t('export.wordDoc') || 'Microsoft Word', desc: '.docx' },
+                          { format: 'Docs', label: t('export.googleDocs') || 'Google Docs Cloud', desc: 'Cloud Format' },
+                          { format: 'PDF', label: t('export.pdfDoc') || 'PDF Document', desc: '.pdf' },
+                          { format: 'Markdown', label: t('export.markdownDoc') || 'Markdown File', desc: '.md' }
                         ].map(f => (
                           <button 
                             key={f.format}
@@ -71861,6 +71861,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </button>
               {shareModalOpen && (
                 <ShareModal
+                  t={t}
                   isOpen={shareModalOpen}
                   onClose={() => setShareModalOpen(false)}
                   shareTargetDocTitle={shareTargetDocTitle}
@@ -73315,7 +73316,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setIsDocumentSubToolbarCollapsed(false);
                     }
                     setDocToolbarTab(tab);
-                    showToast?.(`${tab === 'Context' ? t('toolbar.context') : tab === 'Templates' ? t('toolbar.templates') : tab === 'Write' ? t('toolbar.write') : tab === 'Review' ? t('toolbar.review') : tab === 'View' ? t('toolbar.view') : tab} tools ready`);
+                    showToast?.(t('status.tabToolsReady', { tab: (tab === 'Context' ? t('toolbar.context') : tab === 'Templates' ? t('toolbar.templates') : tab === 'Write' ? t('toolbar.write') : tab === 'Review' ? t('toolbar.review') : tab === 'View' ? t('toolbar.view') : tab) }) || `${tab} ${t('status.toolsReady') || 'tools ready'}`);
                   }}
                   className={`relative px-3.5 py-1 text-[12.5px] font-medium rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.97] cursor-pointer ${
                     docToolbarTab === tab
@@ -73926,7 +73927,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             /* Context Sub-toolbar: Source Material Management for AI */
             <div className="w-full flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0 py-1">
-                <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 shrink-0 select-none">Context Sources:</span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 shrink-0 select-none">{t('toolbar.contextSources') || 'Context Sources:'}</span>
                 <div className="shrink-0">
                   <button
                     type="button"
@@ -73943,7 +73944,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         : 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 border border-violet-200/60 dark:border-violet-800/40'
                     }`}
                   >
-                    <Plus size={13} /> Add Source File <ChevronDown size={11} className={`transition-transform duration-150 ${isAddSourceMenuOpen ? 'rotate-180' : ''}`} />
+                    <Plus size={13} /> {(t('toolbar.addSourceFile') || 'Add Source File')} <ChevronDown size={11} className={`transition-transform duration-150 ${isAddSourceMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
 
@@ -73951,7 +73952,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0">
                   {docContextMaterials.length === 0 ? (
                     <span className="text-xs text-slate-400 dark:text-zinc-500 font-normal italic select-none">
-                      No context source files attached yet
+                      {t('toolbar.noContextSources') || 'No context source files attached yet'}
                     </span>
                   ) : (
                     docContextMaterials.slice(0, 3).map((mat, matIdx) => {
@@ -74035,7 +74036,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           >
                             <div className="flex items-center justify-between px-1.5 pb-1.5 mb-1.5 border-b border-slate-100 dark:border-zinc-800">
                               <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-                                All Context Sources ({docContextMaterials.length})
+                                {t('toolbar.allContextSources') || 'All Context Sources'} ({docContextMaterials.length})
                               </span>
                               <button
                                 type="button"
@@ -74047,7 +74048,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 }}
                                 className="text-[10px] font-semibold text-rose-500 hover:text-rose-600 transition-colors cursor-pointer"
                               >
-                                Clear All
+                                {t('common.clearAll') || 'Clear All'}
                               </button>
                             </div>
                             <div className="space-y-1">
@@ -74112,7 +74113,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <path d="M11.75 6.75V9.25" stroke="#7C3AED" strokeWidth="0.75" strokeLinecap="round" />
                     <path d="M10.5 8H13" stroke="#7C3AED" strokeWidth="0.75" strokeLinecap="round" />
                   </svg>
-                  Synthesize
+                  {t('toolbar.synthesize') || 'Synthesize'}
                 </button>
               </div>
             </div>
@@ -74124,7 +74125,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0 flex-1">
                 {/* Restrained Section Identity Label */}
                 <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider shrink-0 mr-1.5 select-none">
-                  AI WORKFLOWS
+                  {t('toolbar.aiWorkflows') || 'AI WORKFLOWS'}
                 </span>
 
                 {/* Curated High-Priority Startup Preset Chips with Custom Monoline 16px SVG Icons */}
@@ -74158,7 +74159,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   }}
                   className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60 transition-colors cursor-pointer flex items-center gap-1 shrink-0"
                 >
-                  <span>+ Workflow Library</span>
+                  <span>{t('toolbar.workflowLibrary') || '+ Workflow Library'}</span>
                   <span className="text-[10px] bg-purple-200/60 dark:bg-purple-900/80 px-1.5 py-0.2 rounded-md font-bold">25</span>
                 </button>
 
@@ -74171,7 +74172,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   className="px-2 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
                   title="Save current workspace as a custom template"
                 >
-                  + Save Custom
+                  {t('toolbar.saveCustom') || '+ Save Custom'}
                 </button>
               </div>
             </div>
@@ -74211,7 +74212,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       strokeLinecap="round"
                     />
                   </svg>
-                  Proofread
+                  {t('toolbar.proofread') || 'Proofread'}
                 </button>
 
                 {/* ── SECONDARY: Readability ────────────────────────────── */}
@@ -74239,7 +74240,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <circle cx="9.5" cy="9.5" r="2" stroke="currentColor" strokeWidth="1"/>
                       <path d="M11 11l1 1" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
                     </svg>
-                    Readability
+                    {t('toolbar.readability') || 'Readability'}
                   </button>
 
                   {/* ── Readability Popover ─────────────────────────────── */}
@@ -74279,12 +74280,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               
                               {/* Restrained Typography: ~13.5px semibold title */}
                               <div className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 mb-0.5 tracking-tight">
-                                No readability data yet
+                                {t('review.noReadabilityData') || 'No readability data yet'}
                               </div>
                               
                               {/* Concise, readable supporting text (~11.5px) */}
                               <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 leading-snug max-w-[185px] mb-2.5">
-                                Analyze document to compute reading ease, grade level, and writing flow.
+                                {t('review.readabilityDesc') || 'Analyze document to compute reading ease, grade level, and writing flow.'}
                               </p>
 
                               {/* Predominantly neutral/white button with restrained purple accent & matching analysis icon */}
@@ -74300,7 +74301,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   {/* Inspection graph & check mark */}
                                   <path d="M4.5 7.5L6 9L8.8 5.5" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round"/>
                                 </svg>
-                                <span>Analyze Document</span>
+                                <span>{t('review.analyzeDoc') || 'Analyze Document'}</span>
                               </button>
                             </div>
                           ) : (
@@ -74325,9 +74326,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   </svg>
                                 </div>
                                 <div className="readability-popover__score-meta">
-                                  <div className="readability-popover__score-label">Flesch Reading Ease</div>
+                                  <div className="readability-popover__score-label">{t('review.fleschReadingEase') || 'Flesch Reading Ease'}</div>
                                   <div className="readability-popover__score-status">{readabilityAnalysis.status}</div>
-                                  <div className="readability-popover__score-grade">Reading level: {readabilityAnalysis.grade}</div>
+                                  <div className="readability-popover__score-grade">{t('review.readingLevel') || 'Reading level:'} {readabilityAnalysis.grade}</div>
                                 </div>
                               </div>
 
@@ -74336,7 +74337,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                               {/* Suggestions */}
                               <div className="readability-popover__suggestions">
-                                <div className="readability-popover__suggestions-title">Suggestions</div>
+                                <div className="readability-popover__suggestions-title">{t('review.suggestions') || 'Suggestions'}</div>
                                 <ul className="readability-popover__suggestions-list">
                                   {readabilityAnalysis.suggestions.map((sug, i) => (
                                     <li key={i}>{sug}</li>
@@ -74358,7 +74359,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   className="readability-popover__cta !mt-0 !w-auto"
                                   onClick={handleAnalyzeReadability}
                                 >
-                                  <span>Re-analyze</span>
+                                  <span>{t('review.reanalyze') || 'Re-analyze'}</span>
                                   <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
                                     <path d="M2 5.5h7M6 3l3 2.5L6 8" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
                                   </svg>
@@ -74391,7 +74392,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   title="Find, Replace, Go To, Redact (Ctrl+F)"
                 >
                   <Search size={14} />
-                  Find & Replace
+                  {t('toolbar.findReplace') || 'Find & Replace'}
                 </button>
                 {docSearchPanelOpen && renderDocSearchPanel()}
 
@@ -74433,7 +74434,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <circle cx="10" cy="3.5" r="2" fill="currentColor" opacity="0.85"/>
                     <text x="10" y="4.4" textAnchor="middle" fontSize="2.8" fontWeight="700" fill="white" fontFamily="Inter, system-ui">1</text>
                   </svg>
-                  Insert Citation
+                  {t('toolbar.citations') || 'Insert Citation'}
                 </button>
 
                 {/* ── UTILITY: Redact Selection ─────────────────────────── */}
@@ -74464,7 +74465,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <rect x="1.5" y="5" width="10" height="3" rx="0.75" fill="currentColor" opacity="0.8"/>
                     <path d="M2 2.5h6M2 10h4" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
                   </svg>
-                  Redact Selection
+                  {t('toolbar.redactSelection') || 'Redact Selection'}
                 </button>
 
                 {/* ── UTILITY: Version History ──────────────────────────── */}
@@ -74475,7 +74476,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   title="View version history"
                 >
                   <Clock size={14} />
-                  Version History
+                  {t('toolbar.history') || 'Version History'}
                 </button>
 
               </div>
@@ -74496,14 +74497,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     onClick={() => setPageOrientation('portrait')}
                     className={`px-2 py-0.5 text-xs font-medium rounded-md transition-all cursor-pointer ${pageOrientation === 'portrait' ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'}`}
                   >
-                    Portrait
+                    {t('toolbar.portrait') || 'Portrait'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setPageOrientation('landscape')}
                     className={`px-2 py-0.5 text-xs font-medium rounded-md transition-all cursor-pointer ${pageOrientation === 'landscape' ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'}`}
                   >
-                    Landscape
+                    {t('toolbar.landscape') || 'Landscape'}
                   </button>
                 </div>
 
@@ -74576,7 +74577,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onClick={() => setDocOutlineEnabled((prev) => !prev)}
                   className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all shrink-0 cursor-pointer ${docOutlineEnabled ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold border-slate-300 dark:border-zinc-700 shadow-2xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/60'}`}
                 >
-                  Outline: {docOutlineEnabled ? 'On' : 'Off'}
+                  {(t('toolbar.outline') || 'Outline')}: {docOutlineEnabled ? (t('common.on') || 'On') : (t('common.off') || 'Off')}
                 </button>
 
                 {/* Dark Mode Toggle */}

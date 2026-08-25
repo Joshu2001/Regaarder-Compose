@@ -108,7 +108,20 @@
     "fullscreen": "Pantalla completa",
     "documentView": "Vista de documento",
     "textStyle": "Opciones de estilo de texto",
-    "toggleRightPanel": "Alternar panel lateral"
+    "toggleRightPanel": "Alternar panel lateral",
+    "contextSources": "Fuentes de contexto:",
+    "addSourceFile": "Añadir archivo fuente",
+    "noContextSources": "Aún no hay archivos de contexto adjuntos",
+    "allContextSources": "Todas las fuentes",
+    "synthesize": "Sintetizar",
+    "aiWorkflows": "FLUJOS DE TRABAJO IA",
+    "workflowLibrary": "+ Biblioteca de flujos",
+    "saveCustom": "+ Guardar personalizada",
+    "findReplace": "Buscar y reemplazar",
+    "redactSelection": "Ocultar selección",
+    "portrait": "Vertical",
+    "landscape": "Horizontal",
+    "outline": "Esquema"
   },
   "search": {
     "title": "Buscar en el espacio",
@@ -240,7 +253,9 @@
     "draftDesc": "En redacción activa",
     "readyDesc": "Completado y listo para usar",
     "reviewDesc": "Esperando comentarios",
-    "archivedDesc": "Almacenado e inactivo"
+    "archivedDesc": "Almacenado e inactivo",
+    "tabToolsReady": "Herramientas de {{tab}} listas",
+    "toolsReady": "herramientas listas"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -250,7 +265,9 @@
     "clearAll": "Borrar todas",
     "allCaughtUp": "Estás al día con tus notificaciones",
     "notification": "notificación",
-    "notifications": "notificaciones"
+    "notifications": "notificaciones",
+    "markRead": "Marcar como leído",
+    "dismiss": "Descartar"
   },
   "tts": {
     "listenToDraft": "Escuchar borrador",
@@ -270,5 +287,45 @@
     "googleDocs": "Google Docs Cloud",
     "pdfDoc": "Documento PDF",
     "markdownDoc": "Archivo Markdown"
+  },
+  "share": {
+    "title": "Compartir documento",
+    "shareMethod": "MÉTODO DE COMPARTIR",
+    "copyLink": "Copiar enlace",
+    "shareToChat": "Compartir en chat",
+    "nativeApps": "Aplicaciones",
+    "download": "Descargar",
+    "accessLevel": "NIVEL DE ACCESO",
+    "zeroKnowledge": "Conocimiento Cero",
+    "viewer": "Lector",
+    "commenter": "Comentador",
+    "editor": "Editor",
+    "fullAccess": "Acceso completo",
+    "protectedContents": "Contenidos protegidos",
+    "preview": "Vista previa",
+    "noTermsProtected": "🔒 No hay términos protegidos aún.",
+    "add": "Añadir",
+    "customWordToRedact": "Palabra a ocultar...",
+    "advancedSecurity": "SEGURIDAD AVANZADA",
+    "passwordProtection": "Protección por contraseña",
+    "expiringAccess": "Acceso con expiración",
+    "password": "Contraseña",
+    "confirm": "Confirmar",
+    "setPassword": "Guardar contraseña",
+    "fileFormat": "FORMATO DE ARCHIVO",
+    "shareLink": "ENLACE DE COMPARTIR",
+    "readyToShare": "Listo para compartir",
+    "copy": "Copiar",
+    "shareToApps": "Compartir en Apps",
+    "attachToChat": "Adjuntar a Chat"
+  },
+  "review": {
+    "noReadabilityData": "Sin datos de legibilidad aún",
+    "readabilityDesc": "Analiza el documento para calcular la facilidad de lectura y fluidez.",
+    "analyzeDoc": "Analizar documento",
+    "fleschReadingEase": "Facilidad de lectura",
+    "readingLevel": "Nivel de lectura:",
+    "suggestions": "Sugerencias",
+    "reanalyze": "Re-analizar"
   }
 }
