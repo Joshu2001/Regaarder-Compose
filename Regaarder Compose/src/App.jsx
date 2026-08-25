@@ -7172,6 +7172,7 @@ function AppCore() {
 
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
   const [orbOpen, setOrbOpen] = useState(false);
+  const [isMemorySearchOpen, setIsMemorySearchOpen] = useState(false);
   const [orbInitialQuery, setOrbInitialQuery] = useState('');
   const [orbInitialMode, setOrbInitialMode] = useState('search');
   const [sheetGrids, setSheetGrids] = useState(() => {
@@ -31379,6 +31380,8 @@ Answer the user's question, provide an insightful summary, or explain the contex
   const handleMiniSidebarClick = (tabKey) => {
     setWorkspaceLauncherOpen(false);
     if (tabKey === 'orb') {
+      setOrbInitialMode('search');
+      setOrbInitialQuery('');
       setOrbOpen(true);
       return;
     }
@@ -33003,7 +33006,7 @@ Respond with valid JSON formatted like this:
       setIsDocumentImmersive(true);
       setOrbInitialMode('search');
       setOrbInitialQuery('');
-      setOrbOpen(true);
+      setIsMemorySearchOpen(true);
       return;
     }
 
@@ -69679,101 +69682,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* Global Workspace Switcher Popover */}
       {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
 
-      {/* Global Workspace Search Spotlight Modal */}
-      <GlobalWorkspaceSearchModal
-        isOpen={orbOpen}
-        onClose={() => setOrbOpen(false)}
-        initialQuery={orbInitialQuery}
-        isDarkMode={isDarkMode}
-        productMode={productMode}
-        onCallAi={callGemini}
-        liveWorkspaceContext={{
-          documents,
-          activeDocId,
-          docTitle,
-          docSubtitle,
-          docBodyHtml,
-          sheetsTitle,
-          sheetGrids,
-          activeSheetId,
-          deckTitle,
-          deckSlidesData,
-          activeDeckSlideId,
-          tasks: initiatives,
-          scheduleAgendaItems,
-          whiteboardWidgets,
-          whiteboardShapes
-        }}
-        onNavigateToEntity={(entity) => {
-          if (!entity) return;
-          const ws = (entity.workspace || '').toLowerCase();
-          if (ws === 'compose') {
-            if (productMode !== 'compose') setProductMode('compose');
-            if (entity.metadata?.docId) {
-              const targetDoc = documents.find(d => d.id === entity.metadata.docId);
-              if (targetDoc) {
-                setActiveDocId(targetDoc.id);
-                setDocTitle(targetDoc.title || '');
-                setDocSubtitle(targetDoc.subtitle || '');
-                setDocBodyHtml(targetDoc.bodyHtml || '');
-              }
-            }
-            showToast(`Navigated to Document: ${entity.title}`);
-          } else if (ws === 'sheets') {
-            if (productMode !== 'sheets') setProductMode('sheets');
-            showToast(`Navigated to Sheets: ${entity.title}`);
-          } else if (ws === 'deck') {
-            if (productMode !== 'deck') setProductMode('deck');
-            if (entity.metadata?.slideNumber) {
-              setActiveDeckSlideId(entity.metadata.slideNumber);
-            }
-            showToast(`Navigated to Presentation: ${entity.title}`);
-          } else if (ws === 'room') {
-            if (productMode !== 'room') setProductMode('room');
-            showToast(`Navigated to Room: ${entity.title}`);
-          } else if (ws === 'tasks') {
-            handleMiniSidebarClick('tasks');
-            showToast(`Navigated to Tasks: ${entity.title}`);
-          } else if (ws === 'schedule') {
-            handleMiniSidebarClick('calendar');
-            showToast(`Navigated to Schedule: ${entity.title}`);
-          } else if (ws === 'browser') {
-            if (productMode !== 'browser') setProductMode('browser');
-            showToast(`Navigated to Research: ${entity.title}`);
-          } else if (ws === 'people') {
-            showToast(`Team Member: ${entity.title} (${entity.role || entity.department})`);
-          } else {
-            showToast(`Opened: ${entity.title}`);
-          }
-        }}
-        onQuickAction={(action) => {
-          if (!action) return;
-          const ws = action.targetWorkspace;
-          if (ws === 'compose') {
-            setProductMode('compose');
-            if (action.actionType === 'new_doc') {
-              handleCreateNewDocument();
-            }
-          } else if (ws === 'sheets') {
-            setProductMode('sheets');
-            showToast('Created new spreadsheet');
-          } else if (ws === 'deck') {
-            setProductMode('deck');
-            showToast('Created new presentation');
-          } else if (ws === 'room') {
-            setProductMode('room');
-            showToast('Starting meeting room');
-          } else if (ws === 'browser') {
-            setProductMode('browser');
-            showToast('Opened web research');
-          } else if (ws === 'tasks') {
-            handleMiniSidebarClick('tasks');
-            showToast('Opened tasks');
-          }
-        }}
-      />
-
-
       </div>
     );
   }
@@ -84292,10 +84200,80 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onClose={() => setIsDevConsoleOpen(false)}
       />
 
-      {/* ── Layer 6.5: Global Workspace Search Spotlight Modal ─────────────── */}
-      <GlobalWorkspaceSearchModal
+      {/* ── Layer 6.5: Orb Cross-Workspace Intelligence Layer ─────────────── */}
+      <OrbSpotlightModal
         isOpen={orbOpen}
         onClose={() => setOrbOpen(false)}
+        initialQuery={orbInitialQuery}
+        initialMode={orbInitialMode}
+        onCallAi={callGemini}
+        aiProviderConfig={aiProviderConfig}
+        liveWorkspaceContext={{
+          documents,
+          activeDocId,
+          docTitle,
+          docBodyHtml,
+          docSubtitle,
+          sheetsTitle,
+          sheetGrids,
+          activeSheetId,
+          deckTitle,
+          deckSlidesData,
+          activeDeckSlideId,
+          tasks: initiatives,
+          scheduleAgendaItems,
+          whiteboardWidgets,
+          whiteboardShapes
+        }}
+        onNavigateToEntity={(entity) => {
+          if (!entity) return;
+          const ws = (entity.workspace || '').toLowerCase();
+          if (ws === 'compose') {
+            if (productMode !== 'compose') setProductMode('compose');
+            if (entity.metadata?.docId) {
+              const targetDoc = documents.find(d => d.id === entity.metadata.docId);
+              if (targetDoc) {
+                setActiveDocId(targetDoc.id);
+                setDocTitle(targetDoc.title || '');
+                setDocSubtitle(targetDoc.subtitle || '');
+                setDocBodyHtml(targetDoc.bodyHtml || '');
+              }
+            }
+            showToast(`Navigated to Document: ${entity.title}`);
+          } else if (ws === 'sheets') {
+            if (productMode !== 'sheets') setProductMode('sheets');
+            showToast(`Navigated to Sheets Model: ${entity.title}`);
+          } else if (ws === 'deck') {
+            if (productMode !== 'deck') setProductMode('deck');
+            if (entity.metadata?.slideNumber) {
+              setActiveDeckSlideId(entity.metadata.slideNumber);
+            }
+            showToast(`Navigated to Deck: ${entity.title}`);
+          } else if (ws === 'room') {
+            if (productMode !== 'room') setProductMode('room');
+            showToast(`Navigated to Meeting: ${entity.title}`);
+          } else if (ws === 'tasks') {
+            handleMiniSidebarClick('tasks');
+            showToast(`Navigated to Tasks: ${entity.title}`);
+          } else if (ws === 'schedule') {
+            handleMiniSidebarClick('calendar');
+            showToast(`Navigated to Schedule: ${entity.title}`);
+          } else if (ws === 'browser') {
+            if (productMode !== 'browser') setProductMode('browser');
+            showToast(`Navigated to Research: ${entity.title}`);
+          } else {
+            showToast(`Opened: ${entity.title}`);
+          }
+        }}
+        onAddTask={(act) => {
+          showToast(`Added action to Tasks: ${act.title}`);
+        }}
+      />
+
+      {/* ── Layer 6.6: Global Workspace Search Modal (Memory Spotlight) ─────────────── */}
+      <GlobalWorkspaceSearchModal
+        isOpen={isMemorySearchOpen}
+        onClose={() => setIsMemorySearchOpen(false)}
         initialQuery={orbInitialQuery}
         isDarkMode={isDarkMode}
         productMode={productMode}
@@ -84374,14 +84352,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
             setProductMode('deck');
             showToast('Created new presentation');
           } else if (ws === 'room') {
-            setProductMode('room');
-            showToast('Starting meeting room');
+            createRoomExperience();
           } else if (ws === 'browser') {
             setProductMode('browser');
-            showToast('Opened web research');
+            showToast('Opened Web Research');
           } else if (ws === 'tasks') {
             handleMiniSidebarClick('tasks');
-            showToast('Opened tasks');
           }
         }}
       />
