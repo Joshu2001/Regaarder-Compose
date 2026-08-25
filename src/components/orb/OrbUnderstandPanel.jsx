@@ -91,9 +91,9 @@ export default function OrbUnderstandPanel({
           highContrast ? 'border-slate-300 dark:border-zinc-700' : 'border-black/[0.04] dark:border-zinc-800/60'
         }`}>
           <div className={`flex items-center gap-2 text-xs uppercase tracking-wider ${
-            highContrast ? 'font-black text-black dark:text-white' : 'font-bold text-slate-800 dark:text-zinc-200'
+            highContrast ? 'font-black text-black dark:text-white' : 'font-bold text-slate-900 dark:text-zinc-100'
           }`}>
-            <Layers size={14} className="text-slate-700 dark:text-zinc-300" />
+            <Layers size={14} className="text-[#7C5ACF] dark:text-[#a78bfa]" />
             <span>Semantic Linkages</span>
           </div>
           <p className={`text-[11px] mt-1 ${
@@ -106,9 +106,9 @@ export default function OrbUnderstandPanel({
         <div className="flex-1 overflow-y-auto p-3 space-y-2 thin-scrollbar">
           {edges.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-6 text-center text-slate-400 dark:text-zinc-500 h-full min-h-[220px]">
-              <Layers size={24} className="mb-2 opacity-40 text-slate-400" />
-              <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300">No Semantic Linkages</span>
-              <span className="text-[11px] mt-1 text-slate-500 max-w-[200px] leading-relaxed">
+              <Layers size={22} className="mb-2 opacity-40 text-slate-400" />
+              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">No Semantic Linkages</span>
+              <span className="text-[11px] mt-1 text-slate-500 dark:text-zinc-400 max-w-[200px] leading-relaxed">
                 Linkages and evidence will appear as workspace artifacts reference each other.
               </span>
             </div>
@@ -128,7 +128,7 @@ export default function OrbUnderstandPanel({
                   key={edge.id}
                   type="button"
                   onClick={() => onSelectEdge(edge)}
-                  className={`w-full text-left p-3.5 rounded-2xl transition-all duration-150 cursor-pointer ${
+                  className={`w-full text-left p-3 rounded-xl transition-all duration-150 cursor-pointer ${
                     isSelected
                       ? highContrast
                         ? 'border-2 border-slate-900 dark:border-white bg-white dark:bg-zinc-800 shadow-sm'
@@ -155,19 +155,19 @@ export default function OrbUnderstandPanel({
                   </div>
 
                   <div className={`text-xs line-clamp-2 mb-1.5 leading-snug ${
-                    highContrast ? 'font-black text-black dark:text-white' : isSelected ? 'font-semibold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-700 dark:text-zinc-300'
+                    highContrast ? 'font-black text-black dark:text-white' : isSelected ? 'font-semibold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-800 dark:text-zinc-200'
                   }`}>
                     {edge.label || edge.relationType}
                   </div>
 
                   <div className={`flex items-center gap-1 text-[11px] truncate ${
-                    highContrast ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-400 dark:text-zinc-500'
+                    highContrast ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-500 dark:text-zinc-400'
                   }`}>
-                    <span className={`truncate max-w-[90px] ${highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-600 dark:text-zinc-400'}`}>
+                    <span className={`truncate max-w-[90px] ${highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-semibold text-slate-700 dark:text-zinc-300'}`}>
                       {src?.title || 'Source'}
                     </span>
                     <ArrowRight size={11} className="shrink-0 text-slate-400" />
-                    <span className={`truncate max-w-[90px] ${highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-600 dark:text-zinc-400'}`}>
+                    <span className={`truncate max-w-[90px] ${highContrast ? 'font-bold text-slate-900 dark:text-white' : 'font-semibold text-slate-700 dark:text-zinc-300'}`}>
                       {tgt?.title || 'Target'}
                     </span>
                   </div>
@@ -181,13 +181,13 @@ export default function OrbUnderstandPanel({
       {/* ── Right Panel: Deep Relationship Inspector & Evidence View ── */}
       <div className="flex-1 overflow-y-auto p-8 thin-scrollbar flex flex-col justify-center">
         {!activeEdge ? (
-          <div className={`max-w-md mx-auto p-8 rounded-[24px] text-center flex flex-col items-center ${
+          <div className={`max-w-md mx-auto p-8 rounded-2xl text-center flex flex-col items-center ${
             highContrast
               ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600'
-              : 'bg-white dark:bg-zinc-900 shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-slate-200/60 dark:border-zinc-800/80'
+              : 'bg-white dark:bg-zinc-900/90 shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-slate-200/50 dark:border-zinc-800/60'
           }`}>
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-violet-50 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] mb-3.5 border border-violet-100 dark:border-violet-900/60">
-              <Layers size={22} strokeWidth={1.8} />
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-violet-50 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] mb-3.5 border border-violet-100 dark:border-violet-900/60 shadow-2xs">
+              <Layers size={20} strokeWidth={1.6} />
             </div>
             <h4 className={`text-base font-semibold mb-1.5 ${
               highContrast ? 'text-black dark:text-white font-extrabold' : 'text-slate-900 dark:text-zinc-100'

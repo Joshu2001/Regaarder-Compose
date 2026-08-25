@@ -387,12 +387,12 @@ export default function OrbSpotlightModal({
           )}
         </div>
 
-        {/* ── Bottom Status Bar: Minimal & Subdued ── */}
-        <div className="flex items-center justify-between px-6 py-2 border-t border-black/[0.04] dark:border-white/[0.04] text-[11px] text-slate-400/80 dark:text-zinc-500/80 bg-slate-50/40 dark:bg-zinc-900/20 shrink-0">
+        {/* ── Bottom Status Bar: Minimal & Readable ── */}
+        <div className="flex items-center justify-between px-6 py-2.5 border-t border-black/[0.04] dark:border-white/[0.05] text-xs text-slate-500 dark:text-zinc-400 bg-slate-50/50 dark:bg-zinc-900/30 shrink-0">
           <div className="flex items-center gap-2.5">
             <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80"></span>
-              <span className="font-medium text-slate-500 dark:text-zinc-400">Orb Active</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span className="font-semibold text-slate-700 dark:text-zinc-300">Orb Active</span>
             </span>
             <span>•</span>
             <span>{allEntities.length} entities</span>
@@ -400,26 +400,26 @@ export default function OrbSpotlightModal({
             <span>{allEdges.length} relationships</span>
           </div>
 
-          <div className="flex items-center gap-3 font-mono text-[10px]">
+          <div className="flex items-center gap-3 font-mono text-[11px]">
             {activeMode === 'search' && searchResults.results.length > 0 && (
               <>
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500">↑↓</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-black/[0.05] dark:bg-white/[0.08] text-slate-600 dark:text-zinc-300 font-semibold border border-black/[0.04] dark:border-white/[0.06]">↑↓</kbd>
                   <span>Navigate</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500">↵</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-black/[0.05] dark:bg-white/[0.08] text-slate-600 dark:text-zinc-300 font-semibold border border-black/[0.04] dark:border-white/[0.06]">↵</kbd>
                   <span>Open</span>
                 </span>
                 <span>•</span>
               </>
             )}
             <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500">⌘1-4</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-black/[0.05] dark:bg-white/[0.08] text-slate-600 dark:text-zinc-300 font-semibold border border-black/[0.04] dark:border-white/[0.06]">⌘1-4</kbd>
               <span>Modes</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500">Esc</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-black/[0.05] dark:bg-white/[0.08] text-slate-600 dark:text-zinc-300 font-semibold border border-black/[0.04] dark:border-white/[0.06]">Esc</kbd>
               <span>Close</span>
             </span>
           </div>

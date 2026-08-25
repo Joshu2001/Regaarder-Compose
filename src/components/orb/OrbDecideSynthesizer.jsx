@@ -337,7 +337,7 @@ export default function OrbDecideSynthesizer({
                 <span className="font-semibold text-[10.5px] uppercase tracking-wider text-[#7C5ACF] dark:text-[#a78bfa] shrink-0">
                   Replying to Selection:
                 </span>
-                <span className="truncate italic text-[11.5px] text-slate-700 dark:text-zinc-300">
+                <span className="truncate text-[11.5px] text-slate-700 dark:text-zinc-300 font-normal">
                   "{activeQuoteContext}"
                 </span>
               </div>
@@ -501,7 +501,7 @@ export default function OrbDecideSynthesizer({
 
         {/* Quick Sample Prompts: Multi-line Wrapping to Prevent Truncation */}
         <div className="flex flex-wrap items-center gap-1.5 mt-2.5 max-w-4xl mx-auto">
-          <span className="text-[10.5px] uppercase tracking-wider font-semibold text-slate-400 dark:text-zinc-500 shrink-0 mr-1">
+          <span className="text-[10.5px] uppercase tracking-wider font-semibold text-slate-500 dark:text-zinc-400 shrink-0 mr-1">
             Inquiries:
           </span>
           {liveInquiries.map((prompt, idx) => (
@@ -512,7 +512,7 @@ export default function OrbDecideSynthesizer({
                 setQuestion(prompt);
                 triggerSynthesize(prompt);
               }}
-              className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100/80 dark:bg-zinc-800/60 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-zinc-700/70 text-left transition-colors cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100/90 dark:bg-zinc-800/70 text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-zinc-700/80 text-left transition-colors cursor-pointer"
             >
               {prompt}
             </button>
