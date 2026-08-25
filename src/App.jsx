@@ -58,6 +58,7 @@ import ComposeAIStudio from './compose-ai/ComposeAIStudio';
 import HelpSupportPanel from './components/HelpSupportPanel';
 import GlobalWorkspaceSearchModal from './components/search/GlobalWorkspaceSearchModal';
 import OrbSpotlightModal from './components/orb/OrbSpotlightModal';
+import MemoryDashboard from './MemoryDashboard';
 import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWorkspaceRAG';
 import { transcribeAudioBlobLocally, cleanAndSanitizeTranscription } from './services/localWhisperService';
 
@@ -7172,6 +7173,7 @@ function AppCore() {
 
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
   const [orbOpen, setOrbOpen] = useState(false);
+  const [isMemoryOpen, setIsMemoryOpen] = useState(false);
   const [isMemorySearchOpen, setIsMemorySearchOpen] = useState(false);
   const [orbInitialQuery, setOrbInitialQuery] = useState('');
   const [orbInitialMode, setOrbInitialMode] = useState('search');
@@ -43128,6 +43130,17 @@ Respond with a JSON array of slide objects matching the schema.`;
           )}
 
 
+          {activeRightTab === 'memory' && (
+            <div className="flex-1 min-h-0 animate-fade-in flex flex-col bg-transparent overflow-hidden">
+              <MemoryDashboard 
+                onClose={() => setRightSidebarOpen(false)}
+                onNavigateToEntity={(entity) => {
+                  setRightSidebarOpen(false);
+                }}
+              />
+            </div>
+          )}
+
           {activeRightTab === 'orb' && (
             <div className="flex-1 min-h-0 animate-fade-in flex flex-col bg-white">
               <div className="flex-1 overflow-y-auto thin-scrollbar">
@@ -48346,7 +48359,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button className="w-full flex items-center justify-between px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><div className="flex items-center gap-3"><Inbox size={16} /> Inbox</div><span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full font-medium">12</span></button>
                         <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Star size={16} /> Starred</button>
                         <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Users size={16} /> Shared</button>
-                        <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><MemoryIcon size={16} /> Memory</button>
+                        <button onClick={() => setIsMemoryOpen(true)} className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"><MemoryIcon size={16} /> Memory</button>
                         <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors mb-4"><Trash size={16} /> Trash</button>
             
                         <div className="flex items-center justify-between px-2 py-2 mt-4">
@@ -84275,6 +84288,30 @@ if (productMode === 'deck' || productMode === 'sheets') {
           showToast(`Added action to Tasks: ${act.title}`);
         }}
       />
+
+      {/* ── Layer 6.7: Contextual Memory Intelligence Layer Modal ─────────────── */}
+      {isMemoryOpen && (
+        <div 
+          className="fixed inset-0 z-[999998] flex items-center justify-center p-3 sm:p-6 md:p-8 animate-in fade-in duration-150"
+          style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
+        >
+          {/* Translucent Backdrop Overlay (28px blur) */}
+          <div 
+            className="absolute inset-0 bg-slate-900/35 dark:bg-black/55 backdrop-blur-[28px] transition-opacity"
+            onClick={() => setIsMemoryOpen(false)}
+          />
+
+          {/* Main Memory Intelligence Container */}
+          <div className="relative w-[96vw] max-w-7xl h-[90vh] max-h-[880px] z-10 flex flex-col">
+            <MemoryDashboard 
+              onClose={() => setIsMemoryOpen(false)}
+              onNavigateToEntity={(entity) => {
+                setIsMemoryOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── Layer 6.6: Global Workspace Search Modal (Memory Spotlight) ─────────────── */}
       <GlobalWorkspaceSearchModal
