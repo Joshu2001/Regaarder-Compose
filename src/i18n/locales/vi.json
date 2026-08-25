@@ -36,7 +36,11 @@
     "rename": "Đổi tên",
     "duplicate": "Tạo bản sao",
     "pin": "Ghim",
-    "unpin": "Bỏ ghim"
+    "unpin": "Bỏ ghim",
+    "on": "Bật",
+    "off": "Tắt",
+    "mode": "Chế độ",
+    "chars": "ký tự"
   },
   "nav": {
     "docs": "Tài liệu",
@@ -121,7 +125,15 @@
     "redactSelection": "Ẩn vùng chọn",
     "portrait": "Khổ dọc",
     "landscape": "Khổ ngang",
-    "outline": "Dàn ý tài liệu"
+    "outline": "Dàn ý tài liệu",
+    "marginsNormal": "Lề chuẩn (1.0 inch)",
+    "marginsNarrow": "Lề hẹp (0.5 inch)",
+    "marginsWide": "Lề rộng (1.5 inch)",
+    "pageSizeLetter": "Letter (8.5 x 11 inch)",
+    "pageSizeA4": "A4 (210 x 297 mm)",
+    "pageSizeLegal": "Legal (8.5 x 14 inch)",
+    "watermark": "Hình mờ bảo vệ",
+    "editReplay": "Mở xem lại chỉnh sửa"
   },
   "search": {
     "title": "Tìm kiếm không gian làm việc",
@@ -327,5 +339,45 @@
     "readingLevel": "Mức độ đọc hiểu:",
     "suggestions": "Gợi ý cải thiện",
     "reanalyze": "Phân tích lại"
+  },
+  "templates": {
+    "wf-meeting-notes": "Biên bản cuộc họp",
+    "wf-project-plan": "Kế hoạch dự án",
+    "wf-financial-model": "Mô hình tài chính",
+    "wf-budget": "Ngân sách",
+    "wf-runway-burn": "Thời gian hoạt động & Mức chi tiêu",
+    "wf-business-plan": "Kế hoạch kinh doanh",
+    "wf-gtm-plan": "Kế hoạch Go-to-Market",
+    "meetingnotes": "Biên bản cuộc họp",
+    "projectplan": "Kế hoạch dự án",
+    "financialmodel": "Mô hình tài chính",
+    "budget": "Ngân sách",
+    "runwayburn": "Thời gian hoạt động & Mức chi tiêu",
+    "businessplan": "Kế hoạch kinh doanh",
+    "gtmplan": "Kế hoạch Go-to-Market"
+  },
+  "replay": {
+    "title": "Xem lại chỉnh sửa",
+    "stepOf": "Bước {{current}} trên {{total}}",
+    "noHistory": "Chưa có lịch sử chỉnh sửa",
+    "speed": "Tốc độ",
+    "linking": "Đang tạo liên kết..."
+  },
+  "workspaceDesc": {
+    "orb": "Lớp trí tuệ nhân tạo hợp nhất",
+    "compose": "Trình soạn thảo văn bản AI",
+    "sheets": "Bảng tính & Phân tích dữ liệu",
+    "deck": "Trình chiếu & Bản thuyết trình",
+    "whiteboard": "Bảng trắng trực quan",
+    "room": "Họp video nhóm",
+    "browser": "Trình duyệt tri thức AI"
+  },
+  "orb": {
+    "title": "Lớp trí tuệ",
+    "search": "Tìm kiếm trí tuệ",
+    "map": "Bản đồ tri thức",
+    "understand": "Thấu hiểu ngữ cảnh",
+    "decide": "Hỗ trợ quyết định",
+    "searchPlaceholder": "Hỏi Orb hoặc tìm kiếm trong không gian làm việc..."
   }
 }

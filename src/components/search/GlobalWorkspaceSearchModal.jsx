@@ -457,7 +457,7 @@ export default function GlobalWorkspaceSearchModal({
                   }`}
                 >
                   <Icon size={13} strokeWidth={1.7} className={isActive ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'} />
-                  <span>{tab.label}</span>
+                  <span>{tab.id === 'all' ? (t('common.all') || tab.label) : (t('nav.' + tab.id) || tab.label)}</span>
                 </button>
               );
             })}
@@ -466,7 +466,7 @@ export default function GlobalWorkspaceSearchModal({
           {/* Result Count */}
           {mode === 'search' && query.trim() && searchResults.length > 0 && (
             <div className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 pl-3 shrink-0 whitespace-nowrap">
-              {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
+              {searchResults.length} {searchResults.length === 1 ? (t('common.item') || 'result') : (t('common.items') || 'results')}
             </div>
           )}
 

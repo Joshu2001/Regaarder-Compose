@@ -36,7 +36,11 @@
     "rename": "Ganti Nama",
     "duplicate": "Duplikat",
     "pin": "Sematkan",
-    "unpin": "Lepas Sematan"
+    "unpin": "Lepas Sematan",
+    "on": "Aktif",
+    "off": "Nonaktif",
+    "mode": "Mode",
+    "chars": "karakter"
   },
   "nav": {
     "docs": "Dokumen",
@@ -121,7 +125,15 @@
     "redactSelection": "Sensor Pilihan",
     "portrait": "Potret",
     "landscape": "Lanskap",
-    "outline": "Kerangka Dokumen"
+    "outline": "Kerangka Dokumen",
+    "marginsNormal": "Margin Normal (1.0 in)",
+    "marginsNarrow": "Margin Sempit (0.5 in)",
+    "marginsWide": "Margin Lebar (1.5 in)",
+    "pageSizeLetter": "Letter (8.5 x 11 in)",
+    "pageSizeA4": "A4 (210 x 297 mm)",
+    "pageSizeLegal": "Legal (8.5 x 14 in)",
+    "watermark": "Tanda Air",
+    "editReplay": "Buka putar ulang editan"
   },
   "search": {
     "title": "Pencarian Ruang Kerja",
@@ -327,5 +339,45 @@
     "readingLevel": "Tingkat pembaca:",
     "suggestions": "Saran Perbaikan",
     "reanalyze": "Analisis Ulang"
+  },
+  "templates": {
+    "wf-meeting-notes": "Catatan Rapat",
+    "wf-project-plan": "Rencana Proyek",
+    "wf-financial-model": "Model Keuangan",
+    "wf-budget": "Anggaran",
+    "wf-runway-burn": "Runway & Burn Rate",
+    "wf-business-plan": "Rencana Bisnis",
+    "wf-gtm-plan": "Rencana Go-to-Market",
+    "meetingnotes": "Catatan Rapat",
+    "projectplan": "Rencana Proyek",
+    "financialmodel": "Model Keuangan",
+    "budget": "Anggaran",
+    "runwayburn": "Runway & Burn Rate",
+    "businessplan": "Rencana Bisnis",
+    "gtmplan": "Rencana Go-to-Market"
+  },
+  "replay": {
+    "title": "Putar Ulang Editan",
+    "stepOf": "Langkah {{current}} dari {{total}}",
+    "noHistory": "Belum ada riwayat editan",
+    "speed": "Kecepatan",
+    "linking": "Membuat tautan..."
+  },
+  "workspaceDesc": {
+    "orb": "Lapisan Intelijen Terpadu",
+    "compose": "Editor Dokumen AI",
+    "sheets": "Spreadsheet & Analisis Data",
+    "deck": "Slide & Presentasi",
+    "whiteboard": "Kanvas Visual & Diagram",
+    "room": "Video Rapat Tim",
+    "browser": "Peramban Pengetahuan AI"
+  },
+  "orb": {
+    "title": "Lapisan Intelijen",
+    "search": "Pencarian Intelijen",
+    "map": "Peta Pengetahuan",
+    "understand": "Pahami",
+    "decide": "Putuskan",
+    "searchPlaceholder": "Tanyakan apa saja ke Orb atau cari di ruang kerja..."
   }
 }
