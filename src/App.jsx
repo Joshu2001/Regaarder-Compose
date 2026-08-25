@@ -7171,6 +7171,7 @@ function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, grid
 }
 
 function AppCore() {
+  const { t, uiLanguage, setUiLanguage, aiLanguage, setAiLanguage, supportedLanguages, aiLanguages } = useTranslation();
 
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
   const [orbOpen, setOrbOpen] = useState(false);
