@@ -40,7 +40,12 @@
     "on": "Activé",
     "off": "Désactivé",
     "mode": "Mode",
-    "chars": "caractères"
+    "chars": "caractères",
+    "terms": "Conditions d'utilisation",
+    "privacy": "Politique de confidentialité",
+    "legal": "Mentions légales",
+    "updated": "Mis à jour",
+    "version": "Version"
   },
   "nav": {
     "docs": "Docs",
@@ -369,7 +374,8 @@
     "stepOf": "Étape {{current}} sur {{total}}",
     "noHistory": "Aucun historique d'édition",
     "speed": "Vitesse",
-    "linking": "Lien..."
+    "linking": "Lien...",
+    "genesis": "genèse"
   },
   "workspaceDesc": {
     "orb": "Couche d'intelligence unifiée",
@@ -510,7 +516,13 @@
     "askAboutSelection": "Posez une question sur cette sélection...",
     "noResultsFor": "Aucun résultat pour \"{{query}}\"",
     "noMatchingFound": "Aucun document ou tâche correspondante trouvée.",
-    "createWorkspace": "Créer {{name}}"
+    "createWorkspace": "Créer {{name}}",
+    "decidePlaceholder": "Posez une question stratégique ou évaluez une décision...",
+    "inquiries": "Questions suggérées :",
+    "strategicReasoning": "Système de raisonnement stratégique",
+    "strategicReasoningDesc": "Réponses directes en prose, réconciliation des contradictions, analyse des hypothèses et conclusions opérationnelles.",
+    "inquiryContradictions": "Quelles contradictions existent entre les mémos stratégiques et les feuilles de calcul ?",
+    "inquiryGrowth": "Testez notre stratégie de croissance et évaluez les hypothèses de conversion"
   },
   "quickActions": {
     "title": "ACTIONS RAPIDES",
@@ -541,5 +553,17 @@
     "guestMode": "Mode invité",
     "guestModeDesc": "Connectez-vous pour synchroniser votre travail et accéder aux outils IA.",
     "signIn": "Se connecter"
+  },
+  "landing": {
+    "headline": "Un espace de travail unique pour tous vos besoins bureautiques.",
+    "subheadline": "Choisissez un produit pour commencer à créer.",
+    "compose": "Docs",
+    "deck": "Deck",
+    "sheet": "Sheet",
+    "room": "Room",
+    "whiteboard": "Whiteboard",
+    "schedule": "Schedule",
+    "memory": "Memory",
+    "tasks": "Tasks"
   }
 }

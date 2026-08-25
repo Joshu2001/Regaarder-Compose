@@ -40,7 +40,12 @@
     "on": "مفعّل",
     "off": "معطّل",
     "mode": "وضع",
-    "chars": "حرف"
+    "chars": "حرف",
+    "terms": "شروط الخدمة",
+    "privacy": "سياسة الخصوصية",
+    "legal": "قانوني",
+    "updated": "تم التحديث",
+    "version": "الإصدار"
   },
   "nav": {
     "docs": "المستندات",
@@ -369,7 +374,8 @@
     "stepOf": "الخطوة {{current}} من {{total}}",
     "noHistory": "لا يوجد سجل تعديلات بعد",
     "speed": "السرعة",
-    "linking": "جارٍ إنشاء الرابط..."
+    "linking": "جارٍ إنشاء الرابط...",
+    "genesis": "البداية"
   },
   "workspaceDesc": {
     "orb": "طبقة الذكاء الموحدة",
@@ -510,7 +516,13 @@
     "askAboutSelection": "اسأل أي شيء حول هذا التحديد...",
     "noResultsFor": "لا توجد نتائج لـ \"{{query}}\"",
     "noMatchingFound": "لم يتم العثور على مستندات أو مهام مطابقة.",
-    "createWorkspace": "إنشاء {{name}}"
+    "createWorkspace": "إنشاء {{name}}",
+    "decidePlaceholder": "اطرح سؤالاً تنفيذيًا أو قيّم الاستراتيجية...",
+    "inquiries": "استفسارات مقترحة:",
+    "strategicReasoning": "نظام الاستدلال الاستراتيجي",
+    "strategicReasoningDesc": "إجابات مباشرة، والتوفيق بين التناقضات، وتحليل الافتراضات واستنتاجات قابلة للتنفيذ.",
+    "inquiryContradictions": "ما هي التناقضات الموجودة بين مذكرات الاستراتيجية والجداول؟",
+    "inquiryGrowth": "اختبر استراتيجية النمو وافحص افتراضات التحويل المطلوبة"
   },
   "quickActions": {
     "title": "إجراءات سريعة",
@@ -541,5 +553,17 @@
     "guestMode": "وضع الضيف",
     "guestModeDesc": "سجل الدخول لمزامنة أعمالك والوصول لأدوات الذكاء الاصطناعي.",
     "signIn": "تسجيل الدخول"
+  },
+  "landing": {
+    "headline": "مساحة عمل واحدة لجميع احتياجاتك المكتبية.",
+    "subheadline": "اختر منتجًا للبدء في الإنشاء.",
+    "compose": "Docs المستندات",
+    "deck": "Deck العروض",
+    "sheet": "Sheet الجداول",
+    "room": "Room الاجتماعات",
+    "whiteboard": "Whiteboard اللوحة",
+    "schedule": "Schedule الجدول",
+    "memory": "Memory الذاكرة",
+    "tasks": "Tasks المهام"
   }
 }
