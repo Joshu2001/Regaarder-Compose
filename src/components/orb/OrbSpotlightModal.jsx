@@ -175,55 +175,46 @@ export default function OrbSpotlightModal({
         onClick={onClose}
       />
 
-      {/* Main Orb Container: Soft Apple-tier Glass & Surface Shell */}
+      {/* Main Orb Container: Restrained Apple-tier Glass Surface Shell */}
       <div 
-        className={`relative flex flex-col backdrop-blur-3xl shadow-2xl rounded-2xl overflow-hidden transition-all duration-200 z-10 ${
+        className={`relative flex flex-col backdrop-blur-2xl shadow-2xl rounded-2xl overflow-hidden transition-all duration-200 z-10 ${
           isHighContrast
             ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-500 ring-slate-400'
-            : 'bg-white/65 dark:bg-[#12141a]/65 border border-white/60 dark:border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.14)]'
+            : 'bg-white/94 dark:bg-[#12141a]/94 border border-black/[0.08] dark:border-white/[0.08] shadow-[0_24px_70px_rgba(0,0,0,0.18)]'
         } ${
           isFullscreen 
             ? 'w-[98vw] h-[96vh] max-w-none' 
             : 'w-[96vw] max-w-7xl h-[90vh] max-h-[880px]'
         }`}
       >
-        {/* ── Top Header Bar: Clean, Airy & Ambient ── */}
-        <div className={`flex flex-col border-b backdrop-blur-md shrink-0 ${
+        {/* ── Top Header Bar: Clean, Integrated & Minimal ── */}
+        <div className={`flex flex-col border-b shrink-0 ${
           isHighContrast
             ? 'border-b-2 border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-950'
-            : 'border-b border-black/[0.04] dark:border-white/[0.06] bg-white/30 dark:bg-zinc-950/30'
+            : 'border-b border-black/[0.04] dark:border-white/[0.05] bg-white/40 dark:bg-zinc-950/40'
         }`}>
-          <div className="flex items-center justify-between px-7 pt-4 pb-3">
+          <div className="flex items-center justify-between px-6 pt-3.5 pb-2.5">
             {/* Orb Brand Mark */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-violet-50 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] border border-violet-100/80 dark:border-violet-800/60 flex items-center justify-center shadow-2xs">
-                <OrbIcon size={17} />
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] border border-violet-100 dark:border-violet-800/60 flex items-center justify-center shadow-2xs">
+                <OrbIcon size={15} />
               </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-sm tracking-tight ${isHighContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-900 dark:text-zinc-100'}`}>
-                    Orb
-                  </span>
-                  <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                    isHighContrast
-                      ? 'font-bold border-2 border-slate-500 dark:border-zinc-600 bg-white dark:bg-zinc-900 text-slate-950 dark:text-zinc-100'
-                      : 'font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200/50 dark:border-zinc-700/50'
-                  }`}>
-                    Intelligence Layer
-                  </span>
-                </div>
-                <span className={`text-[11px] ${isHighContrast ? 'font-bold text-slate-800 dark:text-zinc-300' : 'font-normal text-slate-500 dark:text-zinc-400'}`}>
-                  Cross-workspace discovery & organizational reasoning
+              <div className="flex items-center gap-2">
+                <span className={`text-sm tracking-tight ${isHighContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-900 dark:text-zinc-100'}`}>
+                  Orb
+                </span>
+                <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                  isHighContrast
+                    ? 'font-bold border-2 border-slate-500 dark:border-zinc-600 bg-white dark:bg-zinc-900 text-slate-950 dark:text-zinc-100'
+                    : 'font-semibold bg-slate-100/80 dark:bg-zinc-800/80 text-slate-500 dark:text-zinc-400 border border-slate-200/50 dark:border-zinc-700/50'
+                }`}>
+                  Intelligence Layer
                 </span>
               </div>
             </div>
 
-            {/* 4 Mode Tabs (Strictly styled as slightly rounded rectangular outlines, no pill shapes) */}
-            <div className={`flex items-center gap-1 p-1 rounded-xl ${
-              isHighContrast
-                ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-300 dark:border-zinc-700'
-                : 'bg-slate-100/70 dark:bg-zinc-900/60 border border-black/[0.03] dark:border-white/[0.04]'
-            }`}>
+            {/* 4 Mode Tabs (Flat slightly rounded rectangular outlines, no pills) */}
+            <div className="flex items-center gap-1 p-0.5">
               {ORB_MODES.map(mode => {
                 const isActive = activeMode === mode.id;
                 const IconComponent = mode.icon;
@@ -232,19 +223,19 @@ export default function OrbSpotlightModal({
                     key={mode.id}
                     type="button"
                     onClick={() => setActiveMode(mode.id)}
-                    className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-lg transition-all duration-150 cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-all duration-150 cursor-pointer ${
                       isActive
                         ? isHighContrast
                           ? 'border-2 border-slate-900 bg-white dark:bg-zinc-800 text-black dark:text-white font-extrabold shadow-sm'
-                          : 'border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-xs'
+                          : 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs'
                         : isHighContrast
                         ? 'border border-transparent text-slate-900 dark:text-zinc-100 hover:border-slate-400 font-bold'
-                        : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-zinc-800/60 font-medium'
+                        : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
                     }`}
                   >
-                    <IconComponent size={14} className={isActive ? 'text-slate-900 dark:text-zinc-100' : 'text-slate-400'} />
+                    <IconComponent size={13} className={isActive ? 'text-slate-900 dark:text-zinc-100' : 'text-slate-400'} />
                     <span>{mode.label}</span>
-                    <span className="text-[10px] text-slate-400 hidden sm:inline font-mono">
+                    <span className="text-[10px] text-slate-400/80 hidden sm:inline font-mono">
                       {mode.shortcut}
                     </span>
                   </button>
@@ -253,66 +244,63 @@ export default function OrbSpotlightModal({
             </div>
 
             {/* Window Controls */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={toggleHighContrast}
-                className={`px-2.5 py-1 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 ${
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
                   isHighContrast
-                    ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border-2 border-violet-500 shadow-2xs font-extrabold'
-                    : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/60 font-medium shadow-2xs'
+                    ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border-2 border-violet-500 font-extrabold'
+                    : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]'
                 }`}
                 title={isHighContrast ? "Visual Disabilities Mode: ON" : "Visual Disabilities Mode: OFF"}
               >
                 <Eye size={14} />
-                <span className="text-[10px] uppercase tracking-wider hidden sm:inline">
-                  {isHighContrast ? 'A11y: ON' : 'A11y'}
-                </span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsFullscreen(f => !f)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors cursor-pointer"
                 title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
               >
-                {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-800 transition-colors cursor-pointer ml-0.5"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors cursor-pointer"
                 title="Close (Esc)"
               >
-                <X size={15} />
+                <X size={14} />
               </button>
             </div>
           </div>
 
-          {/* ── Search Input Row: Soft Floating Bar ── */}
+          {/* ── Search Input: Integrated & Clean ── */}
           {activeMode === 'search' && (
-            <div className="px-7 pb-4 pt-0.5">
+            <div className="px-6 pt-0.5 pb-3">
               <div className="relative flex items-center">
-                <Search size={18} className="absolute left-4 text-slate-400 dark:text-zinc-500" />
+                <Search size={15} className="absolute left-3 text-slate-400 dark:text-zinc-500 pointer-events-none" />
                 <input
                   ref={searchInputRef}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search a concept, project, person, number, formula, or decision across all applications..."
-                  className={`w-full pl-12 pr-24 py-3.5 rounded-2xl text-[15.5px] focus:outline-none transition-all ${
+                  placeholder="Search across documents, spreadsheets, slides, and tasks..."
+                  className={`w-full pl-9 pr-8 py-2 rounded-xl text-[13.5px] focus:outline-none transition-all ${
                     isHighContrast
                       ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 focus:border-slate-600 text-black dark:text-white font-bold'
-                      : 'bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.05] dark:border-white/[0.06] focus:border-slate-300 dark:focus:border-zinc-600 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400/90 shadow-none'
+                      : 'bg-slate-100/60 dark:bg-zinc-800/40 border border-black/[0.04] dark:border-white/[0.05] focus:border-slate-300 dark:focus:border-zinc-600 focus:bg-white dark:focus:bg-zinc-900 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400/80'
                   }`}
                 />
                 {query && (
                   <button
                     type="button"
                     onClick={() => setQuery('')}
-                    className="absolute right-3.5 p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                    className="absolute right-2.5 p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
                   >
-                    <X size={14} />
+                    <X size={13} />
                   </button>
                 )}
               </div>
@@ -399,46 +387,39 @@ export default function OrbSpotlightModal({
           )}
         </div>
 
-        {/* ── Bottom Status Bar with Apple-style Keyboard Traversal Guidance ── */}
-        <div className="flex items-center justify-between px-7 py-2.5 border-t border-black/[0.04] dark:border-white/[0.05] bg-white/30 dark:bg-zinc-900/30 backdrop-blur-md text-[11px] text-slate-400 dark:text-zinc-500 shrink-0">
-          <div className="flex items-center gap-3">
+        {/* ── Bottom Status Bar: Minimal & Subdued ── */}
+        <div className="flex items-center justify-between px-6 py-2 border-t border-black/[0.04] dark:border-white/[0.04] text-[11px] text-slate-400/80 dark:text-zinc-500/80 bg-slate-50/40 dark:bg-zinc-900/20 shrink-0">
+          <div className="flex items-center gap-2.5">
             <span className="flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="font-medium text-slate-600 dark:text-zinc-400">Workspace intelligence active</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80"></span>
+              <span className="font-medium text-slate-500 dark:text-zinc-400">Orb Active</span>
             </span>
             <span>•</span>
-            <span>{allEntities.length} indexed entities</span>
+            <span>{allEntities.length} entities</span>
             <span>•</span>
-            <span>{allEdges.length} semantic relationships</span>
+            <span>{allEdges.length} relationships</span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 font-mono text-[10px]">
             {activeMode === 'search' && searchResults.results.length > 0 && (
               <>
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-[10px] font-mono text-slate-500 border border-slate-200/60 dark:border-zinc-700/60">↑↓</kbd>
+                  <kbd className="px-1 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500">↑↓</kbd>
                   <span>Navigate</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-[10px] font-mono text-slate-500 border border-slate-200/60 dark:border-zinc-700/60">↵</kbd>
+                  <kbd className="px-1 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500">↵</kbd>
                   <span>Open</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-[10px] font-mono text-slate-500 border border-slate-200/60 dark:border-zinc-700/60">Tab</kbd>
-                  <span>Quick Look</span>
                 </span>
                 <span>•</span>
               </>
             )}
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-[10px] font-mono text-slate-500 border border-slate-200/60 dark:border-zinc-700/60">⌘1-4</kbd>
+              <kbd className="px-1 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500">⌘1-4</kbd>
               <span>Modes</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-[10px] font-mono text-slate-500 border border-slate-200/60 dark:border-zinc-700/60">Esc</kbd>
+              <kbd className="px-1 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500">Esc</kbd>
               <span>Close</span>
             </span>
           </div>
