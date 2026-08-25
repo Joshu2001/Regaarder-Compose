@@ -2359,9 +2359,9 @@ const TableGridPicker = ({ setInsertDropdownOpen }) => {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <LayoutGrid size={14} className="text-slate-500" />
-          <span className="text-[13px] font-medium text-slate-800">Table</span>
+          <span className="text-[13px] font-medium text-slate-800">{(window.__rc_t ? window.__rc_t('editor.table') : null) || 'Table'}</span>
         </div>
-        <span className="text-[11px] text-slate-400">{hovered.r > 0 ? `${hovered.r} × ${hovered.c}` : 'Hover to pick size'}</span>
+        <span className="text-[11px] text-slate-400">{hovered.r > 0 ? `${hovered.r} × ${hovered.c}` : ((window.__rc_t ? window.__rc_t('editor.hoverPickSize') : null) || 'Hover to pick size')}</span>
       </div>
       <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: `repeat(${COLS}, 22px)` }} onPointerLeave={() => setHovered({ r: 0, c: 0 })}>
         {Array.from({ length: ROWS }, (_, r) => Array.from({ length: COLS }, (_, c) => (
@@ -69707,8 +69707,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* Global Workspace Search Modal */}
       <GlobalWorkspaceSearchModal
-        isOpen={isGlobalSearchOpen}
-        onClose={() => setIsGlobalSearchOpen(false)}
+        isOpen={isMemorySearchOpen}
+        onClose={() => setIsMemorySearchOpen(false)}
         onSelectEntity={(entity) => {
           if (!entity) return;
           if (entity.type === 'doc') {
@@ -69756,13 +69756,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <div className="flex-1 flex flex-col min-h-0 px-3.5 py-3.5 animate-fade-in-slide-right space-y-3.5" style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <div className="space-y-1.5 shrink-0 px-1">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold tracking-[0.12em] text-slate-400 dark:text-zinc-500 uppercase">Structure</span>
+            <span className="text-[10px] font-semibold tracking-[0.12em] text-slate-400 dark:text-zinc-500 uppercase">{t('outline.structure') || 'Structure'}</span>
             <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-50/80 dark:bg-violet-950/50 border border-violet-200/60 dark:border-violet-800/50 rounded-full px-2.5 py-0.5 shadow-2xs">
-              {outlineTreeData.length} {outlineTreeData.length === 1 ? 'Section' : 'Sections'}
+              {outlineTreeData.length} {outlineTreeData.length === 1 ? (t('outline.section') || 'Section') : (t('outline.sections') || 'Sections')}
             </span>
           </div>
           <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
-            {minRead} min read &bull; {wordsCount} words
+            {minRead} {t('outline.minRead') || 'min read'} &bull; {wordsCount} {t('outline.words') || 'words'}
           </div>
         </div>
 
@@ -70849,224 +70849,39 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
 
-      {/* 1. Left Navigation Sidebar — Full length (top to bottom) */}
+      {/* 1. Left Navigation Sidebar — Full length Document Outline */}
       <div
         className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-[#FAFAFC] dark:bg-[#18181b] border-r border-slate-200/80 dark:border-zinc-800/80 h-screen min-h-screen h-full z-[380]"
         style={{ width: (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
-        <>
-            <div className="h-14 flex items-center justify-between px-4 border-b border-slate-100 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 text-white flex items-center justify-center shadow-[0_12px_24px_-14px_rgba(139,92,246,0.95)]">
-                  <Sparkles size={16} />
-                </div>
-                <div className="leading-tight">
-                  <div className="text-[17px] font-semibold tracking-tight text-gray-900">Orb</div>
-                  <div className="text-[11px] text-gray-500">by Regaarder</div>
-                </div>
-              </div>
-              <button
-                onClick={openCreationPicker}
-                className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
-              >
-                <Upload size={13} />
-                Upload
-              </button>
+        {/* Panel Header */}
+        <div className="h-14 px-4 border-b border-slate-100 dark:border-zinc-800/60 shrink-0 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-xl bg-violet-50 dark:bg-violet-950/60 border border-violet-100 dark:border-violet-900/40 flex items-center justify-center shrink-0 text-[#7C5ACF] dark:text-[#a78bfa]">
+              <FileText size={14} strokeWidth={1.75} />
             </div>
-
-            <div className="px-4 pb-3">
-              <div
-                className="relative"
-                onMouseEnter={() => setIsFormattingDropdownHovered(true)}
-                onMouseLeave={() => setIsFormattingDropdownHovered(false)}
-              >
-                <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search Orb..."
-                  className="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:border-violet-300"
-                />
-                <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">Ctrl K</span>
-              </div>
-            </div>
-        </>
-
-        {/* Main Nav Links */}
-        <div className="flex-1 overflow-y-auto px-3 space-y-4 thin-scrollbar">
-          {/* Integrated Document Outline if in document */}
-          {docOutlineEnabled && documentOutlineItems && documentOutlineItems.length > 1 && (
-            <div className="rounded-xl border border-violet-100/80 dark:border-violet-950/60 bg-violet-50/30 dark:bg-violet-950/20 p-2.5 my-1">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 dark:text-violet-400 uppercase">Document Outline</span>
-                <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/50 rounded-full px-2 py-0.5">{Math.max(0, documentOutlineItems.length - 1)}</span>
-              </div>
-              <div className="max-h-40 overflow-y-auto pr-1 space-y-0.5 thin-scrollbar">
-                {documentOutlineItems.map((item, index) => (
-                  <button
-                    key={`item-${item.id}-${index}`}
-                    type="button"
-                    onClick={() => jumpToOutlineItem(item)}
-                    className={`w-full text-left rounded-md py-1 text-xs transition-colors cursor-pointer ${item.isTitle ? 'font-semibold text-gray-800 dark:text-zinc-200 hover:bg-violet-100/50 px-2' : 'text-gray-600 dark:text-zinc-400 hover:bg-violet-50 dark:hover:bg-zinc-800'}`}
-                    style={item.isTitle ? undefined : { paddingLeft: `${10 + Math.max(0, item.level - 1) * 12}px`, paddingRight: '6px' }}
-                    title={item.label}
-                  >
-                    <span className="block truncate">{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-            <div className="space-y-0.5">
-              <button
-                onClick={() => setActivePrimaryNav('my-orb')}
-                className={`w-full flex items-center gap-3 px-2.5 py-2 text-sm rounded-lg transition-colors ${activePrimaryNav === 'my-orb' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
-              >
-                <Database size={15} /> My Orb
-              </button>
-              <button
-                onClick={() => setActivePrimaryNav('shared')}
-                className={`w-full flex items-center gap-3 px-2.5 py-2 text-sm rounded-lg transition-colors ${activePrimaryNav === 'shared' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
-              >
-                <Users size={15} /> Shared with me
-              </button>
-              <button
-                onClick={() => setActivePrimaryNav('favorites')}
-                className={`w-full flex items-center gap-3 px-2.5 py-2 text-sm rounded-lg transition-colors ${activePrimaryNav === 'favorites' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
-              >
-                <Star size={15} /> Favorites
-              </button>
-              <button
-                onClick={() => { setActivePrimaryNav('recent'); setRecentDocumentsModalOpen(true); }}
-                className={`w-full flex items-center gap-3 px-2.5 py-2 text-sm rounded-lg transition-colors ${activePrimaryNav === 'recent' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
-              >
-                <Clock size={15} /> Recent
-              </button>
-              <button
-                onClick={() => setActivePrimaryNav('trash')}
-                className={`w-full flex items-center gap-3 px-2.5 py-2 text-sm rounded-lg transition-colors ${activePrimaryNav === 'trash' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
-              >
-                <Trash size={15} /> Trash
-              </button>
-            </div>
-
-            <div>
-              <div className="px-2.5 text-[10px] uppercase tracking-[0.11em] font-semibold text-gray-400 mb-1.5">Workspace Intelligence</div>
-              <div className="space-y-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveRightTab('calendar');
-                    setRightSidebarOpen(true);
-                    showToast('Opened Schedule');
-                  }}
-                  className={`w-full flex items-center justify-between px-2.5 py-2 text-sm rounded-lg transition-colors ${activeRightTab === 'calendar' && rightSidebarOpen ? 'bg-violet-50 text-violet-700 font-semibold dark:bg-violet-950/40 dark:text-violet-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800'}`}
-                >
-                  <span className="flex items-center gap-3"><Calendar size={15} /> Schedule</span>
-                  <span className="text-[10px] font-semibold bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 px-1.5 py-0.5 rounded-full">Today</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveRightTab('room');
-                    setRightSidebarOpen(true);
-                    showToast('Opened Compose Room');
-                  }}
-                  className={`w-full flex items-center justify-between px-2.5 py-2 text-sm rounded-lg transition-colors ${activeRightTab === 'room' && rightSidebarOpen ? 'bg-violet-50 text-violet-700 font-semibold dark:bg-violet-950/40 dark:text-violet-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800'}`}
-                >
-                  <span className="flex items-center gap-3"><Users size={15} /> Room</span>
-                  <span className="text-[10px] font-semibold bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 px-1.5 py-0.5 rounded-full">Live</span>
-                </button>
-                <button className="w-full flex items-center justify-between px-2.5 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                  <span className="flex items-center gap-3"><Sparkles size={15} /> AI Suggested</span>
-                  <span className="text-[10px] font-semibold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">12</span>
-                </button>
-                <button className="w-full flex items-center justify-between px-2.5 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                  <span className="flex items-center gap-3"><LinkIcon size={15} /> Related to me</span>
-                  <span className="text-[10px] font-semibold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">8</span>
-                </button>
-                <button className="w-full flex items-center gap-3 px-2.5 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                  <BookOpen size={15} /> Recently referenced
-                </button>
-                <button className="w-full flex items-center gap-3 px-2.5 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                  <ArrowUp size={15} /> Trending in team
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <div className="px-2.5 text-[10px] uppercase tracking-[0.11em] font-semibold text-gray-400 mb-1.5">Spaces</div>
-              <div className="space-y-1">
-                {workspaces.map((workspace) => (
-                  <button key={workspace.id} className="w-full flex items-center justify-between px-2.5 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                    <div className="flex items-center gap-2.5">
-                      <WorkspaceIcon letter={workspace.letter} colorClass={workspace.colorClass} />
-                      <span>{workspace.name}</span>
-                    </div>
-                    <ChevronRight size={13} className="text-gray-300" />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-200 bg-white p-3 mb-3">
-              <div className="text-xs font-semibold text-gray-700 mb-2">Orb Storage</div>
-              <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden mb-1.5">
-                <div className="h-full w-[26%] rounded-full bg-violet-500" />
-              </div>
-              <div className="text-[11px] text-gray-500">256 GB of 1 TB used</div>
-            </div>
-
-            <div className="pb-2">
-              <button className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                Manage storage
-              </button>
-            </div>
+            <span className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-200 tracking-tight">
+              {t('outline.title') || 'Document Outline'}
+            </span>
           </div>
+        </div>
 
-        {/* Footer Settings */}
-        <div className="p-4 border-t border-gray-100 bg-[#FAFAFC]">
-          <button onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }} className="flex items-center gap-3 text-sm text-gray-600 hover:text-gray-900 w-full transition-colors">
-            <Settings size={16} /> Settings
+        {/* Outline Content */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-1 py-1 thin-scrollbar">
+          {renderDocumentOutlineContent()}
+        </div>
+
+        {/* Footer */}
+        <div className="p-3.5 border-t border-slate-100 dark:border-zinc-800/60 bg-white/40 dark:bg-zinc-900/40 shrink-0">
+          <button
+            onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
+            className="flex items-center gap-2.5 text-xs font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 w-full px-2 py-1.5 rounded-lg hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+          >
+            <Settings size={14} strokeWidth={1.75} />
+            <span>{t('settings.title') || 'Settings'}</span>
           </button>
         </div>
       </div>
-
-      {/* Document Outline — full-height floating edge drawer overlay at z-[260] (disabled in favor of integrated full-length sidebar) */}
-      {false && showDocumentOutlineView && productMode === 'compose' && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
-        <div
-          ref={documentOutlineDrawerRef}
-          className="fixed top-0 left-0 bottom-0 z-[260] flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border-r border-slate-200/60 dark:border-zinc-800/80 shadow-[12px_0_35px_-10px_rgba(15,23,42,0.08)] select-none overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-left-4"
-          style={{ width: `${Math.max(300, leftSidebarWidth)}px` }}
-        >
-          {/* Panel Header */}
-          <div className="h-14 px-5 border-b border-slate-100 dark:border-zinc-800/60 shrink-0 bg-slate-50/80 dark:bg-zinc-900/80 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-xl bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-700/60 flex items-center justify-center shrink-0">
-                <FileText size={14} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
-              </div>
-              <span className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-200 tracking-tight">Document Outline</span>
-            </div>
-          </div>
-
-          {/* Outline Content */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-1 py-1 thin-scrollbar">
-            {renderDocumentOutlineContent()}
-          </div>
-
-          {/* Footer */}
-          <div className="p-3.5 border-t border-slate-100 dark:border-zinc-800/60 bg-slate-50/50 dark:bg-zinc-900/40 shrink-0">
-            <button
-              onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
-              className="flex items-center gap-2.5 text-xs font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 w-full px-2 py-1.5 rounded-lg hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-            >
-              <Settings size={14} strokeWidth={1.75} /> Settings
-            </button>
-          </div>
-        </div>
-      )}
-
-
-
 
       {leftSidebarOpen && (
         <div

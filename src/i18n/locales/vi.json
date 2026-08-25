@@ -565,5 +565,17 @@
     "schedule": "Schedule Lịch trình",
     "memory": "Memory Bộ nhớ",
     "tasks": "Tasks Tác vụ"
+  },
+  "editor": {
+    "table": "Bảng",
+    "hoverPickSize": "Di chuột để chọn kích thước"
+  },
+  "outline": {
+    "title": "Dàn ý tài liệu",
+    "structure": "Cấu trúc",
+    "section": "Phần",
+    "sections": "Phần",
+    "minRead": "phút đọc",
+    "words": "từ"
   }
 }

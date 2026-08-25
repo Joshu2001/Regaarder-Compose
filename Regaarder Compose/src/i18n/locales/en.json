@@ -565,5 +565,17 @@
     "schedule": "Schedule",
     "memory": "Memory",
     "tasks": "Tasks"
+  },
+  "editor": {
+    "table": "Table",
+    "hoverPickSize": "Hover to pick size"
+  },
+  "outline": {
+    "title": "Document Outline",
+    "structure": "Structure",
+    "section": "Section",
+    "sections": "Sections",
+    "minRead": "min read",
+    "words": "words"
   }
 }

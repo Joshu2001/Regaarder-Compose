@@ -565,5 +565,17 @@
     "schedule": "Schedule 日程",
     "memory": "Memory 記憶庫",
     "tasks": "Tasks 任務"
+  },
+  "editor": {
+    "table": "表格",
+    "hoverPickSize": "滑鼠懸停以選擇大小"
+  },
+  "outline": {
+    "title": "文件大綱",
+    "structure": "內容結構",
+    "section": "個章節",
+    "sections": "個章節",
+    "minRead": "分鐘閱讀",
+    "words": "字"
   }
 }

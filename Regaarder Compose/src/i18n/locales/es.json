@@ -565,5 +565,17 @@
     "schedule": "Schedule",
     "memory": "Memory",
     "tasks": "Tasks"
+  },
+  "editor": {
+    "table": "Tabla",
+    "hoverPickSize": "Pasa el cursor para elegir tamaño"
+  },
+  "outline": {
+    "title": "Esquema del documento",
+    "structure": "Estructura",
+    "section": "Sección",
+    "sections": "Secciones",
+    "minRead": "min de lectura",
+    "words": "palabras"
   }
 }

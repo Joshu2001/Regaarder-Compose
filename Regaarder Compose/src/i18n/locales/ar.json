@@ -565,5 +565,17 @@
     "schedule": "Schedule الجدول",
     "memory": "Memory الذاكرة",
     "tasks": "Tasks المهام"
+  },
+  "editor": {
+    "table": "جدول",
+    "hoverPickSize": "مرر لاختيار الحجم"
+  },
+  "outline": {
+    "title": "مخطط المستند",
+    "structure": "الهيكل",
+    "section": "قسم",
+    "sections": "أقسام",
+    "minRead": "دقيقة قراءة",
+    "words": "كلمات"
   }
 }
