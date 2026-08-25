@@ -108,7 +108,20 @@
     "fullscreen": "全画面表示",
     "documentView": "ドキュメント表示",
     "textStyle": "テキストスタイル",
-    "toggleRightPanel": "サイドパネル切り替え"
+    "toggleRightPanel": "サイドパネル切り替え",
+    "contextSources": "コンテキストソース:",
+    "addSourceFile": "ソースファイルを追加",
+    "noContextSources": "添付されたコンテキストファイルはありません",
+    "allContextSources": "すべてのコンテキストソース",
+    "synthesize": "統合サマリー生成",
+    "aiWorkflows": "AI ワークフロー",
+    "workflowLibrary": "+ ワークフローライブラリ",
+    "saveCustom": "+ カスタム保存",
+    "findReplace": "検索と置換",
+    "redactSelection": "選択範囲を墨消し",
+    "portrait": "縦向き",
+    "landscape": "横向き",
+    "outline": "アウトライン"
   },
   "search": {
     "title": "ワークスペース検索",
@@ -240,7 +253,9 @@
     "draftDesc": "執筆・編集中",
     "readyDesc": "完了済み、利用可能",
     "reviewDesc": "フィードバック待ち",
-    "archivedDesc": "アーカイブ済み"
+    "archivedDesc": "アーカイブ済み",
+    "tabToolsReady": "{{tab}}ツール準備完了",
+    "toolsReady": "ツール準備完了"
   },
   "notifications": {
     "title": "通知",
@@ -250,7 +265,9 @@
     "clearAll": "すべてクリア",
     "allCaughtUp": "新しい通知はありません",
     "notification": "件の通知",
-    "notifications": "件の通知"
+    "notifications": "件の通知",
+    "markRead": "既読にする",
+    "dismiss": "閉じる"
   },
   "tts": {
     "listenToDraft": "下書きを音声で聴く",
@@ -270,5 +287,45 @@
     "googleDocs": "Google Docs クラウド",
     "pdfDoc": "PDF ドキュメント",
     "markdownDoc": "Markdown ファイル"
+  },
+  "share": {
+    "title": "ドキュメントを共有",
+    "shareMethod": "共有方法",
+    "copyLink": "リンクをコピー",
+    "shareToChat": "チャットで共有",
+    "nativeApps": "アプリで開く",
+    "download": "ダウンロード",
+    "accessLevel": "アクセス権限",
+    "zeroKnowledge": "ゼロ知識暗号化",
+    "viewer": "閲覧者",
+    "commenter": "コメント投稿者",
+    "editor": "編集者",
+    "fullAccess": "フルアクセス",
+    "protectedContents": "保護されたコンテンツ",
+    "preview": "プレビュー",
+    "noTermsProtected": "🔒 保護設定された用語はありません。",
+    "add": "追加",
+    "customWordToRedact": "墨消しする単語を入力...",
+    "advancedSecurity": "高度なセキュリティ",
+    "passwordProtection": "パスワード保護",
+    "expiringAccess": "有効期限を設定",
+    "password": "パスワード",
+    "confirm": "確認",
+    "setPassword": "パスワードを設定",
+    "fileFormat": "ファイル形式",
+    "shareLink": "共有リンク",
+    "readyToShare": "共有の準備完了",
+    "copy": "コピー",
+    "shareToApps": "アプリで共有",
+    "attachToChat": "チャットに添付"
+  },
+  "review": {
+    "noReadabilityData": "読みやすさデータはまだありません",
+    "readabilityDesc": "ドキュメントを分析して読みやすさスコアと文章の流れを測定します。",
+    "analyzeDoc": "ドキュメントを分析",
+    "fleschReadingEase": "読みやすさスコア",
+    "readingLevel": "推奨読解レベル:",
+    "suggestions": "改善の提案",
+    "reanalyze": "再分析"
   }
 }

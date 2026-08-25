@@ -108,7 +108,20 @@
     "fullscreen": "Fullscreen",
     "documentView": "Document view",
     "textStyle": "Text style options",
-    "toggleRightPanel": "Toggle right panel"
+    "toggleRightPanel": "Toggle right panel",
+    "contextSources": "Context Sources:",
+    "addSourceFile": "Add Source File",
+    "noContextSources": "No context source files attached yet",
+    "allContextSources": "All Context Sources",
+    "synthesize": "Synthesize",
+    "aiWorkflows": "AI WORKFLOWS",
+    "workflowLibrary": "+ Workflow Library",
+    "saveCustom": "+ Save Custom",
+    "findReplace": "Find & Replace",
+    "redactSelection": "Redact Selection",
+    "portrait": "Portrait",
+    "landscape": "Landscape",
+    "outline": "Outline"
   },
   "search": {
     "title": "Workspace Search",
@@ -240,7 +253,9 @@
     "draftDesc": "Actively being written",
     "readyDesc": "Completed and ready for use",
     "reviewDesc": "Awaiting feedback",
-    "archivedDesc": "Stored and inactive"
+    "archivedDesc": "Stored and inactive",
+    "tabToolsReady": "{{tab}} tools ready",
+    "toolsReady": "tools ready"
   },
   "notifications": {
     "title": "Notifications",
@@ -250,7 +265,9 @@
     "clearAll": "Clear all",
     "allCaughtUp": "You're all caught up",
     "notification": "notification",
-    "notifications": "notifications"
+    "notifications": "notifications",
+    "markRead": "Mark read",
+    "dismiss": "Dismiss"
   },
   "tts": {
     "listenToDraft": "Listen to your draft",
@@ -270,5 +287,45 @@
     "googleDocs": "Google Docs Cloud",
     "pdfDoc": "PDF Document",
     "markdownDoc": "Markdown File"
+  },
+  "share": {
+    "title": "Share document",
+    "shareMethod": "SHARE METHOD",
+    "copyLink": "Copy link",
+    "shareToChat": "Share to chat",
+    "nativeApps": "Native apps",
+    "download": "Download",
+    "accessLevel": "ACCESS LEVEL",
+    "zeroKnowledge": "Zero-Knowledge",
+    "viewer": "Viewer",
+    "commenter": "Commenter",
+    "editor": "Editor",
+    "fullAccess": "Full access",
+    "protectedContents": "Protected contents",
+    "preview": "Preview",
+    "noTermsProtected": "🔒 No terms protected yet.",
+    "add": "Add",
+    "customWordToRedact": "Custom word to redact...",
+    "advancedSecurity": "ADVANCED SECURITY",
+    "passwordProtection": "Password protection",
+    "expiringAccess": "Expiring access",
+    "password": "Password",
+    "confirm": "Confirm",
+    "setPassword": "Set Password",
+    "fileFormat": "FILE FORMAT",
+    "shareLink": "SHARE LINK",
+    "readyToShare": "Ready to share",
+    "copy": "Copy",
+    "shareToApps": "Share to Apps",
+    "attachToChat": "Attach to Chat"
+  },
+  "review": {
+    "noReadabilityData": "No readability data yet",
+    "readabilityDesc": "Analyze document to compute reading ease, grade level, and writing flow.",
+    "analyzeDoc": "Analyze Document",
+    "fleschReadingEase": "Flesch Reading Ease",
+    "readingLevel": "Reading level:",
+    "suggestions": "Suggestions",
+    "reanalyze": "Re-analyze"
   }
 }

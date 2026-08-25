@@ -108,7 +108,20 @@
     "fullscreen": "全螢幕模式",
     "documentView": "文件檢視模式",
     "textStyle": "文字排版樣式",
-    "toggleRightPanel": "切換側邊輔助面板"
+    "toggleRightPanel": "切換側邊輔助面板",
+    "contextSources": "情境來源：",
+    "addSourceFile": "新增來源檔案",
+    "noContextSources": "尚未附加任何情境參考檔案",
+    "allContextSources": "所有情境來源",
+    "synthesize": "整合摘要",
+    "aiWorkflows": "AI 智慧工作流程",
+    "workflowLibrary": "+ 工作流程庫",
+    "saveCustom": "+ 儲存自訂範本",
+    "findReplace": "尋找與取代",
+    "redactSelection": "遮蔽選取內容",
+    "portrait": "直向",
+    "landscape": "橫向",
+    "outline": "大綱導覽"
   },
   "search": {
     "title": "工作區搜尋",
@@ -240,7 +253,9 @@
     "draftDesc": "正在編輯撰寫中",
     "readyDesc": "已完成可直接使用",
     "reviewDesc": "等待團隊審核意見",
-    "archivedDesc": "已封存且處於唯讀狀態"
+    "archivedDesc": "已封存且處於唯讀狀態",
+    "tabToolsReady": "{{tab}}工具已就緒",
+    "toolsReady": "工具已就緒"
   },
   "notifications": {
     "title": "通知中心",
@@ -250,7 +265,9 @@
     "clearAll": "全部清除",
     "allCaughtUp": "您已閱讀所有即時通知",
     "notification": "則通知",
-    "notifications": "則通知"
+    "notifications": "則通知",
+    "markRead": "標示為已讀",
+    "dismiss": "忽略"
   },
   "tts": {
     "listenToDraft": "朗讀草稿內容",
@@ -270,5 +287,45 @@
     "googleDocs": "Google Docs 雲端格式",
     "pdfDoc": "PDF 列印文件",
     "markdownDoc": "Markdown 標記文件"
+  },
+  "share": {
+    "title": "共享文件",
+    "shareMethod": "共享方式",
+    "copyLink": "複製連結",
+    "shareToChat": "分享至對話",
+    "nativeApps": "系統原生應用程式",
+    "download": "下載檔案",
+    "accessLevel": "存取權限",
+    "zeroKnowledge": "零知識加密",
+    "viewer": "檢視者",
+    "commenter": "加註者",
+    "editor": "編輯者",
+    "fullAccess": "完整權限",
+    "protectedContents": "受保護的機密內容",
+    "preview": "預覽",
+    "noTermsProtected": "🔒 尚未設定任何遮蔽詞彙。",
+    "add": "新增",
+    "customWordToRedact": "輸入欲遮蔽的自訂詞彙...",
+    "advancedSecurity": "進階安全設定",
+    "passwordProtection": "密碼存取保護",
+    "expiringAccess": "設定存取時效",
+    "password": "密碼",
+    "confirm": "確認密碼",
+    "setPassword": "設定密碼",
+    "fileFormat": "檔案格式",
+    "shareLink": "共享連結",
+    "readyToShare": "已準備好共享",
+    "copy": "複製",
+    "shareToApps": "分享至應用程式",
+    "attachToChat": "附加至對話"
+  },
+  "review": {
+    "noReadabilityData": "尚無可讀性分析資料",
+    "readabilityDesc": "分析文件以計算易讀性評分、閱讀年級與行文流暢度。",
+    "analyzeDoc": "分析文件可讀性",
+    "fleschReadingEase": "易讀性評分",
+    "readingLevel": "建議閱讀程度：",
+    "suggestions": "優化建議",
+    "reanalyze": "重新分析"
   }
 }

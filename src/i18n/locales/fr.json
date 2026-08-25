@@ -108,7 +108,20 @@
     "fullscreen": "Plein écran",
     "documentView": "Vue document",
     "textStyle": "Styles de texte",
-    "toggleRightPanel": "Afficher le panneau latéral"
+    "toggleRightPanel": "Afficher le panneau latéral",
+    "contextSources": "Sources contextuelles :",
+    "addSourceFile": "Ajouter un fichier source",
+    "noContextSources": "Aucun fichier source contextuel joint pour le moment",
+    "allContextSources": "Toutes les sources",
+    "synthesize": "Synthétiser",
+    "aiWorkflows": "FLUX DE TRAVAIL IA",
+    "workflowLibrary": "+ Bibliothèque de flux",
+    "saveCustom": "+ Enregistrer comme modèle",
+    "findReplace": "Rechercher et remplacer",
+    "redactSelection": "Masquer la sélection",
+    "portrait": "Portrait",
+    "landscape": "Paysage",
+    "outline": "Plan"
   },
   "search": {
     "title": "Recherche dans l'espace",
@@ -240,7 +253,9 @@
     "draftDesc": "En cours de rédaction",
     "readyDesc": "Terminé et prêt à l'emploi",
     "reviewDesc": "En attente de relecture",
-    "archivedDesc": "Archivé et inactif"
+    "archivedDesc": "Archivé et inactif",
+    "tabToolsReady": "Outils {{tab}} prêts",
+    "toolsReady": "outils prêts"
   },
   "notifications": {
     "title": "Notifications",
@@ -250,7 +265,9 @@
     "clearAll": "Tout effacer",
     "allCaughtUp": "Vous êtes à jour",
     "notification": "notification",
-    "notifications": "notifications"
+    "notifications": "notifications",
+    "markRead": "Marquer comme lu",
+    "dismiss": "Ignorer"
   },
   "tts": {
     "listenToDraft": "Écouter votre brouillon",
@@ -270,5 +287,45 @@
     "googleDocs": "Google Docs Cloud",
     "pdfDoc": "Document PDF",
     "markdownDoc": "Fichier Markdown"
+  },
+  "share": {
+    "title": "Partager le document",
+    "shareMethod": "MODE DE PARTAGE",
+    "copyLink": "Copier le lien",
+    "shareToChat": "Partager dans le chat",
+    "nativeApps": "Applications",
+    "download": "Télécharger",
+    "accessLevel": "NIVEAU D'ACCÈS",
+    "zeroKnowledge": "Zero-Knowledge",
+    "viewer": "Lecteur",
+    "commenter": "Commentateur",
+    "editor": "Éditeur",
+    "fullAccess": "Accès complet",
+    "protectedContents": "Contenus protégés",
+    "preview": "Aperçu",
+    "noTermsProtected": "🔒 Aucun terme protégé pour le moment.",
+    "add": "Ajouter",
+    "customWordToRedact": "Mot à masquer...",
+    "advancedSecurity": "SÉCURITÉ AVANCÉE",
+    "passwordProtection": "Protection par mot de passe",
+    "expiringAccess": "Accès temporaire",
+    "password": "Mot de passe",
+    "confirm": "Confirmer",
+    "setPassword": "Définir le mot de passe",
+    "fileFormat": "FORMAT DE FICHIER",
+    "shareLink": "LIEN DE PARTAGE",
+    "readyToShare": "Prêt à partager",
+    "copy": "Copier",
+    "shareToApps": "Partager vers les applications",
+    "attachToChat": "Joindre au chat"
+  },
+  "review": {
+    "noReadabilityData": "Aucune donnée de lisibilité",
+    "readabilityDesc": "Analysez le document pour calculer la facilité de lecture et la fluidité.",
+    "analyzeDoc": "Analyser le document",
+    "fleschReadingEase": "Facilité de lecture",
+    "readingLevel": "Niveau de lecture :",
+    "suggestions": "Suggestions",
+    "reanalyze": "Ré-analyser"
   }
 }

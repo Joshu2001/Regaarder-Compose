@@ -131,12 +131,15 @@ export default function ShareModal({
   setShareExpirationUnit,
   shareExpirationDate,
   setShareExpirationDate,
-  showToast
+  showToast,
+  t: propT
 }) {
+  const t = propT || (typeof window !== 'undefined' && window.__rc_t) || ((k) => null);
+
   const triggerToast = (msg) => {
     if (showToast) {
       showToast(msg);
-    } else if (window.showToast) {
+    } else if (typeof window !== 'undefined' && window.showToast) {
       window.showToast(msg);
     } else {
       console.log('Toast:', msg);
@@ -146,23 +149,23 @@ export default function ShareModal({
   const handleCopyLinkDirect = () => {
     if (shareLink) {
       navigator.clipboard.writeText(shareLink);
-      triggerToast('Share link copied to clipboard!');
+      triggerToast(t('common.copied') || 'Share link copied to clipboard!');
     }
   };
 
   const shareMethodOptions = [
-    { key: 'friends', label: 'Copy link', icon: <Copy size={13} /> },
-    { key: 'chat', label: 'Share to chat', icon: <MessageSquare size={13} /> },
-    { key: 'apps', label: 'Native apps', icon: <ArrowUpRight size={13} /> },
-    { key: 'downloads', label: 'Download', icon: <Download size={13} /> }
+    { key: 'friends', label: t('share.copyLink') || 'Copy link', icon: <Copy size={13} /> },
+    { key: 'chat', label: t('share.shareToChat') || 'Share to chat', icon: <MessageSquare size={13} /> },
+    { key: 'apps', label: t('share.nativeApps') || 'Native apps', icon: <ArrowUpRight size={13} /> },
+    { key: 'downloads', label: t('share.download') || 'Download', icon: <Download size={13} /> }
   ];
 
   const accessLevelOptions = [
-    { value: 'Zero-Knowledge', label: 'Zero-Knowledge', icon: <EyeOff size={13} /> },
-    { value: 'Viewer', label: 'Viewer', icon: <Lock size={13} /> },
-    { value: 'Commenter', label: 'Commenter', icon: <MessageSquare size={13} /> },
-    { value: 'Editor', label: 'Editor', icon: <Check size={13} /> },
-    { value: 'Full access', label: 'Full access', icon: <Share2 size={13} /> }
+    { value: 'Zero-Knowledge', label: t('share.zeroKnowledge') || 'Zero-Knowledge', icon: <EyeOff size={13} /> },
+    { value: 'Viewer', label: t('share.viewer') || 'Viewer', icon: <Lock size={13} /> },
+    { value: 'Commenter', label: t('share.commenter') || 'Commenter', icon: <MessageSquare size={13} /> },
+    { value: 'Editor', label: t('share.editor') || 'Editor', icon: <Check size={13} /> },
+    { value: 'Full access', label: t('share.fullAccess') || 'Full access', icon: <Share2 size={13} /> }
   ];
 
   const formatOptions = [
@@ -177,7 +180,7 @@ export default function ShareModal({
   const modalFooter = (
     <>
       <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-medium">
-        Ready to share
+        {t('share.readyToShare') || 'Ready to share'}
       </span>
       <div className="flex items-center gap-2">
         <button
@@ -185,7 +188,7 @@ export default function ShareModal({
           onClick={() => onClose()}
           className="px-3.5 py-1.5 rounded-xl text-xs font-medium border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
         >
-          Cancel
+          {t('common.cancel') || 'Cancel'}
         </button>
         <button
           type="button"
@@ -194,12 +197,12 @@ export default function ShareModal({
           className="btn-share btn-share-primary px-4 py-2 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm transition-all whitespace-nowrap min-w-[90px] active:scale-98"
         >
           {shareDestination === 'downloads'
-            ? `Export ${shareFormat}`
+            ? `${t('common.export') || 'Export'} ${shareFormat}`
             : shareDestination === 'apps'
-            ? 'Share to Apps'
+            ? (t('share.shareToApps') || 'Share to Apps')
             : shareDestination === 'chat'
-            ? 'Attach to Chat'
-            : 'Copy Link'}
+            ? (t('share.attachToChat') || 'Attach to Chat')
+            : (t('share.copyLink') || 'Copy Link')}
         </button>
       </div>
     </>
@@ -209,8 +212,8 @@ export default function ShareModal({
     <DropdownModalShell
       isOpen={isOpen}
       onClose={onClose}
-      title="Share document"
-      subtitle={shareTargetDocTitle || 'Untitled document'}
+      title={t('share.title') || "Share document"}
+      subtitle={shareTargetDocTitle || (t('common.untitledDoc') || 'Untitled document')}
       icon={Share}
       width="w-[390px]"
       topOffset="top-12"
@@ -222,7 +225,7 @@ export default function ShareModal({
     >
       {/* Share Method Select */}
       <CustomSelect
-        label="Share Method"
+        label={t('share.shareMethod') || "Share Method"}
         value={shareDestination}
         onChange={setShareDestination}
         options={shareMethodOptions}
@@ -230,7 +233,7 @@ export default function ShareModal({
 
       {/* Access Level Select */}
       <CustomSelect
-        label="Access Level"
+        label={t('share.accessLevel') || "Access Level"}
         value={shareAccess}
         onChange={setShareAccess}
         options={accessLevelOptions}
@@ -242,7 +245,7 @@ export default function ShareModal({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5 font-semibold text-slate-800 dark:text-zinc-200 text-[11.5px]">
               <EyeOff size={13} className="text-slate-700 dark:text-zinc-300 animate-pulse" />
-              <span>Protected contents</span>
+              <span>{t('share.protectedContents') || 'Protected contents'}</span>
             </div>
             <button
               type="button"
@@ -250,7 +253,7 @@ export default function ShareModal({
               className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-800 dark:bg-zinc-200 hover:bg-slate-900 text-white dark:text-slate-900 font-medium shadow-2xs transition-all text-[10.5px]"
             >
               <Eye size={11} />
-              <span>Preview</span>
+              <span>{t('share.preview') || 'Preview'}</span>
             </button>
           </div>
 
@@ -258,7 +261,7 @@ export default function ShareModal({
           <div className="flex flex-wrap gap-1 mb-2 max-h-[80px] overflow-y-auto thin-scrollbar">
             {zeroKnowledgeRedactions.length === 0 ? (
               <div className="w-full text-center py-2 text-[10px] text-slate-400 dark:text-zinc-500 border border-dashed border-slate-200 dark:border-zinc-800 rounded-lg bg-white/50 dark:bg-zinc-900/50">
-                🔒 No terms protected yet.
+                {t('share.noTermsProtected') || '🔒 No terms protected yet.'}
               </div>
             ) : (
               zeroKnowledgeRedactions.map((chip) => (
@@ -286,7 +289,7 @@ export default function ShareModal({
           <div className="flex gap-1.5">
             <input
               type="text"
-              placeholder="Custom word to redact..."
+              placeholder={t('share.customWordToRedact') || "Custom word to redact..."}
               value={newRedactionKeyword}
               onChange={(e) => setNewRedactionKeyword(e.target.value)}
               onKeyDown={(e) => {
@@ -310,7 +313,7 @@ export default function ShareModal({
               }}
               className="px-3 py-1.5 bg-slate-900 dark:bg-zinc-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white font-medium rounded-lg text-xs transition-all shrink-0"
             >
-              Add
+              {t('share.add') || 'Add'}
             </button>
           </div>
         </div>
@@ -319,7 +322,7 @@ export default function ShareModal({
       {/* Advanced Security */}
       <div>
         <label className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block mb-1.5">
-          Advanced Security
+          {t('share.advancedSecurity') || "Advanced Security"}
         </label>
         <div className="rounded-xl bg-slate-50/70 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-700/60 p-3 space-y-2.5">
           <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-zinc-300 cursor-pointer select-none">
@@ -331,7 +334,7 @@ export default function ShareModal({
               className="accent-violet-600 rounded border-slate-300 dark:border-zinc-700 cursor-pointer"
             />
             <Lock size={13} className="text-slate-400 dark:text-zinc-500" />
-            <span>Password protection</span>
+            <span>{t('share.passwordProtection') || 'Password protection'}</span>
           </label>
 
           {sharePasswordProtected && (
@@ -340,7 +343,7 @@ export default function ShareModal({
                 <div className="relative">
                   <input
                     type={showSharePassword ? 'text' : 'password'}
-                    placeholder="Password"
+                    placeholder={t('share.password') || "Password"}
                     value={sharePassword}
                     onChange={(e) => {
                       setSharePassword(e.target.value);
@@ -359,7 +362,7 @@ export default function ShareModal({
                 <div className="relative">
                   <input
                     type={showSharePassword ? 'text' : 'password'}
-                    placeholder="Confirm"
+                    placeholder={t('share.confirm') || "Confirm"}
                     value={sharePasswordConfirm}
                     onChange={(e) => {
                       setSharePasswordConfirm(e.target.value);
@@ -382,7 +385,7 @@ export default function ShareModal({
                   }}
                   className="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-zinc-100 text-white dark:text-slate-900 font-medium hover:bg-slate-800 transition-all text-[11px] shadow-2xs"
                 >
-                  Set Password
+                  {t('share.setPassword') || 'Set Password'}
                 </button>
                 {isPasswordConfirmed && (
                   <span className="flex items-center gap-1 text-[10px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 px-1.5 py-0.5 rounded border border-violet-200 dark:border-violet-800/60">
@@ -403,7 +406,7 @@ export default function ShareModal({
               className="accent-violet-600 rounded border-slate-300 dark:border-zinc-700 cursor-pointer"
             />
             <Clock size={13} className="text-slate-400 dark:text-zinc-500" />
-            <span>Expiring access</span>
+            <span>{t('share.expiringAccess') || 'Expiring access'}</span>
           </label>
 
           {shareExpiringAccess && (
@@ -421,7 +424,7 @@ export default function ShareModal({
 
       {/* File Format Select */}
       <CustomSelect
-        label="File Format"
+        label={t('share.fileFormat') || "File Format"}
         value={shareFormat}
         onChange={setShareFormat}
         options={formatOptions}
@@ -432,7 +435,7 @@ export default function ShareModal({
         <div className="rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-slate-50/70 dark:bg-zinc-800/50 p-2.5 flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
             <div className="text-[9.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-0.5">
-              Share link
+              {t('share.shareLink') || "Share link"}
             </div>
             <div className="text-[10.5px] text-slate-700 dark:text-zinc-300 truncate font-mono">
               {shareLink}
@@ -444,7 +447,7 @@ export default function ShareModal({
             className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-600 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-600 text-[10.5px] font-medium transition-colors shrink-0 flex items-center gap-1 shadow-2xs"
           >
             <Copy size={11} />
-            <span>Copy</span>
+            <span>{t('share.copy') || 'Copy'}</span>
           </button>
         </div>
       )}

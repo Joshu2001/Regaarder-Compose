@@ -108,7 +108,20 @@
     "fullscreen": "Toàn màn hình",
     "documentView": "Xem tài liệu",
     "textStyle": "Tùy chọn kiểu văn bản",
-    "toggleRightPanel": "Bật/tắt bảng điều khiển bên phải"
+    "toggleRightPanel": "Bật/tắt bảng điều khiển bên phải",
+    "contextSources": "Nguồn ngữ cảnh:",
+    "addSourceFile": "Thêm tệp nguồn",
+    "noContextSources": "Chưa có tệp ngữ cảnh nào được đính kèm",
+    "allContextSources": "Tất cả nguồn ngữ cảnh",
+    "synthesize": "Tổng hợp thông tin",
+    "aiWorkflows": "QUY TRÌNH AI",
+    "workflowLibrary": "+ Thư viện quy trình",
+    "saveCustom": "+ Lưu mẫu tùy chỉnh",
+    "findReplace": "Tìm kiếm & Thay thế",
+    "redactSelection": "Ẩn vùng chọn",
+    "portrait": "Khổ dọc",
+    "landscape": "Khổ ngang",
+    "outline": "Dàn ý tài liệu"
   },
   "search": {
     "title": "Tìm kiếm không gian làm việc",
@@ -240,7 +253,9 @@
     "draftDesc": "Đang được biên soạn",
     "readyDesc": "Đã hoàn thành và sẵn sàng sử dụng",
     "reviewDesc": "Đang chờ ý kiến đánh giá",
-    "archivedDesc": "Đã lưu trữ và không hoạt động"
+    "archivedDesc": "Đã lưu trữ và không hoạt động",
+    "tabToolsReady": "Công cụ {{tab}} đã sẵn sàng",
+    "toolsReady": "công cụ đã sẵn sàng"
   },
   "notifications": {
     "title": "Thông báo",
@@ -250,7 +265,9 @@
     "clearAll": "Xóa tất cả",
     "allCaughtUp": "Bạn đã xem hết thông báo",
     "notification": "thông báo",
-    "notifications": "thông báo"
+    "notifications": "thông báo",
+    "markRead": "Đánh dấu đã đọc",
+    "dismiss": "Bỏ qua"
   },
   "tts": {
     "listenToDraft": "Nghe bản nháp",
@@ -270,5 +287,45 @@
     "googleDocs": "Google Docs Cloud",
     "pdfDoc": "Tài liệu PDF",
     "markdownDoc": "Tệp Markdown"
+  },
+  "share": {
+    "title": "Chia sẻ tài liệu",
+    "shareMethod": "PHƯƠNG THỨC CHIA SẺ",
+    "copyLink": "Sao chép liên kết",
+    "shareToChat": "Chia sẻ vào trò chuyện",
+    "nativeApps": "Ứng dụng hệ thống",
+    "download": "Tải xuống",
+    "accessLevel": "QUYỀN TRUY CẬP",
+    "zeroKnowledge": "Zero-Knowledge",
+    "viewer": "Người xem",
+    "commenter": "Người nhận xét",
+    "editor": "Người chỉnh sửa",
+    "fullAccess": "Toàn quyền",
+    "protectedContents": "Nội dung được bảo vệ",
+    "preview": "Xem trước",
+    "noTermsProtected": "🔒 Chưa có từ ngữ nào được bảo vệ.",
+    "add": "Thêm",
+    "customWordToRedact": "Từ cần che giấu...",
+    "advancedSecurity": "BẢO MẬT NÂNG CAO",
+    "passwordProtection": "Bảo vệ bằng mật khẩu",
+    "expiringAccess": "Hạn truy cập",
+    "password": "Mật khẩu",
+    "confirm": "Xác nhận",
+    "setPassword": "Đặt mật khẩu",
+    "fileFormat": "ĐỊNH DẠNG TỆP",
+    "shareLink": "LIÊN KẾT CHIA SẺ",
+    "readyToShare": "Sẵn sàng chia sẻ",
+    "copy": "Sao chép",
+    "shareToApps": "Chia sẻ tới ứng dụng",
+    "attachToChat": "Đính kèm trò chuyện"
+  },
+  "review": {
+    "noReadabilityData": "Chưa có dữ liệu độ dễ đọc",
+    "readabilityDesc": "Phân tích tài liệu để đo lường độ dễ đọc và mức độ trôi chảy.",
+    "analyzeDoc": "Phân tích tài liệu",
+    "fleschReadingEase": "Điểm dễ đọc",
+    "readingLevel": "Mức độ đọc hiểu:",
+    "suggestions": "Gợi ý cải thiện",
+    "reanalyze": "Phân tích lại"
   }
 }

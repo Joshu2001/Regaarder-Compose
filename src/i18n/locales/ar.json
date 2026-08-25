@@ -108,7 +108,20 @@
     "fullscreen": "ملء الشاشة",
     "documentView": "عرض المستند",
     "textStyle": "خيارات تنسيق النص",
-    "toggleRightPanel": "تبديل اللوحة الجانبية"
+    "toggleRightPanel": "تبديل اللوحة الجانبية",
+    "contextSources": "مصادر السياق:",
+    "addSourceFile": "إضافة ملف مصدر",
+    "noContextSources": "لم يتم إرفاق أي ملفات سياق حتى الآن",
+    "allContextSources": "جميع مصادر السياق",
+    "synthesize": "توليف وتلخيص",
+    "aiWorkflows": "مهام وسير عمل الذكاء الاصطناعي",
+    "workflowLibrary": "+ مكتبة المهام",
+    "saveCustom": "+ حفظ كقالب مخصص",
+    "findReplace": "بحث واستبدال",
+    "redactSelection": "تعتيم التحديد",
+    "portrait": "عمودي",
+    "landscape": "أفقي",
+    "outline": "مخطط المستند"
   },
   "search": {
     "title": "البحث في مساحة العمل",
@@ -240,7 +253,9 @@
     "draftDesc": "قيد الكتابة والتحرير",
     "readyDesc": "مكتمل وجاهز للاستخدام",
     "reviewDesc": "بانتظار المراجعة والتعليقات",
-    "archivedDesc": "مؤرشف وغير نشط"
+    "archivedDesc": "مؤرشف وغير نشط",
+    "tabToolsReady": "أدوات {{tab}} جاهزة",
+    "toolsReady": "الأدوات جاهزة"
   },
   "notifications": {
     "title": "الإشعارات",
@@ -250,7 +265,9 @@
     "clearAll": "مسح الكل",
     "allCaughtUp": "لقد اطلعت على جميع الإشعارات",
     "notification": "إشعار",
-    "notifications": "إشعارات"
+    "notifications": "إشعارات",
+    "markRead": "تحديد كمقروء",
+    "dismiss": "تجاهل"
   },
   "tts": {
     "listenToDraft": "الاستماع إلى المسودة",
@@ -270,5 +287,45 @@
     "googleDocs": "مستند Google Docs السحابي",
     "pdfDoc": "مستند PDF",
     "markdownDoc": "ملف Markdown"
+  },
+  "share": {
+    "title": "مشاركة المستند",
+    "shareMethod": "طريقة المشاركة",
+    "copyLink": "نسخ الرابط",
+    "shareToChat": "مشاركة في المحادثة",
+    "nativeApps": "تطبيقات النظام",
+    "download": "تنزيل",
+    "accessLevel": "مستوى الوصول",
+    "zeroKnowledge": "تشفير تام (Zero-Knowledge)",
+    "viewer": "مشاهد",
+    "commenter": "معلّق",
+    "editor": "محرر",
+    "fullAccess": "وصول كامل",
+    "protectedContents": "المحتوى المحمي",
+    "preview": "معاينة",
+    "noTermsProtected": "🔒 لم يتم حماية أي عبارات بعد.",
+    "add": "إضافة",
+    "customWordToRedact": "كلمة مخصصة للتعتيم...",
+    "advancedSecurity": "أمان متقدم",
+    "passwordProtection": "الحماية بكلمة مرور",
+    "expiringAccess": "صلاحية محددة بوقت",
+    "password": "كلمة المرور",
+    "confirm": "تأكيد",
+    "setPassword": "تعيين كلمة المرور",
+    "fileFormat": "تنسيق الملف",
+    "shareLink": "رابط المشاركة",
+    "readyToShare": "جاهز للمشاركة",
+    "copy": "نسخ",
+    "shareToApps": "مشاركة للتطبيقات",
+    "attachToChat": "إرفاق بالمحادثة"
+  },
+  "review": {
+    "noReadabilityData": "لا توجد بيانات سهولة القراءة بعد",
+    "readabilityDesc": "حلل المستند لقياس سهولة القراءة وتدفق الصياغة.",
+    "analyzeDoc": "تحليل المستند",
+    "fleschReadingEase": "مقياس سهولة القراءة",
+    "readingLevel": "المستوى القرائي الموصى به:",
+    "suggestions": "اقتراحات التحسين",
+    "reanalyze": "إعادة التحليل"
   }
 }

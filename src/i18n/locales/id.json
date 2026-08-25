@@ -108,7 +108,20 @@
     "fullscreen": "Layar Penuh",
     "documentView": "Tampilan dokumen",
     "textStyle": "Opsi gaya teks",
-    "toggleRightPanel": "Beralih panel samping"
+    "toggleRightPanel": "Beralih panel samping",
+    "contextSources": "Sumber Konteks:",
+    "addSourceFile": "Tambah Berkas Sumber",
+    "noContextSources": "Belum ada berkas sumber konteks yang dilampirkan",
+    "allContextSources": "Semua Sumber Konteks",
+    "synthesize": "Sintesis Ringkasan",
+    "aiWorkflows": "ALUR KERJA AI",
+    "workflowLibrary": "+ Pustaka Alur Kerja",
+    "saveCustom": "+ Simpan Kustom",
+    "findReplace": "Cari & Ganti",
+    "redactSelection": "Sensor Pilihan",
+    "portrait": "Potret",
+    "landscape": "Lanskap",
+    "outline": "Kerangka Dokumen"
   },
   "search": {
     "title": "Pencarian Ruang Kerja",
@@ -240,7 +253,9 @@
     "draftDesc": "Sedang ditulis secara aktif",
     "readyDesc": "Selesai dan siap digunakan",
     "reviewDesc": "Menunggu masukan",
-    "archivedDesc": "Disimpan dan tidak aktif"
+    "archivedDesc": "Disimpan dan tidak aktif",
+    "tabToolsReady": "Alat {{tab}} siap",
+    "toolsReady": "alat siap"
   },
   "notifications": {
     "title": "Notifikasi",
@@ -250,7 +265,9 @@
     "clearAll": "Hapus semua",
     "allCaughtUp": "Semua notifikasi telah dibaca",
     "notification": "notifikasi",
-    "notifications": "notifikasi"
+    "notifications": "notifikasi",
+    "markRead": "Tandai dibaca",
+    "dismiss": "Tutup"
   },
   "tts": {
     "listenToDraft": "Dengarkan draf",
@@ -270,5 +287,45 @@
     "googleDocs": "Google Docs Cloud",
     "pdfDoc": "Dokumen PDF",
     "markdownDoc": "Berkas Markdown"
+  },
+  "share": {
+    "title": "Bagikan dokumen",
+    "shareMethod": "METODE BERBAGI",
+    "copyLink": "Salin tautan",
+    "shareToChat": "Bagikan ke obrolan",
+    "nativeApps": "Aplikasi bawaan",
+    "download": "Unduh",
+    "accessLevel": "TINGKAT AKSES",
+    "zeroKnowledge": "Zero-Knowledge",
+    "viewer": "Pelihat",
+    "commenter": "Komentator",
+    "editor": "Editor",
+    "fullAccess": "Akses penuh",
+    "protectedContents": "Konten dilindungi",
+    "preview": "Pratinjau",
+    "noTermsProtected": "🔒 Belum ada istilah yang dilindungi.",
+    "add": "Tambah",
+    "customWordToRedact": "Kata kustom untuk disensor...",
+    "advancedSecurity": "KEAMANAN TINGKAT LANJUT",
+    "passwordProtection": "Perlindungan kata sandi",
+    "expiringAccess": "Akses berbatas waktu",
+    "password": "Kata sandi",
+    "confirm": "Konfirmasi",
+    "setPassword": "Atur Kata Sandi",
+    "fileFormat": "FORMAT BERKAS",
+    "shareLink": "TAUTAN BERBAGI",
+    "readyToShare": "Siap dibagikan",
+    "copy": "Salin",
+    "shareToApps": "Bagikan ke Aplikasi",
+    "attachToChat": "Lampirkan ke Obrolan"
+  },
+  "review": {
+    "noReadabilityData": "Belum ada data keterbacaan",
+    "readabilityDesc": "Analisis dokumen untuk menghitung kemudahan membaca dan alur penulisan.",
+    "analyzeDoc": "Analisis Dokumen",
+    "fleschReadingEase": "Kemudahan Membaca",
+    "readingLevel": "Tingkat pembaca:",
+    "suggestions": "Saran Perbaikan",
+    "reanalyze": "Analisis Ulang"
   }
 }
