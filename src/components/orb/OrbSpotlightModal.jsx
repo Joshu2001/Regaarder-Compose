@@ -196,8 +196,8 @@ export default function OrbSpotlightModal({
           <div className="flex items-center justify-between px-6 pt-3.5 pb-2.5">
             {/* Orb Brand Mark */}
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] border border-violet-100 dark:border-violet-800/60 flex items-center justify-center shadow-2xs">
-                <OrbIcon size={15} />
+              <div className="w-8.5 h-8.5 rounded-xl bg-violet-50/90 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] border border-violet-100/90 dark:border-violet-800/60 flex items-center justify-center shadow-2xs">
+                <OrbIcon size={19} />
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-sm tracking-tight ${isHighContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-900 dark:text-zinc-100'}`}>

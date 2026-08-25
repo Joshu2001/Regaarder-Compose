@@ -8,7 +8,7 @@ import {
   ExternalLink, Eye, Maximize2, Minimize2, Network, Shield, Scale,
   BookOpen, Target, Activity, AlertCircle, ArrowUpRight, Zap, MessageSquare
 } from 'lucide-react';
-import { RegaarderProductIcon, RegaarderAiIcon } from '../RegaarderProductIcons';
+import { RegaarderProductIcon, RegaarderAiIcon, OrbIcon } from '../RegaarderProductIcons';
 import OrbDecideSelectionPill from './OrbDecideSelectionPill';
 import { synthesizeStrategicDecision } from '../../services/orbKnowledgeGraphService';
 import { 
@@ -291,13 +291,21 @@ export default function OrbDecideSynthesizer({
   // Active Model Label
   const currentModelLabel = useMemo(() => {
     if (aiConfig.provider === 'ollama') {
-      return `Ollama (${aiConfig.ollamaModel || 'Local'})`;
+      const m = aiConfig.ollamaModel || 'gemma3:1b';
+      if (m.toLowerCase().includes('gemma3:1b') || m.toLowerCase().includes('gemma:1b')) return 'Gemma 3:1B';
+      if (m.toLowerCase().includes('gemma3:4b') || m.toLowerCase().includes('gemma:4b')) return 'Gemma 3:4B';
+      if (m.toLowerCase().includes('gemma3:12b') || m.toLowerCase().includes('gemma:12b')) return 'Gemma 3:12B';
+      if (m.toLowerCase().includes('gemma3:27b') || m.toLowerCase().includes('gemma:27b')) return 'Gemma 3:27B';
+      if (m.toLowerCase().includes('llama3.3')) return 'Llama 3.3';
+      if (m.toLowerCase().includes('llama3.2')) return 'Llama 3.2';
+      if (m.toLowerCase().includes('deepseek')) return 'DeepSeek R1';
+      return m;
     }
     if (aiConfig.provider === 'lmstudio') {
-      return `LM Studio (${aiConfig.lmstudioModel || 'Local'})`;
+      return aiConfig.lmstudioModel || 'LM Studio';
     }
     if (aiConfig.provider === 'custom') {
-      return `Custom LLM (${aiConfig.customModel || 'Local'})`;
+      return aiConfig.customModel || 'Custom LLM';
     }
     const found = CLOUD_AI_MODELS.find(m => m.id === (aiConfig.activeModel || aiConfig.geminiModel));
     return found ? found.name : 'Gemini 1.5 Pro';
@@ -318,7 +326,7 @@ export default function OrbDecideSynthesizer({
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-transparent">
-      {/* ── Query Bar Header: Airy & Floating with Model Selector ── */}
+      {/* ── Query Bar Header: Airy & Floating with Flat Inline Model Selector ── */}
       <div className="px-7 py-3.5 border-b border-black/[0.04] dark:border-white/[0.05] bg-white/35 dark:bg-zinc-950/35 backdrop-blur-md shrink-0 relative z-30">
         <form onSubmit={handleQuerySubmit} className="flex flex-col gap-2 max-w-4xl mx-auto">
           {/* Active Quoted Selection Context Pill */}
@@ -344,36 +352,31 @@ export default function OrbDecideSynthesizer({
             </div>
           )}
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             {/* Main Inquiry Input */}
             <div className="relative flex-1">
-              <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 pointer-events-none" />
               <input
                 ref={queryInputRef}
                 type="text"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 placeholder={activeQuoteContext ? "Ask a follow-up inquiry about this selection..." : "Ask an executive question or evaluate strategy..."}
-                className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-[#7C5ACF] dark:focus:border-[#a78bfa] focus:shadow-[0_4px_16px_rgba(124,90,207,0.06)] transition-all"
+                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-[#7C5ACF] dark:focus:border-[#a78bfa] focus:shadow-[0_4px_16px_rgba(124,90,207,0.06)] transition-all"
               />
             </div>
 
-          {/* Model Selector Pill */}
-          <div className="relative shrink-0" ref={modelPickerRef}>
-            <button
-              type="button"
-              onClick={() => setIsModelPickerOpen(!isModelPickerOpen)}
-              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-all text-xs font-medium cursor-pointer select-none ${
-                isModelPickerOpen
-                  ? 'border-[#7C5ACF] bg-white dark:bg-zinc-900 ring-2 ring-[#7C5ACF]/20 text-[#7C5ACF] dark:text-[#a78bfa]'
-                  : 'border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 hover:border-slate-300 dark:hover:border-zinc-700'
-              }`}
-              title="Select AI Model or Local Inference Engine"
-            >
-              <span className={`w-2 h-2 rounded-full shrink-0 ${isLocalActive ? 'bg-emerald-500 animate-pulse' : 'bg-[#7C5ACF]'}`} />
-              <span className="truncate max-w-[130px] font-semibold">{currentModelLabel}</span>
-              <ChevronDown size={12} className={`text-slate-400 transition-transform ${isModelPickerOpen ? 'rotate-180' : ''}`} />
-            </button>
+            {/* Model Selector: Flat Inline Text without Pill/Container */}
+            <div className="relative shrink-0" ref={modelPickerRef}>
+              <button
+                type="button"
+                onClick={() => setIsModelPickerOpen(!isModelPickerOpen)}
+                className="flex items-center gap-1 px-2 py-2 rounded-lg text-xs font-medium text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer select-none"
+                title="Select AI Model or Local Inference Engine"
+              >
+                <span className="truncate max-w-[140px]">{currentModelLabel}</span>
+                <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform ${isModelPickerOpen ? 'rotate-180' : ''}`} />
+              </button>
 
             {/* Model Picker Menu */}
             {isModelPickerOpen && (
@@ -496,9 +499,9 @@ export default function OrbDecideSynthesizer({
         </div>
       </form>
 
-        {/* Quick Sample Prompts */}
-        <div className="flex items-center gap-2 mt-2.5 max-w-4xl mx-auto overflow-x-auto thin-scrollbar pb-0.5">
-          <span className="text-[10.5px] uppercase tracking-wider font-semibold text-slate-400 dark:text-zinc-500 shrink-0">
+        {/* Quick Sample Prompts: Multi-line Wrapping to Prevent Truncation */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-2.5 max-w-4xl mx-auto">
+          <span className="text-[10.5px] uppercase tracking-wider font-semibold text-slate-400 dark:text-zinc-500 shrink-0 mr-1">
             Inquiries:
           </span>
           {liveInquiries.map((prompt, idx) => (
@@ -509,7 +512,7 @@ export default function OrbDecideSynthesizer({
                 setQuestion(prompt);
                 triggerSynthesize(prompt);
               }}
-              className="px-3 py-1 rounded-lg text-xs font-medium bg-slate-100/80 dark:bg-zinc-800/60 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-zinc-700/70 whitespace-nowrap transition-colors cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100/80 dark:bg-zinc-800/60 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-zinc-700/70 text-left transition-colors cursor-pointer"
             >
               {prompt}
             </button>
@@ -545,9 +548,9 @@ export default function OrbDecideSynthesizer({
 
           {/* Empty State */}
           {!activeQuery && !isSynthesizing && (
-            <div className="flex flex-col items-center justify-center py-16 px-6 rounded-3xl bg-white dark:bg-zinc-900 border border-black/[0.04] dark:border-white/[0.05] text-center shadow-2xs">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-violet-50 dark:bg-violet-950/50 text-[#7C5ACF] dark:text-[#a78bfa] mb-3.5 border border-violet-100 dark:border-violet-900/40">
-                <Compass size={22} strokeWidth={1.8} />
+            <div className="flex flex-col items-center justify-center py-16 px-6 rounded-2xl bg-white/70 dark:bg-zinc-900/60 border border-black/[0.04] dark:border-white/[0.05] text-center shadow-2xs">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-violet-50/90 dark:bg-violet-950/50 text-[#7C5ACF] dark:text-[#a78bfa] mb-3.5 border border-violet-100 dark:border-violet-900/40">
+                <OrbIcon size={20} />
               </div>
               <h3 className="text-base font-semibold text-slate-900 dark:text-zinc-100 mb-1">
                 Strategic Reasoning System

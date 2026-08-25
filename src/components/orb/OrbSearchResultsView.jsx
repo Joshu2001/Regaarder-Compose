@@ -4,7 +4,7 @@ import {
   Table, Presentation, Video, CheckSquare, Calendar, Globe,
   CornerDownRight, User, Hash, Clock, Layers, HelpCircle, Compass
 } from 'lucide-react';
-import { RegaarderProductIcon, RegaarderAiIcon } from '../RegaarderProductIcons';
+import { RegaarderProductIcon, RegaarderAiIcon, OrbIcon } from '../RegaarderProductIcons';
 
 export const WORKSPACE_LABELS = {
   all: 'All Intelligence',
@@ -181,7 +181,7 @@ export default function OrbSearchResultsView({
                 {workspaceFilter !== 'all' ? (
                   <RegaarderProductIcon name={workspaceFilter} size={22} />
                 ) : (
-                  <Compass size={22} strokeWidth={1.5} />
+                  <OrbIcon size={22} className="text-[#7C5ACF] dark:text-[#a78bfa]" />
                 )}
               </div>
               <h3 className={`text-sm mb-1 ${
@@ -202,7 +202,7 @@ export default function OrbSearchResultsView({
                   onClick={() => onNavigateToWorkspace({ workspace: targetWorkspace })}
                   className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-zinc-100 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 >
-                  <span>Create {WORKSPACE_LABELS[workspaceFilter] || 'Document'}</span>
+                  <span>{workspaceFilter === 'all' ? 'Build Workspace Intelligence' : `Create ${WORKSPACE_LABELS[workspaceFilter] || 'Document'}`}</span>
                   <ArrowRight size={12} />
                 </button>
               )}
